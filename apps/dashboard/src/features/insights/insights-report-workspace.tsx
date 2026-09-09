@@ -230,7 +230,7 @@ function humanize(value: string) {
 }
 function money(value: number | null | undefined, currency: string, locale: string) {
   return value == null
-    ? "—"
+    ? "N/A"
     : new Intl.NumberFormat(locale, {
         style: "currency",
         currency,

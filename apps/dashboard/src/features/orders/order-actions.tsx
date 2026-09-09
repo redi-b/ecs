@@ -170,14 +170,19 @@ export function OrderActions({
       await postOrderAction(action, { action: "cancel" });
       return t("orders.actions.toastCanceled");
     },
-    onError: (error) =>
+    onMutate: () => toast.loading(t("orders.actions.working")),
+    onError: (error, _kind, toastId) => {
       setActionError(
         mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
-      ),
-    onSuccess: (message) => {
+      );
+      toast.error(t("orders.actions.updateFailedTitle"), {
+        ...(toastId !== undefined ? { id: toastId } : {}),
+      });
+    },
+    onSuccess: (message, _kind, toastId) => {
       setActionError(null);
       setPending(null);
-      toast.success(message);
+      toast.success(message, { ...(toastId !== undefined ? { id: toastId } : {}) });
       router.refresh();
     },
   });
@@ -328,9 +333,12 @@ export function OrderActions({
                 : copy.description
         }
         icon={pending?.kind === "cancel" ? "warning" : "question"}
-        onConfirm={(event) => {
-          event.preventDefault();
-          if (pending) mutation.mutate(pending);
+        onConfirm={() => {
+          if (!pending) return;
+          const actionToRun = pending;
+          setActionError(null);
+          setPending(null);
+          mutation.mutate(actionToRun);
         }}
         onOpenChange={(open) => {
           if (!open && !mutation.isPending) setPending(null);

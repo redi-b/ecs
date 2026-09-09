@@ -188,6 +188,7 @@ export function TelegramShopToolsPanel({
   function confirmRemove() {
     if (!removeTarget) return;
     const bindingId = removeTarget.id;
+    setRemoveTarget(null);
     startTransition(async () => {
       try {
         const response = await postAction({ action: "remove", bindingId });
@@ -197,7 +198,6 @@ export function TelegramShopToolsPanel({
           return;
         }
         toast.success(t("settings.telegram.unlinked"));
-        setRemoveTarget(null);
         await loadBindings();
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
@@ -560,10 +560,7 @@ export function TelegramShopToolsPanel({
           name: removeTarget?.label ?? "",
         })}
         icon="trash"
-        onConfirm={(event) => {
-          event.preventDefault();
-          confirmRemove();
-        }}
+        onConfirm={confirmRemove}
         onOpenChange={(open) => {
           if (!open && !isPending) setRemoveTarget(null);
         }}

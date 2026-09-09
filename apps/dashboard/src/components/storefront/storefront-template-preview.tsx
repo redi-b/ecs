@@ -6,7 +6,14 @@ import { useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export function StorefrontTemplatePreview({
@@ -39,27 +46,55 @@ export function StorefrontTemplatePreview({
           }}
           type="button"
         >
-          <PreviewFrame alt={alt} compact={compact} fallbackPalette={fallbackPalette} name={template.name} preview={preview} slug={template.slug} />
+          <PreviewFrame
+            alt={alt}
+            compact={compact}
+            fallbackPalette={fallbackPalette}
+            name={template.name}
+            preview={preview}
+            slug={template.slug}
+          />
         </button>
-        {template.version.demoUrl ? (
-          <Button
-            asChild
-            className="absolute bottom-2 right-2 opacity-100 shadow-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-            size="icon-sm"
-            title={demoLabel}
-            variant="secondary"
-          >
-            <a
-              aria-label={`${demoLabel}: ${template.name}`}
-              href={template.version.demoUrl}
-              onClick={(event) => event.stopPropagation()}
-              rel="noreferrer"
-              target="_blank"
-            >
-              <AppIcons.externalLink aria-hidden />
-            </a>
-          </Button>
-        ) : null}
+        <TooltipProvider>
+          <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={`${previewLabel}: ${template.name}`}
+                  className="transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen(true);
+                  }}
+                  size="icon-sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  <AppIcons.expand aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{previewLabel}</TooltipContent>
+            </Tooltip>
+            {template.version.demoUrl ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild size="icon-sm" variant="secondary">
+                    <a
+                      aria-label={`${demoLabel}: ${template.name}`}
+                      href={template.version.demoUrl}
+                      onClick={(event) => event.stopPropagation()}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <AppIcons.externalLink aria-hidden />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{demoLabel}</TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
+        </TooltipProvider>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-hidden p-0 sm:max-w-4xl">
@@ -80,7 +115,13 @@ export function StorefrontTemplatePreview({
             </div>
           </DialogHeader>
           <div className="max-h-[72vh] overflow-auto bg-muted/30 p-3 sm:p-5">
-            <PreviewFrame alt={alt} fallbackPalette={fallbackPalette} name={template.name} preview={preview} slug={template.slug} />
+            <PreviewFrame
+              alt={alt}
+              fallbackPalette={fallbackPalette}
+              name={template.name}
+              preview={preview}
+              slug={template.slug}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -88,7 +129,14 @@ export function StorefrontTemplatePreview({
   );
 }
 
-function PreviewFrame({ alt, compact = false, fallbackPalette, name, preview, slug }: {
+function PreviewFrame({
+  alt,
+  compact = false,
+  fallbackPalette,
+  name,
+  preview,
+  slug,
+}: {
   alt: string;
   compact?: boolean;
   fallbackPalette: FallbackPalette;
@@ -97,50 +145,112 @@ function PreviewFrame({ alt, compact = false, fallbackPalette, name, preview, sl
   slug: string;
 }) {
   return (
-    <div className={cn("relative overflow-hidden rounded-lg border bg-muted/40", compact ? "aspect-[4/3]" : "aspect-[16/10]") }>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg border bg-muted/40",
+        compact ? "aspect-[4/3]" : "aspect-[16/10]",
+      )}
+    >
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt={alt} className="size-full object-cover object-top transition-transform duration-200 group-hover:scale-[1.01] motion-reduce:transition-none" src={preview} />
+        <img
+          alt={alt}
+          className="size-full object-cover object-top transition-transform duration-200 group-hover:scale-[1.01] motion-reduce:transition-none"
+          src={preview}
+        />
       ) : (
         <FallbackPreview compact={compact} name={name} palette={fallbackPalette} slug={slug} />
       )}
-      <span className="absolute inset-0 bg-foreground/0 transition-colors group-hover:bg-foreground/[0.025]" aria-hidden />
+      <span
+        className="absolute inset-0 bg-foreground/0 transition-colors group-hover:bg-foreground/[0.025]"
+        aria-hidden
+      />
     </div>
   );
 }
 
-type FallbackPalette = { accent: string; background: string; foreground: string; muted: string; primary: string };
+type FallbackPalette = {
+  accent: string;
+  background: string;
+  foreground: string;
+  muted: string;
+  primary: string;
+};
 
-function FallbackPreview({ compact, name, palette, slug }: { compact: boolean; name: string; palette: FallbackPalette; slug: string }) {
+function FallbackPreview({
+  compact,
+  name,
+  palette,
+  slug,
+}: {
+  compact: boolean;
+  name: string;
+  palette: FallbackPalette;
+  slug: string;
+}) {
   return (
-    <div className="absolute inset-0" role="img" aria-label={`${name} storefront preview unavailable`} style={{ backgroundColor: palette.background, color: palette.foreground }}>
+    <div
+      className="absolute inset-0"
+      role="img"
+      aria-label={`${name} storefront preview unavailable`}
+      style={{ backgroundColor: palette.background, color: palette.foreground }}
+    >
       <div className="absolute inset-x-2.5 top-2.5 flex items-center gap-1">
-        <span className="size-1.5 rounded-full opacity-20" style={{ backgroundColor: palette.foreground }} />
-        <span className="size-1.5 rounded-full opacity-20" style={{ backgroundColor: palette.foreground }} />
-        <span className="size-1.5 rounded-full opacity-20" style={{ backgroundColor: palette.foreground }} />
-        <span className="ml-1 h-1.5 flex-1 rounded-full opacity-10" style={{ backgroundColor: palette.foreground }} />
+        <span
+          className="size-1.5 rounded-full opacity-20"
+          style={{ backgroundColor: palette.foreground }}
+        />
+        <span
+          className="size-1.5 rounded-full opacity-20"
+          style={{ backgroundColor: palette.foreground }}
+        />
+        <span
+          className="size-1.5 rounded-full opacity-20"
+          style={{ backgroundColor: palette.foreground }}
+        />
+        <span
+          className="ml-1 h-1.5 flex-1 rounded-full opacity-10"
+          style={{ backgroundColor: palette.foreground }}
+        />
       </div>
       <div className="absolute inset-x-2.5 bottom-2.5 top-8 grid grid-cols-[1.2fr_0.8fr] gap-1.5">
-        <div className="flex flex-col justify-end rounded-md p-2.5 shadow-sm" style={{ backgroundColor: palette.muted }}>
-          <span className="block h-1.5 w-12 rounded-full opacity-35" style={{ backgroundColor: palette.foreground }} />
-          <span className="mt-1.5 block h-1.5 w-16 rounded-full opacity-20" style={{ backgroundColor: palette.foreground }} />
-          <span className="mt-2.5 block h-4 w-12 rounded-md" style={{ backgroundColor: palette.primary }} />
+        <div
+          className="flex flex-col justify-end rounded-md p-2.5 shadow-sm"
+          style={{ backgroundColor: palette.muted }}
+        >
+          <span
+            className="block h-1.5 w-12 rounded-full opacity-35"
+            style={{ backgroundColor: palette.foreground }}
+          />
+          <span
+            className="mt-1.5 block h-1.5 w-16 rounded-full opacity-20"
+            style={{ backgroundColor: palette.foreground }}
+          />
+          <span
+            className="mt-2.5 block h-4 w-12 rounded-md"
+            style={{ backgroundColor: palette.primary }}
+          />
         </div>
         <div className="grid gap-1.5">
           <span className="rounded-md opacity-80" style={{ backgroundColor: palette.accent }} />
           <span className="rounded-md opacity-60" style={{ backgroundColor: palette.muted }} />
         </div>
       </div>
-      {!compact ? <span className="absolute left-2.5 top-8 rounded-md bg-background/95 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{slug}</span> : null}
+      {!compact ? (
+        <span className="absolute left-2.5 top-8 rounded-md bg-background/95 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {slug}
+        </span>
+      ) : null}
     </div>
   );
 }
 
 function getFallbackPalette(templateKey: string): FallbackPalette {
   const tokens = getStorefrontTemplateDefinition(templateKey)?.defaultThemeTokens;
-  const colors = tokens && typeof tokens === "object" && "colors" in tokens
-    ? (tokens.colors as Partial<FallbackPalette>)
-    : null;
+  const colors =
+    tokens && typeof tokens === "object" && "colors" in tokens
+      ? (tokens.colors as Partial<FallbackPalette>)
+      : null;
   return {
     accent: colors?.accent ?? "#dbe7f7",
     background: colors?.background ?? "#f7f9fc",

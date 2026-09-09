@@ -114,7 +114,7 @@
   "dropPageTitle": "Drop images to add them",
   "dropPageDescription": "You can review the batch before anything uploads.",
   "uploadComposerTitle": "Compose media upload",
-  "uploadComposerDescription": "Add images, preview the batch, then start uploading. Progress continues in the queue so you can keep working.",
+  "uploadComposerDescription": "Add images and review them before uploading.",
   "addMore": "Add images",
   "browseFiles": "Browse files",
   "dropZoneHint": "Drop images here, or browse from your device",

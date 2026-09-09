@@ -42,7 +42,7 @@ export function BulkInventoryDialog({
       products.flatMap((product) =>
         (product.variants ?? []).map((variant) => ({
           key: `${product.id}:${variant.id}`,
-          label: `${product.title ?? product.handle ?? product.id} — ${variant.title ?? variant.sku ?? variant.id}`,
+          label: `${product.title ?? product.handle ?? product.id}: ${variant.title ?? variant.sku ?? variant.id}`,
           productId: product.id,
           stockedQuantity: String(variant.stock?.stockedQuantity ?? 0),
           variantId: variant.id,

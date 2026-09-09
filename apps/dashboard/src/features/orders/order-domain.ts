@@ -198,7 +198,7 @@ export function getMethodShortLabel(method: OrderMethodLabel, t?: Translate) {
     case "chapa":
       return t ? t("orders.labels.methodOnline") : "Online";
     case "unknown":
-      return t ? t("orders.labels.methodUnknown") : "—";
+      return t ? t("orders.labels.methodUnknown") : "N/A";
   }
 }
 
@@ -218,7 +218,7 @@ export function getDeliveryDisplayLabel(label: OrderDeliveryLabel, t?: Translate
     case "pickup":
       return t ? t("orders.labels.deliveryPickup") : "Customer pickup";
     case "unknown":
-      return t ? t("orders.labels.deliveryUnknown") : "—";
+      return t ? t("orders.labels.deliveryUnknown") : "N/A";
   }
 }
 
@@ -258,7 +258,7 @@ export function getOrderCustomerPhone(order: MerchantOrder) {
 }
 
 export function formatOrderMoney(amount: number | null | undefined, currencyCode?: string | null) {
-  if (amount == null || Number.isNaN(amount)) return "—";
+  if (amount == null || Number.isNaN(amount)) return "N/A";
   const code = (currencyCode ?? "ETB").toUpperCase();
   try {
     return new Intl.NumberFormat("en-ET", {
@@ -272,9 +272,9 @@ export function formatOrderMoney(amount: number | null | undefined, currencyCode
 }
 
 export function formatOrderDateTime(value: string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "N/A";
   // Fixed locale + 2-digit hour/minute so server and client never disagree
   // (e.g. "0:07" vs "00:07" under hour: "numeric").
   return new Intl.DateTimeFormat("en-GB", {
@@ -288,9 +288,9 @@ export function formatOrderDateTime(value: string | null | undefined) {
 }
 
 export function formatOrderRelativeTime(value: string | null | undefined, now = new Date()) {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "N/A";
 
   const diffMs = date.getTime() - now.getTime();
   const diffMinutes = Math.round(diffMs / 60_000);

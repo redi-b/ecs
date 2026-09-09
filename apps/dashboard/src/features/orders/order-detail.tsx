@@ -161,7 +161,7 @@ export async function OrderDetail({
     <div className="flex flex-col gap-4 sm:gap-5">
       {/*
         Two-zone hero (old structure, cleaned):
-        - Left: order id, payment chips only (no progress badge — track covers that),
+        - Left: order id and payment chips only (the track covers progress),
           customer/meta, connected fulfillment track
         - Right: next actions
       */}
@@ -300,7 +300,7 @@ export async function OrderDetail({
                             </div>
                           </TableCell>
                           <TableCell className="py-2.5 text-right tabular-nums">
-                            {item.quantity ?? "—"}
+                            {item.quantity ?? "N/A"}
                           </TableCell>
                           <TableCell className="py-2.5 text-right font-medium tabular-nums">
                             {formatOrderMoney(item.total, order.currencyCode)}

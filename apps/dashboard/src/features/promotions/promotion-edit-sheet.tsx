@@ -380,7 +380,7 @@ export function PromotionEditSheet({
             <div className="rounded-2xl border border-border/80 bg-muted/15 px-3.5 py-3">
               <p className="text-sm font-medium">{t("promotions.edit.discount")}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {promotion ? offerSummary(promotion, t) : "—"}
+                {promotion ? offerSummary(promotion, t) : "N/A"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("promotions.edit.fixedShapeHelp")}

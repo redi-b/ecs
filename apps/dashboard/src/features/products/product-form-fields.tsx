@@ -4,6 +4,7 @@ import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/co
 import { useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { Badge } from "@/components/ui/badge";
 import {
   MultiSearchableCombobox,
   SearchableCombobox,
@@ -107,13 +108,25 @@ export function CollectionPicker({
         open={open}
         options={options}
         panelFooter={
-          <button
-            className="text-sm font-medium text-primary hover:underline"
-            onClick={openCreate}
-            type="button"
-          >
-            {t("products.formPicker.createCollection")}
-          </button>
+          <div className="flex flex-col gap-2">
+            {allCollections.length === 0 ? (
+              <TaxonomyExamples
+                examples={[
+                  t("products.formPicker.collectionExampleNewArrivals"),
+                  t("products.formPicker.collectionExampleBestSellers"),
+                  t("products.formPicker.collectionExampleSeasonal"),
+                ]}
+                label={t("products.formPicker.examplesLabel")}
+              />
+            ) : null}
+            <button
+              className="self-start text-sm font-medium text-primary hover:underline"
+              onClick={openCreate}
+              type="button"
+            >
+              {t("products.formPicker.createCollection")}
+            </button>
+          </div>
         }
         placeholder={t("products.formPicker.noCollection")}
         renderItem={(item) =>
@@ -220,13 +233,25 @@ export function CategoryPicker({
         open={open}
         options={options}
         panelFooter={
-          <button
-            className="text-sm font-medium text-primary hover:underline"
-            onClick={openCreate}
-            type="button"
-          >
-            {t("products.formPicker.createCategory")}
-          </button>
+          <div className="flex flex-col gap-2">
+            {allCategories.length === 0 ? (
+              <TaxonomyExamples
+                examples={[
+                  t("products.formPicker.categoryExampleClothing"),
+                  t("products.formPicker.categoryExampleShoes"),
+                  t("products.formPicker.categoryExampleSkinCare"),
+                ]}
+                label={t("products.formPicker.examplesLabel")}
+              />
+            ) : null}
+            <button
+              className="self-start text-sm font-medium text-primary hover:underline"
+              onClick={openCreate}
+              type="button"
+            >
+              {t("products.formPicker.createCategory")}
+            </button>
+          </div>
         }
         placeholder={t("products.formPicker.selectCategories")}
         removeLabel={(label) => t("products.formPicker.removeCategory", { value: label })}
@@ -274,6 +299,21 @@ export function CategoryPicker({
         queryKey="product-categories"
         showTrigger={false}
       />
+    </div>
+  );
+}
+
+function TaxonomyExamples({ examples, label }: { examples: string[]; label: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {examples.map((example) => (
+          <Badge key={example} variant="outline">
+            {example}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }

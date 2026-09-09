@@ -158,7 +158,7 @@
     "emptyTitle": "ገና ለመከፋፈል መረጃ የለም"
   },
   "helpers": {
-    "unavailable": "—",
+    "unavailable": "መረጃ የለም",
     "noSalesYet": "ገና ሽያጭ የለም",
     "recordsReviewed": "{count} ትዕዛዞች"
   },
@@ -206,7 +206,7 @@
     "catalogDesc": "{count} ምርቶች በካታሎግ",
     "catalogEmpty": "ደንበኞች የሚገዙትን ቢያንስ አንድ ምርት ያክሉ",
     "storefrontDesign": "የመደብር ንድፍ",
-    "storefrontSelected": "አብነት ተመርጧል — በማስተካከያ ያብጁ",
+    "storefrontSelected": "አብነት ተመርጧል። በማስተካከያ ያብጁ።",
     "chooseStorefront": "የመደብር ገጽ አብነት ይምረጡ",
     "publishStorefront": "መደብር ለደንበኞች ክፈት",
     "customersCanAccess": "ሱቁ ለደንበኞች ክፍት ነው",
