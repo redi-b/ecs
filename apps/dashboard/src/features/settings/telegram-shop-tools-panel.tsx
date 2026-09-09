@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -543,12 +544,7 @@ export function TelegramShopToolsPanel({
                 {t("common.cancel")}
               </Button>
             </DialogClose>
-            <Button
-              className="rounded-full"
-              disabled={isPending}
-              type="button"
-              onClick={startLink}
-            >
+            <Button className="rounded-full" disabled={isPending} type="button" onClick={startLink}>
               {isPending ? t("settings.telegram.opening") : t("settings.telegram.continueTelegram")}
               {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
             </Button>
@@ -556,39 +552,24 @@ export function TelegramShopToolsPanel({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={removeTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setRemoveTarget(null);
+      <ConfirmDialog
+        cancelDisabled={isPending}
+        confirmDisabled={isPending}
+        confirmLabel={t("settings.telegram.remove")}
+        description={t("settings.telegram.removeDescription", {
+          name: removeTarget?.label ?? "",
+        })}
+        icon="trash"
+        onConfirm={(event) => {
+          event.preventDefault();
+          confirmRemove();
         }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("settings.telegram.removeTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("settings.telegram.removeDescription", {
-                name: removeTarget?.label ?? "",
-              })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button className="rounded-full" type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-            </DialogClose>
-            <Button
-              className="rounded-full"
-              disabled={isPending}
-              type="button"
-              variant="destructive"
-              onClick={confirmRemove}
-            >
-              {t("settings.telegram.remove")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={(open) => {
+          if (!open && !isPending) setRemoveTarget(null);
+        }}
+        open={removeTarget !== null}
+        title={t("settings.telegram.removeTitle")}
+      />
     </>
   );
 }
