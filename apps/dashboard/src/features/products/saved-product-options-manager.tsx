@@ -23,6 +23,7 @@ import { ProductColorPopover } from "@/features/products/product-form-sections";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { rankFuzzyItems } from "@/lib/fuzzy-search";
 
 type SavedValue = { label: string; swatch?: { kind: "color"; value: string } | null };
 type SavedOption = { id: string; title: string; values: SavedValue[] };
@@ -91,17 +92,13 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
 
   const startCreating = () => setEditing({ id: "", isNew: true, title: "", values: [] });
   const options = query.data?.optionSets ?? [];
-  const normalizedSearch = search.trim().toLowerCase();
+  const hasSearch = Boolean(search.trim());
   const filteredOptions = useMemo(
     () =>
-      normalizedSearch
-        ? options.filter(
-            (option) =>
-              option.title.toLowerCase().includes(normalizedSearch) ||
-              option.values.some((value) => value.label.toLowerCase().includes(normalizedSearch)),
-          )
-        : options,
-    [normalizedSearch, options],
+      rankFuzzyItems(options, search, (option) =>
+        [option.title, ...option.values.map((value) => value.label)].join(" "),
+      ),
+    [options, search],
   );
   const cloneForEditing = (option: SavedOption): SavedOptionDraft => ({
     ...option,
@@ -221,7 +218,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
       ) : (
         <>
           {!query.isPending ? (
-            <ListSummary count={filteredOptions.length} filtered={Boolean(normalizedSearch)} />
+            <ListSummary count={filteredOptions.length} filtered={hasSearch} />
           ) : null}
           <DataTable
             columns={columns}
@@ -232,7 +229,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
             filteredEmptyMessage={t("products.savedOptions.filteredEmptyDescription")}
             filteredEmptyTitle={t("products.savedOptions.filteredEmptyTitle")}
             getRowId={(option) => option.id}
-            isFiltered={Boolean(normalizedSearch)}
+            isFiltered={hasSearch}
             isLoading={query.isPending}
             pageSize={20}
             toolbar={

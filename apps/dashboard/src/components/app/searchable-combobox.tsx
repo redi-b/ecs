@@ -21,6 +21,7 @@ import {
   releaseNestedOverlayIfOpen,
   type NestedOverlaySession,
 } from "@/lib/nested-overlay";
+import { fuzzyMatches } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
 
@@ -79,13 +80,9 @@ function useNestedOverlaySync(controlledOpen?: boolean) {
 }
 
 function matchesOption(item: SearchableComboboxOption, query: string) {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return (
-    item.label.toLowerCase().includes(q) ||
-    item.value.toLowerCase().includes(q) ||
-    (item.keywords?.toLowerCase().includes(q) ?? false) ||
-    (item.description?.toLowerCase().includes(q) ?? false)
+  return fuzzyMatches(
+    [item.label, item.value, item.keywords, item.description].filter(Boolean).join(" "),
+    query,
   );
 }
 
@@ -226,16 +223,11 @@ export function SearchableCombobox({
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item.value} value={item}>
-              <OptionRow
-                item={item}
-                {...(renderItem ? { renderItem } : {})}
-              />
+              <OptionRow item={item} {...(renderItem ? { renderItem } : {})} />
             </ComboboxItem>
           )}
         </ComboboxList>
-        {panelFooter ? (
-          <div className="border-t px-3 py-2">{panelFooter}</div>
-        ) : null}
+        {panelFooter ? <div className="border-t px-3 py-2">{panelFooter}</div> : null}
       </ComboboxContent>
     </Combobox>
   );
@@ -284,9 +276,7 @@ export function MultiSearchableCombobox({
 
   const selectedOptions = useMemo(() => {
     const byValue = new Map(options.map((option) => [option.value, option]));
-    return values
-      .map((value) => byValue.get(value) ?? { value, label: value })
-      .filter(Boolean);
+    return values.map((value) => byValue.get(value) ?? { value, label: value }).filter(Boolean);
   }, [options, values]);
 
   const triggerLabel =
@@ -294,8 +284,7 @@ export function MultiSearchableCombobox({
       ? null
       : selectedOptions.length === 1
         ? selectedOptions[0]!.label
-        : (selectedCountLabel?.(selectedOptions.length) ??
-          `${selectedOptions.length} selected`);
+        : (selectedCountLabel?.(selectedOptions.length) ?? `${selectedOptions.length} selected`);
 
   function removeValue(value: string) {
     onChange(values.filter((current) => current !== value));
@@ -339,9 +328,7 @@ export function MultiSearchableCombobox({
             />
           }
         >
-          <span className="min-w-0 flex-1 truncate text-left">
-            {triggerLabel ?? placeholder}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-left">{triggerLabel ?? placeholder}</span>
         </ComboboxTrigger>
 
         <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
@@ -354,16 +341,11 @@ export function MultiSearchableCombobox({
           <ComboboxList>
             {(item) => (
               <ComboboxItem key={item.value} value={item}>
-                <OptionRow
-                  item={item}
-                  {...(renderItem ? { renderItem } : {})}
-                />
+                <OptionRow item={item} {...(renderItem ? { renderItem } : {})} />
               </ComboboxItem>
             )}
           </ComboboxList>
-          {panelFooter ? (
-            <div className="border-t px-3 py-2">{panelFooter}</div>
-          ) : null}
+          {panelFooter ? <div className="border-t px-3 py-2">{panelFooter}</div> : null}
         </ComboboxContent>
       </Combobox>
 
