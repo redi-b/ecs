@@ -209,8 +209,8 @@ export function ProductForm({
     },
   });
   const HandleLockIcon = isHandleLocked ? AppIcons.lock : AppIcons.lockUnlock;
-  const formIsDirty = useStore(form.store, (state) => state.isDirty);
-  const isDirty = formIsDirty && !submitMutation.isSuccess;
+  const formHasChanges = useStore(form.store, (state) => !state.isDefaultValue);
+  const isDirty = formHasChanges && !submitMutation.isSuccess;
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
     isDirty && open,
   );
@@ -895,7 +895,7 @@ export function ProductForm({
               </div>
 
               <div className="z-20 flex shrink-0 flex-col gap-3 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-4 sm:pb-4">
-                <form.Subscribe selector={(state) => state.isDirty}>
+                <form.Subscribe selector={(state) => !state.isDefaultValue}>
                   {(isDirty) =>
                     actionError ? (
                       <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-destructive">

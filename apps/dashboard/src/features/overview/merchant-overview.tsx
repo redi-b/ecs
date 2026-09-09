@@ -461,7 +461,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-3 pt-3">
             {hasStorefrontActivity ? (
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
+              <div className="grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
                 {[
                   {
                     label: t("overview.storefrontActivity.visits"),
@@ -480,7 +480,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     value: storefrontActivity.checkoutVisits,
                   },
                 ].map((item) => (
-                  <div className="flex min-w-0 flex-col gap-1 bg-card px-3 py-3" key={item.label}>
+                  <div className="flex min-w-0 flex-col justify-center gap-1 bg-card px-3 py-3" key={item.label}>
                     <span className="truncate text-xs text-muted-foreground">{item.label}</span>
                     <span className="font-mono text-xl font-semibold tabular-nums">
                       {formatNumber(item.value, locale)}

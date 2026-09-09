@@ -7,6 +7,7 @@ import {
   type StorageAdapter,
   type StoredObjectMetadata,
 } from "../../adapters/storage/index.js";
+import { getDefaultTemplateDemoUrl } from "./template-demo-url.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type PlatformAssetRow = typeof platformAssets.$inferSelect;
@@ -14,7 +15,11 @@ type PlatformAssetRow = typeof platformAssets.$inferSelect;
 const allowedMimeTypes = new Set(["image/avif", "image/jpeg", "image/png", "image/webp"]);
 const maxPreviewBytes = 8 * 1024 * 1024;
 
-export function createPlatformTemplateAssetService(db: PlatformDb, storage: StorageAdapter) {
+export function createPlatformTemplateAssetService(
+  db: PlatformDb,
+  storage: StorageAdapter,
+  options: { demoBaseUrl?: string | null } = {},
+) {
   async function listTemplates() {
     const rows = await db
       .select({
@@ -38,7 +43,14 @@ export function createPlatformTemplateAssetService(db: PlatformDb, storage: Stor
         and(eq(storefrontTemplateVersions.previewAssetId, platformAssets.id), eq(platformAssets.status, "ready")),
       )
       .orderBy(asc(storefrontTemplates.sortOrder), asc(storefrontTemplateVersions.version));
-    return { ok: true as const, templates: rows };
+    return {
+      ok: true as const,
+      templates: rows.map((row) => ({
+        ...row,
+        demoUrl: row.demoUrl ?? getDefaultTemplateDemoUrl(options.demoBaseUrl ?? null, row.slug),
+        demoUrlOverride: row.demoUrl,
+      })),
+    };
   }
 
   async function createUpload(input: {

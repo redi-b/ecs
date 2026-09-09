@@ -29,17 +29,38 @@ export function StorefrontTemplatePreview({
 
   return (
     <>
-      <button
-        aria-label={`${previewLabel}: ${template.name}`}
-        className={cn("group block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
-        onClick={(event) => {
-          event.stopPropagation();
-          setOpen(true);
-        }}
-        type="button"
-      >
-        <PreviewFrame alt={alt} compact={compact} fallbackPalette={fallbackPalette} name={template.name} preview={preview} slug={template.slug} />
-      </button>
+      <div className={cn("group relative", className)}>
+        <button
+          aria-label={`${previewLabel}: ${template.name}`}
+          className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen(true);
+          }}
+          type="button"
+        >
+          <PreviewFrame alt={alt} compact={compact} fallbackPalette={fallbackPalette} name={template.name} preview={preview} slug={template.slug} />
+        </button>
+        {template.version.demoUrl ? (
+          <Button
+            asChild
+            className="absolute bottom-2 right-2 opacity-100 shadow-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+            size="icon-sm"
+            title={demoLabel}
+            variant="secondary"
+          >
+            <a
+              aria-label={`${demoLabel}: ${template.name}`}
+              href={template.version.demoUrl}
+              onClick={(event) => event.stopPropagation()}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <AppIcons.externalLink aria-hidden />
+            </a>
+          </Button>
+        ) : null}
+      </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-hidden p-0 sm:max-w-4xl">
           <DialogHeader className="border-b px-5 py-4 text-left">
@@ -84,9 +105,6 @@ function PreviewFrame({ alt, compact = false, fallbackPalette, name, preview, sl
         <FallbackPreview compact={compact} name={name} palette={fallbackPalette} slug={slug} />
       )}
       <span className="absolute inset-0 bg-foreground/0 transition-colors group-hover:bg-foreground/[0.025]" aria-hidden />
-      <span className="absolute bottom-2 right-2 grid size-7 place-items-center rounded-full border bg-background/95 text-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
-        <AppIcons.expand className="size-3.5" />
-      </span>
     </div>
   );
 }

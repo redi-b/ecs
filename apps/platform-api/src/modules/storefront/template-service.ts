@@ -24,6 +24,7 @@ import type {
   StorefrontUnpublishResult,
 } from "../../types/index.js";
 import { purgeStorefrontTenantCache } from "./cache-purge.js";
+import { getDefaultTemplateDemoUrl } from "./template-demo-url.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -189,7 +190,10 @@ export function resolveTemplateDraft(input: {
   };
 }
 
-export function createStorefrontTemplateService(db: PlatformDb) {
+export function createStorefrontTemplateService(
+  db: PlatformDb,
+  options: { demoBaseUrl?: string | null } = {},
+) {
   async function getStorefrontDraft(input: { tenantId: string }): Promise<StorefrontDraftResult> {
     const [draft] = await db
       .select({
@@ -396,7 +400,7 @@ export function createStorefrontTemplateService(db: PlatformDb) {
           previewAssetId: row.previewAssetId,
           previewAltText: row.previewAltText,
           previewUrl: row.previewUrl,
-          demoUrl: row.demoUrl,
+          demoUrl: row.demoUrl ?? getDefaultTemplateDemoUrl(options.demoBaseUrl ?? null, row.slug),
         },
       }));
     },

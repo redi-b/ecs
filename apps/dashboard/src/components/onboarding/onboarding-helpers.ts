@@ -42,10 +42,11 @@ export function serializeCategories(values: string[]) {
 }
 
 export function getTemplateTags(template: StorefrontTemplateCatalogItem | null | undefined) {
-  const tags = template?.tags;
-  return Array.isArray(tags)
-    ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 4)
-    : [];
+  return getRawTemplateTags(template)
+    .filter((tag) => tag.startsWith("category:"))
+    .map((tag) => tag.slice("category:".length))
+    .filter(Boolean)
+    .slice(0, 3);
 }
 
 /** Match categories declared by each template; template names do not drive recommendations. */
@@ -57,11 +58,18 @@ export function getRecommendedTemplateKey(
   if (!selected.size) return null;
 
   return templates.find((template) =>
-    getTemplateTags(template).some((tag) => {
+    getRawTemplateTags(template).some((tag) => {
       const category = tag.startsWith("category:") ? tag.slice("category:".length) : "";
       return selected.has(category.toLocaleLowerCase());
     }),
   )?.version.templateKey ?? null;
+}
+
+function getRawTemplateTags(template: StorefrontTemplateCatalogItem | null | undefined) {
+  const tags = template?.tags;
+  return Array.isArray(tags)
+    ? tags.filter((tag): tag is string => typeof tag === "string")
+    : [];
 }
 
 /** Preserve a trailing hyphen while typing; canonical slugging happens on blur. */
