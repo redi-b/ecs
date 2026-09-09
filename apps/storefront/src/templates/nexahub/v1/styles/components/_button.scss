@@ -120,7 +120,21 @@
     justify-content: center;
 
     &.btn--with-icon {
-      justify-content: space-between;
+      position: relative;
+      padding-inline: 57px;
+
+      .btn__icon {
+        position: absolute;
+        inset-inline-end: 6px;
+      }
+
+      &.btn--small {
+        padding-inline: 34px;
+
+        .btn__icon {
+          inset-inline-end: 4px;
+        }
+      }
     }
   }
 

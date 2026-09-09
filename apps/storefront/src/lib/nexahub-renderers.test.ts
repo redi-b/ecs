@@ -197,7 +197,7 @@ test("NexaHub ports the reference listing controls and featured carousel structu
   assert.match(client, /visibilitychange/);
 });
 
-test("NexaHub keeps reference controls visible and uses the reference carousel icons", () => {
+test("NexaHub keeps labels centered and uses the reference carousel icons", () => {
   const button = read("templates/nexahub/v1/Button.astro");
   const home = read("templates/nexahub/v1/Home.astro");
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
@@ -206,7 +206,9 @@ test("NexaHub keeps reference controls visible and uses the reference carousel i
   assert.match(home, /arrow-right-icon\.svg\?raw/);
   assert.doesNotMatch(home, />←<|>→</, "category controls must use the reference SVG, not text glyphs");
   assert.match(headerStyles, /\[data-cart-count\]\s*\{[\s\S]*?position:\s*absolute/);
-  assert.match(read("templates/nexahub/v1/styles/components/_button.scss"), /&--full-width[\s\S]*?&\.btn--with-icon[\s\S]*?justify-content:\s*space-between/);
+  const buttonStyles = read("templates/nexahub/v1/styles/components/_button.scss");
+  assert.match(buttonStyles, /&--full-width[\s\S]*?&\.btn--with-icon[\s\S]*?position:\s*relative/);
+  assert.match(buttonStyles, /\.btn__icon\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset-inline-end/);
 });
 
 test("NexaHub never invents featured commerce and preserves reference secondary-page geometry", () => {
