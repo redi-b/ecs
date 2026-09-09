@@ -21,7 +21,7 @@ export default function NotFound() {
           </EmptyMedia>
           <EmptyTitle>Page not found</EmptyTitle>
           <EmptyDescription>
-            This address is unavailable or is not part of your operations access.
+            This page does not exist or you do not have access to it.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>

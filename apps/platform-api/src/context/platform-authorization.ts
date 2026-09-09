@@ -18,6 +18,8 @@ export const PLATFORM_PERMISSIONS = [
   "payments.onboarding.review",
   "payments.onboarding.read",
   "platform.overview.read",
+  "storefront.templates.read",
+  "storefront.templates.update",
   "platform.work.read",
   "platform.work.retry",
   "tenants.status.update",

@@ -8,6 +8,7 @@ import {
   FileClock,
   LayoutDashboard,
   Layers3,
+  PanelsTopLeft,
   LogOut,
   ShieldCheck,
   UsersRound,
@@ -76,6 +77,13 @@ const navigation = [
     label: "Plans",
     permission: "billing.plans.read",
     shortcut: "B",
+  },
+  {
+    href: "/storefront-templates",
+    icon: PanelsTopLeft,
+    label: "Storefront templates",
+    permission: "storefront.templates.read",
+    shortcut: "T",
   },
   {
     href: "/health",

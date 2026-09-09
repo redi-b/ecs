@@ -13,6 +13,67 @@ export function registerPlatformOperatorRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
+  app.get("/platform/operator/storefront-templates", async (context) => {
+    if (!options.listPlatformStorefrontTemplates) {
+      return context.json({ error: "storefront_templates_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.read");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    return context.json(await options.listPlatformStorefrontTemplates());
+  });
+
+  app.post("/platform/operator/storefront-templates/uploads", async (context) => {
+    if (!options.createPlatformTemplatePreviewUpload) {
+      return context.json({ error: "storefront_template_uploads_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const result = await options.createPlatformTemplatePreviewUpload({
+      byteSize: typeof record.byteSize === "number" ? record.byteSize : 0,
+      filename: getRequiredBodyString(body, "filename") ?? "",
+      mimeType: getRequiredBodyString(body, "mimeType") ?? "",
+      operatorUserId: access.session.user.id,
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/operator/storefront-templates/uploads/:assetId/complete", async (context) => {
+    if (!options.completePlatformTemplatePreviewUpload) {
+      return context.json({ error: "storefront_template_uploads_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const result = await options.completePlatformTemplatePreviewUpload({
+      assetId: context.req.param("assetId"),
+      ...(typeof record.height === "number" ? { height: record.height } : {}),
+      ...(typeof record.width === "number" ? { width: record.width } : {}),
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/operator/storefront-templates/:versionId", async (context) => {
+    if (!options.updatePlatformStorefrontTemplate) {
+      return context.json({ error: "storefront_templates_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const result = await options.updatePlatformStorefrontTemplate({
+      ...(typeof record.demoUrl === "string" || record.demoUrl === null ? { demoUrl: record.demoUrl } : {}),
+      operatorUserId: access.session.user.id,
+      platformPrincipalId: access.authorization.principal.id,
+      ...(typeof record.previewAltText === "string" || record.previewAltText === null ? { previewAltText: record.previewAltText } : {}),
+      ...(typeof record.previewAssetId === "string" || record.previewAssetId === null ? { previewAssetId: record.previewAssetId } : {}),
+      templateVersionId: context.req.param("versionId"),
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
+
   app.get("/platform/operator/session", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
     if (!session) return context.json({ error: "auth_required" }, 401);

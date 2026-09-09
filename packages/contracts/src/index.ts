@@ -1216,7 +1216,7 @@ export const merchantDashboardSummarySchema = z.object({
     .object({
       range: z.object({
         label: z.string().min(1),
-        days: z.number().int().positive(),
+        days: z.number().int().positive().nullable(),
         sampledOrderCount: z.number().int().nonnegative(),
       }),
       quality: z.object({
@@ -1469,7 +1469,7 @@ export const storefrontTemplateCatalogItemSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
   description: z.string().min(1),
-  previewAssetId: z.string().min(1).nullable(),
+  previewAssetId: z.string().min(1).nullable().optional(),
   tags: z.unknown(),
   minimumPlanId: z.string().min(1).nullable(),
   version: z.object({
@@ -1477,6 +1477,10 @@ export const storefrontTemplateCatalogItemSchema = z.object({
     version: z.number().int().positive(),
     templateKey: z.string().min(1),
     previewData: z.unknown(),
+    previewAssetId: z.string().min(1).nullable().optional(),
+    previewAltText: z.string().min(1).nullable().optional(),
+    previewUrl: z.string().url().nullable().optional(),
+    demoUrl: z.string().url().nullable().optional(),
   }),
 });
 
@@ -1485,6 +1489,28 @@ export const storefrontTemplateCatalogSchema = z.object({
 });
 
 export type StorefrontTemplateCatalogItem = z.infer<typeof storefrontTemplateCatalogItemSchema>;
+
+export const operatorStorefrontTemplateCatalogSchema = z.object({
+  ok: z.literal(true),
+  templates: z.array(z.object({
+    description: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    status: z.string(),
+    templateId: z.string().min(1),
+    templateKey: z.string().min(1),
+    version: z.number().int().positive(),
+    versionId: z.string().min(1),
+    previewAltText: z.string().nullable(),
+    previewAssetId: z.string().nullable(),
+    previewUrl: z.string().url().nullable(),
+    demoUrl: z.string().url().nullable(),
+  })),
+});
+
+export type OperatorStorefrontTemplateCatalog = z.infer<
+  typeof operatorStorefrontTemplateCatalogSchema
+>;
 
 export const storefrontTemplateSelectionSchema = z.object({
   draft: z.object({

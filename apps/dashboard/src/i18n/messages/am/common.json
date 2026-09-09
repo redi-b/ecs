@@ -6,6 +6,7 @@
   "cancel": "ይቅር",
   "notSet": "አልተዘጋጀም",
   "preview": "ቅድመ እይታ",
+  "viewDemo": "ማሳያውን ይመልከቱ",
   "total": "{count} በጠቅላላ",
   "totalLabel": "በጠቅላላ",
   "matchLabel": "ተዛማጅ",
@@ -50,12 +51,10 @@
   "loading": "በመጫን ላይ",
   "errors": {
     "notFoundTitle": "ገጹ አልተገኘም",
-    "notFoundEyebrow": "ከመንገድ ውጭ",
-    "notFoundDescription": "ይህ ገጽ ተዛውሮ ሊሆን ይችላል ወይም ለዚህ ሱቅ ላይገኝ ይችላል።",
+    "notFoundDescription": "ይህ ገጽ የለም ወይም ለዚህ ሱቅ አይገኝም።",
     "notFoundAction": "ወደ ዳሽቦርድ ተመለስ",
     "unavailableTitle": "ዳሽቦርዱ ለጊዜው አይገኝም",
-    "unavailableEyebrow": "ግንኙነቱ ተቋርጧል",
-    "unavailableDescription": "የሱቅዎ መረጃ አልተቀየረም። ይህን ገጽ እንደገና ይክፈቱ።",
+    "unavailableDescription": "ይህን ገጽ እንደገና ይክፈቱ። የተቀመጠው የሱቅዎ መረጃ አይጎዳም።",
     "retrying": "እንደገና በመሞከር ላይ…"
   },
   "listStatus": {

@@ -520,6 +520,7 @@
     "handleChecking": "Checking handle…",
     "handleAvailable": "This handle is available.",
     "handleTaken": "This handle is already used by another product.",
+    "handleAdjusted": "Already in use, so this was changed to {handle}.",
     "titleRequired": "Enter a product title.",
     "priceRequired": "Enter a price.",
     "priceNumbersOnly": "Use numbers only.",

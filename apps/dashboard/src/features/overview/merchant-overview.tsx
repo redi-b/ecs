@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import Link from "@/components/app/link";
+import { AppIcons } from "@/components/app/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -253,14 +254,21 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       : metric === "orders"
         ? t("overview.metrics.orders")
         : t("overview.metrics.customers");
-  const averageOrderRows = series
+  const visibleTotals = visibleSeries.reduce(
+    (total, row) => ({
+      orders: total.orders + row.orders,
+      revenue: total.revenue + row.revenue,
+    }),
+    { orders: 0, revenue: 0 },
+  );
+  const averageOrderRows = visibleSeries
     .filter((row) => row.orders > 0)
     .map((row) => ({
       date: row.date,
       orders: row.orders,
       averageOrderValue: Math.round(row.revenue / row.orders),
     }));
-  const demandRhythmRows = getDemandRhythmRows(series);
+  const demandRhythmRows = getDemandRhythmRows(visibleSeries);
   const customerRows =
     typeof operations?.customers.unique === "number" &&
     typeof operations.customers.repeat === "number"
@@ -395,7 +403,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 return (
                   <Link
                     className={cn(
-                      "flex flex-col gap-1 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring",
+                      "group flex cursor-pointer flex-col gap-1 rounded-lg border border-transparent px-3 py-2 text-sm transition-[background-color,border-color] hover:border-primary/20 hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring",
                       hot ? "bg-primary/7" : "bg-muted/45",
                     )}
                     href={item.href}
@@ -404,13 +412,19 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   >
                     <span className="flex items-start justify-between gap-2">
                       <span className="min-w-0 font-medium leading-snug">{item.label}</span>
-                      <span
-                        className={cn(
-                          "shrink-0 font-mono text-lg font-semibold tabular-nums leading-none",
-                          hot ? "text-primary" : "text-muted-foreground",
-                        )}
-                      >
-                        {formatNumber(item.value, locale)}
+                      <span className="flex shrink-0 items-center gap-1">
+                        <span
+                          className={cn(
+                            "font-mono text-lg font-semibold tabular-nums leading-none",
+                            hot ? "text-primary" : "text-muted-foreground",
+                          )}
+                        >
+                          {formatNumber(item.value, locale)}
+                        </span>
+                        <AppIcons.arrowRight
+                          aria-hidden
+                          className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                        />
                       </span>
                     </span>
                     <span className="text-xs text-muted-foreground">{item.hint}</span>
@@ -430,13 +444,22 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <Card className="flex flex-col" size="sm">
           <CardHeader className="shrink-0 border-b pb-3">
             <CardTitle>{t("overview.storefrontActivity.title")}</CardTitle>
-            <span className="col-start-2 row-start-1 self-start justify-self-end text-xs text-muted-foreground">
-              {analytics
-                ? t("overview.storefrontActivity.range", { count: analytics.range.days })
-                : null}
-            </span>
+            <div className="col-start-2 row-start-1 flex items-center gap-3 self-start justify-self-end">
+              <span className="text-xs text-muted-foreground">
+                {analytics
+                  ? t("overview.storefrontActivity.range", { count: analytics.range.days })
+                  : null}
+              </span>
+              <Link
+                className="text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                href={previewHref(dashboardRoutes.insights)}
+                prefetch={false}
+              >
+                {t("overview.storefrontActivity.viewInsights")}
+              </Link>
+            </div>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col justify-center gap-3 pt-3">
+          <CardContent className="flex flex-1 flex-col gap-3 pt-3">
             {hasStorefrontActivity ? (
               <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
                 {[
@@ -479,11 +502,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 </p>
               </div>
             )}
-            <Button asChild className="w-full" size="sm" variant="outline">
-              <Link href={previewHref(dashboardRoutes.insights)} prefetch={false}>
-                {t("overview.storefrontActivity.viewInsights")}
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -493,13 +511,14 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         <MetricCard
           href={previewHref(dashboardRoutes.orders)}
           label={t("overview.metrics.revenue")}
-          note={operations?.range.label ?? t("overview.metrics.noSalesYet")}
-          value={formatMoney(operations?.totals.revenue, currencyCode, locale)}
+          note={hasSeries ? rangeLabel : t("overview.metrics.noSalesYet")}
+          value={formatMoney(hasSeries ? visibleTotals.revenue : operations?.totals.revenue, currencyCode, locale)}
         />
         <MetricCard
           href={previewHref(dashboardRoutes.orders)}
           label={t("overview.metrics.orders")}
-          value={formatNumber(operations?.totals.orders, locale)}
+          {...(hasSeries ? { note: rangeLabel } : {})}
+          value={formatNumber(hasSeries ? visibleTotals.orders : operations?.totals.orders, locale)}
         />
         <MetricCard
           href={previewHref(dashboardRoutes.products)}
@@ -539,6 +558,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     <SelectItem value="7d">{t("overview.trading.range.7d")}</SelectItem>
                     <SelectItem value="30d">{t("overview.trading.range.30d")}</SelectItem>
                     <SelectItem value="90d">{t("overview.trading.range.90d")}</SelectItem>
+                    <SelectItem value="all">{t("overview.trading.range.all")}</SelectItem>
                     <SelectItem value="custom">{t("overview.trading.range.custom")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>

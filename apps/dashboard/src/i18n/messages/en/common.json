@@ -6,6 +6,7 @@
   "cancel": "Cancel",
   "notSet": "Not set",
   "preview": "Preview",
+  "viewDemo": "View demo",
   "total": "{count} total",
   "totalLabel": "total",
   "matchLabel": "match",
@@ -50,12 +51,10 @@
   "loading": "Loading",
   "errors": {
     "notFoundTitle": "Page not found",
-    "notFoundEyebrow": "Off the map",
-    "notFoundDescription": "This page may have moved or may not be available for this shop.",
+    "notFoundDescription": "This page does not exist or is not available for this shop.",
     "notFoundAction": "Return to dashboard",
     "unavailableTitle": "Dashboard temporarily unavailable",
-    "unavailableEyebrow": "Connection paused",
-    "unavailableDescription": "Your shop data is unchanged. Try opening this page again.",
+    "unavailableDescription": "Try opening this page again. Your saved shop data is not affected.",
     "retrying": "Trying again…"
   },
   "listStatus": {

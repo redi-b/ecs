@@ -150,6 +150,44 @@
 
   .products-section__header-right { width: 100%; }
   .products-section__header-right .btn { width: 100%; }
+  :is(
+    .hero-section__actions,
+    .catalogue-section__overlay-box,
+    .catalogue-section__footer,
+    .products-section__header-right,
+    .product-info__actions-row
+  ) .btn--with-icon {
+    position: relative;
+    padding-inline: 57px;
+  }
+  :is(
+    .hero-section__actions,
+    .catalogue-section__overlay-box,
+    .catalogue-section__footer,
+    .products-section__header-right,
+    .product-info__actions-row
+  ) .btn--with-icon .btn__icon {
+    position: absolute;
+    inset-inline-end: 6px;
+  }
+  :is(
+    .hero-section__actions,
+    .catalogue-section__overlay-box,
+    .catalogue-section__footer,
+    .products-section__header-right,
+    .product-info__actions-row
+  ) .btn--small.btn--with-icon {
+    padding-inline: 34px;
+  }
+  :is(
+    .hero-section__actions,
+    .catalogue-section__overlay-box,
+    .catalogue-section__footer,
+    .products-section__header-right,
+    .product-info__actions-row
+  ) .btn--small.btn--with-icon .btn__icon {
+    inset-inline-end: 4px;
+  }
   .products-section__grid,
   .products-catalog__grid { grid-template-columns: minmax(0, 1fr) !important; justify-items: center; }
   .product-card { width: 100%; max-width: 343px; margin-inline: auto; }

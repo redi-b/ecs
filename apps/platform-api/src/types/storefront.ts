@@ -3,7 +3,8 @@ export type StorefrontTemplateCatalogItem = {
   slug: string;
   name: string;
   description: string;
-  previewAssetId: string | null;
+  /** Legacy template-level preview pointer; version presentation takes precedence. */
+  previewAssetId?: string | null;
   tags: unknown;
   minimumPlanId: string | null;
   version: {
@@ -11,6 +12,10 @@ export type StorefrontTemplateCatalogItem = {
     version: number;
     templateKey: string;
     previewData: unknown;
+    previewAssetId?: string | null;
+    previewAltText?: string | null;
+    previewUrl?: string | null;
+    demoUrl?: string | null;
   };
 };
 

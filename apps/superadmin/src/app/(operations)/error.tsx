@@ -33,7 +33,7 @@ export default function OperationsError({
         </EmptyMedia>
         <EmptyTitle>This page could not be opened</EmptyTitle>
         <EmptyDescription>
-          Your access and completed work are unchanged. Try opening the page again.
+          Try again. If the problem continues, return to the Operations overview.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center">

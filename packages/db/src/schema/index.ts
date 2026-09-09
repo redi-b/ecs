@@ -11,6 +11,7 @@ export * from "./media.js";
 export * from "./notifications.js";
 export * from "./onboarding.js";
 export * from "./payment-banks.js";
+export * from "./platform-assets.js";
 export * from "./platform-access.js";
 export * from "./product-imports.js";
 export * from "./product-option-sets.js";

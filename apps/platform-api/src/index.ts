@@ -53,6 +53,7 @@ import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
 import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
+import { createPlatformTemplateAssetService } from "./modules/storefront/platform-template-assets.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
@@ -156,6 +157,7 @@ if (mediaStorage.provider === "unconfigured") {
   );
 }
 const mediaService = createMediaService(platformDb.db, mediaStorage);
+const platformTemplateAssetService = createPlatformTemplateAssetService(platformDb.db, mediaStorage);
 
 const redisUrl = process.env.REDIS_URL?.trim();
 const jobsClient = redisUrl
@@ -876,6 +878,10 @@ const app = createPlatformApp({
     }
   },
   getDashboardMetrics: dashboardMetricsService,
+  listPlatformStorefrontTemplates: platformTemplateAssetService.listTemplates,
+  createPlatformTemplatePreviewUpload: platformTemplateAssetService.createUpload,
+  completePlatformTemplatePreviewUpload: platformTemplateAssetService.completeUpload,
+  updatePlatformStorefrontTemplate: platformTemplateAssetService.updateTemplatePresentation,
   requestInsightsRefresh,
   getDeliverySettings: deliverySettingsService.getDeliverySettings,
   getMerchantChapaCredentials: paymentOnboardingService.getMerchantChapaCredentials,

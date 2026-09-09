@@ -164,7 +164,7 @@ export function createMerchantDashboardSummary(
 
     // Prefer platform daily_metrics (cheap DB) before heavy Medusa list calls.
     const metrics = options.getDashboardMetrics
-      ? await options.getDashboardMetrics({ days: 90, tenantId: input.tenantId })
+      ? await options.getDashboardMetrics({ days: null, tenantId: input.tenantId })
       : null;
     const metricData = metrics?.ok ? metrics.metrics : null;
     const useMetricOperations = Boolean(metricData && metricData.quality.status !== "missing");
@@ -225,8 +225,8 @@ export function createMerchantDashboardSummary(
 
     return {
       range: {
-        label: useMetricOperations ? "Last 90 days" : "Recent orders",
-        days: 90,
+        label: useMetricOperations ? "All time" : "Recent orders",
+        days: useMetricOperations ? null : 90,
         sampledOrderCount: useMetricOperations ? (metricTotals?.orders ?? 0) : orderRows.length,
       },
       quality: metricData?.quality ?? {
