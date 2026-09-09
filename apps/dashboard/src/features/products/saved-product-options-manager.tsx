@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ProductColorPopover } from "@/features/products/product-form-sections";
+import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 
@@ -322,7 +323,45 @@ function SavedOptionEditDialog({
           </Field>
           <Field>
             <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-            <div className="flex min-h-8 flex-wrap items-center gap-1.5 rounded-[1rem] border px-2 py-1">
+            <ProductOptionValuesField
+              addControl={
+                isColor ? (
+                  <ProductColorPopover
+                    onSave={(label, color) => addValue(label, { kind: "color", value: color })}
+                  />
+                ) : undefined
+              }
+              addLabel={t("products.formReview.addValue")}
+              inputLabel={t("products.formReview.addValueAria", {
+                option: option.title || t("products.formReview.optionFallback"),
+              })}
+              onChange={setDraftValue}
+              onCommit={() => addValue(draftValue)}
+              onPasteMany={(rawValue) => {
+                const labels = rawValue
+                  .split(/[,\n]/)
+                  .map((label) => label.trim())
+                  .filter(Boolean);
+                const seen = new Set(option.values.map((value) => value.label.toLowerCase()));
+                const additions = labels
+                  .filter((label) => {
+                    const normalized = label.toLowerCase();
+                    if (seen.has(normalized)) return false;
+                    seen.add(normalized);
+                    return true;
+                  })
+                  .map((label) => ({ label }));
+                update({ values: [...option.values, ...additions] });
+                setDraftValue("");
+              }}
+              onRemoveLast={
+                currentOption.values.length
+                  ? () => update({ values: currentOption.values.slice(0, -1) })
+                  : undefined
+              }
+              placeholder={t("products.formReview.addAnotherValue")}
+              value={draftValue}
+            >
               {option.values.map((value, index) => (
                 <span
                   className="inline-flex items-center rounded-full bg-secondary text-xs"
@@ -355,52 +394,7 @@ function SavedOptionEditDialog({
                   </button>
                 </span>
               ))}
-              {isColor ? (
-                <ProductColorPopover
-                  onSave={(label, color) => addValue(label, { kind: "color", value: color })}
-                />
-              ) : (
-                <input
-                  className="min-w-28 flex-1 bg-transparent px-1 py-1 text-sm outline-none"
-                  onChange={(event) => setDraftValue(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === ",") {
-                      event.preventDefault();
-                      addValue(draftValue);
-                    } else if (
-                      event.key === "Backspace" &&
-                      !draftValue &&
-                      currentOption.values.length
-                    ) {
-                      update({ values: currentOption.values.slice(0, -1) });
-                    }
-                  }}
-                  onBlur={() => addValue(draftValue)}
-                  onPaste={(event) => {
-                    const labels = event.clipboardData
-                      .getData("text")
-                      .split(/[,\n]/)
-                      .map((label) => label.trim())
-                      .filter(Boolean);
-                    if (labels.length < 2) return;
-                    event.preventDefault();
-                    const seen = new Set(option.values.map((value) => value.label.toLowerCase()));
-                    const additions = labels
-                      .filter((label) => {
-                        const normalized = label.toLowerCase();
-                        if (seen.has(normalized)) return false;
-                        seen.add(normalized);
-                        return true;
-                      })
-                      .map((label) => ({ label }));
-                    update({ values: [...option.values, ...additions] });
-                    setDraftValue("");
-                  }}
-                  placeholder={t("products.formReview.addAnotherValue")}
-                  value={draftValue}
-                />
-              )}
-            </div>
+            </ProductOptionValuesField>
             <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
           </Field>
         </div>

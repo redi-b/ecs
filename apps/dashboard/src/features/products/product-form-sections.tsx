@@ -24,6 +24,7 @@ import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
+import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
@@ -567,76 +568,82 @@ export function ProductOptionsBuilder({
               <AppIcons.arrowDown data-icon="inline-end" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-72 p-1.5">
-            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+          <PopoverContent
+            align="end"
+            className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
+          >
+            <div className="shrink-0 border-b px-3 py-2.5 text-xs font-medium text-muted-foreground">
               {t("products.formReview.chooseOptionType")}
             </div>
-            {presetOptions.map((preset) => (
-              <button
-                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={options.some(
-                  (option) => option.title.toLowerCase() === preset.toLowerCase(),
-                )}
-                key={preset}
-                onClick={() => addOption(preset)}
-                type="button"
-              >
-                <span>{preset}</span>
-              </button>
-            ))}
-            {optionSetsQuery.data?.optionSets.length ? (
-              <>
-                <div className="my-1 border-t" />
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  {t("products.formReview.savedOptions")}
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
+              {presetOptions.map((preset) => (
+                <button
+                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                  disabled={options.some(
+                    (option) => option.title.toLowerCase() === preset.toLowerCase(),
+                  )}
+                  key={preset}
+                  onClick={() => addOption(preset)}
+                  type="button"
+                >
+                  <span>{preset}</span>
+                </button>
+              ))}
+              {optionSetsQuery.data?.optionSets.length ? (
+                <>
+                  <div className="my-1 border-t" />
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    {t("products.formReview.savedOptions")}
+                  </div>
+                  {optionSetsQuery.data.optionSets.map((optionSet) => (
+                    <button
+                      className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                      disabled={options.some(
+                        (option) => option.title.toLowerCase() === optionSet.title.toLowerCase(),
+                      )}
+                      key={optionSet.id}
+                      onClick={() => addSavedOption(optionSet)}
+                      type="button"
+                    >
+                      <span>{optionSet.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("products.formReview.valuesCount", { count: optionSet.values.length })}
+                      </span>
+                    </button>
+                  ))}
+                </>
+              ) : null}
+              {optionSetsQuery.isPending ? (
+                <div className="px-2.5 py-2 text-xs text-muted-foreground">
+                  {t("products.formReview.loadingSavedOptions")}
                 </div>
-                {optionSetsQuery.data.optionSets.map((optionSet) => (
-                  <button
-                    className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={options.some(
-                      (option) => option.title.toLowerCase() === optionSet.title.toLowerCase(),
-                    )}
-                    key={optionSet.id}
-                    onClick={() => addSavedOption(optionSet)}
-                    type="button"
-                  >
-                    <span>{optionSet.title}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t("products.formReview.valuesCount", { count: optionSet.values.length })}
-                    </span>
-                  </button>
-                ))}
-              </>
-            ) : null}
-            {optionSetsQuery.isPending ? (
-              <div className="px-2.5 py-2 text-xs text-muted-foreground">
-                {t("products.formReview.loadingSavedOptions")}
-              </div>
-            ) : null}
-            {optionSetsQuery.isError ? (
+              ) : null}
+              {optionSetsQuery.isError ? (
+                <button
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                  onClick={() => void optionSetsQuery.refetch()}
+                  type="button"
+                >
+                  {t("products.formReview.retrySavedOptions")}
+                </button>
+              ) : null}
+              <div className="my-1 border-t" />
               <button
-                className="w-full rounded-lg px-2.5 py-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-                onClick={() => void optionSetsQuery.refetch()}
+                className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
+                onClick={() => addOption()}
                 type="button"
               >
-                {t("products.formReview.retrySavedOptions")}
+                {t("products.formReview.customOption")}
               </button>
-            ) : null}
-            <div className="my-1 border-t" />
-            <button
-              className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
-              onClick={() => addOption()}
-              type="button"
-            >
-              {t("products.formReview.customOption")}
-            </button>
-            <div className="my-1 border-t" />
-            <Button asChild className="w-full justify-start" size="sm" variant="ghost">
-              <Link href={getTenantScopedPath(dashboardRoutes.productOptions, tenantId)}>
-                <AppIcons.settings data-icon="inline-start" />
-                {t("products.formReview.manageSavedOptions")}
-              </Link>
-            </Button>
+            </div>
+            <div className="shrink-0 border-t p-1.5">
+              <Button asChild className="w-full justify-start" size="sm" variant="ghost">
+                <Link href={getTenantScopedPath(dashboardRoutes.productOptions, tenantId)}>
+                  <AppIcons.settings data-icon="inline-start" />
+                  {t("products.formReview.manageSavedOptions")}
+                </Link>
+              </Button>
+            </div>
           </PopoverContent>
         </Popover>
       </div>
@@ -662,7 +669,37 @@ export function ProductOptionsBuilder({
 
               <Field>
                 <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-                <div className="flex max-h-36 min-h-8 flex-wrap items-center gap-1.5 overflow-y-auto overscroll-contain rounded-[1rem] border bg-muted/15 px-2 py-1">
+                <ProductOptionValuesField
+                  addControl={
+                    isColorOptionTitle(option.title) ? (
+                      <ProductColorPopover
+                        onSave={(label, color) => addColorValue(index, label, color)}
+                      />
+                    ) : undefined
+                  }
+                  addLabel={t("products.formReview.addValue")}
+                  inputLabel={t("products.formReview.addValueAria", {
+                    option: option.title || t("products.formReview.optionFallback"),
+                  })}
+                  onChange={(value) =>
+                    setDraftValues((current) => ({ ...current, [index]: value }))
+                  }
+                  onCommit={() => addValues(index, draftValues[index] ?? "")}
+                  onPasteMany={(value) => addValues(index, value)}
+                  onRemoveLast={
+                    option.values.length
+                      ? () => removeValue(index, option.values.length - 1)
+                      : undefined
+                  }
+                  placeholder={
+                    option.values.length
+                      ? t("products.formReview.addAnotherValue")
+                      : option.title.trim()
+                        ? `Add ${option.title.toLowerCase()} values`
+                        : t("products.formReview.valuePlaceholder")
+                  }
+                  value={draftValues[index] ?? ""}
+                >
                   {option.values.map((value, valueIndex) => (
                     <span
                       className="inline-flex h-7 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
@@ -691,54 +728,7 @@ export function ProductOptionsBuilder({
                       </button>
                     </span>
                   ))}
-                  {!isColorOptionTitle(option.title) ? (
-                    <input
-                      aria-label={t("products.formReview.addValueAria", {
-                        option: option.title || t("products.formReview.optionFallback"),
-                      })}
-                      className="min-w-32 flex-1 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-muted-foreground"
-                      onChange={(event) =>
-                        setDraftValues((current) => ({
-                          ...current,
-                          [index]: event.target.value,
-                        }))
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === ",") {
-                          event.preventDefault();
-                          addValues(index, draftValues[index] ?? "");
-                        } else if (
-                          event.key === "Backspace" &&
-                          !(draftValues[index] ?? "") &&
-                          option.values.length
-                        ) {
-                          removeValue(index, option.values.length - 1);
-                        }
-                      }}
-                      onBlur={() => addValues(index, draftValues[index] ?? "")}
-                      onPaste={(event) => {
-                        const pastedText = event.clipboardData.getData("text");
-
-                        if (/[\n,]/.test(pastedText)) {
-                          event.preventDefault();
-                          addValues(index, pastedText);
-                        }
-                      }}
-                      placeholder={
-                        option.values.length
-                          ? t("products.formReview.addAnotherValue")
-                          : option.title.trim()
-                            ? `Add ${option.title.toLowerCase()} values`
-                            : t("products.formReview.valuePlaceholder")
-                      }
-                      value={draftValues[index] ?? ""}
-                    />
-                  ) : (
-                    <ProductColorPopover
-                      onSave={(label, color) => addColorValue(index, label, color)}
-                    />
-                  )}
-                </div>
+                </ProductOptionValuesField>
                 <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
                 {!isColorOptionTitle(option.title) ? (
                   <SuggestedOptionValues
