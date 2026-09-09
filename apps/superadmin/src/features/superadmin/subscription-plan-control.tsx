@@ -3,21 +3,13 @@
 import type { OperatorPlanCatalog } from "@ecs/contracts";
 import { ArrowRightLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -57,20 +49,19 @@ export function SubscriptionPlanControl({
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [selectedId, setSelectedId] = useState("");
+  const [reason, setReason] = useState("");
   const selected = choices.find((choice) => choice.id === selectedId) ?? null;
   const hasAlternative = choices.some((choice) => choice.id !== currentPlanVersionId);
   const router = useRouter();
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit() {
     if (pending || !selected || selected.id === currentPlanVersionId) return;
-    const form = new FormData(event.currentTarget);
     setPending(true);
     try {
       const response = await fetch(
         `/api/tenants/${encodeURIComponent(tenantId)}/billing/plan-version`,
         {
-          body: JSON.stringify({ planVersionId: selected.id, reason: form.get("reason") }),
+          body: JSON.stringify({ planVersionId: selected.id, reason: reason.trim() }),
           headers: { "content-type": "application/json" },
           method: "POST",
         },
@@ -82,6 +73,7 @@ export function SubscriptionPlanControl({
       }
       setOpen(false);
       setSelectedId("");
+      setReason("");
       toast.success(`Merchant moved to ${selected.planName}, version ${selected.version}.`);
       router.refresh();
     } finally {
@@ -108,75 +100,80 @@ export function SubscriptionPlanControl({
           This changes the merchant’s access immediately. It does not issue a refund, collect a
           payment, or change existing invoices.
         </p>
-        <Dialog onOpenChange={setOpen} open={open}>
-          <DialogTrigger asChild>
+        <OperationsActionDialog
+          description="Choose the published plan version approved for this merchant. The change takes effect immediately and is recorded."
+          footer={
+            <>
+              <DialogClose asChild>
+                <Button disabled={pending} variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                disabled={
+                  pending ||
+                  !selected ||
+                  selected.id === currentPlanVersionId ||
+                  reason.trim().length < 10
+                }
+                onClick={() => void submit()}
+              >
+                {pending ? <Spinner data-icon="inline-start" /> : null}Apply immediately
+              </Button>
+            </>
+          }
+          onOpenChange={setOpen}
+          open={open}
+          title="Change subscription terms"
+          trigger={
             <Button disabled={!hasAlternative} variant="outline">
               <ArrowRightLeft data-icon="inline-start" /> Change plan version
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={submit}>
-              <DialogHeader>
-                <DialogTitle>Change subscription terms</DialogTitle>
-                <DialogDescription>
-                  Choose the exact published version approved for this merchant. The change takes
-                  effect immediately and is recorded in the audit log.
-                </DialogDescription>
-              </DialogHeader>
-              <FieldGroup className="py-5">
-                <Field>
-                  <FieldLabel>Published plan version</FieldLabel>
-                  <Select onValueChange={setSelectedId} value={selectedId}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose a plan version" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      <SelectGroup>
-                        <SelectLabel>Available versions</SelectLabel>
-                        {choices.map((choice) => (
-                          <SelectItem
-                            disabled={choice.id === currentPlanVersionId}
-                            key={choice.id}
-                            value={choice.id}
-                          >
-                            {choice.label}
-                            {choice.id === currentPlanVersionId ? " (current)" : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>
-                    Published versions are immutable. Drafts cannot be assigned to merchants.
-                  </FieldDescription>
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor={`plan-migration-reason-${tenantId}`}>
-                    Reason for this change
-                  </FieldLabel>
-                  <Textarea
-                    id={`plan-migration-reason-${tenantId}`}
-                    minLength={10}
-                    name="reason"
-                    placeholder="Record the approved correction or commercial decision."
-                    required
-                    rows={3}
-                  />
-                  <FieldDescription>Saved with the operator and selected version.</FieldDescription>
-                </Field>
-              </FieldGroup>
-              <DialogFooter showCloseButton>
-                <Button
-                  disabled={pending || !selected || selected.id === currentPlanVersionId}
-                  type="submit"
-                >
-                  {pending ? <Spinner data-icon="inline-start" /> : null}
-                  Apply immediately
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+          }
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Published plan version</FieldLabel>
+              <Select onValueChange={setSelectedId} value={selectedId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose a plan version" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectGroup>
+                    <SelectLabel>Available versions</SelectLabel>
+                    {choices.map((choice) => (
+                      <SelectItem
+                        disabled={choice.id === currentPlanVersionId}
+                        key={choice.id}
+                        value={choice.id}
+                      >
+                        {choice.label}
+                        {choice.id === currentPlanVersionId ? " (current)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                Published versions are immutable. Drafts cannot be assigned to merchants.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`plan-migration-reason-${tenantId}`}>
+                Reason for this change
+              </FieldLabel>
+              <Textarea
+                id={`plan-migration-reason-${tenantId}`}
+                minLength={10}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Record the approved correction or commercial decision."
+                rows={3}
+                value={reason}
+              />
+              <FieldDescription>Saved with the operator and selected version.</FieldDescription>
+            </Field>
+          </FieldGroup>
+        </OperationsActionDialog>
       </CardContent>
     </Card>
   );
@@ -201,3 +198,5 @@ function migrationError(error?: string) {
     return "Confirm your identity, then try this change again.";
   return "The subscription could not be changed. Review the selection and try again.";
 }
+
+import { OperationsActionDialog } from "@/components/operations-action-dialog";

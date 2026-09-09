@@ -5,17 +5,9 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { beginReauthentication } from "@/lib/reauthentication";
@@ -61,32 +53,10 @@ export function WorkRecoveryAction({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <RotateCcw aria-hidden data-icon="inline-start" /> Recover
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Recover shop setup</DialogTitle>
-          <DialogDescription>
-            ECS will retry the failed setup for {merchantName} using the original owner and template
-            selection.
-          </DialogDescription>
-        </DialogHeader>
-        <Field>
-          <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
-          <Textarea
-            id={reasonId}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="What was checked or changed before this retry?"
-            rows={4}
-            value={reason}
-          />
-          <FieldDescription>This reason is saved with the recovery result.</FieldDescription>
-        </Field>
-        <DialogFooter>
+    <OperationsActionDialog
+      description={`Retry the failed setup for ${merchantName} using the original owner and template selection.`}
+      footer={
+        <>
           <DialogClose asChild>
             <Button disabled={busy} variant="outline">
               Cancel
@@ -95,8 +65,28 @@ export function WorkRecoveryAction({
           <Button disabled={busy || reason.trim().length < 10} onClick={() => void recover()}>
             {busy ? "Recovering…" : "Start recovery"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title="Recover shop setup"
+      trigger={
+        <Button size="sm" variant="outline">
+          <RotateCcw aria-hidden data-icon="inline-start" /> Recover
+        </Button>
+      }
+    >
+      <Field>
+        <FieldLabel htmlFor={reasonId}>Reason</FieldLabel>
+        <Textarea
+          id={reasonId}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="What was checked or changed before this retry?"
+          rows={4}
+          value={reason}
+        />
+        <FieldDescription>This reason is saved with the recovery result.</FieldDescription>
+      </Field>
+    </OperationsActionDialog>
   );
 }

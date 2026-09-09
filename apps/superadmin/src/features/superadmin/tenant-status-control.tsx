@@ -4,17 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { beginReauthentication } from "@/lib/reauthentication";
@@ -62,7 +55,7 @@ export function TenantStatusControl({ status, tenantId }: { status: string; tena
 
   return (
     <Card className={suspending ? "border-destructive/30" : undefined}>
-      <CardHeader>
+      <CardHeader className="border-b">
         <CardTitle>{suspending ? "Suspend merchant" : "Restore merchant"}</CardTitle>
         <CardDescription>
           {suspending
@@ -70,51 +63,23 @@ export function TenantStatusControl({ status, tenantId }: { status: string; tena
             : "Restores normal access using the merchant's existing configuration."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Field>
-          <FieldLabel htmlFor={`status-reason-${tenantId}`}>Required reason</FieldLabel>
-          <Input
-            id={`status-reason-${tenantId}`}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder={
-              suspending
-                ? "Policy violation confirmed in support case…"
-                : "Issue resolved and access approved…"
-            }
-            value={reason}
-          />
-          <FieldDescription>
-            Saved with the status change for future operational review.
-          </FieldDescription>
-        </Field>
+      <CardContent className="pt-5">
         <Button
-          disabled={busy || reason.trim().length < 10}
           onClick={() => setConfirming(true)}
           type="button"
           variant={suspending ? "destructive" : "default"}
         >
-          {suspending ? "Review suspension" : "Review restoration"}
+          {suspending ? "Suspend merchant" : "Restore merchant"}
         </Button>
       </CardContent>
-      <Dialog onOpenChange={setConfirming} open={confirming}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {suspending ? "Suspend this merchant?" : "Restore this merchant?"}
-            </DialogTitle>
-            <DialogDescription>
-              {suspending
-                ? "The storefront and merchant dashboard will become unavailable immediately. Existing merchant data and billing records will be preserved."
-                : "The merchant dashboard and storefront will become available again using the existing shop configuration."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="rounded-xl border bg-muted/35 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Reason
-            </p>
-            <p className="mt-1 break-words text-sm">{reason.trim()}</p>
-          </div>
-          <DialogFooter>
+      <OperationsActionDialog
+        description={
+          suspending
+            ? "The storefront and merchant dashboard will become unavailable immediately. Merchant data and billing records are preserved."
+            : "The merchant dashboard and storefront will become available using the existing shop configuration."
+        }
+        footer={
+          <>
             <DialogClose asChild>
               <Button disabled={busy} variant="outline">
                 Cancel
@@ -133,9 +98,25 @@ export function TenantStatusControl({ status, tenantId }: { status: string; tena
                   ? "Suspend merchant"
                   : "Restore merchant"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+        onOpenChange={setConfirming}
+        open={confirming}
+        title={suspending ? "Suspend this merchant?" : "Restore this merchant?"}
+      >
+        <Field>
+          <FieldLabel htmlFor={`status-reason-${tenantId}`}>Reason</FieldLabel>
+          <Input
+            id={`status-reason-${tenantId}`}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder={
+              suspending ? "Why is access being suspended?" : "Why is access being restored?"
+            }
+            value={reason}
+          />
+          <FieldDescription>Saved with the status change.</FieldDescription>
+        </Field>
+      </OperationsActionDialog>
     </Card>
   );
 }
