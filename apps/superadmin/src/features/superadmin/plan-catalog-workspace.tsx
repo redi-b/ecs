@@ -3,21 +3,15 @@
 import type { OperatorPlanCatalog } from "@ecs/contracts";
 import { Check, History, PencilLine, Rocket } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
+import { OperationsDataState } from "@/components/operations-data-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,14 +30,10 @@ type Plan = OperatorPlanCatalog["plans"][number];
 export function PlanCatalogWorkspace({ catalog }: { catalog: OperatorPlanCatalog }) {
   if (!catalog.plans.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No plans yet</CardTitle>
-          <CardDescription>
-            Plans will appear after the billing catalog has been initialized.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <OperationsDataState
+        description="Plans will appear after the billing catalog is initialized."
+        title="No plans yet"
+      />
     );
   }
 
@@ -96,6 +86,36 @@ function PlanCard({ plan }: { plan: Plan }) {
           />
           <PlanFact label="Custom domains" value={customDomains ? "Included" : "Not included"} />
         </div>
+        {plan.draft ? (
+          <div className="overflow-hidden rounded-lg border">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b bg-muted/25 px-3 py-2 text-xs font-medium text-muted-foreground">
+              <span>Draft changes</span>
+              <span>Published</span>
+              <span>Draft</span>
+            </div>
+            <PlanDifference
+              label="Price"
+              published={version ? formatMoney(version.price, version.currency) : "Not published"}
+              draft={formatMoney(plan.draft.price, plan.draft.currency)}
+            />
+            <PlanDifference
+              label="Products"
+              published={formatProductLimit(readProductLimit(version?.limits))}
+              draft={formatProductLimit(readProductLimit(plan.draft.limits))}
+            />
+            <PlanDifference
+              label="Custom domains"
+              published={
+                readBooleanFeature(version?.features, "customDomains") ? "Included" : "Not included"
+              }
+              draft={
+                readBooleanFeature(plan.draft.features, "customDomains")
+                  ? "Included"
+                  : "Not included"
+              }
+            />
+          </div>
+        ) : null}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <History aria-hidden />
           {plan.versions.length} published {plan.versions.length === 1 ? "version" : "versions"}
@@ -107,6 +127,28 @@ function PlanCard({ plan }: { plan: Plan }) {
       </CardContent>
     </Card>
   );
+}
+
+function PlanDifference({
+  draft,
+  label,
+  published,
+}: {
+  draft: string;
+  label: string;
+  published: string;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-b px-3 py-2.5 text-sm last:border-0">
+      <span>{label}</span>
+      <span className="text-muted-foreground">{published}</span>
+      <span className="font-medium">{draft}</span>
+    </div>
+  );
+}
+
+function formatProductLimit(value: number | null) {
+  return value === null ? "No limit" : value.toLocaleString("en-ET");
 }
 
 function PlanFact({ label, value }: { label: string; value: string }) {
@@ -122,6 +164,7 @@ function PlanFact({ label, value }: { label: string; value: string }) {
 
 function EditPlanDialog({ plan }: { plan: Plan }) {
   const router = useRouter();
+  const formId = useId();
   const source = plan.draft ?? plan.latestVersion;
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -163,95 +206,99 @@ function EditPlanDialog({ plan }: { plan: Plan }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <OperationsActionDialog
+      description="Save a draft for review. Current merchant terms do not change until a version is published and assigned."
+      footer={
+        <>
+          <DialogClose asChild>
+            <Button disabled={pending} variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button disabled={pending} form={formId} type="submit">
+            {pending ? <Spinner data-icon="inline-start" /> : null}Save draft
+          </Button>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title={`Edit ${plan.name}`}
+      trigger={
         <Button variant="outline">
           <PencilLine data-icon="inline-start" /> Edit draft
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={submit}>
-          <DialogHeader>
-            <DialogTitle>Edit {plan.name}</DialogTitle>
-            <DialogDescription>
-              Save a draft for review. Merchants keep their current published terms until this draft
-              is published.
-            </DialogDescription>
-          </DialogHeader>
-          <FieldGroup className="py-5">
+      }
+    >
+      <form id={formId} onSubmit={submit}>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={`plan-name-${plan.id}`}>Plan name</FieldLabel>
+            <Input
+              id={`plan-name-${plan.id}`}
+              name="name"
+              defaultValue={source?.name ?? plan.name}
+              required
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor={`plan-name-${plan.id}`}>Plan name</FieldLabel>
+              <FieldLabel htmlFor={`plan-price-${plan.id}`}>Monthly price (ETB)</FieldLabel>
               <Input
-                id={`plan-name-${plan.id}`}
-                name="name"
-                defaultValue={source?.name ?? plan.name}
+                id={`plan-price-${plan.id}`}
+                name="price"
+                inputMode="decimal"
+                defaultValue={source?.price ?? plan.price}
                 required
               />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor={`plan-price-${plan.id}`}>Monthly price (ETB)</FieldLabel>
-                <Input
-                  id={`plan-price-${plan.id}`}
-                  name="price"
-                  inputMode="decimal"
-                  defaultValue={source?.price ?? plan.price}
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`plan-products-${plan.id}`}>Product limit</FieldLabel>
-                <Input
-                  id={`plan-products-${plan.id}`}
-                  name="productLimit"
-                  inputMode="numeric"
-                  min="0"
-                  type="number"
-                  defaultValue={readProductLimit(source?.limits ?? plan.limits) ?? ""}
-                />
-                <FieldDescription>
-                  Leave empty when the plan has no set product limit.
-                </FieldDescription>
-              </Field>
-            </div>
             <Field>
-              <FieldLabel>Custom domains</FieldLabel>
-              <Select value={customDomains} onValueChange={setCustomDomains}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="included">Included</SelectItem>
-                    <SelectItem value="excluded">Not included</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`plan-reason-${plan.id}`}>Reason for this draft</FieldLabel>
-              <Textarea
-                id={`plan-reason-${plan.id}`}
-                name="reason"
-                minLength={10}
-                required
-                placeholder="Explain the commercial change for the audit record."
+              <FieldLabel htmlFor={`plan-products-${plan.id}`}>Product limit</FieldLabel>
+              <Input
+                id={`plan-products-${plan.id}`}
+                name="productLimit"
+                inputMode="numeric"
+                min="0"
+                type="number"
+                defaultValue={readProductLimit(source?.limits ?? plan.limits) ?? ""}
               />
+              <FieldDescription>
+                Leave empty when the plan has no set product limit.
+              </FieldDescription>
             </Field>
-          </FieldGroup>
-          <DialogFooter showCloseButton>
-            <Button disabled={pending} type="submit">
-              {pending ? <Spinner data-icon="inline-start" /> : null} Save draft
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </div>
+          <Field>
+            <FieldLabel>Custom domains</FieldLabel>
+            <Select value={customDomains} onValueChange={setCustomDomains}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="included">Included</SelectItem>
+                  <SelectItem value="excluded">Not included</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={`plan-reason-${plan.id}`}>Reason for this draft</FieldLabel>
+            <Textarea
+              id={`plan-reason-${plan.id}`}
+              name="reason"
+              minLength={10}
+              required
+              placeholder="Explain the commercial change for the audit record."
+            />
+          </Field>
+        </FieldGroup>
+      </form>
+    </OperationsActionDialog>
   );
 }
 
 function PublishPlanDialog({ plan }: { plan: Plan }) {
   const router = useRouter();
+  const formId = useId();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -278,41 +325,44 @@ function PublishPlanDialog({ plan }: { plan: Plan }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <OperationsActionDialog
+      description="Creates an immutable version for new subscriptions. Existing merchants stay on their accepted version unless moved separately."
+      footer={
+        <>
+          <DialogClose asChild>
+            <Button disabled={pending} variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button disabled={pending} form={formId} type="submit">
+            {pending ? <Spinner data-icon="inline-start" /> : null}Publish version
+          </Button>
+        </>
+      }
+      onOpenChange={setOpen}
+      open={open}
+      title={`Publish ${plan.draft?.name ?? plan.name}`}
+      trigger={
         <Button>
           <Rocket data-icon="inline-start" /> Review and publish
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <form onSubmit={submit}>
-          <DialogHeader>
-            <DialogTitle>Publish {plan.draft?.name ?? plan.name}</DialogTitle>
-            <DialogDescription>
-              This creates an immutable version for new subscriptions. Existing merchants stay on
-              the version they accepted unless moved separately.
-            </DialogDescription>
-          </DialogHeader>
-          <FieldGroup className="py-5">
-            <Field>
-              <FieldLabel htmlFor={`publish-reason-${plan.id}`}>Reason for publishing</FieldLabel>
-              <Textarea
-                id={`publish-reason-${plan.id}`}
-                name="reason"
-                minLength={10}
-                required
-                placeholder="Record who approved these terms and why."
-              />
-            </Field>
-          </FieldGroup>
-          <DialogFooter showCloseButton>
-            <Button disabled={pending} type="submit">
-              {pending ? <Spinner data-icon="inline-start" /> : null} Publish version
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      }
+    >
+      <form id={formId} onSubmit={submit}>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={`publish-reason-${plan.id}`}>Reason for publishing</FieldLabel>
+            <Textarea
+              id={`publish-reason-${plan.id}`}
+              name="reason"
+              minLength={10}
+              required
+              placeholder="Record who approved these terms and why."
+            />
+          </Field>
+        </FieldGroup>
+      </form>
+    </OperationsActionDialog>
   );
 }
 

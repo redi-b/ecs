@@ -3,14 +3,35 @@
 import type { OperatorStorefrontTemplateCatalog } from "@ecs/contracts";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
-import { ExternalLink, ImageIcon, ImagePlus, RefreshCw, Trash2, Upload, X } from "lucide-react";
+import {
+  ExternalLink,
+  ImageIcon,
+  ImagePlus,
+  PencilLine,
+  RefreshCw,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { type DragEvent, type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
+import { OperationsActionDialog } from "@/components/operations-action-dialog";
+import { OperationsConfirmDialog } from "@/components/operations-confirm-dialog";
+import { OperationsDataState } from "@/components/operations-data-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -31,7 +52,20 @@ type UploadState = {
 const allowedPreviewTypes = new Set(["image/avif", "image/jpeg", "image/png", "image/webp"]);
 const maxPreviewBytes = 8 * 1024 * 1024;
 
-export function StorefrontTemplateWorkspace({ catalog }: { catalog: OperatorStorefrontTemplateCatalog }) {
+export function StorefrontTemplateWorkspace({
+  catalog,
+}: {
+  catalog: OperatorStorefrontTemplateCatalog;
+}) {
+  if (!catalog.templates.length) {
+    return (
+      <OperationsDataState
+        description="Templates will appear here when storefront versions are registered."
+        icon={ImageIcon}
+        title="No templates found"
+      />
+    );
+  }
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       {catalog.templates.map((template) => (
@@ -43,8 +77,11 @@ export function StorefrontTemplateWorkspace({ catalog }: { catalog: OperatorStor
 
 function TemplateCard({ template }: { template: Template }) {
   const router = useRouter();
+  const formId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const uploadStateRef = useRef<UploadState | null>(null);
@@ -75,7 +112,11 @@ function TemplateCard({ template }: { template: Template }) {
           throw new Error(descriptor?.error ?? "upload_failed");
         }
         uppy.setFileMeta(file.id, { assetId });
-        return { headers: descriptor.headers ?? {}, method: "PUT" as const, url: descriptor.uploadUrl };
+        return {
+          headers: descriptor.headers ?? {},
+          method: "PUT" as const,
+          url: descriptor.uploadUrl,
+        };
       },
       shouldUseMultipart: false,
     }),
@@ -94,13 +135,17 @@ function TemplateCard({ template }: { template: Template }) {
       return { ...current, progress: 100, status: "processing" };
     });
     const dimensions = await readImageDimensions(sourceFile);
-    const response = await fetch(`/api/storefront-templates/uploads/${encodeURIComponent(assetId)}/complete`, {
-      body: JSON.stringify(dimensions),
-      headers: { "content-type": "application/json" },
-      method: "POST",
-    });
+    const response = await fetch(
+      `/api/storefront-templates/uploads/${encodeURIComponent(assetId)}/complete`,
+      {
+        body: JSON.stringify(dimensions),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      },
+    );
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "upload_failed");
+    if (!response.ok)
+      throw new Error(typeof body.error === "string" ? body.error : "upload_failed");
     setUploadState((current) => {
       if (!current || current.fileId !== file.id) return current;
       return { ...current, assetId, error: null, progress: 100, status: "ready" };
@@ -108,7 +153,10 @@ function TemplateCard({ template }: { template: Template }) {
   }, []);
 
   useEffect(() => {
-    const onProgress = (file: UppyFile<UploadMeta, Record<string, never>> | undefined, progress: { bytesTotal: number | null; bytesUploaded: number }) => {
+    const onProgress = (
+      file: UppyFile<UploadMeta, Record<string, never>> | undefined,
+      progress: { bytesTotal: number | null; bytesUploaded: number },
+    ) => {
       const bytesTotal = progress.bytesTotal;
       if (!file || !bytesTotal) return;
       setUploadState((current) => {
@@ -116,7 +164,10 @@ function TemplateCard({ template }: { template: Template }) {
         return { ...current, progress: Math.round((progress.bytesUploaded / bytesTotal) * 100) };
       });
     };
-    const onError = (file: UppyFile<UploadMeta, Record<string, never>> | undefined, error: Error) => {
+    const onError = (
+      file: UppyFile<UploadMeta, Record<string, never>> | undefined,
+      error: Error,
+    ) => {
       if (!file) return;
       setUploadState((current) => {
         if (!current || current.fileId !== file.id) return current;
@@ -165,11 +216,20 @@ function TemplateCard({ template }: { template: Template }) {
     try {
       validatePreviewFile(file);
       const dimensions = await readImageDimensions(file);
-      if (dimensions.width < 960 || dimensions.width <= dimensions.height) throw new Error("platform_asset_dimensions_invalid");
+      if (dimensions.width < 960 || dimensions.width <= dimensions.height)
+        throw new Error("platform_asset_dimensions_invalid");
       clearUpload();
       const previewUrl = URL.createObjectURL(file);
       const fileId = uppy.addFile({ data: file, name: file.name, type: file.type });
-      const next: UploadState = { assetId: null, error: null, file, fileId, previewUrl, progress: 0, status: "uploading" };
+      const next: UploadState = {
+        assetId: null,
+        error: null,
+        file,
+        fileId,
+        previewUrl,
+        progress: 0,
+        status: "uploading",
+      };
       uploadStateRef.current = next;
       setUploadState(next);
     } catch (error) {
@@ -181,14 +241,21 @@ function TemplateCard({ template }: { template: Template }) {
   async function retryUpload() {
     const current = uploadStateRef.current;
     if (!current) return;
-    setUploadState({ ...current, error: null, progress: current.assetId ? 100 : 0, status: current.assetId ? "processing" : "uploading" });
+    setUploadState({
+      ...current,
+      error: null,
+      progress: current.assetId ? 100 : 0,
+      status: current.assetId ? "processing" : "uploading",
+    });
     try {
       const file = uppy.getFile(current.fileId);
       if (!file) throw new Error("upload_failed");
       if (file.meta.assetId && file.progress?.uploadComplete) await completeUpload(file);
       else await uppy.retryUpload(current.fileId);
     } catch (error) {
-      setUploadState((value) => value ? { ...value, error: formatError(error), status: "failed" } : value);
+      setUploadState((value) =>
+        value ? { ...value, error: formatError(error), status: "failed" } : value,
+      );
     }
   }
 
@@ -199,19 +266,24 @@ function TemplateCard({ template }: { template: Template }) {
     setPending(true);
     try {
       const previewAssetId = uploadState?.assetId ?? template.previewAssetId;
-      const response = await fetch(`/api/storefront-templates/${encodeURIComponent(template.versionId)}`, {
-        body: JSON.stringify({
-          demoUrl: String(form.get("demoUrl") ?? "").trim() || null,
-          previewAltText: String(form.get("previewAltText") ?? "").trim() || null,
-          previewAssetId,
-        }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/storefront-templates/${encodeURIComponent(template.versionId)}`,
+        {
+          body: JSON.stringify({
+            demoUrl: String(form.get("demoUrl") ?? "").trim() || null,
+            previewAltText: String(form.get("previewAltText") ?? "").trim() || null,
+            previewAssetId,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        },
+      );
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "update_failed");
+      if (!response.ok)
+        throw new Error(typeof body.error === "string" ? body.error : "update_failed");
       toast.success(`${template.name} preview updated`);
       clearUpload();
+      setManageOpen(false);
       router.refresh();
     } catch (cause) {
       toast.error(formatError(cause));
@@ -223,63 +295,157 @@ function TemplateCard({ template }: { template: Template }) {
   const previewUrl = uploadState?.previewUrl ?? template.previewUrl;
   const uploadBusy = uploadState?.status === "uploading" || uploadState?.status === "processing";
 
+  async function removePreview() {
+    setPending(true);
+    try {
+      const response = await fetch(
+        `/api/storefront-templates/${encodeURIComponent(template.versionId)}`,
+        {
+          body: JSON.stringify({
+            demoUrl: template.demoUrlOverride,
+            previewAltText: null,
+            previewAssetId: null,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        },
+      );
+      if (!response.ok) throw new Error("remove_failed");
+      setRemoveOpen(false);
+      setManageOpen(false);
+      toast.success("Preview removed");
+      router.refresh();
+    } catch {
+      toast.error("The preview could not be removed.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
-    <Card className="overflow-hidden">
-      <div className="group relative aspect-[16/10] border-b bg-muted/35">
-        {previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt="" className="size-full object-cover object-top" src={previewUrl} />
-        ) : (
-          <div className="grid size-full place-items-center text-muted-foreground">
-            <ImageIcon aria-hidden className="size-8" />
-          </div>
-        )}
-        {uploadState ? (
-          <div className="absolute inset-x-3 bottom-3 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="truncate font-medium">{uploadState.file.name}</span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {uploadState.status === "ready" ? "Ready" : uploadState.status === "processing" ? "Checking image" : uploadState.status === "failed" ? "Upload failed" : `${uploadState.progress}%`}
-                  </span>
+    <>
+      <Card className="overflow-hidden">
+        <div className="group relative aspect-[16/10] border-b bg-muted/35">
+          {previewUrl ? (
+            <Image
+              alt=""
+              className="object-cover object-top"
+              fill
+              sizes="(min-width: 1280px) 50vw, 100vw"
+              src={previewUrl}
+              unoptimized
+            />
+          ) : (
+            <div className="grid size-full place-items-center text-muted-foreground">
+              <ImageIcon aria-hidden className="size-8" />
+            </div>
+          )}
+          {uploadState ? (
+            <div className="absolute inset-x-3 bottom-3 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate font-medium">{uploadState.file.name}</span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {uploadState.status === "ready"
+                        ? "Ready"
+                        : uploadState.status === "processing"
+                          ? "Checking image"
+                          : uploadState.status === "failed"
+                            ? "Upload failed"
+                            : `${uploadState.progress}%`}
+                    </span>
+                  </div>
+                  {uploadState.status !== "ready" && uploadState.status !== "failed" ? (
+                    <Progress className="mt-2 h-1.5" value={uploadState.progress} />
+                  ) : null}
+                  {uploadState.error ? (
+                    <p className="mt-1 text-xs text-destructive">{uploadState.error}</p>
+                  ) : null}
                 </div>
-                {uploadState.status !== "ready" && uploadState.status !== "failed" ? <Progress className="mt-2 h-1.5" value={uploadState.progress} /> : null}
-                {uploadState.error ? <p className="mt-1 text-xs text-destructive">{uploadState.error}</p> : null}
+                {uploadState.status === "failed" ? (
+                  <Button
+                    aria-label="Retry upload"
+                    onClick={() => void retryUpload()}
+                    size="icon-sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <RefreshCw aria-hidden />
+                  </Button>
+                ) : null}
+                <Button
+                  aria-label="Cancel selected screenshot"
+                  disabled={uploadState.status === "processing"}
+                  onClick={clearUpload}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X aria-hidden />
+                </Button>
               </div>
-              {uploadState.status === "failed" ? (
-                <Button aria-label="Retry upload" onClick={() => void retryUpload()} size="icon-sm" type="button" variant="outline">
-                  <RefreshCw aria-hidden />
+            </div>
+          ) : null}
+        </div>
+        <CardHeader className="border-b">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle>{template.name}</CardTitle>
+                <Badge variant="outline">v{template.version}</Badge>
+                <Badge variant={template.status === "active" ? "success" : "secondary"}>
+                  {template.status}
+                </Badge>
+              </div>
+              <CardDescription className="mt-1">{template.description}</CardDescription>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {template.demoUrl ? (
+                <Button asChild size="sm" variant="outline">
+                  <a href={template.demoUrl} rel="noreferrer" target="_blank">
+                    View demo <ExternalLink aria-hidden data-icon="inline-end" />
+                  </a>
                 </Button>
               ) : null}
-              <Button aria-label="Cancel selected screenshot" disabled={uploadState.status === "processing"} onClick={clearUpload} size="icon-sm" type="button" variant="ghost">
-                <X aria-hidden />
+              <Button onClick={() => setManageOpen(true)} size="sm" variant="outline">
+                <PencilLine aria-hidden data-icon="inline-start" /> Manage
               </Button>
             </div>
           </div>
-        ) : null}
-      </div>
-      <CardHeader className="border-b">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle>{template.name}</CardTitle>
-              <Badge variant="outline">v{template.version}</Badge>
-              <Badge variant={template.status === "active" ? "success" : "secondary"}>{template.status}</Badge>
-            </div>
-            <CardDescription className="mt-1">{template.description}</CardDescription>
-          </div>
-          {template.demoUrl ? (
-            <Button asChild size="sm" variant="outline">
-              <a href={template.demoUrl} rel="noreferrer" target="_blank">
-                View demo <ExternalLink aria-hidden data-icon="inline-end" />
-              </a>
+        </CardHeader>
+      </Card>
+      <OperationsActionDialog
+        description="Replace the screenshot or change the public demo used in merchant template selection."
+        footer={
+          <>
+            <Button
+              disabled={pending || uploadBusy}
+              onClick={() => setManageOpen(false)}
+              variant="outline"
+            >
+              Cancel
             </Button>
-          ) : null}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-5">
-        <form onSubmit={submit}>
+            <Button
+              disabled={pending || uploadBusy || uploadState?.status === "failed"}
+              form={formId}
+              type="submit"
+            >
+              {pending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Upload aria-hidden data-icon="inline-start" />
+              )}
+              Save
+            </Button>
+          </>
+        }
+        onOpenChange={setManageOpen}
+        open={manageOpen}
+        title={`Manage ${template.name}`}
+        wide
+      >
+        <form id={formId} onSubmit={submit}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor={`preview-${template.versionId}`}>Preview screenshot</FieldLabel>
@@ -295,22 +461,39 @@ function TemplateCard({ template }: { template: Template }) {
                 className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-5 text-center outline-none transition-colors hover:border-foreground/30 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                 disabled={pending || uploadBusy}
                 onClick={() => fileRef.current?.click()}
-                onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
-                onDragLeave={(event) => { event.preventDefault(); setDragActive(false); }}
-                onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setDragActive(true);
+                }}
+                onDragLeave={(event) => {
+                  event.preventDefault();
+                  setDragActive(false);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragActive(true);
+                }}
                 onDrop={(event: DragEvent<HTMLButtonElement>) => {
                   event.preventDefault();
                   setDragActive(false);
                   void selectFile(event.dataTransfer.files[0]);
                 }}
-                style={dragActive ? { borderColor: "var(--ring)", backgroundColor: "var(--muted)" } : undefined}
+                style={
+                  dragActive
+                    ? { borderColor: "var(--ring)", backgroundColor: "var(--muted)" }
+                    : undefined
+                }
                 type="button"
               >
                 <ImagePlus aria-hidden className="size-5 text-muted-foreground" />
-                <span className="text-sm font-medium">{template.previewAssetId ? "Replace screenshot" : "Choose a screenshot"}</span>
+                <span className="text-sm font-medium">
+                  {template.previewAssetId ? "Replace screenshot" : "Choose a screenshot"}
+                </span>
                 <span className="text-xs text-muted-foreground">or drag and drop it here</span>
               </button>
-              <FieldDescription>Landscape, at least 960 pixels wide. Maximum 8 MB.</FieldDescription>
+              <FieldDescription>
+                Landscape, at least 960 pixels wide. Maximum 8 MB.
+              </FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor={`alt-${template.versionId}`}>Preview description</FieldLabel>
@@ -338,39 +521,28 @@ function TemplateCard({ template }: { template: Template }) {
               {template.previewAssetId && !uploadState ? (
                 <Button
                   disabled={pending || uploadBusy}
-                  onClick={async () => {
-                    setPending(true);
-                    try {
-                      const response = await fetch(`/api/storefront-templates/${encodeURIComponent(template.versionId)}`, {
-                        body: JSON.stringify({ demoUrl: template.demoUrlOverride, previewAltText: null, previewAssetId: null }),
-                        headers: { "content-type": "application/json" },
-                        method: "POST",
-                      });
-                      if (!response.ok) throw new Error("remove_failed");
-                      toast.success("Preview removed");
-                      router.refresh();
-                    } catch {
-                      toast.error("The preview could not be removed.");
-                    } finally {
-                      setPending(false);
-                    }
-                  }}
+                  onClick={() => setRemoveOpen(true)}
                   type="button"
-                  variant="outline"
+                  variant="destructive-outline"
                 >
                   <Trash2 aria-hidden data-icon="inline-start" />
                   Remove preview
                 </Button>
               ) : null}
-              <Button disabled={pending || uploadBusy || uploadState?.status === "failed"} type="submit">
-                {pending ? <Spinner data-icon="inline-start" /> : <Upload aria-hidden data-icon="inline-start" />}
-                Save presentation
-              </Button>
             </div>
           </FieldGroup>
         </form>
-      </CardContent>
-    </Card>
+      </OperationsActionDialog>
+      <OperationsConfirmDialog
+        confirmLabel="Remove preview"
+        description="The template will return to its built-in fallback until another screenshot is uploaded."
+        onConfirm={() => void removePreview()}
+        onOpenChange={setRemoveOpen}
+        open={removeOpen}
+        pending={pending}
+        title="Remove this preview?"
+      />
+    </>
   );
 }
 
@@ -381,7 +553,7 @@ function validatePreviewFile(file: File) {
 
 function readImageDimensions(file: File) {
   return new Promise<{ height: number; width: number }>((resolve, reject) => {
-    const image = new Image();
+    const image = new window.Image();
     const url = URL.createObjectURL(file);
     image.onload = () => {
       URL.revokeObjectURL(url);
@@ -397,11 +569,14 @@ function readImageDimensions(file: File) {
 
 function formatError(cause: unknown) {
   const value = cause instanceof Error ? cause.message : "update_failed";
-  if (value === "platform_asset_dimensions_invalid") return "Use a landscape image at least 960 pixels wide.";
-  if (value === "platform_asset_mime_type_invalid") return "Choose an AVIF, JPEG, PNG, or WebP image.";
+  if (value === "platform_asset_dimensions_invalid")
+    return "Use a landscape image at least 960 pixels wide.";
+  if (value === "platform_asset_mime_type_invalid")
+    return "Choose an AVIF, JPEG, PNG, or WebP image.";
   if (value === "platform_asset_too_large") return "Choose an image smaller than 8 MB.";
   if (value === "image_invalid") return "Choose a valid image file.";
-  if (value === "storefront_template_alt_text_required") return "Add a short description for the preview image.";
+  if (value === "storefront_template_alt_text_required")
+    return "Add a short description for the preview image.";
   if (value === "storefront_template_demo_url_invalid") return "Enter a valid public demo URL.";
   return "The template presentation could not be saved. Try again.";
 }
