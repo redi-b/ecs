@@ -1,19 +1,14 @@
-import { AlertTriangle, CheckCircle2, Clock3, ServerCog, Store } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { OperationsDataState } from "@/components/operations-data-state";
+import { OperationsListShell } from "@/components/operations-list-shell";
+import { OperationsPageHeader } from "@/components/operations-page-header";
 import { OperationsPagination } from "@/components/operations-pagination";
 import { OperatorReadError } from "@/components/operator-read-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { WorkRecoveryAction } from "@/features/superadmin/work-recovery-action";
 import { getOpsAccess } from "@/lib/ops-access";
 import { getOperatorWork } from "@/lib/platform-api/superadmin/console";
@@ -44,26 +39,20 @@ export default async function WorkPage({
   }
 
   return (
-    <div className="space-y-7">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Queue</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Work</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Investigate failed shop setup and recent background processing failures.
-        </p>
-      </header>
-      <nav aria-label="Work type" className="flex flex-wrap gap-2">
-        <Button asChild size="sm" variant={kind === "shop_setup" ? "secondary" : "outline"}>
+    <div className="flex flex-col gap-6">
+      <OperationsPageHeader title="Work" description="Review failed setup and background work." />
+      <nav aria-label="Work type" className="inline-flex w-fit rounded-lg border bg-muted/30 p-1">
+        <Button asChild size="sm" variant={kind === "shop_setup" ? "secondary" : "ghost"}>
           <Link aria-current={kind === "shop_setup" ? "page" : undefined} href="/work">
-            <Store data-icon="inline-start" /> Shop setup
+            Shop setup
           </Link>
         </Button>
-        <Button asChild size="sm" variant={kind === "background_job" ? "secondary" : "outline"}>
+        <Button asChild size="sm" variant={kind === "background_job" ? "secondary" : "ghost"}>
           <Link
             aria-current={kind === "background_job" ? "page" : undefined}
             href="/work?kind=background_job"
           >
-            <ServerCog data-icon="inline-start" /> Background failures
+            Background failures
           </Link>
         </Button>
       </nav>
@@ -75,96 +64,70 @@ export default async function WorkPage({
         />
       ) : result.data.items.length ? (
         <>
-          <Card>
-            <CardHeader className="border-b">
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle>
-                  {kind === "shop_setup" ? "Shop setup" : "Recent background failures"}
-                </CardTitle>
-                <Badge variant="destructive">
-                  {result.data.count} {kind === "shop_setup" ? "open" : "in 7 days"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="divide-y p-0">
+          <OperationsListShell
+            status={`${result.data.count} ${kind === "shop_setup" ? "open" : "in the last 7 days"}`}
+          >
+            <div className="divide-y">
               {result.data.items.map((item) =>
                 item.kind === "shop_setup" ? (
-                  <div className="flex flex-wrap items-center gap-4 px-5 py-4" key={item.id}>
-                    <span className="grid size-9 place-items-center rounded-xl bg-destructive/10 text-destructive">
-                      <AlertTriangle aria-hidden className="size-4" />
-                    </span>
+                  <div
+                    className="flex flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5"
+                    key={item.id}
+                  >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">{item.merchantName}</p>
                       <p className="mt-0.5 text-sm text-muted-foreground">
-                        @{item.handle} · {formatStep(item.step)}
+                        @{item.handle} · {formatStep(item.step)} · {formatDate(item.createdAt)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <Badge variant="warning">{formatFailure(item.failureCategory)}</Badge>
-                      <p className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                        <Clock3 className="size-3" /> {formatDate(item.createdAt)}
-                      </p>
-                    </div>
+                    <Badge variant="warning">{formatFailure(item.failureCategory)}</Badge>
                     {item.retryable && canRecover ? (
                       <WorkRecoveryAction attemptId={item.id} merchantName={item.merchantName} />
-                    ) : (
-                      <Badge variant="outline">Review only</Badge>
-                    )}
+                    ) : null}
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-4 px-5 py-4" key={item.id}>
-                    <span className="grid size-9 place-items-center rounded-xl bg-destructive/10 text-destructive">
-                      <ServerCog aria-hidden className="size-4" />
-                    </span>
+                  <div
+                    className="flex flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5"
+                    key={item.id}
+                  >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">{formatJobName(item.jobName)}</p>
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         {item.merchant ? `@${item.merchant.handle}` : "Platform-wide work"} ·
-                        Attempt {item.attempts} of {item.maxAttempts}
+                        Attempt {item.attempts} of {item.maxAttempts} ·{" "}
+                        {formatDate(item.finishedAt)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <Badge variant="warning">{formatFailure(item.failureCategory)}</Badge>
-                      <p className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                        <Clock3 className="size-3" /> {formatDate(item.finishedAt)}
-                      </p>
-                    </div>
+                    <Badge variant="warning">{formatFailure(item.failureCategory)}</Badge>
                     {item.merchant ? (
                       <Button asChild size="sm" variant="outline">
                         <Link href={`/tenants/${item.merchant.id}`}>Open merchant</Link>
                       </Button>
-                    ) : (
-                      <Badge variant="outline">Review only</Badge>
-                    )}
+                    ) : null}
                   </div>
                 ),
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </OperationsListShell>
           <OperationsPagination
             basePath="/work"
             count={result.data.count}
             page={page}
             pageSize={limit}
+            resourceLabel="work items"
             searchParams={{ kind: kind === "background_job" ? kind : undefined }}
           />
         </>
       ) : (
-        <Empty className="rounded-2xl border bg-card py-16">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <CheckCircle2 />
-            </EmptyMedia>
-            <EmptyTitle>
-              {kind === "shop_setup" ? "No setup failures" : "No recent background failures"}
-            </EmptyTitle>
-            <EmptyDescription>
-              {kind === "shop_setup"
-                ? "Every merchant’s latest shop setup attempt completed or remains in progress."
-                : "No background work has failed during the last seven days."}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <OperationsDataState
+          icon={CheckCircle2}
+          title={kind === "shop_setup" ? "No setup failures" : "No recent background failures"}
+          description={
+            kind === "shop_setup"
+              ? "Every merchant’s latest shop setup attempt completed or remains in progress."
+              : "No background work has failed during the last seven days."
+          }
+        />
       )}
     </div>
   );

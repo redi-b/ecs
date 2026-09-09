@@ -8,20 +8,14 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowRight, RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
-
+import { OperationsDataState } from "@/components/operations-data-state";
+import { OperationsListShell } from "@/components/operations-list-shell";
 import { OperationsPagination } from "@/components/operations-pagination";
-import { Badge } from "@/components/ui/badge";
+import { OperationsStatusBadge } from "@/components/operations-status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -77,24 +71,12 @@ export function MerchantDirectory({
       }),
       helper.accessor("status", {
         header: "Status",
-        cell: (info) => <Badge variant="outline">{formatStatus(info.getValue())}</Badge>,
+        cell: (info) => <OperationsStatusBadge status={info.getValue()} />,
       }),
       helper.accessor("primaryDomainHostname", {
         header: "Storefront",
         cell: (info) => (
           <span className="text-muted-foreground">{info.getValue() ?? "Not assigned"}</span>
-        ),
-      }),
-      helper.display({
-        id: "open",
-        cell: ({ row }) => (
-          <Link
-            aria-label={`Open ${row.original.name}`}
-            className="grid size-8 place-items-center rounded-full text-muted-foreground transition-[color,background-color,transform] hover:translate-x-0.5 hover:bg-muted hover:text-foreground"
-            href={`/tenants/${row.original.id}`}
-          >
-            <ArrowRight />
-          </Link>
         ),
       }),
     ],
@@ -128,44 +110,37 @@ export function MerchantDirectory({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {result.isError ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Search />
-            </EmptyMedia>
-            <EmptyTitle>Merchant directory unavailable</EmptyTitle>
-            <EmptyDescription>Try the search again in a moment.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <OperationsDataState
+          title="Merchant directory unavailable"
+          description="Try again in a moment."
+          tone="destructive"
+        />
       ) : table.getRowModel().rows.length ? (
         <>
-          <div
-            className="overflow-hidden rounded-2xl border bg-card shadow-xs transition-opacity duration-200 data-[pending=true]:opacity-65"
+          <OperationsListShell
+            className="transition-opacity duration-200 data-[pending=true]:opacity-65"
             data-pending={result.isPlaceholderData}
-          >
-            <div className="flex flex-col gap-3 border-b bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <form className="flex min-w-0 flex-1 gap-2 sm:max-w-2xl" onSubmit={submit}>
-                <Input
-                  aria-label="Search merchants"
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Search name, handle, or owner email"
-                  value={draft}
-                />
-                <Button disabled={result.isFetching} type="submit">
-                  {result.isFetching ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <Search data-icon="inline-start" />
-                  )}
-                  Search
-                </Button>
-              </form>
-              <div className="flex items-center justify-between gap-3 sm:justify-end">
-                <span className="text-sm tabular-nums text-muted-foreground">
-                  {result.data?.count ?? 0} merchants
-                </span>
+            status={`${result.data?.count ?? 0} merchants`}
+            toolbar={
+              <div className="flex min-w-0 gap-2">
+                <form className="flex min-w-0 flex-1 gap-2 sm:max-w-2xl" onSubmit={submit}>
+                  <Input
+                    aria-label="Search merchants"
+                    onChange={(event) => setDraft(event.target.value)}
+                    placeholder="Search name, handle, or owner email"
+                    value={draft}
+                  />
+                  <Button disabled={result.isFetching} type="submit">
+                    {result.isFetching ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : (
+                      <Search data-icon="inline-start" />
+                    )}
+                    Search
+                  </Button>
+                </form>
                 <Button
                   aria-label="Refresh merchants"
                   disabled={result.isFetching}
@@ -177,7 +152,8 @@ export function MerchantDirectory({
                   {result.isFetching ? <Spinner /> : <RefreshCw />}
                 </Button>
               </div>
-            </div>
+            }
+          >
             <div className="max-h-[min(65vh,48rem)] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
@@ -186,13 +162,11 @@ export function MerchantDirectory({
                       {group.headers.map((header) => (
                         <TableHead
                           className={
-                            header.column.id === "open"
-                              ? "w-12"
-                              : header.column.id === "status"
-                                ? "hidden w-40 sm:table-cell"
-                                : header.column.id === "primaryDomainHostname"
-                                  ? "hidden w-56 md:table-cell"
-                                  : ""
+                            header.column.id === "status"
+                              ? "hidden w-40 sm:table-cell"
+                              : header.column.id === "primaryDomainHostname"
+                                ? "hidden w-56 md:table-cell"
+                                : ""
                           }
                           key={header.id}
                         >
@@ -226,29 +200,26 @@ export function MerchantDirectory({
                 </TableBody>
               </Table>
             </div>
-          </div>
+          </OperationsListShell>
           <OperationsPagination
             count={result.data?.count ?? 0}
             onPageChange={changePage}
             page={page}
             pageSize={pageSize}
             pending={result.isPlaceholderData}
+            resourceLabel="merchants"
           />
         </>
       ) : (
-        <Empty className="rounded-2xl border bg-card py-16">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Search />
-            </EmptyMedia>
-            <EmptyTitle>{query ? "No matching merchants" : "No merchants yet"}</EmptyTitle>
-            <EmptyDescription>
-              {query
-                ? "Try a different name, handle, or owner email."
-                : "Merchants will appear here after onboarding begins."}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <OperationsDataState
+          icon={Search}
+          title={query ? "No matching merchants" : "No merchants yet"}
+          description={
+            query
+              ? "Try a different name, handle, or owner email."
+              : "Merchants will appear here after onboarding begins."
+          }
+        />
       )}
     </div>
   );
@@ -267,7 +238,4 @@ async function fetchDirectory(
   const response = await fetch(`/api/tenants?${params}`, { signal });
   if (!response.ok) throw new Error("merchant_directory_unavailable");
   return response.json() as Promise<DirectoryData>;
-}
-function formatStatus(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " ");
 }

@@ -1,17 +1,20 @@
-import { ShieldCheck, UsersRound } from "lucide-react";
+import { ChevronRight, UsersRound } from "lucide-react";
 import { headers } from "next/headers";
-
+import { OperationsDataState } from "@/components/operations-data-state";
+import { OperationsListShell } from "@/components/operations-list-shell";
+import { OperationsPageHeader } from "@/components/operations-page-header";
+import { OperationsStatusBadge } from "@/components/operations-status-badge";
 import { OperatorReadError } from "@/components/operator-read-error";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { getPlatformOperators } from "@/lib/platform-api/superadmin/console";
 
 export default async function OperatorsPage() {
@@ -23,14 +26,11 @@ export default async function OperatorsPage() {
       : {}),
   }).catch(() => ({ ok: false as const, message: "operators_unavailable", status: 503 }));
   return (
-    <div className="space-y-7">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Access</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Operators</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          People authorized to work in ECS Operations and the access currently assigned to them.
-        </p>
-      </header>
+    <div className="flex flex-col gap-6">
+      <OperationsPageHeader
+        title="Operators"
+        description="Review who can access Operations and what they can do."
+      />
       {!result.ok ? (
         <OperatorReadError
           resource="Operator access"
@@ -38,78 +38,86 @@ export default async function OperatorsPage() {
           unavailableDescription="Operator assignments could not be loaded. No access was changed."
         />
       ) : result.data.operators.length ? (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {result.data.operators.map((operator) => (
-            <Card key={operator.principalId}>
-              <CardHeader className="border-b">
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-10">
-                    <AvatarFallback>{initials(operator.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <CardTitle className="truncate">{operator.name}</CardTitle>
-                    <p className="truncate text-sm text-muted-foreground">{operator.email}</p>
-                  </div>
-                  <Badge variant={operator.status === "active" ? "success" : "destructive"}>
-                    {operator.status === "active" ? "Active" : "Disabled"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-5">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <ShieldCheck className="size-4 text-primary" /> {operator.permissions.length}{" "}
-                  permissions
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {groupPermissions(operator.permissions).map((group) => (
-                    <Badge key={group} variant="outline">
-                      {group}
-                    </Badge>
-                  ))}
-                </div>
-                <details className="group mt-5 rounded-xl border bg-muted/20">
-                  <summary className="cursor-pointer list-none rounded-xl px-4 py-3 text-sm font-medium outline-none marker:hidden focus-visible:ring-3 focus-visible:ring-ring/50">
-                    View assigned access
-                  </summary>
-                  <div className="divide-y border-t">
-                    {operator.access.length ? (
-                      operator.access.map((item) => (
-                        <div
-                          className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-                          key={item.permission}
-                        >
-                          <span className="text-sm">{formatPermission(item.permission)}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {item.expiresAt ? `Ends ${formatDate(item.expiresAt)}` : "No expiry"}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="px-4 py-3 text-sm text-muted-foreground">
-                        No active access is assigned.
-                      </p>
-                    )}
-                  </div>
-                </details>
-                <p className="mt-5 text-xs text-muted-foreground">
-                  Access last changed {formatDate(operator.updatedAt)}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <OperationsListShell status={`${result.data.operators.length} operators`}>
+          <div className="divide-y">
+            {result.data.operators.map((operator) => {
+              const groups = groupPermissions(operator.permissions);
+              return (
+                <Sheet key={operator.principalId}>
+                  <SheetTrigger asChild>
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/40 sm:px-5"
+                      type="button"
+                    >
+                      <Avatar className="size-10">
+                        <AvatarFallback>{initials(operator.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{operator.name}</p>
+                        <p className="truncate text-sm text-muted-foreground">{operator.email}</p>
+                      </div>
+                      <div className="hidden flex-1 flex-wrap justify-end gap-1.5 md:flex">
+                        {groups.map((group) => (
+                          <Badge key={group} variant="outline">
+                            {group}
+                          </Badge>
+                        ))}
+                      </div>
+                      <span className="hidden text-sm tabular-nums text-muted-foreground sm:block">
+                        {operator.permissions.length} permissions
+                      </span>
+                      <OperationsStatusBadge status={operator.status} />
+                      <ChevronRight aria-hidden className="size-4 text-muted-foreground" />
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent className="w-full sm:max-w-md">
+                    <SheetHeader className="border-b pe-12">
+                      <SheetTitle>{operator.name}</SheetTitle>
+                      <SheetDescription>{operator.email}</SheetDescription>
+                    </SheetHeader>
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2 border-b p-4">
+                        <OperationsStatusBadge status={operator.status} />
+                        {groups.map((group) => (
+                          <Badge key={group} variant="outline">
+                            {group}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="divide-y">
+                        {operator.access.length ? (
+                          operator.access.map((item) => (
+                            <div className="flex flex-col gap-1 px-4 py-3" key={item.permission}>
+                              <span className="text-sm">{formatPermission(item.permission)}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {item.expiresAt
+                                  ? `Ends ${formatDate(item.expiresAt)}`
+                                  : "No expiry"}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="px-4 py-3 text-sm text-muted-foreground">
+                            No active access is assigned.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="border-t p-4 text-xs text-muted-foreground">
+                      Access last changed {formatDate(operator.updatedAt)}
+                    </p>
+                  </SheetContent>
+                </Sheet>
+              );
+            })}
+          </div>
+        </OperationsListShell>
       ) : (
-        <Empty className="rounded-2xl border bg-card py-16">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <UsersRound />
-            </EmptyMedia>
-            <EmptyTitle>No operators found</EmptyTitle>
-            <EmptyDescription>
-              No platform operator principals are currently configured.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <OperationsDataState
+          icon={UsersRound}
+          title="No operators found"
+          description="No operator accounts are configured."
+        />
       )}
     </div>
   );
