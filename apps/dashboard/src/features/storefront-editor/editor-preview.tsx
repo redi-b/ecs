@@ -22,7 +22,7 @@ export function TemplatePreview({
   templateKey,
   previewUrl,
   previewPage = "home",
-  isFullscreen = false,
+  viewport = "desktop",
   onSelectPath,
   onSelectionInteractionChange,
   selectedPath,
@@ -33,7 +33,7 @@ export function TemplatePreview({
   templateKey: string;
   previewUrl?: string | undefined;
   previewPage?: string;
-  isFullscreen?: boolean;
+  viewport?: "desktop" | "mobile";
   onSelectPath?: (path: string) => void;
   onSelectionInteractionChange?: (active: boolean) => void;
   selectedPath?: string | null;
@@ -44,7 +44,6 @@ export function TemplatePreview({
   if (manifest?.previewMode === "iframe" && previewUrl) {
     return (
       <StorefrontIframePreview
-        isFullscreen={isFullscreen}
         onSelectPath={onSelectPath}
         onSelectionInteractionChange={onSelectionInteractionChange}
         previewUrl={withPreviewPage(previewUrl, previewPage)}
@@ -52,6 +51,7 @@ export function TemplatePreview({
         selectedPath={selectedPath}
         showEditHints={showEditHints}
         templateKey={templateKey}
+        viewport={viewport}
       />
     );
   }
@@ -88,20 +88,20 @@ function StorefrontIframePreview({
   previewUrl,
   props,
   templateKey,
-  isFullscreen,
   onSelectPath,
   onSelectionInteractionChange,
   selectedPath,
   showEditHints,
+  viewport,
 }: {
   previewUrl: string;
   props: StorefrontPageProps;
   templateKey: string;
-  isFullscreen: boolean;
   onSelectPath?: ((path: string) => void) | undefined;
   onSelectionInteractionChange?: ((active: boolean) => void) | undefined;
   selectedPath?: string | null | undefined;
   showEditHints: boolean;
+  viewport: "desktop" | "mobile";
 }) {
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -172,19 +172,20 @@ function StorefrontIframePreview({
     return () => observer.disconnect();
   }, []);
 
-  const desktopPreviewWidth = 1440;
-  const scalesDesktopToFit =
-    !isFullscreen && frameSize.width >= 768 && frameSize.width < desktopPreviewWidth;
-  const previewScale = scalesDesktopToFit ? frameSize.width / desktopPreviewWidth : 1;
-  const iframeStyle = scalesDesktopToFit
-    ? {
-        height: frameSize.height ? `${frameSize.height / previewScale}px` : "100%",
-        transform: `scale(${previewScale})`,
-        transformOrigin: "top left",
-        width: `${desktopPreviewWidth}px`,
-      }
-    : undefined;
+  const targetPreviewWidth = viewport === "desktop" ? 1440 : 390;
+  const previewScale = frameSize.width ? Math.min(1, frameSize.width / targetPreviewWidth) : 1;
+  const renderedPreviewWidth = targetPreviewWidth * previewScale;
+  const iframeStyle = {
+    height: frameSize.height ? `${frameSize.height / previewScale}px` : "100%",
+    left: frameSize.width ? `calc(50% - ${renderedPreviewWidth / 2}px)` : 0,
+    position: "absolute" as const,
+    transform: `scale(${previewScale})`,
+    transformOrigin: "top left",
+    width: `${targetPreviewWidth}px`,
+  };
 
+  // The preview URL identifies a new iframe session and must reset its handshake state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: previewUrl intentionally restarts the session.
   useEffect(() => {
     connectedOriginRef.current = null;
     setPreviewState("loading");
@@ -200,6 +201,8 @@ function StorefrontIframePreview({
     postConnected({ type: "ecs:editor:ui", selectedPath, showEditHints });
   }, [postConnected, selectedPath, showEditHints]);
 
+  // A retry increments attempt specifically to restart this connection interval.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt is the retry trigger.
   useEffect(() => {
     if (previewState !== "loading") return;
     connect();
@@ -207,6 +210,8 @@ function StorefrontIframePreview({
     return () => window.clearInterval(timer);
   }, [attempt, connect, previewState]);
 
+  // A retry increments attempt specifically to restart the failure timeout.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt is the retry trigger.
   useEffect(() => {
     if (previewState !== "loading") return;
     if (isMixedContentPreviewUrl(previewUrl, window.location.protocol)) {
@@ -277,6 +282,7 @@ function StorefrontIframePreview({
     manifest,
     onSelectPath,
     postConnected,
+    props,
     resolvedTheme,
     selectedPath,
     showEditHints,
@@ -285,8 +291,8 @@ function StorefrontIframePreview({
   return (
     <div
       ref={previewFrameRef}
-      className="relative h-full min-h-0 w-full overflow-hidden bg-background"
-      data-preview-viewport={scalesDesktopToFit ? "desktop-scaled" : "responsive"}
+      className="relative h-full min-h-0 w-full overflow-hidden bg-muted/30"
+      data-preview-viewport={viewport}
     >
       <iframe
         className={cn(
@@ -497,6 +503,7 @@ export function EditableImage({
         >
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
+            // biome-ignore lint/performance/noImgElement: Editor previews display dynamic media URLs without image optimization constraints.
             <img alt="" className="size-full rounded-[inherit] object-cover" src={imageUrl} />
           ) : variant === "logo" ? (
             fallbackLabel

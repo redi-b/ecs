@@ -17,6 +17,9 @@
     "exitFullscreen": "ሙሉ ማያ ውጣ",
     "fullscreen": "ሙሉ ማያ",
     "openLive": "ሕያው መደብር ክፈት",
+    "more": "ተጨማሪ የማስተካከያ ተግባራት",
+    "hideSettings": "ማስተካከያዎችን ደብቅ",
+    "showSettings": "ማስተካከያዎችን አሳይ",
     "resetEditor": "ማስተካከያውን መልስ",
     "resetTitle": "ለውጦቹ ይመለሱ?",
     "resetDescription": "ገጹን ሲከፍቱ የነበረው ይመለሳል።",
@@ -61,6 +64,12 @@
     "preview": "ቅድመ እይታ",
     "settings": "ማስተካከያዎች"
   },
+  "preview": {
+    "page": "የቅድመ እይታ ገጽ",
+    "viewport": "የቅድመ እይታ መሣሪያ",
+    "desktop": "የኮምፒውተር ቅድመ እይታ",
+    "mobile": "የስልክ ቅድመ እይታ"
+  },
   "shell": {
     "title": "የመደብር ገጽ ማስተካከያ",
     "hint": "በቅድመ እይታ ላይ የተከበቡ ጽሑፎችን ይጫኑ፣ ወይም ዝርዝሮችን በማስተካከያዎች ያሻሽሉ።",
@@ -69,6 +78,9 @@
   "settings": {
     "description": "አገናኞች፣ ምስሎች፣ ቀለሞች እና ተለዋጭ ይዘት።",
     "changeTemplate": "ንድፍ ቀይር",
+    "jumpToSection": "ወደ ክፍል ይሂዱ",
+    "searchSections": "ክፍሎችን ፈልግ…",
+    "noMatchingSection": "ተዛማጅ ክፍል አልተገኘም።",
     "sectionHidden": "ተደብቋል",
     "sectionVisibleTooltip": "በመደብር ላይ ይታያል",
     "sectionHiddenTooltip": "በመደብር ላይ ተደብቋል",

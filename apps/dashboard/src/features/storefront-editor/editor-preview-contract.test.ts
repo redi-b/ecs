@@ -4,9 +4,9 @@ import test from "node:test";
 
 const source = readFileSync(new URL("./editor-preview.tsx", import.meta.url), "utf8");
 
-test("embedded desktop previews preserve desktop responsive state while fitting the canvas", () => {
-  assert.match(source, /const desktopPreviewWidth = 1440/);
-  assert.match(source, /data-preview-viewport=\{scalesDesktopToFit \? "desktop-scaled" : "responsive"\}/);
+test("preview device presets preserve responsive width while fitting the canvas", () => {
+  assert.match(source, /viewport === "desktop" \? 1440 : 390/);
+  assert.match(source, /data-preview-viewport=\{viewport\}/);
   assert.match(source, /transform: `scale\(\$\{previewScale\}\)`/);
-  assert.match(source, /width: `\$\{desktopPreviewWidth\}px`/);
+  assert.match(source, /width: `\$\{targetPreviewWidth\}px`/);
 });

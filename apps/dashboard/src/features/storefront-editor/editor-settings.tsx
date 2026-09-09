@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  getStorefrontEditorManifest,
-  type StorefrontEditorField,
-} from "@ecs/storefront-templates";
+import { getStorefrontEditorManifest, type StorefrontEditorField } from "@ecs/storefront-templates";
 import { RiArrowDownSLine, RiExpandUpDownLine } from "@remixicon/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,29 +22,28 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  SETTINGS_SECTION_LABELS,
-  useStorefrontEditor,
-} from "@/features/storefront-editor/editor-config";
-import {
   MediaImageReferenceControl,
   MediaImageSourceActions,
 } from "@/features/media/media-image-reference-control";
+import {
+  SETTINGS_SECTION_LABELS,
+  useStorefrontEditor,
+} from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-
+import { StorefrontLinksEditor } from "./editor-links";
 import {
   StorefrontCollectionPicker,
   StorefrontCollectionsPicker,
   StorefrontProductsPicker,
 } from "./editor-merchandising";
-import { StorefrontLinksEditor } from "./editor-links";
 import {
-  getStorefrontPageProps,
   type EditorAction,
   type EditorData,
+  getStorefrontPageProps,
   type StorefrontPageProps,
 } from "./editor-state";
-import { ThemeBrandSection, FontSelect, ColorPickerField } from "./editor-theme";
+import { ColorPickerField, FontSelect, ThemeBrandSection } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
 export {
@@ -55,7 +51,15 @@ export {
   MediaImageSourceActions as EditorImageSourceActions,
 };
 
-export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKey }: { onSelectPath: (path: string | null) => void; selectedPath: string | null; templateKey: string }) {
+export function StorefrontSettingsPanel({
+  onSelectPath,
+  selectedPath,
+  templateKey,
+}: {
+  onSelectPath: (path: string | null) => void;
+  selectedPath: string | null;
+  templateKey: string;
+}) {
   const { t } = useI18n();
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
@@ -70,7 +74,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
     sectionContainsPath(section, selectedPath),
   );
 
-  const scrollSettingsPathIntoView = (path: string) => {
+  const scrollSettingsPathIntoView = useCallback((path: string) => {
     requestAnimationFrame(() => {
       const scroller = scrollRef.current;
       const candidate = Array.from(
@@ -85,7 +89,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
         top: Math.max(0, candidateTop - 64),
       });
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (!activeSection) return;
@@ -100,9 +104,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
   useEffect(() => {
     if (!selectedPath) return;
     scrollSettingsPathIntoView(selectedPath);
-    // The scroll target is intentionally derived from the selected path only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPath]);
+  }, [scrollSettingsPathIntoView, selectedPath]);
 
   if (!manifest) {
     return null;
@@ -133,7 +135,7 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
   };
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" ref={scrollRef}>
+    <div className="h-full min-h-0 overflow-y-auto overscroll-contain" ref={scrollRef}>
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <Popover onOpenChange={setSectionNavigatorOpen} open={sectionNavigatorOpen}>
           <PopoverTrigger asChild>
@@ -145,17 +147,21 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
             >
               <span className={cn("truncate", !activeSection && "text-muted-foreground")}>
                 {activeSection
-                  ? SETTINGS_SECTION_LABELS[activeSection.id] ?? activeSection.label
-                  : "Jump to a section"}
+                  ? (SETTINGS_SECTION_LABELS[activeSection.id] ?? activeSection.label)
+                  : t("editor.settings.jumpToSection")}
               </span>
               <RiArrowDownSLine className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0" sideOffset={6}>
+          <PopoverContent
+            align="start"
+            className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+            sideOffset={6}
+          >
             <Command shouldFilter>
-              <CommandInput placeholder="Search sections…" size="panel" />
+              <CommandInput placeholder={t("editor.settings.searchSections")} size="panel" />
               <CommandList className="max-h-72 px-1.5 pb-1.5">
-                <CommandEmpty>No matching section.</CommandEmpty>
+                <CommandEmpty>{t("editor.settings.noMatchingSection")}</CommandEmpty>
                 <CommandGroup className="p-0">
                   {manifest.sections.map((section) => (
                     <CommandItem
@@ -172,27 +178,39 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
             </Command>
           </PopoverContent>
         </Popover>
-        <Button
-          className="h-9 w-[7.75rem] shrink-0 gap-1.5 px-3 text-xs"
-          onClick={toggleAllSections}
-          type="button"
-          variant="ghost"
-        >
-          <RiExpandUpDownLine aria-hidden className="size-3.5 shrink-0" />
-          {allSectionsExpanded
-            ? t("editor.settings.collapseAll")
-            : t("editor.settings.expandAll")}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={
+                allSectionsExpanded
+                  ? t("editor.settings.collapseAll")
+                  : t("editor.settings.expandAll")
+              }
+              className="size-9 shrink-0"
+              onClick={toggleAllSections}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <RiExpandUpDownLine aria-hidden />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {allSectionsExpanded
+              ? t("editor.settings.collapseAll")
+              : t("editor.settings.expandAll")}
+          </TooltipContent>
+        </Tooltip>
       </div>
-      <div className="flex flex-col gap-3 p-3 pb-10 sm:p-4">
+      <div className="flex flex-col gap-2.5 p-3 pb-10 sm:p-4">
         {manifest.sections.map((section) => {
           if (section.id === "theme") {
             return (
               <div
                 className={cn(
-                  "rounded-2xl transition-shadow",
-                  selectedPath === sectionSettingsPath(section)
-                    && "bg-primary/[0.06] ring-1 ring-primary/30",
+                  "rounded-xl transition-shadow",
+                  selectedPath === sectionSettingsPath(section) &&
+                    "bg-primary/[0.06] ring-1 ring-primary/30",
                 )}
                 data-editor-settings-path={sectionSettingsPath(section)}
                 key={section.id}
@@ -234,7 +252,8 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
                 : enabledValue !== false && enabledValue !== "false";
           const sectionPath = enabledField?.path.replace(/\.enabled$/, "") ?? section.id;
 
-          const sectionOpen = openSections.has(section.id) || sectionContainsPath(section, selectedPath);
+          const sectionOpen =
+            openSections.has(section.id) || sectionContainsPath(section, selectedPath);
 
           return (
             <Collapsible
@@ -252,98 +271,137 @@ export function StorefrontSettingsPanel({ onSelectPath, selectedPath, templateKe
               }}
               open={sectionOpen}
             >
-            <section
-              className={cn(
-                "min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)] transition-opacity",
-                !sectionVisible && "opacity-70",
-                selectedPath === sectionPath && "bg-primary/[0.06] ring-1 ring-primary/30",
-              )}
-              data-editor-settings-path={sectionPath}
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-muted/10 px-4 py-3">
-                <button className="flex min-w-0 items-center gap-2 text-left" onClick={() => onSelectPath(sectionPath)} type="button">
-                  <div className="truncate text-sm font-medium tracking-tight">
-                    {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
-                  </div>
-                  {enabledField && !sectionVisible ? (
-                    <Badge className="shrink-0 font-normal" variant="secondary">
-                      {t("editor.settings.sectionHidden")}
-                    </Badge>
-                  ) : null}
-                </button>
-                <div className="flex shrink-0 items-center gap-1">
-                {enabledField ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex shrink-0 items-center">
-                        <Switch
-                          aria-label={enabledField.label}
-                          checked={sectionVisible}
-                          id={enabledField.prop}
-                          onCheckedChange={(next) =>
-                            updateStorefrontProp(
-                              data,
-                              dispatch,
-                              enabledField.prop as keyof StorefrontPageProps,
-                              next,
-                            )
-                          }
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      {sectionVisible
-                        ? t("editor.settings.sectionVisibleTooltip")
-                        : t("editor.settings.sectionHiddenTooltip")}
-                    </TooltipContent>
-                  </Tooltip>
-                ) : null}
-                {bodyFields.length > 0 ? <CollapsibleTrigger asChild>
-                  <Button aria-label={`${sectionOpen ? "Collapse" : "Expand"} ${section.label}`} size="icon-sm" type="button" variant="ghost">
-                    <RiArrowDownSLine className={cn("size-4 transition-transform", sectionOpen && "rotate-180")} aria-hidden />
-                  </Button>
-                </CollapsibleTrigger> : null}
-                </div>
-              </div>
-              {bodyFields.length > 0 ? (
-                <CollapsibleContent>
-                <div
-                  className={cn(
-                    "flex min-w-0 flex-col gap-5 p-4",
-                    enabledField && !sectionVisible && "pointer-events-none opacity-50",
-                  )}
-                >
-                  {bodyFields.map((field) => {
-                    const value = (props as Record<string, unknown>)[field.prop];
-                    const helpText = "helpText" in field ? field.helpText : undefined;
-
-                    const showHelp = Boolean(helpText) && field.kind !== "products";
-
-                    return (
-                      <Field className={cn("min-w-0 gap-2.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150", (selectedPath === field.path || selectedPath?.startsWith(`${field.path}.`)) && "bg-primary/[0.055] ring-1 ring-primary/25")} data-editor-settings-path={field.path} key={field.path} onClickCapture={() => onSelectPath(field.path)} onFocusCapture={(event) => onSelectPath((event.target as Element).closest<HTMLElement>("[data-editor-settings-path]")?.dataset.editorSettingsPath ?? field.path)}>
-                        {field.kind === "boolean" ? null : (
-                          <FieldLabel className="text-sm font-medium" htmlFor={nativeControlId(field)}>{field.label}</FieldLabel>
-                        )}
-                        <div className="min-w-0">
-                          <StorefrontSettingControl
-                            data={data}
-                            dispatch={dispatch}
-                            field={field}
-                            value={value}
+              <section
+                className={cn(
+                  "min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card transition-opacity",
+                  !sectionVisible && "opacity-70",
+                  selectedPath === sectionPath && "bg-primary/[0.06] ring-1 ring-primary/30",
+                )}
+                data-editor-settings-path={sectionPath}
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-border/80 bg-muted/10 px-4 py-3">
+                  <button
+                    className="flex min-w-0 items-center gap-2 text-left"
+                    onClick={() => onSelectPath(sectionPath)}
+                    type="button"
+                  >
+                    <div className="truncate text-sm font-medium tracking-tight">
+                      {SETTINGS_SECTION_LABELS[section.id] ?? section.label}
+                    </div>
+                    {enabledField && !sectionVisible ? (
+                      <Badge className="shrink-0 font-normal" variant="secondary">
+                        {t("editor.settings.sectionHidden")}
+                      </Badge>
+                    ) : null}
+                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {enabledField ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex shrink-0 items-center">
+                            <Switch
+                              aria-label={enabledField.label}
+                              checked={sectionVisible}
+                              id={enabledField.prop}
+                              onCheckedChange={(next) =>
+                                updateStorefrontProp(
+                                  data,
+                                  dispatch,
+                                  enabledField.prop as keyof StorefrontPageProps,
+                                  next,
+                                )
+                              }
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          {sectionVisible
+                            ? t("editor.settings.sectionVisibleTooltip")
+                            : t("editor.settings.sectionHiddenTooltip")}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                    {bodyFields.length > 0 ? (
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          aria-label={`${sectionOpen ? "Collapse" : "Expand"} ${section.label}`}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <RiArrowDownSLine
+                            className={cn(
+                              "size-4 transition-transform",
+                              sectionOpen && "rotate-180",
+                            )}
+                            aria-hidden
                           />
-                        </div>
-                        {showHelp ? (
-                          <FieldDescription className="text-pretty leading-relaxed">
-                            {helpText}
-                          </FieldDescription>
-                        ) : null}
-                      </Field>
-                    );
-                  })}
+                        </Button>
+                      </CollapsibleTrigger>
+                    ) : null}
+                  </div>
                 </div>
-                </CollapsibleContent>
-              ) : null}
-            </section>
+                {bodyFields.length > 0 ? (
+                  <CollapsibleContent>
+                    <div
+                      className={cn(
+                        "flex min-w-0 flex-col gap-5 p-4",
+                        enabledField && !sectionVisible && "pointer-events-none opacity-50",
+                      )}
+                    >
+                      {bodyFields.map((field) => {
+                        const value = (props as Record<string, unknown>)[field.prop];
+                        const helpText = "helpText" in field ? field.helpText : undefined;
+
+                        const showHelp = Boolean(helpText) && field.kind !== "products";
+
+                        return (
+                          <Field
+                            className={cn(
+                              "min-w-0 gap-2.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150",
+                              (selectedPath === field.path ||
+                                selectedPath?.startsWith(`${field.path}.`)) &&
+                                "bg-primary/[0.055] ring-1 ring-primary/25",
+                            )}
+                            data-editor-settings-path={field.path}
+                            key={field.path}
+                            onClickCapture={() => onSelectPath(field.path)}
+                            onFocusCapture={(event) =>
+                              onSelectPath(
+                                (event.target as Element).closest<HTMLElement>(
+                                  "[data-editor-settings-path]",
+                                )?.dataset.editorSettingsPath ?? field.path,
+                              )
+                            }
+                          >
+                            {field.kind === "boolean" ? null : (
+                              <FieldLabel
+                                className="text-sm font-medium"
+                                htmlFor={nativeControlId(field)}
+                              >
+                                {field.label}
+                              </FieldLabel>
+                            )}
+                            <div className="min-w-0">
+                              <StorefrontSettingControl
+                                data={data}
+                                dispatch={dispatch}
+                                field={field}
+                                value={value}
+                              />
+                            </div>
+                            {showHelp ? (
+                              <FieldDescription className="text-pretty leading-relaxed">
+                                {helpText}
+                              </FieldDescription>
+                            ) : null}
+                          </Field>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                ) : null}
+              </section>
             </Collapsible>
           );
         })}
@@ -372,9 +430,11 @@ function sectionContainsPath(
 ) {
   if (!path) return false;
   const sectionPath = sectionSettingsPath(section);
-  return path === sectionPath
-    || path.startsWith(`${sectionPath}.`)
-    || section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`));
+  return (
+    path === sectionPath ||
+    path.startsWith(`${sectionPath}.`) ||
+    section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`))
+  );
 }
 
 export function StorefrontSettingControl({
@@ -408,21 +468,30 @@ export function StorefrontSettingControl({
 
   if (field.kind === "collection") {
     return (
-      <StorefrontCollectionPicker
-        onChange={(id) => update(id || undefined)}
-        value={stringValue}
-      />
+      <StorefrontCollectionPicker onChange={(id) => update(id || undefined)} value={stringValue} />
     );
   }
 
   if (field.kind === "products") {
     const ids = Array.isArray(value) ? value.map(String) : [];
-    return <StorefrontProductsPicker maxSelection={field.maxItems} onChange={(next) => update(next)} value={ids} />;
+    return (
+      <StorefrontProductsPicker
+        maxSelection={field.maxItems}
+        onChange={(next) => update(next)}
+        value={ids}
+      />
+    );
   }
 
   if (field.kind === "collections") {
     const ids = Array.isArray(value) ? value.map(String) : [];
-    return <StorefrontCollectionsPicker maxSelection={field.maxItems} onChange={(next) => update(next)} value={ids} />;
+    return (
+      <StorefrontCollectionsPicker
+        maxSelection={field.maxItems}
+        onChange={(next) => update(next)}
+        value={ids}
+      />
+    );
   }
 
   if (field.kind === "product") {
@@ -435,7 +504,14 @@ export function StorefrontSettingControl({
   }
 
   if (field.kind === "links") {
-    return <StorefrontLinksEditor label={field.label} onChange={update} path={field.path} value={value} />;
+    return (
+      <StorefrontLinksEditor
+        label={field.label}
+        onChange={update}
+        path={field.path}
+        value={value}
+      />
+    );
   }
 
   if (field.kind === "color") {
@@ -449,7 +525,9 @@ export function StorefrontSettingControl({
   }
 
   if (field.path.includes("typography.")) {
-    return <FontSelect onChange={(nextValue) => update(nextValue)} value={stringValue || "Inter"} />;
+    return (
+      <FontSelect onChange={(nextValue) => update(nextValue)} value={stringValue || "Inter"} />
+    );
   }
 
   if (field.kind === "image") {

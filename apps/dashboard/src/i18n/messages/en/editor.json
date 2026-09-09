@@ -17,6 +17,9 @@
     "exitFullscreen": "Exit fullscreen",
     "fullscreen": "Fullscreen",
     "openLive": "Open live storefront",
+    "more": "More editor actions",
+    "hideSettings": "Hide settings",
+    "showSettings": "Show settings",
     "resetEditor": "Reset editor",
     "resetTitle": "Reset editor changes?",
     "resetDescription": "This resets the editor to the draft that was loaded when you opened this page.",
@@ -61,6 +64,12 @@
     "preview": "Preview",
     "settings": "Settings"
   },
+  "preview": {
+    "page": "Preview page",
+    "viewport": "Preview device",
+    "desktop": "Desktop preview",
+    "mobile": "Mobile preview"
+  },
   "shell": {
     "title": "Storefront editor",
     "hint": "Click outlined text in the preview, or refine details in settings.",
@@ -69,6 +78,9 @@
   "settings": {
     "description": "Links, images, colors, and fallback content.",
     "changeTemplate": "Change template",
+    "jumpToSection": "Jump to a section",
+    "searchSections": "Search sections…",
+    "noMatchingSection": "No matching section.",
     "sectionHidden": "Hidden",
     "sectionVisibleTooltip": "Visible on storefront",
     "sectionHiddenTooltip": "Hidden on storefront",

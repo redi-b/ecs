@@ -79,10 +79,9 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
 
   return (
     <PageShell
-      className="gap-0 p-2 sm:p-4 md:p-6 lg:p-8"
+      className="flex-none gap-0 p-2 sm:p-4 md:p-6 lg:p-8"
       hideHeader
       title={t("editor.title")}
-      viewportWorkspace
     >
       {!access.ok ? (
         <Alert variant="destructive">

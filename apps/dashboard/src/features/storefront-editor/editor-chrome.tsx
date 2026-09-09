@@ -5,23 +5,42 @@ import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
 import {
   RiArrowGoBackLine,
   RiArrowGoForwardLine,
+  RiComputerLine,
   RiEditLine,
   RiExternalLinkLine,
   RiEyeLine,
   RiEyeOffLine,
   RiFullscreenExitLine,
   RiFullscreenLine,
+  RiMore2Line,
   RiPauseLine,
   RiResetLeftLine,
   RiRocketLine,
   RiSave3Line,
+  RiSideBarLine,
+  RiSmartphoneLine,
 } from "@remixicon/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
@@ -31,7 +50,7 @@ import { cn } from "@/lib/utils";
 
 import { TemplatePreview } from "./editor-preview";
 import { StorefrontSettingsPanel } from "./editor-settings";
-import { getStorefrontPageProps, type EditorData, type PublicationStatus } from "./editor-state";
+import { type EditorData, getStorefrontPageProps, type PublicationStatus } from "./editor-state";
 
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
@@ -93,9 +112,11 @@ export function StorefrontEditorActions({
   onPublish,
   onUnpublish,
   onSave,
+  onToggleSettings,
   onToggleEditHints,
   onUndo,
   showEditHints,
+  settingsOpen,
 }: {
   canRedo: boolean;
   canUndo: boolean;
@@ -109,20 +130,24 @@ export function StorefrontEditorActions({
   onPublish: () => void;
   onUnpublish?: (() => void) | undefined;
   onSave: () => void;
+  onToggleSettings: () => void;
   onToggleEditHints: () => void;
   onUndo: () => void;
   showEditHints: boolean;
+  settingsOpen: boolean;
 }) {
   const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
+  const [pauseConfirmOpen, setPauseConfirmOpen] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-2">
-      <div className="flex flex-wrap items-center gap-0.5 sm:gap-2">
+    <div className="flex w-full min-w-0 items-center justify-between gap-2 sm:w-auto sm:justify-end">
+      <div className="flex shrink-0 items-center gap-0.5">
         <ToolbarIconButton
           disabled={hasMounted ? !canUndo : undefined}
           label={t("editor.actions.undo")}
@@ -137,50 +162,20 @@ export function StorefrontEditorActions({
         >
           <RiArrowGoForwardLine />
         </ToolbarIconButton>
-        <Separator className="mx-0.5 hidden h-5 sm:mx-1 sm:block" orientation="vertical" />
-        <ToolbarIconButton
-          label={showEditHints ? t("editor.actions.hideOutlines") : t("editor.actions.showOutlines")}
-          onClick={onToggleEditHints}
-          pressed={showEditHints}
-        >
-          {showEditHints ? <RiEyeLine /> : <RiEyeOffLine />}
-        </ToolbarIconButton>
-        <span className="hidden sm:inline-flex">
+        <Separator className="mx-0.5 hidden h-5 lg:block" orientation="vertical" />
+        <span className="hidden lg:inline-flex">
           <ToolbarIconButton
-            label={isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
-            onClick={onToggleFullscreen}
+            label={
+              settingsOpen ? t("editor.actions.hideSettings") : t("editor.actions.showSettings")
+            }
+            onClick={onToggleSettings}
+            pressed={settingsOpen}
           >
-            {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
+            <RiSideBarLine />
           </ToolbarIconButton>
         </span>
-        <ToolbarIconButton asChild label={t("editor.actions.openLive")}>
-          <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
-            <RiExternalLinkLine />
-          </a>
-        </ToolbarIconButton>
-        <ConfirmDialog
-          confirmLabel={t("editor.actions.resetConfirm")}
-          description={t("editor.actions.resetDescription")}
-          eyebrow={t("common.confirm.dangerEyebrow")}
-          icon="question"
-          onConfirm={onReset}
-          title={t("editor.actions.resetTitle")}
-          tone="default"
-          trigger={
-            <Button
-              aria-label={t("editor.actions.resetEditor")}
-              size="icon-sm"
-              title={t("editor.actions.resetEditor")}
-              type="button"
-              variant="ghost"
-            >
-              <RiResetLeftLine />
-              <span className="sr-only">{t("editor.actions.resetEditor")}</span>
-            </Button>
-          }
-        />
       </div>
-      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+      <div className="flex min-w-0 items-center justify-end gap-2">
         <Button
           className="min-w-0"
           disabled={isPending}
@@ -192,34 +187,8 @@ export function StorefrontEditorActions({
           <RiSave3Line data-icon="inline-start" />
           {t("editor.actions.saveDraft")}
         </Button>
-        {isLive && onUnpublish ? (
-          <ConfirmDialog
-            cancelDisabled={isPending}
-            confirmDisabled={isPending}
-            confirmLabel={t("editor.actions.pauseConfirm")}
-            description={t("editor.actions.pauseDescription")}
-            eyebrow={t("common.confirm.dangerEyebrow")}
-            icon="warning"
-            onConfirm={() => onUnpublish()}
-            title={t("editor.actions.pauseTitle")}
-            trigger={
-              <Button
-                className="min-w-0"
-                disabled={isPending}
-                size="sm"
-                type="button"
-                variant="destructive"
-              >
-                <RiPauseLine data-icon="inline-start" />
-                {t("editor.actions.pauseShop")}
-              </Button>
-            }
-          />
-        ) : (
-          <span className="hidden sm:block" />
-        )}
         <Button
-          className={cn("min-w-0", isLive && onUnpublish ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-1")}
+          className="min-w-0"
           disabled={isPending}
           onClick={onPublish}
           size="sm"
@@ -228,7 +197,88 @@ export function StorefrontEditorActions({
           <RiRocketLine data-icon="inline-start" />
           {t("editor.actions.publish")}
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label={t("editor.actions.more")}
+              disabled={isPending}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              <RiMore2Line />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuGroup>
+              <DropdownMenuItem onSelect={onToggleEditHints}>
+                {showEditHints ? <RiEyeOffLine /> : <RiEyeLine />}
+                {showEditHints
+                  ? t("editor.actions.hideOutlines")
+                  : t("editor.actions.showOutlines")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onToggleFullscreen}>
+                {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
+                {isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={editorMeta.liveStorefrontUrl} rel="noreferrer" target="_blank">
+                  <RiExternalLinkLine />
+                  {t("editor.actions.openLive")}
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={editorMeta.settingsUrl}>
+                  <RiEditLine />
+                  {t("editor.settings.changeTemplate")}
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onSelect={() => setResetConfirmOpen(true)}>
+                <RiResetLeftLine />
+                {t("editor.actions.resetEditor")}
+              </DropdownMenuItem>
+              {isLive && onUnpublish ? (
+                <DropdownMenuItem onSelect={() => setPauseConfirmOpen(true)} variant="destructive">
+                  <RiPauseLine />
+                  {t("editor.actions.pauseShop")}
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <ConfirmDialog
+        confirmLabel={t("editor.actions.resetConfirm")}
+        description={t("editor.actions.resetDescription")}
+        icon="question"
+        onConfirm={() => {
+          setResetConfirmOpen(false);
+          onReset();
+        }}
+        onOpenChange={setResetConfirmOpen}
+        open={resetConfirmOpen}
+        title={t("editor.actions.resetTitle")}
+        tone="default"
+      />
+      {onUnpublish ? (
+        <ConfirmDialog
+          cancelDisabled={isPending}
+          confirmDisabled={isPending}
+          confirmLabel={t("editor.actions.pauseConfirm")}
+          description={t("editor.actions.pauseDescription")}
+          icon="warning"
+          onConfirm={() => {
+            setPauseConfirmOpen(false);
+            onUnpublish();
+          }}
+          onOpenChange={setPauseConfirmOpen}
+          open={pauseConfirmOpen}
+          title={t("editor.actions.pauseTitle")}
+        />
+      ) : null}
     </div>
   );
 }
@@ -271,6 +321,7 @@ export function ToolbarIconButton({
 }
 
 type EditorMobilePanel = "preview" | "settings";
+type EditorPreviewViewport = "desktop" | "mobile";
 
 export function StorefrontEditorShell({
   canRedo,
@@ -311,11 +362,19 @@ export function StorefrontEditorShell({
   const data = useStorefrontEditor((api) => api.appState.data);
   const props = getStorefrontPageProps(data);
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
+  const [previewViewport, setPreviewViewport] = useState<EditorPreviewViewport>("desktop");
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const manifest = getStorefrontEditorManifest(editorMeta.templateKey);
   const previewPages = manifest?.previewPages ?? [{ id: "home", label: "Home" }];
   const [previewPage, setPreviewPage] = useState(previewPages[0]?.id ?? "home");
   const [selectionInteractionActive, setSelectionInteractionActive] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      setPreviewViewport("mobile");
+    }
+  }, []);
 
   useEffect(() => {
     function clearSelection() {
@@ -352,26 +411,20 @@ export function StorefrontEditorShell({
   return (
     <div
       className={cn(
-        "storefront-editor-chrome flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
+        "storefront-editor-chrome flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]",
         isFullscreen && "h-dvh",
       )}
     >
-      <div className="flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-muted/20 px-3 py-3 sm:gap-3 sm:px-4">
-        <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border/80 bg-background shadow-sm sm:size-10">
-            <RiEditLine className="text-muted-foreground" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <div className="text-sm font-medium tracking-tight">{t("editor.shell.title")}</div>
-              <Badge variant="secondary">{editorMeta.templateName}</Badge>
-              <ShopLiveStatusBadge live={isLive} />
-              <PublicationStatusBadge status={publicationStatus} />
+      <div className="flex shrink-0 flex-col gap-2.5 border-b border-border/80 bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium tracking-tight">
+              {t("editor.shell.title")}
             </div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {isLive ? t("editor.shell.hint") : t("editor.shell.hintPaused")}
-            </div>
+            <div className="truncate text-xs text-muted-foreground">{editorMeta.templateName}</div>
           </div>
+          {!isLive ? <ShopLiveStatusBadge live={false} /> : null}
+          <PublicationStatusBadge status={publicationStatus} />
         </div>
         <StorefrontEditorActions
           canRedo={canRedo}
@@ -386,9 +439,11 @@ export function StorefrontEditorShell({
           onPublish={() => onPublish(data)}
           onUnpublish={onUnpublish}
           onSave={() => onSave(data)}
+          onToggleSettings={() => setSettingsOpen((current) => !current)}
           onToggleEditHints={onToggleEditHints}
           onUndo={onUndo}
           showEditHints={showEditHints}
+          settingsOpen={settingsOpen}
         />
       </div>
 
@@ -408,72 +463,148 @@ export function StorefrontEditorShell({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden bg-muted/20 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]",
-          isFullscreen && "lg:min-h-[calc(100dvh-7.5rem)]",
+          "contain-strict flex h-[clamp(40rem,calc(100dvh-11rem),58rem)] min-h-0 flex-none overflow-hidden bg-muted/20",
+          isFullscreen && "h-auto flex-1",
         )}
         data-edit-hints={showEditHints ? "on" : "off"}
       >
         <div
           className={cn(
-            "min-h-0 min-w-0 overflow-hidden p-3 sm:p-5",
+            "min-h-0 min-w-0 flex-1 overflow-hidden p-3 sm:p-5",
             isFullscreen && "h-full",
             mobilePanel !== "preview" && "max-lg:hidden",
           )}
         >
-          <div className={cn("mx-auto h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm", isFullscreen ? "max-w-none" : "max-w-6xl")}>
+          <div
+            className={cn(
+              "mx-auto h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border/80 bg-background shadow-sm",
+              isFullscreen ? "max-w-none" : "max-w-6xl",
+            )}
+          >
             <div className="flex h-full min-h-0 flex-col">
-            {previewPages.length > 1 ? <div className="shrink-0 border-b border-border/80 bg-muted/15 p-2"><SegmentedControl ariaLabel="Preview page" onChange={(page) => { setPreviewPage(page); setSelectedPath(null); }} options={previewPages.map((page) => ({ id: page.id, label: page.label }))} size="sm" value={previewPage} /></div> : null}
-            <div className="min-h-0 flex-1">
-            <TemplatePreview
-              isFullscreen={isFullscreen}
-              onSelectPath={(path) => {
-                setSelectedPath(path || null);
-                const sectionPage = manifest?.sections.find((section) => section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`)))?.previewPage;
-                if (sectionPage) setPreviewPage(sectionPage);
-              }}
-              onSelectionInteractionChange={setSelectionInteractionActive}
-              props={props}
-              selectedPath={selectedPath}
-              showEditHints={showEditHints}
-              storefrontName={editorMeta.storefrontName}
-              templateKey={editorMeta.templateKey}
-              previewUrl={editorMeta.previewUrl}
-              previewPage={previewPage}
-            />
-            </div>
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/80 bg-muted/15 p-2">
+                <PreviewPageSwitcher
+                  ariaLabel={t("editor.preview.page")}
+                  onChange={(page) => {
+                    setPreviewPage(page);
+                    setSelectedPath(null);
+                  }}
+                  pages={previewPages}
+                  value={previewPage}
+                />
+                <SegmentedControl
+                  ariaLabel={t("editor.preview.viewport")}
+                  className="shrink-0 [&_svg]:size-4"
+                  fullWidth={false}
+                  onChange={setPreviewViewport}
+                  options={[
+                    {
+                      ariaLabel: t("editor.preview.desktop"),
+                      id: "desktop",
+                      label: <RiComputerLine className="size-4" aria-hidden />,
+                    },
+                    {
+                      ariaLabel: t("editor.preview.mobile"),
+                      id: "mobile",
+                      label: <RiSmartphoneLine className="size-4" aria-hidden />,
+                    },
+                  ]}
+                  size="sm"
+                  value={previewViewport}
+                />
+              </div>
+              <div className="min-h-0 flex-1">
+                <TemplatePreview
+                  onSelectPath={(path) => {
+                    setSelectedPath(path || null);
+                    if (path) setSettingsOpen(true);
+                    const sectionPage = manifest?.sections.find((section) =>
+                      section.fields.some(
+                        (field) => path === field.path || path.startsWith(`${field.path}.`),
+                      ),
+                    )?.previewPage;
+                    if (sectionPage) setPreviewPage(sectionPage);
+                  }}
+                  onSelectionInteractionChange={setSelectionInteractionActive}
+                  props={props}
+                  selectedPath={selectedPath}
+                  showEditHints={showEditHints}
+                  storefrontName={editorMeta.storefrontName}
+                  templateKey={editorMeta.templateKey}
+                  previewUrl={editorMeta.previewUrl}
+                  previewPage={previewPage}
+                  viewport={previewViewport}
+                />
+              </div>
             </div>
           </div>
         </div>
         <aside
           className={cn(
-            "flex h-full min-h-0 flex-col overflow-hidden border-t border-border/80 bg-background",
-            "lg:border-l lg:border-t-0",
+            "flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/80 bg-background transition-[width,opacity] duration-200 ease-out",
+            "lg:w-[clamp(18rem,20vw,24rem)] lg:flex-none lg:border-l lg:border-t-0",
+            !settingsOpen && "lg:pointer-events-none lg:w-0 lg:border-l-0 lg:opacity-0",
             mobilePanel !== "settings" && "max-lg:hidden",
           )}
         >
-          <div className="shrink-0 border-b border-border/80 bg-muted/15 px-4 py-3 sm:py-3.5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-              <div className="min-w-0">
-                <div className="text-sm font-medium tracking-tight">
-                  {t("editor.panels.settings")}
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  {t("editor.settings.description")}
-                </div>
-              </div>
-              <Button asChild className="w-full shrink-0 sm:w-auto" size="sm" variant="outline">
-                <a href={editorMeta.settingsUrl}>{t("editor.settings.changeTemplate")}</a>
-              </Button>
-            </div>
-          </div>
-          <StorefrontSettingsPanel onSelectPath={(path) => {
-            setSelectedPath(path);
-            if (!path) return;
-            const sectionPage = manifest?.sections.find((section) => section.fields.some((field) => path === field.path || path.startsWith(`${field.path}.`)))?.previewPage;
-            if (sectionPage) setPreviewPage(sectionPage);
-          }} selectedPath={selectedPath} templateKey={editorMeta.templateKey} />
+          <StorefrontSettingsPanel
+            onSelectPath={(path) => {
+              setSelectedPath(path);
+              if (!path) return;
+              const sectionPage = manifest?.sections.find((section) =>
+                section.fields.some(
+                  (field) => path === field.path || path.startsWith(`${field.path}.`),
+                ),
+              )?.previewPage;
+              if (sectionPage) setPreviewPage(sectionPage);
+            }}
+            selectedPath={selectedPath}
+            templateKey={editorMeta.templateKey}
+          />
         </aside>
       </div>
     </div>
+  );
+}
+
+function PreviewPageSwitcher({
+  ariaLabel,
+  onChange,
+  pages,
+  value,
+}: {
+  ariaLabel: string;
+  onChange: (page: string) => void;
+  pages: Array<{ id: string; label: string }>;
+  value: string;
+}) {
+  if (pages.length <= 1) return <span />;
+
+  if (pages.length <= 3) {
+    return (
+      <SegmentedControl
+        ariaLabel={ariaLabel}
+        className="min-w-0 max-w-md"
+        onChange={onChange}
+        options={pages.map((page) => ({ id: page.id, label: page.label }))}
+        size="sm"
+        value={value}
+      />
+    );
+  }
+
+  return (
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger aria-label={ariaLabel} className="w-[min(13rem,55vw)]" size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="start">
+        {pages.map((page) => (
+          <SelectItem key={page.id} value={page.id}>
+            {page.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

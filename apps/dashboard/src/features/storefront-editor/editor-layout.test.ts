@@ -2,41 +2,44 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
-const chromeSource = await readFile(
-  new URL("./editor-chrome.tsx", import.meta.url),
-  "utf8",
-);
-const settingsSource = await readFile(
-  new URL("./editor-settings.tsx", import.meta.url),
-  "utf8",
-);
-const pageShellSource = await readFile(
-  new URL("../../components/app/page-shell.tsx", import.meta.url),
-  "utf8",
-);
-const globalStyles = await readFile(
-  new URL("../../app/globals.css", import.meta.url),
+const chromeSource = await readFile(new URL("./editor-chrome.tsx", import.meta.url), "utf8");
+const settingsSource = await readFile(new URL("./editor-settings.tsx", import.meta.url), "utf8");
+const pageSource = await readFile(
+  new URL("../../app/admin/(dashboard)/editor/page.tsx", import.meta.url),
   "utf8",
 );
 
 describe("storefront editor workspace containment", () => {
-  it("bounds the editor grid row so settings content cannot size the outer page", () => {
-    assert.match(chromeSource, /grid-rows-\[minmax\(0,1fr\)\]/);
-    assert.match(chromeSource, /grid-rows-\[minmax\(0,1fr\)\][^\"]*overflow-hidden/);
-    assert.match(chromeSource, /flex h-full min-h-0 flex-col overflow-hidden border-t/);
+  it("uses an intentional canvas height instead of locking the dashboard viewport", () => {
+    assert.match(chromeSource, /h-\[clamp\(40rem,calc\(100dvh-11rem\),58rem\)\]/);
+    assert.match(
+      chromeSource,
+      /contain-strict flex h-\[clamp\(40rem,calc\(100dvh-11rem\),58rem\)\]/,
+    );
+    assert.match(chromeSource, /min-h-0 min-w-0 flex-1 overflow-hidden p-3/);
+    assert.match(chromeSource, /isFullscreen && "h-auto flex-1"/);
+    assert.match(pageSource, /className="flex-none gap-0/);
   });
 
   it("keeps settings scrolling inside its own panel", () => {
-    assert.match(settingsSource, /min-h-0 flex-1 overflow-y-auto overscroll-contain/);
+    assert.match(settingsSource, /h-full min-h-0 overflow-y-auto overscroll-contain/);
   });
 
-  it("locks the dashboard inset only for viewport-owned workspaces", () => {
-    assert.match(pageShellSource, /data-viewport-workspace=\{viewportWorkspace/);
-    assert.match(
-      globalStyles,
-      /\[data-slot="sidebar-inset"\]:has\(> \[data-viewport-workspace\]\)/,
-    );
-    assert.match(globalStyles, /height: 100svh;\s+min-height: 0;\s+overflow: hidden;/);
+  it("keeps preview and settings aligned while allowing the desktop panel to collapse", () => {
+    assert.match(chromeSource, /lg:w-\[clamp\(18rem,20vw,24rem\)\]/);
+    assert.match(chromeSource, /lg:w-0 lg:border-l-0 lg:opacity-0/);
+    assert.match(chromeSource, /setSettingsOpen\(true\)/);
+  });
+
+  it("keeps compact page tabs and falls back to a scalable page select", () => {
+    assert.match(chromeSource, /pages\.length <= 3/);
+    assert.match(chromeSource, /<Select onValueChange=\{onChange\} value=\{value\}>/);
+  });
+
+  it("keeps draft saving visible on mobile and uses compact viewport glyphs", () => {
+    assert.doesNotMatch(chromeSource, /className="hidden min-w-0 sm:inline-flex"/);
+    assert.match(chromeSource, /<RiComputerLine className="size-4" aria-hidden \/>/);
+    assert.match(chromeSource, /<RiSmartphoneLine className="size-4" aria-hidden \/>/);
   });
 
   it("uses a quiet non-shifting settings selection treatment", () => {

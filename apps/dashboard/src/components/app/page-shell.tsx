@@ -14,8 +14,6 @@ type PageShellProps = {
   /** Secondary meta row under description (counts, status chips). */
   meta?: ReactNode;
   className?: string;
-  /** Locks the page to the dashboard viewport and delegates scrolling to its children. */
-  viewportWorkspace?: boolean;
   /** Immersive workspaces can move page identity into their own chrome. */
   hideHeader?: boolean;
   /** Keep a semantic page title without repeating identity already shown by app chrome. */
@@ -35,16 +33,14 @@ export function PageShell({
   eyebrow,
   meta,
   className,
-  viewportWorkspace = false,
   hideHeader = false,
   headerMode = "visible",
 }: PageShellProps) {
   return (
     <main
-      data-viewport-workspace={viewportWorkspace ? "" : undefined}
       className={cn(
         "flex min-h-0 min-w-0 flex-col gap-5 overflow-x-hidden p-4 sm:gap-6 sm:p-5 md:gap-7 md:p-8",
-        viewportWorkspace ? "h-[calc(100dvh-3.5rem)] flex-none overflow-hidden" : "flex-1",
+        "flex-1",
         className,
       )}
     >
