@@ -146,36 +146,44 @@ export default async function HealthPage() {
             }
           >
             <div className="divide-y">
-              {result.data.dependencies.map((dependency) => {
-                const presentation = dependencyPresentation(dependency.id);
-                const Icon = presentation.icon;
-                return (
-                  <div className="flex flex-wrap items-center gap-4 px-5 py-4" key={dependency.id}>
-                    <span className="text-muted-foreground">
-                      <Icon aria-hidden className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{presentation.label}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {dependency.evidence === "request"
-                          ? "Confirmed by this successful operations request"
-                          : dependency.status === "not_configured"
-                            ? "Not configured for this environment"
-                            : dependency.latencyMs === null
-                              ? "Checked now"
-                              : `Responded in ${dependency.latencyMs} ms`}
-                      </p>
+              {[...result.data.dependencies]
+                .sort(
+                  (left, right) =>
+                    dependencyPriority(left.status) - dependencyPriority(right.status),
+                )
+                .map((dependency) => {
+                  const presentation = dependencyPresentation(dependency.id);
+                  const Icon = presentation.icon;
+                  return (
+                    <div
+                      className="flex flex-wrap items-center gap-4 px-5 py-4"
+                      key={dependency.id}
+                    >
+                      <span className="text-muted-foreground">
+                        <Icon aria-hidden className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{presentation.label}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {dependency.evidence === "request"
+                            ? "Confirmed by this successful operations request"
+                            : dependency.status === "not_configured"
+                              ? "Not configured for this environment"
+                              : dependency.latencyMs === null
+                                ? "Checked now"
+                                : `Responded in ${dependency.latencyMs} ms`}
+                        </p>
+                      </div>
+                      <Badge variant={dependencyVariant(dependency.status)}>
+                        {dependency.status === "operational"
+                          ? "Available"
+                          : dependency.status === "unavailable"
+                            ? "Unavailable"
+                            : "Not configured"}
+                      </Badge>
                     </div>
-                    <Badge variant={dependencyVariant(dependency.status)}>
-                      {dependency.status === "operational"
-                        ? "Available"
-                        : dependency.status === "unavailable"
-                          ? "Unavailable"
-                          : "Not configured"}
-                    </Badge>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </OperationsListShell>
           <div className="grid items-start gap-5 xl:grid-cols-2">
@@ -249,6 +257,10 @@ function dependencyVariant(status: "operational" | "unavailable" | "not_configur
   if (status === "operational") return "success" as const;
   if (status === "unavailable") return "destructive" as const;
   return "secondary" as const;
+}
+
+function dependencyPriority(status: "operational" | "unavailable" | "not_configured") {
+  return status === "unavailable" ? 0 : status === "not_configured" ? 1 : 2;
 }
 
 function EvidenceCard({
