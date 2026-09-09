@@ -1505,6 +1505,7 @@ export const operatorStorefrontTemplateCatalogSchema = z.object({
     previewAssetId: z.string().nullable(),
     previewUrl: z.string().url().nullable(),
     demoUrl: z.string().url().nullable(),
+    demoUrlOverride: z.string().url().nullable(),
   })),
 });
 

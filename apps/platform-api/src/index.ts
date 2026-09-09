@@ -63,6 +63,7 @@ import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/cata
 import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
 import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { getTemplateDemoBaseUrl } from "./modules/storefront/template-demo-url.js";
 import { createSuperadminCommerceReviewService } from "./modules/superadmin/commerce-review-service.js";
 import { createSuperadminConsoleReadService } from "./modules/superadmin/console-read-service.js";
 import {
@@ -157,7 +158,12 @@ if (mediaStorage.provider === "unconfigured") {
   );
 }
 const mediaService = createMediaService(platformDb.db, mediaStorage);
-const platformTemplateAssetService = createPlatformTemplateAssetService(platformDb.db, mediaStorage);
+const storefrontDemoBaseUrl = getTemplateDemoBaseUrl(
+  process.env.STOREFRONT_DEMO_HOST ?? "demo.lvh.me",
+);
+const platformTemplateAssetService = createPlatformTemplateAssetService(platformDb.db, mediaStorage, {
+  demoBaseUrl: storefrontDemoBaseUrl,
+});
 
 const redisUrl = process.env.REDIS_URL?.trim();
 const jobsClient = redisUrl
@@ -343,7 +349,9 @@ const getPlatformPrincipalAccess = createPlatformPrincipalAccessLookup(platformD
 const superadminTenantProjectionService = createSuperadminTenantProjectionService(platformDb.db);
 const getSuperadminOverview = createSuperadminOverviewService(platformDb.db);
 const getSuperadminDiagnostics = createSuperadminDiagnosticsService(platformDb.db);
-const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
+const storefrontTemplateService = createStorefrontTemplateService(platformDb.db, {
+  demoBaseUrl: storefrontDemoBaseUrl,
+});
 const supportService = createSupportService(platformDb.db);
 const supportAccessService = createSupportAccessService(platformDb.db);
 const tenantOnboardingService = createTenantOnboardingService(platformDb.db);

@@ -325,13 +325,14 @@ function TemplateCard({ template }: { template: Template }) {
             <Field>
               <FieldLabel htmlFor={`demo-${template.versionId}`}>Demo URL</FieldLabel>
               <Input
-                defaultValue={template.demoUrl ?? ""}
+                defaultValue={template.demoUrlOverride ?? ""}
                 id={`demo-${template.versionId}`}
                 inputMode="url"
                 name="demoUrl"
-                placeholder="https://demo.example.com"
+                placeholder={template.demoUrl ?? "https://demo.example.com"}
                 type="url"
               />
+              <FieldDescription>Leave blank to use the built-in demo.</FieldDescription>
             </Field>
             <div className="flex flex-wrap justify-end gap-2">
               {template.previewAssetId && !uploadState ? (
@@ -341,7 +342,7 @@ function TemplateCard({ template }: { template: Template }) {
                     setPending(true);
                     try {
                       const response = await fetch(`/api/storefront-templates/${encodeURIComponent(template.versionId)}`, {
-                        body: JSON.stringify({ demoUrl: template.demoUrl, previewAltText: null, previewAssetId: null }),
+                        body: JSON.stringify({ demoUrl: template.demoUrlOverride, previewAltText: null, previewAssetId: null }),
                         headers: { "content-type": "application/json" },
                         method: "POST",
                       });

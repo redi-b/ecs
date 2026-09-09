@@ -66,7 +66,11 @@ export function getSelectedTemplateName(
 
 export function getTemplateTags(template: StorefrontTemplateCatalogItem) {
   return Array.isArray(template.tags)
-    ? template.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 3)
+    ? template.tags
+        .filter((tag): tag is string => typeof tag === "string" && tag.startsWith("category:"))
+        .map((tag) => tag.slice("category:".length))
+        .filter(Boolean)
+        .slice(0, 3)
     : [];
 }
 
