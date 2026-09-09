@@ -750,10 +750,3 @@ html[lang="am"] .storefront-editor-chrome *,
 [data-sonner-toast] .sonner-loader[data-visible="false"] {
   display: none !important;
 }
-
-/* Immersive dashboard routes own the viewport; their nested panes own scrolling. */
-[data-slot="sidebar-inset"]:has(> [data-viewport-workspace]) {
-  height: 100svh;
-  min-height: 0;
-  overflow: hidden;
-}

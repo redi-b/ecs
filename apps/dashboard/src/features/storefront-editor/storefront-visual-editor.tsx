@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
-import { getErrorMessage, StorefrontEditorShell } from "@/features/storefront-editor/editor-components";
+import {
+  getErrorMessage,
+  StorefrontEditorShell,
+} from "@/features/storefront-editor/editor-components";
 import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/editor-config";
 import {
   HISTORY_COMMIT_DELAY_MS,
@@ -52,9 +55,7 @@ export function StorefrontVisualEditor({
   const [historyIndex, setHistoryIndex] = useState(0);
   const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot);
   const [publishedSnapshot, setPublishedSnapshot] = useState(initialPublishedSnapshot);
-  const [isLive, setIsLive] = useState(
-    Boolean(draft.published) || editorMeta.initiallyPublished,
-  );
+  const [isLive, setIsLive] = useState(Boolean(draft.published) || editorMeta.initiallyPublished);
   const [showEditHints, setShowEditHints] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -80,11 +81,12 @@ export function StorefrontVisualEditor({
     }
 
     document.addEventListener("keydown", handleKeyDown);
+    const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, [isFullscreen]);
 
@@ -298,13 +300,12 @@ export function StorefrontVisualEditor({
     savedSnapshot,
   });
   const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
-  const { leaveDialogOpen, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(hasUnsavedChanges);
+  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(hasUnsavedChanges);
 
   return (
     <div
       className={cn(
-        "storefront-editor-runtime h-full min-h-0 w-full flex-none transition-all duration-300 ease-out",
+        "storefront-editor-runtime min-h-0 w-full flex-none transition-all duration-300 ease-out",
         // Keep the editor chrome on the configured Ethiopic UI face in Amharic.
         locale === "am" && "storefront-editor-runtime--am",
         isFullscreen &&
@@ -332,11 +333,7 @@ export function StorefrontVisualEditor({
         />
       </StorefrontEditorProvider>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>
   );
 }
