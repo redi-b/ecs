@@ -78,11 +78,8 @@ export default async function MerchantProductCategoriesPage({
           />
         </>
       }
-      meta={
-        <HelpTip
-          label={t("categories.helpLabel")}
-          summary={t("categories.description")}
-        />
+      titleAccessory={
+        <HelpTip label={t("categories.helpLabel")} summary={t("categories.description")} />
       }
       title={t("categories.title")}
     >

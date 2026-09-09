@@ -34,17 +34,13 @@ export function OnboardingSignOutButton() {
         <Button
           aria-busy={isSigningOut}
           aria-label={isSigningOut ? t("account.signingOut") : t("account.signOut")}
-          className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="min-w-9 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           disabled={isSigningOut}
-          size="icon-sm"
+          size="icon-lg"
           type="button"
           variant="ghost"
         >
-          {isSigningOut ? (
-            <AppIcons.loader className="animate-spin" />
-          ) : (
-            <AppIcons.logout />
-          )}
+          {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
         </Button>
       }
     />
