@@ -95,9 +95,10 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
   const hasSearch = Boolean(search.trim());
   const filteredOptions = useMemo(
     () =>
-      rankFuzzyItems(options, search, (option) =>
-        [option.title, ...option.values.map((value) => value.label)].join(" "),
-      ),
+      rankFuzzyItems(options, search, [
+        { getValue: (option) => option.title, weight: 2 },
+        { getValue: (option) => option.values.map((value) => value.label).join(" ") },
+      ]),
     [options, search],
   );
   const cloneForEditing = (option: SavedOption): SavedOptionDraft => ({

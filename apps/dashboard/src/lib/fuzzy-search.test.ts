@@ -23,3 +23,25 @@ test("fuzzy search preserves source order when scores tie", () => {
     values,
   );
 });
+
+test("fuzzy search supports Ethiopic text without Latin-only normalization", () => {
+  const values = ["የቆዳ እንክብካቤ", "ልብስ", "ጫማ"];
+  assert.deepEqual(
+    rankFuzzyItems(values, "እንክብ", (value) => value),
+    ["የቆዳ እንክብካቤ"],
+  );
+});
+
+test("weighted fields keep primary labels ahead of secondary metadata", () => {
+  const values = [
+    { name: "Summer shirt", note: "Featured" },
+    { name: "Featured", note: "Summer shirt" },
+  ];
+  assert.deepEqual(
+    rankFuzzyItems(values, "featured", [
+      { getValue: (value) => value.name, weight: 2 },
+      { getValue: (value) => value.note },
+    ]),
+    [values[1], values[0]],
+  );
+});

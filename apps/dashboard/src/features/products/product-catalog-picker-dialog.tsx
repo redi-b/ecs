@@ -143,19 +143,21 @@ export function ProductCatalogPickerDialog({
   }, [open, selectedIdsProp]);
 
   const filtered = useMemo(() => {
-    return rankFuzzyItems(catalogProducts, query, (product) =>
-      [
-        product.searchText,
-        ...(product.variants ?? []).flatMap((variant) => [
-          variant.title,
-          variant.sku,
-          variant.id,
-          ...Object.values(variant.options ?? {}),
-        ]),
-      ]
-        .filter(Boolean)
-        .join(" "),
-    );
+    return rankFuzzyItems(catalogProducts, query, [
+      { getValue: (product) => product.searchText, weight: 2 },
+      {
+        getValue: (product) =>
+          (product.variants ?? [])
+            .flatMap((variant) => [
+              variant.title,
+              variant.sku,
+              variant.id,
+              ...Object.values(variant.options ?? {}),
+            ])
+            .filter(Boolean)
+            .join(" "),
+      },
+    ]);
   }, [catalogProducts, query]);
 
   const pageItems = filtered.slice(0, visibleCount);
