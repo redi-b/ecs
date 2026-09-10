@@ -1360,6 +1360,38 @@ export const merchantDashboardSummarySchema = z.object({
           }),
         )
         .optional(),
+      provider: z
+        .object({
+          status: z.enum(["available", "not_configured", "unavailable"]),
+          range: z.object({
+            from: z.string().min(1),
+            timezone: z.string().min(1),
+            to: z.string().min(1),
+          }),
+          traffic: z
+            .object({
+              bounceRate: z.number().nonnegative().nullable(),
+              pageViews: z.number().int().nonnegative(),
+              visitDurationSeconds: z.number().nonnegative().nullable(),
+              visitors: z.number().int().nonnegative(),
+              visits: z.number().int().nonnegative(),
+            })
+            .nullable(),
+          series: z.array(
+            z.object({
+              date: z.string().min(1),
+              pageViews: z.number().int().nonnegative(),
+              visits: z.number().int().nonnegative(),
+            }),
+          ),
+          dimensions: z.object({
+            country: z.array(z.object({ key: z.string(), visits: z.number().nonnegative() })),
+            device: z.array(z.object({ key: z.string(), visits: z.number().nonnegative() })),
+            path: z.array(z.object({ key: z.string(), visits: z.number().nonnegative() })),
+            referrer: z.array(z.object({ key: z.string(), visits: z.number().nonnegative() })),
+          }),
+        })
+        .optional(),
       coverage: z.object({
         lastEventAt: z.string().min(1).nullable(),
         status: z.enum(["no_data", "observed"]),
@@ -1492,21 +1524,23 @@ export type StorefrontTemplateCatalogItem = z.infer<typeof storefrontTemplateCat
 
 export const operatorStorefrontTemplateCatalogSchema = z.object({
   ok: z.literal(true),
-  templates: z.array(z.object({
-    description: z.string(),
-    name: z.string(),
-    slug: z.string(),
-    status: z.string(),
-    templateId: z.string().min(1),
-    templateKey: z.string().min(1),
-    version: z.number().int().positive(),
-    versionId: z.string().min(1),
-    previewAltText: z.string().nullable(),
-    previewAssetId: z.string().nullable(),
-    previewUrl: z.string().url().nullable(),
-    demoUrl: z.string().url().nullable(),
-    demoUrlOverride: z.string().url().nullable(),
-  })),
+  templates: z.array(
+    z.object({
+      description: z.string(),
+      name: z.string(),
+      slug: z.string(),
+      status: z.string(),
+      templateId: z.string().min(1),
+      templateKey: z.string().min(1),
+      version: z.number().int().positive(),
+      versionId: z.string().min(1),
+      previewAltText: z.string().nullable(),
+      previewAssetId: z.string().nullable(),
+      previewUrl: z.string().url().nullable(),
+      demoUrl: z.string().url().nullable(),
+      demoUrlOverride: z.string().url().nullable(),
+    }),
+  ),
 });
 
 export type OperatorStorefrontTemplateCatalog = z.infer<

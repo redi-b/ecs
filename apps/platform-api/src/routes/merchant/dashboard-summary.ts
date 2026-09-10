@@ -1,10 +1,5 @@
 import { getOrderAttentionReasons } from "../../adapters/medusa/order/attention.js";
-import type {
-  BillingStatus,
-  DashboardMetricsResult,
-  PlatformAppOptions,
-  TenantInsightsSummaryResult,
-} from "../../app.js";
+import type { BillingStatus, DashboardMetricsResult, PlatformAppOptions } from "../../app.js";
 import type { ResolvedMerchantCommerceContext } from "./context.js";
 
 type MerchantDashboardBase = {
@@ -144,7 +139,11 @@ export function createMerchantDashboardSummary(
         commerce: commerceContext,
         tenantId: input.context.tenantId,
       }),
-      getDashboardAnalytics({ tenantId: input.context.tenantId }),
+      getDashboardAnalytics({
+        hostname: input.context.hostname,
+        name: input.context.tenantName,
+        tenantId: input.context.tenantId,
+      }),
       getDashboardBilling({ tenantId: input.context.tenantId }),
     ]);
 
@@ -338,7 +337,11 @@ export function createMerchantDashboardSummary(
       }));
   }
 
-  async function getDashboardAnalytics(input: { tenantId: string }) {
+  async function getDashboardAnalytics(input: {
+    hostname: string;
+    name: string;
+    tenantId: string;
+  }) {
     if (!options.getTenantInsightsSummary) {
       return {
         range: {
@@ -372,10 +375,17 @@ export function createMerchantDashboardSummary(
       };
     }
 
-    const result: TenantInsightsSummaryResult = await options.getTenantInsightsSummary({
-      days: 30,
-      tenantId: input.tenantId,
-    });
+    const [result, provider] = await Promise.all([
+      options.getTenantInsightsSummary({ days: 30, tenantId: input.tenantId }),
+      options.getStorefrontInsights
+        ? options.getStorefrontInsights({
+            days: 30,
+            hostname: input.hostname,
+            name: input.name,
+            tenantId: input.tenantId,
+          })
+        : Promise.resolve(null),
+    ]);
 
     return {
       range: result.summary.range,
@@ -384,6 +394,30 @@ export function createMerchantDashboardSummary(
       funnel: result.summary.funnel,
       storefront: result.summary.storefront,
       products: result.summary.products,
+      provider: provider
+        ? {
+            dimensions: {
+              country: provider.dimensions.country ?? [],
+              device: provider.dimensions.device ?? [],
+              path: provider.dimensions.path ?? [],
+              referrer: provider.dimensions.referrer ?? [],
+            },
+            range: provider.range,
+            series: provider.series,
+            status: provider.status,
+            traffic: provider.traffic,
+          }
+        : {
+            dimensions: { country: [], device: [], path: [], referrer: [] },
+            range: {
+              from: result.summary.range.from,
+              timezone: "Africa/Addis_Ababa",
+              to: result.summary.range.to,
+            },
+            series: [],
+            status: "not_configured" as const,
+            traffic: null,
+          },
       coverage: result.summary.coverage,
       unavailable: false,
     };

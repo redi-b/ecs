@@ -40,12 +40,18 @@ const { disabled = false } = Astro.props;
     ) => {
       const payload = JSON.stringify({
         eventType,
+        hostname: location.hostname,
         idempotencyKey: `${sessionId}:${eventType}:${location.pathname}:${Date.now()}`,
+        language: navigator.language,
         occurredAt: new Date().toISOString(),
         properties: { path: location.pathname, ...properties },
+        referrer: document.referrer,
+        screen: `${window.screen.width}x${window.screen.height}`,
         sessionId,
         subjectId: subjectId ?? null,
         subjectType: subjectType ?? null,
+        title: document.title,
+        url: `${location.pathname}${location.search}`,
       });
       if (
         navigator.sendBeacon?.(

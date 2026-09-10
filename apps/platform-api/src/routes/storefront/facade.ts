@@ -150,7 +150,9 @@ async function getOptionalJsonObjectBody(request: Request) {
 }
 
 async function recordStorefrontAnalyticsEvent(options: {
+  hostname: string;
   recordAnalyticsEvent: NonNullable<PlatformAppOptions["recordAnalyticsEvent"]>;
+  recordStorefrontBehavior?: PlatformAppOptions["recordStorefrontBehavior"];
   request: Request;
   tenantId: string;
 }) {
@@ -181,6 +183,39 @@ async function recordStorefrontAnalyticsEvent(options: {
 
   if (!event.ok) {
     return Response.json({ error: event.error }, { status: event.status });
+  }
+
+  const behaviorProperties =
+    typeof body.properties === "object" &&
+    body.properties !== null &&
+    !Array.isArray(body.properties)
+      ? (body.properties as Record<string, unknown>)
+      : null;
+  const url =
+    typeof body.url === "string"
+      ? body.url
+      : typeof behaviorProperties?.path === "string"
+        ? behaviorProperties.path
+        : "/";
+  if (options.recordStorefrontBehavior) {
+    void options.recordStorefrontBehavior({
+      clientIp:
+        options.request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        options.request.headers.get("x-real-ip"),
+      eventType: body.eventType,
+      hostname: options.hostname,
+      language: typeof body.language === "string" ? body.language : null,
+      properties: behaviorProperties,
+      referrer: typeof body.referrer === "string" ? body.referrer : null,
+      screen: typeof body.screen === "string" ? body.screen : null,
+      sessionId: typeof body.sessionId === "string" ? body.sessionId : null,
+      subjectId: typeof body.subjectId === "string" ? body.subjectId : null,
+      subjectType: typeof body.subjectType === "string" ? body.subjectType : null,
+      tenantId: options.tenantId,
+      title: typeof body.title === "string" ? body.title : null,
+      url,
+      userAgent: options.request.headers.get("user-agent"),
+    });
   }
 
   return Response.json(
@@ -350,7 +385,9 @@ export function registerStoreFacadeRoutes(
       }
 
       return recordStorefrontAnalyticsEvent({
+        hostname: result.context.hostname,
         recordAnalyticsEvent: options.recordAnalyticsEvent,
+        recordStorefrontBehavior: options.recordStorefrontBehavior,
         request: context.req.raw,
         tenantId: result.context.tenantId,
       });

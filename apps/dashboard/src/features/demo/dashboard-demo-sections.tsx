@@ -6,11 +6,7 @@ import { RefreshButton } from "@/components/app/refresh-button";
 import { Button } from "@/components/ui/button";
 import { dashboardDemoFixture } from "@/features/demo/dashboard-demo-fixture";
 import { DemoActionButton } from "@/features/demo/demo-action-button";
-import { InsightsReportNav } from "@/features/insights/insights-report-nav";
-import {
-  type InsightsReport,
-  InsightsReportWorkspace,
-} from "@/features/insights/insights-report-workspace";
+import type { InsightsReport } from "@/features/insights/insights-report-workspace";
 import { InsightsWorkspace } from "@/features/insights/insights-workspace";
 import type { OrderListFilterState } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
@@ -109,16 +105,8 @@ export async function DemoInsights({
 }) {
   const t = await getTranslations();
   return (
-    <PageShell
-      description={t(`insights.reports.descriptions.${report}`)}
-      title={report === "overview" ? t("insights.title") : t(`insights.reports.${report}`)}
-    >
-      <InsightsReportNav demoMode />
-      {report === "overview" ? (
-        <InsightsWorkspace demoMode summary={dashboardDemoFixture} />
-      ) : (
-        <InsightsReportWorkspace report={report} summary={dashboardDemoFixture} />
-      )}
+    <PageShell title={t("insights.title")}>
+      <InsightsWorkspace demoMode report={report} summary={dashboardDemoFixture} />
     </PageShell>
   );
 }
