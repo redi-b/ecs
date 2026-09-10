@@ -6,7 +6,7 @@
  *   pnpm dev:apps --grouped
  *   pnpm dev:apps --split-medusa
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
 import { fitWidth, formatDevLogLine, wrapLine } from "./lib/dev-log.mjs";
@@ -25,6 +25,17 @@ if (process.env.FORCE_COLOR === undefined) {
 const args = new Set(process.argv.slice(2));
 const groupedLogs = args.has("--grouped") || process.env.DEV_LOG_MODE === "grouped";
 const splitMedusa = args.has("--split-medusa") || process.env.MEDUSA_DEV_MODE === "split";
+
+info("Syncing the product search index");
+const reindex = spawnSync("pnpm", ["--filter", "@ecs/medusa", "search:reindex"], {
+  env: process.env,
+  stdio: "inherit",
+});
+if (reindex.status !== 0) {
+  process.exit(reindex.status ?? 1);
+}
+success("Product search index is ready");
+blank();
 
 const services = [
   {

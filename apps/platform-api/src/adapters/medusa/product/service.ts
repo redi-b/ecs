@@ -462,7 +462,8 @@ export function createMedusaProductService(options: {
           if (
             ids &&
             ids.every((id: string | null): id is string => Boolean(id)) &&
-            Number.isSafeInteger(searchData?.count)
+            Number.isSafeInteger(searchData?.count) &&
+            searchData?.index_document_count !== 0
           ) {
             if (!ids.length) {
               return {

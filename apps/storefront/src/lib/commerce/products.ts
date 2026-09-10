@@ -24,6 +24,7 @@ const PRODUCT_FIELDS = [
 type ProductSearchResponse = {
   product_ids: string[];
   count: number;
+  index_document_count?: number;
   limit: number;
   offset: number;
 };
@@ -34,8 +35,15 @@ function parseProductSearchResponse(value: unknown): ProductSearchResponse | nul
   const count = getNumber(value.count);
   const limit = getNumber(value.limit);
   const offset = getNumber(value.offset);
+  const indexDocumentCount = getNumber(value.index_document_count);
   if (count === undefined || limit === undefined || offset === undefined) return null;
-  return { product_ids: productIds, count, limit, offset };
+  return {
+    product_ids: productIds,
+    count,
+    limit,
+    offset,
+    ...(indexDocumentCount !== undefined ? { index_document_count: indexDocumentCount } : {}),
+  };
 }
 
 async function searchStoreProducts(
@@ -55,6 +63,7 @@ async function searchStoreProducts(
 
     const search = parseProductSearchResponse(await response.json().catch(() => undefined));
     if (!search) return null;
+    if (search.index_document_count === 0) return null;
     if (!search.product_ids.length) {
       return { products: [], count: search.count, limit: search.limit, offset: search.offset };
     }

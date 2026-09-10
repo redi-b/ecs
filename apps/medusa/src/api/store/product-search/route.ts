@@ -25,6 +25,7 @@ export async function GET(
   return res.json({
     product_ids: result.hits.map((hit) => hit.id),
     count: result.estimatedTotalHits,
+    index_document_count: result.indexDocumentCount,
     limit: input.limit,
     offset: input.offset,
     processing_time_ms: result.processingTimeMs,

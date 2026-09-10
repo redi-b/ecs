@@ -113,6 +113,37 @@ test("listStoreProducts falls back to Medusa database search when the index is u
   assert.equal("products" in result && result.products[0]?.id, "p1");
 });
 
+test("listStoreProducts falls back when the entire search index is empty", async () => {
+  const requests: Request[] = [];
+  const result = await listStoreProducts({
+    fetcher: async (request) => {
+      requests.push(request);
+      if (request.url.includes("/store/product-search?")) {
+        return Response.json({
+          product_ids: [],
+          count: 0,
+          limit: 24,
+          offset: 0,
+          index_document_count: 0,
+        });
+      }
+      return Response.json({
+        products: [{ id: "p1", title: "Coffee", handle: "coffee", variants: [] }],
+        count: 1,
+        limit: 24,
+        offset: 0,
+      });
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "shop.lvh.me",
+    q: "coffee",
+  });
+
+  assert.equal(requests.length, 2);
+  assert.ok(requests[1]?.url.includes("/store/products?"));
+  assert.equal("products" in result && result.products[0]?.id, "p1");
+});
+
 test("getStoreDeliveryOptions calls the platform store facade with host context", async () => {
   const requests: Request[] = [];
   const deliveryResponse = {
