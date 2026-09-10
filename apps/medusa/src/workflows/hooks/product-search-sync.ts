@@ -1,10 +1,6 @@
 import type { Logger } from "@medusajs/framework/types";
 import { StepResponse } from "@medusajs/framework/workflows-sdk";
-import {
-  createProductsWorkflow,
-  deleteProductsWorkflow,
-  updateProductsWorkflow,
-} from "@medusajs/medusa/core-flows";
+import { deleteProductsWorkflow } from "@medusajs/medusa/core-flows";
 
 import {
   PRODUCT_SEARCH_FIELDS,
@@ -38,7 +34,7 @@ async function retrySearchWrite(operation: () => Promise<void>) {
   throw lastError;
 }
 
-async function indexProducts(ids: string[], container: WorkflowContainer) {
+export async function indexProducts(ids: string[], container: WorkflowContainer) {
   const logger = container.resolve<Logger>("logger");
   try {
     const query = container.resolve<ProductQuery>("query");
@@ -56,20 +52,6 @@ async function indexProducts(ids: string[], container: WorkflowContainer) {
   }
   return new StepResponse({ attempted: ids.length });
 }
-
-createProductsWorkflow.hooks.productsCreated(async ({ products }, { container }) =>
-  indexProducts(
-    products.map((product) => product.id),
-    container,
-  ),
-);
-
-updateProductsWorkflow.hooks.productsUpdated(async ({ products }, { container }) =>
-  indexProducts(
-    products.map((product) => product.id),
-    container,
-  ),
-);
 
 deleteProductsWorkflow.hooks.productsDeleted(async ({ ids }, { container }) => {
   const logger = container.resolve<Logger>("logger");
