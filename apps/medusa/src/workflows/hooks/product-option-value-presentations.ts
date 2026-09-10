@@ -7,6 +7,7 @@ import {
   type OptionValuePresentationMutation,
   readOptionValuePresentationPayload,
 } from "../../lib/product-option-value-presentations";
+import { indexProducts } from "./product-search-sync";
 
 type CompensationData = Array<Pick<OptionValuePresentationMutation, "id" | "previousMetadata">>;
 
@@ -66,21 +67,21 @@ async function compensatePresentations(
 }
 
 createProductsWorkflow.hooks.productsCreated(
-  async ({ products, additional_data }, { container }) =>
-    applyPresentations(
-      products.map((product) => product.id),
-      additional_data,
-      container,
-    ),
+  async ({ products, additional_data }, { container }) => {
+    const productIds = products.map((product) => product.id);
+    const result = await applyPresentations(productIds, additional_data, container);
+    await indexProducts(productIds, container);
+    return result;
+  },
   async (mutations, { container }) => compensatePresentations(mutations, container),
 );
 
 updateProductsWorkflow.hooks.productsUpdated(
-  async ({ products, additional_data }, { container }) =>
-    applyPresentations(
-      products.map((product) => product.id),
-      additional_data,
-      container,
-    ),
+  async ({ products, additional_data }, { container }) => {
+    const productIds = products.map((product) => product.id);
+    const result = await applyPresentations(productIds, additional_data, container);
+    await indexProducts(productIds, container);
+    return result;
+  },
   async (mutations, { container }) => compensatePresentations(mutations, container),
 );

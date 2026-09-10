@@ -24,3 +24,10 @@ test("the discovered hook chain stays runtime-neutral", async () => {
   assert.match(helper, /from "\.\/product-option-value-presentation-contract"/);
   assert.match(middleware, /from "\.\.\/lib\/product-option-value-presentation-contract"/);
 });
+
+test("product workflow hook modules can load together without duplicate handlers", async () => {
+  await assert.doesNotReject(async () => {
+    await import("./product-option-value-presentations.js");
+    await import("./product-search-sync.js");
+  });
+});
