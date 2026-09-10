@@ -9,9 +9,8 @@ import { cn } from "@/lib/utils";
 const reports = [
   ["overview", "/admin/insights"],
   ["sales", "/admin/insights/sales"],
-  ["storefront", "/admin/insights/storefront"],
-  ["products", "/admin/insights/products"],
-  ["customers", "/admin/insights/customers"],
+  ["journey", "/admin/insights/journey"],
+  ["traffic", "/admin/insights/traffic"],
 ] as const;
 
 export function InsightsReportNav({ demoMode = false }: { demoMode?: boolean }) {
@@ -21,7 +20,7 @@ export function InsightsReportNav({ demoMode = false }: { demoMode?: boolean }) 
   const tenantId = searchParams.get("tenantId");
 
   return (
-    <nav aria-label={t("insights.reports.label")} className="overflow-x-auto border-b">
+    <nav aria-label={t("insights.reports.label")} className="min-w-0 overflow-x-auto">
       <div className="flex min-w-max gap-1">
         {reports.map(([id, path]) => {
           const resolvedPath = demoMode ? getDemoInsightsHref(id) : path;

@@ -14,6 +14,15 @@ export const POST: APIRoute = async ({ request }) => {
       accept: "application/json",
       "content-type": "application/json",
       ...(requestHost ? { "x-forwarded-host": requestHost } : {}),
+      ...(request.headers.get("user-agent")
+        ? { "user-agent": request.headers.get("user-agent") as string }
+        : {}),
+      ...(request.headers.get("x-forwarded-for")
+        ? { "x-forwarded-for": request.headers.get("x-forwarded-for") as string }
+        : {}),
+      ...(request.headers.get("x-real-ip")
+        ? { "x-real-ip": request.headers.get("x-real-ip") as string }
+        : {}),
     },
     method: "POST",
   }).catch(() => null);

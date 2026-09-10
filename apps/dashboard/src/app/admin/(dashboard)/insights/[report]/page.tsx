@@ -4,7 +4,7 @@ import { InsightsPage } from "@/features/insights/insights-page";
 import type { InsightsReport } from "@/features/insights/insights-report-workspace";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
 
-const reports = new Set<InsightsReport>(["sales", "storefront", "products", "customers"]);
+const reports = new Set<InsightsReport>(["sales", "journey", "traffic"]);
 
 export default async function Page({
   params,

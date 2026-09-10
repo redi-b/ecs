@@ -9,6 +9,8 @@ import type {
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
+import type { StorefrontBehaviorEvent } from "../modules/analytics/storefront-analytics-bridge.js";
+import type { StorefrontInsightsSnapshot } from "../modules/analytics/storefront-insights-service.js";
 import type {
   BillingCancelDowngradeResult,
   BillingInvoicePayResult,
@@ -271,6 +273,9 @@ export type PlatformAppOptions = {
   recordAnalyticsEvent?:
     | ((input: AnalyticsEventRecordInput) => Promise<AnalyticsEventRecordResult>)
     | undefined;
+  recordStorefrontBehavior?:
+    | ((input: StorefrontBehaviorEvent) => Promise<{ delivered: boolean }>)
+    | undefined;
   getPublishedStorefrontConfig?:
     | ((input: {
         publishedRevisionId: string;
@@ -483,6 +488,14 @@ export type PlatformAppOptions = {
     | undefined;
   getTenantInsightsSummary?:
     | ((input: { days: number; tenantId: string }) => Promise<TenantInsightsSummaryResult>)
+    | undefined;
+  getStorefrontInsights?:
+    | ((input: {
+        days: number;
+        hostname: string;
+        name: string;
+        tenantId: string;
+      }) => Promise<StorefrontInsightsSnapshot>)
     | undefined;
   getTenantCommerceContext?:
     | ((input: { tenantId: string; userId: string }) => Promise<TenantCommerceContextResult>)

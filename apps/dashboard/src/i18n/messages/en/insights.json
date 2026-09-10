@@ -5,9 +5,8 @@
     "label": "Insight reports",
     "overview": "Overview",
     "sales": "Sales",
-    "storefront": "Storefront",
-    "products": "Products",
-    "customers": "Customers",
+    "journey": "Shopping journey",
+    "traffic": "Storefront traffic",
     "descriptions": {
       "overview": "Review sales, storefront visits, and recorded shopping activity.",
       "sales": "See revenue, order value, payment, and delivery progress.",
@@ -18,11 +17,12 @@
     "paymentStatus": "Payment status",
     "fulfillmentStatus": "Delivery status",
     "orderStatus": "Order status",
-    "productInterest": "Product interest",
-    "productInterestDescription": "Visits that viewed each product or tried adding it to the cart.",
+    "productInterest": "Product performance",
+    "productInterestDescription": "Compare product views and add-to-cart activity.",
     "product": "Product",
     "viewVisits": "Viewed in visits",
     "addToCartVisits": "Added to cart in visits",
+    "productConversion": "View to cart",
     "noProductActivity": "Product activity will appear after people browse your product pages.",
     "customersUnique": "Customers",
     "customersReturning": "Returning customers",
@@ -52,13 +52,31 @@
   "period": {
     "label": "Sales period",
     "thirtyDays": "Last 30 days",
-    "ninetyDays": "Last 90 days"
+    "ninetyDays": "Last 90 days",
+    "allTime": "All time"
   },
   "metrics": {
     "revenue": "Revenue",
     "orders": "Orders",
     "averageOrder": "Average order",
-    "visits": "Storefront visits"
+    "visits": "Storefront visits",
+    "purchaseRate": "Purchase rate"
+  },
+  "overview": {
+    "performance": "Store performance",
+    "audience": "Storefront snapshot",
+    "signals": "At a glance",
+    "topProduct": "Most viewed product",
+    "topSource": "Top traffic source",
+    "popularPage": "Most visited page",
+    "productViews": "{count} viewing visits",
+    "visits": "{count} visits"
+  },
+  "products": {
+    "journeyTitle": "Product interest"
+  },
+  "common": {
+    "notAvailable": "Not available yet"
   },
   "visits": {
     "refresh": "Check visitor count",
@@ -67,11 +85,17 @@
   },
   "sales": {
     "title": "Sales performance",
+    "metricLabel": "Chart metric",
+    "compared": "Compared with the previous period",
+    "previous": "Previous period",
+    "previousPeriod": "from the previous period",
     "description": "Revenue and placed orders for the selected period.",
     "revenue": "Revenue",
     "orders": "Orders",
     "emptyTitle": "No sales trend yet",
-    "emptyDescription": "Sales activity will appear here after your first completed reporting update."
+    "emptyDescription": "Sales activity will appear here after your first completed reporting update.",
+    "periodSummary": "Period summary",
+    "bestDay": "Strongest sales day"
   },
   "freshness": {
     "title": "Report status",
@@ -97,6 +121,7 @@
   },
   "funnel": {
     "title": "Shopping journey",
+    "activityTitle": "Shopping activity",
     "description": "Distinct storefront sessions at each step, followed by placed orders.",
     "storefrontVisits": "Opened your storefront",
     "productViews": "Viewed a product",
@@ -104,6 +129,7 @@
     "checkoutStarted": "Started checkout",
     "ordersCreated": "Placed an order",
     "sessionsUnit": "visits",
+    "shareOfVisits": "{rate} of storefront visits",
     "ordersUnit": "orders",
     "fromPrevious": "{rate} continued",
     "rateUnavailable": "Not enough activity yet",
@@ -113,6 +139,56 @@
     "emptyDescription": "Visits and shopping actions will appear here as people use your storefront.",
     "helpTitle": "About these numbers",
     "disclaimer": "A visit starts when someone opens your shop and continues while they browse. If they leave for 30 minutes, their next return counts as a new visit. Orders are shown separately."
+  },
+  "customers": {
+    "title": "Customers",
+    "repeatRate": "Returning customer rate"
+  },
+  "businessMix": {
+    "title": "Customers and orders"
+  },
+  "orders": {
+    "emptyTitle": "No orders in this period",
+    "emptyDescription": "Order status will appear here after customers place orders."
+  },
+  "storefront": {
+    "title": "Storefront traffic",
+    "visitors": "Visitors",
+    "visits": "Visits",
+    "pageViews": "Page views",
+    "bounceRate": "Bounce rate",
+    "visitDuration": "Average visit"
+  },
+  "audience": {
+    "title": "Storefront audience",
+    "description": "How shoppers find and browse your shop."
+  },
+  "acquisition": {
+    "title": "Traffic sources",
+    "empty": "Traffic sources will appear after visitors arrive."
+  },
+  "pages": {
+    "title": "Popular pages",
+    "empty": "Popular pages will appear after visitors browse your shop."
+  },
+  "locations": {
+    "title": "Countries",
+    "empty": "Country data is not available yet."
+  },
+  "devices": {
+    "title": "Devices",
+    "empty": "Device data is not available yet."
+  },
+  "traffic": {
+    "actions": "Shopping actions",
+    "actionsEmpty": "Shopping actions will appear after visitors interact with your shop.",
+    "viewDetails": "View all {title}",
+    "detailDescription": "Complete results for the selected reporting period.",
+    "productViewed": "Viewed a product",
+    "cartAdded": "Added to cart",
+    "checkoutStarted": "Started checkout",
+    "searched": "Searched",
+    "contacted": "Contacted the shop"
   },
   "highlights": {
     "title": "Highlights",
