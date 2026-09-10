@@ -1,6 +1,7 @@
 "use client";
 
 import type { MerchantDashboardAccess } from "@ecs/contracts";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
@@ -22,13 +23,15 @@ import { getLaunchChecklistItems, type LaunchChecklistItem } from "./launch-assi
 
 export function LaunchAssistant({ access }: { access: MerchantDashboardAccess }) {
   const { t } = useI18n();
+  const pathname = usePathname();
   const [productCount, setProductCount] = useState<number | null>(null);
+  const [productCountUnavailable, setProductCountUnavailable] = useState(false);
   const [hasVisitedEditor, setHasVisitedEditor] = useState(false);
   const summary = useMemo(
-    () => (productCount === null ? null : { ...access, hasVisitedEditor, productCount }),
-    [access, hasVisitedEditor, productCount],
+    () => ({ ...access, hasVisitedEditor, productCount, productCountUnavailable }),
+    [access, hasVisitedEditor, productCount, productCountUnavailable],
   );
-  const items = useMemo(() => (summary ? getLaunchChecklistItems(summary, t) : []), [summary, t]);
+  const items = useMemo(() => getLaunchChecklistItems(summary, t), [summary, t]);
   const requiredItems = items.filter((item) => item.required);
   const optionalItems = items.filter((item) => !item.required);
   const completedRequired = requiredItems.filter((item) => item.ready).length;
@@ -45,8 +48,8 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     setHasVisitedEditor(hasVisitedStorefrontEditor(access.tenant.id));
 
     setHidden(nextHidden);
-    // Default open when not launch-ready; stay collapsed when complete unless user opened it.
-    setOpen(nextHidden ? false : (nextOpen ?? !launchReady));
+    // Keep unfinished setup close at hand, then collapse it once the required work is done.
+    setOpen(nextHidden || launchReady ? false : (nextOpen ?? true));
     setHydrated(true);
 
     function handlePreferenceChange(event: Event) {
@@ -75,6 +78,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     if (!hydrated || hidden) return;
 
     let cancelled = false;
+    setProductCountUnavailable(false);
 
     void fetch(`${dashboardRoutes.productListAction}?limit=1&offset=0`, {
       credentials: "same-origin",
@@ -88,9 +92,13 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
             : undefined;
         if (typeof count === "number" && count >= 0) {
           setProductCount(count);
+          return;
         }
+        setProductCountUnavailable(true);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setProductCountUnavailable(true);
+      });
 
     return () => {
       cancelled = true;
@@ -114,7 +122,9 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     });
   }
 
-  if (!hydrated || hidden || !summary) {
+  const isSetupHome = pathname === dashboardRoutes.overview || pathname === dashboardRoutes.settings;
+
+  if (!hydrated || hidden || (launchReady && !isSetupHome)) {
     return null;
   }
 
