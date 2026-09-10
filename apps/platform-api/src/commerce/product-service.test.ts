@@ -1232,6 +1232,38 @@ describe("createMedusaProductService", () => {
     assert.equal(result.ok, true);
   });
 
+  it("falls back to database product search when the entire index is empty", async () => {
+    const paths: string[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input) => {
+        const url = new URL(String(input));
+        paths.push(`${url.pathname}${url.search}`);
+        if (url.pathname === "/admin/product-search") {
+          return Response.json({ hits: [], count: 0, index_document_count: 0 });
+        }
+        return Response.json({
+          products: [{ id: "p1", title: "Coffee", handle: "coffee", variants: [] }],
+          count: 1,
+          limit: 6,
+          offset: 0,
+        });
+      },
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 6,
+      offset: 0,
+      q: "coffee",
+      salesChannelId: "sc_1",
+    });
+
+    assert.equal(paths.length, 2);
+    assert.ok(paths[1]?.startsWith("/admin/products?"));
+    assert.equal(result.ok && result.products[0]?.id, "p1");
+  });
+
   it("paginates missing-category results directly in Medusa", async () => {
     const offsets: number[] = [];
     const source = Array.from({ length: 150 }, (_, index) => ({

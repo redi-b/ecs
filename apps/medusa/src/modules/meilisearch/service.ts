@@ -57,7 +57,7 @@ const PRODUCT_INDEX_SETTINGS = {
     enabled: true,
     disableOnAttributes: ["id", "handle", "skus", "barcodes"],
     disableOnNumbers: true,
-    minWordSizeForTypos: { oneTypo: 5, twoTypos: 10 },
+    minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
   },
 } satisfies Settings;
 
@@ -150,12 +150,12 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       ...(query.offset !== undefined ? { offset: query.offset } : {}),
       ...(query.sort ? { sort: query.sort } : {}),
     };
-    const result = await this.client
-      .index<ProductSearchDocument>(this.indexName)
-      .search(query.q, params);
+    const index = this.client.index<ProductSearchDocument>(this.indexName);
+    const [result, stats] = await Promise.all([index.search(query.q, params), index.getStats()]);
 
     return {
       hits: result.hits,
+      indexDocumentCount: stats.numberOfDocuments,
       estimatedTotalHits: result.estimatedTotalHits ?? result.hits.length,
       processingTimeMs: result.processingTimeMs,
       query: result.query,

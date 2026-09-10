@@ -23,6 +23,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       status: hit.status,
     })),
     count: result.estimatedTotalHits,
+    index_document_count: result.indexDocumentCount,
     limit: input.limit,
     offset: input.offset,
     processing_time_ms: result.processingTimeMs,

@@ -33,6 +33,7 @@ export type ProductSearchQuery = Pick<
 
 export type ProductSearchResult = {
   hits: ProductSearchDocument[];
+  indexDocumentCount: number;
   estimatedTotalHits: number;
   processingTimeMs: number;
   query: string;

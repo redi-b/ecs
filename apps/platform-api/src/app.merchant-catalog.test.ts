@@ -2420,6 +2420,33 @@ describe("platform app merchant and tenant catalog", () => {
     assert.equal(forwardedRequest.headers.get("host"), null);
   });
 
+  it("forwards storefront product search to Medusa", async () => {
+    let forwardedRequest: Request | undefined;
+    const medusaStoreFetch: typeof fetch = async (request) => {
+      forwardedRequest = request instanceof Request ? request : new Request(request);
+      return Response.json({ product_ids: ["prod_1"], count: 1, limit: 24, offset: 0 });
+    };
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      { medusaStoreFetch },
+    );
+
+    const response = await app.request("/store/product-search?q=cofee&limit=24", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+
+    assert.equal(response.status, 200);
+    assert.ok(forwardedRequest);
+    assert.equal(
+      forwardedRequest.url,
+      "http://medusa:9000/store/product-search?q=cofee&limit=24",
+    );
+    assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
+  });
+
   it("injects the resolved tenant region when forwarding cart creation", async () => {
     let forwardedRequest: Request | undefined;
     const medusaStoreFetch: typeof fetch = async (request) => {

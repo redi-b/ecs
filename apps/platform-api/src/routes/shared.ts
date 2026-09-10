@@ -63,6 +63,10 @@ export function isAllowedStoreFacadeRoute(request: Request) {
     return true;
   }
 
+  if (method === "GET" && path === "/store/product-search") {
+    return true;
+  }
+
   if (method === "GET" && /^\/store\/products\/[^/]+$/.test(path)) {
     return true;
   }
