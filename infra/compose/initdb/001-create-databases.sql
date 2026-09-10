@@ -1,2 +1,3 @@
 CREATE DATABASE platform_db;
 CREATE DATABASE medusa_db;
+CREATE DATABASE umami_db;
