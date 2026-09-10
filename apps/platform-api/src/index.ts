@@ -37,6 +37,11 @@ import {
   createDrizzleAnalyticsInsightsStore,
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
+import {
+  createStorefrontAnalyticsBridge,
+  createStorefrontInsightsService,
+  createUmamiAnalyticsProvider,
+} from "./modules/analytics/index.js";
 import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
 import { createPlanAdministrationService } from "./modules/billing/plan-administration.js";
 import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
@@ -53,7 +58,6 @@ import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
 import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
-import { createPlatformTemplateAssetService } from "./modules/storefront/platform-template-assets.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
@@ -62,8 +66,9 @@ import { createReceivingAccountsService } from "./modules/payments/receiving-acc
 import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
 import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
 import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
-import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createPlatformTemplateAssetService } from "./modules/storefront/platform-template-assets.js";
 import { getTemplateDemoBaseUrl } from "./modules/storefront/template-demo-url.js";
+import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
 import { createSuperadminCommerceReviewService } from "./modules/superadmin/commerce-review-service.js";
 import { createSuperadminConsoleReadService } from "./modules/superadmin/console-read-service.js";
 import {
@@ -161,9 +166,13 @@ const mediaService = createMediaService(platformDb.db, mediaStorage);
 const storefrontDemoBaseUrl = getTemplateDemoBaseUrl(
   process.env.STOREFRONT_DEMO_HOST ?? "demo.lvh.me",
 );
-const platformTemplateAssetService = createPlatformTemplateAssetService(platformDb.db, mediaStorage, {
-  demoBaseUrl: storefrontDemoBaseUrl,
-});
+const platformTemplateAssetService = createPlatformTemplateAssetService(
+  platformDb.db,
+  mediaStorage,
+  {
+    demoBaseUrl: storefrontDemoBaseUrl,
+  },
+);
 
 const redisUrl = process.env.REDIS_URL?.trim();
 const jobsClient = redisUrl
@@ -339,6 +348,36 @@ const notificationChannelAvailability = {
   telegram: telegramConnectService.isConfigured(),
 };
 const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
+const localUmamiDefaults =
+  process.env.NODE_ENV === "development"
+    ? { baseUrl: "http://localhost:3003", password: "umami", username: "admin" }
+    : null;
+const umamiBaseUrl = process.env.UMAMI_BASE_URL?.trim() || localUmamiDefaults?.baseUrl;
+const umamiUsername = process.env.UMAMI_USERNAME?.trim() || localUmamiDefaults?.username;
+const umamiPassword = process.env.UMAMI_PASSWORD?.trim() || localUmamiDefaults?.password;
+const hasPartialUmamiConfig = Boolean(umamiBaseUrl || umamiUsername || umamiPassword);
+const umamiConfigured = Boolean(umamiBaseUrl && umamiUsername && umamiPassword);
+if (hasPartialUmamiConfig && !umamiConfigured) {
+  logger.warn(
+    "Umami analytics is only partially configured; storefront behavior delivery is disabled.",
+  );
+}
+const umamiProvider = umamiConfigured
+  ? createUmamiAnalyticsProvider({
+      baseUrl: umamiBaseUrl as string,
+      password: umamiPassword as string,
+      username: umamiUsername as string,
+    })
+  : null;
+const storefrontAnalyticsBridge = umamiProvider
+  ? createStorefrontAnalyticsBridge({ logger, provider: umamiProvider })
+  : null;
+const getStorefrontInsights = umamiProvider
+  ? createStorefrontInsightsService({ logger, provider: umamiProvider })
+  : null;
+if (storefrontAnalyticsBridge) {
+  logger.info("Umami storefront analytics delivery configured.");
+}
 const analyticsInsightsService = createAnalyticsInsightsService(
   createDrizzleAnalyticsInsightsStore(platformDb.db),
 );
@@ -913,6 +952,7 @@ const app = createPlatformApp({
   getTenantDashboardSummary,
   getTenantForUser,
   getTenantInsightsSummary: analyticsInsightsService.getTenantInsightsSummary,
+  ...(getStorefrontInsights ? { getStorefrontInsights } : {}),
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
   getMerchantOrder: orderService.getMerchantOrder,
@@ -959,6 +999,9 @@ const app = createPlatformApp({
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
   unpublishStorefront: storefrontTemplateService.unpublishStorefront,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
+  ...(storefrontAnalyticsBridge
+    ? { recordStorefrontBehavior: storefrontAnalyticsBridge.capture }
+    : {}),
   recordNotificationEvent: notificationService.recordNotificationEvent,
   resolveTenantIdByMedusaSalesChannelId,
   sendTestNotification: notificationService.sendTestNotification,

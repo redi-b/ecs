@@ -86,6 +86,13 @@ Platform/Medusa databases, malformed public media origins, and half-configured n
 providers. A mutable `IMAGE_TAG=main` produces a warning; use the published `sha-<git-sha>` tag for
 rollback-safe releases.
 
+The stack also starts one internal Umami service. It uses a separate `umami_db` database on the
+existing PostgreSQL server, so it does not add another database container. Set a unique
+`UMAMI_APP_SECRET`; Umami is not exposed through the public Caddy routes.
+For administration, tunnel the host's loopback-only port (default `3003`) over SSH. The first boot
+uses Umami's `admin` / `umami` bootstrap login. Change that password immediately, update
+`UMAMI_PASSWORD` in Dokploy, and redeploy Platform API.
+
 For backup, restore, rollback, and post-deploy gates, follow [`OPERATIONS.md`](./OPERATIONS.md).
 
 After deploy, verify that a never-before-used `https://<new-shop>.${BASE_DOMAIN}` hostname is immediately covered by the wildcard certificate. It must not require a first-visit issuance attempt.

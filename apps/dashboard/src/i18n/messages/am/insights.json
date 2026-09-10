@@ -5,9 +5,8 @@
     "label": "የንግድ ግንዛቤ ሪፖርቶች",
     "overview": "አጠቃላይ",
     "sales": "ሽያጭ",
-    "storefront": "መደብር",
-    "products": "ምርቶች",
-    "customers": "ደንበኞች",
+    "journey": "የግዢ ጉዞ",
+    "traffic": "የመደብር ጉብኝት",
     "descriptions": {
       "overview": "ሽያጭን፣ የመደብር ጉብኝቶችን እና የተመዘገቡ የግዢ እንቅስቃሴዎችን ይመልከቱ።",
       "sales": "ገቢን፣ የትዕዛዝ ዋጋን፣ ክፍያን እና የማድረስ ሂደትን ይመልከቱ።",
@@ -18,11 +17,12 @@
     "paymentStatus": "የክፍያ ሁኔታ",
     "fulfillmentStatus": "የማድረስ ሁኔታ",
     "orderStatus": "የትዕዛዝ ሁኔታ",
-    "productInterest": "የምርት ፍላጎት",
-    "productInterestDescription": "እያንዳንዱን ምርት ያዩ ወይም ወደ ጋሪ ለመጨመር የሞከሩ ጉብኝቶች።",
+    "productInterest": "የምርት አፈጻጸም",
+    "productInterestDescription": "የምርት እይታዎችን እና ወደ ጋሪ የመጨመር እንቅስቃሴን ያወዳድሩ።",
     "product": "ምርት",
     "viewVisits": "ምርቱን ያዩ ጉብኝቶች",
     "addToCartVisits": "ወደ ጋሪ የጨመሩ ጉብኝቶች",
+    "productConversion": "ከእይታ ወደ ጋሪ",
     "noProductActivity": "ሰዎች የምርት ገጾችዎን ከጎበኙ በኋላ መረጃው እዚህ ይታያል።",
     "customersUnique": "ደንበኞች",
     "customersReturning": "ተመላሽ ደንበኞች",
@@ -52,13 +52,31 @@
   "period": {
     "label": "የሽያጭ ጊዜ",
     "thirtyDays": "ያለፉት 30 ቀናት",
-    "ninetyDays": "ያለፉት 90 ቀናት"
+    "ninetyDays": "ያለፉት 90 ቀናት",
+    "allTime": "ሁሉም ጊዜ"
   },
   "metrics": {
     "revenue": "ገቢ",
     "orders": "ትዕዛዞች",
     "averageOrder": "አማካይ ትዕዛዝ",
-    "visits": "የመደብር ጉብኝቶች"
+    "visits": "የመደብር ጉብኝቶች",
+    "purchaseRate": "የግዢ መጠን"
+  },
+  "overview": {
+    "performance": "የመደብር አፈጻጸም",
+    "audience": "የመደብር አጭር እይታ",
+    "signals": "በአጭሩ",
+    "topProduct": "ብዙ የታየ ምርት",
+    "topSource": "ዋና የጉብኝት ምንጭ",
+    "popularPage": "ብዙ የታየ ገጽ",
+    "productViews": "{count} የእይታ ጉብኝቶች",
+    "visits": "{count} ጉብኝቶች"
+  },
+  "products": {
+    "journeyTitle": "የምርት ፍላጎት"
+  },
+  "common": {
+    "notAvailable": "ገና አይገኝም"
   },
   "visits": {
     "refresh": "የጎብኚዎችን ቁጥር ያረጋግጡ",
@@ -67,11 +85,17 @@
   },
   "sales": {
     "title": "የሽያጭ አፈጻጸም",
+    "metricLabel": "የገበታ መለኪያ",
+    "compared": "ከቀዳሚው ጊዜ ጋር ሲነጻጸር",
+    "previous": "ቀዳሚ ጊዜ",
+    "previousPeriod": "ከቀዳሚው ጊዜ",
     "description": "በተመረጠው ጊዜ ውስጥ ገቢ እና የተደረጉ ትዕዛዞች።",
     "revenue": "ገቢ",
     "orders": "ትዕዛዞች",
     "emptyTitle": "እስካሁን የሽያጭ አዝማሚያ የለም",
-    "emptyDescription": "የመጀመሪያው የሪፖርት ዝማኔ ከተጠናቀቀ በኋላ የሽያጭ እንቅስቃሴ እዚህ ይታያል።"
+    "emptyDescription": "የመጀመሪያው የሪፖርት ዝማኔ ከተጠናቀቀ በኋላ የሽያጭ እንቅስቃሴ እዚህ ይታያል።",
+    "periodSummary": "የጊዜው ማጠቃለያ",
+    "bestDay": "ጠንካራ የሽያጭ ቀን"
   },
   "freshness": {
     "title": "የሪፖርት ሁኔታ",
@@ -97,6 +121,7 @@
   },
   "funnel": {
     "title": "የግዢ ጉዞ",
+    "activityTitle": "የግዢ እንቅስቃሴ",
     "description": "በእያንዳንዱ ደረጃ የተለዩ የመደብር ጉብኝት ጊዜዎች፣ ከዚያም የተደረጉ ትዕዛዞች።",
     "storefrontVisits": "መደብርዎን ከፍተዋል",
     "productViews": "ምርት ተመልክተዋል",
@@ -104,6 +129,7 @@
     "checkoutStarted": "ክፍያ ጀምረዋል",
     "ordersCreated": "ትዕዛዝ አስገብተዋል",
     "sessionsUnit": "ጉብኝቶች",
+    "shareOfVisits": "ከመደብር ጉብኝቶች {rate}",
     "ordersUnit": "ትዕዛዞች",
     "fromPrevious": "{rate} ቀጥለዋል",
     "rateUnavailable": "ገና በቂ እንቅስቃሴ የለም",
@@ -113,6 +139,56 @@
     "emptyDescription": "ሰዎች የመደብርዎን ገጽ ሲጠቀሙ ጉብኝቶች እና የግዢ እርምጃዎች እዚህ ይታያሉ።",
     "helpTitle": "ስለ እነዚህ ቁጥሮች",
     "disclaimer": "አንድ ሰው መደብርዎን ሲከፍት ጉብኝት ይጀምራል፣ በመደብሩ ውስጥ እያየ ሳለም ይቀጥላል። ለ30 ደቂቃ ከወጣ በኋላ ሲመለስ እንደ አዲስ ጉብኝት ይቆጠራል። ትዕዛዞች በተለየ ይታያሉ።"
+  },
+  "customers": {
+    "title": "ደንበኞች",
+    "repeatRate": "የተመላሽ ደንበኞች መጠን"
+  },
+  "businessMix": {
+    "title": "ደንበኞች እና ትዕዛዞች"
+  },
+  "orders": {
+    "emptyTitle": "በዚህ ጊዜ ትዕዛዝ የለም",
+    "emptyDescription": "ደንበኞች ትዕዛዝ ካስገቡ በኋላ የትዕዛዝ ሁኔታ እዚህ ይታያል።"
+  },
+  "storefront": {
+    "title": "የመደብር ጉብኝት",
+    "visitors": "ጎብኚዎች",
+    "visits": "ጉብኝቶች",
+    "pageViews": "የገጽ እይታዎች",
+    "bounceRate": "አንድ ገጽ ብቻ ያዩ",
+    "visitDuration": "አማካይ ጉብኝት"
+  },
+  "audience": {
+    "title": "የመደብር ጎብኚዎች",
+    "description": "ገዢዎች መደብርዎን እንዴት እንደሚያገኙ እና እንደሚጎበኙ።"
+  },
+  "acquisition": {
+    "title": "የጉብኝት ምንጮች",
+    "empty": "ጎብኚዎች ከመጡ በኋላ ምንጮቹ እዚህ ይታያሉ።"
+  },
+  "pages": {
+    "title": "ብዙ የታዩ ገጾች",
+    "empty": "ጎብኚዎች መደብሩን ከተመለከቱ በኋላ ገጾቹ እዚህ ይታያሉ።"
+  },
+  "locations": {
+    "title": "አገሮች",
+    "empty": "የአገር መረጃ ገና አልተገኘም።"
+  },
+  "devices": {
+    "title": "መሳሪያዎች",
+    "empty": "የመሳሪያ መረጃ ገና አልተገኘም።"
+  },
+  "traffic": {
+    "actions": "የግዢ እንቅስቃሴዎች",
+    "actionsEmpty": "ጎብኚዎች መደብርዎን ሲጠቀሙ የግዢ እንቅስቃሴዎች እዚህ ይታያሉ።",
+    "viewDetails": "ሁሉንም {title} ይመልከቱ",
+    "detailDescription": "ለተመረጠው የሪፖርት ጊዜ ሙሉ ውጤቶች።",
+    "productViewed": "ምርት ተመልክተዋል",
+    "cartAdded": "ወደ ጋሪ ጨምረዋል",
+    "checkoutStarted": "ክፍያ ጀምረዋል",
+    "searched": "ፍለጋ አድርገዋል",
+    "contacted": "መደብሩን አነጋግረዋል"
   },
   "highlights": {
     "title": "ዋና ነጥቦች",

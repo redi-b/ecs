@@ -3,11 +3,7 @@ import { headers } from "next/headers";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InsightsHeaderActions } from "@/features/insights/insights-header-actions";
-import { InsightsReportNav } from "@/features/insights/insights-report-nav";
-import {
-  type InsightsReport,
-  InsightsReportWorkspace,
-} from "@/features/insights/insights-report-workspace";
+import type { InsightsReport } from "@/features/insights/insights-report-workspace";
 import { InsightsWorkspace } from "@/features/insights/insights-workspace";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
@@ -35,9 +31,8 @@ export async function InsightsPage({
   return (
     <PageShell
       actions={result.ok ? <InsightsHeaderActions summary={result.summary} /> : null}
-      title={report === "overview" ? t("insights.title") : t(`insights.reports.${report}`)}
+      title={t("insights.title")}
     >
-      <InsightsReportNav />
       {!result.ok ? (
         <Alert variant="destructive">
           <AlertTitle>{t("insights.error.title")}</AlertTitle>
@@ -45,10 +40,8 @@ export async function InsightsPage({
             {mapPlatformErrorMessage(result.message, { resource: "Insights" })}
           </AlertDescription>
         </Alert>
-      ) : !result.summary.analytics && !result.summary.operations ? null : report === "overview" ? (
-        <InsightsWorkspace summary={result.summary} />
-      ) : (
-        <InsightsReportWorkspace report={report} summary={result.summary} />
+      ) : !result.summary.analytics && !result.summary.operations ? null : (
+        <InsightsWorkspace report={report} summary={result.summary} />
       )}
     </PageShell>
   );

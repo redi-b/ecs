@@ -28,6 +28,42 @@ services:
       timeout: 5s
       retries: 20
 
+  prepare-umami-db:
+    image: postgres:17-alpine
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGUSER: ecs
+      PGPASSWORD: ecs
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        test "$$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='umami_db'")" = 1 || createdb umami_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  umami:
+    image: ghcr.io/umami-software/umami:3.3.1
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ecs:ecs@postgres:5432/umami_db
+      APP_SECRET: ${UMAMI_APP_SECRET:-local-umami-app-secret-change-in-production}
+      CLIENT_IP_HEADER: x-forwarded-for
+      DISABLE_TELEMETRY: "1"
+    ports:
+      - "${UMAMI_HOST_PORT:-3003}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/heartbeat >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      prepare-umami-db:
+        condition: service_completed_successfully
+
   # S3-compatible media store (SeaweedFS). App still uses MEDIA_S3_* only.
   seaweedfs:
     image: chrislusf/seaweedfs:4.00
