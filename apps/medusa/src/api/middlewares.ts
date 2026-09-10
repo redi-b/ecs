@@ -7,6 +7,10 @@ import { z } from "@medusajs/framework/zod";
 import { listProductQueryConfig } from "@medusajs/medusa/api/admin/products/query-config";
 import { productMediaQuerySchema } from "../lib/product-media-query";
 import {
+  adminProductSearchQuerySchema,
+  productSearchQuerySchema,
+} from "../lib/product-search-query";
+import {
   PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY,
   productOptionValuePresentationsAdditionalDataSchema,
 } from "../lib/product-option-value-presentation-contract";
@@ -20,6 +24,16 @@ const additionalDataValidator = {
 
 export default defineMiddlewares({
   routes: [
+    {
+      method: "GET",
+      matcher: "/store/product-search",
+      middlewares: [validateAndTransformQuery(productSearchQuerySchema, {})],
+    },
+    {
+      method: "GET",
+      matcher: "/admin/product-search",
+      middlewares: [validateAndTransformQuery(adminProductSearchQuerySchema, {})],
+    },
     {
       method: "GET",
       matcher: "/admin/platform-promotions",

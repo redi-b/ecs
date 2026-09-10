@@ -62,6 +62,57 @@ test("listStoreProducts returns an error result when platform response fails", a
   assert.equal(result.message, "We could not find this shop.");
 });
 
+test("listStoreProducts hydrates ranked search ids and preserves their order", async () => {
+  const requests: Request[] = [];
+  const result = await listStoreProducts({
+    fetcher: async (request) => {
+      requests.push(request);
+      if (request.url.includes("/store/product-search?")) {
+        return Response.json({ product_ids: ["p2", "p1"], count: 2, limit: 24, offset: 0 });
+      }
+      return Response.json({
+        products: [
+          { id: "p1", title: "First", handle: "first", variants: [] },
+          { id: "p2", title: "Second", handle: "second", variants: [] },
+        ],
+      });
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "shop.lvh.me",
+    q: "secon",
+  });
+
+  assert.equal(requests.length, 2);
+  assert.ok(requests[0]?.url.includes("/store/product-search?"));
+  assert.deepEqual("products" in result ? result.products.map((product) => product.id) : [], ["p2", "p1"]);
+});
+
+test("listStoreProducts falls back to Medusa database search when the index is unavailable", async () => {
+  const requests: Request[] = [];
+  const result = await listStoreProducts({
+    fetcher: async (request) => {
+      requests.push(request);
+      if (request.url.includes("/store/product-search?")) {
+        return Response.json({ message: "Search unavailable" }, { status: 503 });
+      }
+      return Response.json({
+        products: [{ id: "p1", title: "Coffee", handle: "coffee", variants: [] }],
+        count: 1,
+        limit: 24,
+        offset: 0,
+      });
+    },
+    platformApiBaseUrl: "http://api.lvh.me",
+    requestHost: "shop.lvh.me",
+    q: "cofee",
+  });
+
+  assert.equal(requests.length, 2);
+  assert.ok(requests[1]?.url.includes("/store/products?"));
+  assert.ok(requests[1]?.url.includes("q=cofee"));
+  assert.equal("products" in result && result.products[0]?.id, "p1");
+});
+
 test("getStoreDeliveryOptions calls the platform store facade with host context", async () => {
   const requests: Request[] = [];
   const deliveryResponse = {

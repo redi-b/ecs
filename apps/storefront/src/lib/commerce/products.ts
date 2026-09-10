@@ -21,6 +21,61 @@ const PRODUCT_FIELDS = [
   "+collection_id",
 ].join(",");
 
+type ProductSearchResponse = {
+  product_ids: string[];
+  count: number;
+  limit: number;
+  offset: number;
+};
+
+function parseProductSearchResponse(value: unknown): ProductSearchResponse | null {
+  if (!isRecord(value) || !Array.isArray(value.product_ids)) return null;
+  const productIds = value.product_ids.filter((id): id is string => typeof id === "string");
+  const count = getNumber(value.count);
+  const limit = getNumber(value.limit);
+  const offset = getNumber(value.offset);
+  if (count === undefined || limit === undefined || offset === undefined) return null;
+  return { product_ids: productIds, count, limit, offset };
+}
+
+async function searchStoreProducts(
+  options: HostedStoreRequest & { limit?: number; offset?: number; regionId?: string | null; q: string },
+): Promise<StoreProductsResponse | null> {
+  try {
+    const response = await storeFetch({
+      ...options,
+      path: "/store/product-search",
+      searchParams: {
+        q: options.q,
+        limit: options.limit ?? 24,
+        offset: options.offset ?? 0,
+      },
+    });
+    if (!response.ok) return null;
+
+    const search = parseProductSearchResponse(await response.json().catch(() => undefined));
+    if (!search) return null;
+    if (!search.product_ids.length) {
+      return { products: [], count: search.count, limit: search.limit, offset: search.offset };
+    }
+
+    const hydrated = await getStoreProductsByIds({
+      ...options,
+      productIds: search.product_ids,
+      regionId: options.regionId,
+    });
+    if (!("products" in hydrated)) return null;
+    return {
+      products: hydrated.products,
+      count: search.count,
+      limit: search.limit,
+      offset: search.offset,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function listStoreProducts(
   options: HostedStoreRequest & {
     limit?: number;
@@ -32,6 +87,17 @@ export async function listStoreProducts(
     order?: string | null;
   },
 ): Promise<StoreProductsResponse | StorefrontError> {
+  const query = options.q?.trim();
+  const canUseSearchIndex =
+    Boolean(query && query.length >= 2) &&
+    !options.collectionId?.trim() &&
+    !options.categoryId?.trim() &&
+    !options.order?.trim();
+  if (canUseSearchIndex && query) {
+    const result = await searchStoreProducts({ ...options, q: query });
+    if (result) return result;
+  }
+
   const response = await storeFetch({
     ...options,
     path: "/store/products",
@@ -40,7 +106,7 @@ export async function listStoreProducts(
       offset: options.offset ?? 0,
       region_id: options.regionId,
       fields: PRODUCT_FIELDS,
-      ...(options.q?.trim() ? { q: options.q.trim() } : {}),
+      ...(query ? { q: query } : {}),
       ...(options.collectionId?.trim()
         ? { collection_id: options.collectionId.trim() }
         : {}),

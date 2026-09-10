@@ -111,6 +111,18 @@ export function getProductsBaseUrl(medusaInternalUrl: string) {
   return new URL("/admin/products", normalizeBaseUrl(medusaInternalUrl));
 }
 
+export function getProductSearchUrl(
+  medusaInternalUrl: string,
+  input: { limit: number; offset: number; q: string; salesChannelId: string },
+) {
+  const url = new URL("/admin/product-search", normalizeBaseUrl(medusaInternalUrl));
+  url.searchParams.set("q", input.q);
+  url.searchParams.set("limit", String(input.limit));
+  url.searchParams.set("offset", String(input.offset));
+  url.searchParams.set("sales_channel_id", input.salesChannelId);
+  return url;
+}
+
 export function getProductDetailUrl(medusaInternalUrl: string, productId: string) {
   const url = getProductUrl(medusaInternalUrl, productId);
 

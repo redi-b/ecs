@@ -1165,6 +1165,73 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("uses indexed ranking for dashboard product searches and hydrates from Medusa", async () => {
+    const paths: string[] = [];
+    const product = (id: string, title: string) => ({
+      id,
+      title,
+      handle: title.toLowerCase(),
+      status: "published",
+      collection_id: null,
+      categories: [],
+      variants: [],
+      thumbnail: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+    });
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input) => {
+        const url = new URL(String(input));
+        paths.push(`${url.pathname}${url.search}`);
+        if (url.pathname === "/admin/product-search") {
+          return Response.json({ hits: [{ id: "p2" }, { id: "p1" }], count: 2 });
+        }
+        return Response.json({ products: [product("p1", "First"), product("p2", "Second")] });
+      },
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 6,
+      offset: 0,
+      q: "secon",
+      salesChannelId: "sc_1",
+    });
+
+    assert.ok(paths[0]?.startsWith("/admin/product-search?"));
+    assert.ok(paths[0]?.includes("sales_channel_id=sc_1"));
+    assert.ok(paths[1]?.startsWith("/admin/products?"));
+    assert.deepEqual(result.ok ? result.products.map(({ id }) => id) : [], ["p2", "p1"]);
+  });
+
+  it("falls back to database product search when the index is unavailable", async () => {
+    const paths: string[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input) => {
+        const url = new URL(String(input));
+        paths.push(`${url.pathname}${url.search}`);
+        if (url.pathname === "/admin/product-search") {
+          return Response.json({ message: "unavailable" }, { status: 503 });
+        }
+        return Response.json({ products: [], count: 0, limit: 6, offset: 0 });
+      },
+    });
+
+    const result = await service.listMerchantProducts({
+      limit: 6,
+      offset: 0,
+      q: "cofee",
+      salesChannelId: "sc_1",
+    });
+
+    assert.ok(paths[1]?.startsWith("/admin/products?"));
+    assert.ok(paths[1]?.includes("q=cofee"));
+    assert.equal(result.ok, true);
+  });
+
   it("paginates missing-category results directly in Medusa", async () => {
     const offsets: number[] = [];
     const source = Array.from({ length: 150 }, (_, index) => ({
