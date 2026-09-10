@@ -193,6 +193,9 @@ importers:
       '@medusajs/medusa':
         specifier: 2.16.0
         version: 2.16.0(@medusajs/admin-sdk@2.16.0)(@medusajs/cli@2.16.0(@types/node@25.9.5))(@medusajs/dashboard@2.16.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(typescript@5.9.3))(@medusajs/framework@2.16.0(@medusajs/cli@2.16.0(@types/node@25.9.5))(@types/node@25.9.5)(ioredis@5.11.1)(vite@5.4.21(@types/node@25.9.5)(lightningcss@1.32.0)(sass-embedded@1.102.0)(sass@1.102.0))(zod@4.4.3))(@medusajs/icons@2.16.0(react@18.3.1))(@medusajs/ui@4.1.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.43)(@types/node@25.9.5)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(awilix@8.0.1)(lightningcss@1.32.0)(posthog-node@5.38.2(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(sass-embedded@1.102.0)(sass@1.102.0)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0)
+      meilisearch:
+        specifier: 0.62.0
+        version: 0.62.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -8182,6 +8185,10 @@ packages:
   media-typer@1.1.0:
     resolution: {integrity: sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==}
     engines: {node: '>= 0.8'}
+
+  meilisearch@0.62.0:
+    resolution: {integrity: sha512-/ETDW7mmWI2NcSmtJdTPhbjsIbs3VcuapszX5X6JhdHB0XbszPOhqd3EB2bEylL0HK7dgwh/4Z3MdyuycWVf5A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
 
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
@@ -18813,6 +18820,8 @@ snapshots:
   media-typer@0.3.0: {}
 
   media-typer@1.1.0: {}
+
+  meilisearch@0.62.0: {}
 
   merge-descriptors@1.0.3: {}
 

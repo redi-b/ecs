@@ -1,4 +1,5 @@
 import type {
+  MerchantProduct,
   MerchantBatchDeleteResult,
   MerchantDeleteResult,
   MerchantProductCategoriesResult,
@@ -55,6 +56,7 @@ import {
   getProductCollectionsBaseUrl,
   getProductDetailUrl,
   getProductOwnershipUrl,
+  getProductSearchUrl,
   getProductsBaseUrl,
   getProductsUrl,
   getProductUrl,
@@ -433,6 +435,82 @@ export function createMedusaProductService(options: {
     }): Promise<MerchantProductsResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
+      }
+
+      if (
+        input.q?.trim() &&
+        !input.media &&
+        !input.categoryId &&
+        !input.collectionId &&
+        !input.status
+      ) {
+        const indexed = await requestMedusa(
+          fetcher,
+          getProductSearchUrl(options.medusaInternalUrl, {
+            limit: input.limit,
+            offset: input.offset,
+            q: input.q.trim(),
+            salesChannelId: input.salesChannelId,
+          }),
+          { headers: getAdminHeaders(options.adminApiToken) },
+        ).catch(() => undefined);
+        if (indexed?.ok) {
+          const searchData = await indexed.json().catch(() => undefined);
+          const ids: Array<string | null> | null = Array.isArray(searchData?.hits)
+            ? searchData.hits.map((hit: unknown) => (isRecord(hit) ? getString(hit.id) : null))
+            : null;
+          if (
+            ids &&
+            ids.every((id: string | null): id is string => Boolean(id)) &&
+            Number.isSafeInteger(searchData?.count)
+          ) {
+            if (!ids.length) {
+              return {
+                ok: true,
+                count: searchData.count,
+                limit: input.limit,
+                offset: input.offset,
+                products: [],
+              };
+            }
+            const { q: _query, ...hydrateInput } = input;
+            const url = getProductsUrl(options.medusaInternalUrl, {
+              ...hydrateInput,
+              limit: ids.length,
+              offset: 0,
+            });
+            ids.forEach((id: string) => url.searchParams.append("id[]", id));
+            const hydration = await requestMedusa(fetcher, url, {
+              headers: getAdminHeaders(options.adminApiToken),
+            }).catch(() => undefined);
+            if (hydration?.ok) {
+              const hydrationData = await hydration.json().catch(() => undefined);
+              if (Array.isArray(hydrationData?.products)) {
+                const normalized: MerchantProduct[] = hydrationData.products.flatMap(
+                  (product: unknown) => normalizeProduct(product),
+                );
+                const byId = new Map(normalized.map((product) => [product.id, product]));
+                const ranked = ids.flatMap((id: string) => {
+                  const product = byId.get(id);
+                  return product ? [product] : [];
+                });
+                const products = input.stockLocationId?.trim()
+                  ? await hydrateProductsWithStock(fetcher, options, {
+                      products: ranked,
+                      stockLocationId: input.stockLocationId,
+                    })
+                  : ranked;
+                return {
+                  ok: true,
+                  count: searchData.count,
+                  limit: input.limit,
+                  offset: input.offset,
+                  products,
+                };
+              }
+            }
+          }
+        }
       }
 
       const response = await requestMedusa(

@@ -28,6 +28,24 @@ services:
       timeout: 5s
       retries: 20
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.53.1
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-local-meilisearch-master-key-change-in-production}
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "${MEILISEARCH_HOST_PORT:-7700}:7700"
+    volumes:
+      - meilisearch-data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
   prepare-umami-db:
     image: postgres:17-alpine
     restart: "no"
@@ -109,6 +127,7 @@ services:
 
 volumes:
   postgres-data:
+  meilisearch-data:
   seaweed-data:
   caddy-data:
   caddy-config:

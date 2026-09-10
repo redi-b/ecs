@@ -58,6 +58,18 @@ module.exports = defineConfig({
   },
   modules: [
     {
+      resolve: "./src/modules/meilisearch",
+      options: {
+        apiKey:
+          process.env.MEILISEARCH_API_KEY ||
+          (process.env.NODE_ENV === "production"
+            ? undefined
+            : "local-meilisearch-master-key-change-in-production"),
+        host: process.env.MEILISEARCH_HOST || "http://localhost:7700",
+        productIndexName: process.env.MEILISEARCH_PRODUCT_INDEX_NAME || "ecs_products_v1",
+      },
+    },
+    {
       resolve: "@medusajs/medusa/event-bus-redis",
       options: {
         redisUrl,
