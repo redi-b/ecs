@@ -25,7 +25,8 @@ export type LaunchChecklistItem = {
 
 export type LaunchAssistantData = MerchantDashboardAccess & {
   hasVisitedEditor: boolean;
-  productCount: number;
+  productCount: number | null;
+  productCountUnavailable?: boolean;
 };
 
 export function getLaunchChecklistItems(
@@ -35,7 +36,7 @@ export function getLaunchChecklistItems(
   const hasShopProfile = Boolean(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
   );
-  const hasCatalog = summary.productCount > 0;
+  const hasCatalog = (summary.productCount ?? 0) > 0;
   const hasStorefrontDraft = Boolean(
     summary.storefront.templateKey ?? summary.storefront.templateId,
   );
@@ -71,8 +72,14 @@ export function getLaunchChecklistItems(
       id: "catalog",
       label: t("overview.launch.catalog"),
       description: hasCatalog
-        ? t("overview.launch.catalogDesc", { count: formatCount(summary.productCount) })
-        : t("overview.launch.catalogEmpty"),
+        ? t("overview.launch.catalogDesc", { count: formatCount(summary.productCount ?? 0) })
+        : summary.productCount === null
+          ? t(
+              summary.productCountUnavailable
+                ? "overview.launch.catalogUnavailable"
+                : "overview.launch.catalogChecking",
+            )
+          : t("overview.launch.catalogEmpty"),
       ready: hasCatalog,
       href: hasCatalog ? dashboardRoutes.products : withCreate(dashboardRoutes.products, "product"),
       required: true,

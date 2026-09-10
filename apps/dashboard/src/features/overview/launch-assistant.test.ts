@@ -71,3 +71,23 @@ test("does not complete storefront review from template selection alone", () => 
   assert.equal(design?.ready, false);
   assert.equal(design?.current, true);
 });
+
+test("keeps the setup path visible while the product count is loading", () => {
+  const catalog = getLaunchChecklistItems(
+    { ...access, hasVisitedEditor: true, productCount: null },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  ).find((item) => item.id === "catalog");
+
+  assert.equal(catalog?.ready, false);
+  assert.equal(catalog?.description, "overview.launch.catalogChecking");
+});
+
+test("keeps the setup path useful when the product count cannot be loaded", () => {
+  const catalog = getLaunchChecklistItems(
+    { ...access, hasVisitedEditor: true, productCount: null, productCountUnavailable: true },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  ).find((item) => item.id === "catalog");
+
+  assert.equal(catalog?.ready, false);
+  assert.equal(catalog?.description, "overview.launch.catalogUnavailable");
+});

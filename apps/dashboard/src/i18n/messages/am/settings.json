@@ -111,8 +111,8 @@
     "saveShopFailed": "የሱቅ ለውጦችን መቀየር አልተቻለም።",
     "addressUpdated": "የሱቅ አድራሻ ተቀይሯል። ወደ አዲሱ እያሸጋገርን ነው…",
     "shopSaved": "የሱቅ ለውጦች ተቀይረዋል።",
-    "launchEnabled": "የጀማሪ ረዳት ተከፍቷል",
-    "launchHidden": "የጀማሪ ረዳት ተደብቋል"
+    "launchEnabled": "የማዋቀር መመሪያው ታይቷል",
+    "launchHidden": "የማዋቀር መመሪያው ተደብቋል"
   },
   "labels": {
     "fulfillmentSettings": "የመላኪያ ማስተካከያዎች",
@@ -146,8 +146,8 @@
     "intro": "የዳሽቦርድ እና የትዕዛዝ ነባሪዎች ለዕለታዊ ስራ።",
     "dashboardTitle": "ዳሽቦርድ",
     "dashboardDescription": "ለአሁኑ ሱቅ በዚህ ቦታ ብቻ ይቆያል።",
-    "launchTitle": "የጀማሪ ረዳት",
-    "launchDescription": "በአጠቃላይ እይታ ላይ ተንሳፋፊ የማዋቀር ረዳት አሳይ።",
+    "launchTitle": "የሱቅ ማዋቀር መመሪያ",
+    "launchDescription": "ሱቅዎ እስኪዘጋጅ ድረስ የማዋቀር ደረጃዎችን በዳሽቦርዱ ሁሉ አሳይ።",
     "commerceTitle": "የንግድ ነባሪዎች",
     "commerceDescription": "ለዚህ ሱቅ ምንዛሬ እና የትዕዛዝ አማራጮች።",
     "currencyEtb": "ምንዛሬ · ETB",

@@ -111,8 +111,8 @@
     "saveShopFailed": "Could not save shop settings.",
     "addressUpdated": "Shop address updated. Redirecting…",
     "shopSaved": "Shop settings saved.",
-    "launchEnabled": "Launch assistant enabled",
-    "launchHidden": "Launch assistant hidden"
+    "launchEnabled": "Setup guide shown",
+    "launchHidden": "Setup guide hidden"
   },
   "labels": {
     "fulfillmentSettings": "Fulfillment settings",
@@ -146,8 +146,8 @@
     "intro": "Browser and checkout defaults for day-to-day work.",
     "dashboardTitle": "Dashboard",
     "dashboardDescription": "Stored in this browser for the current shop.",
-    "launchTitle": "Launch assistant",
-    "launchDescription": "Show the floating setup assistant on Overview.",
+    "launchTitle": "Shop setup guide",
+    "launchDescription": "Show setup steps across the dashboard until your shop is ready.",
     "commerceTitle": "Commerce defaults",
     "commerceDescription": "Currency and checkout options for this shop.",
     "currencyEtb": "Currency · ETB",
