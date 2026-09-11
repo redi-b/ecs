@@ -15,6 +15,7 @@ import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.j
 import { registerMerchantInquiryRoutes } from "./inquiries.js";
 import { registerMerchantPaymentRoutes } from "./payments.js";
 import { registerMerchantTelegramNotificationRoutes } from "./telegram-notifications.js";
+import { registerMerchantTeamRoutes } from "./team.js";
 
 export function registerMerchantRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -35,4 +36,5 @@ export function registerMerchantRoutes(
   registerMerchantInboxNotificationRoutes(app, options, helpers);
   registerMerchantInquiryRoutes(app, options, helpers);
   registerMerchantPaymentRoutes(app, options, helpers);
+  registerMerchantTeamRoutes(app, options, helpers);
 }

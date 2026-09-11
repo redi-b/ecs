@@ -18,7 +18,7 @@ export function registerMerchantCatalogRoutes(
   const { getAuthorizedMerchantContext, getResolvedCommerce } = helpers;
 
   app.get("/platform/merchant/product-categories", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -51,7 +51,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-categories", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["create"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -102,7 +102,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.get("/platform/merchant/product-collections", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -136,7 +136,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-collections", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["create"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -184,7 +184,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-categories/reorder", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     if (!options.reorderMerchantProductCategories) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -220,7 +220,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-categories/:categoryId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     const body = await getJsonBody(context.req.raw);
     const name = getRequiredBodyString(body, "name");
@@ -251,7 +251,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-collections/:collectionId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     const body = await getJsonBody(context.req.raw);
     const title = getRequiredBodyString(body, "title");
@@ -272,7 +272,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.get("/platform/merchant/product-collections/:collectionId/products", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -289,7 +289,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-collections/:collectionId/products", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -311,7 +311,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.delete("/platform/merchant/product-categories/:categoryId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -327,7 +327,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-categories/batch-delete", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -348,7 +348,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.delete("/platform/merchant/product-collections/:collectionId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -364,7 +364,7 @@ export function registerMerchantCatalogRoutes(
   });
 
   app.post("/platform/merchant/product-collections/batch-delete", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);

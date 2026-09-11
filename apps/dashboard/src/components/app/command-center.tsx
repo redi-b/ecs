@@ -3,7 +3,7 @@
 import type { MerchantSearchHit, MerchantSearchHitType } from "@ecs/contracts";
 import { useRouter } from "nextjs-toploader/app";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
+import { useAccess } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,25 +25,23 @@ import {
 } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useSidebar } from "@/components/ui/sidebar";
-import {
-  commandSearchValue,
-  filterStaticCommands,
-  getAllStaticCommands,
-  type CommandDef,
-} from "@/lib/command-registry";
+import { useI18n } from "@/i18n/provider";
 import {
   loadRecentCommands,
   pushRecentCommand,
   type RecentCommandItem,
 } from "@/lib/command-recent";
-import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import {
-  groupLabelForSearchType,
-  hrefForSearchHit,
-} from "@/lib/merchant-search";
+  type CommandDef,
+  commandSearchValue,
+  filterStaticCommands,
+  getAllStaticCommands,
+} from "@/lib/command-registry";
+import { canAccessDashboardRoute } from "@/lib/dashboard-route-access";
+import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import { groupLabelForSearchType, hrefForSearchHit } from "@/lib/merchant-search";
 import { parseCreateFromHref, requestOpenCreate } from "@/lib/open-create";
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/i18n/provider";
 
 const REMOTE_MIN_CHARS = 2;
 const DEBOUNCE_MS = 220;
@@ -85,13 +83,7 @@ function searchTypeIcon(type: MerchantSearchHitType) {
   }
 }
 
-function IconTile({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function IconTile({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span
       className={cn(
@@ -108,7 +100,6 @@ function IconTile({
 }
 
 function useModKeyLabel() {
-
   const [modKey, setModKey] = useState("Ctrl");
   useEffect(() => {
     const apple = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -119,6 +110,7 @@ function useModKeyLabel() {
 
 export function CommandCenter() {
   const { t } = useI18n();
+  const { permissions } = useAccess();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -133,12 +125,12 @@ export function CommandCenter() {
 
   const tenantId =
     typeof window !== "undefined"
-      ? getSelectedTenantId({
+      ? (getSelectedTenantId({
           tenantId: new URLSearchParams(window.location.search).get("tenantId") ?? undefined,
-        }) ?? window.location.hostname
+        }) ?? window.location.hostname)
       : "default";
 
-  const staticCommands = useMemo(() => getAllStaticCommands(t), [t]);
+  const staticCommands = useMemo(() => getAllStaticCommands(t, permissions), [permissions, t]);
   const filteredCommands = useMemo(
     () => filterStaticCommands(query, staticCommands),
     [query, staticCommands],
@@ -171,8 +163,15 @@ export function CommandCenter() {
       setPendingWaves(0);
       return;
     }
-    setRecent(loadRecentCommands(tenantId));
-  }, [open, tenantId]);
+    const permittedCommandIds = new Set(staticCommands.map((command) => command.id));
+    setRecent(
+      loadRecentCommands(tenantId).filter((item) =>
+        item.kind === "command"
+          ? permittedCommandIds.has(item.id)
+          : canAccessDashboardRoute(item.href, permissions),
+      ),
+    );
+  }, [open, permissions, staticCommands, tenantId]);
 
   // Progressive multi-wave search: paint groups as each wave returns.
   useEffect(() => {
@@ -241,7 +240,7 @@ export function CommandCenter() {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [open, query, tenantId]);
+  }, [open, query, tenantId, t]);
 
   const closePalette = useCallback(() => {
     setOpen(false);
@@ -302,9 +301,7 @@ export function CommandCenter() {
   const showRemote = query.trim().length >= REMOTE_MIN_CHARS;
   const hasLocal = actionCommands.length > 0 || navCommands.length > 0;
   const hasRemote = remoteHitsCount > 0;
-  const showEmpty =
-    !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
-
+  const showEmpty = !showEmptyQuery && !hasLocal && !hasRemote && !remoteLoading;
 
   const [inputPlaceholder, setInputPlaceholder] = useState(t("commandCenter.searchOrJump"));
   useEffect(() => {
@@ -507,7 +504,9 @@ export function CommandCenter() {
                   <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground">
                     <AppIcons.loader className="size-3.5 animate-spin opacity-70" />
                     <span>
-                      {hasRemote ? t("commandCenter.loadingMore") : t("commandCenter.searchingShop")}
+                      {hasRemote
+                        ? t("commandCenter.loadingMore")
+                        : t("commandCenter.searchingShop")}
                     </span>
                   </div>
                 ) : null}

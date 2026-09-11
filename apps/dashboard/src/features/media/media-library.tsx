@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
@@ -58,6 +59,7 @@ export function MediaLibrary({
   totalCount: number;
 }) {
   const { formatDate, t } = useI18n();
+  const canManage = usePermission("media.manage");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
@@ -258,12 +260,16 @@ export function MediaLibrary({
         onSelect: () => openLightbox(asset),
         type: "button" as const,
       },
-      {
-        icon: AppIcons.edit,
-        label: t("media.editDetails"),
-        onSelect: () => setEditing(asset),
-        type: "button" as const,
-      },
+      ...(canManage
+        ? [
+            {
+              icon: AppIcons.edit,
+              label: t("media.editDetails"),
+              onSelect: () => setEditing(asset),
+              type: "button" as const,
+            },
+          ]
+        : []),
       {
         disabled: !asset.publicUrl,
         icon: AppIcons.copy,
@@ -287,17 +293,21 @@ export function MediaLibrary({
         onSelect: () => void downloadAsset(asset),
         type: "button" as const,
       },
-      { id: "danger", type: "separator" as const },
-      {
-        icon: AppIcons.trash,
-        label: t("media.delete"),
-        onSelect: () => {
-          setBulkDeleteTargets([]);
-          setDeleteTarget(asset);
-        },
-        type: "button" as const,
-        variant: "destructive" as const,
-      },
+      ...(canManage
+        ? [
+            { id: "danger", type: "separator" as const },
+            {
+              icon: AppIcons.trash,
+              label: t("media.delete"),
+              onSelect: () => {
+                setBulkDeleteTargets([]);
+                setDeleteTarget(asset);
+              },
+              type: "button" as const,
+              variant: "destructive" as const,
+            },
+          ]
+        : []),
     ];
   }
 
@@ -341,13 +351,19 @@ export function MediaLibrary({
               <img alt="" className="size-11 object-cover" src={asset.publicUrl ?? ""} />
             </button>
             <div className="min-w-0">
-              <button
-                className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
-                onClick={() => setEditing(asset)}
-                type="button"
-              >
-                {asset.displayName}
-              </button>
+              {canManage ? (
+                <button
+                  className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
+                  onClick={() => setEditing(asset)}
+                  type="button"
+                >
+                  {asset.displayName}
+                </button>
+              ) : (
+                <span className="truncate text-sm font-medium text-foreground">
+                  {asset.displayName}
+                </span>
+              )}
               <p className="truncate text-xs text-muted-foreground">
                 {dimensions ? `${dimensions} · ` : ""}
                 {asset.filename}
@@ -442,18 +458,20 @@ export function MediaLibrary({
         <AppIcons.copy data-icon="inline-start" />
         {t("media.copyUrls")}
       </Button>
-      <Button
-        onClick={() => {
-          setBulkDeleteTargets(targets);
-          setDeleteTarget(null);
-        }}
-        size="sm"
-        type="button"
-        variant="destructive-outline"
-      >
-        <AppIcons.trash data-icon="inline-start" />
-        {t("media.deleteSelected")}
-      </Button>
+      {canManage ? (
+        <Button
+          onClick={() => {
+            setBulkDeleteTargets(targets);
+            setDeleteTarget(null);
+          }}
+          size="sm"
+          type="button"
+          variant="destructive-outline"
+        >
+          <AppIcons.trash data-icon="inline-start" />
+          {t("media.deleteSelected")}
+        </Button>
+      ) : null}
     </div>
   );
 
@@ -619,17 +637,19 @@ export function MediaLibrary({
         )}
       </div>
 
-      <MediaEditSheet
-        asset={editing}
-        onClose={() => setEditing(null)}
-        onOpenLightbox={() => {
-          if (editing) openLightbox(editing);
-        }}
-        onSaved={() => {
-          setEditing(null);
-          onChanged();
-        }}
-      />
+      {canManage ? (
+        <MediaEditSheet
+          asset={editing}
+          onClose={() => setEditing(null)}
+          onOpenLightbox={() => {
+            if (editing) openLightbox(editing);
+          }}
+          onSaved={() => {
+            setEditing(null);
+            onChanged();
+          }}
+        />
+      ) : null}
 
       <MediaLightbox
         assets={filtered}
@@ -638,28 +658,32 @@ export function MediaLibrary({
         onIndexChange={setLightboxIndex}
       />
 
-      <ConfirmDialog
-        confirmDisabled={!deleteTargets.length}
-        confirmLabel={t("media.delete")}
-        description={
-          isBulkDelete ? t("media.deleteSelectedDescription") : t("media.deleteConfirmDescription")
-        }
-        eyebrow={t("common.confirm.deleteEyebrow")}
-        icon="trash"
-        onConfirm={() => confirmDelete(deleteTargets)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-            setBulkDeleteTargets([]);
+      {canManage ? (
+        <ConfirmDialog
+          confirmDisabled={!deleteTargets.length}
+          confirmLabel={t("media.delete")}
+          description={
+            isBulkDelete
+              ? t("media.deleteSelectedDescription")
+              : t("media.deleteConfirmDescription")
           }
-        }}
-        open={Boolean(deleteTarget) || isBulkDelete}
-        title={
-          isBulkDelete
-            ? t("media.deleteSelectedConfirm", { count: deleteTargets.length })
-            : t("media.deleteConfirm")
-        }
-      />
+          eyebrow={t("common.confirm.deleteEyebrow")}
+          icon="trash"
+          onConfirm={() => confirmDelete(deleteTargets)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteTarget(null);
+              setBulkDeleteTargets([]);
+            }
+          }}
+          open={Boolean(deleteTarget) || isBulkDelete}
+          title={
+            isBulkDelete
+              ? t("media.deleteSelectedConfirm", { count: deleteTargets.length })
+              : t("media.deleteConfirm")
+          }
+        />
+      ) : null}
     </>
   );
 }

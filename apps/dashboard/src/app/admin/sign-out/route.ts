@@ -6,12 +6,20 @@ import { getCentralDashboardUrl } from "@/lib/shop-host";
 
 export async function POST(request: Request) {
   const wantsJson = requestWantsJson(request);
+  const formData = wantsJson ? null : await request.clone().formData().catch(() => null);
+  const requestedNext = formData?.get("next");
+  const safeNext =
+    typeof requestedNext === "string" &&
+    requestedNext.startsWith("/") &&
+    !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/admin/sign-in";
   const signOutResult = await signOutWithPlatformAuth({
     cookieHeader: request.headers.get("cookie"),
     forwardedHost: request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "",
     forwardedProto: request.headers.get("x-forwarded-proto") ?? "http",
   });
-  const redirectTo = getCentralDashboardUrl("/admin/sign-in");
+  const redirectTo = getCentralDashboardUrl(safeNext);
 
   const response = wantsJson
     ? NextResponse.json({ ok: true as const, redirectTo })

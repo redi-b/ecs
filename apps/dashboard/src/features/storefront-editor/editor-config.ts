@@ -1,4 +1,4 @@
-import { createContext, createElement, useContext, useMemo, type ReactNode } from "react";
+import { createContext, createElement, type ReactNode, useContext, useMemo } from "react";
 
 import type {
   EditorAction,
@@ -9,6 +9,8 @@ import type {
 export type { PublicationStatus, StorefrontDraft } from "@/features/storefront-editor/editor-state";
 
 export type StorefrontVisualEditorProps = {
+  canEdit?: boolean;
+  canPublish?: boolean;
   draft: StorefrontDraft;
   editorMeta: {
     initiallyPublished: boolean;

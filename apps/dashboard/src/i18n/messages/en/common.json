@@ -103,6 +103,9 @@
     "deniedDesc": "This account does not have access to this shop. Sign in from the main dashboard to open a shop you belong to.",
     "useAnotherAccount": "Use another account",
     "goToYourDashboard": "Go to main dashboard",
+    "pageDeniedTitle": "You don’t have access to this page",
+    "pageDeniedDesc": "Ask the shop owner to update your role if you need access.",
+    "openAvailablePage": "Go to an available page",
     "unavailableTitle": "Dashboard temporarily unavailable",
     "unavailableDesc": "We could not load this dashboard. Try again in a moment."
   }

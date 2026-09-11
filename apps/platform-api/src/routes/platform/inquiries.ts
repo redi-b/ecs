@@ -10,13 +10,18 @@ const inquiryStatusSchema = z.enum(["new", "read", "resolved", "archived"]);
 async function authorize(
   context: Context<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
+  action: "read" | "update",
 ) {
   const session = await options.getSession?.(context.req.raw.headers);
   if (!session)
     return { ok: false as const, response: context.json({ error: "auth_required" }, 401) };
   const tenantId = context.req.param("tenantId");
   const access = tenantId
-    ? await options.authorizeDashboardForTenant?.({ tenantId, userId: session.user.id })
+    ? await options.authorizeDashboardForTenant?.({
+        tenantId,
+        userId: session.user.id,
+        permission: { inquiries: [action] },
+      })
     : null;
   if (!tenantId || !access?.ok)
     return { ok: false as const, response: context.json({ error: "dashboard_forbidden" }, 403) };
@@ -28,7 +33,7 @@ export function registerPlatformInquiryRoutes(
   options: PlatformAppOptions,
 ) {
   app.get("/platform/tenants/:tenantId/inquiries", async (context) => {
-    const access = await authorize(context, options);
+    const access = await authorize(context, options, "read");
     if (!access.ok) return access.response;
     if (!options.listStorefrontInquiries)
       return context.json({ error: "inquiries_unavailable" }, 503);
@@ -45,7 +50,7 @@ export function registerPlatformInquiryRoutes(
   });
 
   app.get("/platform/tenants/:tenantId/inquiries/:inquiryId", async (context) => {
-    const access = await authorize(context, options);
+    const access = await authorize(context, options, "read");
     if (!access.ok) return access.response;
     if (!options.getStorefrontInquiry) return context.json({ error: "inquiries_unavailable" }, 503);
     const result = await options.getStorefrontInquiry({
@@ -57,7 +62,7 @@ export function registerPlatformInquiryRoutes(
   });
 
   app.patch("/platform/tenants/:tenantId/inquiries/:inquiryId", async (context) => {
-    const access = await authorize(context, options);
+    const access = await authorize(context, options, "update");
     if (!access.ok) return access.response;
     if (!options.updateStorefrontInquiryStatus)
       return context.json({ error: "inquiries_unavailable" }, 503);

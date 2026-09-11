@@ -2,14 +2,14 @@
 
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 import { useMemo, useState } from "react";
-
+import { usePermission } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
-import { Badge } from "@/components/ui/badge";
 import {
   MultiSearchableCombobox,
   SearchableCombobox,
   type SearchableComboboxOption,
 } from "@/components/app/searchable-combobox";
+import { Badge } from "@/components/ui/badge";
 import { FieldDescription } from "@/components/ui/field";
 import { TaxonomyCreateDialog } from "@/features/catalog-taxonomy/taxonomy-create-dialog";
 import {
@@ -57,6 +57,7 @@ export function CollectionPicker({
   tenantId?: string | undefined;
   value: string;
 }) {
+  const canCreateTaxonomy = usePermission("products.create");
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -119,13 +120,15 @@ export function CollectionPicker({
                 label={t("products.formPicker.examplesLabel")}
               />
             ) : null}
-            <button
-              className="self-start text-sm font-medium text-primary hover:underline"
-              onClick={openCreate}
-              type="button"
-            >
-              {t("products.formPicker.createCollection")}
-            </button>
+            {canCreateTaxonomy ? (
+              <button
+                className="self-start text-sm font-medium text-primary hover:underline"
+                onClick={openCreate}
+                type="button"
+              >
+                {t("products.formPicker.createCollection")}
+              </button>
+            ) : null}
           </div>
         }
         placeholder={t("products.formPicker.noCollection")}
@@ -143,23 +146,25 @@ export function CollectionPicker({
         value={value || NO_COLLECTION_VALUE}
       />
 
-      <TaxonomyCreateDialog
-        action={createAction}
-        entityLabel="collection"
-        tenantId={tenantId}
-        nameKey="title"
-        nameLabel={t("taxonomy.create.titleLabel")}
-        namePlaceholder={t("taxonomy.create.titlePlaceholder")}
-        onCreated={(payload) => {
-          if (!payload.collection) return;
-          setCreatedCollections((current) => mergeById(current, payload.collection!));
-          onChange(payload.collection.id);
-        }}
-        onOpenChange={setCreateOpen}
-        open={createOpen}
-        queryKey="product-collections"
-        showTrigger={false}
-      />
+      {canCreateTaxonomy ? (
+        <TaxonomyCreateDialog
+          action={createAction}
+          entityLabel="collection"
+          tenantId={tenantId}
+          nameKey="title"
+          nameLabel={t("taxonomy.create.titleLabel")}
+          namePlaceholder={t("taxonomy.create.titlePlaceholder")}
+          onCreated={(payload) => {
+            if (!payload.collection) return;
+            setCreatedCollections((current) => mergeById(current, payload.collection!));
+            onChange(payload.collection.id);
+          }}
+          onOpenChange={setCreateOpen}
+          open={createOpen}
+          queryKey="product-collections"
+          showTrigger={false}
+        />
+      ) : null}
     </>
   );
 }
@@ -177,6 +182,7 @@ export function CategoryPicker({
   tenantId?: string | undefined;
   value: string[];
 }) {
+  const canCreateTaxonomy = usePermission("products.create");
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -244,13 +250,15 @@ export function CategoryPicker({
                 label={t("products.formPicker.examplesLabel")}
               />
             ) : null}
-            <button
-              className="self-start text-sm font-medium text-primary hover:underline"
-              onClick={openCreate}
-              type="button"
-            >
-              {t("products.formPicker.createCategory")}
-            </button>
+            {canCreateTaxonomy ? (
+              <button
+                className="self-start text-sm font-medium text-primary hover:underline"
+                onClick={openCreate}
+                type="button"
+              >
+                {t("products.formPicker.createCategory")}
+              </button>
+            ) : null}
           </div>
         }
         placeholder={t("products.formPicker.selectCategories")}
@@ -279,26 +287,28 @@ export function CategoryPicker({
         values={value}
       />
 
-      <TaxonomyCreateDialog
-        action={createAction}
-        entityLabel="category"
-        tenantId={tenantId}
-        nameKey="name"
-        nameLabel={t("taxonomy.create.nameLabel")}
-        namePlaceholder={t("taxonomy.create.namePlaceholder")}
-        onCreated={(payload) => {
-          if (!payload.category) return;
-          setCreatedCategories((current) => mergeById(current, payload.category!));
-          if (!value.includes(payload.category.id)) {
-            onChange([...value, payload.category.id]);
-          }
-        }}
-        onOpenChange={setCreateOpen}
-        open={createOpen}
-        parentOptions={allCategories}
-        queryKey="product-categories"
-        showTrigger={false}
-      />
+      {canCreateTaxonomy ? (
+        <TaxonomyCreateDialog
+          action={createAction}
+          entityLabel="category"
+          tenantId={tenantId}
+          nameKey="name"
+          nameLabel={t("taxonomy.create.nameLabel")}
+          namePlaceholder={t("taxonomy.create.namePlaceholder")}
+          onCreated={(payload) => {
+            if (!payload.category) return;
+            setCreatedCategories((current) => mergeById(current, payload.category!));
+            if (!value.includes(payload.category.id)) {
+              onChange([...value, payload.category.id]);
+            }
+          }}
+          onOpenChange={setCreateOpen}
+          open={createOpen}
+          parentOptions={allCategories}
+          queryKey="product-categories"
+          showTrigger={false}
+        />
+      ) : null}
     </div>
   );
 }

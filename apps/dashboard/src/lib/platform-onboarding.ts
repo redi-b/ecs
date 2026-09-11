@@ -1,12 +1,16 @@
 import {
   type PlatformHandleAvailability,
   type PlatformOnboardingState,
+  type PlatformTenant,
   type PlatformTenantMutation,
+  type PlatformTenants,
   platformErrorSchema,
   platformHandleAvailabilitySchema,
   platformOnboardingStateSchema,
   platformTenantCreateRequestSchema,
+  platformTenantDetailSchema,
   platformTenantMutationSchema,
+  platformTenantsSchema,
   type StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
 
@@ -51,6 +55,68 @@ export type TenantCreateInput = {
   templateId?: string | undefined;
   templateKey?: string | undefined;
 };
+
+export type PlatformTenantsResult =
+  | { ok: true; tenants: PlatformTenant[] }
+  | { ok: false; message: string; status: number };
+
+export async function getPlatformTenant(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  tenantId: string;
+}) {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(
+    new URL(
+      `/platform/tenants/${encodeURIComponent(options.tenantId)}`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    { cache: "no-store", headers: getJsonHeaders(options.cookieHeader) },
+  ).catch(() => null);
+  if (!response) return { message: "platform_request_failed", ok: false as const, status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return getPlatformError(response, data, "Shop request failed");
+  const parsed = platformTenantDetailSchema.safeParse(data);
+  if (!parsed.success) {
+    return { message: "invalid_tenant_response", ok: false as const, status: 502 };
+  }
+  return { ok: true as const, tenant: parsed.data.tenant };
+}
+
+export async function getAllPlatformTenants(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+}): Promise<PlatformTenantsResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const tenants: PlatformTenant[] = [];
+  const limit = 100;
+
+  for (let offset = 0; ; offset += limit) {
+    const url = new URL("/platform/tenants", normalizeBaseUrl(options.platformApiBaseUrl));
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+    const response = await fetcher(url, {
+      cache: "no-store",
+      headers: getJsonHeaders(options.cookieHeader),
+    }).catch(() => null);
+    if (!response) return { message: "platform_request_failed", ok: false, status: 503 };
+
+    const data = await response.json().catch(() => undefined);
+    if (!response.ok) return getPlatformError(response, data, "Shop list request failed");
+    const parsed = platformTenantsSchema.safeParse(data);
+    if (!parsed.success) {
+      return { message: "invalid_tenant_list_response", ok: false, status: 502 };
+    }
+
+    const page: PlatformTenants = parsed.data;
+    tenants.push(...page.tenants);
+    if (tenants.length >= page.count || page.tenants.length === 0) break;
+  }
+
+  return { ok: true, tenants };
+}
 
 export async function getPlatformOnboardingState(options: {
   cookieHeader?: string | null | undefined;

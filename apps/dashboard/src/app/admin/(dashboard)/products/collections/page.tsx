@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
-import { ListSetupState } from "@/components/app/list-error-state";
+import { PermissionGate } from "@/components/app/access-context";
 import { HelpTip } from "@/components/app/help-tip";
+import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -60,16 +61,18 @@ export default async function MerchantProductCollectionsPage({
       actions={
         <>
           <RefreshButton />
-          <TaxonomyCreateDialog
-            tenantId={tenantId}
-            action={createCollectionAction}
-            entityLabel="collection"
-            nameKey="title"
-            nameLabel={t("taxonomy.create.titleLabel")}
-            namePlaceholder={t("taxonomy.create.titlePlaceholder")}
-            queryKey="product-collections"
-            triggerLabel={t("collections.actions.new")}
-          />
+          <PermissionGate permission="products.create">
+            <TaxonomyCreateDialog
+              tenantId={tenantId}
+              action={createCollectionAction}
+              entityLabel="collection"
+              nameKey="title"
+              nameLabel={t("taxonomy.create.titleLabel")}
+              namePlaceholder={t("taxonomy.create.titlePlaceholder")}
+              queryKey="product-collections"
+              triggerLabel={t("collections.actions.new")}
+            />
+          </PermissionGate>
         </>
       }
       titleAccessory={

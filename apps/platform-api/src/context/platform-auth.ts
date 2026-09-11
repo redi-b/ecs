@@ -3,15 +3,25 @@ import type { createPlatformDb } from "@ecs/db";
 import * as schema from "@ecs/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
+import { organization } from "better-auth/plugins";
+import { and, eq, ne } from "drizzle-orm";
+
+import { merchantAccessControl, merchantRoles } from "../auth/merchant-permissions.js";
 import type { NotificationProvider } from "../modules/notifications/providers/types.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
+
+export function requiresVerifiedEmailForInvitation(requireEmailVerification?: boolean) {
+  return requireEmailVerification === true;
+}
 
 export function createPlatformAuth(options: {
   baseUrl?: string | undefined;
   cookieDomain?: string | undefined;
   /** Better Auth cookie prefix. Defaults to env / `ecs`. */
   cookiePrefix?: string | undefined;
+  dashboardPublicBaseUrl?: string | undefined;
   db: PlatformDb;
   emailProvider?: NotificationProvider | undefined;
   requireEmailVerification?: boolean | undefined;
@@ -20,6 +30,44 @@ export function createPlatformAuth(options: {
   useSecureCookies?: boolean | undefined;
 }) {
   const emailProvider = options.emailProvider;
+  const assertOrganizationKeepsOwner = async (input: {
+    memberId: string;
+    organizationId: string;
+    currentRole: string;
+    currentStatus?: string | undefined;
+    nextRole?: string | undefined;
+  }) => {
+    const currentlyOwns = input.currentRole
+      .split(",")
+      .map((role) => role.trim())
+      .includes("owner");
+    const willOwn = input.nextRole
+      ? input.nextRole
+          .split(",")
+          .map((role) => role.trim())
+          .includes("owner")
+      : false;
+    if (!currentlyOwns || input.currentStatus === "suspended" || willOwn) return;
+
+    const [anotherOwner] = await options.db
+      .select({ id: schema.organizationMembers.id })
+      .from(schema.organizationMembers)
+      .where(
+        and(
+          eq(schema.organizationMembers.organizationId, input.organizationId),
+          eq(schema.organizationMembers.role, "owner"),
+          eq(schema.organizationMembers.status, "active"),
+          ne(schema.organizationMembers.id, input.memberId),
+        ),
+      )
+      .limit(1);
+
+    if (!anotherOwner) {
+      throw new APIError("BAD_REQUEST", {
+        message: "Assign another active owner before changing or removing this owner.",
+      });
+    }
+  };
 
   return betterAuth({
     advanced: getPlatformAuthCookieOptions(options),
@@ -30,6 +78,10 @@ export function createPlatformAuth(options: {
       schema: {
         ...schema,
         account: schema.accounts,
+        invitation: schema.organizationInvitations,
+        member: schema.organizationMembers,
+        organization: schema.organizations,
+        organizationRole: schema.organizationRoles,
         session: schema.sessions,
         user: schema.users,
         verification: schema.verifications,
@@ -66,6 +118,83 @@ export function createPlatformAuth(options: {
       : {}),
     secret: options.secret,
     ...(options.trustedOrigins?.length ? { trustedOrigins: options.trustedOrigins } : {}),
+    plugins: [
+      organization({
+        ac: merchantAccessControl,
+        cancelPendingInvitationsOnReInvite: true,
+        creatorRole: "owner",
+        disableOrganizationDeletion: true,
+        dynamicAccessControl: {
+          enabled: true,
+          maximumRolesPerOrganization: 20,
+        },
+        invitationExpiresIn: 60 * 60 * 24 * 7,
+        // Keep invitation acceptance aligned with the account policy. Requiring a
+        // verified address when verification delivery is disabled makes every
+        // link-only invitation impossible to accept.
+        requireEmailVerificationOnInvitation: requiresVerifiedEmailForInvitation(
+          options.requireEmailVerification,
+        ),
+        roles: merchantRoles,
+        organizationHooks: {
+          beforeRemoveMember: async ({ member }) => {
+            await assertOrganizationKeepsOwner({
+              currentRole: member.role,
+              currentStatus: member.status,
+              memberId: member.id,
+              organizationId: member.organizationId,
+            });
+          },
+          beforeUpdateMemberRole: async ({ member, newRole }) => {
+            await assertOrganizationKeepsOwner({
+              currentRole: member.role,
+              currentStatus: member.status,
+              memberId: member.id,
+              nextRole: Array.isArray(newRole) ? newRole.join(",") : newRole,
+              organizationId: member.organizationId,
+            });
+          },
+        },
+        ...(emailProvider && options.dashboardPublicBaseUrl
+          ? {
+              sendInvitationEmail: async (data) => {
+                const invitationUrl = new URL("/accept-invitation", options.dashboardPublicBaseUrl);
+                invitationUrl.searchParams.set("invitationId", data.id);
+                const [tenant] = await options.db
+                  .select({ id: schema.tenants.id })
+                  .from(schema.tenants)
+                  .where(eq(schema.tenants.organizationId, data.organization.id))
+                  .limit(1);
+                if (tenant) invitationUrl.searchParams.set("tenantId", tenant.id);
+                await emailProvider.send({
+                  body: `${data.inviter.user.name} invited you to join ${data.organization.name} on ECS.\n\nAccept the invitation:\n${invitationUrl.toString()}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,
+                  channel: "email",
+                  eventType: "account.organization_invitation",
+                  recipient: data.email,
+                  subject: `Join ${data.organization.name} on ECS`,
+                  tenantId: "platform",
+                });
+              },
+            }
+          : {}),
+        schema: {
+          invitation: { modelName: "organizationInvitations" },
+          member: {
+            additionalFields: {
+              status: {
+                defaultValue: "active",
+                input: false,
+                required: true,
+                type: "string",
+              },
+            },
+            modelName: "organizationMembers",
+          },
+          organization: { modelName: "organizations" },
+          organizationRole: { modelName: "organizationRoles" },
+        },
+      }),
+    ],
     user: {
       modelName: "users",
     },

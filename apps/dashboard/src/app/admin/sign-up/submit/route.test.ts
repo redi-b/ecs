@@ -74,7 +74,7 @@ test("POST /admin/sign-up/submit creates an account and redirects to onboarding"
   );
   assert.equal(forwardedRequest?.url, "http://platform.test/platform/auth/sign-up/email");
   assert.deepEqual(forwardedRequest?.body, {
-    callbackURL: "http://app.lvh.me/admin/sign-in?verified=1",
+    callbackURL: "http://app.lvh.me/admin/sign-in?verified=1&next=%2Fadmin%2Fonboarding",
     email: "mahi@example.com",
     name: "Mahi Bekele",
     password: "password1234",
@@ -110,6 +110,47 @@ test("POST /admin/sign-up/submit asks the user to verify email when verification
     ok: true,
     redirectTo: "http://app.lvh.me/admin/sign-up/check-email",
   });
+});
+
+test("POST /admin/sign-up/submit preserves a safe invitation continuation", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  let callbackURL: string | undefined;
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init);
+    callbackURL = ((await request.json()) as { callbackURL?: string }).callbackURL;
+    return new Response(JSON.stringify({ user: { id: "user_1" } }), {
+      headers: {
+        "content-type": "application/json",
+        "set-cookie": "better-auth.session_token=session_1; HttpOnly; SameSite=Lax",
+      },
+      status: 200,
+    });
+  };
+
+  const next = "/accept-invitation?invitationId=invitation_1";
+  const response = await POST(
+    new Request("http://app.lvh.me/admin/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "password1234",
+        email: "new@example.com",
+        next,
+        ownerName: "New Member",
+        password: "password1234",
+      }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    redirectTo: `http://app.lvh.me${next}`,
+  });
+  assert.equal(
+    callbackURL,
+    "http://app.lvh.me/admin/sign-in?verified=1&next=%2Faccept-invitation%3FinvitationId%3Dinvitation_1",
+  );
 });
 
 test("POST /admin/sign-up/submit redirects back when platform auth does not return a session cookie", async () => {

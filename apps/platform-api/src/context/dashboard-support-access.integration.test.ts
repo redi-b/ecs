@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createPlatformDb,
+  organizations,
   platformPrincipals,
   tenantSupportAccessGrants,
   tenants,
@@ -21,6 +22,8 @@ test(
     const { db, pool } = createPlatformDb({ connectionString: connectionString as string, max: 1 });
     const suffix = Date.now().toString(36);
     const userId = `support-operator-${suffix}`;
+    const organizationAId = `support-org-a-${suffix}`;
+    const organizationBId = `support-org-b-${suffix}`;
     try {
       await db.insert(users).values({
         id: userId,
@@ -31,11 +34,15 @@ test(
         .insert(platformPrincipals)
         .values({ userId })
         .returning({ id: platformPrincipals.id });
+      await db.insert(organizations).values([
+        { id: organizationAId, name: "Support A", slug: `support-a-${suffix}` },
+        { id: organizationBId, name: "Support B", slug: `support-b-${suffix}` },
+      ]);
       const [tenantA, tenantB] = await db
         .insert(tenants)
         .values([
-          { handle: `support-a-${suffix}`, name: "Support A" },
-          { handle: `support-b-${suffix}`, name: "Support B" },
+          { handle: `support-a-${suffix}`, name: "Support A", organizationId: organizationAId },
+          { handle: `support-b-${suffix}`, name: "Support B", organizationId: organizationBId },
         ])
         .returning({ id: tenants.id });
       assert.ok(principal && tenantA && tenantB);

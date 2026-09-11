@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -132,6 +133,8 @@ export function OrderActions({
   variant?: "card" | "header";
 }) {
   const { t } = useI18n();
+  const canUpdate = usePermission("orders.update");
+  const canCancel = usePermission("orders.cancel");
   const router = useRouter();
   const next = useMemo(() => getNextAction(order), [order]);
   const copy = nextActionCopy(next.type, t);
@@ -142,6 +145,7 @@ export function OrderActions({
   const [banks, setBanks] = useState<BankOption[]>([]);
 
   useEffect(() => {
+    if (!canUpdate) return;
     void Promise.all([
       fetch("/admin/settings/payments/receiving-accounts", { cache: "no-store" }),
       fetch("/admin/settings/payments/banks", { cache: "no-store" }),
@@ -151,7 +155,7 @@ export function OrderActions({
         if (b.ok) setBanks((await b.json().catch(() => ({})))?.banks ?? []);
       })
       .catch(() => undefined);
-  }, []);
+  }, [canUpdate]);
 
   const mutation = useMutation({
     mutationFn: async (kind: PendingKind) => {
@@ -203,11 +207,12 @@ export function OrderActions({
     },
   });
 
-  const showMarkPaid = canMarkPaid(order);
-  const showRecheck = canRecheckPayment(order);
+  const showMarkPaid = canUpdate && canMarkPaid(order);
+  const showRecheck = canUpdate && canRecheckPayment(order);
   const canceled = (order.status ?? "").toLowerCase().includes("cancel");
-  const showCancel = !canceled && (next.type !== "none" || showMarkPaid);
-  const hasMenu = next.type !== "none" || showMarkPaid || showRecheck || showCancel;
+  const showCancel = canCancel && !canceled && (next.type !== "none" || showMarkPaid);
+  const hasNextAction = canUpdate && next.type !== "none";
+  const hasMenu = hasNextAction || showMarkPaid || showRecheck || showCancel;
   const menu = hasMenu ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -222,7 +227,7 @@ export function OrderActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        {next.type !== "none" ? (
+        {hasNextAction ? (
           <DropdownMenuItem onSelect={() => setPending({ kind: "complete_remaining" })}>
             {t("orders.actions.completeAll")}
           </DropdownMenuItem>
@@ -252,7 +257,7 @@ export function OrderActions({
     </DropdownMenu>
   ) : null;
 
-  if (next.type === "none" && !hasMenu)
+  if (!hasNextAction && !hasMenu)
     return (
       <div className="rounded-xl bg-muted/30 px-3.5 py-3 text-sm text-muted-foreground ring-1 ring-foreground/[0.06]">
         {canceled ? t("orders.actions.canceled") : t("orders.actions.noFurther")}
@@ -274,7 +279,7 @@ export function OrderActions({
             : "flex h-full min-h-[11rem] flex-col gap-3"
         }
       >
-        {next.type !== "none" ? (
+        {hasNextAction ? (
           <div
             className={
               variant === "card"

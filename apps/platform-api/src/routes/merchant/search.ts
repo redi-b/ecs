@@ -73,6 +73,31 @@ export function registerMerchantSearchRoutes(
     const typesParam = context.req.query("types")?.trim();
     const types = parseTypes(typesParam);
 
+    const permissionChecks = await Promise.all(
+      [
+        ["product", { products: ["read"] }],
+        ["order", { orders: ["read"] }],
+        ["customer", { customers: ["read"] }],
+        ["media", { media: ["read"] }],
+        ["category", { products: ["read"] }],
+        ["collection", { products: ["read"] }],
+        ["promotion", { promotions: ["read"] }],
+      ].map(async ([type, permission]) => {
+        if (!types.has(type as string)) return [type, false] as const;
+        const authorization = await options.authorizeDashboardForTenant?.({
+          tenantId: merchant.result.context.tenantId,
+          userId: merchant.session.user.id,
+          permission: permission as NonNullable<Parameters<
+            NonNullable<PlatformAppOptions["authorizeDashboardForTenant"]>
+          >[0]["permission"]>,
+        });
+        return [type, authorization?.ok === true] as const;
+      }),
+    );
+    const allowedTypes = new Set(
+      permissionChecks.filter(([, allowed]) => allowed).map(([type]) => type),
+    );
+
     const commerce = helpers.getResolvedCommerce(merchant.result.context);
     const salesChannelId = commerce.ok ? commerce.context.medusaSalesChannelId : null;
     const stockLocationId = merchant.result.context.medusaStockLocationId;
@@ -80,7 +105,7 @@ export function registerMerchantSearchRoutes(
 
     const tasks: Promise<SearchHit[]>[] = [];
 
-    if (types.has("product") && options.listMerchantProducts && salesChannelId) {
+    if (allowedTypes.has("product") && options.listMerchantProducts && salesChannelId) {
       tasks.push(
         options
           .listMerchantProducts({
@@ -104,7 +129,7 @@ export function registerMerchantSearchRoutes(
       );
     }
 
-    if (types.has("order") && options.listMerchantOrders && salesChannelId) {
+    if (allowedTypes.has("order") && options.listMerchantOrders && salesChannelId) {
       tasks.push(
         options
           .listMerchantOrders({
@@ -137,7 +162,7 @@ export function registerMerchantSearchRoutes(
       );
     }
 
-    if (types.has("customer") && options.listMerchantCustomers) {
+    if (allowedTypes.has("customer") && options.listMerchantCustomers) {
       tasks.push(
         options
           .listMerchantCustomers({
@@ -166,7 +191,7 @@ export function registerMerchantSearchRoutes(
     }
 
     // Phase-2 types: media / taxonomy / promotions when requested and available.
-    if (types.has("media") && options.listMediaAssets) {
+    if (allowedTypes.has("media") && options.listMediaAssets) {
       tasks.push(
         options
           .listMediaAssets({
@@ -189,7 +214,7 @@ export function registerMerchantSearchRoutes(
       );
     }
 
-    if (types.has("category") && options.listMerchantProductCategories) {
+    if (allowedTypes.has("category") && options.listMerchantProductCategories) {
       tasks.push(
         options
           .listMerchantProductCategories({
@@ -212,7 +237,7 @@ export function registerMerchantSearchRoutes(
       );
     }
 
-    if (types.has("collection") && options.listMerchantProductCollections) {
+    if (allowedTypes.has("collection") && options.listMerchantProductCollections) {
       tasks.push(
         options
           .listMerchantProductCollections({
@@ -235,7 +260,7 @@ export function registerMerchantSearchRoutes(
       );
     }
 
-    if (types.has("promotion") && options.listMerchantPromotions) {
+    if (allowedTypes.has("promotion") && options.listMerchantPromotions) {
       tasks.push(
         options
           .listMerchantPromotions({

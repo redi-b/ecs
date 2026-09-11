@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 
 import {
@@ -45,7 +46,8 @@ type ProductDetailProps = {
 
 export function ProductDetail({ action, product, readOnly = false, tenantId }: ProductDetailProps) {
   const { t } = useI18n();
-  const taxonomy = useProductTaxonomy({ enabled: !readOnly, tenantId });
+  const effectiveReadOnly = readOnly || !usePermission("products.update");
+  const taxonomy = useProductTaxonomy({ enabled: !effectiveReadOnly, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -110,7 +112,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <ProductStatusBadge status={product.status} />
-                  {readOnly ? null : (
+                  {effectiveReadOnly ? null : (
                     <ProductDetailsEditButton
                       action={action}
                       product={product}
@@ -176,7 +178,11 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15.5rem,18rem)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
           <DetailSection
-            action={readOnly ? null : <ProductMediaEditButton action={action} product={product} />}
+            action={
+              effectiveReadOnly ? null : (
+                <ProductMediaEditButton action={action} product={product} />
+              )
+            }
             meta={t("products.detail.imagesCount", { count: images.length })}
             title={t("products.detail.images")}
           >
@@ -229,7 +235,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
 
           <DetailSection
             action={
-              readOnly ? null : (
+              effectiveReadOnly ? null : (
                 <ProductOptionsEditButton action={action} product={product} />
               )
             }
@@ -243,7 +249,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
         <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
           <DetailSection
             action={
-              readOnly ? null : (
+              effectiveReadOnly ? null : (
                 <ProductOrganizationEditButton
                   action={action}
                   categories={categories}
@@ -261,7 +267,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
                   <CollectionValue
                     collection={collection}
                     product={product}
-                    readOnly={readOnly}
+                    readOnly={effectiveReadOnly}
                     tenantId={tenantId}
                   />
                 }
@@ -271,7 +277,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
                 value={
                   <CategoryValue
                     categories={productCategories}
-                    readOnly={readOnly}
+                    readOnly={effectiveReadOnly}
                     tenantId={tenantId}
                   />
                 }

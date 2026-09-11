@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-
+import { usePermission } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
@@ -49,6 +49,7 @@ export function MediaWorkspace({
   totalCount: number;
 }) {
   const { t } = useI18n();
+  const canManage = usePermission("media.manage");
   const [assets, setAssets] = useState(initialAssets);
   const [totalCount, setTotalCount] = useState(initialTotalCount);
   const [refreshing, setRefreshing] = useState(false);
@@ -124,13 +125,15 @@ export function MediaWorkspace({
               {refreshing ? t("common.refreshing") : t("media.refresh")}
             </TooltipContent>
           </Tooltip>
-          <Button
-            onClick={() => window.dispatchEvent(new Event(OPEN_MEDIA_UPLOAD_EVENT))}
-            type="button"
-          >
-            <AppIcons.upload data-icon="inline-start" />
-            {t("media.uploadNew")}
-          </Button>
+          {canManage ? (
+            <Button
+              onClick={() => window.dispatchEvent(new Event(OPEN_MEDIA_UPLOAD_EVENT))}
+              type="button"
+            >
+              <AppIcons.upload data-icon="inline-start" />
+              {t("media.uploadNew")}
+            </Button>
+          ) : null}
         </>
       }
       title={t("media.shellTitle")}

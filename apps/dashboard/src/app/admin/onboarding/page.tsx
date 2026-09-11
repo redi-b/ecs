@@ -10,6 +10,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
+import { resolveShopDestination } from "@/lib/shop-selection";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type OnboardingPageProps = {
@@ -65,8 +66,14 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     redirect("/admin/sign-in?next=%2Fadmin%2Fonboarding");
   }
 
-  if (onboardingResult.ok && onboardingResult.state.primaryTenant) {
-    redirect(onboardingResult.state.primaryTenant.dashboardUrl);
+  if (onboardingResult.ok && onboardingResult.state.tenants.length > 0) {
+    redirect(
+      resolveShopDestination({
+        lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,
+        protocol: requestHeaders.get("x-forwarded-proto") ?? "http",
+        state: onboardingResult.state,
+      }).href,
+    );
   }
 
   const templates = templatesResult.ok ? templatesResult.templates : [];

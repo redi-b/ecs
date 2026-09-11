@@ -2,8 +2,8 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   domains,
+  organizationMembers,
   reservedHandles,
-  tenantMemberships,
   tenantProvisioningAttempts,
   tenants,
   users,
@@ -72,19 +72,19 @@ export function createTenantListService(db: PlatformDb) {
         name: tenants.name,
         handle: tenants.handle,
         status: tenants.status,
-        role: tenantMemberships.role,
+        role: organizationMembers.role,
         primaryDomainHostname: domains.hostname,
         createdAt: tenants.createdAt,
         updatedAt: tenants.updatedAt,
       })
-      .from(tenantMemberships)
-      .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .leftJoin(domains, eq(tenants.primaryDomainId, domains.id))
       .where(
         and(
-          eq(tenantMemberships.userId, input.userId),
-          eq(tenantMemberships.status, "active"),
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
           eq(users.status, "active"),
         ),
       )
@@ -94,13 +94,13 @@ export function createTenantListService(db: PlatformDb) {
 
     const [total] = await db
       .select({ count: count() })
-      .from(tenantMemberships)
-      .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .where(
         and(
-          eq(tenantMemberships.userId, input.userId),
-          eq(tenantMemberships.status, "active"),
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
           eq(users.status, "active"),
         ),
       );
@@ -126,20 +126,20 @@ export function createTenantDetailService(db: PlatformDb) {
         name: tenants.name,
         handle: tenants.handle,
         status: tenants.status,
-        role: tenantMemberships.role,
+        role: organizationMembers.role,
         primaryDomainHostname: domains.hostname,
         createdAt: tenants.createdAt,
         updatedAt: tenants.updatedAt,
       })
-      .from(tenantMemberships)
-      .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .leftJoin(domains, eq(tenants.primaryDomainId, domains.id))
       .where(
         and(
           eq(tenants.id, input.tenantId),
-          eq(tenantMemberships.userId, input.userId),
-          eq(tenantMemberships.status, "active"),
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
           eq(users.status, "active"),
         ),
       )
@@ -347,14 +347,14 @@ export function createTenantShopSettingsService(options: {
         id: tenants.id,
         currentHandle: tenants.handle,
       })
-      .from(tenantMemberships)
-      .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .where(
         and(
           eq(tenants.id, input.tenantId),
-          eq(tenantMemberships.userId, input.userId),
-          eq(tenantMemberships.status, "active"),
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
           eq(users.status, "active"),
         ),
       )
@@ -452,20 +452,20 @@ export function createTenantShopSettingsService(options: {
           name: tenants.name,
           handle: tenants.handle,
           status: tenants.status,
-          role: tenantMemberships.role,
+          role: organizationMembers.role,
           primaryDomainHostname: domains.hostname,
           createdAt: tenants.createdAt,
           updatedAt: tenants.updatedAt,
         })
-        .from(tenantMemberships)
-        .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-        .innerJoin(users, eq(tenantMemberships.userId, users.id))
+        .from(organizationMembers)
+        .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+        .innerJoin(users, eq(organizationMembers.userId, users.id))
         .leftJoin(domains, eq(tenants.primaryDomainId, domains.id))
         .where(
           and(
             eq(tenants.id, input.tenantId),
-            eq(tenantMemberships.userId, input.userId),
-            eq(tenantMemberships.status, "active"),
+            eq(organizationMembers.userId, input.userId),
+            eq(organizationMembers.status, "active"),
             eq(users.status, "active"),
           ),
         )

@@ -148,6 +148,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["edit"] },
     });
 
     if (!authorization?.ok) {
@@ -204,6 +205,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -233,6 +235,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["read"] },
     });
     if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
     const result = await options.getStorefrontSeoSettings({ tenantId });
@@ -250,6 +253,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["edit"] },
     });
     if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
     const body = await getJsonBody(context.req.raw);
@@ -286,6 +290,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["read"] },
     });
     if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
     const draft = await options.getStorefrontDraft({ tenantId });
@@ -310,6 +315,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["edit"] },
     });
 
     if (!authorization?.ok) {
@@ -368,6 +374,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["publish"] },
     });
 
     if (!authorization?.ok) {
@@ -403,6 +410,7 @@ export function registerPlatformStorefrontRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { storefront: ["publish"] },
     });
 
     if (!authorization?.ok) {

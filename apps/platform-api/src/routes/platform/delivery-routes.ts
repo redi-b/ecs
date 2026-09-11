@@ -70,6 +70,7 @@ export function registerDeliveryRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { settings: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -105,6 +106,7 @@ export function registerDeliveryRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { settings: ["manage"] },
     });
 
     if (!authorization?.ok) {

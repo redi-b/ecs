@@ -1,4 +1,5 @@
-export type DashboardActorRole = "owner" | "manager" | "staff" | "operator";
+/** Better Auth built-in/custom merchant role name, or the isolated platform support role. */
+export type DashboardActorRole = string;
 
 export type PlatformSessionUser = {
   id: string;

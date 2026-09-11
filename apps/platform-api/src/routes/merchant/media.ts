@@ -34,7 +34,7 @@ export function registerMerchantMediaRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   app.post("/platform/merchant/media/uploads", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.createMediaUpload) {
       return context.json({ error: "media_storage_unavailable" }, 503);
@@ -55,7 +55,7 @@ export function registerMerchantMediaRoutes(
   });
 
   app.post("/platform/merchant/media/uploads/:assetId/complete", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.completeMediaUpload) {
       return context.json({ error: "media_storage_unavailable" }, 503);
@@ -74,7 +74,7 @@ export function registerMerchantMediaRoutes(
   });
 
   app.get("/platform/merchant/media", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMediaAssets) {
       return context.json({ error: "media_storage_unavailable" }, 503);
@@ -106,7 +106,7 @@ export function registerMerchantMediaRoutes(
   });
 
   app.post("/platform/merchant/media/:assetId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.updateMediaMetadata) {
       return context.json({ error: "media_storage_unavailable" }, 503);
@@ -125,7 +125,7 @@ export function registerMerchantMediaRoutes(
   });
 
   app.delete("/platform/merchant/media/:assetId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.deleteMediaAsset) {
       return context.json({ error: "media_storage_unavailable" }, 503);
@@ -139,7 +139,10 @@ export function registerMerchantMediaRoutes(
   });
 
   app.post("/platform/merchant/media/products/:productId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      media: ["manage"],
+      products: ["update"],
+    });
     if (!merchant.ok) return merchant.response;
     if (!options.syncProductMedia) {
       return context.json({ error: "media_storage_unavailable" }, 503);

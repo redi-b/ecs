@@ -2,14 +2,10 @@
 
 import type { MerchantOrder } from "@ecs/contracts";
 import type { ReactNode } from "react";
-import Link from "@/components/app/link";
-
-import {
-  DetailHero,
-  DetailMetric,
-  DetailSection,
-} from "@/components/app/detail-surface";
+import { usePermission } from "@/components/app/access-context";
+import { DetailHero, DetailMetric, DetailSection } from "@/components/app/detail-surface";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,9 +61,10 @@ function MetaDot() {
 
 /** Page-level actions: edit belongs with refresh, not inside the hero metrics row. */
 export function CustomerDetailPageActions({ customer }: { customer: MerchantCustomer }) {
+  const canUpdate = usePermission("customers.update");
   return (
     <div className="flex items-center gap-2">
-      <CustomerFormDialog customer={customer} />
+      {canUpdate ? <CustomerFormDialog customer={customer} /> : null}
       <RefreshButton />
     </div>
   );
@@ -80,6 +77,7 @@ export function CustomerDetail({
   ordersTotalCount,
 }: CustomerDetailProps) {
   const { t, locale } = useI18n();
+  const canUpdate = usePermission("customers.update");
   const groups = customer.groups;
   const memberSince = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     new Date(customer.createdAt),
@@ -245,11 +243,8 @@ export function CustomerDetail({
 
       <DetailSection
         action={
-          isWalkIn ? null : (
-            <CustomerAddressDialog
-              customerDefaults={contactDefaults}
-              customerId={customer.id}
-            />
+          isWalkIn || !canUpdate ? null : (
+            <CustomerAddressDialog customerDefaults={contactDefaults} customerId={customer.id} />
           )
         }
         meta={
@@ -285,9 +280,7 @@ export function CustomerDetail({
                           address.address1 ||
                           t("customers.detail.defaultAddressName")}
                       </p>
-                      {contact ? (
-                        <p className="text-xs text-muted-foreground">{contact}</p>
-                      ) : null}
+                      {contact ? <p className="text-xs text-muted-foreground">{contact}</p> : null}
                     </div>
                     {isDefault ? (
                       <Badge className="font-normal" variant="secondary">
@@ -305,17 +298,19 @@ export function CustomerDetail({
                       </a>
                     </p>
                   ) : null}
-                  <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
-                    <CustomerAddressDialog
-                      address={address}
-                      customerDefaults={contactDefaults}
-                      customerId={customer.id}
-                    />
-                    <CustomerAddressDeleteButton
-                      addressId={address.id}
-                      customerId={customer.id}
-                    />
-                  </div>
+                  {canUpdate ? (
+                    <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
+                      <CustomerAddressDialog
+                        address={address}
+                        customerDefaults={contactDefaults}
+                        customerId={customer.id}
+                      />
+                      <CustomerAddressDeleteButton
+                        addressId={address.id}
+                        customerId={customer.id}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

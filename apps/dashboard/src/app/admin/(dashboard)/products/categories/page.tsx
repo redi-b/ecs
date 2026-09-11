@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
-import { ListSetupState } from "@/components/app/list-error-state";
+import { PermissionGate } from "@/components/app/access-context";
 import { HelpTip } from "@/components/app/help-tip";
+import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -65,17 +66,19 @@ export default async function MerchantProductCategoriesPage({
       actions={
         <>
           <RefreshButton />
-          <TaxonomyCreateDialog
-            tenantId={tenantId}
-            action={createCategoryAction}
-            entityLabel="category"
-            nameKey="name"
-            nameLabel={t("taxonomy.create.nameLabel")}
-            namePlaceholder={t("taxonomy.create.namePlaceholder")}
-            parentOptions={result.ok ? result.categories : []}
-            queryKey="product-categories"
-            triggerLabel={t("categories.actions.new")}
-          />
+          <PermissionGate permission="products.create">
+            <TaxonomyCreateDialog
+              tenantId={tenantId}
+              action={createCategoryAction}
+              entityLabel="category"
+              nameKey="name"
+              nameLabel={t("taxonomy.create.nameLabel")}
+              namePlaceholder={t("taxonomy.create.namePlaceholder")}
+              parentOptions={result.ok ? result.categories : []}
+              queryKey="product-categories"
+              triggerLabel={t("categories.actions.new")}
+            />
+          </PermissionGate>
         </>
       }
       titleAccessory={

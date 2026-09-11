@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkspaceNavigation } from "@/components/workspace-navigation";
 import { CommerceReviewWorkspace } from "@/features/superadmin/commerce-review-workspace";
+import { MerchantTeamInspector } from "@/features/superadmin/merchant-team-inspector";
 import { OperationalDiagnostics } from "@/features/superadmin/operational-diagnostics";
 import { SubscriptionPlanControl } from "@/features/superadmin/subscription-plan-control";
 import { SupportAccessControl } from "@/features/superadmin/support-access-control";
@@ -22,6 +23,7 @@ import { getSuperadminDiagnostics } from "@/lib/platform-api/superadmin/diagnost
 import { getSuperadminOperationalSummary } from "@/lib/platform-api/superadmin/operations";
 import { getSuperadminSupportHistory } from "@/lib/platform-api/superadmin/support";
 import { getSuperadminSupportAccess } from "@/lib/platform-api/superadmin/support-access";
+import { getSuperadminMerchantTeam } from "@/lib/platform-api/superadmin/team-access";
 import { getSuperadminTenant } from "@/lib/platform-api/superadmin/tenants";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +120,10 @@ export default async function MerchantWorkspacePage({
   const supportAccess =
     activeTab === "access" && access.permissions.includes("tenants.support.access.read")
       ? await getSuperadminSupportAccess(common)
+      : null;
+  const merchantTeam =
+    activeTab === "access" && access.permissions.includes("tenants.support.access.read")
+      ? await getSuperadminMerchantTeam(common)
       : null;
 
   return (
@@ -229,23 +235,33 @@ export default async function MerchantWorkspacePage({
       ) : null}
 
       {activeTab === "access" && supportAccess?.ok ? (
-        <SupportAccessControl
-          canManage={access.permissions.includes("tenants.support.access.manage")}
-          currentOperatorUserId={access.operator.id}
-          dashboardUrl={
-            tenant.primaryDomainHostname
-              ? `${tenant.primaryDomainHostname.endsWith(".lvh.me") ? "http" : "https"}://${tenant.primaryDomainHostname}/admin`
-              : null
-          }
-          grants={supportAccess.grants}
-          tenantId={tenantId}
-        />
+        <div className="space-y-5">
+          {merchantTeam?.ok ? <MerchantTeamInspector team={merchantTeam.team} /> : null}
+          <SupportAccessControl
+            canManage={access.permissions.includes("tenants.support.access.manage")}
+            currentOperatorUserId={access.operator.id}
+            dashboardUrl={
+              tenant.primaryDomainHostname
+                ? `${tenant.primaryDomainHostname.endsWith(".lvh.me") ? "http" : "https"}://${tenant.primaryDomainHostname}/admin`
+                : null
+            }
+            grants={supportAccess.grants}
+            tenantId={tenantId}
+          />
+        </div>
       ) : null}
       {activeTab === "access" && supportAccess && !supportAccess.ok ? (
         <OperatorReadError
           resource="Support access"
           status={supportAccess.status}
           unavailableDescription="Current support access grants could not be loaded."
+        />
+      ) : null}
+      {activeTab === "access" && merchantTeam && !merchantTeam.ok ? (
+        <OperatorReadError
+          resource="Merchant team"
+          status={merchantTeam.status}
+          unavailableDescription="The merchant organization membership could not be loaded."
         />
       ) : null}
 

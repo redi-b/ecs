@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { useAccess } from "@/components/app/access-context";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,14 +33,33 @@ import { SettingsSectionNav } from "@/features/settings/settings-section-nav";
 import { ShopSection } from "@/features/settings/settings-shop-section";
 import { StorefrontSection } from "@/features/settings/settings-storefront-section";
 import type { Delivery, SettingsWorkspaceProps } from "@/features/settings/settings-types";
+import { TeamSection } from "@/features/settings/team-section";
 import { TelegramSection } from "@/features/settings/telegram-section";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { allows, merchantPolicies } from "@/lib/access-policy";
 import {
   isLaunchAssistantHidden,
   setLaunchAssistantHidden,
 } from "@/lib/launch-assistant-preferences";
 import { dashboardRoutes } from "@/lib/routes";
+
+function canOpenSettingsSection(
+  section: SettingsSectionId,
+  permissions: ReadonlySet<string> | readonly string[],
+) {
+  if (section === "team") return allows(permissions, merchantPolicies.team);
+  if (section === "payments") return allows(permissions, merchantPolicies.paymentsManage);
+  if (section === "domains") return allows(permissions, merchantPolicies.domainsManage);
+  if (section === "notifications" || section === "telegram") {
+    return allows(permissions, merchantPolicies.notifications);
+  }
+  if (section === "storefront") return allows(permissions, merchantPolicies.storefront);
+  if (section === "shop" || section === "fulfillment") {
+    return allows(permissions, merchantPolicies.shopSettings);
+  }
+  return true;
+}
 
 export function SettingsWorkspace({
   delivery,
@@ -51,11 +71,16 @@ export function SettingsWorkspace({
   storefrontTemplates,
   storefrontSeo,
   summary,
+  team,
   templateStatus,
 }: SettingsWorkspaceProps) {
   const router = useRouter();
+  const { permissions } = useAccess();
   const { t } = useI18n();
-  const [section, setSection] = useState<SettingsSectionId>(() => parseSettingsSection(initialTab));
+  const [section, setSection] = useState<SettingsSectionId>(() => {
+    const requested = parseSettingsSection(initialTab);
+    return canOpenSettingsSection(requested, permissions) ? requested : "preferences";
+  });
   const [name, setName] = useState(summary.tenant.name);
   const [handle, setHandle] = useState(summary.tenant.handle);
   const [handleUnlocked, setHandleUnlocked] = useState(false);
@@ -84,6 +109,26 @@ export function SettingsWorkspace({
     (!handleChanged || handleAvailability.status === "available");
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
     useUnsavedChangesGuard(shopDirty);
+  const visibleSections = (
+    [
+      "shop",
+      "preferences",
+      "team",
+      "notifications",
+      "telegram",
+      "payments",
+      "fulfillment",
+      "storefront",
+      "domains",
+      "account",
+    ] as SettingsSectionId[]
+  ).filter((id) => {
+    return canOpenSettingsSection(id, permissions);
+  });
+
+  useEffect(() => {
+    if (!canOpenSettingsSection(section, permissions)) setSection("preferences");
+  }, [permissions, section]);
 
   useEffect(() => {
     setShowLaunchAssistant(!isLaunchAssistantHidden(summary.tenant.id));
@@ -277,7 +322,11 @@ export function SettingsWorkspace({
       {/* min-w-0: allow the chip strip to shrink so overflow-x scrolls inside the nav,
           not the page (flex default min-width:auto expands to fit all chips). */}
       <div className="flex min-w-0 flex-col gap-4 sm:gap-5 lg:flex-row lg:items-start lg:gap-8">
-        <SettingsSectionNav active={section} onSelect={selectSection} />
+        <SettingsSectionNav
+          active={section}
+          onSelect={selectSection}
+          visibleSections={visibleSections}
+        />
 
         <div className="min-w-0 flex-1" key={section}>
           {section === "shop" ? (
@@ -312,6 +361,8 @@ export function SettingsWorkspace({
 
           {section === "preferences" ? (
             <PreferencesSection
+              canOpenFulfillment={allows(permissions, merchantPolicies.shopSettings)}
+              canShowLaunchAssistant={allows(permissions, merchantPolicies.launchSetup)}
               showLaunchAssistant={showLaunchAssistant}
               tenantId={summary.tenant.id}
               onLaunchAssistantChange={(checked) => {
@@ -328,6 +379,8 @@ export function SettingsWorkspace({
           {section === "notifications" ? (
             <NotificationsSection tenantId={summary.tenant.id} />
           ) : null}
+
+          {section === "team" ? <TeamSection initialTeam={team} /> : null}
 
           {section === "telegram" ? <TelegramSection tenantId={summary.tenant.id} /> : null}
 

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { StorefrontVisualEditor } from "@/features/storefront-editor/storefront-visual-editor";
 import { getTranslations } from "@/i18n/server";
+import { allows, merchantPolicies } from "@/lib/access-policy";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -107,6 +108,8 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
         </Empty>
       ) : (
         <StorefrontVisualEditor
+          canEdit={allows(access.access.permissions ?? [], merchantPolicies.storefrontEdit)}
+          canPublish={allows(access.access.permissions ?? [], merchantPolicies.storefrontPublish)}
           draft={draft.draft}
           editorMeta={{
             initiallyPublished: access.access.storefront.isPublished,

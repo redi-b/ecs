@@ -12,6 +12,7 @@ const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
   preferences: AppIcons.preferences,
   notifications: AppIcons.notifications,
+  team: AppIcons.team,
   telegram: AppIcons.smartphone,
   payments: AppIcons.billing,
   fulfillment: AppIcons.orders,
@@ -32,9 +33,11 @@ function sectionLabelKey(id: SettingsSectionId): MessageKey {
 export function SettingsSectionNav({
   active,
   onSelect,
+  visibleSections = SETTINGS_SECTION_IDS,
 }: {
   active: SettingsSectionId;
   onSelect: (id: SettingsSectionId) => void;
+  visibleSections?: SettingsSectionId[];
 }) {
   const { t } = useI18n();
   const scrollerRef = useRef<HTMLUListElement>(null);
@@ -115,7 +118,7 @@ export function SettingsSectionNav({
           )}
           ref={scrollerRef}
         >
-          {SETTINGS_SECTION_IDS.map((id) => {
+          {visibleSections.map((id) => {
             const isActive = active === id;
             const Icon = SECTION_ICONS[id];
             return (

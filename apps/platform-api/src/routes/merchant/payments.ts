@@ -21,7 +21,7 @@ export function registerMerchantPaymentRoutes(
       return context.json({ error: "payments_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -38,7 +38,7 @@ export function registerMerchantPaymentRoutes(
       return context.json({ error: "payments_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -83,7 +83,7 @@ export function registerMerchantPaymentRoutes(
   });
 
   app.post("/platform/merchant/payments/chapa/test", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -121,7 +121,7 @@ export function registerMerchantPaymentRoutes(
       return context.json({ error: "payments_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -158,7 +158,7 @@ export function registerMerchantPaymentRoutes(
       return context.json({ error: "payments_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -178,7 +178,7 @@ export function registerMerchantPaymentRoutes(
   // --- Bank catalog + receiving accounts (offline settlement labels) ---
 
   app.get("/platform/merchant/payments/banks", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantPaymentBanks) {
       return context.json({ error: "payments_unavailable" }, 503);
@@ -188,7 +188,7 @@ export function registerMerchantPaymentRoutes(
   });
 
   app.get("/platform/merchant/payments/receiving-accounts", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantReceivingAccounts) {
       return context.json({ error: "payments_unavailable" }, 503);
@@ -202,7 +202,7 @@ export function registerMerchantPaymentRoutes(
   });
 
   app.post("/platform/merchant/payments/receiving-accounts", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.createMerchantReceivingAccount) {
       return context.json({ error: "payments_unavailable" }, 503);
@@ -227,7 +227,7 @@ export function registerMerchantPaymentRoutes(
   });
 
   app.post("/platform/merchant/payments/receiving-accounts/:accountId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.updateMerchantReceivingAccount) {
       return context.json({ error: "payments_unavailable" }, 503);
@@ -255,7 +255,7 @@ export function registerMerchantPaymentRoutes(
   });
 
   app.delete("/platform/merchant/payments/receiving-accounts/:accountId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { payments: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.deleteMerchantReceivingAccount) {
       return context.json({ error: "payments_unavailable" }, 503);

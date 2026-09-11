@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -109,6 +110,7 @@ export function PromotionsManager({
   totalCount: number;
 }) {
   const { t } = useI18n();
+  const canManage = usePermission("promotions.manage");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
@@ -386,12 +388,16 @@ export function PromotionsManager({
           return (
             <RowActionsMenu
               actions={[
-                {
-                  icon: AppIcons.edit,
-                  label: t("promotions.action.edit"),
-                  onSelect: () => setEditing(item),
-                  type: "button",
-                },
+                ...(canManage
+                  ? [
+                      {
+                        icon: AppIcons.edit,
+                        label: t("promotions.action.edit"),
+                        onSelect: () => setEditing(item),
+                        type: "button" as const,
+                      },
+                    ]
+                  : []),
                 ...(!item.isAutomatic
                   ? [
                       {
@@ -403,14 +409,18 @@ export function PromotionsManager({
                       },
                     ]
                   : []),
-                { id: "danger", type: "separator" },
-                {
-                  icon: AppIcons.trash,
-                  label: t("table.actions.deletePromotion"),
-                  onSelect: () => setDeleteTarget(item),
-                  type: "button",
-                  variant: "destructive",
-                },
+                ...(canManage
+                  ? [
+                      { id: "danger", type: "separator" as const },
+                      {
+                        icon: AppIcons.trash,
+                        label: t("table.actions.deletePromotion"),
+                        onSelect: () => setDeleteTarget(item),
+                        type: "button" as const,
+                        variant: "destructive" as const,
+                      },
+                    ]
+                  : []),
               ]}
               label={t("table.actions.openActionsFor", { name: item.code })}
             />
@@ -420,7 +430,7 @@ export function PromotionsManager({
         enableSorting: false,
       },
     ],
-    [setEditing, t],
+    [canManage, t],
   );
 
   const deleteTargets = deleteTarget ? [deleteTarget] : bulkDeleteTargets;
@@ -450,15 +460,17 @@ export function PromotionsManager({
               <AppIcons.copy data-icon="inline-start" />
               {t("promotions.table.copyCodes")}
             </Button>
-            <Button
-              onClick={() => setBulkDeleteTargets(selected)}
-              size="sm"
-              type="button"
-              variant="destructive-outline"
-            >
-              <AppIcons.trash data-icon="inline-start" />
-              {t("table.actions.deleteSelected")}
-            </Button>
+            {canManage ? (
+              <Button
+                onClick={() => setBulkDeleteTargets(selected)}
+                size="sm"
+                type="button"
+                variant="destructive-outline"
+              >
+                <AppIcons.trash data-icon="inline-start" />
+                {t("table.actions.deleteSelected")}
+              </Button>
+            ) : null}
           </div>
         )}
         columns={columns}

@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -66,6 +67,8 @@ async function copyToClipboard(
 }
 
 function getCollectionColumns(
+  canUpdate: boolean,
+  canDelete: boolean,
   onDelete: (collectionId: string) => void,
   onEdit: (collection: MerchantProductCollection) => void,
   t: (key: any, values?: Record<string, string | number>) => string,
@@ -102,7 +105,10 @@ function getCollectionColumns(
         <DataTableHeader column={column} title={t("taxonomy.table.collection")} />
       ),
       cell: ({ row }) => (
-        <CollectionIdentityCell collection={row.original} onOpen={() => onEdit(row.original)} />
+        <CollectionIdentityCell
+          collection={row.original}
+          onOpen={canUpdate ? () => onEdit(row.original) : undefined}
+        />
       ),
     },
     {
@@ -142,14 +148,18 @@ function getCollectionColumns(
         return (
           <RowActionsMenu
             actions={[
-              {
-                icon: AppIcons.edit,
-                label: t("taxonomy.table.actions.edit", {
-                  entity: t("taxonomy.entity.collection.label"),
-                }),
-                onSelect: () => onEdit(collection),
-                type: "button",
-              },
+              ...(canUpdate
+                ? [
+                    {
+                      icon: AppIcons.edit,
+                      label: t("taxonomy.table.actions.edit", {
+                        entity: t("taxonomy.entity.collection.label"),
+                      }),
+                      onSelect: () => onEdit(collection),
+                      type: "button" as const,
+                    },
+                  ]
+                : []),
               {
                 icon: AppIcons.copy,
                 label: t("taxonomy.table.actions.copyId", {
@@ -173,16 +183,20 @@ function getCollectionColumns(
                   copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
                 type: "button",
               },
-              { id: "danger", type: "separator" },
-              {
-                icon: AppIcons.trash,
-                label: t("taxonomy.table.actions.delete", {
-                  entity: t("taxonomy.entity.collection.label"),
-                }),
-                onSelect: () => onDelete(collection.id),
-                type: "button",
-                variant: "destructive",
-              },
+              ...(canDelete
+                ? [
+                    { id: "danger", type: "separator" as const },
+                    {
+                      icon: AppIcons.trash,
+                      label: t("taxonomy.table.actions.delete", {
+                        entity: t("taxonomy.entity.collection.label"),
+                      }),
+                      onSelect: () => onDelete(collection.id),
+                      type: "button" as const,
+                      variant: "destructive" as const,
+                    },
+                  ]
+                : []),
             ]}
             label={`Open actions for ${getCollectionDisplayName(collection)}`}
           />
@@ -231,6 +245,8 @@ export function ProductCollectionsTable({
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const canUpdate = usePermission("products.update");
+  const canDelete = usePermission("products.delete");
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const visibility = initialVisibility;
@@ -267,11 +283,13 @@ export function ProductCollectionsTable({
   const columns = useMemo(
     () =>
       getCollectionColumns(
+        canUpdate,
+        canDelete,
         (id) => setDeleteCollectionId(id),
         (collection) => setEditingCollection(collection),
         t,
       ),
-    [t],
+    [canDelete, canUpdate, t],
   );
 
   const deleteCollectionMutation = useMutation({
@@ -394,14 +412,16 @@ export function ProductCollectionsTable({
 
   return (
     <>
-      <CollectionEditSheet
-        collection={editingCollection}
-        onOpenChange={(next) => {
-          if (!next) setEditingCollection(null);
-        }}
-        open={Boolean(editingCollection)}
-        tenantId={tenantId}
-      />
+      {canUpdate ? (
+        <CollectionEditSheet
+          collection={editingCollection}
+          onOpenChange={(next) => {
+            if (!next) setEditingCollection(null);
+          }}
+          open={Boolean(editingCollection)}
+          tenantId={tenantId}
+        />
+      ) : null}
       <DataTable
         enableSorting={false}
         bulkActions={(selectedCollections) => (
@@ -421,18 +441,20 @@ export function ProductCollectionsTable({
               <AppIcons.copy data-icon="inline-start" />
               {t("table.actions.copyIds")}
             </Button>
-            <Button
-              onClick={() => {
-                setSelectedCollectionIdsForDelete(selectedCollections.map((c) => c.id));
-                setShowBatchDeleteDialog(true);
-              }}
-              size="sm"
-              type="button"
-              variant="destructive-outline"
-            >
-              <AppIcons.trash data-icon="inline-start" />
-              Delete selected
-            </Button>
+            {canDelete ? (
+              <Button
+                onClick={() => {
+                  setSelectedCollectionIdsForDelete(selectedCollections.map((c) => c.id));
+                  setShowBatchDeleteDialog(true);
+                }}
+                size="sm"
+                type="button"
+                variant="destructive-outline"
+              >
+                <AppIcons.trash data-icon="inline-start" />
+                Delete selected
+              </Button>
+            ) : null}
           </div>
         )}
         columns={columns}
@@ -450,48 +472,52 @@ export function ProductCollectionsTable({
         footer={footer}
       />
 
-      <ConfirmDialog
-        cancelDisabled={deleteCollectionMutation.isPending}
-        confirmDisabled={deleteCollectionMutation.isPending}
-        confirmLabel={
-          deleteCollectionMutation.isPending ? t("common.deleting") : t("common.delete")
-        }
-        description={t("taxonomy.delete.desc", {
-          name: collectionToDelete
-            ? getCollectionDisplayName(collectionToDelete)
-            : t("taxonomy.entity.collection.label"),
-        })}
-        eyebrow={t("common.confirm.deleteEyebrow")}
-        icon="trash"
-        onConfirm={() => {
-          if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
-        }}
-        onOpenChange={(open) => {
-          if (!open) setDeleteCollectionId(null);
-        }}
-        open={deleteCollectionId !== null}
-        title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.collection.label") })}
-      />
+      {canDelete ? (
+        <ConfirmDialog
+          cancelDisabled={deleteCollectionMutation.isPending}
+          confirmDisabled={deleteCollectionMutation.isPending}
+          confirmLabel={
+            deleteCollectionMutation.isPending ? t("common.deleting") : t("common.delete")
+          }
+          description={t("taxonomy.delete.desc", {
+            name: collectionToDelete
+              ? getCollectionDisplayName(collectionToDelete)
+              : t("taxonomy.entity.collection.label"),
+          })}
+          eyebrow={t("common.confirm.deleteEyebrow")}
+          icon="trash"
+          onConfirm={() => {
+            if (deleteCollectionId) deleteCollectionMutation.mutate(deleteCollectionId);
+          }}
+          onOpenChange={(open) => {
+            if (!open) setDeleteCollectionId(null);
+          }}
+          open={deleteCollectionId !== null}
+          title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.collection.label") })}
+        />
+      ) : null}
 
-      <ConfirmDialog
-        cancelDisabled={batchDeleteCollectionsMutation.isPending}
-        confirmDisabled={batchDeleteCollectionsMutation.isPending}
-        confirmLabel={
-          batchDeleteCollectionsMutation.isPending ? t("common.deleting") : t("common.delete")
-        }
-        description={t("taxonomy.delete.batchDesc", {
-          count: selectedCollectionIdsForDelete.length,
-          entityPlural: t("taxonomy.entity.collection.plural"),
-        })}
-        eyebrow={t("common.confirm.deleteEyebrow")}
-        icon="trash"
-        onConfirm={() => batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete)}
-        onOpenChange={setShowBatchDeleteDialog}
-        open={showBatchDeleteDialog}
-        title={t("taxonomy.delete.batchTitle", {
-          entityPlural: t("taxonomy.entity.collection.plural"),
-        })}
-      />
+      {canDelete ? (
+        <ConfirmDialog
+          cancelDisabled={batchDeleteCollectionsMutation.isPending}
+          confirmDisabled={batchDeleteCollectionsMutation.isPending}
+          confirmLabel={
+            batchDeleteCollectionsMutation.isPending ? t("common.deleting") : t("common.delete")
+          }
+          description={t("taxonomy.delete.batchDesc", {
+            count: selectedCollectionIdsForDelete.length,
+            entityPlural: t("taxonomy.entity.collection.plural"),
+          })}
+          eyebrow={t("common.confirm.deleteEyebrow")}
+          icon="trash"
+          onConfirm={() => batchDeleteCollectionsMutation.mutate(selectedCollectionIdsForDelete)}
+          onOpenChange={setShowBatchDeleteDialog}
+          open={showBatchDeleteDialog}
+          title={t("taxonomy.delete.batchTitle", {
+            entityPlural: t("taxonomy.entity.collection.plural"),
+          })}
+        />
+      ) : null}
     </>
   );
 }

@@ -34,7 +34,7 @@ export function registerMerchantPromotionRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/promotions", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantPromotions)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -75,7 +75,7 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
     if (!merchant.ok) return merchant.response;
     const parsed = promotionSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_promotion" }, 400);
@@ -90,7 +90,7 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions/:promotionId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
     if (!merchant.ok) return merchant.response;
     const parsed = promotionSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_promotion" }, 400);
@@ -106,7 +106,7 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.delete("/platform/merchant/promotions/:promotionId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
     if (!merchant.ok) return merchant.response;
     if (!options.deleteMerchantPromotion)
       return context.json({ error: "commerce_backend_unavailable" }, 503);

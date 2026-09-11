@@ -27,6 +27,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { notifications: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -55,6 +56,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { notifications: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -114,6 +116,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { notifications: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -158,6 +161,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { insights: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -189,6 +193,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { overview: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -221,6 +226,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -252,6 +258,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["manage"] },
     });
     if (!authorization?.ok) {
       return context.json({ error: "dashboard_forbidden" }, 403);
@@ -275,6 +282,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["manage"] },
     });
     if (!authorization?.ok) {
       return context.json({ error: "dashboard_forbidden" }, 403);
@@ -312,6 +320,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["manage"] },
     });
     if (!authorization?.ok) {
       return context.json({ error: "dashboard_forbidden" }, 403);
@@ -353,6 +362,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["manage"] },
     });
     if (!authorization?.ok) {
       return context.json({ error: "dashboard_forbidden" }, 403);
@@ -381,6 +391,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { billing: ["manage"] },
     });
     if (!authorization?.ok) {
       return context.json({ error: "dashboard_forbidden" }, 403);
@@ -442,6 +453,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { domains: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -470,6 +482,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { domains: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -511,6 +524,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { domains: ["manage"] },
     });
     if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
 
@@ -539,6 +553,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { domains: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -575,6 +590,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { payments: ["manage"] },
     });
 
     if (!authorization?.ok) {
@@ -603,6 +619,7 @@ export function registerPlatformTenantOpsRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { payments: ["manage"] },
     });
 
     if (!authorization?.ok) {

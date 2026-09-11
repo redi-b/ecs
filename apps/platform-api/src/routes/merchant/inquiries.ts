@@ -14,7 +14,7 @@ export function registerMerchantInquiryRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/inquiries", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { inquiries: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listStorefrontInquiries)
       return context.json({ error: "inquiries_unavailable" }, 503);
@@ -31,7 +31,7 @@ export function registerMerchantInquiryRoutes(
   });
 
   app.get("/platform/merchant/inquiries/:inquiryId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { inquiries: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.getStorefrontInquiry) return context.json({ error: "inquiries_unavailable" }, 503);
     const result = await options.getStorefrontInquiry({
@@ -43,7 +43,7 @@ export function registerMerchantInquiryRoutes(
   });
 
   app.patch("/platform/merchant/inquiries/:inquiryId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { inquiries: ["update"] });
     if (!merchant.ok) return merchant.response;
     if (!options.updateStorefrontInquiryStatus)
       return context.json({ error: "inquiries_unavailable" }, 503);

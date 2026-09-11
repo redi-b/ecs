@@ -539,6 +539,7 @@ describe("platform app health, auth, and tenant bootstrap", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { notifications: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });
@@ -714,6 +715,7 @@ describe("platform app health, auth, and tenant bootstrap", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { insights: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });

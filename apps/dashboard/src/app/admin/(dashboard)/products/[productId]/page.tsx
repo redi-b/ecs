@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-
+import { PermissionGate } from "@/components/app/access-context";
 import { DashboardBreadcrumbLabel } from "@/components/app/breadcrumb-labels";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { PageShell } from "@/components/app/page-shell";
@@ -63,11 +63,13 @@ export default async function MerchantProductDetailPage({
       actions={
         <div className="flex items-center gap-2">
           {productResult.ok ? (
-            <ProductDeleteButton
-              productId={productResult.product.id}
-              productTitle={productResult.product.title ?? t("products.detail.thisProduct")}
-              tenantId={tenantId}
-            />
+            <PermissionGate permission="products.delete">
+              <ProductDeleteButton
+                productId={productResult.product.id}
+                productTitle={productResult.product.title ?? t("products.detail.thisProduct")}
+                tenantId={tenantId}
+              />
+            </PermissionGate>
           ) : null}
           <RefreshButton />
         </div>

@@ -12,6 +12,7 @@ type SignUpPageProps = {
     email?: string;
     error?: string;
     ownerName?: string;
+    next?: string;
   }>;
 };
 
@@ -56,7 +57,12 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
           ownerName: resolvedSearchParams.ownerName,
         }}
         errorMessage={errorMessage}
+        nextPath={getSafeNextPath(resolvedSearchParams.next)}
       />
     </AuthShell>
   );
+}
+
+function getSafeNextPath(value: string | undefined) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/admin/onboarding";
 }

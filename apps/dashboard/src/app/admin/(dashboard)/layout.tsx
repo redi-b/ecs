@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { AccessProvider } from "@/components/app/access-context";
 import { ActivityDock } from "@/components/app/activity-dock";
 import { ActivityRegistryProvider } from "@/components/app/activity-registry";
 import { ActorProvider } from "@/components/app/actor-context";
@@ -9,6 +10,7 @@ import { AppSidebar } from "@/components/app/app-sidebar";
 import { BackgroundTaskCenter } from "@/components/app/background-task-center";
 import { BreadcrumbLabelsProvider } from "@/components/app/breadcrumb-labels";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
+import { DashboardRouteBoundary } from "@/components/app/dashboard-route-boundary";
 import { OnboardingWarningToast } from "@/components/app/onboarding-warning-toast";
 import { SupportAccessBanner } from "@/components/app/support-access-banner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -26,6 +28,7 @@ import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getCentralDashboardUrl } from "@/lib/shop-host";
+import { resolveShopDestination } from "@/lib/shop-selection";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
@@ -57,11 +60,12 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       );
     }
 
-    if (!onboarding.state.primaryTenant) {
-      redirect("/admin/onboarding");
-    }
-
-    redirect(onboarding.state.primaryTenant.dashboardUrl);
+    const destination = resolveShopDestination({
+      lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,
+      protocol: requestHeaders.get("x-forwarded-proto") ?? "http",
+      state: onboarding.state,
+    });
+    redirect(destination.href);
   }
 
   // Lean shell only — never load ops/metrics/billing for the chrome.
@@ -114,23 +118,28 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
         <ActorProvider actor={access.access.actor}>
-          <AppSidebar access={access.access} />
-          <SidebarInset>
-            {access.access.actor.supportAccess ? (
-              <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
-            ) : null}
-            <BreadcrumbLabelsProvider>
-              <AppHeader />
-              <OnboardingWarningToast />
-              {children}
-              <LaunchAssistant access={access.access} />
-              <ActivityRegistryProvider>
-                <BackgroundTaskCenter />
-                <MediaUploadHost />
-                <ActivityDock />
-              </ActivityRegistryProvider>
-            </BreadcrumbLabelsProvider>
-          </SidebarInset>
+          <AccessProvider access={access.access}>
+            <AppSidebar
+              access={access.access}
+              centralDashboardUrl={getCentralDashboardUrl("").replace(/\/$/, "")}
+            />
+            <SidebarInset>
+              {access.access.actor.supportAccess ? (
+                <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
+              ) : null}
+              <BreadcrumbLabelsProvider>
+                <AppHeader />
+                <OnboardingWarningToast />
+                <DashboardRouteBoundary>{children}</DashboardRouteBoundary>
+                <LaunchAssistant access={access.access} />
+                <ActivityRegistryProvider>
+                  <BackgroundTaskCenter />
+                  <MediaUploadHost />
+                  <ActivityDock />
+                </ActivityRegistryProvider>
+              </BreadcrumbLabelsProvider>
+            </SidebarInset>
+          </AccessProvider>
         </ActorProvider>
       </SidebarProvider>
     </TooltipProvider>

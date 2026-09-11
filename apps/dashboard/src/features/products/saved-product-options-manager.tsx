@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableHeader } from "@/components/app/data-table-header";
@@ -29,9 +30,21 @@ type SavedValue = { label: string; swatch?: { kind: "color"; value: string } | n
 type SavedOption = { id: string; title: string; values: SavedValue[] };
 type SavedOptionDraft = SavedOption & { isNew?: boolean };
 
+function cloneForEditing(option: SavedOption): SavedOptionDraft {
+  return {
+    ...option,
+    values: option.values.map((value) =>
+      value.swatch ? { ...value, swatch: { ...value.swatch } } : { label: value.label },
+    ),
+  };
+}
+
 export function SavedProductOptionsManager({ tenantId }: { tenantId: string | null }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const canCreate = usePermission("products.create");
+  const canUpdate = usePermission("products.update");
+  const canDelete = usePermission("products.delete");
   const url = getTenantScopedPath("/admin/products/actions/option-sets", tenantId);
   const [editing, setEditing] = useState<SavedOptionDraft | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SavedOption | null>(null);
@@ -101,12 +114,6 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
       ]),
     [options, search],
   );
-  const cloneForEditing = (option: SavedOption): SavedOptionDraft => ({
-    ...option,
-    values: option.values.map((value) =>
-      value.swatch ? { ...value, swatch: { ...value.swatch } } : { label: value.label },
-    ),
-  });
   const columns = useMemo<ColumnDef<SavedOption>[]>(
     () => [
       {
@@ -114,15 +121,18 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         header: ({ column }) => (
           <DataTableHeader column={column} title={t("products.savedOptions.columnOption")} />
         ),
-        cell: ({ row }) => (
-          <button
-            className="font-medium text-foreground transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
-            onClick={() => setEditing(cloneForEditing(row.original))}
-            type="button"
-          >
-            {row.original.title}
-          </button>
-        ),
+        cell: ({ row }) =>
+          canUpdate ? (
+            <button
+              className="font-medium text-foreground transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+              onClick={() => setEditing(cloneForEditing(row.original))}
+              type="button"
+            >
+              {row.original.title}
+            </button>
+          ) : (
+            <span className="font-medium text-foreground">{row.original.title}</span>
+          ),
       },
       {
         id: "values",
@@ -163,39 +173,51 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex justify-end">
-            <RowActionsMenu
-              actions={[
-                {
-                  icon: AppIcons.edit,
-                  label: t("common.edit"),
-                  onSelect: () => setEditing(cloneForEditing(row.original)),
-                  type: "button",
-                },
-                { id: "delete", type: "separator" },
-                {
-                  icon: AppIcons.trash,
-                  label: t("common.delete"),
-                  onSelect: () => setPendingDelete(row.original),
-                  type: "button",
-                  variant: "destructive",
-                },
-              ]}
-              label={t("products.savedOptions.actionsAria", { name: row.original.title })}
-            />
+            {canUpdate || canDelete ? (
+              <RowActionsMenu
+                actions={[
+                  ...(canUpdate
+                    ? [
+                        {
+                          icon: AppIcons.edit,
+                          label: t("common.edit"),
+                          onSelect: () => setEditing(cloneForEditing(row.original)),
+                          type: "button" as const,
+                        },
+                      ]
+                    : []),
+                  ...(canUpdate && canDelete ? [{ id: "delete", type: "separator" as const }] : []),
+                  ...(canDelete
+                    ? [
+                        {
+                          icon: AppIcons.trash,
+                          label: t("common.delete"),
+                          onSelect: () => setPendingDelete(row.original),
+                          type: "button" as const,
+                          variant: "destructive" as const,
+                        },
+                      ]
+                    : []),
+                ]}
+                label={t("products.savedOptions.actionsAria", { name: row.original.title })}
+              />
+            ) : null}
           </div>
         ),
       },
     ],
-    [t],
+    [canDelete, canUpdate, t],
   );
 
   return (
     <PageShell
       actions={
-        <Button onClick={startCreating}>
-          <AppIcons.add data-icon="inline-start" />
-          {t("products.savedOptions.newAction")}
-        </Button>
+        canCreate ? (
+          <Button onClick={startCreating}>
+            <AppIcons.add data-icon="inline-start" />
+            {t("products.savedOptions.newAction")}
+          </Button>
+        ) : null
       }
       titleAccessory={
         <HelpTip
@@ -245,24 +267,28 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
           />
         </>
       )}
-      <SavedOptionEditDialog
-        key={editing ? (editing.isNew ? "new" : editing.id) : "closed"}
-        onChange={setEditing}
-        onOpenChange={(open) => !open && setEditing(null)}
-        onSave={(option) => save.mutate(option)}
-        option={editing}
-        saving={save.isPending}
-      />
-      <ConfirmDialog
-        confirmDisabled={remove.isPending}
-        confirmLabel={remove.isPending ? t("common.deleting") : t("common.delete")}
-        description={t("products.savedOptions.deleteDescription")}
-        icon="trash"
-        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
-        open={Boolean(pendingDelete)}
-        title={t("products.savedOptions.deleteTitle")}
-      />
+      {canCreate || canUpdate ? (
+        <SavedOptionEditDialog
+          key={editing ? (editing.isNew ? "new" : editing.id) : "closed"}
+          onChange={setEditing}
+          onOpenChange={(open) => !open && setEditing(null)}
+          onSave={(option) => save.mutate(option)}
+          option={editing}
+          saving={save.isPending}
+        />
+      ) : null}
+      {canDelete ? (
+        <ConfirmDialog
+          confirmDisabled={remove.isPending}
+          confirmLabel={remove.isPending ? t("common.deleting") : t("common.delete")}
+          description={t("products.savedOptions.deleteDescription")}
+          icon="trash"
+          onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+          onOpenChange={(open) => !open && setPendingDelete(null)}
+          open={Boolean(pendingDelete)}
+          title={t("products.savedOptions.deleteTitle")}
+        />
+      ) : null}
     </PageShell>
   );
 }

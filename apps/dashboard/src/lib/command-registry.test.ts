@@ -35,9 +35,25 @@ describe("command registry", () => {
     const all = getAllStaticCommands(translate);
     const products = filterStaticCommands("product", all);
     assert.ok(products.length > 0);
-    assert.ok(products.every((command) => {
-      const hay = [command.label, ...command.keywords].join(" ").toLowerCase();
-      return hay.includes("product");
-    }));
+    assert.ok(
+      products.every((command) => {
+        const hay = [command.label, ...command.keywords].join(" ").toLowerCase();
+        return hay.includes("product");
+      }),
+    );
+  });
+
+  it("removes navigation and actions the member cannot use", () => {
+    const commands = getAllStaticCommands(translate, new Set(["products.read"]));
+    assert.ok(commands.some((command) => command.id === "nav.products"));
+    assert.ok(!commands.some((command) => command.id === "nav.insights"));
+    assert.ok(!commands.some((command) => command.id === "action.create-product"));
+    assert.ok(!commands.some((command) => command.id === "action.create-promotion"));
+  });
+
+  it("derives read-only editor navigation from the route policy", () => {
+    const commands = getNavigationCommands(translate, new Set(["storefront.read"]));
+    assert.ok(commands.some((command) => command.id === "nav.editor"));
+    assert.ok(!commands.some((command) => command.id === "nav.products"));
   });
 });

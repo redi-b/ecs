@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -86,9 +87,12 @@ export function ProductsTable({
   totalCount,
 }: ProductsTableProps) {
   const { t } = useI18n();
+  const canUpdate = usePermission("products.update") && !readOnly;
+  const canDelete = usePermission("products.delete") && !readOnly;
+  const canPublish = usePermission("products.publish") && !readOnly;
   const router = useRouter();
   const queryClient = useQueryClient();
-  const taxonomy = useProductTaxonomy({ enabled: !readOnly, tenantId });
+  const taxonomy = useProductTaxonomy({ enabled: canUpdate, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
   const [pending, startTransition] = useTransition();
@@ -208,15 +212,15 @@ export function ProductsTable({
       tenantId,
       categories,
       collections,
-      (id) => setDeleteProductId(id),
+      canDelete ? (id) => setDeleteProductId(id) : undefined,
       handleStatusChange,
       t,
       productDetailHrefBase
         ? (product) => `${productDetailHrefBase}/${encodeURIComponent(product.id)}`
         : undefined,
     );
-    return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
-  }, [categories, collections, handleStatusChange, productDetailHrefBase, readOnly, t, tenantId]);
+    return resolved;
+  }, [canDelete, categories, collections, handleStatusChange, productDetailHrefBase, t, tenantId]);
 
   const pushServerFilters = useCallback(
     (
@@ -414,7 +418,7 @@ export function ProductsTable({
               <AppIcons.copy data-icon="inline-start" />
               {t("table.actions.copyIds")}
             </Button>
-            {!readOnly ? (
+            {canPublish ? (
               <>
                 <Button
                   disabled={isStatusUpdatePending}
@@ -446,7 +450,7 @@ export function ProductsTable({
                 </Button>
               </>
             ) : null}
-            {!readOnly && !tenantId ? (
+            {canUpdate && !tenantId ? (
               <Button
                 onClick={() => {
                   setSelectedProductsForInventory(selectedProducts);
@@ -459,7 +463,7 @@ export function ProductsTable({
                 {t("products.stock.bulkAction")}
               </Button>
             ) : null}
-            {!readOnly ? (
+            {canDelete ? (
               <Button
                 onClick={() => {
                   setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));

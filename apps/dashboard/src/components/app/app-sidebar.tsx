@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantDashboardSummary } from "@ecs/contracts";
+import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { usePathname } from "next/navigation";
 import { AccountMenu } from "@/components/app/account-menu";
 import { AppIcons } from "@/components/app/icons";
@@ -35,6 +35,7 @@ import {
 import { getDemoSidebarRoute } from "@/features/demo/dashboard-demo-routes";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { canAccessDashboardRoute } from "@/lib/dashboard-route-access";
 import { type AppRoute, appRouteSections, getAppRoutesBySection } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -212,9 +213,11 @@ function NavRouteItem({ pathname, route }: { pathname: string; route: AppRoute }
 
 export function AppSidebar({
   access,
+  centralDashboardUrl,
   demoMode = false,
 }: {
-  access: Pick<MerchantDashboardSummary, "actor" | "tenant">;
+  access: Pick<MerchantDashboardAccess, "actor" | "permissions" | "tenant">;
+  centralDashboardUrl?: string;
   demoMode?: boolean;
 }) {
   const pathname = usePathname();
@@ -223,15 +226,17 @@ export function AppSidebar({
   const shopName = access.tenant.name?.trim() || access.tenant.handle;
   const shopInitial = (shopName.charAt(0) || "E").toUpperCase();
 
+  const permissions = new Set(access.permissions ?? []);
+  const routesForSection = (section: (typeof appRouteSections)[number]) =>
+    getAppRoutesBySection(section.id).filter(
+      (route) => demoMode || canAccessDashboardRoute(route.href, permissions),
+    );
   const visibleSections = appRouteSections.filter(
-    (section) => getAppRoutesBySection(section.id).length > 0,
+    (section) => routesForSection(section).length > 0,
   );
 
   return (
     <Sidebar className="border-r border-sidebar-border/90" collapsible="icon">
-      {/*
-        Match AppHeader height (h-14) so the header bottom border is one continuous line.
-      */}
       {/*
         Match AppHeader height (h-14) so the header bottom border is one continuous line.
         Brand uses menu button chrome (previous look); sizing stays compact inside h-14.
@@ -264,7 +269,7 @@ export function AppSidebar({
 
       <SidebarContent className="gap-0 py-2">
         {visibleSections.map((section, index) => {
-          const routes = getAppRoutesBySection(section.id).map((route) =>
+          const routes = routesForSection(section).map((route) =>
             demoMode ? getDemoSidebarRoute(route) : route,
           );
 
@@ -291,7 +296,12 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-2">
-        <AccountMenu actor={access.actor} demoMode={demoMode} />
+        <AccountMenu
+          actor={access.actor}
+          currentTenantId={access.tenant.id}
+          demoMode={demoMode}
+          {...(centralDashboardUrl ? { shopPickerUrl: `${centralDashboardUrl}/admin/shops` } : {})}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables, PlatformSession } from "../../app.js";
+import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
 import type { TenantResolutionResult } from "../../tenancy/tenant-resolver.js";
 import { getRequestHost, storeErrorStatus } from "../shared.js";
 
@@ -30,6 +31,7 @@ export type AuthorizedMerchantContext =
 export function createMerchantRouteHelpers(options: PlatformAppOptions) {
   async function getAuthorizedMerchantContext(
     context: Context<{ Variables: PlatformAppVariables }>,
+    permission?: MerchantPermissionRequest,
   ): Promise<AuthorizedMerchantContext> {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -55,6 +57,7 @@ export function createMerchantRouteHelpers(options: PlatformAppOptions) {
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      ...(permission ? { permission } : {}),
     });
 
     if (!authorization?.ok) {

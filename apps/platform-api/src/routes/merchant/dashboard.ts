@@ -1,6 +1,10 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import {
+  getBuiltInMerchantCapabilities,
+  getBuiltInMerchantPermissions,
+} from "../../auth/merchant-authorization.js";
 import { getJsonBody, getRequestHost, getRequiredBodyString, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 import { createMerchantDashboardSummary } from "./dashboard-summary.js";
@@ -13,6 +17,15 @@ export function registerMerchantDashboardRoutes(
   const { getAuthorizedMerchantContext, getResolvedCommerce } = helpers;
   const { getMerchantDashboardAccessPayload, getMerchantDashboardPayload } =
     createMerchantDashboardSummary(options, getResolvedCommerce);
+
+  async function getCapabilities(input: { actorRole: string; tenantId: string; userId: string }) {
+    return input.actorRole === "operator"
+      ? {
+          capabilities: getBuiltInMerchantCapabilities("staff"),
+          permissions: getBuiltInMerchantPermissions("staff"),
+        }
+      : options.getMerchantCapabilities?.({ tenantId: input.tenantId, userId: input.userId });
+  }
 
   /** Lean shell: actor + tenant + storefront flags only (no ops/metrics/billing). */
   app.get("/platform/merchant/dashboard/access", async (context) => {
@@ -48,12 +61,19 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "dashboard_summary_unavailable" }, 503);
     }
 
-    return context.json(
-      await getMerchantDashboardAccessPayload({
-        actor: authorization.actor,
-        context: dashboard.context,
-      }),
-    );
+    const payload = await getMerchantDashboardAccessPayload({
+      actor: authorization.actor,
+      context: dashboard.context,
+    });
+    const access = await getCapabilities({
+      actorRole: authorization.actor.role,
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+    return context.json({
+      ...payload,
+      ...(access ?? {}),
+    });
   });
 
   app.get("/platform/merchant/dashboard", async (context) => {
@@ -75,6 +95,7 @@ export function registerMerchantDashboardRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { overview: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -89,19 +110,26 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "dashboard_summary_unavailable" }, 503);
     }
 
-    return context.json(
-      await getMerchantDashboardPayload({
-        actor: authorization.actor,
-        context: dashboard.context,
-      }),
-    );
+    const payload = await getMerchantDashboardPayload({
+      actor: authorization.actor,
+      context: dashboard.context,
+    });
+    const access = await getCapabilities({
+      actorRole: authorization.actor.role,
+      tenantId: result.context.tenantId,
+      userId: session.user.id,
+    });
+    return context.json({
+      ...payload,
+      ...(access ?? {}),
+    });
   });
 
   app.get("/platform/merchant/analytics/visits", async (context) => {
     if (!options.getTenantInsightsSummary) {
       return context.json({ error: "insights_unavailable" }, 503);
     }
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { insights: ["read"] });
     if (!merchant.ok) return merchant.response;
 
     const result = await options.getTenantInsightsSummary({
@@ -138,7 +166,7 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "notifications_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { notifications: ["read"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -167,7 +195,7 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "settings_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { settings: ["manage"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -207,7 +235,7 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "notifications_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { notifications: ["manage"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -263,7 +291,7 @@ export function registerMerchantDashboardRoutes(
       return context.json({ error: "notifications_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { notifications: ["manage"] });
 
     if (!merchant.ok) {
       return merchant.response;

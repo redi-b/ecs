@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardAccess } from "@ecs/contracts";
-
+import { PolicyGate, usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
+import { merchantPolicies } from "@/lib/access-policy";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function ShopSection({
@@ -63,6 +64,7 @@ export function ShopSection({
   summary: MerchantDashboardAccess;
 }) {
   const { t } = useI18n();
+  const canManage = usePolicy(merchantPolicies.shopSettingsManage);
   const dirty = nameChanged || handleChanged;
 
   return (
@@ -77,7 +79,12 @@ export function ShopSection({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor={nameId}>{t("settings.shop.name")}</FieldLabel>
-              <Input id={nameId} onChange={(e) => onNameChange(e.target.value)} value={name} />
+              <Input
+                disabled={!canManage}
+                id={nameId}
+                onChange={(e) => onNameChange(e.target.value)}
+                value={name}
+              />
             </Field>
             <Field>
               <div className="flex items-center justify-between gap-2">
@@ -102,29 +109,31 @@ export function ShopSection({
                   spellCheck={false}
                   value={handle}
                 />
-                <InputGroupAddon align="inline-end">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InputGroupButton
-                        aria-label={
-                          handleUnlocked
-                            ? t("settings.handle.lockAria")
-                            : t("settings.handle.unlockAria")
-                        }
-                        onClick={onToggleHandleLock}
-                        size="icon-xs"
-                        type="button"
-                      >
-                        {handleUnlocked ? <AppIcons.lockUnlock /> : <AppIcons.lock />}
-                      </InputGroupButton>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {handleUnlocked
-                        ? t("settings.handle.lockTooltip")
-                        : t("settings.handle.unlockTooltip")}
-                    </TooltipContent>
-                  </Tooltip>
-                </InputGroupAddon>
+                {canManage ? (
+                  <InputGroupAddon align="inline-end">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InputGroupButton
+                          aria-label={
+                            handleUnlocked
+                              ? t("settings.handle.lockAria")
+                              : t("settings.handle.unlockAria")
+                          }
+                          onClick={onToggleHandleLock}
+                          size="icon-xs"
+                          type="button"
+                        >
+                          {handleUnlocked ? <AppIcons.lockUnlock /> : <AppIcons.lock />}
+                        </InputGroupButton>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {handleUnlocked
+                          ? t("settings.handle.lockTooltip")
+                          : t("settings.handle.unlockTooltip")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </InputGroupAddon>
+                ) : null}
               </InputGroup>
               <FieldDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-mono text-xs">{nextHost}</span>
@@ -138,17 +147,19 @@ export function ShopSection({
               <AlertDescription>{t("settings.shop.addressChangeDescription")}</AlertDescription>
             </Alert>
           ) : null}
-          <div className="flex justify-end">
-            <Button
-              className="w-full rounded-full sm:w-auto"
-              disabled={!canSaveShop || !dirty || isPending}
-              onClick={onSave}
-              size="sm"
-              type="button"
-            >
-              {isPending ? t("common.saving") : t("settings.shop.saveShop")}
-            </Button>
-          </div>
+          {canManage ? (
+            <div className="flex justify-end">
+              <Button
+                className="w-full rounded-full sm:w-auto"
+                disabled={!canSaveShop || !dirty || isPending}
+                onClick={onSave}
+                size="sm"
+                type="button"
+              >
+                {isPending ? t("common.saving") : t("settings.shop.saveShop")}
+              </Button>
+            </div>
+          ) : null}
         </SettingsPanel>
 
         <div className="flex flex-col gap-4 lg:sticky lg:top-20">
@@ -163,12 +174,16 @@ export function ShopSection({
             <SettingsRow label={t("settings.shop.status")} value={summary.tenant.status} />
           </SettingsPanel>
           <SettingsPanel title={t("settings.shop.related")} contentClassName="flex flex-col gap-2">
-            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-              <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
-            </Button>
-            <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-              <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
-            </Button>
+            <PolicyGate requirement={merchantPolicies.billing}>
+              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+                <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
+              </Button>
+            </PolicyGate>
+            <PolicyGate requirement={merchantPolicies.storefront}>
+              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
+                <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
+              </Button>
+            </PolicyGate>
           </SettingsPanel>
         </div>
       </div>

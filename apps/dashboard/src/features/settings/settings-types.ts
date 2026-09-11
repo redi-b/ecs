@@ -8,6 +8,7 @@ import type {
 
 import type { MessageKey } from "@/i18n/messages";
 import type { MerchantPaymentsStatus } from "@/lib/platform-api/payments/client";
+import type { MerchantTeam } from "@/lib/platform-api/team";
 
 export type Delivery = DeliverySettings["delivery"];
 
@@ -21,6 +22,7 @@ export type SettingsWorkspaceProps = {
   settingsStatus?: string | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   storefrontSeo: StorefrontSeoSettings;
+  team: MerchantTeam | null;
   /** Access shell only — settings never needs ops/metrics/billing. */
   summary: MerchantDashboardAccess;
   templateStatus?: string | undefined;

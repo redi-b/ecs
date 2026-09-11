@@ -52,7 +52,7 @@ export function registerMerchantManualOrderRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   app.post("/platform/merchant/manual-orders", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { orders: ["create"] });
     if (!merchant.ok) return merchant.response;
 
     const parsed = createSchema.safeParse(await context.req.json().catch(() => null));

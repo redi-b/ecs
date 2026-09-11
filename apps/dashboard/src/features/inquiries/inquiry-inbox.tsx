@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -45,6 +46,7 @@ export function InquiryInbox({
   const searchParams = useSearchParams();
   const [selected, setSelected] = useState<StorefrontInquiry | null>(null);
   const [updating, startTransition] = useTransition();
+  const canUpdate = usePermission("inquiries.update");
   const search = searchParams.get("q") ?? "";
   const status = searchParams.get("status") ?? "all";
   const type = searchParams.get("type") ?? "all";
@@ -267,29 +269,32 @@ export function InquiryInbox({
                 ))}
             </SheetBody>
           )}
-          <SheetFooter className="flex-row justify-between">
-            <Button
-              disabled={updating || !selected}
-              onClick={() =>
-                selected && void updateStatus(selected.status === "archived" ? "read" : "archived")
-              }
-              size="sm"
-              variant="ghost"
-            >
-              {selected?.status === "archived" ? "Restore" : "Archive"}
-            </Button>
-            <Button
-              disabled={updating || !selected || selected.status === "resolved"}
-              onClick={() => void updateStatus("resolved")}
-              size="sm"
-            >
-              {updating
-                ? "Updating…"
-                : selected?.status === "resolved"
-                  ? "Resolved"
-                  : "Mark resolved"}
-            </Button>
-          </SheetFooter>
+          {canUpdate ? (
+            <SheetFooter className="flex-row justify-between">
+              <Button
+                disabled={updating || !selected}
+                onClick={() =>
+                  selected &&
+                  void updateStatus(selected.status === "archived" ? "read" : "archived")
+                }
+                size="sm"
+                variant="ghost"
+              >
+                {selected?.status === "archived" ? "Restore" : "Archive"}
+              </Button>
+              <Button
+                disabled={updating || !selected || selected.status === "resolved"}
+                onClick={() => void updateStatus("resolved")}
+                size="sm"
+              >
+                {updating
+                  ? "Updating…"
+                  : selected?.status === "resolved"
+                    ? "Resolved"
+                    : "Mark resolved"}
+              </Button>
+            </SheetFooter>
+          ) : null}
         </SheetContent>
       </Sheet>
     </>

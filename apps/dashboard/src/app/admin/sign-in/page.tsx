@@ -83,7 +83,7 @@ export default async function AdminSignInPage({
             {t("auth.newMerchant")}{" "}
             <Link
               className="font-medium text-primary underline-offset-4 hover:underline"
-              href="/admin/sign-up"
+              href={`/admin/sign-up${nextPath !== "/admin" ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
             >
               {t("auth.createAccount")}
             </Link>

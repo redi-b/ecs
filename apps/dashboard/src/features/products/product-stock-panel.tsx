@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
+import { usePermission } from "@/components/app/access-context";
 import { DataTable } from "@/components/app/data-table";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -51,15 +51,24 @@ export function ProductStockPanel({
   stockError,
   tenantId,
 }: ProductStockPanelProps) {
+  const canUpdate = usePermission("products.update");
   const variants = product.variants ?? [];
 
   if (variants.length > 1) {
-    return <VariantStockPanel productId={productId} tenantId={tenantId} variants={variants} />;
+    return (
+      <VariantStockPanel
+        canUpdate={canUpdate}
+        productId={productId}
+        tenantId={tenantId}
+        variants={variants}
+      />
+    );
   }
 
   return (
     <SingleVariantStockPanel
       action={action}
+      canUpdate={canUpdate}
       initialStock={initialStock}
       productId={productId}
       stockError={stockError}

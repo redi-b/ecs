@@ -9,6 +9,7 @@ import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
+import { allows, merchantPolicies } from "@/lib/access-policy";
 import {
   getLaunchAssistantOpenPreference,
   hasVisitedStorefrontEditor,
@@ -37,6 +38,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   const completedRequired = requiredItems.filter((item) => item.ready).length;
   const launchReady = completedRequired === requiredItems.length;
   const liveShopHref = `//${access.domain.hostname}`;
+  const canCompleteSetup = allows(access.permissions ?? [], merchantPolicies.launchSetup);
 
   const [hydrated, setHydrated] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -49,7 +51,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
 
     setHidden(nextHidden);
     // Keep unfinished setup close at hand, then collapse it once the required work is done.
-    setOpen(nextHidden || launchReady ? false : (nextOpen ?? true));
+    setOpen(nextHidden ? false : (nextOpen ?? true));
     setHydrated(true);
 
     function handlePreferenceChange(event: Event) {
@@ -60,11 +62,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
       }
 
       setHidden(detail.hidden);
-      setOpen(
-        detail.hidden
-          ? false
-          : (getLaunchAssistantOpenPreference(access.tenant.id) ?? !launchReady),
-      );
+      setOpen(detail.hidden ? false : (getLaunchAssistantOpenPreference(access.tenant.id) ?? true));
     }
 
     window.addEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
@@ -72,7 +70,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     return () => {
       window.removeEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
     };
-  }, [access.tenant.id, launchReady]);
+  }, [access.tenant.id]);
 
   useEffect(() => {
     if (!hydrated || hidden) return;
@@ -122,9 +120,10 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     });
   }
 
-  const isSetupHome = pathname === dashboardRoutes.overview || pathname === dashboardRoutes.settings;
+  const isSetupHome =
+    pathname === dashboardRoutes.overview || pathname === dashboardRoutes.settings;
 
-  if (!hydrated || hidden || (launchReady && !isSetupHome)) {
+  if (!canCompleteSetup || !hydrated || hidden || (launchReady && !isSetupHome)) {
     return null;
   }
 

@@ -1,4 +1,5 @@
 import type { SuperadminTenant } from "@ecs/contracts";
+import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
 import type {
   PlatformAuthorizationResult,
   PlatformPermission,
@@ -104,6 +105,14 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  dashboardPublicBaseUrl?: string;
+  emailDeliveryConfigured?: boolean;
+  getMerchantCapabilities?: ReturnType<
+    typeof import("../auth/merchant-authorization.js").createMerchantCapabilityLookup
+  >;
+  merchantTeamService?: ReturnType<
+    typeof import("../modules/team/merchant-team-service.js").createMerchantTeamService
+  >;
   listPlatformStorefrontTemplates?: ReturnType<
     typeof import("../modules/storefront/platform-template-assets.js").createPlatformTemplateAssetService
   >["listTemplates"];
@@ -213,7 +222,11 @@ export type PlatformAppOptions = {
     | ((input: { promotionId: string; tenantId: string }) => Promise<MerchantPromotionDeleteResult>)
     | undefined;
   authorizeDashboardForTenant?:
-    | ((input: { tenantId: string; userId: string }) => Promise<DashboardAuthorizationResult>)
+    | ((input: {
+        tenantId: string;
+        userId: string;
+        permission?: MerchantPermissionRequest;
+      }) => Promise<DashboardAuthorizationResult>)
     | undefined;
   authorizePlatformPermission?:
     | ((input: {

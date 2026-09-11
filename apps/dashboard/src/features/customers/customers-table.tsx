@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
@@ -65,6 +66,7 @@ export function CustomersTable({
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [editing, setEditing] = useState<MerchantCustomer | null>(null);
+  const canUpdate = usePermission("customers.update");
 
   useEffect(() => {
     setSearchValue(initialQuery);
@@ -202,12 +204,16 @@ export function CustomersTable({
                   label: t("table.actions.viewDetails"),
                   type: "link",
                 },
-                {
-                  icon: AppIcons.edit,
-                  label: t("customers.detail.editCustomer"),
-                  onSelect: () => setEditing(customer),
-                  type: "button",
-                },
+                ...(canUpdate
+                  ? [
+                      {
+                        icon: AppIcons.edit,
+                        label: t("customers.detail.editCustomer"),
+                        onSelect: () => setEditing(customer),
+                        type: "button" as const,
+                      },
+                    ]
+                  : []),
                 { id: "copy", type: "separator" },
                 {
                   disabled: !customer.phone,
@@ -234,7 +240,7 @@ export function CustomersTable({
         enableSorting: false,
       },
     ],
-    [t, locale],
+    [canUpdate, t, locale],
   );
 
   return (
@@ -327,14 +333,16 @@ export function CustomersTable({
         }
       />
 
-      <CustomerFormDialog
-        customer={editing ?? undefined}
-        onOpenChange={(next) => {
-          if (!next) setEditing(null);
-        }}
-        open={Boolean(editing)}
-        trigger={null}
-      />
+      {canUpdate ? (
+        <CustomerFormDialog
+          customer={editing ?? undefined}
+          onOpenChange={(next) => {
+            if (!next) setEditing(null);
+          }}
+          open={Boolean(editing)}
+          trigger={null}
+        />
+      ) : null}
     </>
   );
 }
