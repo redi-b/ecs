@@ -165,6 +165,7 @@ const allowedStorefrontEvents = new Set([
   "storefront.product_viewed",
   "storefront.collection_viewed",
   "storefront.search_submitted",
+  "storefront.search_suggestion_selected",
   "storefront.add_to_cart_clicked",
   "storefront.checkout_started",
   "storefront.contact_clicked",

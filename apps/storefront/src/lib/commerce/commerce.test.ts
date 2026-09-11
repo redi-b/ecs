@@ -36,6 +36,7 @@ test("listStoreProducts calls the platform store facade with host context", asyn
     platformApiBaseUrl: "http://api.lvh.me",
     requestHost: "abebe.lvh.me",
     regionId: "reg_1",
+    q: "a",
   });
 
   assert.equal(requests.length, 1);
@@ -68,7 +69,16 @@ test("listStoreProducts hydrates ranked search ids and preserves their order", a
     fetcher: async (request) => {
       requests.push(request);
       if (request.url.includes("/store/product-search?")) {
-        return Response.json({ product_ids: ["p2", "p1"], count: 2, limit: 24, offset: 0 });
+        return Response.json({
+          product_ids: ["p2", "p1"],
+          count: 2,
+          limit: 24,
+          offset: 0,
+          facet_distribution: {
+            category_ids: { pcat_1: 2, invalid: "many" },
+            collection_id: { pcol_1: 2, negative: -1 },
+          },
+        });
       }
       return Response.json({
         products: [
@@ -80,11 +90,23 @@ test("listStoreProducts hydrates ranked search ids and preserves their order", a
     platformApiBaseUrl: "http://api.lvh.me",
     requestHost: "shop.lvh.me",
     q: "secon",
+    categoryId: "pcat_1",
+    collectionId: "pcol_1",
+    order: "created_at",
   });
 
   assert.equal(requests.length, 2);
   assert.ok(requests[0]?.url.includes("/store/product-search?"));
+  assert.ok(requests[0]?.url.includes("category_id=pcat_1"));
+  assert.ok(requests[0]?.url.includes("collection_id=pcol_1"));
+  assert.ok(requests[0]?.url.includes("order=created_at"));
   assert.deepEqual("products" in result ? result.products.map((product) => product.id) : [], ["p2", "p1"]);
+  assert.deepEqual("products" in result ? result.facets : undefined, {
+    categories: { pcat_1: 2 },
+    collections: { pcol_1: 2 },
+    options: [],
+    price: null,
+  });
 });
 
 test("listStoreProducts falls back to Medusa database search when the index is unavailable", async () => {

@@ -25,9 +25,12 @@ const PRODUCT_INDEX_SETTINGS = {
     "collection_title",
     "tag_values",
     "option_values",
+    "option_pairs",
     "variant_titles",
     "skus",
     "barcodes",
+    "price_min_etb",
+    "price_max_etb",
     "created_at",
     "updated_at",
   ],
@@ -50,9 +53,15 @@ const PRODUCT_INDEX_SETTINGS = {
     "category_ids",
     "collection_id",
     "tag_values",
+    "option_pairs",
+    "price_min_etb",
+    "price_max_etb",
   ],
-  sortableAttributes: ["created_at", "updated_at", "title"],
+  sortableAttributes: ["created_at", "updated_at", "title", "price_min_etb"],
   rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
+  pagination: { maxTotalHits: 10_000 },
+  faceting: { maxValuesPerFacet: 250 },
+  searchCutoffMs: 200,
   typoTolerance: {
     enabled: true,
     disableOnAttributes: ["id", "handle", "skus", "barcodes"],
@@ -65,11 +74,33 @@ function filterValue(value: string) {
   return JSON.stringify(value);
 }
 
+function optionPairGroup(value: string) {
+  try {
+    const pair: unknown = JSON.parse(value);
+    return Array.isArray(pair) && typeof pair[0] === "string" ? pair[0] : value;
+  } catch {
+    return value;
+  }
+}
+
+export function buildOptionPairFilters(pairs: string[]) {
+  const groups = new Map<string, string[]>();
+  for (const pair of pairs) {
+    const group = optionPairGroup(pair);
+    groups.set(group, [...(groups.get(group) ?? []), pair]);
+  }
+  return [...groups.values()].map((values) =>
+    `(${values.map((pair) => `option_pairs = ${filterValue(pair)}`).join(" OR ")})`,
+  );
+}
+
 export default class MeilisearchModuleService implements ProductSearchProvider {
   private readonly client: Meilisearch;
   private readonly indexName: string;
   private readonly logger: Logger;
   private configurePromise: Promise<void> | undefined;
+  private documentCountCache: { expiresAt: number; value: number } | undefined;
+  private documentCountPromise: Promise<number> | undefined;
 
   constructor({ logger }: { logger: Logger }, options: MeilisearchModuleOptions) {
     this.logger = logger;
@@ -100,11 +131,13 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       .index<ProductSearchDocument>(this.indexName)
       .addDocuments(documents, { primaryKey: "id" })
       .waitTask();
+    this.documentCountCache = undefined;
   }
 
   async deleteProducts(ids: string[]) {
     if (!ids.length) return;
     await this.client.index(this.indexName).deleteDocuments(ids).waitTask();
+    this.documentCountCache = undefined;
   }
 
   async pruneProducts(validIds: string[], protectUpdatedAfter: number) {
@@ -129,7 +162,29 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       if (offset >= page.total || page.results.length === 0) break;
     }
     if (stale.length) await index.deleteDocuments(stale).waitTask();
+    if (stale.length) this.documentCountCache = undefined;
     return stale.length;
+  }
+
+  private async getDocumentCount() {
+    const now = Date.now();
+    if (this.documentCountCache && this.documentCountCache.expiresAt > now) {
+      return this.documentCountCache.value;
+    }
+    this.documentCountPromise ??= this.client
+      .index(this.indexName)
+      .getStats()
+      .then((stats) => {
+        this.documentCountCache = {
+          expiresAt: Date.now() + 10_000,
+          value: stats.numberOfDocuments,
+        };
+        return stats.numberOfDocuments;
+      })
+      .finally(() => {
+        this.documentCountPromise = undefined;
+      });
+    return this.documentCountPromise;
   }
 
   async searchProducts(query: ProductSearchQuery): Promise<ProductSearchResult> {
@@ -139,6 +194,26 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       .join(" OR ");
     const filters = [`(${channelFilter})`];
     if (!query.includeDrafts) filters.push(`status = "published"`);
+    if (query.statuses?.length) {
+      filters.push(
+        `(${query.statuses.map((status) => `status = ${filterValue(status)}`).join(" OR ")})`,
+      );
+    }
+    if (query.categoryIds?.length) {
+      filters.push(
+        `(${query.categoryIds
+          .map((id) => `category_ids = ${filterValue(id)}`)
+          .join(" OR ")})`,
+      );
+    }
+    if (query.collectionId) {
+      filters.push(`collection_id = ${filterValue(query.collectionId)}`);
+    }
+    if (query.optionPairs?.length) {
+      filters.push(...buildOptionPairFilters(query.optionPairs));
+    }
+    if (query.priceMinEtb !== undefined) filters.push(`price_min_etb >= ${query.priceMinEtb}`);
+    if (query.priceMaxEtb !== undefined) filters.push(`price_min_etb <= ${query.priceMaxEtb}`);
 
     const params: SearchParams = {
       filter: filters,
@@ -151,11 +226,21 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       ...(query.sort ? { sort: query.sort } : {}),
     };
     const index = this.client.index<ProductSearchDocument>(this.indexName);
-    const [result, stats] = await Promise.all([index.search(query.q, params), index.getStats()]);
+    const [result, indexDocumentCount] = await Promise.all([
+      index.search(query.q, params),
+      this.getDocumentCount(),
+    ]);
+    if (result.processingTimeMs >= 250) {
+      this.logger.warn(
+        `Product search exceeded latency budget (${result.processingTimeMs}ms, ${result.estimatedTotalHits ?? result.hits.length} hits).`,
+      );
+    }
 
     return {
+      ...(result.facetDistribution ? { facetDistribution: result.facetDistribution } : {}),
+      ...(result.facetStats ? { facetStats: result.facetStats } : {}),
       hits: result.hits,
-      indexDocumentCount: stats.numberOfDocuments,
+      indexDocumentCount,
       estimatedTotalHits: result.estimatedTotalHits ?? result.hits.length,
       processingTimeMs: result.processingTimeMs,
       query: result.query,
@@ -168,6 +253,17 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
     } catch (error) {
       this.logger.warn(`Meilisearch health check failed: ${String(error)}`);
       return false;
+    }
+  }
+
+  async status() {
+    const available = await this.health();
+    if (!available) return { available: false, documentCount: null };
+    try {
+      return { available: true, documentCount: await this.getDocumentCount() };
+    } catch (error) {
+      this.logger.warn(`Meilisearch index status check failed: ${String(error)}`);
+      return { available: true, documentCount: null };
     }
   }
 }

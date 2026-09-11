@@ -1,6 +1,7 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
 import { listStoreCategories, listStoreCollections } from "../../lib/commerce/catalog";
+import { catalogHref, parseCatalogFilters } from "../../lib/commerce/catalog-filters";
 import { resolveTaxonomySelection, taxonomyHandle } from "../../lib/commerce/taxonomy-links";
 import { listStoreProducts } from "../../lib/commerce/products";
 import { isStoreError } from "../../lib/commerce/result";
@@ -18,10 +19,11 @@ if (!ctx.ok) {
 
 const limit = 24;
 const offset = Math.max(0, Number(Astro.url.searchParams.get("offset") ?? "0") || 0);
-const q = Astro.url.searchParams.get("q")?.trim() || "";
-const collectionValue = Astro.url.searchParams.get("collection")?.trim() || "";
-const categoryValue = Astro.url.searchParams.get("category")?.trim() || "";
-const order = Astro.url.searchParams.get("order")?.trim() || "";
+const filters = parseCatalogFilters(Astro.url.searchParams);
+const q = filters.q ?? "";
+const collectionValue = filters.collectionId ?? "";
+const categoryValue = filters.categoryId ?? "";
+const order = filters.order ?? "";
 
 const [collectionsResult, categoriesResult] = ctx.ok
   ? await Promise.all([listStoreCollections({
@@ -72,12 +74,16 @@ const productsResult = ctx.ok && !invalidTaxonomy
       collectionId: collectionSelection.item?.id ?? null,
       categoryId: categorySelection.item?.id ?? null,
       order: order || null,
+      optionPairs: filters.optionPairs,
+      priceMin: filters.priceMin ?? null,
+      priceMax: filters.priceMax ?? null,
     })
   : null;
 const products: StoreProduct[] =
   productsResult && !isStoreError(productsResult) ? productsResult.products : [];
 const count =
   productsResult && !isStoreError(productsResult) ? (productsResult.count ?? products.length) : 0;
+const facets = productsResult && !isStoreError(productsResult) ? productsResult.facets : undefined;
 const errorMessage = invalidTaxonomy
   ? "This collection or category does not exist."
   : productsResult && isStoreError(productsResult) ? productsResult.message : null;
@@ -86,14 +92,7 @@ const hasPrev = offset > 0;
 const hasNext = offset + limit < count;
 
 function productsHref(nextOffset: number) {
-  const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  if (collectionValue) params.set("collection", collectionValue);
-  if (categoryValue) params.set("category", categoryValue);
-  if (order) params.set("order", order);
-  if (nextOffset > 0) params.set("offset", String(nextOffset));
-  const qs = params.toString();
-  return qs ? `/products?${qs}` : "/products";
+  return catalogHref(filters, nextOffset);
 }
 
 const ProductList = ctx.ok
@@ -131,18 +130,16 @@ if (ctx.ok && ProductList && !errorMessage) {
       nextHref={hasNext ? productsHref(offset + limit) : undefined}
       collections={collections}
       categories={categories}
-      filters={{
-        q: q || undefined,
-        collectionId: collectionValue || undefined,
-        categoryId: categoryValue || undefined,
-        order: order || undefined,
-      }}
+      facets={facets}
+      filters={filters}
       totalCount={count}
       offset={offset}
       limit={limit}
       seo={buildStorefrontSeo({
         noindex: Boolean(
-          q || order || offset || invalidTaxonomy || (collectionValue && categoryValue),
+          q || order || offset || invalidTaxonomy || filters.optionPairs.length ||
+          filters.priceMin !== undefined || filters.priceMax !== undefined ||
+          (collectionValue && categoryValue),
         ),
         path: collectionValue
           ? `/products?collection=${encodeURIComponent(collectionValue)}`

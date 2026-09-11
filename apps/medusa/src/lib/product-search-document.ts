@@ -1,6 +1,8 @@
 import type { ProductSearchDocument } from "../modules/meilisearch/types";
 
 type RelatedValue = { id?: string | null; name?: string | null; title?: string | null; value?: string | null };
+type CalculatedPrice = { calculated_amount?: number | null; currency_code?: string | null };
+type VariantPrice = { amount?: number | null; currency_code?: string | null };
 export type ProductSearchSource = {
   id: string;
   title?: string | null;
@@ -15,11 +17,13 @@ export type ProductSearchSource = {
   categories?: RelatedValue[] | null;
   collection?: RelatedValue | null;
   tags?: RelatedValue[] | null;
-  options?: Array<{ values?: RelatedValue[] | null }> | null;
+  options?: Array<{ title?: string | null; values?: RelatedValue[] | null }> | null;
   variants?: Array<{
     title?: string | null;
     sku?: string | null;
     barcode?: string | null;
+    calculated_price?: CalculatedPrice | null;
+    prices?: VariantPrice[] | null;
   }> | null;
 };
 
@@ -33,7 +37,26 @@ function timestamp(value: string | Date | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function optionPair(option: string, value: string) {
+  return JSON.stringify([option.trim(), value.trim()]);
+}
+
+function etbPrices(product: ProductSearchSource) {
+  return (product.variants ?? []).flatMap((variant) => {
+    const price = variant.calculated_price;
+    if (price?.currency_code?.toLowerCase() === "etb" &&
+      typeof price.calculated_amount === "number" &&
+      Number.isFinite(price.calculated_amount)) return [price.calculated_amount];
+    return (variant.prices ?? []).flatMap((candidate) =>
+      candidate.currency_code?.toLowerCase() === "etb" && typeof candidate.amount === "number" && Number.isFinite(candidate.amount)
+        ? [candidate.amount]
+        : [],
+    );
+  });
+}
+
 export function toProductSearchDocument(product: ProductSearchSource): ProductSearchDocument {
+  const prices = etbPrices(product);
   return {
     id: product.id,
     title: product.title?.trim() || product.id,
@@ -53,9 +76,21 @@ export function toProductSearchDocument(product: ProductSearchSource): ProductSe
         (option.values ?? []).map((item) => item.value),
       ),
     ),
+    option_pairs: strings(
+      (product.options ?? []).flatMap((option) => {
+        const title = option.title?.trim();
+        if (!title) return [];
+        return (option.values ?? []).flatMap((item) => {
+          const value = item.value?.trim();
+          return value ? [optionPair(title, value)] : [];
+        });
+      }),
+    ),
     variant_titles: strings((product.variants ?? []).map((variant) => variant.title)),
     skus: strings((product.variants ?? []).map((variant) => variant.sku)),
     barcodes: strings((product.variants ?? []).map((variant) => variant.barcode)),
+    price_min_etb: prices.length ? Math.min(...prices) : null,
+    price_max_etb: prices.length ? Math.max(...prices) : null,
     created_at: timestamp(product.created_at),
     updated_at: timestamp(product.updated_at),
   };
@@ -77,8 +112,12 @@ export const PRODUCT_SEARCH_FIELDS = [
   "collection.id",
   "collection.title",
   "tags.value",
+  "options.title",
   "options.values.value",
   "variants.title",
   "variants.sku",
   "variants.barcode",
+  "variants.calculated_price.*",
+  "variants.prices.amount",
+  "variants.prices.currency_code",
 ] as const;

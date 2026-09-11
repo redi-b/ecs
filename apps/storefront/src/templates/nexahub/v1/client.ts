@@ -75,17 +75,6 @@ export function initNexahubStorefront() {
   const focusableElements = (root: HTMLElement | null | undefined) => root
     ? [...root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')].filter((node) => !node.hidden && node.getAttribute("aria-hidden") !== "true")
     : [];
-  const closeFilterMenus = (restoreFocus = false) => {
-    document.querySelectorAll<HTMLElement>("[data-filter-menu].is-open").forEach((node) => {
-      node.classList.remove("is-open");
-    });
-    document.querySelectorAll<HTMLButtonElement>("[data-filter-toggle]").forEach((node) => {
-      const wasOpen = node.getAttribute("aria-expanded") === "true";
-      node.setAttribute("aria-expanded", "false");
-      if (restoreFocus && wasOpen) node.focus();
-    });
-  };
-
   document.querySelectorAll<HTMLElement>("[data-featured-carousel]").forEach((root) => {
     const viewport = root.querySelector<HTMLElement>("[data-featured-viewport]");
     if (!viewport) return;
@@ -122,24 +111,6 @@ export function initNexahubStorefront() {
     track.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
     sync();
-  });
-
-  document.querySelectorAll<HTMLFormElement>("[data-filter-bar]").forEach((bar) => {
-    bar.querySelectorAll<HTMLElement>(".product-filter-bar__item").forEach((item) => {
-      const toggle = item.querySelector<HTMLButtonElement>("[data-filter-toggle]");
-      const menu = item.querySelector<HTMLElement>("[data-filter-menu]");
-      const selected = item.querySelector<HTMLElement>("[data-filter-selected]");
-      const input = item.querySelector<HTMLInputElement>("[data-filter-input]");
-      toggle?.addEventListener("click", () => {
-        const open = !menu?.classList.contains("is-open");
-        closeFilterMenus();
-        if (!menu || !open) return;
-        menu.classList.add("is-open");
-        toggle.setAttribute("aria-expanded", "true");
-      });
-      toggle?.addEventListener("keydown", (event) => { if (event.key === "ArrowDown") { event.preventDefault(); if (!menu?.classList.contains("is-open")) toggle.click(); else menu.querySelector<HTMLButtonElement>("[data-filter-option]")?.focus(); } });
-      menu?.querySelectorAll<HTMLButtonElement>("[data-filter-option]").forEach((option) => option.addEventListener("click", () => { if (input) input.value = option.dataset.filterOption ?? ""; if (selected) selected.textContent = option.textContent?.trim() ?? ""; closeFilterMenus(); if (!readOnly) { bar.setAttribute("aria-busy", "true"); announce("Updating products"); bar.requestSubmit(); } }));
-    });
   });
 
   const setNavigation = (open: boolean) => {
@@ -198,15 +169,10 @@ export function initNexahubStorefront() {
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target?.closest(".site-header__nav-item--dropdown")) setDropdown(false);
-    const activeMenu = document.querySelector<HTMLElement>("[data-filter-menu].is-open");
-    const activeOwner = activeMenu?.closest<HTMLElement>(".product-filter-bar__item");
-    const insideActiveFilter = Boolean(activeMenu && (activeMenu.contains(target) || activeOwner?.contains(target)));
-    if (activeMenu && !insideActiveFilter) closeFilterMenus();
   });
   window.addEventListener("resize", () => {
     if (!isCollapsedNavigation()) {
       setNavigation(false);
-      closeFilterMenus();
     }
   });
 
@@ -316,7 +282,7 @@ export function initNexahubStorefront() {
     catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : "Could not load your cart."; announce("Cart could not be loaded"); }
     finally { itemsRoot?.removeAttribute("aria-busy"); }
   };
-  const openCart = async (cart?: any) => { if (!overlay) return; setNavigation(false); closeFilterMenus(); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null; overlay.classList.add("is-visible"); overlay.setAttribute("aria-hidden", "false"); syncScrollLock(); window.requestAnimationFrame(() => window.requestAnimationFrame(() => { drawer?.classList.add("is-open"); drawer?.querySelector<HTMLButtonElement>("[data-cart-close]")?.focus(); })); if (cart) renderCart(cart); else await loadCart(); };
+  const openCart = async (cart?: any) => { if (!overlay) return; setNavigation(false); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null; overlay.classList.add("is-visible"); overlay.setAttribute("aria-hidden", "false"); syncScrollLock(); window.requestAnimationFrame(() => window.requestAnimationFrame(() => { drawer?.classList.add("is-open"); drawer?.querySelector<HTMLButtonElement>("[data-cart-close]")?.focus(); })); if (cart) renderCart(cart); else await loadCart(); };
   const closeCart = () => { drawer?.classList.remove("is-open"); overlay?.classList.remove("is-visible"); overlay?.setAttribute("aria-hidden", "true"); syncScrollLock(); lastFocused?.focus(); };
   document.querySelector("[data-cart-open]")?.addEventListener("click", () => { if (!readOnly) void openCart(); });
   drawer?.querySelector("[data-cart-close]")?.addEventListener("click", closeCart);
@@ -352,10 +318,8 @@ export function initNexahubStorefront() {
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      const filterWasOpen = Boolean(document.querySelector("[data-filter-menu].is-open"));
       const dropdownWasOpen = Boolean(dropdown?.classList.contains("is-open"));
       const navigationWasOpen = Boolean(header?.classList.contains("is-open"));
-      closeFilterMenus(filterWasOpen);
       setNavigation(false);
       setDropdown(false);
       if (dropdownWasOpen) dropdownButton?.focus();

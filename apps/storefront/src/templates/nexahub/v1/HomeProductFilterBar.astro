@@ -1,0 +1,31 @@
+---
+import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
+import chevronIcon from "./icons/chevron-down-icon.svg?raw";
+import "./styles/components/_home-product-filter-bar.scss";
+
+interface Props { collections?: StoreCollection[]; categories?: StoreCategory[]; }
+const { collections = [], categories = [] } = Astro.props;
+const groups = [
+  { label: "Collection", items: collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.title ?? "Collection", href: `/products?collection=${encodeURIComponent(value)}` }] : []; }) },
+  { label: "Product category", items: categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.name ?? "Category", href: `/products?category=${encodeURIComponent(value)}` }] : []; }) },
+].filter((group) => group.items.length);
+---
+{groups.length > 0 && <nav class="home-product-filters" aria-label="Browse products">
+  <span>Browse by</span>
+  {groups.map((group) => <details>
+    <summary>{group.label}<Fragment set:html={chevronIcon} /></summary>
+    <div>{group.items.slice(0, 8).map((item) => <a href={item.href}>{item.label}</a>)}<a class="home-product-filters__all" href="/products">View all products</a></div>
+  </details>)}
+</nav>}
+
+<script>
+  document.querySelectorAll<HTMLDetailsElement>(".home-product-filters details").forEach((menu) => menu.addEventListener("toggle", () => {
+    if (!menu.open) return;
+    document.querySelectorAll<HTMLDetailsElement>(".home-product-filters details").forEach((other) => { if (other !== menu) other.open = false; });
+  }));
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Node)) return;
+    document.querySelectorAll<HTMLDetailsElement>(".home-product-filters details[open]").forEach((menu) => { if (!menu.contains(event.target as Node)) menu.open = false; });
+  });
+</script>

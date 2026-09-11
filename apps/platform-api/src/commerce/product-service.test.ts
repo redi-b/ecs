@@ -1193,14 +1193,20 @@ describe("createMedusaProductService", () => {
     });
 
     const result = await service.listMerchantProducts({
+      categoryId: "pcat_1",
+      collectionId: "pcol_1",
       limit: 6,
       offset: 0,
       q: "secon",
       salesChannelId: "sc_1",
+      status: "published",
     });
 
     assert.ok(paths[0]?.startsWith("/admin/product-search?"));
     assert.ok(paths[0]?.includes("sales_channel_id=sc_1"));
+    assert.ok(paths[0]?.includes("category_id=pcat_1"));
+    assert.ok(paths[0]?.includes("collection_id=pcol_1"));
+    assert.ok(paths[0]?.includes("status=published"));
     assert.ok(paths[1]?.startsWith("/admin/products?"));
     assert.deepEqual(result.ok ? result.products.map(({ id }) => id) : [], ["p2", "p1"]);
   });

@@ -1,4 +1,5 @@
 import type { Logger, MedusaContainer } from "@medusajs/framework/types";
+import { QueryContext } from "@medusajs/framework/utils";
 
 import {
   PRODUCT_SEARCH_FIELDS,
@@ -13,6 +14,7 @@ type QueryGraph = {
     entity: "product";
     fields: string[];
     pagination: { skip: number; take: number };
+    context?: Record<string, unknown>;
   }): Promise<{ data: ProductSearchSource[] }>;
 };
 
@@ -30,6 +32,9 @@ export async function reindexProductSearch(container: MedusaContainer) {
       entity: "product",
       fields: [...PRODUCT_SEARCH_FIELDS],
       pagination: { skip: offset, take: batchSize },
+      context: {
+        variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
+      },
     });
     if (!data.length) break;
     const documents = data.map(toProductSearchDocument);

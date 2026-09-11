@@ -22,12 +22,58 @@ const PRODUCT_FIELDS = [
 ].join(",");
 
 type ProductSearchResponse = {
+  facet_distribution?: {
+    category_ids?: Record<string, number>;
+    collection_id?: Record<string, number>;
+    option_pairs?: Record<string, number>;
+  };
+  facet_stats?: { price_min_etb?: { min: number; max: number } };
   product_ids: string[];
   count: number;
   index_document_count?: number;
   limit: number;
   offset: number;
 };
+
+function parseFacetCounts(value: unknown): Record<string, number> | undefined {
+  if (!isRecord(value)) return undefined;
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, number] =>
+        Number.isSafeInteger(entry[1]) && Number(entry[1]) >= 0,
+    ),
+  );
+}
+
+function parsePriceFacet(value: unknown) {
+  if (!isRecord(value)) return null;
+  const min = getNumber(value.min);
+  const max = getNumber(value.max);
+  return min !== undefined && max !== undefined ? { min, max } : null;
+}
+
+function parseOptionFacets(counts: Record<string, number> | undefined) {
+  const groups = new Map<string, Array<{ count: number; token: string; value: string }>>();
+  for (const [token, count] of Object.entries(counts ?? {})) {
+    try {
+      const pair: unknown = JSON.parse(token);
+      if (!Array.isArray(pair) || pair.length !== 2 ||
+        typeof pair[0] !== "string" || typeof pair[1] !== "string") continue;
+      const name = pair[0].trim();
+      const value = pair[1].trim();
+      if (!name || !value) continue;
+      groups.set(name, [...(groups.get(name) ?? []), { count, token, value }]);
+    } catch {
+      // Ignore malformed legacy facet values while a search index is being upgraded.
+    }
+  }
+  return [...groups.entries()]
+    .map(([name, values]) => ({
+      name,
+      values: values.sort((a, b) => a.value.localeCompare(b.value)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 function parseProductSearchResponse(value: unknown): ProductSearchResponse | null {
   if (!isRecord(value) || !Array.isArray(value.product_ids)) return null;
@@ -36,18 +82,55 @@ function parseProductSearchResponse(value: unknown): ProductSearchResponse | nul
   const limit = getNumber(value.limit);
   const offset = getNumber(value.offset);
   const indexDocumentCount = getNumber(value.index_document_count);
+  const facetDistribution = isRecord(value.facet_distribution)
+    ? {
+        category_ids: parseFacetCounts(value.facet_distribution.category_ids),
+        collection_id: parseFacetCounts(value.facet_distribution.collection_id),
+        option_pairs: parseFacetCounts(value.facet_distribution.option_pairs),
+      }
+    : undefined;
+  const facetStats = isRecord(value.facet_stats)
+    ? { price_min_etb: parsePriceFacet(value.facet_stats.price_min_etb) ?? undefined }
+    : undefined;
   if (count === undefined || limit === undefined || offset === undefined) return null;
   return {
     product_ids: productIds,
     count,
     limit,
     offset,
+    ...(facetDistribution
+      ? {
+          facet_distribution: {
+            ...(facetDistribution.category_ids
+              ? { category_ids: facetDistribution.category_ids }
+              : {}),
+            ...(facetDistribution.collection_id
+              ? { collection_id: facetDistribution.collection_id }
+              : {}),
+            ...(facetDistribution.option_pairs
+              ? { option_pairs: facetDistribution.option_pairs }
+              : {}),
+          },
+        }
+      : {}),
+    ...(facetStats ? { facet_stats: facetStats } : {}),
     ...(indexDocumentCount !== undefined ? { index_document_count: indexDocumentCount } : {}),
   };
 }
 
 async function searchStoreProducts(
-  options: HostedStoreRequest & { limit?: number; offset?: number; regionId?: string | null; q: string },
+  options: HostedStoreRequest & {
+    categoryId?: string | null;
+    collectionId?: string | null;
+    limit?: number;
+    offset?: number;
+    order?: string | null;
+    regionId?: string | null;
+    optionPairs?: string[];
+    priceMin?: number | null;
+    priceMax?: number | null;
+    q: string;
+  },
 ): Promise<StoreProductsResponse | null> {
   try {
     const response = await storeFetch({
@@ -55,8 +138,14 @@ async function searchStoreProducts(
       path: "/store/product-search",
       searchParams: {
         q: options.q,
+        category_id: options.categoryId,
+        collection_id: options.collectionId,
+        option: options.optionPairs,
+        price_min: options.priceMin,
+        price_max: options.priceMax,
         limit: options.limit ?? 24,
         offset: options.offset ?? 0,
+        order: options.order,
       },
     });
     if (!response.ok) return null;
@@ -65,7 +154,15 @@ async function searchStoreProducts(
     if (!search) return null;
     if (search.index_document_count === 0) return null;
     if (!search.product_ids.length) {
-      return { products: [], count: search.count, limit: search.limit, offset: search.offset };
+      return {
+        products: [], count: search.count, limit: search.limit, offset: search.offset,
+        facets: {
+          categories: search.facet_distribution?.category_ids ?? {},
+          collections: search.facet_distribution?.collection_id ?? {},
+          options: parseOptionFacets(search.facet_distribution?.option_pairs),
+          price: search.facet_stats?.price_min_etb ?? null,
+        },
+      };
     }
 
     const hydrated = await getStoreProductsByIds({
@@ -79,6 +176,12 @@ async function searchStoreProducts(
       count: search.count,
       limit: search.limit,
       offset: search.offset,
+      facets: {
+        categories: search.facet_distribution?.category_ids ?? {},
+        collections: search.facet_distribution?.collection_id ?? {},
+        options: parseOptionFacets(search.facet_distribution?.option_pairs),
+        price: search.facet_stats?.price_min_etb ?? null,
+      },
     };
   } catch {
     return null;
@@ -93,18 +196,30 @@ export async function listStoreProducts(
     q?: string | null;
     collectionId?: string | null;
     categoryId?: string | null;
+    optionPairs?: string[];
+    priceMin?: number | null;
+    priceMax?: number | null;
     order?: string | null;
   },
 ): Promise<StoreProductsResponse | StorefrontError> {
   const query = options.q?.trim();
-  const canUseSearchIndex =
-    Boolean(query && query.length >= 2) &&
-    !options.collectionId?.trim() &&
-    !options.categoryId?.trim() &&
-    !options.order?.trim();
-  if (canUseSearchIndex && query) {
-    const result = await searchStoreProducts({ ...options, q: query });
+  const order = options.order?.trim();
+  const supportedSearchOrder = !order || ["created_at", "title", "-title", "price", "-price"].includes(order);
+  const canUseSearchIndex = supportedSearchOrder && (!query || query.length >= 2);
+  if (canUseSearchIndex) {
+    const result = await searchStoreProducts({ ...options, q: query ?? "" });
     if (result) return result;
+    const requiresIndex = Boolean(
+      options.optionPairs?.length || options.priceMin != null || options.priceMax != null ||
+      order === "price" || order === "-price",
+    );
+    if (requiresIndex) {
+      return {
+        ok: false,
+        status: 503,
+        message: "Product filters are temporarily unavailable. Please try again.",
+      };
+    }
   }
 
   const response = await storeFetch({
@@ -122,7 +237,7 @@ export async function listStoreProducts(
       ...(options.categoryId?.trim()
         ? { category_id: options.categoryId.trim() }
         : {}),
-      ...(options.order?.trim() ? { order: options.order.trim() } : {}),
+      ...(order && ["created_at", "title", "-title"].includes(order) ? { order } : {}),
     },
   });
   const data = await response.json().catch(() => undefined);
