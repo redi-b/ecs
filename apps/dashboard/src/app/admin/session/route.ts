@@ -1,3 +1,4 @@
+import { platformOnboardingStateSchema } from "@ecs/contracts";
 import { createAuthClient } from "better-auth/client";
 import { NextResponse } from "next/server";
 
@@ -6,6 +7,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
 import { requestWantsJson } from "@/lib/request-wants-json";
 import { sessionCanAccessShopHost, validateShopHost } from "@/lib/shop-host";
+import { getLastShopId, resolveShopDestination } from "@/lib/shop-selection";
 
 export async function POST(request: Request) {
   const wantsJson = requestWantsJson(request);
@@ -88,6 +90,8 @@ export async function POST(request: Request) {
     cookies: authResult.cookies,
     forwardedHost,
     nextPath,
+    previousCookieHeader: request.headers.get("cookie"),
+    protocol: forwardedProto,
   });
   const redirectTo = absoluteRedirectUrl(redirectPath, request);
 
@@ -149,6 +153,8 @@ async function getPostSignInRedirectPath(input: {
   cookies: string[];
   forwardedHost: string;
   nextPath: string;
+  previousCookieHeader?: string | null;
+  protocol: string;
 }) {
   if (!isCentralDashboardHost(input.forwardedHost) || input.nextPath !== "/admin") {
     return input.nextPath;
@@ -172,13 +178,15 @@ async function getPostSignInRedirectPath(input: {
     return "/admin/onboarding";
   }
 
-  const body = (await response.json().catch(() => ({}))) as {
-    primaryTenant?: {
-      dashboardUrl?: string;
-    } | null;
-  };
+  const body = (await response.json().catch(() => null)) as unknown;
+  const parsed = platformOnboardingStateSchema.safeParse(body);
+  if (!parsed.success) return "/admin/onboarding";
 
-  return body.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
+  return resolveShopDestination({
+    lastShopId: getLastShopId(input.previousCookieHeader),
+    protocol: input.protocol,
+    state: parsed.data,
+  }).href;
 }
 
 function getPlatformBaseUrl() {

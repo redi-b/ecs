@@ -4,6 +4,7 @@ import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsWorkspace } from "@/features/settings/settings-workspace";
 import { getTranslations } from "@/i18n/server";
+import { allows, merchantPolicies } from "@/lib/access-policy";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantDeliverySettings } from "@/lib/merchant-settings";
@@ -11,6 +12,7 @@ import { getMerchantDomains } from "@/lib/platform-api/domains";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getMerchantPaymentsStatus } from "@/lib/platform-api/payments/client";
 import { getStorefrontSeoSettings } from "@/lib/platform-api/storefront/seo";
+import { getMerchantTeam } from "@/lib/platform-api/team";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type SettingsPageProps = {
@@ -35,34 +37,49 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     requestHost: requestHeaders.get("host"),
     tenantId: selectedTenantId,
   });
-  const [delivery, templates, payments, storefrontSeo, domains] =
+  const [delivery, templates, payments, storefrontSeo, domains, team] =
     result.ok && result.access.tenant.id
       ? await Promise.all([
-          getMerchantDeliverySettings({
-            cookieHeader: requestHeaders.get("cookie"),
-            platformApiBaseUrl,
-            tenantId: result.access.tenant.id,
-          }),
+          allows(result.access.permissions ?? [], merchantPolicies.shopSettings)
+            ? getMerchantDeliverySettings({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                tenantId: result.access.tenant.id,
+              })
+            : null,
           getStorefrontTemplates({
             platformApiBaseUrl,
           }),
-          getMerchantPaymentsStatus({
-            cookieHeader: requestHeaders.get("cookie"),
-            platformApiBaseUrl,
-            requestHost: requestHeaders.get("host"),
-          }),
-          getStorefrontSeoSettings({
-            cookieHeader: requestHeaders.get("cookie"),
-            platformApiBaseUrl,
-            tenantId: result.access.tenant.id,
-          }),
-          getMerchantDomains({
-            cookieHeader: requestHeaders.get("cookie"),
-            platformApiBaseUrl,
-            tenantId: result.access.tenant.id,
-          }),
+          allows(result.access.permissions ?? [], merchantPolicies.paymentsManage)
+            ? getMerchantPaymentsStatus({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                requestHost: requestHeaders.get("host"),
+              })
+            : null,
+          allows(result.access.permissions ?? [], merchantPolicies.storefront)
+            ? getStorefrontSeoSettings({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                tenantId: result.access.tenant.id,
+              })
+            : null,
+          allows(result.access.permissions ?? [], merchantPolicies.domainsManage)
+            ? getMerchantDomains({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                tenantId: result.access.tenant.id,
+              })
+            : null,
+          allows(result.access.permissions ?? [], merchantPolicies.team)
+            ? getMerchantTeam({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                requestHost: requestHeaders.get("host"),
+              })
+            : null,
         ])
-      : [null, null, null, null, null];
+      : [null, null, null, null, null, null];
 
   return (
     <PageShell
@@ -92,6 +109,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               : { title: null, description: null, socialImageUrl: null }
           }
           templateStatus={resolvedSearchParams.templateStatus}
+          team={team?.ok ? team.value : null}
           summary={result.access}
         />
       )}

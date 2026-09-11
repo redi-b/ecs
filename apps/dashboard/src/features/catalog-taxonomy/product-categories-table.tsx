@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
 import {
@@ -66,6 +67,8 @@ async function copyToClipboard(
 
 function getCategoryColumns(
   categoriesById: Map<string, MerchantProductCategory>,
+  canUpdate: boolean,
+  canDelete: boolean,
   onDelete: (categoryId: string) => void,
   onEdit: (category: MerchantProductCategory) => void,
   t: (key: any, values?: Record<string, string | number>) => string,
@@ -102,7 +105,10 @@ function getCategoryColumns(
         <DataTableHeader column={column} title={t("taxonomy.table.category")} />
       ),
       cell: ({ row }) => (
-        <CategoryIdentityCell category={row.original} onOpen={() => onEdit(row.original)} />
+        <CategoryIdentityCell
+          category={row.original}
+          onOpen={canUpdate ? () => onEdit(row.original) : undefined}
+        />
       ),
     },
     {
@@ -167,14 +173,18 @@ function getCategoryColumns(
         return (
           <RowActionsMenu
             actions={[
-              {
-                icon: AppIcons.edit,
-                label: t("taxonomy.table.actions.edit", {
-                  entity: t("taxonomy.entity.category.label"),
-                }),
-                onSelect: () => onEdit(category),
-                type: "button",
-              },
+              ...(canUpdate
+                ? [
+                    {
+                      icon: AppIcons.edit,
+                      label: t("taxonomy.table.actions.edit", {
+                        entity: t("taxonomy.entity.category.label"),
+                      }),
+                      onSelect: () => onEdit(category),
+                      type: "button" as const,
+                    },
+                  ]
+                : []),
               {
                 icon: AppIcons.copy,
                 label: t("taxonomy.table.actions.copyId", {
@@ -198,16 +208,20 @@ function getCategoryColumns(
                   copyToClipboard(category.handle ?? "", t("taxonomy.table.handle"), t),
                 type: "button",
               },
-              { id: "danger", type: "separator" },
-              {
-                icon: AppIcons.trash,
-                label: t("taxonomy.table.actions.delete", {
-                  entity: t("taxonomy.entity.category.label"),
-                }),
-                onSelect: () => onDelete(category.id),
-                type: "button",
-                variant: "destructive",
-              },
+              ...(canDelete
+                ? [
+                    { id: "danger", type: "separator" as const },
+                    {
+                      icon: AppIcons.trash,
+                      label: t("taxonomy.table.actions.delete", {
+                        entity: t("taxonomy.entity.category.label"),
+                      }),
+                      onSelect: () => onDelete(category.id),
+                      type: "button" as const,
+                      variant: "destructive" as const,
+                    },
+                  ]
+                : []),
             ]}
             label={`Open actions for ${getCategoryDisplayName(category)}`}
           />
@@ -268,6 +282,8 @@ export function ProductCategoriesTable({
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const canUpdate = usePermission("products.update");
+  const canDelete = usePermission("products.delete");
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const visibility = initialVisibility;
@@ -312,11 +328,13 @@ export function ProductCategoriesTable({
     () =>
       getCategoryColumns(
         categoriesById,
+        canUpdate,
+        canDelete,
         (id) => setDeleteCategoryId(id),
         (category) => setEditingCategory(category),
         t,
       ),
-    [categoriesById, t],
+    [canDelete, canUpdate, categoriesById, t],
   );
 
   const deleteCategoryMutation = useMutation({
@@ -426,18 +444,20 @@ export function ProductCategoriesTable({
               ]}
               value={viewMode}
             />
-            <Button
-              aria-label={t("taxonomy.actions.reorder")}
-              disabled={taxonomy.categoriesPending || taxonomy.categoriesError}
-              className={listToolbarControlClassName}
-              onClick={() => setReorderOpen(true)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <AppIcons.drag data-icon="inline-start" />
-              <span className="hidden sm:inline">{t("taxonomy.actions.reorder")}</span>
-            </Button>
+            {canUpdate ? (
+              <Button
+                aria-label={t("taxonomy.actions.reorder")}
+                disabled={taxonomy.categoriesPending || taxonomy.categoriesError}
+                className={listToolbarControlClassName}
+                onClick={() => setReorderOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <AppIcons.drag data-icon="inline-start" />
+                <span className="hidden sm:inline">{t("taxonomy.actions.reorder")}</span>
+              </Button>
+            ) : null}
           </>
         }
         filters={filters}
@@ -477,22 +497,26 @@ export function ProductCategoriesTable({
 
   return (
     <>
-      <CategoryEditSheet
-        categories={taxonomy.categories}
-        categoriesReady={!taxonomy.categoriesPending && !taxonomy.categoriesError}
-        category={editingCategory}
-        onOpenChange={(next) => {
-          if (!next) setEditingCategory(null);
-        }}
-        open={Boolean(editingCategory)}
-        tenantId={tenantId}
-      />
-      <CategoryReorderSheet
-        categories={taxonomy.categories}
-        onOpenChange={setReorderOpen}
-        open={reorderOpen}
-        tenantId={tenantId}
-      />
+      {canUpdate ? (
+        <CategoryEditSheet
+          categories={taxonomy.categories}
+          categoriesReady={!taxonomy.categoriesPending && !taxonomy.categoriesError}
+          category={editingCategory}
+          onOpenChange={(next) => {
+            if (!next) setEditingCategory(null);
+          }}
+          open={Boolean(editingCategory)}
+          tenantId={tenantId}
+        />
+      ) : null}
+      {canUpdate ? (
+        <CategoryReorderSheet
+          categories={taxonomy.categories}
+          onOpenChange={setReorderOpen}
+          open={reorderOpen}
+          tenantId={tenantId}
+        />
+      ) : null}
       {/* Shared shell keeps ListViewToggle mounted across Table/Tree switches. */}
       <div className="mb-4 flex w-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border bg-card/95 lg:mb-6">
         <div className="shrink-0 border-b bg-muted/20 p-3">{toolbar}</div>
@@ -501,7 +525,9 @@ export function ProductCategoriesTable({
             <CategoryTreeView
               categories={filteredCategories}
               embedded
-              onEdit={(category) => setEditingCategory(category)}
+              {...(canUpdate
+                ? { onEdit: (category: MerchantProductCategory) => setEditingCategory(category) }
+                : {})}
               query={initialQuery}
             />
             {footer && filteredCategories.length > 0 ? (
@@ -527,18 +553,20 @@ export function ProductCategoriesTable({
                   <AppIcons.copy data-icon="inline-start" />
                   {t("table.actions.copyIds")}
                 </Button>
-                <Button
-                  onClick={() => {
-                    setSelectedCategoryIdsForDelete(selectedCategories.map((c) => c.id));
-                    setShowBatchDeleteDialog(true);
-                  }}
-                  size="sm"
-                  type="button"
-                  variant="destructive-outline"
-                >
-                  <AppIcons.trash data-icon="inline-start" />
-                  Delete selected
-                </Button>
+                {canDelete ? (
+                  <Button
+                    onClick={() => {
+                      setSelectedCategoryIdsForDelete(selectedCategories.map((c) => c.id));
+                      setShowBatchDeleteDialog(true);
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="destructive-outline"
+                  >
+                    <AppIcons.trash data-icon="inline-start" />
+                    Delete selected
+                  </Button>
+                ) : null}
               </div>
             )}
             columns={columns}
@@ -559,46 +587,52 @@ export function ProductCategoriesTable({
         )}
       </div>
 
-      <ConfirmDialog
-        cancelDisabled={deleteCategoryMutation.isPending}
-        confirmDisabled={deleteCategoryMutation.isPending}
-        confirmLabel={deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")}
-        description={t("taxonomy.delete.desc", {
-          name: categoryToDelete
-            ? getCategoryDisplayName(categoryToDelete)
-            : t("taxonomy.entity.category.label"),
-        })}
-        eyebrow={t("common.confirm.deleteEyebrow")}
-        icon="trash"
-        onConfirm={() => {
-          if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
-        }}
-        onOpenChange={(open) => {
-          if (!open) setDeleteCategoryId(null);
-        }}
-        open={deleteCategoryId !== null}
-        title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.category.label") })}
-      />
+      {canDelete ? (
+        <ConfirmDialog
+          cancelDisabled={deleteCategoryMutation.isPending}
+          confirmDisabled={deleteCategoryMutation.isPending}
+          confirmLabel={
+            deleteCategoryMutation.isPending ? t("common.deleting") : t("common.delete")
+          }
+          description={t("taxonomy.delete.desc", {
+            name: categoryToDelete
+              ? getCategoryDisplayName(categoryToDelete)
+              : t("taxonomy.entity.category.label"),
+          })}
+          eyebrow={t("common.confirm.deleteEyebrow")}
+          icon="trash"
+          onConfirm={() => {
+            if (deleteCategoryId) deleteCategoryMutation.mutate(deleteCategoryId);
+          }}
+          onOpenChange={(open) => {
+            if (!open) setDeleteCategoryId(null);
+          }}
+          open={deleteCategoryId !== null}
+          title={t("taxonomy.delete.title", { entity: t("taxonomy.entity.category.label") })}
+        />
+      ) : null}
 
-      <ConfirmDialog
-        cancelDisabled={batchDeleteCategoriesMutation.isPending}
-        confirmDisabled={batchDeleteCategoriesMutation.isPending}
-        confirmLabel={
-          batchDeleteCategoriesMutation.isPending ? t("common.deleting") : t("common.delete")
-        }
-        description={t("taxonomy.delete.batchDesc", {
-          count: selectedCategoryIdsForDelete.length,
-          entityPlural: t("taxonomy.entity.category.plural"),
-        })}
-        eyebrow={t("common.confirm.deleteEyebrow")}
-        icon="trash"
-        onConfirm={() => batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete)}
-        onOpenChange={setShowBatchDeleteDialog}
-        open={showBatchDeleteDialog}
-        title={t("taxonomy.delete.batchTitle", {
-          entityPlural: t("taxonomy.entity.category.plural"),
-        })}
-      />
+      {canDelete ? (
+        <ConfirmDialog
+          cancelDisabled={batchDeleteCategoriesMutation.isPending}
+          confirmDisabled={batchDeleteCategoriesMutation.isPending}
+          confirmLabel={
+            batchDeleteCategoriesMutation.isPending ? t("common.deleting") : t("common.delete")
+          }
+          description={t("taxonomy.delete.batchDesc", {
+            count: selectedCategoryIdsForDelete.length,
+            entityPlural: t("taxonomy.entity.category.plural"),
+          })}
+          eyebrow={t("common.confirm.deleteEyebrow")}
+          icon="trash"
+          onConfirm={() => batchDeleteCategoriesMutation.mutate(selectedCategoryIdsForDelete)}
+          onOpenChange={setShowBatchDeleteDialog}
+          open={showBatchDeleteDialog}
+          title={t("taxonomy.delete.batchTitle", {
+            entityPlural: t("taxonomy.entity.category.plural"),
+          })}
+        />
+      ) : null}
     </>
   );
 }

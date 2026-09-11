@@ -1,7 +1,9 @@
 "use client";
 
+import { allMerchantPermissions } from "@ecs/contracts";
 import type { ReactNode } from "react";
 
+import { AccessProvider } from "@/components/app/access-context";
 import { ActorProvider } from "@/components/app/actor-context";
 import { AppHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
@@ -18,14 +20,16 @@ export function DashboardDemoShell({ children }: { children: ReactNode }) {
       <TooltipProvider>
         <SidebarProvider>
           <ActorProvider actor={dashboardDemoFixture.actor}>
-            <AppSidebar access={dashboardDemoFixture} demoMode />
-            <SidebarInset>
-              <BreadcrumbLabelsProvider>
-                <AppHeader demoMode />
-                <DemoPreviewBanner />
-                {children}
-              </BreadcrumbLabelsProvider>
-            </SidebarInset>
+            <AccessProvider access={{ permissions: allMerchantPermissions }} refreshOnFocus={false}>
+              <AppSidebar access={dashboardDemoFixture} demoMode />
+              <SidebarInset>
+                <BreadcrumbLabelsProvider>
+                  <AppHeader demoMode />
+                  <DemoPreviewBanner />
+                  {children}
+                </BreadcrumbLabelsProvider>
+              </SidebarInset>
+            </AccessProvider>
           </ActorProvider>
         </SidebarProvider>
       </TooltipProvider>

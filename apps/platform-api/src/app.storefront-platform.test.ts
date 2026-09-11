@@ -1062,6 +1062,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { overview: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });
@@ -1129,6 +1130,7 @@ describe("platform app storefront, delivery, billing, and operator", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { domains: ["manage"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });

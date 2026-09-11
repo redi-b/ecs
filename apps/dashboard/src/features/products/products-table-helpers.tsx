@@ -113,7 +113,7 @@ export function getProductColumns(
   tenantId: string | null | undefined,
   categories: MerchantProductCategory[],
   collections: MerchantProductCollection[],
-  onDelete: (productId: string) => void,
+  onDelete: ((productId: string) => void) | undefined,
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
   t: Translate,
   productDetailHref?: (product: MerchantProduct) => string,
@@ -292,14 +292,18 @@ export function getProductColumns(
                   ),
                 type: "button",
               },
-              { id: "danger", type: "separator" },
-              {
-                icon: AppIcons.trash,
-                label: t("products.table.deleteProduct"),
-                onSelect: () => onDelete(product.id),
-                type: "button",
-                variant: "destructive",
-              },
+              ...(onDelete
+                ? [
+                    { id: "danger", type: "separator" as const },
+                    {
+                      icon: AppIcons.trash,
+                      label: t("products.table.deleteProduct"),
+                      onSelect: () => onDelete(product.id),
+                      type: "button" as const,
+                      variant: "destructive" as const,
+                    },
+                  ]
+                : []),
             ]}
             label={t("products.table.actionsFor", {
               name: product.title || t("products.table.unnamed"),

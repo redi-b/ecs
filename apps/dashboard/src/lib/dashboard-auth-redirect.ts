@@ -2,6 +2,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
+import { getLastShopId, resolveShopDestination } from "@/lib/shop-selection";
 
 export async function getAuthenticatedDashboardRedirect(options: {
   cookieHeader?: string | null | undefined;
@@ -30,7 +31,11 @@ export async function getAuthenticatedDashboardRedirect(options: {
       return null;
     }
 
-    return onboarding.state.primaryTenant?.dashboardUrl ?? "/admin/onboarding";
+    return resolveShopDestination({
+      lastShopId: getLastShopId(options.cookieHeader),
+      protocol: new URL(process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me").protocol,
+      state: onboarding.state,
+    }).href;
   }
 
   const access = await getMerchantDashboardAccessShell({

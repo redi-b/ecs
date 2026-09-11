@@ -183,6 +183,7 @@ describe("platform app merchant dashboard and orders", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { overview: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });
@@ -362,6 +363,7 @@ describe("platform app merchant dashboard and orders", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { overview: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });
@@ -648,6 +650,7 @@ describe("platform app merchant dashboard and orders", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(authorizationInput, {
+      permission: { overview: ["read"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });

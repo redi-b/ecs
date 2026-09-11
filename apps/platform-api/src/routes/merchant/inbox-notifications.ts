@@ -24,6 +24,7 @@ async function resolveTenantContext(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: tenantIdParam,
       userId: session.user.id,
+      permission: { notifications: ["read"] },
     });
     if (!authorization?.ok) {
       return { ok: false as const, response: context.json({ error: "dashboard_forbidden" }, 403) };
@@ -35,7 +36,9 @@ async function resolveTenantContext(
     };
   }
 
-  const merchant = await helpers.getAuthorizedMerchantContext(context);
+  const merchant = await helpers.getAuthorizedMerchantContext(context, {
+    notifications: ["read"],
+  });
   if (!merchant.ok) {
     return { ok: false as const, response: merchant.response };
   }

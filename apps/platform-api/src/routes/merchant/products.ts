@@ -56,6 +56,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["create"] },
     });
 
     if (!authorization?.ok) {
@@ -134,6 +135,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -173,7 +175,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.get("/platform/merchant/products/export.csv", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["export"] });
     if (!merchant.ok) return merchant.response;
 
     const commerce = getResolvedCommerce(merchant.result.context);
@@ -206,7 +208,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/products/inventory/batch", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context, {
       requireStockLocation: true,
@@ -234,7 +236,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/products/import/dry-run", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["import"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -274,7 +276,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/products/import/apply", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["import"] });
     if (!merchant.ok) return merchant.response;
     const session = await options.getSession?.(context.req.raw.headers);
     if (!session) return context.json({ error: "auth_required" }, 401);
@@ -302,7 +304,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.get("/platform/merchant/products/import/executions/:executionId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["import"] });
     if (!merchant.ok) return merchant.response;
     if (!options.getProductImportExecution) {
       return context.json({ error: "product_import_queue_unavailable" }, 503);
@@ -316,7 +318,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.get("/platform/merchant/products/:productId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -366,6 +368,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -424,6 +427,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["update"] },
     });
 
     if (!authorization?.ok) {
@@ -491,6 +495,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -550,6 +555,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["update"] },
     });
 
     if (!authorization?.ok) {
@@ -605,7 +611,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/products/batch-delete", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -644,6 +650,7 @@ export function registerMerchantProductRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { products: ["update"] },
     });
 
     if (!authorization?.ok) {
@@ -692,7 +699,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.delete("/platform/merchant/products/:productId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -708,7 +715,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.get("/platform/merchant/product-option-sets", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantProductOptionSets) {
       return context.json({ error: "product_option_sets_unavailable" }, 500);
@@ -720,7 +727,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/product-option-sets", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     if (!options.createMerchantProductOptionSet) {
       return context.json({ error: "product_option_sets_unavailable" }, 500);
@@ -739,7 +746,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.post("/platform/merchant/product-option-sets/:optionSetId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["update"] });
     if (!merchant.ok) return merchant.response;
     if (!options.updateMerchantProductOptionSet) {
       return context.json({ error: "product_option_sets_unavailable" }, 500);
@@ -759,7 +766,7 @@ export function registerMerchantProductRoutes(
   });
 
   app.delete("/platform/merchant/product-option-sets/:optionSetId", async (context) => {
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["delete"] });
     if (!merchant.ok) return merchant.response;
     if (!options.deleteMerchantProductOptionSet) {
       return context.json({ error: "product_option_sets_unavailable" }, 500);

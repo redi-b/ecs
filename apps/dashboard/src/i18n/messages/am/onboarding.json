@@ -90,6 +90,14 @@
     "unavailable": "አድራሻው አይገኝም።",
     "unavailableShort": "አይገኝም"
   },
+  "shopPicker": {
+    "title": "ሱቅ ይምረጡ",
+    "description": "ለመስራት የሚፈልጉትን ሱቅ ይምረጡ። በእያንዳንዱ ሱቅ ያለዎት ፈቃድ ሊለያይ ይችላል።",
+    "current": "አሁን ያለዎት",
+    "open": "{shop}ን ክፈት",
+    "errorTitle": "ያንን ሱቅ መክፈት አልተቻለም",
+    "errorDescription": "ፈቃድዎ ተቀይሮ ሊሆን ይችላል። ሌላ ሱቅ ይምረጡ ወይም እንደገና ይሞክሩ።"
+  },
   "error": {
     "authRequired": "ሱቅዎን ለማዋቀር ይግቡ።",
     "handleTaken": "ይህ የሱቅ አድራሻ ተይዟል። ሌላ ይሞክሩ።",

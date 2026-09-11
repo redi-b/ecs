@@ -1,6 +1,8 @@
+import type { MerchantPermission } from "@ecs/contracts";
 import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
 import type { MessageKey } from "@/i18n/messages";
+import { canAccessDashboardRoute } from "@/lib/dashboard-route-access";
 import { getNavigableAppRoutes } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -13,6 +15,7 @@ export type CommandDef = {
   group: CommandGroup;
   icon: AppIcon;
   href: string;
+  permission?: MerchantPermission;
 };
 
 type Translate = (key: MessageKey) => string;
@@ -23,6 +26,7 @@ type ActionDef = {
   keywords: string[];
   icon: AppIcon;
   href: string;
+  permission?: MerchantPermission;
 };
 
 /** Verb-first actions that navigate to existing create/list UIs. */
@@ -40,6 +44,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["new", "add", "catalog", "item", "product"],
     icon: AppIcons.products,
     href: withCreate(dashboardRoutes.products, "product"),
+    permission: "products.create",
   },
   {
     id: "action.create-category",
@@ -47,6 +52,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["new", "taxonomy", "catalog", "category"],
     icon: AppIcons.tree,
     href: withCreate(dashboardRoutes.productCategories, "category"),
+    permission: "products.create",
   },
   {
     id: "action.create-collection",
@@ -54,6 +60,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["new", "taxonomy", "catalog", "collection"],
     icon: AppIcons.folder,
     href: withCreate(dashboardRoutes.productCollections, "collection"),
+    permission: "products.create",
   },
   {
     id: "action.create-order",
@@ -61,6 +68,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["new", "draft", "sale", "order"],
     icon: AppIcons.orders,
     href: withCreate(dashboardRoutes.orders, "order"),
+    permission: "orders.create",
   },
   {
     id: "action.customers",
@@ -68,6 +76,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["buyers", "people", "contacts", "customers"],
     icon: AppIcons.user,
     href: dashboardRoutes.customers,
+    permission: "customers.read",
   },
   {
     id: "action.upload-media",
@@ -75,6 +84,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["image", "file", "library", "media", "upload"],
     icon: AppIcons.image,
     href: dashboardRoutes.media,
+    permission: "media.manage",
   },
   {
     id: "action.create-promotion",
@@ -82,6 +92,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["new", "discount", "coupon", "code", "promotion"],
     icon: AppIcons.tag,
     href: withCreate(dashboardRoutes.promotions, "promotion"),
+    permission: "promotions.manage",
   },
   {
     id: "action.billing",
@@ -89,6 +100,7 @@ const actionDefs: ActionDef[] = [
     keywords: ["plan", "subscription", "invoice", "pay", "billing"],
     icon: AppIcons.billing,
     href: dashboardRoutes.billing,
+    permission: "billing.read",
   },
   {
     id: "action.settings",
@@ -107,20 +119,29 @@ export function navMessageKeyForRouteId(id: string): MessageKey {
   return `nav.${camelCased}` as MessageKey;
 }
 
-export function getCommandActions(t: Translate): CommandDef[] {
-  return actionDefs.map((def) => ({
-    id: def.id,
-    label: t(def.labelKey),
-    keywords: def.keywords,
-    group: "action" as const,
-    icon: def.icon,
-    href: def.href,
-  }));
+export function getCommandActions(t: Translate, permissions?: ReadonlySet<string>): CommandDef[] {
+  return actionDefs
+    .filter((def) => !permissions || !def.permission || permissions.has(def.permission))
+    .map((def) => ({
+      id: def.id,
+      label: t(def.labelKey),
+      keywords: def.keywords,
+      group: "action" as const,
+      icon: def.icon,
+      href: def.href,
+      ...(def.permission ? { permission: def.permission } : {}),
+    }));
 }
 
-export function getNavigationCommands(t: Translate): CommandDef[] {
+export function getNavigationCommands(
+  t: Translate,
+  permissions?: ReadonlySet<string>,
+): CommandDef[] {
   return getNavigableAppRoutes()
-    .filter((route) => !route.disabled)
+    .filter(
+      (route) =>
+        !route.disabled && (!permissions || canAccessDashboardRoute(route.href, permissions)),
+    )
     .map((route) => ({
       id: `nav.${route.id}`,
       label: t(navMessageKeyForRouteId(route.id)) || route.title,
@@ -131,8 +152,11 @@ export function getNavigationCommands(t: Translate): CommandDef[] {
     }));
 }
 
-export function getAllStaticCommands(t: Translate): CommandDef[] {
-  return [...getCommandActions(t), ...getNavigationCommands(t)];
+export function getAllStaticCommands(
+  t: Translate,
+  permissions?: ReadonlySet<string>,
+): CommandDef[] {
+  return [...getCommandActions(t, permissions), ...getNavigationCommands(t, permissions)];
 }
 
 /** @deprecated Prefer getCommandActions(t). English-only fallback for tests. */
@@ -143,6 +167,7 @@ export const commandActions: CommandDef[] = actionDefs.map((def) => ({
   group: "action" as const,
   icon: def.icon,
   href: def.href,
+  ...(def.permission ? { permission: def.permission } : {}),
 }));
 
 export function filterStaticCommands(query: string, commands: CommandDef[]): CommandDef[] {

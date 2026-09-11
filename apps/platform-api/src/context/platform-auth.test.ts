@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { getPlatformAuthCookieOptions } from "./platform-auth.js";
+import {
+  getPlatformAuthCookieOptions,
+  requiresVerifiedEmailForInvitation,
+} from "./platform-auth.js";
 
 test("production auth cookies are secure, branded, and shared across the parent domain", () => {
   const options = getPlatformAuthCookieOptions({
@@ -35,4 +38,10 @@ test("cookiePrefix falls back to ecs when omitted", () => {
     if (previous === undefined) delete process.env.BETTER_AUTH_COOKIE_PREFIX;
     else process.env.BETTER_AUTH_COOKIE_PREFIX = previous;
   }
+});
+
+test("invitation verification follows the account email-verification policy", () => {
+  assert.equal(requiresVerifiedEmailForInvitation(), false);
+  assert.equal(requiresVerifiedEmailForInvitation(false), false);
+  assert.equal(requiresVerifiedEmailForInvitation(true), true);
 });

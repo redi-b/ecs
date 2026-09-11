@@ -92,3 +92,38 @@ test("POST /admin/sign-out signs out through Platform auth and forwards clearing
   assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-proto"), "http");
 });
+
+test("POST /admin/sign-out preserves a safe local destination", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  process.env.DASHBOARD_PUBLIC_BASE_URL = "http://app.lvh.me";
+  globalThis.fetch = async () => Response.json({ success: true });
+
+  const response = await POST(
+    new Request("http://dashboard.test/admin/sign-out", {
+      body: new URLSearchParams({
+        next: "/admin/sign-in?next=%2Faccept-invitation%3FinvitationId%3Dinvite_123",
+      }),
+      method: "POST",
+    }),
+  );
+
+  assert.equal(
+    response.headers.get("location"),
+    "http://app.lvh.me/admin/sign-in?next=%2Faccept-invitation%3FinvitationId%3Dinvite_123",
+  );
+});
+
+test("POST /admin/sign-out rejects an external destination", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  process.env.DASHBOARD_PUBLIC_BASE_URL = "http://app.lvh.me";
+  globalThis.fetch = async () => Response.json({ success: true });
+
+  const response = await POST(
+    new Request("http://dashboard.test/admin/sign-out", {
+      body: new URLSearchParams({ next: "//malicious.example/steal" }),
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.headers.get("location"), "http://app.lvh.me/admin/sign-in");
+});

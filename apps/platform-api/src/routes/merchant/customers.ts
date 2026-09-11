@@ -42,7 +42,7 @@ export function registerMerchantCustomerRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/customers", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantCustomers)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -55,7 +55,7 @@ export function registerMerchantCustomerRoutes(
     return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
   app.get("/platform/merchant/customers/:customerId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.getMerchantCustomer)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -66,7 +66,7 @@ export function registerMerchantCustomerRoutes(
     return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
   app.post("/platform/merchant/customers", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
     if (!merchant.ok) return merchant.response;
     const parsed = createCustomerSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_customer" }, 400);
@@ -91,7 +91,7 @@ export function registerMerchantCustomerRoutes(
       : context.json({ error: result.error }, result.status);
   });
   app.post("/platform/merchant/customers/:customerId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
     if (!merchant.ok) return merchant.response;
     const parsed = createCustomerSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_customer" }, 400);
@@ -115,7 +115,7 @@ export function registerMerchantCustomerRoutes(
     return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
   });
   app.get("/platform/merchant/customer-groups", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["read"] });
     if (!merchant.ok) return merchant.response;
     if (!options.listMerchantCustomerGroups)
       return context.json({ error: "commerce_backend_unavailable" }, 503);
@@ -126,7 +126,7 @@ export function registerMerchantCustomerRoutes(
   });
 
   app.post("/platform/merchant/customers/:customerId/addresses", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
     if (!merchant.ok) return merchant.response;
     const parsed = addressSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_customer_address" }, 400);
@@ -145,7 +145,7 @@ export function registerMerchantCustomerRoutes(
   app.post(
     "/platform/merchant/customers/:customerId/addresses/:addressId",
     async (context) => {
-      const merchant = await helpers.getAuthorizedMerchantContext(context);
+      const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
       if (!merchant.ok) return merchant.response;
       const parsed = addressSchema.safeParse(await context.req.json().catch(() => null));
       if (!parsed.success) return context.json({ error: "invalid_customer_address" }, 400);
@@ -166,7 +166,7 @@ export function registerMerchantCustomerRoutes(
   app.delete(
     "/platform/merchant/customers/:customerId/addresses/:addressId",
     async (context) => {
-      const merchant = await helpers.getAuthorizedMerchantContext(context);
+      const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
       if (!merchant.ok) return merchant.response;
       if (!options.deleteMerchantCustomerAddress)
         return context.json({ error: "commerce_backend_unavailable" }, 503);

@@ -164,7 +164,18 @@ test("POST /admin/session routes central dashboard sign-in to the user's primary
           email: "owner@example.com",
           name: "Mahi Bekele",
         },
-        tenants: [],
+        tenants: [
+          {
+            createdAt: "2026-09-01T00:00:00.000Z",
+            handle: "addis-pantry",
+            id: "tenant_1",
+            name: "Addis Pantry",
+            primaryDomain: { hostname: "addis-pantry.lvh.me" },
+            role: "owner",
+            status: "active",
+            updatedAt: "2026-09-01T00:00:00.000Z",
+          },
+        ],
         primaryTenant: {
           id: "tenant_1",
           handle: "addis-pantry",

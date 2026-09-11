@@ -27,6 +27,8 @@ import {
 } from "./editor-state";
 
 export function StorefrontVisualEditor({
+  canEdit = true,
+  canPublish = true,
   draft,
   editorMeta,
   onPublish,
@@ -66,8 +68,8 @@ export function StorefrontVisualEditor({
   const skipHistoryRef = useRef(false);
 
   useEffect(() => {
-    markStorefrontEditorVisited(draft.tenantId);
-  }, [draft.tenantId]);
+    if (canEdit) markStorefrontEditorVisited(draft.tenantId);
+  }, [canEdit, draft.tenantId]);
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -233,6 +235,7 @@ export function StorefrontVisualEditor({
   }
 
   function handleEditorChange(nextData: EditorData) {
+    if (!canEdit) return;
     setEditorData(nextData);
 
     if (skipHistoryRef.current) {
@@ -299,7 +302,7 @@ export function StorefrontVisualEditor({
     publishedSnapshot,
     savedSnapshot,
   });
-  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
+  const hasUnsavedChanges = canEdit && currentSnapshot !== savedSnapshot;
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(hasUnsavedChanges);
 
   return (
@@ -314,6 +317,8 @@ export function StorefrontVisualEditor({
     >
       <StorefrontEditorProvider data={editorData} onChange={handleEditorChange}>
         <StorefrontEditorShell
+          canEdit={canEdit}
+          canPublish={canEdit && canPublish}
           canRedo={historyIndex < history.length - 1}
           canUndo={historyIndex > 0}
           editorMeta={editorMeta}
@@ -325,7 +330,7 @@ export function StorefrontVisualEditor({
           onReset={handleReset}
           onToggleFullscreen={() => setIsFullscreen((current) => !current)}
           onPublish={handlePublishDraft}
-          onUnpublish={onUnpublish ? handleUnpublishShop : undefined}
+          onUnpublish={canEdit && canPublish && onUnpublish ? handleUnpublishShop : undefined}
           onSave={handleSaveDraft}
           onToggleEditHints={() => setShowEditHints((current) => !current)}
           onUndo={handleUndo}

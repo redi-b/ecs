@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { PermissionGate } from "@/components/app/access-context";
 import { ExportDownloadButton } from "@/components/app/export-download-button";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
@@ -67,7 +68,9 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
       actions={
         <>
           <RefreshButton />
-          <ManualOrderCreateDialog />
+          <PermissionGate permission="orders.create">
+            <ManualOrderCreateDialog />
+          </PermissionGate>
         </>
       }
       title={t("orders.title")}
@@ -77,17 +80,19 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
           <ListSummary
             actions={
               !tenantId ? (
-                <ExportDownloadButton
-                  failedMessage={t("orders.export.failed")}
-                  fallbackFilename="ecs-orders.csv"
-                  href={listExportPath(dashboardRoutes.ordersExportAction, {
-                    ...filters,
-                    customerId,
-                    ...(dateRange ? listDateRangeToTimestamps(dateRange) : {}),
-                  })}
-                  label={t("orders.export.label")}
-                  pendingLabel={t("orders.export.pending")}
-                />
+                <PermissionGate permission="orders.export">
+                  <ExportDownloadButton
+                    failedMessage={t("orders.export.failed")}
+                    fallbackFilename="ecs-orders.csv"
+                    href={listExportPath(dashboardRoutes.ordersExportAction, {
+                      ...filters,
+                      customerId,
+                      ...(dateRange ? listDateRangeToTimestamps(dateRange) : {}),
+                    })}
+                    label={t("orders.export.label")}
+                    pendingLabel={t("orders.export.pending")}
+                  />
+                </PermissionGate>
               ) : null
             }
             count={result.orders.count}

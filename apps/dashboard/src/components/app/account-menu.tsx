@@ -2,6 +2,7 @@
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import { useState } from "react";
+import { usePolicy } from "@/components/app/access-context";
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
@@ -22,15 +23,20 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useI18n } from "@/i18n/provider";
+import { merchantPolicies } from "@/lib/access-policy";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function AccountMenu({
   actor,
+  currentTenantId,
   demoMode = false,
+  shopPickerUrl,
 }: {
   actor: MerchantDashboardSummary["actor"];
+  currentTenantId?: string;
   demoMode?: boolean;
+  shopPickerUrl?: string;
 }) {
   const { t } = useI18n();
   const { isMobile, setOpenMobile, state } = useSidebar();
@@ -39,6 +45,7 @@ export function AccountMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const [suppressTooltip, setSuppressTooltip] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const canViewBilling = usePolicy(merchantPolicies.billing);
   const accountName = liveActor.name?.trim() || liveActor.email;
   const accountInitials = getAccountInitials(accountName);
   const openBeside = !isMobile && collapsed;
@@ -138,23 +145,36 @@ export function AccountMenu({
                   </Link>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild={!demoMode} className="py-1.5" disabled={demoMode}>
-                {demoMode ? (
-                  <span>
-                    <AppIcons.billing />
-                    {t("account.billing")}
-                  </span>
-                ) : (
-                  <Link
-                    href={dashboardRoutes.billing}
+              {demoMode || canViewBilling ? (
+                <DropdownMenuItem asChild={!demoMode} className="py-1.5" disabled={demoMode}>
+                  {demoMode ? (
+                    <span>
+                      <AppIcons.billing />
+                      {t("account.billing")}
+                    </span>
+                  ) : (
+                    <Link
+                      href={dashboardRoutes.billing}
+                      onClick={closeMobileSidebar}
+                      prefetch={false}
+                    >
+                      <AppIcons.billing />
+                      {t("account.billing")}
+                    </Link>
+                  )}
+                </DropdownMenuItem>
+              ) : null}
+              {!demoMode && shopPickerUrl ? (
+                <DropdownMenuItem asChild className="py-1.5">
+                  <a
+                    href={`${shopPickerUrl}?current=${encodeURIComponent(currentTenantId ?? "")}`}
                     onClick={closeMobileSidebar}
-                    prefetch={false}
                   >
-                    <AppIcons.billing />
-                    {t("account.billing")}
-                  </Link>
-                )}
-              </DropdownMenuItem>
+                    <AppIcons.shoppingBag />
+                    {t("account.switchShop")}
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="my-1" />
             <DropdownMenuItem

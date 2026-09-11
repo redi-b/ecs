@@ -20,6 +20,7 @@ import {
 } from "./adapters/medusa/update-shipping-price.js";
 import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
+import { createMerchantCapabilityLookup } from "./auth/merchant-authorization.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDashboardAuthorizationLookup } from "./context/dashboard-authorization.js";
@@ -82,6 +83,7 @@ import { createSuperadminTenantProjectionService } from "./modules/superadmin/te
 import { createSuperadminWorkRecoveryService } from "./modules/superadmin/work-recovery-service.js";
 import { createSupportAccessService } from "./modules/support/access-service.js";
 import { createSupportService } from "./modules/support/service.js";
+import { createMerchantTeamService } from "./modules/team/merchant-team-service.js";
 import {
   handleTelegramCallbackQuery,
   resolveTelegramCallbackSecret,
@@ -383,6 +385,7 @@ const analyticsInsightsService = createAnalyticsInsightsService(
 );
 const dashboardMetricsService = createDashboardMetricsService(platformDb.db);
 const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
+const getMerchantCapabilities = createMerchantCapabilityLookup(platformDb.db);
 const authorizePlatformPermission = createPlatformPermissionAuthorization(platformDb.db);
 const getPlatformPrincipalAccess = createPlatformPrincipalAccessLookup(platformDb.db);
 const superadminTenantProjectionService = createSuperadminTenantProjectionService(platformDb.db);
@@ -708,6 +711,7 @@ const auth = createPlatformAuth({
   cookieDomain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
   // Brand cookies as ecs.* unless overridden (see @ecs/config getAuthCookiePrefix).
   cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
+  dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
   db: platformDb.db,
   ...(authEmailProvider ? { emailProvider: authEmailProvider } : {}),
   requireEmailVerification,
@@ -725,7 +729,15 @@ const auth = createPlatformAuth({
   useSecureCookies: (process.env.BETTER_AUTH_URL ?? "http://api.lvh.me").startsWith("https://"),
 });
 
+const merchantTeamService = createMerchantTeamService({
+  authHandler: auth.handler,
+  db: platformDb.db,
+});
+
 const app = createPlatformApp({
+  dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
+  emailDeliveryConfigured,
+  merchantTeamService,
   createReviewedProductImportArtifact: productImportArtifactService.createReviewedArtifact,
   ...(productImportExecutionService
     ? {
@@ -744,6 +756,7 @@ const app = createPlatformApp({
   createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
   authorizeDashboardForTenant,
+  getMerchantCapabilities,
   authorizePlatformPermission,
   getPlatformPrincipalAccess,
   getSuperadminOverview,

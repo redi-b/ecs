@@ -15,18 +15,18 @@ import {
 } from "@/components/ui/empty";
 import {
   buildCategoryTree,
+  type CategoryTreeNode,
   flattenCategoryTree,
   getCategoryDisplayName,
-  type CategoryTreeNode,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { useI18n } from "@/i18n/provider";
-import { listEntityActionClassName } from "@/lib/list-entity-link";
 import { fuzzyMatches } from "@/lib/fuzzy-search";
+import { listEntityActionClassName } from "@/lib/list-entity-link";
 import { cn } from "@/lib/utils";
 
 type CategoryTreeViewProps = {
   categories: MerchantProductCategory[];
-  onEdit: (category: MerchantProductCategory) => void;
+  onEdit?: (category: MerchantProductCategory) => void;
   query?: string;
   /** When true, parent card already provides border/radius — only render rows. */
   embedded?: boolean;
@@ -100,7 +100,7 @@ export function CategoryTreeView({
           hasChildren={node.children.length > 0}
           key={node.category.id}
           node={node}
-          onEdit={() => onEdit(node.category)}
+          {...(onEdit ? { onEdit: () => onEdit(node.category) } : {})}
           onToggle={() =>
             setCollapsed((current) => {
               const next = new Set(current);
@@ -131,7 +131,7 @@ function TreeRow({
   collapsed: boolean;
   hasChildren: boolean;
   node: CategoryTreeNode;
-  onEdit: () => void;
+  onEdit?: () => void;
   onToggle: () => void;
 }) {
   const { t } = useI18n();
@@ -160,13 +160,17 @@ function TreeRow({
           <span className="size-7 shrink-0" aria-hidden />
         )}
         <div className="min-w-0">
-          <button
-            className={cn(listEntityActionClassName, "truncate text-left")}
-            onClick={onEdit}
-            type="button"
-          >
-            {name}
-          </button>
+          {onEdit ? (
+            <button
+              className={cn(listEntityActionClassName, "truncate text-left")}
+              onClick={onEdit}
+              type="button"
+            >
+              {name}
+            </button>
+          ) : (
+            <span className="truncate text-left font-medium text-foreground">{name}</span>
+          )}
           {node.category.handle ? (
             <p className="truncate font-mono text-xs text-muted-foreground">
               {node.category.handle}
@@ -180,23 +184,25 @@ function TreeRow({
       <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
         {node.category.rank ?? 0}
       </span>
-      <div className="shrink-0">
-        <RowActionsMenu
-          actions={[
-            {
-              icon: AppIcons.edit,
-              label: t("taxonomy.table.actions.edit", {
-                entity: t("taxonomy.entity.category.label"),
-              }),
-              onSelect: onEdit,
-              type: "button",
-            },
-          ]}
-          label={t("taxonomy.table.actions.edit", {
-            entity: t("taxonomy.entity.category.label"),
-          })}
-        />
-      </div>
+      {onEdit ? (
+        <div className="shrink-0">
+          <RowActionsMenu
+            actions={[
+              {
+                icon: AppIcons.edit,
+                label: t("taxonomy.table.actions.edit", {
+                  entity: t("taxonomy.entity.category.label"),
+                }),
+                onSelect: onEdit,
+                type: "button",
+              },
+            ]}
+            label={t("taxonomy.table.actions.edit", {
+              entity: t("taxonomy.entity.category.label"),
+            })}
+          />
+        </div>
+      ) : null}
     </li>
   );
 }

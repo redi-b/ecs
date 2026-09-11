@@ -3,11 +3,12 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   telegramOperatorBindings,
   telegramOperatorLinkSessions,
-  tenantMemberships,
+  organizationMembers,
   tenants,
 } from "@ecs/db";
 import { and, desc, eq, or } from "drizzle-orm";
 
+import { createMerchantPermissionLookup } from "../../auth/merchant-authorization.js";
 import { sendTelegramBotMessage } from "../notifications/providers/telegram-provider.js";
 import {
   deleteChatBotCommands,
@@ -25,8 +26,6 @@ export type TelegramConnectConfig = {
 const SESSION_TTL_MS = 30 * 60 * 1000;
 /** Deep-link payload prefix: /start op_<token> */
 export const OPERATOR_START_PREFIX = "op_";
-
-export const OPERATOR_WRITE_ROLES = ["owner", "manager"] as const;
 
 export type TelegramOperatorBindingView = {
   id: string;
@@ -80,14 +79,16 @@ async function getActiveWriteMembership(
 ) {
   const [row] = await db
     .select({
-      role: tenantMemberships.role,
-      status: tenantMemberships.status,
+      role: organizationMembers.role,
+      status: organizationMembers.status,
+      organizationId: organizationMembers.organizationId,
     })
-    .from(tenantMemberships)
+    .from(organizationMembers)
+    .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
     .where(
       and(
-        eq(tenantMemberships.tenantId, input.tenantId),
-        eq(tenantMemberships.userId, input.userId),
+        eq(tenants.id, input.tenantId),
+        eq(organizationMembers.userId, input.userId),
       ),
     )
     .limit(1);
@@ -95,7 +96,14 @@ async function getActiveWriteMembership(
   if (!row || row.status !== "active") {
     return null;
   }
-  if (!OPERATOR_WRITE_ROLES.includes(row.role as (typeof OPERATOR_WRITE_ROLES)[number])) {
+  const hasPermission = createMerchantPermissionLookup(db);
+  if (
+    !(await hasPermission({
+      organizationId: row.organizationId,
+      role: row.role,
+      permission: { orders: ["update"] },
+    }))
+  ) {
     return null;
   }
   return row;
@@ -375,20 +383,21 @@ export function createTelegramOperatorService(
       const rows = await db
         .select({
           binding: telegramOperatorBindings,
-          role: tenantMemberships.role,
-          membershipStatus: tenantMemberships.status,
+          organizationId: organizationMembers.organizationId,
+          role: organizationMembers.role,
+          membershipStatus: organizationMembers.status,
           tenantName: tenants.name,
           tenantHandle: tenants.handle,
         })
         .from(telegramOperatorBindings)
+        .innerJoin(tenants, eq(tenants.id, telegramOperatorBindings.tenantId))
         .innerJoin(
-          tenantMemberships,
+          organizationMembers,
           and(
-            eq(tenantMemberships.tenantId, telegramOperatorBindings.tenantId),
-            eq(tenantMemberships.userId, telegramOperatorBindings.userId),
+            eq(organizationMembers.organizationId, tenants.organizationId),
+            eq(organizationMembers.userId, telegramOperatorBindings.userId),
           ),
         )
-        .innerJoin(tenants, eq(tenants.id, telegramOperatorBindings.tenantId))
         .where(
           and(
             eq(telegramOperatorBindings.telegramUserId, input.telegramUserId),
@@ -396,11 +405,23 @@ export function createTelegramOperatorService(
           ),
         );
 
-      const active = rows.filter(
-        (row) =>
-          row.membershipStatus === "active" &&
-          OPERATOR_WRITE_ROLES.includes(row.role as (typeof OPERATOR_WRITE_ROLES)[number]),
-      );
+      const hasPermission = createMerchantPermissionLookup(db);
+      const active = (
+        await Promise.all(
+          rows.map(async (row) => ({
+            allowed:
+              row.membershipStatus === "active" &&
+              (await hasPermission({
+                organizationId: row.organizationId,
+                role: row.role,
+                permission: { orders: ["update"] },
+              })),
+            row,
+          })),
+        )
+      )
+        .filter(({ allowed }) => allowed)
+        .map(({ row }) => row);
 
       return {
         operators: active.map((row) => ({

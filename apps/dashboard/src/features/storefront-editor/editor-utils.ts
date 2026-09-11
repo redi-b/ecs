@@ -1,9 +1,7 @@
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import type { EditorAction, EditorData } from "./editor-state";
 
-import {
-  STOREFRONT_PAGE_COMPONENT,
-  type StorefrontPageProps,
-} from "./editor-state";
+import { STOREFRONT_PAGE_COMPONENT, type StorefrontPageProps } from "./editor-state";
 
 export function updateStorefrontProp(
   data: EditorData,
@@ -48,7 +46,7 @@ export function isHexColor(value: string) {
 
 export function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    return mapPlatformErrorMessage(error.message, { fallback });
   }
   return fallback;
 }

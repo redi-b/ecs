@@ -1,5 +1,6 @@
 import { getOrderAttentionReasons } from "../../adapters/medusa/order/attention.js";
 import type { BillingStatus, DashboardMetricsResult, PlatformAppOptions } from "../../app.js";
+import type { DashboardActorRole } from "../../types/session.js";
 import type { ResolvedMerchantCommerceContext } from "./context.js";
 
 type MerchantDashboardBase = {
@@ -7,7 +8,7 @@ type MerchantDashboardBase = {
     id: string;
     email: string;
     name: string | null;
-    role: "owner" | "manager" | "staff" | "operator";
+    role: DashboardActorRole;
     supportAccess?: { grantId: string; expiresAt: string };
   };
   commerce: {

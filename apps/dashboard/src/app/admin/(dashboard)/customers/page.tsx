@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { PermissionGate } from "@/components/app/access-context";
 
 import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
@@ -39,7 +40,9 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       actions={
         <>
           <RefreshButton />
-          <CustomerFormDialog />
+          <PermissionGate permission="customers.update">
+            <CustomerFormDialog />
+          </PermissionGate>
         </>
       }
       title={t("customers.title")}

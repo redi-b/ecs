@@ -43,6 +43,7 @@ export function registerMerchantOrderRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { orders: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -109,6 +110,7 @@ export function registerMerchantOrderRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: tenant.context.tenantId,
       userId: session.user.id,
+      permission: { orders: ["export"] },
     });
     if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
 
@@ -174,6 +176,7 @@ export function registerMerchantOrderRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId: result.context.tenantId,
       userId: session.user.id,
+      permission: { orders: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -212,7 +215,9 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, {
+      orders: [action === "cancel" ? "cancel" : "update"],
+    });
 
     if (!merchant.ok) {
       return merchant.response;
@@ -325,7 +330,7 @@ export function registerMerchantOrderRoutes(
     if (!options.updateMerchantOrderSettlement) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
     if (!merchant.ok) return merchant.response;
     const commerce = getResolvedCommerce(merchant.result.context);
     if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
@@ -353,7 +358,7 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
     if (!merchant.ok) {
       return merchant.response;
     }
@@ -412,7 +417,7 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
 
-    const merchant = await getAuthorizedMerchantContext(context);
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
     if (!merchant.ok) {
       return merchant.response;
     }

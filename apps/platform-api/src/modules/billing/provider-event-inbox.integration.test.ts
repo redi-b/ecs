@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, describe, it } from "node:test";
 
-import { billingProviderEvents, createPlatformDb, tenants } from "@ecs/db";
+import { billingProviderEvents, createPlatformDb, organizations, tenants } from "@ecs/db";
 import { eq } from "drizzle-orm";
 
 import { createBillingProviderEventInbox } from "./provider-event-inbox.js";
@@ -11,13 +11,20 @@ const connectionString = process.env.PLATFORM_AUTH_INTEGRATION_DATABASE_URL;
 
 describe("billing provider-event inbox with PostgreSQL", { skip: !connectionString }, () => {
   const tenantId = randomUUID();
+  const organizationId = `org_${tenantId.replaceAll("-", "")}`;
   const database = createPlatformDb({ connectionString: connectionString ?? "" });
 
   before(async () => {
+    await database.db.insert(organizations).values({
+      id: organizationId,
+      name: "Billing Inbox Integration",
+      slug: `billing-inbox-${tenantId.slice(0, 8)}`,
+    });
     await database.db.insert(tenants).values({
       id: tenantId,
       handle: `billing-inbox-${tenantId.slice(0, 8)}`,
       name: "Billing Inbox Integration",
+      organizationId,
     });
   });
 
@@ -26,6 +33,7 @@ describe("billing provider-event inbox with PostgreSQL", { skip: !connectionStri
       .delete(billingProviderEvents)
       .where(eq(billingProviderEvents.tenantId, tenantId));
     await database.db.delete(tenants).where(eq(tenants.id, tenantId));
+    await database.db.delete(organizations).where(eq(organizations.id, organizationId));
     await database.pool.end();
   });
 

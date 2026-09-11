@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-
+import { PermissionGate } from "@/components/app/access-context";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
@@ -65,7 +65,9 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       actions={
         <>
           <RefreshButton />
-          <PromotionCreateDialog />
+          <PermissionGate permission="promotions.manage">
+            <PromotionCreateDialog />
+          </PermissionGate>
         </>
       }
       title={t("promotions.title")}

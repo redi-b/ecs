@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { PermissionGate } from "@/components/app/access-context";
 import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
@@ -71,10 +72,12 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       actions={
         <>
           <RefreshButton />
-          <ProductCreateDialog
-            action={getTenantScopedPath(dashboardRoutes.productCreateAction, tenantId)}
-            tenantId={tenantId}
-          />
+          <PermissionGate permission="products.create">
+            <ProductCreateDialog
+              action={getTenantScopedPath(dashboardRoutes.productCreateAction, tenantId)}
+              tenantId={tenantId}
+            />
+          </PermissionGate>
         </>
       }
       title={t("products.title")}
@@ -90,18 +93,20 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
           <ListSummary
             actions={
               !tenantId ? (
-                <ProductDataActions
-                  exportHref={listExportPath(
-                    getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId),
-                    {
-                      q: listParams.q,
-                      status: statusFilter,
-                      categoryId: categoryFilter,
-                      collectionId: collectionFilter,
-                      media: mediaFilter,
-                    },
-                  )}
-                />
+                <PermissionGate permission="products.export">
+                  <ProductDataActions
+                    exportHref={listExportPath(
+                      getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId),
+                      {
+                        q: listParams.q,
+                        status: statusFilter,
+                        categoryId: categoryFilter,
+                        collectionId: collectionFilter,
+                        media: mediaFilter,
+                      },
+                    )}
+                  />
+                </PermissionGate>
               ) : null
             }
             count={result.products.count}

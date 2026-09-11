@@ -1,5 +1,33 @@
 import { z } from "zod";
 
+/** ECS merchant permissions shared by authorization and every dashboard policy consumer. */
+export const merchantPermissionActions = {
+  team: ["create", "update", "delete", "read", "invite", "manage", "roles"],
+  overview: ["read"],
+  orders: ["read", "create", "update", "cancel", "refund", "export"],
+  products: ["read", "create", "update", "publish", "delete", "import", "export"],
+  customers: ["read", "update", "export"],
+  inquiries: ["read", "update"],
+  promotions: ["read", "manage"],
+  media: ["read", "manage"],
+  storefront: ["read", "edit", "publish"],
+  insights: ["read"],
+  notifications: ["read", "manage"],
+  settings: ["read", "manage"],
+  domains: ["manage"],
+  payments: ["manage"],
+  billing: ["read", "manage"],
+  ownership: ["transfer"],
+} as const;
+
+export type MerchantPermission = {
+  [Resource in keyof typeof merchantPermissionActions]: `${Resource}.${(typeof merchantPermissionActions)[Resource][number]}`;
+}[keyof typeof merchantPermissionActions];
+
+export const allMerchantPermissions = Object.entries(merchantPermissionActions).flatMap(
+  ([resource, actions]) => actions.map((action) => `${resource}.${action}` as MerchantPermission),
+);
+
 export const tenantStatusSchema = z.enum(["draft", "active", "suspended", "cancelled"]);
 
 export type TenantStatus = z.infer<typeof tenantStatusSchema>;
@@ -7,6 +35,10 @@ export type TenantStatus = z.infer<typeof tenantStatusSchema>;
 export const tenantMemberRoleSchema = z.enum(["owner", "manager", "staff", "operator"]);
 
 export type TenantMemberRole = z.infer<typeof tenantMemberRoleSchema>;
+
+export const merchantRoleNameSchema = z.string().trim().min(1).max(64);
+
+export type MerchantRoleName = z.infer<typeof merchantRoleNameSchema>;
 
 export const tenantReadinessMissingReasonSchema = z.enum([
   "tenant_inactive",
@@ -45,7 +77,7 @@ export const platformTenantSchema = z.object({
   name: z.string().min(1),
   handle: z.string().min(1),
   status: tenantStatusSchema,
-  role: tenantMemberRoleSchema,
+  role: merchantRoleNameSchema,
   primaryDomain: z.object({
     hostname: z.string().min(1).nullable(),
   }),
@@ -1178,6 +1210,40 @@ export const superadminSupportAccessSchema = z.object({
 });
 export type SuperadminSupportAccess = z.infer<typeof superadminSupportAccessSchema>;
 
+export const superadminMerchantTeamSchema = z.object({
+  invitations: z.array(
+    z.object({
+      createdAt: z.string().min(1),
+      email: z.string().email(),
+      expiresAt: z.string().min(1),
+      id: z.string().min(1),
+      role: z.string().min(1),
+    }),
+  ),
+  members: z.array(
+    z.object({
+      createdAt: z.string().min(1),
+      email: z.string().email(),
+      id: z.string().min(1),
+      image: z.string().nullable(),
+      name: z.string().min(1),
+      role: z.string().min(1),
+      status: z.string().min(1),
+      userId: z.string().min(1),
+    }),
+  ),
+  roles: z.array(
+    z.object({
+      createdAt: z.string().min(1),
+      id: z.string().min(1),
+      permission: z.record(z.string(), z.array(z.string())),
+      role: z.string().min(1),
+      updatedAt: z.string().nullable(),
+    }),
+  ),
+});
+export type SuperadminMerchantTeam = z.infer<typeof superadminMerchantTeamSchema>;
+
 export const merchantDashboardSummarySchema = z.object({
   tenant: z.object({
     id: z.string().min(1),
@@ -1193,11 +1259,33 @@ export const merchantDashboardSummarySchema = z.object({
     id: z.string().min(1),
     email: z.string().email(),
     name: z.string().min(1).nullable(),
-    role: z.enum(["owner", "manager", "staff", "operator"]),
+    role: merchantRoleNameSchema,
     supportAccess: z
       .object({ grantId: z.string().min(1), expiresAt: z.string().min(1) })
       .optional(),
   }),
+  capabilities: z
+    .array(
+      z.enum([
+        "billing",
+        "customers",
+        "domains",
+        "editor",
+        "inquiries",
+        "insights",
+        "media",
+        "notifications",
+        "orders",
+        "payments",
+        "products",
+        "promotions",
+        "settings",
+        "storefront",
+        "team",
+      ]),
+    )
+    .optional(),
+  permissions: z.array(z.string().regex(/^[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*$/)).optional(),
   commerce: z.object({
     hasPublishableKey: z.boolean(),
     hasSalesChannel: z.boolean(),
@@ -1408,6 +1496,8 @@ export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySc
 /** Shell/auth payload only — no operations, analytics, or billing. */
 export const merchantDashboardAccessSchema = merchantDashboardSummarySchema.pick({
   actor: true,
+  capabilities: true,
+  permissions: true,
   commerce: true,
   domain: true,
   storefront: true,

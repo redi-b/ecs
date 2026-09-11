@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   const email = payload.email?.toLowerCase() ?? null;
   const password = payload.password;
   const confirmPassword = payload.confirmPassword;
+  const nextPath = getSafeNextPath(payload.next);
 
   if (!ownerName || !email || !password || !confirmPassword) {
     return failSignUp(request, "missing_required_fields", payload, wantsJson);
@@ -34,7 +35,10 @@ export async function POST(request: Request) {
   }
 
   const signUpResult = await signUpWithPlatformAuth({
-    callbackURL: new URL("/admin/sign-in?verified=1", getRequestOrigin(request)).toString(),
+    callbackURL: new URL(
+      `/admin/sign-in?verified=1&next=${encodeURIComponent(nextPath)}`,
+      getRequestOrigin(request),
+    ).toString(),
     email,
     forwardedHost: getForwardedHost(request),
     forwardedProto: getForwardedProto(request),
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
     return failSignUp(request, "auth_session_missing", payload, wantsJson);
   }
 
-  const redirectTo = new URL("/admin/onboarding", getRequestOrigin(request)).toString();
+  const redirectTo = new URL(nextPath, getRequestOrigin(request)).toString();
 
   if (wantsJson) {
     const response = NextResponse.json({ ok: true as const, redirectTo });
@@ -84,12 +88,14 @@ async function readSignUpPayload(request: Request) {
       ownerName?: unknown;
       password?: unknown;
       confirmPassword?: unknown;
+      next?: unknown;
     } | null;
     return {
       email: typeof body?.email === "string" && body.email.trim() ? body.email.trim() : null,
       ownerName:
         typeof body?.ownerName === "string" && body.ownerName.trim() ? body.ownerName.trim() : null,
       password: typeof body?.password === "string" && body.password ? body.password : null,
+      next: typeof body?.next === "string" ? body.next : null,
       confirmPassword:
         typeof body?.confirmPassword === "string" && body.confirmPassword
           ? body.confirmPassword
@@ -103,13 +109,14 @@ async function readSignUpPayload(request: Request) {
     ownerName: getRequiredString(formData, "ownerName"),
     password: getRequiredString(formData, "password"),
     confirmPassword: getRequiredString(formData, "confirmPassword"),
+    next: getRequiredString(formData, "next"),
   };
 }
 
 function failSignUp(
   request: Request,
   error: string,
-  payload: { email: string | null; ownerName: string | null },
+  payload: { email: string | null; next?: string | null; ownerName: string | null },
   wantsJson: boolean,
 ) {
   if (wantsJson) {
@@ -202,16 +209,21 @@ function normalizeSignupError(value: string | undefined) {
   return "signup_failed";
 }
 
+function getSafeNextPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/admin/onboarding";
+}
+
 function redirectToSignUp(
   request: Request,
   error: string,
-  payload: { email: string | null; ownerName: string | null },
+  payload: { email: string | null; next?: string | null; ownerName: string | null },
 ) {
   const url = new URL("/admin/sign-up", getRequestOrigin(request));
 
   url.searchParams.set("error", error);
   if (payload.ownerName) url.searchParams.set("ownerName", payload.ownerName);
   if (payload.email) url.searchParams.set("email", payload.email);
+  if (payload.next) url.searchParams.set("next", getSafeNextPath(payload.next));
 
   return NextResponse.redirect(url, { status: 303 });
 }

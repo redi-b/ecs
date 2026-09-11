@@ -2,13 +2,14 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   domains,
+  organizationMembers,
+  organizations,
   planVersions,
   reservedHandles,
   storefrontConfigs,
   storefrontTemplates,
   storefrontTemplateVersions,
   subscriptions,
-  tenantMemberships,
   tenantOnboarding,
   tenantProvisioningAttempts,
   tenants,
@@ -393,10 +394,26 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
     }) => {
       await createBillingService(options.db).ensureDefaultPlans();
       const tenant = await options.db.transaction(async (transaction) => {
+        const organizationId = crypto.randomUUID();
+        await transaction.insert(organizations).values({
+          id: organizationId,
+          name,
+          slug: handle,
+        });
+
+        await transaction.insert(organizationMembers).values({
+          id: crypto.randomUUID(),
+          organizationId,
+          userId: ownerUserId,
+          role: "owner",
+          status: "active",
+        });
+
         const [createdTenant] = await transaction
           .insert(tenants)
           .values({
             id: tenantId,
+            organizationId,
             name,
             handle,
             status: "draft",
@@ -445,13 +462,6 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             primaryDomainId: primaryDomainRow.id,
           })
           .where(eq(tenants.id, tenantId));
-
-        await transaction.insert(tenantMemberships).values({
-          tenantId,
-          userId: ownerUserId,
-          role: "owner",
-          status: "active",
-        });
 
         await transaction.insert(storefrontConfigs).values({
           tenantId,
@@ -571,18 +581,18 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           handle: tenants.handle,
           status: tenants.status,
           primaryDomainHostname: domains.hostname,
-          ownerUserId: tenantMemberships.userId,
+          ownerUserId: organizationMembers.userId,
           updatedAt: tenants.updatedAt,
         })
         .from(tenants)
         .leftJoin(domains, eq(domains.id, tenants.primaryDomainId))
         .leftJoin(
-          tenantMemberships,
+          organizationMembers,
           and(
-            eq(tenantMemberships.tenantId, tenants.id),
-            eq(tenantMemberships.status, "active"),
-            eq(tenantMemberships.role, "owner"),
-            eq(tenantMemberships.userId, ownerUserId),
+            eq(organizationMembers.organizationId, tenants.organizationId),
+            eq(organizationMembers.status, "active"),
+            eq(organizationMembers.role, "owner"),
+            eq(organizationMembers.userId, ownerUserId),
           ),
         )
         .where(eq(tenants.handle, handle))

@@ -1127,6 +1127,7 @@ describe("platform app merchant and tenant catalog", () => {
     assert.equal(resolvedHost, "abebe.lvh.me");
     assert.equal(sessionCookie, "better-auth.session_token=session_1");
     assert.deepEqual(authorizationInput, {
+      permission: { products: ["create"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });
@@ -1287,6 +1288,7 @@ describe("platform app merchant and tenant catalog", () => {
     assert.equal(resolvedHost, "abebe.lvh.me");
     assert.equal(sessionCookie, "better-auth.session_token=session_1");
     assert.deepEqual(authorizationInput, {
+      permission: { products: ["create"] },
       tenantId: "tenant_1",
       userId: "user_1",
     });

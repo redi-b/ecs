@@ -100,6 +100,8 @@ export function PublicationStatusBadge({ status }: { status: PublicationStatus }
 }
 
 export function StorefrontEditorActions({
+  canEdit,
+  canPublish,
   canRedo,
   canUndo,
   editorMeta,
@@ -118,6 +120,8 @@ export function StorefrontEditorActions({
   showEditHints,
   settingsOpen,
 }: {
+  canEdit: boolean;
+  canPublish: boolean;
   canRedo: boolean;
   canUndo: boolean;
   editorMeta: StorefrontVisualEditorProps["editorMeta"];
@@ -147,56 +151,62 @@ export function StorefrontEditorActions({
 
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2 sm:w-auto sm:justify-end">
-      <div className="flex shrink-0 items-center gap-0.5">
-        <ToolbarIconButton
-          disabled={hasMounted ? !canUndo : undefined}
-          label={t("editor.actions.undo")}
-          onClick={onUndo}
-        >
-          <RiArrowGoBackLine />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          disabled={hasMounted ? !canRedo : undefined}
-          label={t("editor.actions.redo")}
-          onClick={onRedo}
-        >
-          <RiArrowGoForwardLine />
-        </ToolbarIconButton>
-        <Separator className="mx-0.5 hidden h-5 lg:block" orientation="vertical" />
-        <span className="hidden lg:inline-flex">
+      {canEdit ? (
+        <div className="flex shrink-0 items-center gap-0.5">
           <ToolbarIconButton
-            label={
-              settingsOpen ? t("editor.actions.hideSettings") : t("editor.actions.showSettings")
-            }
-            onClick={onToggleSettings}
-            pressed={settingsOpen}
+            disabled={hasMounted ? !canUndo : undefined}
+            label={t("editor.actions.undo")}
+            onClick={onUndo}
           >
-            <RiSideBarLine />
+            <RiArrowGoBackLine />
           </ToolbarIconButton>
-        </span>
-      </div>
+          <ToolbarIconButton
+            disabled={hasMounted ? !canRedo : undefined}
+            label={t("editor.actions.redo")}
+            onClick={onRedo}
+          >
+            <RiArrowGoForwardLine />
+          </ToolbarIconButton>
+          <Separator className="mx-0.5 hidden h-5 lg:block" orientation="vertical" />
+          <span className="hidden lg:inline-flex">
+            <ToolbarIconButton
+              label={
+                settingsOpen ? t("editor.actions.hideSettings") : t("editor.actions.showSettings")
+              }
+              onClick={onToggleSettings}
+              pressed={settingsOpen}
+            >
+              <RiSideBarLine />
+            </ToolbarIconButton>
+          </span>
+        </div>
+      ) : null}
       <div className="flex min-w-0 items-center justify-end gap-2">
-        <Button
-          className="min-w-0"
-          disabled={isPending}
-          onClick={onSave}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <RiSave3Line data-icon="inline-start" />
-          {t("editor.actions.saveDraft")}
-        </Button>
-        <Button
-          className="min-w-0"
-          disabled={isPending}
-          onClick={onPublish}
-          size="sm"
-          type="button"
-        >
-          <RiRocketLine data-icon="inline-start" />
-          {t("editor.actions.publish")}
-        </Button>
+        {canEdit ? (
+          <Button
+            className="min-w-0"
+            disabled={isPending}
+            onClick={onSave}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <RiSave3Line data-icon="inline-start" />
+            {t("editor.actions.saveDraft")}
+          </Button>
+        ) : null}
+        {canPublish ? (
+          <Button
+            className="min-w-0"
+            disabled={isPending}
+            onClick={onPublish}
+            size="sm"
+            type="button"
+          >
+            <RiRocketLine data-icon="inline-start" />
+            {t("editor.actions.publish")}
+          </Button>
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -211,12 +221,14 @@ export function StorefrontEditorActions({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={onToggleEditHints}>
-                {showEditHints ? <RiEyeOffLine /> : <RiEyeLine />}
-                {showEditHints
-                  ? t("editor.actions.hideOutlines")
-                  : t("editor.actions.showOutlines")}
-              </DropdownMenuItem>
+              {canEdit ? (
+                <DropdownMenuItem onSelect={onToggleEditHints}>
+                  {showEditHints ? <RiEyeOffLine /> : <RiEyeLine />}
+                  {showEditHints
+                    ? t("editor.actions.hideOutlines")
+                    : t("editor.actions.showOutlines")}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={onToggleFullscreen}>
                 {isFullscreen ? <RiFullscreenExitLine /> : <RiFullscreenLine />}
                 {isFullscreen ? t("editor.actions.exitFullscreen") : t("editor.actions.fullscreen")}
@@ -227,19 +239,23 @@ export function StorefrontEditorActions({
                   {t("editor.actions.openLive")}
                 </a>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href={editorMeta.settingsUrl}>
-                  <RiEditLine />
-                  {t("editor.settings.changeTemplate")}
-                </a>
-              </DropdownMenuItem>
+              {canEdit ? (
+                <DropdownMenuItem asChild>
+                  <a href={editorMeta.settingsUrl}>
+                    <RiEditLine />
+                    {t("editor.settings.changeTemplate")}
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => setResetConfirmOpen(true)}>
-                <RiResetLeftLine />
-                {t("editor.actions.resetEditor")}
-              </DropdownMenuItem>
+              {canEdit ? (
+                <DropdownMenuItem onSelect={() => setResetConfirmOpen(true)}>
+                  <RiResetLeftLine />
+                  {t("editor.actions.resetEditor")}
+                </DropdownMenuItem>
+              ) : null}
               {isLive && onUnpublish ? (
                 <DropdownMenuItem onSelect={() => setPauseConfirmOpen(true)} variant="destructive">
                   <RiPauseLine />
@@ -250,19 +266,21 @@ export function StorefrontEditorActions({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <ConfirmDialog
-        confirmLabel={t("editor.actions.resetConfirm")}
-        description={t("editor.actions.resetDescription")}
-        icon="question"
-        onConfirm={() => {
-          setResetConfirmOpen(false);
-          onReset();
-        }}
-        onOpenChange={setResetConfirmOpen}
-        open={resetConfirmOpen}
-        title={t("editor.actions.resetTitle")}
-        tone="default"
-      />
+      {canEdit ? (
+        <ConfirmDialog
+          confirmLabel={t("editor.actions.resetConfirm")}
+          description={t("editor.actions.resetDescription")}
+          icon="question"
+          onConfirm={() => {
+            setResetConfirmOpen(false);
+            onReset();
+          }}
+          onOpenChange={setResetConfirmOpen}
+          open={resetConfirmOpen}
+          title={t("editor.actions.resetTitle")}
+          tone="default"
+        />
+      ) : null}
       {onUnpublish ? (
         <ConfirmDialog
           cancelDisabled={isPending}
@@ -324,6 +342,8 @@ type EditorMobilePanel = "preview" | "settings";
 type EditorPreviewViewport = "desktop" | "mobile";
 
 export function StorefrontEditorShell({
+  canEdit,
+  canPublish,
   canRedo,
   canUndo,
   editorMeta,
@@ -341,6 +361,8 @@ export function StorefrontEditorShell({
   publicationStatus,
   showEditHints,
 }: {
+  canEdit: boolean;
+  canPublish: boolean;
   canRedo: boolean;
   canUndo: boolean;
   editorMeta: StorefrontVisualEditorProps["editorMeta"];
@@ -427,6 +449,8 @@ export function StorefrontEditorShell({
           <PublicationStatusBadge status={publicationStatus} />
         </div>
         <StorefrontEditorActions
+          canEdit={canEdit}
+          canPublish={canPublish}
           canRedo={canRedo}
           canUndo={canUndo}
           editorMeta={editorMeta}
@@ -447,19 +471,21 @@ export function StorefrontEditorShell({
         />
       </div>
 
-      <div className="shrink-0 border-b border-border/80 bg-background px-3 py-2 lg:hidden">
-        <SegmentedControl
-          active="muted"
-          ariaLabel={`${t("editor.panels.preview")} / ${t("editor.panels.settings")}`}
-          onChange={setMobilePanel}
-          options={[
-            { id: "preview", label: t("editor.panels.preview") },
-            { id: "settings", label: t("editor.panels.settings") },
-          ]}
-          size="sm"
-          value={mobilePanel}
-        />
-      </div>
+      {canEdit ? (
+        <div className="shrink-0 border-b border-border/80 bg-background px-3 py-2 lg:hidden">
+          <SegmentedControl
+            active="muted"
+            ariaLabel={`${t("editor.panels.preview")} / ${t("editor.panels.settings")}`}
+            onChange={setMobilePanel}
+            options={[
+              { id: "preview", label: t("editor.panels.preview") },
+              { id: "settings", label: t("editor.panels.settings") },
+            ]}
+            size="sm"
+            value={mobilePanel}
+          />
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -515,20 +541,24 @@ export function StorefrontEditorShell({
               </div>
               <div className="min-h-0 flex-1">
                 <TemplatePreview
-                  onSelectPath={(path) => {
-                    setSelectedPath(path || null);
-                    if (path) setSettingsOpen(true);
-                    const sectionPage = manifest?.sections.find((section) =>
-                      section.fields.some(
-                        (field) => path === field.path || path.startsWith(`${field.path}.`),
-                      ),
-                    )?.previewPage;
-                    if (sectionPage) setPreviewPage(sectionPage);
-                  }}
+                  {...(canEdit
+                    ? {
+                        onSelectPath: (path: string) => {
+                          setSelectedPath(path || null);
+                          if (path) setSettingsOpen(true);
+                          const sectionPage = manifest?.sections.find((section) =>
+                            section.fields.some(
+                              (field) => path === field.path || path.startsWith(`${field.path}.`),
+                            ),
+                          )?.previewPage;
+                          if (sectionPage) setPreviewPage(sectionPage);
+                        },
+                      }
+                    : {})}
                   onSelectionInteractionChange={setSelectionInteractionActive}
                   props={props}
                   selectedPath={selectedPath}
-                  showEditHints={showEditHints}
+                  showEditHints={canEdit && showEditHints}
                   storefrontName={editorMeta.storefrontName}
                   templateKey={editorMeta.templateKey}
                   previewUrl={editorMeta.previewUrl}
@@ -539,29 +569,31 @@ export function StorefrontEditorShell({
             </div>
           </div>
         </div>
-        <aside
-          className={cn(
-            "flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/80 bg-background transition-[width,opacity] duration-200 ease-out",
-            "lg:w-[clamp(18rem,20vw,24rem)] lg:flex-none lg:border-l lg:border-t-0",
-            !settingsOpen && "lg:pointer-events-none lg:w-0 lg:border-l-0 lg:opacity-0",
-            mobilePanel !== "settings" && "max-lg:hidden",
-          )}
-        >
-          <StorefrontSettingsPanel
-            onSelectPath={(path) => {
-              setSelectedPath(path);
-              if (!path) return;
-              const sectionPage = manifest?.sections.find((section) =>
-                section.fields.some(
-                  (field) => path === field.path || path.startsWith(`${field.path}.`),
-                ),
-              )?.previewPage;
-              if (sectionPage) setPreviewPage(sectionPage);
-            }}
-            selectedPath={selectedPath}
-            templateKey={editorMeta.templateKey}
-          />
-        </aside>
+        {canEdit ? (
+          <aside
+            className={cn(
+              "flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/80 bg-background transition-[width,opacity] duration-200 ease-out",
+              "lg:w-[clamp(18rem,20vw,24rem)] lg:flex-none lg:border-l lg:border-t-0",
+              !settingsOpen && "lg:pointer-events-none lg:w-0 lg:border-l-0 lg:opacity-0",
+              mobilePanel !== "settings" && "max-lg:hidden",
+            )}
+          >
+            <StorefrontSettingsPanel
+              onSelectPath={(path) => {
+                setSelectedPath(path);
+                if (!path) return;
+                const sectionPage = manifest?.sections.find((section) =>
+                  section.fields.some(
+                    (field) => path === field.path || path.startsWith(`${field.path}.`),
+                  ),
+                )?.previewPage;
+                if (sectionPage) setPreviewPage(sectionPage);
+              }}
+              selectedPath={selectedPath}
+              templateKey={editorMeta.templateKey}
+            />
+          </aside>
+        ) : null}
       </div>
     </div>
   );

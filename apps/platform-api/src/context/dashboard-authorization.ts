@@ -1,29 +1,44 @@
 import type { createPlatformDb } from "@ecs/db";
-import { platformPrincipals, tenantMemberships, tenantSupportAccessGrants, users } from "@ecs/db";
+import {
+  organizationMembers,
+  platformPrincipals,
+  tenantSupportAccessGrants,
+  tenants,
+  users,
+} from "@ecs/db";
 import { and, eq, gt, isNull } from "drizzle-orm";
-
+import {
+  builtInMerchantRoleAllows,
+  createMerchantPermissionLookup,
+} from "../auth/merchant-authorization.js";
+import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
 import type { DashboardAuthorizationResult } from "../types/index.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export function createDashboardAuthorizationLookup(db: PlatformDb) {
+  const hasMerchantPermission = createMerchantPermissionLookup(db);
+
   return async function authorizeDashboardForTenant(input: {
     tenantId: string;
     userId: string;
+    permission?: MerchantPermissionRequest;
   }): Promise<DashboardAuthorizationResult> {
     const [row] = await db
       .select({
         id: users.id,
         email: users.email,
         name: users.name,
-        role: tenantMemberships.role,
+        organizationId: organizationMembers.organizationId,
+        role: organizationMembers.role,
       })
-      .from(tenantMemberships)
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .where(
         and(
-          eq(tenantMemberships.tenantId, input.tenantId),
-          eq(tenantMemberships.status, "active"),
+          eq(tenants.id, input.tenantId),
+          eq(organizationMembers.status, "active"),
           eq(users.id, input.userId),
           eq(users.status, "active"),
         ),
@@ -58,6 +73,9 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         )
         .limit(1);
       if (!support) return { ok: false };
+      if (input.permission && !builtInMerchantRoleAllows("staff", input.permission)) {
+        return { ok: false };
+      }
       return {
         ok: true,
         actor: {
@@ -71,6 +89,17 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
           },
         },
       };
+    }
+
+    if (
+      input.permission &&
+      !(await hasMerchantPermission({
+        organizationId: row.organizationId,
+        role: row.role,
+        permission: input.permission,
+      }))
+    ) {
+      return { ok: false };
     }
 
     return {

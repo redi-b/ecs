@@ -1,6 +1,6 @@
 import type { SuperadminTenant } from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
-import { domains, tenantMemberships, tenants, users } from "@ecs/db";
+import { domains, organizationMembers, tenants, users } from "@ecs/db";
 import { and, count, desc, eq, ilike, min, or } from "drizzle-orm";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -8,13 +8,15 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 export function createSuperadminTenantProjectionService(db: PlatformDb) {
   const ownerProjection = db
     .select({
-      tenantId: tenantMemberships.tenantId,
+      organizationId: organizationMembers.organizationId,
       ownerEmail: min(users.email).as("owner_email"),
     })
-    .from(tenantMemberships)
-    .innerJoin(users, eq(tenantMemberships.userId, users.id))
-    .where(and(eq(tenantMemberships.role, "owner"), eq(tenantMemberships.status, "active")))
-    .groupBy(tenantMemberships.tenantId)
+    .from(organizationMembers)
+    .innerJoin(users, eq(organizationMembers.userId, users.id))
+    .where(
+      and(eq(organizationMembers.role, "owner"), eq(organizationMembers.status, "active")),
+    )
+    .groupBy(organizationMembers.organizationId)
     .as("tenant_owner");
   const projection = {
     id: tenants.id,
@@ -41,7 +43,7 @@ export function createSuperadminTenantProjectionService(db: PlatformDb) {
         .select(projection)
         .from(tenants)
         .leftJoin(domains, eq(tenants.primaryDomainId, domains.id))
-        .leftJoin(ownerProjection, eq(tenants.id, ownerProjection.tenantId))
+        .leftJoin(ownerProjection, eq(tenants.organizationId, ownerProjection.organizationId))
         .where(filter)
         .orderBy(desc(tenants.createdAt))
         .limit(input.limit)
@@ -49,7 +51,7 @@ export function createSuperadminTenantProjectionService(db: PlatformDb) {
       const [total] = await db
         .select({ count: count() })
         .from(tenants)
-        .leftJoin(ownerProjection, eq(tenants.id, ownerProjection.tenantId))
+        .leftJoin(ownerProjection, eq(tenants.organizationId, ownerProjection.organizationId))
         .where(filter);
       return {
         tenants: rows.map(serialize),
@@ -63,7 +65,7 @@ export function createSuperadminTenantProjectionService(db: PlatformDb) {
         .select(projection)
         .from(tenants)
         .leftJoin(domains, eq(tenants.primaryDomainId, domains.id))
-        .leftJoin(ownerProjection, eq(tenants.id, ownerProjection.tenantId))
+        .leftJoin(ownerProjection, eq(tenants.organizationId, ownerProjection.organizationId))
         .where(and(eq(tenants.id, input.tenantId)))
         .limit(1);
       return row

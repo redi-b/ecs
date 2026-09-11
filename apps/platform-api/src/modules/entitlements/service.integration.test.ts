@@ -5,6 +5,7 @@ import { after, before, describe, it } from "node:test";
 import {
   createPlatformDb,
   entitlementOverrides,
+  organizations,
   plans,
   planVersions,
   subscriptions,
@@ -18,16 +19,23 @@ const connectionString = process.env.PLATFORM_AUTH_INTEGRATION_DATABASE_URL;
 
 describe("entitlement service with PostgreSQL", { skip: !connectionString }, () => {
   const tenantId = randomUUID();
+  const organizationId = `org_${tenantId.replaceAll("-", "")}`;
   const planId = randomUUID();
   const planVersionId = randomUUID();
   const overrideId = randomUUID();
   const database = createPlatformDb({ connectionString: connectionString ?? "" });
 
   before(async () => {
+    await database.db.insert(organizations).values({
+      id: organizationId,
+      name: "Entitlement Integration",
+      slug: `entitlement-${tenantId.slice(0, 8)}`,
+    });
     await database.db.insert(tenants).values({
       id: tenantId,
       handle: `entitlement-${tenantId.slice(0, 8)}`,
       name: "Entitlement Integration",
+      organizationId,
     });
     await database.db.insert(plans).values({
       id: planId,
@@ -61,6 +69,7 @@ describe("entitlement service with PostgreSQL", { skip: !connectionString }, () 
     await database.db.delete(planVersions).where(eq(planVersions.planId, planId));
     await database.db.delete(plans).where(eq(plans.id, planId));
     await database.db.delete(tenants).where(eq(tenants.id, tenantId));
+    await database.db.delete(organizations).where(eq(organizations.id, organizationId));
     await database.pool.end();
   });
 

@@ -1,11 +1,11 @@
 import type { createPlatformDb } from "@ecs/db";
 import {
   domains,
+  organizationMembers,
   storefrontConfigs,
   storefrontRevisions,
   storefrontTemplateDrafts,
   storefrontTemplateVersions,
-  tenantMemberships,
   tenants,
   users,
 } from "@ecs/db";
@@ -129,14 +129,14 @@ export function createTenantCommerceContextService(db: PlatformDb) {
         medusaShippingProfileId: tenants.medusaShippingProfileId,
         medusaShippingOptionId: tenants.medusaShippingOptionId,
       })
-      .from(tenantMemberships)
-      .innerJoin(tenants, eq(tenantMemberships.tenantId, tenants.id))
-      .innerJoin(users, eq(tenantMemberships.userId, users.id))
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
       .where(
         and(
           eq(tenants.id, input.tenantId),
-          eq(tenantMemberships.userId, input.userId),
-          eq(tenantMemberships.status, "active"),
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
           eq(users.status, "active"),
         ),
       )

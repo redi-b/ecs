@@ -17,12 +17,14 @@ import { useI18n } from "@/i18n/provider";
 export function AccountSignUpForm({
   defaultValues,
   errorMessage: initialErrorMessage,
+  nextPath,
 }: {
   defaultValues: {
     email?: string | undefined;
     ownerName?: string | undefined;
   };
   errorMessage: string | null;
+  nextPath?: string;
 }) {
   const fieldId = useId();
   const { t } = useI18n();
@@ -49,7 +51,7 @@ export function AccountSignUpForm({
     setErrorMessage(null);
 
     const response = await fetch("/admin/sign-up/submit", {
-      body: JSON.stringify({ confirmPassword, email, ownerName, password }),
+      body: JSON.stringify({ confirmPassword, email, next: nextPath, ownerName, password }),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
@@ -162,7 +164,9 @@ export function AccountSignUpForm({
             />
             <InputGroupAddon align="inline-end">
               <InputGroupButton
-                aria-label={isConfirmPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                aria-label={
+                  isConfirmPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")
+                }
                 disabled={isSubmitting}
                 onClick={() => setIsConfirmPasswordVisible((value) => !value)}
                 size="icon-xs"

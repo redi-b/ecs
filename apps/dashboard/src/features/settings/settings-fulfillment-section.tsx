@@ -1,5 +1,6 @@
 "use client";
 
+import { usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -26,6 +27,7 @@ import {
 import type { Delivery } from "@/features/settings/settings-types";
 import { deliveryFieldKeys } from "@/features/settings/settings-types";
 import { useI18n } from "@/i18n/provider";
+import { merchantPolicies } from "@/lib/access-policy";
 
 export function FulfillmentSection({
   currencyId,
@@ -47,6 +49,7 @@ export function FulfillmentSection({
   savingFee: boolean;
 }) {
   const { t } = useI18n();
+  const canManage = usePolicy(merchantPolicies.shopSettingsManage);
   return (
     <SettingsSectionBody>
       <SectionIntro title={t("settings.sections.fulfillment.label")} />
@@ -85,7 +88,7 @@ export function FulfillmentSection({
                     </FieldContent>
                     <Switch
                       checked={deliveryState[item.key]}
-                      disabled={isPending || wouldDisableLastMethod}
+                      disabled={!canManage || isPending || wouldDisableLastMethod}
                       onCheckedChange={(checked) => {
                         if (
                           isMethodToggle &&
@@ -119,7 +122,7 @@ export function FulfillmentSection({
                     <InputGroupText>ETB</InputGroupText>
                   </InputGroupAddon>
                   <InputGroupInput
-                    disabled={savingFee}
+                    disabled={!canManage || savingFee}
                     id={deliveryFeeId}
                     min="0"
                     onChange={(event) =>
@@ -132,26 +135,28 @@ export function FulfillmentSection({
                     type="number"
                     value={deliveryState.defaultDeliveryFee}
                   />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupButton
-                      aria-busy={savingFee}
-                      className="rounded-full"
-                      disabled={savingFee || isPending}
-                      onClick={onSaveFee}
-                      size="xs"
-                      type="button"
-                      variant="secondary"
-                    >
-                      {savingFee ? (
-                        <>
-                          <AppIcons.loader className="animate-spin" />
-                          {t("common.saving")}
-                        </>
-                      ) : (
-                        t("common.save")
-                      )}
-                    </InputGroupButton>
-                  </InputGroupAddon>
+                  {canManage ? (
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        aria-busy={savingFee}
+                        className="rounded-full"
+                        disabled={savingFee || isPending}
+                        onClick={onSaveFee}
+                        size="xs"
+                        type="button"
+                        variant="secondary"
+                      >
+                        {savingFee ? (
+                          <>
+                            <AppIcons.loader className="animate-spin" />
+                            {t("common.saving")}
+                          </>
+                        ) : (
+                          t("common.save")
+                        )}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  ) : null}
                 </InputGroup>
                 <FieldDescription>{t("settings.fulfillment.feeHint")}</FieldDescription>
               </Field>

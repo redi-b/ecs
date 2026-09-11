@@ -593,6 +593,7 @@ export function registerPlatformOperatorRoutes(
     const authorization = await options.authorizeDashboardForTenant?.({
       tenantId,
       userId: session.user.id,
+      permission: { overview: ["read"] },
     });
 
     if (!authorization?.ok) {
@@ -695,6 +696,24 @@ export function registerPlatformOperatorRoutes(
         })),
       },
     });
+  });
+
+  app.get("/platform/operator/tenants/:tenantId/team-access", async (context) => {
+    if (!options.merchantTeamService) {
+      return context.json({ error: "team_service_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "tenants.support.access.read",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const result = await options.merchantTeamService.getOverview({
+      tenantId: context.req.param("tenantId"),
+    });
+    return result.ok
+      ? context.json({ team: result.team })
+      : context.json({ error: result.error }, 404);
   });
 
   app.post("/platform/operator/tenants/:tenantId/support/notes", async (context) => {

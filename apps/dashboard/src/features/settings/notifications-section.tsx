@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
-
+import { usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,6 +32,7 @@ import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-
 import { TelegramConnectPanel } from "@/features/settings/telegram-connect-panel";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { merchantPolicies } from "@/lib/access-policy";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,7 @@ function emailStateFromPreferences(preferences: NotificationPreference[]): Email
 
 export function NotificationsSection({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
+  const canManage = usePolicy(merchantPolicies.notificationsManage);
   const emailFieldId = useId();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -366,7 +368,9 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     <SettingsSectionBody>
       <SectionIntro title={t("settings.sections.notifications.label")} />
 
-      <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
+      {canManage ? (
+        <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
+      ) : null}
 
       <Card size="sm">
         <NotificationChannelHeader
@@ -394,7 +398,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                 <InputGroup>
                   <InputGroupInput
                     autoComplete="email"
-                    disabled={isPending || savingTarget}
+                    disabled={!canManage || isPending || savingTarget}
                     id={emailFieldId}
                     placeholder="you@business.com"
                     type="email"
@@ -407,26 +411,28 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                       }
                     }}
                   />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupButton
-                      aria-busy={savingTarget}
-                      className="rounded-full"
-                      disabled={isPending || savingTarget || !targetDirty}
-                      size="xs"
-                      type="button"
-                      variant="secondary"
-                      onClick={saveTarget}
-                    >
-                      {savingTarget ? (
-                        <>
-                          <AppIcons.loader className="animate-spin" />
-                          {t("common.saving")}
-                        </>
-                      ) : (
-                        t("common.save")
-                      )}
-                    </InputGroupButton>
-                  </InputGroupAddon>
+                  {canManage ? (
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        aria-busy={savingTarget}
+                        className="rounded-full"
+                        disabled={isPending || savingTarget || !targetDirty}
+                        size="xs"
+                        type="button"
+                        variant="secondary"
+                        onClick={saveTarget}
+                      >
+                        {savingTarget ? (
+                          <>
+                            <AppIcons.loader className="animate-spin" />
+                            {t("common.saving")}
+                          </>
+                        ) : (
+                          t("common.save")
+                        )}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  ) : null}
                 </InputGroup>
                 <FieldDescription>
                   {mailtoHref ? (
@@ -465,29 +471,31 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                     <NotificationAlertsSwitch
                       checked={saved.enabled}
-                      disabled={isPending}
+                      disabled={!canManage || isPending}
                       onCheckedChange={toggleEnabled}
                     />
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          aria-label={t("settings.notifications.sendTestAria")}
-                          className="rounded-full"
-                          disabled={isPending || !saved.enabled || targetDirty}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          onClick={sendEmailTest}
-                        >
-                          {t("settings.notifications.sendTest")}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {targetDirty
-                          ? t("settings.notifications.saveBeforeTest")
-                          : t("settings.notifications.sendTestHint")}
-                      </TooltipContent>
-                    </Tooltip>
+                    {canManage ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            aria-label={t("settings.notifications.sendTestAria")}
+                            className="rounded-full"
+                            disabled={isPending || !saved.enabled || targetDirty}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={sendEmailTest}
+                          >
+                            {t("settings.notifications.sendTest")}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {targetDirty
+                            ? t("settings.notifications.saveBeforeTest")
+                            : t("settings.notifications.sendTestHint")}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -496,7 +504,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                 <NotificationEventPicker
                   description={t("settings.notifications.eventsDescription")}
                   dirty={eventsDirty}
-                  disabled={isPending}
+                  disabled={!canManage || isPending}
                   events={eventsDraft}
                   saving={savingEvents}
                   onChange={setEventsDraft}

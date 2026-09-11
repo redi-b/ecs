@@ -1,9 +1,27 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { tenantStatus } from "./enums.js";
 
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    logo: text("logo"),
+    metadata: text("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)],
+);
+
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "restrict" })
+    .unique(),
   name: text("name").notNull(),
   handle: text("handle").notNull().unique(),
   status: tenantStatus("status").notNull().default("draft"),
@@ -21,6 +39,20 @@ export const tenants = pgTable("tenants", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const organizationsRelations = relations(organizations, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [organizations.id],
+    references: [tenants.organizationId],
+  }),
+}));
+
+export const tenantsRelations = relations(tenants, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [tenants.organizationId],
+    references: [organizations.id],
+  }),
+}));
 
 export const reservedHandles = pgTable("reserved_handles", {
   id: uuid("id").primaryKey().defaultRandom(),

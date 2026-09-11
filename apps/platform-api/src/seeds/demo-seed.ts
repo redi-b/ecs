@@ -43,6 +43,7 @@ import {
   notificationLogs,
   notificationPreferences,
   operatorNotes,
+  organizations,
   paymentOnboarding,
   platformPermissionGrants,
   platformPrincipals,
@@ -1778,6 +1779,7 @@ async function cleanAllDemoData() {
       id: tenants.id,
       handle: tenants.handle,
       medusaSalesChannelId: tenants.medusaSalesChannelId,
+      organizationId: tenants.organizationId,
     })
     .from(tenants)
     .where(inArray(tenants.handle, handles));
@@ -1785,6 +1787,9 @@ async function cleanAllDemoData() {
   const idsToRemove = [
     ...new Set([...tenantIds, ...existingTenants.map((row) => row.id)]),
   ];
+  const organizationIdsToRemove = existingTenants.flatMap((row) =>
+    row.organizationId ? [row.organizationId] : [],
+  );
 
   let commerce = { categories: 0, collections: 0, customers: 0, orders: 0, products: 0, promotions: 0 };
 
@@ -1879,6 +1884,11 @@ async function cleanAllDemoData() {
     await platformDb.db.delete(mediaUsages).where(inArray(mediaUsages.tenantId, idsToRemove));
     await platformDb.db.delete(mediaAssets).where(inArray(mediaAssets.tenantId, idsToRemove));
     await platformDb.db.delete(tenants).where(inArray(tenants.id, idsToRemove));
+    if (organizationIdsToRemove.length) {
+      await platformDb.db
+        .delete(organizations)
+        .where(inArray(organizations.id, organizationIdsToRemove));
+    }
   }
 
   const existingUsers = await platformDb.db

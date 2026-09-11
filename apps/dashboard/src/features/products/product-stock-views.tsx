@@ -47,11 +47,13 @@ type VariantInventoryRow = {
 
 export function SingleVariantStockPanel({
   action,
+  canUpdate,
   initialStock,
   productId,
   stockError,
 }: {
   action: string;
+  canUpdate: boolean;
   initialStock?: MerchantProductStock | undefined;
   productId: string;
   stockError?: string | undefined;
@@ -160,33 +162,35 @@ export function SingleVariantStockPanel({
           />
         </div>
 
-        <form
-          className="rounded-xl bg-muted/25 p-4 ring-1 ring-foreground/[0.06]"
-          onSubmit={(event) => {
-            event.preventDefault();
-            mutation.mutate();
-          }}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <Field className="max-w-xs flex-1">
-              <FieldLabel htmlFor={stockedQuantityInputId}>
-                {t("products.stock.setStockedQuantity")}
-              </FieldLabel>
-              <Input
-                id={stockedQuantityInputId}
-                min="0"
-                onChange={(event) => setStockedQuantity(event.target.value)}
-                step="1"
-                type="number"
-                value={stockedQuantity}
-              />
-              <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
-            </Field>
-            <Button disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
-            </Button>
-          </div>
-        </form>
+        {canUpdate ? (
+          <form
+            className="rounded-xl bg-muted/25 p-4 ring-1 ring-foreground/[0.06]"
+            onSubmit={(event) => {
+              event.preventDefault();
+              mutation.mutate();
+            }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <Field className="max-w-xs flex-1">
+                <FieldLabel htmlFor={stockedQuantityInputId}>
+                  {t("products.stock.setStockedQuantity")}
+                </FieldLabel>
+                <Input
+                  id={stockedQuantityInputId}
+                  min="0"
+                  onChange={(event) => setStockedQuantity(event.target.value)}
+                  step="1"
+                  type="number"
+                  value={stockedQuantity}
+                />
+                <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
+              </Field>
+              <Button disabled={mutation.isPending} type="submit">
+                {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+              </Button>
+            </div>
+          </form>
+        ) : null}
 
         {actionError ? (
           <Alert variant="destructive">
@@ -201,10 +205,12 @@ export function SingleVariantStockPanel({
 }
 
 export function VariantStockPanel({
+  canUpdate,
   productId,
   tenantId,
   variants,
 }: {
+  canUpdate: boolean;
   productId: string;
   tenantId?: string | undefined;
   variants: NonNullable<MerchantProduct["variants"]>;
@@ -241,7 +247,7 @@ export function VariantStockPanel({
         .join(" "),
     );
   }, [query, t, variants]);
-  const columns = useMemo(() => getVariantInventoryColumns(t), [t]);
+  const columns = useMemo(() => getVariantInventoryColumns(t, canUpdate), [canUpdate, t]);
 
   const multiStockDirty = useMemo(() => {
     return variants.some((variant) => {
@@ -467,8 +473,11 @@ export function VariantStockPanel({
   );
 }
 
-export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInventoryRow>[] {
-  return [
+export function getVariantInventoryColumns(
+  t: Translate,
+  canUpdate = true,
+): ColumnDef<VariantInventoryRow>[] {
+  const columns: ColumnDef<VariantInventoryRow>[] = [
     {
       id: "variant",
       accessorFn: (row) => row.variant.title ?? row.variant.id,
@@ -575,6 +584,7 @@ export function getVariantInventoryColumns(t: Translate): ColumnDef<VariantInven
       },
     },
   ];
+  return canUpdate ? columns : columns.filter((column) => column.id !== "stocked");
 }
 
 export function StockMetric({
