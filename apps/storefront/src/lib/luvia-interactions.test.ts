@@ -43,6 +43,8 @@ test("catalog facets support persistent batch filtering and a dedicated scroll r
   assert.doesNotMatch(catalog, /other\.open\s*=\s*false/);
   assert.doesNotMatch(catalog, /menu\.open\s*=\s*false/);
   assert.match(styles, /\.lv-catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(catalog, /lv-catalog-filter__scroll" data-lenis-prevent/);
+  assert.match(catalog, /lv-filter-footer[\s\S]*lv-catalog-filter__active[\s\S]*lv-filter-clear[\s\S]*lv-filter-apply/);
   assert.match(animation, /animation\.finished/);
   assert.match(animation, /if \(!opening\) details\.open = false/);
 });
