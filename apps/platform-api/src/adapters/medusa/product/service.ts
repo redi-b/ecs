@@ -439,10 +439,7 @@ export function createMedusaProductService(options: {
 
       if (
         input.q?.trim() &&
-        !input.media &&
-        !input.categoryId &&
-        !input.collectionId &&
-        !input.status
+        !input.media
       ) {
         const indexed = await requestMedusa(
           fetcher,
@@ -451,6 +448,15 @@ export function createMedusaProductService(options: {
             offset: input.offset,
             q: input.q.trim(),
             salesChannelId: input.salesChannelId,
+            ...(input.categoryId?.trim() && !["all", "none"].includes(input.categoryId)
+              ? { categoryId: input.categoryId.trim() }
+              : {}),
+            ...(input.collectionId?.trim() && !["all", "none"].includes(input.collectionId)
+              ? { collectionId: input.collectionId.trim() }
+              : {}),
+            ...(input.status?.trim() && input.status !== "all"
+              ? { status: input.status.trim() }
+              : {}),
           }),
           { headers: getAdminHeaders(options.adminApiToken) },
         ).catch(() => undefined);

@@ -20,7 +20,7 @@ import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
 import Layout from "./Layout.astro";
 import { nexahubAsset, parseNexahubData } from "./lib";
 import ProductCard from "./ProductCard.astro";
-import ProductFilterBar from "./ProductFilterBar.astro";
+import HomeProductFilterBar from "./HomeProductFilterBar.astro";
 import "./styles/pages/index.scss";
 import "./styles/responsive.scss";
 
@@ -215,7 +215,7 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 <Button text="All Products" href="/products" />
 </div>
 </header>
-<ProductFilterBar collections={collections} categories={categories} />{hasCatalogError ? <p class="nexa-state">Products could not be loaded. Please try again.</p> : selectedProducts.length ? <div class="products-section__grid" data-editor-products-path="home.bestSellers.productIds">{selectedProducts.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : null}<footer class="products-section__footer">
+<HomeProductFilterBar collections={collections} categories={categories} />{hasCatalogError ? <p class="nexa-state">Products could not be loaded. Please try again.</p> : selectedProducts.length ? <div class="products-section__grid" data-editor-products-path="home.bestSellers.productIds">{selectedProducts.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : null}<footer class="products-section__footer">
 <span class="products-section__pagination-info type-body-xs-500">SHOWING {selectedProducts.length} PRODUCTS</span>
 <Button text="Browse Full Catalog" href="/products" />
 </footer>

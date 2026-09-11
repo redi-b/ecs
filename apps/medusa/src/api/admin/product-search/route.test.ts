@@ -8,7 +8,15 @@ test("admin product search includes drafts but remains sales-channel scoped", as
   let body: any;
   await GET(
     {
-      validatedQuery: { q: "shirt", limit: 6, offset: 0, sales_channel_id: "sc_merchant" },
+      validatedQuery: {
+        q: "shirt",
+        category_id: "pcat_1",
+        collection_id: "pcol_1",
+        limit: 6,
+        offset: 0,
+        sales_channel_id: "sc_merchant",
+        status: "draft",
+      },
       scope: {
         resolve: () => ({
           searchProducts: async (input: unknown) => {
@@ -28,10 +36,13 @@ test("admin product search includes drafts but remains sales-channel scoped", as
 
   assert.deepEqual(query, {
     q: "shirt",
+    categoryIds: ["pcat_1"],
+    collectionId: "pcol_1",
     limit: 6,
     offset: 0,
     salesChannelIds: ["sc_merchant"],
     includeDrafts: true,
+    statuses: ["draft"],
   });
   assert.equal(body.hits[0].id, "p1");
 });

@@ -22,8 +22,10 @@ test("NexaHub listing preserves URL filters, pagination, and truthful states", (
 
   for (const marker of [
     'name="q"',
-    'key: "collection"',
-    'key: "category"',
+    'name="collection"',
+    'name="category"',
+    'name="option"',
+    'name="price_min"',
     'name="order"',
     'rel="prev"',
     'rel="next"',
@@ -189,7 +191,7 @@ test("NexaHub ports the reference listing controls and featured carousel structu
     assert.ok(listing.includes(marker), `listing is missing reference marker ${marker}`);
   }
   assert.doesNotMatch(listing, /<select|Apply filters|Browse products/i);
-  for (const marker of ["product-filter-bar__btn", "product-filter-bar__dropdown", "data-filter-option"]) assert.ok(filters.includes(marker));
+  for (const marker of ["product-filter-trigger", "product-filter-panel", "data-filter-panel-toggle"]) assert.ok(filters.includes(marker));
   for (const marker of ["data-featured-carousel", "hero-section__featured-meta", "hero-section__featured-dots"]) assert.ok(home.includes(marker));
   assert.ok(client.includes('from "embla-carousel"'));
   assert.match(client, /prefers-reduced-motion: reduce/);
@@ -234,7 +236,7 @@ test("NexaHub interaction polish is keyboard-safe, reduced-motion-safe, and anno
   const indexStyles = read("templates/nexahub/v1/styles/pages/index.scss");
 
   for (const marker of ["data-nexa-live", 'aria-live="polite"', 'aria-atomic="true"']) assert.ok(layout.includes(marker));
-  for (const marker of ["setBusy", "aria-busy", 'event.key === "Tab"', "focusableElements", "closeFilterMenus"]) assert.ok(client.includes(marker));
+  for (const marker of ["setBusy", "aria-busy", 'event.key === "Tab"', "focusableElements"]) assert.ok(client.includes(marker));
   assert.match(mainStyles, /prefers-reduced-motion:\s*reduce/);
   assert.match(mainStyles, /data-busy/);
   assert.match(indexStyles, /grid-template-rows:\s*0fr/);
@@ -292,29 +294,31 @@ test("NexaHub has a shared touch-first responsive contract for live and editor r
   assert.match(responsive, /@media \(max-width:\s*420px\)/);
   assert.match(responsive, /min-height:\s*44px/);
   assert.match(responsive, /safe-area-inset-bottom/);
-  for (const surface of ["hero-section", "catalogue-section", "products-section", "product-filter-bar", "product-main", "nexa-secondary", "nexa-commerce", "site-footer"]) {
+  for (const surface of ["hero-section", "catalogue-section", "products-section", "product-main", "nexa-secondary", "nexa-commerce", "site-footer"]) {
     assert.ok(responsive.includes(surface), `responsive contract is missing ${surface}`);
   }
 });
 
-test("NexaHub navigation and cart are modal-safe while product filters stay anchored and non-modal", () => {
+test("NexaHub navigation, cart, and mobile product filters use bounded modal behavior", () => {
   const layout = read("templates/nexahub/v1/Layout.astro");
   const client = read("templates/nexahub/v1/client.ts");
+  const productFilter = read("templates/nexahub/v1/ProductFilterBar.astro");
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
   const filterStyles = read("templates/nexahub/v1/styles/components/_product-filter-bar.scss");
   const cartStyles = read("templates/nexahub/v1/styles/components/_cart-drawer.scss");
-  const responsive = read("templates/nexahub/v1/styles/responsive.scss");
   const homeStyles = read("templates/nexahub/v1/styles/pages/index.scss");
 
   assert.match(layout, /data-header-backdrop/);
   assert.doesNotMatch(client, /portalFilterMenu|document\.body\.append\(menu\)/);
-  assert.match(client, /activeMenu\?\.closest<HTMLElement>\("\.product-filter-bar__item"\)/);
+  assert.match(productFilter, /event\.key !== "Tab"/);
+  assert.match(productFilter, /panel\.querySelectorAll<HTMLElement>\(focusableSelector\)/);
   assert.match(client, /const locked = Boolean\(header\?\.classList\.contains\("is-open"\) \|\| overlay\?\.classList\.contains\("is-visible"\)\)/);
   assert.match(client, /navigationLastFocused/);
   assert.match(client, /focusableElements\(overlay\?\.classList\.contains\("is-visible"\) \? drawer : header\)/);
   assert.match(headerStyles, /&__backdrop\.is-visible/);
-  assert.doesNotMatch(filterStyles, /\.product-filter-backdrop/);
-  assert.match(responsive, /\.product-filter-bar__dropdown \{ width: min\(19rem/);
+  assert.match(filterStyles, /\.product-filter-backdrop/);
+  assert.match(filterStyles, /height: min\(88dvh, 780px\)/);
+  assert.match(filterStyles, /env\(safe-area-inset-bottom\)/);
   assert.match(cartStyles, /translate3d\(102%,\s*0,\s*0\)/);
   assert.match(cartStyles, /&\.is-open\s*\{\s*transform:\s*translate3d\(0,\s*0,\s*0\)/);
   assert.match(client, /requestAnimationFrame\(\(\) => window\.requestAnimationFrame/);

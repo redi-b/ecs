@@ -9,10 +9,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const search = req.scope.resolve<ProductSearchProvider>(MEILISEARCH_MODULE);
   const result = await search.searchProducts({
     q: input.q,
+    ...(input.category_id ? { categoryIds: [input.category_id] } : {}),
+    ...(input.collection_id ? { collectionId: input.collection_id } : {}),
     limit: input.limit,
     offset: input.offset,
     salesChannelIds: [input.sales_channel_id],
     includeDrafts: true,
+    ...(input.status ? { statuses: [input.status] } : {}),
   });
 
   return res.json({

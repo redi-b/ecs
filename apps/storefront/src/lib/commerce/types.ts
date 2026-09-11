@@ -71,6 +71,15 @@ export type StoreCategory = {
 };
 
 export type StoreProductsResponse = {
+  facets?: {
+    categories: Record<string, number>;
+    collections: Record<string, number>;
+    options: Array<{
+      name: string;
+      values: Array<{ count: number; token: string; value: string }>;
+    }>;
+    price: { min: number; max: number } | null;
+  };
   products: StoreProduct[];
   count?: number;
   limit?: number;

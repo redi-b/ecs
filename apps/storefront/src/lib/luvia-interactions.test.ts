@@ -32,6 +32,21 @@ test("product and address disclosures animate their content instead of snapping"
   assert.match(account, /form\.animate/);
 });
 
+test("catalog facets support persistent batch filtering and a dedicated scroll region", async () => {
+  const [catalog, styles, animation] = await Promise.all([
+    readTemplate("ProductList.astro"),
+    readTemplate("styles/product-list.scss"),
+    readFile(new URL("./browser/animate-details.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(catalog, /initAnimatedDetails\(document, "\.lv-filter-menu"/);
+  assert.doesNotMatch(catalog, /other\.open\s*=\s*false/);
+  assert.doesNotMatch(catalog, /menu\.open\s*=\s*false/);
+  assert.match(styles, /\.lv-catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(animation, /animation\.finished/);
+  assert.match(animation, /if \(!opening\) details\.open = false/);
+});
+
 test("featured promotions autoplay without taking control from the shopper", async () => {
   const carousel = await readTemplate("scripts/hero-carousel.ts");
 

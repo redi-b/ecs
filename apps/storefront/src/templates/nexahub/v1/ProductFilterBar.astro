@@ -1,5 +1,6 @@
 ---
-import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types";
+import type { CatalogFilters } from "../../../lib/commerce/catalog-filters";
+import type { StoreCategory, StoreCollection, StoreProductsResponse } from "../../../lib/commerce/types";
 import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import chevronIcon from "./icons/chevron-down-icon.svg?raw";
 import "./styles/components/_product-filter-bar.scss";
@@ -7,35 +8,103 @@ import "./styles/components/_product-filter-bar.scss";
 interface Props {
   collections?: StoreCollection[];
   categories?: StoreCategory[];
-  values?: { q?: string; collectionId?: string; categoryId?: string; order?: string };
+  facets?: StoreProductsResponse["facets"];
+  values?: CatalogFilters;
   action?: string;
 }
 
-const { collections = [], categories = [], values = {}, action = "/products" } = Astro.props;
-const controls = [
-  ...(collections.length ? [{ key: "collection", label: collections.find((item) => taxonomyHandle(item) === values.collectionId)?.title ?? "Collection", options: [{ value: "", label: "All Collections" }, ...collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ value, label: item.title ?? "Collection" }] : []; })] }] : []),
-  ...(categories.length ? [{ key: "category", label: categories.find((item) => taxonomyHandle(item) === values.categoryId)?.name ?? "Product Category", options: [{ value: "", label: "All Categories" }, ...categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ value, label: item.name ?? "Category" }] : []; })] }] : []),
-];
-const sortOptions = [
-  { value: "", label: "Featured" },
-  { value: "created_at", label: "Newest" },
-  { value: "title", label: "Title A–Z" },
-  { value: "-title", label: "Title Z–A" },
-];
-const sortLabel = sortOptions.find((item) => item.value === values.order)?.label ?? "Sort By";
+const { collections = [], categories = [], facets, values = { optionPairs: [] }, action = "/products" } = Astro.props;
+const activeCount = Number(Boolean(values.collectionId)) + Number(Boolean(values.categoryId)) +
+  values.optionPairs.length + Number(values.priceMin !== undefined || values.priceMax !== undefined);
+const selectedOptionNames = new Set(values.optionPairs.flatMap((token) => {
+  try { const pair = JSON.parse(token); return Array.isArray(pair) && typeof pair[0] === "string" ? [pair[0]] : []; }
+  catch { return []; }
+}));
 ---
-<form class="product-filter-bar" action={action} method="get" data-filter-bar>
+<button class="product-filter-trigger" type="button" aria-expanded="false" aria-controls="product-filter-panel" data-filter-panel-toggle>
+  <span>Filters{activeCount ? ` (${activeCount})` : ""}</span><Fragment set:html={chevronIcon} />
+</button>
+<button class="product-filter-backdrop" type="button" aria-label="Close filters" data-filter-panel-close></button>
+<form class="product-filter-panel" id="product-filter-panel" action={action} method="get" data-filter-panel>
   {values.q && <input type="hidden" name="q" value={values.q} />}
-  <div class="product-filter-bar__filters">
-    {controls.map((control, index) => <div class="product-filter-bar__item">
-      <input type="hidden" name={control.key} value={control.key === "collection" ? values.collectionId : values.categoryId} data-filter-input />
-      <button type="button" class="product-filter-bar__btn type-body-l" aria-expanded="false" aria-controls={`nexa-filter-${index}`} data-filter-toggle={index}><span data-filter-selected>{control.label}</span><Fragment set:html={chevronIcon} /></button>
-      <div class="product-filter-bar__dropdown" id={`nexa-filter-${index}`} data-filter-menu={index}>{control.options.map((option) => <button type="button" class="product-filter-bar__dropdown-opt type-body-s-400" data-filter-option={option.value}>{option.label}</button>)}</div>
-    </div>)}
+  <header><h2>Filter products</h2><div>{activeCount > 0 && <a href="/products">Clear</a>}<button type="button" aria-label="Close filters" data-filter-panel-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div></header>
+  <div class="product-filter-panel__scroll">
+    {collections.length > 0 && <details class="product-filter-group" open>
+      <summary><span>Collection</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+        <label><input type="radio" name="collection" value="" checked={!values.collectionId} /><span>All collections</span></label>
+        {collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [<label><input type="radio" name="collection" value={value} checked={values.collectionId === value} /><span>{item.title ?? "Collection"}</span>{facets?.collections[item.id] !== undefined && <small>{facets.collections[item.id]}</small>}</label>] : []; })}
+      </fieldset>
+    </details>}
+    {categories.length > 0 && <details class="product-filter-group" open>
+      <summary><span>Category</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+        <label><input type="radio" name="category" value="" checked={!values.categoryId} /><span>All categories</span></label>
+        {categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [<label><input type="radio" name="category" value={value} checked={values.categoryId === value} /><span>{item.name ?? "Category"}</span>{facets?.categories[item.id] !== undefined && <small>{facets.categories[item.id]}</small>}</label>] : []; })}
+      </fieldset>
+    </details>}
+    {facets?.options.map((option) => <details class="product-filter-group" open={selectedOptionNames.has(option.name)}>
+      <summary><span>{option.name}</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+        {option.values.map((item) => <label><input type="checkbox" name="option" value={item.token} checked={values.optionPairs.includes(item.token)} /><span>{item.value}</span><small>{item.count}</small></label>)}
+      </fieldset>
+    </details>)}
+    {facets?.price && <details class="product-filter-group" open={values.priceMin !== undefined || values.priceMax !== undefined}>
+      <summary><span>Price range</span><Fragment set:html={chevronIcon} /></summary><fieldset class="product-filter-panel__price">
+        <p>ETB {Math.floor(facets.price.min).toLocaleString()} to {Math.ceil(facets.price.max).toLocaleString()}</p>
+        <div><label><span>Minimum</span><input type="number" name="price_min" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={values.priceMin} placeholder={String(Math.floor(facets.price.min))} /></label><label><span>Maximum</span><input type="number" name="price_max" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={values.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label></div>
+      </fieldset>
+    </details>}
+    <details class="product-filter-group">
+      <summary><span>Sort by</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+        {[["", values.q ? "Relevance" : "Featured"], ["created_at", "Newest"], ["price", "Price: low to high"], ["-price", "Price: high to low"], ["title", "Title A to Z"], ["-title", "Title Z to A"]].map(([value, label]) => <label><input type="radio" name="order" value={value} checked={(values.order ?? "") === value} /><span>{label}</span></label>)}
+      </fieldset>
+    </details>
   </div>
-  <div class="product-filter-bar__item product-filter-bar__item--sort">
-    <input type="hidden" name="order" value={values.order} data-filter-input />
-    <button type="button" class="product-filter-bar__sort type-body-l" aria-expanded="false" aria-controls="nexa-filter-sort" data-filter-toggle="sort"><span data-filter-selected>{sortLabel}</span><Fragment set:html={chevronIcon} /></button>
-    <div class="product-filter-bar__dropdown product-filter-bar__dropdown--right" id="nexa-filter-sort" data-filter-menu="sort">{sortOptions.map((option) => <button type="button" class="product-filter-bar__dropdown-opt type-body-s-400" data-filter-option={option.value}>{option.label}</button>)}</div>
-  </div>
+  <div class="product-filter-panel__actions"><button type="submit">Apply filters</button></div>
 </form>
+
+<script>
+  import { initAnimatedDetails } from "../../../lib/browser/animate-details";
+
+  const trigger = document.querySelector<HTMLButtonElement>("[data-filter-panel-toggle]");
+  const panel = document.querySelector<HTMLElement>("[data-filter-panel]");
+  const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const setOpen = (open: boolean) => {
+    trigger?.setAttribute("aria-expanded", String(open));
+    panel?.toggleAttribute("data-open", open);
+    document.documentElement.toggleAttribute("data-catalog-filter-open", open);
+    const mobile = window.matchMedia("(max-width: 767px)").matches;
+    if (panel && mobile) {
+      panel.toggleAttribute("aria-modal", open);
+      if (open) { panel.setAttribute("role", "dialog"); panel.querySelector<HTMLElement>("[data-filter-panel-close]")?.focus(); }
+      else panel.removeAttribute("role");
+    }
+  };
+  trigger?.addEventListener("click", () => setOpen(trigger.getAttribute("aria-expanded") !== "true"));
+  initAnimatedDetails(document, ".product-filter-group", ":scope > fieldset");
+  const showCatalogLoading = () => {
+    const results = document.querySelector<HTMLElement>("[data-catalog-results]");
+    results?.setAttribute("data-loading", "true");
+    results?.setAttribute("aria-busy", "true");
+  };
+  panel?.addEventListener("submit", () => {
+    const submit = panel.querySelector<HTMLButtonElement>('button[type="submit"]');
+    showCatalogLoading();
+    if (submit) { submit.disabled = true; submit.textContent = "Applying filters"; }
+  });
+  document.addEventListener("click", (event) => {
+    const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>(".products-catalog a, .products-pagination a") : null;
+    const pointer = event instanceof MouseEvent ? event : null;
+    if (link && pointer && !event.defaultPrevented && !pointer.metaKey && !pointer.ctrlKey && !pointer.shiftKey && !pointer.altKey) showCatalogLoading();
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-filter-panel-close]").forEach((button) => button.addEventListener("click", () => { setOpen(false); trigger?.focus(); }));
+  document.addEventListener("keydown", (event) => {
+    if (!panel?.hasAttribute("data-open") || !window.matchMedia("(max-width: 767px)").matches) return;
+    if (event.key === "Escape") { setOpen(false); trigger?.focus(); return; }
+    if (event.key !== "Tab") return;
+    const focusable = [...panel.querySelectorAll<HTMLElement>(focusableSelector)].filter((element) => element.getClientRects().length > 0);
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (!first || !last) return;
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+</script>

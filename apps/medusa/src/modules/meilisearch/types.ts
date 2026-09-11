@@ -15,9 +15,12 @@ export type ProductSearchDocument = {
   collection_title: string | null;
   tag_values: string[];
   option_values: string[];
+  option_pairs: string[];
   variant_titles: string[];
   skus: string[];
   barcodes: string[];
+  price_min_etb: number | null;
+  price_max_etb: number | null;
   created_at: number;
   updated_at: number;
 };
@@ -28,15 +31,28 @@ export type ProductSearchQuery = Pick<
 > & {
   q: string;
   salesChannelIds: string[];
+  categoryIds?: string[];
+  collectionId?: string;
+  optionPairs?: string[];
+  priceMinEtb?: number;
+  priceMaxEtb?: number;
   includeDrafts?: boolean;
+  statuses?: string[];
 };
 
 export type ProductSearchResult = {
+  facetDistribution?: Record<string, Record<string, number>>;
+  facetStats?: Record<string, { min: number; max: number }>;
   hits: ProductSearchDocument[];
   indexDocumentCount: number;
   estimatedTotalHits: number;
   processingTimeMs: number;
   query: string;
+};
+
+export type ProductSearchStatus = {
+  available: boolean;
+  documentCount: number | null;
 };
 
 export type MeilisearchModuleOptions = {
@@ -50,6 +66,7 @@ export interface ProductSearchProvider {
   configureProductIndex(): Promise<void>;
   deleteProducts(ids: string[]): Promise<void>;
   health(): Promise<boolean>;
+  status(): Promise<ProductSearchStatus>;
   pruneProducts(validIds: string[], protectUpdatedAfter: number): Promise<number>;
   searchProducts(query: ProductSearchQuery): Promise<ProductSearchResult>;
   upsertProducts(documents: ProductSearchDocument[]): Promise<void>;

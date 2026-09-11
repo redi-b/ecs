@@ -97,7 +97,7 @@ const isActiveLink = (href: string) =>
         </span>
       </nav>
       <div class="lv-actions">
-        <form class="lv-search" action="/products" method="get" role="search">
+        <form class="lv-search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor>
           <label class="sr-only" for="lv-search-input">Search products</label>
           <input id="lv-search-input" name="q" type="search" placeholder="Search any product..." />
           <button type="submit" aria-label="Search" aria-controls="lv-search-input" aria-expanded="false"><img src={searchIcon.src} alt="" /></button>
@@ -128,6 +128,7 @@ const isActiveLink = (href: string) =>
     <StorefrontAnalytics disabled={demoMode || editorMode} />
     <script>
       import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../lib/browser/cart-count";
+      import { initProductSearchSuggestions } from "../../../lib/browser/product-search-suggestions";
       import { initWishlistController } from "../../../lib/browser/wishlist";
 
       const editorPreview = document.body.dataset.editorMode === "true";
@@ -139,6 +140,7 @@ const isActiveLink = (href: string) =>
       const searchForm = document.querySelector<HTMLFormElement>(".lv-search");
       const searchInput = searchForm?.querySelector<HTMLInputElement>('input[type="search"]');
       const searchButton = searchForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (!readOnlyPreview) initProductSearchSuggestions(searchForm ?? null);
       let headerSurface: "menu" | "search" | null = null;
       let headerCloseTimer = 0;
       const syncPageScrollLock = () => {

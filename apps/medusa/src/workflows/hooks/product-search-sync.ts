@@ -1,4 +1,5 @@
 import type { Logger } from "@medusajs/framework/types";
+import { QueryContext } from "@medusajs/framework/utils";
 import { StepResponse } from "@medusajs/framework/workflows-sdk";
 import { deleteProductsWorkflow } from "@medusajs/medusa/core-flows";
 
@@ -16,6 +17,7 @@ type ProductQuery = {
     entity: "product";
     fields: string[];
     filters: { id: string[] };
+    context?: Record<string, unknown>;
   }): Promise<{ data: ProductSearchSource[] }>;
 };
 
@@ -43,6 +45,9 @@ export async function indexProducts(ids: string[], container: WorkflowContainer)
       entity: "product",
       fields: [...PRODUCT_SEARCH_FIELDS],
       filters: { id: ids },
+      context: {
+        variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
+      },
     });
     await retrySearchWrite(() => search.upsertProducts(data.map(toProductSearchDocument)));
   } catch (error) {

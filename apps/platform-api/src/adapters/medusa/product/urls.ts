@@ -113,13 +113,24 @@ export function getProductsBaseUrl(medusaInternalUrl: string) {
 
 export function getProductSearchUrl(
   medusaInternalUrl: string,
-  input: { limit: number; offset: number; q: string; salesChannelId: string },
+  input: {
+    categoryId?: string;
+    collectionId?: string;
+    limit: number;
+    offset: number;
+    q: string;
+    salesChannelId: string;
+    status?: string;
+  },
 ) {
   const url = new URL("/admin/product-search", normalizeBaseUrl(medusaInternalUrl));
   url.searchParams.set("q", input.q);
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", String(input.offset));
   url.searchParams.set("sales_channel_id", input.salesChannelId);
+  if (input.categoryId?.trim()) url.searchParams.set("category_id", input.categoryId.trim());
+  if (input.collectionId?.trim()) url.searchParams.set("collection_id", input.collectionId.trim());
+  if (input.status?.trim()) url.searchParams.set("status", input.status.trim());
   return url;
 }
 

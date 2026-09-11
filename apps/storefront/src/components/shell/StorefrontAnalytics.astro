@@ -77,6 +77,10 @@ const { disabled = false } = Astro.props;
 
     document.addEventListener("submit", (event) => {
       const form = event.target;
+      if (form instanceof HTMLFormElement && form.matches('[role="search"], [data-product-search-suggestions]')) {
+        const query = String(new FormData(form).get("q") ?? "").trim().slice(0, 120);
+        if (query.length >= 2) record("storefront.search_submitted", "search", undefined, { query });
+      }
       if (form instanceof HTMLFormElement && form.action.includes("/actions/cart/add")) {
         const variantId = String(new FormData(form).get("variantId") ?? "");
         record(
@@ -86,6 +90,15 @@ const { disabled = false } = Astro.props;
           { variantId },
         );
       }
+    });
+    document.addEventListener("ecs:product-search-suggestion-selected", (event) => {
+      const detail = event instanceof CustomEvent && typeof event.detail === "object" && event.detail
+        ? event.detail as Record<string, unknown>
+        : {};
+      record("storefront.search_suggestion_selected", "product", String(detail.handle ?? ""), {
+        position: Number(detail.position) || undefined,
+        query: String(detail.query ?? "").slice(0, 120),
+      });
     });
   }
 </script>
