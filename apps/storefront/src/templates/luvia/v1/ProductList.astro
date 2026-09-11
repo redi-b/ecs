@@ -112,7 +112,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
         <button class="lv-filter-backdrop" type="button" aria-label="Close filters" data-filter-close></button>
         <div class="lv-catalog-filter__body" id="catalog-filter-controls">
           <div class="lv-filter-sheet-head"><strong>Filter products</strong><button type="button" aria-label="Close filters" data-filter-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div>
-          <div class="lv-catalog-filter__scroll">
+          <div class="lv-catalog-filter__scroll" data-lenis-prevent>
           <div class="lv-catalog-filter__controls">
             {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
             <div class="lv-catalog-filter__search" data-search-suggestions-anchor><label class="sr-only" for="lv-catalog-search">Search products</label><input id="lv-catalog-search" name="q" type="search" value={filters.q ?? ""} placeholder="Search products" /></div>
@@ -130,12 +130,6 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
                 {categories.flatMap((category) => { const handle = taxonomyHandle(category); return handle ? [<label><input type="radio" name="category" value={handle} checked={filters.categoryId === handle} /><span>{category.name ?? "Category"}</span>{facets?.categories[category.id] !== undefined && <small>{facets.categories[category.id]}</small>}</label>] : []; })}
               </div>
             </details>}
-            {facets?.options.map((option) => <details class="lv-filter-menu">
-              <summary><span>{option.name}</span><strong data-filter-value>{filters.optionPairs.some((token) => parseOptionPair(token)?.name === option.name) ? "Selected" : `All ${option.name.toLowerCase()}`}</strong></summary>
-              <div role="group" aria-label={`Filter by ${option.name}`}>
-                {option.values.map((item) => <label><input type="checkbox" name="option" value={item.token} checked={filters.optionPairs.includes(item.token)} /><span>{item.value}</span><small>{item.count}</small></label>)}
-              </div>
-            </details>)}
             {facets?.price && <details class="lv-filter-menu lv-filter-menu--price">
               <summary><span>Price</span><strong data-filter-value>{filters.priceMin !== undefined || filters.priceMax !== undefined ? "Custom" : "Any price"}</strong></summary>
               <div class="lv-price-filter" role="group" aria-label="Price in Ethiopian birr">
@@ -143,6 +137,12 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
                 <label><span>To</span><input name="price_max" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label>
               </div>
             </details>}
+            {facets?.options.map((option) => <details class="lv-filter-menu">
+              <summary><span>{option.name}</span><strong data-filter-value>{filters.optionPairs.some((token) => parseOptionPair(token)?.name === option.name) ? "Selected" : `All ${option.name.toLowerCase()}`}</strong></summary>
+              <div role="group" aria-label={`Filter by ${option.name}`}>
+                {option.values.map((item) => <label><input type="checkbox" name="option" value={item.token} checked={filters.optionPairs.includes(item.token)} /><span>{item.value}</span><small>{item.count}</small></label>)}
+              </div>
+            </details>)}
             <details class="lv-filter-menu lv-filter-menu--sort">
               <summary><span>Sort by</span><strong data-filter-value>{sortLabel}</strong></summary>
               <div role="radiogroup" aria-label="Sort products">
@@ -155,6 +155,8 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
               </div>
             </details>
           </div>
+          </div>
+          <div class="lv-filter-footer">
           <div class="lv-catalog-filter__active">
             <div>
               {filters.q && <a href={clearFilterHref("q")}><strong>Search:</strong> {filters.q}<span aria-hidden="true">×</span></a>}
@@ -164,12 +166,11 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
               {filters.priceMin !== undefined && <a href={clearFilterHref("priceMin")}><strong>From:</strong> ETB {filters.priceMin.toLocaleString()}<span aria-hidden="true">×</span></a>}
               {filters.priceMax !== undefined && <a href={clearFilterHref("priceMax")}><strong>To:</strong> ETB {filters.priceMax.toLocaleString()}<span aria-hidden="true">×</span></a>}
               {filters.order && <a href={clearFilterHref("order")}><strong>Sort:</strong> {sortLabel}<span aria-hidden="true">×</span></a>}
-              {hasActiveFilters && <a class="lv-filter-clear" href="/products">Clear filters</a>}
             </div>
             <span>{totalCount} Results</span>
           </div>
+          <div class="lv-filter-footer__actions">{hasActiveFilters && <a class="lv-filter-clear" href="/products">Clear filters</a>}<button class="lv-filter-apply" type="submit">Apply filters</button></div>
           </div>
-          <div class="lv-filter-footer"><button class="lv-filter-apply" type="submit">Apply filters</button></div>
         </div>
       </form>
 
