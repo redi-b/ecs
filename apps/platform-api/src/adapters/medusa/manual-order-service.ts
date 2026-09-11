@@ -9,6 +9,12 @@ type Options = {
 export type ManualOrderItemInput = {
   quantity: number;
   variantId: string;
+  unitPrice?: number | null | undefined;
+};
+
+export type ManualOrderDiscountInput = {
+  type: "fixed" | "percentage";
+  value: number;
 };
 
 export type ManualOrderAddressInput = {
@@ -27,6 +33,8 @@ export type ManualOrderCreateInput = {
   customerEmail: string;
   customerId?: string | null | undefined;
   items: ManualOrderItemInput[];
+  discount?: ManualOrderDiscountInput | null | undefined;
+  adjustmentReason?: string | null | undefined;
   note?: string | null | undefined;
   regionId: string;
   salesChannelId: string;
@@ -103,6 +111,7 @@ export function createMedusaManualOrderService(options: Options) {
       items: input.items.map((item) => ({
         quantity: item.quantity,
         variant_id: item.variantId,
+        ...(item.unitPrice != null ? { unit_price: item.unitPrice } : {}),
       })),
       ...(shipping
         ? {
@@ -117,6 +126,11 @@ export function createMedusaManualOrderService(options: Options) {
         payment_method: "cod",
         checkout_type: "cod",
         platform_tenant_id: input.tenantId,
+        manual_adjustment_reason: input.adjustmentReason?.trim() || null,
+        manual_discount: input.discount ?? null,
+        custom_price_variant_ids: input.items
+          .filter((item) => item.unitPrice != null)
+          .map((item) => item.variantId),
       },
     };
 
@@ -173,6 +187,31 @@ export function createMedusaManualOrderService(options: Options) {
         headers: headers(),
         method: "POST",
       }).catch(() => null);
+    }
+
+    if (input.discount) {
+      const discounted = await fetcher(
+        `${base}/admin/platform-draft-orders/${encodeURIComponent(draftId)}/manual-discount`,
+        {
+          body: JSON.stringify({
+            discount: input.discount,
+            reason: input.adjustmentReason,
+            tenant_id: input.tenantId,
+            user_id: input.userId,
+          }),
+          headers: headers(),
+          method: "POST",
+        },
+      ).catch(() => null);
+      if (!discounted?.ok) {
+        if (discounted?.status === 401 || discounted?.status === 403) {
+          return { error: "commerce_credentials_invalid", ok: false, status: 401 };
+        }
+        if (!discounted || discounted.status >= 500 || discounted.status === 404) {
+          return unavailable("commerce_backend_unavailable", discounted ?? undefined);
+        }
+        return { error: "invalid_manual_order_discount", ok: false, status: 400 };
+      }
     }
 
     const converted = await fetcher(

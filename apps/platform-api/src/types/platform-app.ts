@@ -838,7 +838,13 @@ export type PlatformAppOptions = {
         customerFirstName?: string | null | undefined;
         customerLastName?: string | null | undefined;
         customerPhone?: string | null | undefined;
-        items: Array<{ quantity: number; variantId: string }>;
+        items: Array<{
+          quantity: number;
+          unitPrice?: number | null | undefined;
+          variantId: string;
+        }>;
+        discount?: { type: "fixed" | "percentage"; value: number } | null | undefined;
+        adjustmentReason?: string | null | undefined;
         note?: string | null | undefined;
         regionId: string;
         salesChannelId: string;

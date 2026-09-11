@@ -533,6 +533,7 @@ export const merchantOrderSchema = z.object({
   paymentReference: z.string().min(1).nullable().optional(),
   settlement: merchantOrderSettlementSchema.nullable().optional(),
   note: z.string().min(1).nullable().optional(),
+  adjustmentReason: z.string().min(1).nullable().optional(),
   currencyCode: z.string().min(1).nullable(),
   total: z.number().nullable(),
   subtotal: z.number().nullable().optional(),

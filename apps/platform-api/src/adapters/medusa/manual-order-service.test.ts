@@ -126,4 +126,43 @@ describe("createMedusaManualOrderService", () => {
       status: 400,
     });
   });
+
+  it("passes custom prices and applies an audited discount before conversion", async () => {
+    const calls: Array<{ body: string | undefined; url: string }> = [];
+    const service = createMedusaManualOrderService({
+      adminApiToken: "token",
+      fetcher: async (input, init) => {
+        const url = String(input);
+        calls.push({ body: typeof init?.body === "string" ? init.body : undefined, url });
+        if (url.endsWith("/admin/draft-orders")) {
+          return new Response(JSON.stringify({ draft_order: { id: "draft_discount" } }));
+        }
+        if (url.includes("/manual-discount")) {
+          return new Response(JSON.stringify({ discount: { amount: 150 } }));
+        }
+        if (url.includes("/convert-to-order")) {
+          return new Response(JSON.stringify({ order: { id: "order_discount" } }));
+        }
+        return new Response("{}", { status: 404 });
+      },
+      medusaInternalUrl: "http://medusa.test",
+    });
+
+    const result = await service.createManualOrder({
+      adjustmentReason: "Negotiated walk-in price",
+      customerEmail: "walkin@example.com",
+      discount: { type: "fixed", value: 150 },
+      items: [{ quantity: 2, unitPrice: 900, variantId: "variant_1" }],
+      regionId: "reg_1",
+      salesChannelId: "sc_1",
+      tenantId: "tenant_1",
+      userId: "user_1",
+    });
+
+    assert.equal(result.ok, true);
+    assert.match(calls[0]?.body ?? "", /"unit_price":900/);
+    assert.match(calls[1]?.url ?? "", /manual-discount/);
+    assert.match(calls[1]?.body ?? "", /Negotiated walk-in price/);
+    assert.match(calls.at(-1)?.url ?? "", /convert-to-order/);
+  });
 });

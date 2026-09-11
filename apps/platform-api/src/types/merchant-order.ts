@@ -25,6 +25,7 @@ export type MerchantOrderSettlement = {
   receivingAccountId?: string | null;
   reference?: string | null;
   note?: string | null;
+  adjustmentReason?: string | null;
   recordedAt?: string | null;
 };
 

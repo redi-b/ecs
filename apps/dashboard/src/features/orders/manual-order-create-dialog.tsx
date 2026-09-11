@@ -83,6 +83,9 @@ function ManualOrderCreateDialogInner() {
   const [customerPhone, setCustomerPhone] = useState("");
 
   const [lines, setLines] = useState<LineItem[]>([]);
+  const [discountType, setDiscountType] = useState<"none" | "fixed" | "percentage">("none");
+  const [discountValue, setDiscountValue] = useState("");
+  const [adjustmentReason, setAdjustmentReason] = useState("");
   const [note, setNote] = useState("");
   const [includeAddress, setIncludeAddress] = useState(true);
   const [address, setAddress] = useState<AddressForm>(emptyAddress);
@@ -164,8 +167,10 @@ function ManualOrderCreateDialogInner() {
           return {
             id: variant.id,
             availableQuantity,
+            currencyCode: price?.currencyCode ?? "etb",
             label: [productTitle, variantTitle].filter(Boolean).join(" · "),
             options,
+            priceAmount: price?.amount ?? null,
             priceLabel,
             productId: product.id,
             productTitle,
@@ -324,6 +329,9 @@ function ManualOrderCreateDialogInner() {
     setCustomerLastName("");
     setCustomerPhone("");
     setLines([]);
+    setDiscountType("none");
+    setDiscountValue("");
+    setAdjustmentReason("");
     setNote("");
     setIncludeAddress(true);
     setAddress(emptyAddress);
@@ -342,6 +350,7 @@ function ManualOrderCreateDialogInner() {
       return true;
     }
     if (lines.length > 0) return true;
+    if (discountType !== "none" || discountValue || adjustmentReason.trim()) return true;
     if (note.trim()) return true;
     if (!includeAddress) return true;
     if (savedAddressId !== MANUAL_ADDRESS_NEW) return true;
@@ -365,6 +374,9 @@ function ManualOrderCreateDialogInner() {
     customerLastName,
     customerMode,
     customerPhone,
+    adjustmentReason,
+    discountType,
+    discountValue,
     includeAddress,
     lines.length,
     note,
@@ -544,7 +556,11 @@ function ManualOrderCreateDialogInner() {
           if (typeof available === "number" && available >= 0) {
             quantity = Math.min(Math.max(quantity, 1), Math.max(available, 1));
           }
-          return { quantity, variantId };
+          return {
+            quantity,
+            unitPrice: current.find((line) => line.variantId === variantId)?.unitPrice ?? null,
+            variantId,
+          };
         });
     });
   }
@@ -567,8 +583,41 @@ function ManualOrderCreateDialogInner() {
     setLines((current) => current.filter((line) => line.variantId !== variantId));
   }
 
+  function setLinePrice(variantId: string, value: string) {
+    const next = value.trim() === "" ? null : Number(value);
+    setLines((current) =>
+      current.map((line) =>
+        line.variantId === variantId && (next === null || (Number.isFinite(next) && next >= 0))
+          ? { ...line, unitPrice: next }
+          : line,
+      ),
+    );
+  }
+
+  const merchandiseSubtotal = lines.reduce((sum, line) => {
+    const variant = variantById.get(line.variantId);
+    return sum + (line.unitPrice ?? variant?.priceAmount ?? 0) * line.quantity;
+  }, 0);
+  const parsedDiscountValue = Number(discountValue);
+  const discountAmount =
+    discountType === "percentage"
+      ? merchandiseSubtotal * (Number.isFinite(parsedDiscountValue) ? parsedDiscountValue / 100 : 0)
+      : discountType === "fixed" && Number.isFinite(parsedDiscountValue)
+        ? parsedDiscountValue
+        : 0;
+  const hasPriceAdjustment =
+    lines.some((line) => line.unitPrice !== null) || discountType !== "none";
+  const adjustmentIsValid =
+    !hasPriceAdjustment ||
+    (adjustmentReason.trim().length >= 3 &&
+      (discountType === "none" ||
+        (Number.isFinite(parsedDiscountValue) && parsedDiscountValue > 0)) &&
+      discountAmount >= 0 &&
+      discountAmount <= merchandiseSubtotal &&
+      (discountType !== "percentage" || parsedDiscountValue <= 100));
+
   async function create() {
-    if (!canContinueFromCustomer() || !canContinueFromItems()) return;
+    if (!canContinueFromCustomer() || !canContinueFromItems() || !adjustmentIsValid) return;
     setSaving(true);
     setError(null);
 
@@ -580,8 +629,11 @@ function ManualOrderCreateDialogInner() {
       customerPhone: customerPhone.trim() || null,
       items: lines.map((line) => ({
         quantity: line.quantity,
+        unitPrice: line.unitPrice,
         variantId: line.variantId,
       })),
+      discount: discountType === "none" ? null : { type: discountType, value: parsedDiscountValue },
+      adjustmentReason: hasPriceAdjustment ? adjustmentReason.trim() : null,
       note: note.trim() || null,
       shippingAddress: includeAddress
         ? {
@@ -828,7 +880,7 @@ function ManualOrderCreateDialogInner() {
                           const variant = variantById.get(line.variantId);
                           return (
                             <li
-                              className="grid gap-2 rounded-xl border px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_6rem_auto] sm:items-center"
+                              className="grid gap-3 rounded-xl border px-3 py-3 sm:grid-cols-[minmax(0,1fr)_5.5rem_8rem_auto] sm:items-end"
                               key={line.variantId}
                             >
                               <div className="min-w-0">
@@ -846,22 +898,54 @@ function ManualOrderCreateDialogInner() {
                                     .join(" · ") || t("orders.create.optionFallback")}
                                 </p>
                               </div>
-                              <Input
-                                aria-label={t("orders.create.quantityFor", {
-                                  name: variant?.label ?? t("orders.create.optionFallback"),
-                                })}
-                                max={
-                                  typeof variant?.availableQuantity === "number"
-                                    ? Math.max(variant.availableQuantity, 1)
-                                    : undefined
-                                }
-                                min={1}
-                                onChange={(event) =>
-                                  setLineQuantity(line.variantId, event.target.value)
-                                }
-                                type="number"
-                                value={String(line.quantity)}
-                              />
+                              <Field>
+                                <FieldLabel>{t("orders.create.quantity")}</FieldLabel>
+                                <Input
+                                  aria-label={t("orders.create.quantityFor", {
+                                    name: variant?.label ?? t("orders.create.optionFallback"),
+                                  })}
+                                  max={
+                                    typeof variant?.availableQuantity === "number"
+                                      ? Math.max(variant.availableQuantity, 1)
+                                      : undefined
+                                  }
+                                  min={1}
+                                  onChange={(event) =>
+                                    setLineQuantity(line.variantId, event.target.value)
+                                  }
+                                  type="number"
+                                  value={String(line.quantity)}
+                                />
+                              </Field>
+                              <Field>
+                                <div className="flex items-center justify-between gap-2">
+                                  <FieldLabel>{t("orders.create.sellingPrice")}</FieldLabel>
+                                  {line.unitPrice !== null ? (
+                                    <button
+                                      className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                                      onClick={() => setLinePrice(line.variantId, "")}
+                                      type="button"
+                                    >
+                                      {t("orders.create.resetPrice")}
+                                    </button>
+                                  ) : null}
+                                </div>
+                                <Input
+                                  aria-label={t("orders.create.sellingPriceFor", {
+                                    name: variant?.label ?? t("orders.create.optionFallback"),
+                                  })}
+                                  min={0}
+                                  onChange={(event) =>
+                                    setLinePrice(line.variantId, event.target.value)
+                                  }
+                                  placeholder={
+                                    variant?.priceAmount != null ? String(variant.priceAmount) : "0"
+                                  }
+                                  step="0.01"
+                                  type="number"
+                                  value={line.unitPrice ?? ""}
+                                />
+                              </Field>
                               <Button
                                 aria-label={t("orders.create.removeItem")}
                                 onClick={() => removeLine(line.variantId)}
@@ -875,6 +959,76 @@ function ManualOrderCreateDialogInner() {
                           );
                         })}
                       </ul>
+                    </section>
+                  ) : null}
+
+                  {lines.length > 0 ? (
+                    <section className="space-y-3 border-t pt-5">
+                      <div>
+                        <p className="text-sm font-medium">{t("orders.create.orderDiscount")}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("orders.create.orderDiscountDesc")}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+                        {(["none", "percentage", "fixed"] as const).map((type) => (
+                          <Button
+                            key={type}
+                            onClick={() => {
+                              setDiscountType(type);
+                              if (type === "none") setDiscountValue("");
+                            }}
+                            size="sm"
+                            type="button"
+                            variant={discountType === type ? "default" : "ghost"}
+                          >
+                            {t(`orders.create.discountType.${type}`)}
+                          </Button>
+                        ))}
+                      </div>
+                      {discountType !== "none" ? (
+                        <Field>
+                          <FieldLabel htmlFor="mo-discount">
+                            {discountType === "fixed"
+                              ? t("orders.create.discountAmount")
+                              : t("orders.create.discountPercent")}
+                          </FieldLabel>
+                          <Input
+                            id="mo-discount"
+                            max={discountType === "percentage" ? 100 : merchandiseSubtotal}
+                            min={0}
+                            onChange={(event) => setDiscountValue(event.target.value)}
+                            step="0.01"
+                            type="number"
+                            value={discountValue}
+                          />
+                        </Field>
+                      ) : null}
+                      {hasPriceAdjustment ? (
+                        <Field data-invalid={adjustmentReason.trim().length < 3}>
+                          <FieldLabel htmlFor="mo-adjustment-reason">
+                            {t("orders.create.adjustmentReason")} {t("orders.create.required")}
+                          </FieldLabel>
+                          <Input
+                            aria-describedby="mo-adjustment-reason-error"
+                            aria-invalid={adjustmentReason.trim().length < 3}
+                            aria-required="true"
+                            id="mo-adjustment-reason"
+                            onChange={(event) => setAdjustmentReason(event.target.value)}
+                            placeholder={t("orders.create.adjustmentReasonPlaceholder")}
+                            required
+                            value={adjustmentReason}
+                          />
+                          {adjustmentReason.trim().length < 3 ? (
+                            <FieldDescription
+                              className="text-destructive"
+                              id="mo-adjustment-reason-error"
+                            >
+                              {t("orders.create.adjustmentReasonRequired")}
+                            </FieldDescription>
+                          ) : null}
+                        </Field>
+                      ) : null}
                     </section>
                   ) : null}
                 </div>
@@ -894,6 +1048,28 @@ function ManualOrderCreateDialogInner() {
                         <div className="flex justify-between gap-3">
                           <dt className="text-muted-foreground">{t("orders.create.customer")}</dt>
                           <dd className="truncate font-medium">{customerPhone || "N/A"}</dd>
+                        </div>
+                        <div className="flex justify-between gap-3 border-t pt-1.5">
+                          <dt className="text-muted-foreground">
+                            {t("orders.create.merchandiseSubtotal")}
+                          </dt>
+                          <dd className="font-medium">{formatPrice(merchandiseSubtotal, "etb")}</dd>
+                        </div>
+                        {discountAmount > 0 ? (
+                          <div className="flex justify-between gap-3">
+                            <dt className="text-muted-foreground">
+                              {t("orders.create.orderDiscount")}
+                            </dt>
+                            <dd className="font-medium text-emerald-700">
+                              -{formatPrice(discountAmount, "etb")}
+                            </dd>
+                          </div>
+                        ) : null}
+                        <div className="flex justify-between gap-3">
+                          <dt className="font-medium">{t("orders.create.itemsTotal")}</dt>
+                          <dd className="font-semibold">
+                            {formatPrice(Math.max(0, merchandiseSubtotal - discountAmount), "etb")}
+                          </dd>
                         </div>
                         {getDisplayCustomerEmail(customerEmail) ? (
                           <div className="flex justify-between gap-3">
@@ -1069,7 +1245,12 @@ function ManualOrderCreateDialogInner() {
               </Button>
             ) : (
               <Button
-                disabled={saving || !canContinueFromCustomer() || !canContinueFromItems()}
+                disabled={
+                  saving ||
+                  !canContinueFromCustomer() ||
+                  !canContinueFromItems() ||
+                  !adjustmentIsValid
+                }
                 onClick={() => void create()}
                 type="button"
               >
