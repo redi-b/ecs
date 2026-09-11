@@ -64,6 +64,9 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       paymentReference,
       ...(settlement ? { settlement } : {}),
       note,
+      ...(getString(metadata.manual_adjustment_reason)
+        ? { adjustmentReason: getString(metadata.manual_adjustment_reason) }
+        : {}),
       currencyCode: getString(value.currency_code),
       total,
       subtotal: getNumber(value.subtotal) ?? null,
@@ -122,9 +125,7 @@ export function resolvePaymentMethod(
 
   for (const collection of collections) {
     if (!isRecord(collection)) continue;
-    const sessions = Array.isArray(collection.payment_sessions)
-      ? collection.payment_sessions
-      : [];
+    const sessions = Array.isArray(collection.payment_sessions) ? collection.payment_sessions : [];
     for (const session of sessions) {
       if (!isRecord(session)) continue;
       const provider = normalizeKey(getString(session.provider_id));
@@ -154,20 +155,15 @@ function resolvePaymentReference(
 
   if (fromMeta) return fromMeta;
 
-  const collections = Array.isArray(order.payment_collections)
-    ? order.payment_collections
-    : [];
+  const collections = Array.isArray(order.payment_collections) ? order.payment_collections : [];
 
   for (const collection of collections) {
     if (!isRecord(collection)) continue;
-    const sessions = Array.isArray(collection.payment_sessions)
-      ? collection.payment_sessions
-      : [];
+    const sessions = Array.isArray(collection.payment_sessions) ? collection.payment_sessions : [];
     for (const session of sessions) {
       if (!isRecord(session)) continue;
       const data = isRecord(session.data) ? session.data : {};
-      const ref =
-        getString(data.tx_ref) ?? getString(data.txRef) ?? getString(data.reference);
+      const ref = getString(data.tx_ref) ?? getString(data.txRef) ?? getString(data.reference);
       if (ref) return ref;
     }
   }
@@ -234,14 +230,10 @@ export function getDeliveryDetails(order: Record<string, unknown>) {
   const delivery = {
     choice: getString(orderMetadata.delivery_choice ?? shippingMetadata.delivery_choice),
     customerName: getString(
-      orderMetadata.customer_name ??
-        shippingMetadata.customer_name ??
-        (shippingName || null),
+      orderMetadata.customer_name ?? shippingMetadata.customer_name ?? (shippingName || null),
     ),
     customerPhone: getString(
-      orderMetadata.customer_phone ??
-        shippingMetadata.customer_phone ??
-        shippingAddress.phone,
+      orderMetadata.customer_phone ?? shippingMetadata.customer_phone ?? shippingAddress.phone,
     ),
     landmark: getString(orderMetadata.landmark ?? shippingMetadata.landmark),
     notes: getString(orderMetadata.customer_notes ?? shippingMetadata.customer_notes),
@@ -278,8 +270,7 @@ export function getLineItems(value: unknown) {
       getNumber(item.unit_price) ?? (detail ? getNumber(detail.unit_price) : undefined) ?? null;
     // Prefer computed line total when Medusa returns 0/empty totals with a real unit price.
     const reportedTotal = getNumber(item.total) ?? getNumber(item.subtotal);
-    const computedTotal =
-      quantity !== null && unitPrice !== null ? quantity * unitPrice : null;
+    const computedTotal = quantity !== null && unitPrice !== null ? quantity * unitPrice : null;
     const total =
       reportedTotal !== undefined && reportedTotal !== null && reportedTotal > 0
         ? reportedTotal
@@ -348,8 +339,8 @@ function formatVariantOptions(variant: Record<string, unknown> | null): string |
     if (!value) continue;
     const option = isRecord(raw.option) ? raw.option : null;
     const optionTitle = option
-      ? getString(option.title) ?? getString(option.name)
-      : getString(raw.option_title) ?? getString(raw.title);
+      ? (getString(option.title) ?? getString(option.name))
+      : (getString(raw.option_title) ?? getString(raw.title));
     if (optionTitle && !isGenericVariantTitle(optionTitle)) {
       parts.push(`${optionTitle}: ${value}`);
     } else {

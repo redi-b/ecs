@@ -1,10 +1,12 @@
 import {
   defineMiddlewares,
   maybeApplyLinkFilter,
+  validateAndTransformBody,
   validateAndTransformQuery,
 } from "@medusajs/framework/http";
 import { z } from "@medusajs/framework/zod";
 import { listProductQueryConfig } from "@medusajs/medusa/api/admin/products/query-config";
+import { manualOrderAdjustmentSchema } from "../lib/manual-order-adjustment";
 import { productMediaQuerySchema } from "../lib/product-media-query";
 import {
   adminProductSearchQuerySchema,
@@ -24,6 +26,11 @@ const additionalDataValidator = {
 
 export default defineMiddlewares({
   routes: [
+    {
+      method: "POST",
+      matcher: "/admin/platform-draft-orders/:id/manual-discount",
+      middlewares: [validateAndTransformBody(manualOrderAdjustmentSchema)],
+    },
     {
       method: "GET",
       matcher: "/store/product-search",

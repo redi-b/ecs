@@ -3,6 +3,8 @@ export type CatalogVariant = {
   label: string;
   options: Record<string, string>;
   priceLabel: string | null;
+  priceAmount: number | null;
+  currencyCode: string;
   productId: string;
   productTitle: string;
   sku: string | null;
@@ -11,7 +13,6 @@ export type CatalogVariant = {
   /** Available units when inventory is tracked; null = not tracked. */
   availableQuantity: number | null;
 };
-
 export type CustomerAddressOption = {
   address1: string | null;
   city: string | null;
@@ -36,6 +37,7 @@ export type CustomerOption = {
 
 export type LineItem = {
   quantity: number;
+  unitPrice: number | null;
   variantId: string;
 };
 
@@ -89,7 +91,6 @@ export function addressFormFromSaved(
     province: address.province ?? "",
   };
 }
-
 
 export function formatPrice(amount: number, currencyCode: string) {
   try {

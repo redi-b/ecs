@@ -55,6 +55,8 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   draft_order_unavailable: "Manual orders are not available yet. Contact support.",
   manual_order_convert_failed: "The order draft could not be finalized. Try again.",
   manual_order_create_failed: "Could not create this order. Try again.",
+  invalid_manual_order_discount: "Check the discount amount and try again.",
+  manual_order_adjustment_reason_required: "Add a reason for the price adjustment.",
   missing_title: "A title is required.",
   missing_name: "A name is required.",
   missing_handle: "A handle is required.",

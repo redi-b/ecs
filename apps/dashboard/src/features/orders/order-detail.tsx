@@ -473,6 +473,13 @@ export async function OrderDetail({
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{order.note}</p>
             </DetailSection>
           ) : null}
+          {order.adjustmentReason ? (
+            <DetailSection title={t("orders.detail.adjustmentReason")}>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                {order.adjustmentReason}
+              </p>
+            </DetailSection>
+          ) : null}
         </div>
       </div>
     </div>
