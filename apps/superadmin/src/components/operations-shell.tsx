@@ -6,10 +6,11 @@ import {
   ChevronsUpDown,
   ClipboardList,
   FileClock,
-  LayoutDashboard,
   Layers3,
-  PanelsTopLeft,
+  LayoutDashboard,
   LogOut,
+  Mail,
+  PanelsTopLeft,
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
@@ -84,6 +85,13 @@ const navigation = [
     label: "Storefront templates",
     permission: "storefront.templates.read",
     shortcut: "T",
+  },
+  {
+    href: "/email-templates",
+    icon: Mail,
+    label: "Email templates",
+    permission: "email.templates.read",
+    shortcut: "E",
   },
   {
     href: "/health",

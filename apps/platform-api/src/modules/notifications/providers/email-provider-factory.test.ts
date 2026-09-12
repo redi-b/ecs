@@ -28,7 +28,7 @@ test("keeps legacy Resend configuration working without an explicit selector", (
 test("rejects an incomplete selected provider configuration", () => {
   assert.throws(
     () => createEmailNotificationProviderFromEnv({ EMAIL_PROVIDER: "resend" }),
-    /requires RESEND_API_KEY and EMAIL_FROM/,
+    /requires RESEND_API_KEY/,
   );
 });
 

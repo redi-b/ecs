@@ -26,7 +26,11 @@ const validEnvironment = () => ({
   MEDIA_S3_CORS_ALLOW_ORIGIN: "https://app.ecs.acme.test",
   EMAIL_PROVIDER: "resend",
   RESEND_API_KEY: secret("resend"),
-  EMAIL_FROM: "alerts@ecs.acme.test",
+  EMAIL_FROM_ACCOUNTS: "ECS Accounts <accounts@ecs.acme.test>",
+  EMAIL_FROM_BILLING: "ECS Billing <billing@ecs.acme.test>",
+  EMAIL_FROM_NOTIFICATIONS: "ECS Notifications <notifications@ecs.acme.test>",
+  EMAIL_FROM_ORDERS: "ECS Orders <orders@ecs.acme.test>",
+  EMAIL_DELIVERY_ENCRYPTION_KEY: "email-delivery-key-at-least-32-characters",
   AUTH_REQUIRE_EMAIL_VERIFICATION: "true",
 });
 
@@ -39,13 +43,13 @@ test("rejects placeholders, reused secrets, database drift, and partial provider
   environment.BASE_DOMAIN = "ecs.example.com";
   environment.BETTER_AUTH_SECRET = environment.PLATFORM_INTERNAL_API_TOKEN;
   environment.MEDUSA_DATABASE_URL = environment.PLATFORM_DATABASE_URL;
-  environment.EMAIL_FROM = "";
+  environment.EMAIL_FROM_ACCOUNTS = "";
 
   const { errors } = validateProductionEnvironment(environment);
   assert.ok(errors.some((error) => error.includes("BASE_DOMAIN still contains a placeholder")));
   assert.ok(errors.some((error) => error.includes("must not reuse")));
   assert.ok(errors.some((error) => error.includes("separate databases")));
-  assert.ok(errors.some((error) => error.includes("EMAIL_FROM is required")));
+  assert.ok(errors.some((error) => error.includes("EMAIL_FROM_ACCOUNTS")));
 });
 
 test("rejects an email provider without an installed adapter", () => {

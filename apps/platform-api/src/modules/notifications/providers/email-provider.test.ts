@@ -12,6 +12,16 @@ describe("createResendEmailNotificationProvider", () => {
     const provider = createResendEmailNotificationProvider({
       apiKey: "re_test",
       from: "alerts@example.com",
+      senders: {
+        fallback: "alerts@example.com",
+        profiles: {
+          accounts: "ECS Accounts <accounts@example.com>",
+          billing: "billing@example.com",
+          notifications: "alerts@example.com",
+          orders: "orders@example.com",
+        },
+        supportReplyTo: null,
+      },
       fetchImpl: async (url, init) => {
         calls.push({ url: String(url), init: init ?? {} });
         return new Response(JSON.stringify({ id: "msg_123" }), { status: 200 });
@@ -26,18 +36,21 @@ describe("createResendEmailNotificationProvider", () => {
       subject: "New order",
       body: "You have a new order.\nOrder: #10",
       html: "<b>You have a new order.</b>\n<b>Order:</b> #10",
+      idempotencyKey: "email-delivery-1",
+      senderProfile: "orders",
     });
 
     assert.equal(result.providerReference, "resend:msg_123");
     assert.equal(calls.length, 1);
     assert.equal(calls[0]?.url, "https://api.resend.com/emails");
     const body = JSON.parse(String(calls[0]?.init.body));
-    assert.equal(body.from, "alerts@example.com");
+    assert.equal(body.from, "orders@example.com");
+    assert.equal(new Headers(calls[0]?.init.headers).get("idempotency-key"), "email-delivery-1");
     assert.deepEqual(body.to, ["owner@shop.com"]);
     assert.equal(body.subject, "New order");
     assert.equal(body.text, "You have a new order.\nOrder: #10");
     assert.match(body.html, /<b>You have a new order\.<\/b>/);
-    assert.match(body.html, /<br\/>/);
+    assert.equal(body.html, "<b>You have a new order.</b>\n<b>Order:</b> #10");
   });
 
   it("throws on provider error responses", async () => {

@@ -58,6 +58,8 @@ import { createProductImportArtifactService } from "./modules/data-transfer/prod
 import { createProductImportExecutionService } from "./modules/data-transfer/product-import-execution.js";
 import { createDeliverySettingsService } from "./modules/delivery/service.js";
 import { createDomainManagementService } from "./modules/domains/service.js";
+import { createEmailDeliveryService } from "./modules/email/delivery-service.js";
+import { createEmailTemplateService } from "./modules/email/template-service.js";
 import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
@@ -335,6 +337,23 @@ const emailProviderResolution = createEmailNotificationProviderFromEnv(process.e
 const emailDeliveryConfigured = emailProviderResolution.configured;
 const requireEmailVerification = process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true";
 const authEmailProvider = emailProviderResolution.provider;
+const emailEncryptionKey =
+  process.env.EMAIL_DELIVERY_ENCRYPTION_KEY?.trim() ||
+  process.env.PLATFORM_SECRETS_ENCRYPTION_KEY?.trim() ||
+  process.env.BETTER_AUTH_SECRET?.trim() ||
+  "development-ecs-auth-secret-change-before-production";
+const emailDeliveryService =
+  jobsClient && authEmailProvider
+    ? createEmailDeliveryService({
+        db: platformDb.db,
+        encryptionKey: emailEncryptionKey,
+        enqueueJob: (input) => jobsClient.enqueueJob(input),
+      })
+    : null;
+const emailTemplateService = createEmailTemplateService({
+  db: platformDb.db,
+  emailProvider: authEmailProvider,
+});
 if (requireEmailVerification && !authEmailProvider) {
   throw new Error("AUTH_REQUIRE_EMAIL_VERIFICATION requires a configured EMAIL_PROVIDER");
 }
@@ -716,6 +735,7 @@ const auth = createPlatformAuth({
   dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
   db: platformDb.db,
   ...(authEmailProvider ? { emailProvider: authEmailProvider } : {}),
+  ...(emailDeliveryService ? { enqueueAccountEmail: emailDeliveryService.enqueue } : {}),
   requireEmailVerification,
   secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
   trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
@@ -952,6 +972,13 @@ const app = createPlatformApp({
   },
   getDashboardMetrics: dashboardMetricsService,
   listPlatformStorefrontTemplates: platformTemplateAssetService.listTemplates,
+  listEmailTemplates: emailTemplateService.list,
+  getEmailTemplate: emailTemplateService.get,
+  saveEmailTemplateDraft: emailTemplateService.saveDraft,
+  publishEmailTemplate: emailTemplateService.publish,
+  restoreEmailTemplateVersion: emailTemplateService.restore,
+  previewEmailTemplate: emailTemplateService.preview,
+  sendEmailTemplateTest: emailTemplateService.sendTest,
   createPlatformTemplatePreviewUpload: platformTemplateAssetService.createUpload,
   completePlatformTemplatePreviewUpload: platformTemplateAssetService.completeUpload,
   updatePlatformStorefrontTemplate: platformTemplateAssetService.updateTemplatePresentation,

@@ -1,4 +1,8 @@
 import {
+  resolveEmailSenderConfiguration,
+  validateEmailSenderConfiguration,
+} from "./email-configuration.js";
+import {
   createResendEmailNotificationProvider,
   isEmailDeliveryConfigured,
 } from "./email-provider.js";
@@ -21,13 +25,16 @@ const resendAdapter: EmailProviderAdapter = {
     return createResendEmailNotificationProvider({
       apiKey: env.RESEND_API_KEY ?? "",
       from: env.EMAIL_FROM ?? "",
+      senders: resolveEmailSenderConfiguration(env),
     });
   },
   name: "resend",
   validate(env) {
-    return isEmailDeliveryConfigured(env)
-      ? null
-      : "EMAIL_PROVIDER=resend requires RESEND_API_KEY and EMAIL_FROM";
+    if (!env.RESEND_API_KEY?.trim()) return "EMAIL_PROVIDER=resend requires RESEND_API_KEY";
+    return validateEmailSenderConfiguration({
+      env,
+      production: env.NODE_ENV === "production",
+    });
   },
 };
 

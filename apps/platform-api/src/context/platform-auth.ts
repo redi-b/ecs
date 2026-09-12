@@ -24,12 +24,22 @@ export function createPlatformAuth(options: {
   dashboardPublicBaseUrl?: string | undefined;
   db: PlatformDb;
   emailProvider?: NotificationProvider | undefined;
+  enqueueAccountEmail?:
+    | ((input: {
+        idempotencySource: string;
+        recipient: string;
+        templateKey: string;
+        tenantId?: string | null | undefined;
+        variables: Record<string, string>;
+      }) => Promise<unknown>)
+    | undefined;
   requireEmailVerification?: boolean | undefined;
   secret: string;
   trustedOrigins?: string[] | undefined;
   useSecureCookies?: boolean | undefined;
 }) {
   const emailProvider = options.emailProvider;
+  const enqueueAccountEmail = options.enqueueAccountEmail;
   const assertOrganizationKeepsOwner = async (input: {
     memberId: string;
     organizationId: string;
@@ -83,6 +93,7 @@ export function createPlatformAuth(options: {
         organization: schema.organizations,
         organizationRole: schema.organizationRoles,
         session: schema.sessions,
+        rateLimit: schema.authRateLimits,
         user: schema.users,
         verification: schema.verifications,
       },
@@ -90,8 +101,26 @@ export function createPlatformAuth(options: {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: options.requireEmailVerification ?? false,
+      ...(enqueueAccountEmail
+        ? {
+            sendResetPassword: async ({
+              url,
+              user,
+            }: {
+              url: string;
+              user: { email: string; name: string };
+            }) => {
+              await enqueueAccountEmail({
+                idempotencySource: url,
+                recipient: user.email,
+                templateKey: "account.password_reset",
+                variables: { action_url: url, recipient_name: user.name || "there" },
+              });
+            },
+          }
+        : {}),
     },
-    ...(emailProvider
+    ...(enqueueAccountEmail || emailProvider
       ? {
           emailVerification: {
             autoSignInAfterVerification: false,
@@ -102,22 +131,45 @@ export function createPlatformAuth(options: {
               user,
             }: {
               url: string;
-              user: { email: string };
+              user: { email: string; name: string };
             }) => {
-              await emailProvider.send({
-                body: `Verify your email address to finish creating your ECS account:\n\n${url}\n\nIf you did not create this account, you can ignore this email.`,
-                channel: "email",
-                eventType: "account.email_verification",
-                recipient: user.email,
-                subject: "Verify your ECS email address",
-                tenantId: "platform",
-              });
+              if (enqueueAccountEmail) {
+                await enqueueAccountEmail({
+                  idempotencySource: url,
+                  recipient: user.email,
+                  templateKey: "account.email_verification",
+                  variables: { action_url: url, recipient_name: user.name || "there" },
+                });
+              } else if (emailProvider) {
+                await emailProvider.send({
+                  body: `Verify your email address to finish creating your ECS account:\n\n${url}`,
+                  channel: "email",
+                  eventType: "account.email_verification",
+                  recipient: user.email,
+                  senderProfile: "accounts",
+                  subject: "Verify your ECS email address",
+                  tenantId: "platform",
+                });
+              }
             },
           },
         }
       : {}),
     secret: options.secret,
     ...(options.trustedOrigins?.length ? { trustedOrigins: options.trustedOrigins } : {}),
+    rateLimit: {
+      customRules: {
+        "/change-email": { max: 3, window: 60 },
+        "/organization/invite-member": { max: 10, window: 60 },
+        "/request-password-reset": { max: 3, window: 60 },
+        "/send-verification-email": { max: 3, window: 60 },
+      },
+      enabled: true,
+      max: 100,
+      modelName: "authRateLimits",
+      storage: "database",
+      window: 60,
+    },
     plugins: [
       organization({
         ac: merchantAccessControl,
@@ -155,7 +207,7 @@ export function createPlatformAuth(options: {
             });
           },
         },
-        ...(emailProvider && options.dashboardPublicBaseUrl
+        ...((enqueueAccountEmail || emailProvider) && options.dashboardPublicBaseUrl
           ? {
               sendInvitationEmail: async (data) => {
                 const invitationUrl = new URL("/accept-invitation", options.dashboardPublicBaseUrl);
@@ -166,14 +218,30 @@ export function createPlatformAuth(options: {
                   .where(eq(schema.tenants.organizationId, data.organization.id))
                   .limit(1);
                 if (tenant) invitationUrl.searchParams.set("tenantId", tenant.id);
-                await emailProvider.send({
-                  body: `${data.inviter.user.name} invited you to join ${data.organization.name} on ECS.\n\nAccept the invitation:\n${invitationUrl.toString()}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,
-                  channel: "email",
-                  eventType: "account.organization_invitation",
-                  recipient: data.email,
-                  subject: `Join ${data.organization.name} on ECS`,
-                  tenantId: "platform",
-                });
+                if (enqueueAccountEmail) {
+                  await enqueueAccountEmail({
+                    idempotencySource: data.id,
+                    recipient: data.email,
+                    templateKey: "account.organization_invitation",
+                    tenantId: tenant?.id ?? null,
+                    variables: {
+                      action_url: invitationUrl.toString(),
+                      inviter_name: data.inviter.user.name || "A shop owner",
+                      recipient_name: data.email.split("@")[0] || "there",
+                      shop_name: data.organization.name,
+                    },
+                  });
+                } else if (emailProvider) {
+                  await emailProvider.send({
+                    body: `${data.inviter.user.name} invited you to join ${data.organization.name} on ECS.\n\n${invitationUrl.toString()}`,
+                    channel: "email",
+                    eventType: "account.organization_invitation",
+                    recipient: data.email,
+                    senderProfile: "accounts",
+                    subject: `Join ${data.organization.name} on ECS`,
+                    tenantId: tenant?.id ?? "platform",
+                  });
+                }
               },
             }
           : {}),
@@ -196,6 +264,33 @@ export function createPlatformAuth(options: {
       }),
     ],
     user: {
+      ...(enqueueAccountEmail
+        ? {
+            changeEmail: {
+              enabled: true,
+              sendChangeEmailConfirmation: async ({
+                newEmail,
+                url,
+                user,
+              }: {
+                newEmail: string;
+                url: string;
+                user: { email: string; name: string };
+              }) => {
+                await enqueueAccountEmail({
+                  idempotencySource: url,
+                  recipient: user.email,
+                  templateKey: "account.email_change_current",
+                  variables: {
+                    action_url: url,
+                    new_email: newEmail,
+                    recipient_name: user.name || "there",
+                  },
+                });
+              },
+            },
+          }
+        : {}),
       modelName: "users",
     },
     session: {
