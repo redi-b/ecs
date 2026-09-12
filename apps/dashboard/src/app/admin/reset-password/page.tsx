@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
+
 import { ResetPasswordForm } from "@/components/app/account-recovery-forms";
 import { AuthShell } from "@/components/onboarding/auth-shell";
+
+export const metadata: Metadata = {
+  referrer: "no-referrer",
+  robots: { follow: false, index: false },
+};
 
 export default async function ResetPasswordPage({
   searchParams,
