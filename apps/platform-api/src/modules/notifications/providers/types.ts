@@ -24,6 +24,11 @@ export type SendNotificationInput = {
   metadata?: Record<string, unknown>;
   /** Telegram inline keyboard (or other channel-specific control markup). */
   replyMarkup?: unknown;
+  /** Logical sender selection. Email adapters resolve this to a verified mailbox. */
+  senderProfile?: "accounts" | "billing" | "notifications" | "orders";
+  replyTo?: string;
+  idempotencyKey?: string;
+  tags?: Record<string, string>;
 };
 
 export type SendNotificationResult = {

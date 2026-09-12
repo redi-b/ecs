@@ -1,8 +1,10 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -78,6 +80,18 @@ export const verifications = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("verifications_identifier_idx").on(table.identifier)],
+);
+
+/** Shared Better Auth rate-limit counters for multi-instance API deployments. */
+export const authRateLimits = pgTable(
+  "auth_rate_limits",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull().unique(),
+    count: integer("count").notNull(),
+    lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+  },
+  (table) => [index("auth_rate_limits_key_idx").on(table.key)],
 );
 
 export const organizationMembers = pgTable(

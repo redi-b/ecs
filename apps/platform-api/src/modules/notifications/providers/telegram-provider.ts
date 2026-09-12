@@ -1,4 +1,8 @@
-import type { NotificationProvider, SendNotificationInput, SendNotificationResult } from "./types.js";
+import type {
+  NotificationProvider,
+  SendNotificationInput,
+  SendNotificationResult,
+} from "./types.js";
 
 export type CreateTelegramProviderOptions = {
   botToken: string;
@@ -49,7 +53,9 @@ export function createTelegramNotificationProvider(
       const messageId = data.result?.message_id;
       return {
         providerReference:
-          messageId != null ? `telegram:${input.recipient}:${messageId}` : `telegram:${input.recipient}`,
+          messageId != null
+            ? `telegram:${input.recipient}:${messageId}`
+            : `telegram:${input.recipient}`,
       };
     },
   };
@@ -114,7 +120,10 @@ export async function editTelegramMessageText(options: {
       }),
     },
   );
-  const data = (await response.json().catch(() => null)) as { ok?: boolean; description?: string } | null;
+  const data = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    description?: string;
+  } | null;
   if (!response.ok || !data?.ok) {
     throw new Error(data?.description || `telegram_http_${response.status}`);
   }
@@ -140,7 +149,10 @@ export async function answerTelegramCallbackQuery(options: {
       }),
     },
   );
-  const data = (await response.json().catch(() => null)) as { ok?: boolean; description?: string } | null;
+  const data = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    description?: string;
+  } | null;
   if (!response.ok || !data?.ok) {
     throw new Error(data?.description || `telegram_http_${response.status}`);
   }
@@ -166,7 +178,10 @@ export async function editTelegramMessageReplyMarkup(options: {
       }),
     },
   );
-  const data = (await response.json().catch(() => null)) as { ok?: boolean; description?: string } | null;
+  const data = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    description?: string;
+  } | null;
   if (!response.ok || !data?.ok) {
     throw new Error(data?.description || `telegram_http_${response.status}`);
   }

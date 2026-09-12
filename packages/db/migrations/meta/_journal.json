@@ -316,6 +316,20 @@
       "when": 1789123511344,
       "tag": "0044_strange_randall_flagg",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1789193526231,
+      "tag": "0045_mute_lockjaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1789194231436,
+      "tag": "0046_rainy_kingpin",
+      "breakpoints": true
     }
   ]
 }

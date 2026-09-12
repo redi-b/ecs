@@ -1,4 +1,8 @@
-import type { NotificationChannelId, NotificationProvider, SendNotificationInput } from "./types.js";
+import type {
+  NotificationChannelId,
+  NotificationProvider,
+  SendNotificationInput,
+} from "./types.js";
 
 /**
  * Dev-safe provider: records a structured log and returns a reference.

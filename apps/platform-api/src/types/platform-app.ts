@@ -105,6 +105,27 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  listEmailTemplates?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["list"];
+  getEmailTemplate?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["get"];
+  saveEmailTemplateDraft?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["saveDraft"];
+  publishEmailTemplate?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["publish"];
+  restoreEmailTemplateVersion?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["restore"];
+  previewEmailTemplate?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["preview"];
+  sendEmailTemplateTest?: ReturnType<
+    typeof import("../modules/email/template-service.js").createEmailTemplateService
+  >["sendTest"];
   dashboardPublicBaseUrl?: string;
   emailDeliveryConfigured?: boolean;
   getMerchantCapabilities?: ReturnType<

@@ -1,9 +1,15 @@
-import type { NotificationProvider, SendNotificationInput, SendNotificationResult } from "./types.js";
+import type { EmailSenderConfiguration } from "./email-configuration.js";
+import type {
+  NotificationProvider,
+  SendNotificationInput,
+  SendNotificationResult,
+} from "./types.js";
 
 export type CreateResendEmailProviderOptions = {
   apiKey: string;
   /** Verified sender, e.g. `Shop Alerts <alerts@example.com>` or `alerts@example.com`. */
   from: string;
+  senders?: EmailSenderConfiguration;
   /** Optional fetch override for tests. */
   fetchImpl?: typeof fetch;
 };
@@ -25,7 +31,11 @@ export function createResendEmailNotificationProvider(
       if (!apiKey) {
         throw new Error("email_api_key_missing");
       }
-      if (!from) {
+      const selectedFrom = input.senderProfile
+        ? options.senders?.profiles[input.senderProfile]
+        : options.senders?.profiles.notifications;
+      const messageFrom = selectedFrom ?? from;
+      if (!messageFrom) {
         throw new Error("email_from_missing");
       }
 
@@ -36,28 +46,29 @@ export function createResendEmailNotificationProvider(
 
       const subject = (input.subject?.trim() || "Shop notification").slice(0, 200);
       const text = input.body.slice(0, 100_000);
-      const htmlSource = input.html?.trim();
-      // Resend HTML: keep bold tags, turn newlines into breaks.
-      const html = htmlSource
-        ? `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.5;color:#111">${htmlSource
-            .split("\n")
-            .map((line) => (line.trim() ? line : "&nbsp;"))
-            .join("<br/>")}</div>`.slice(0, 100_000)
-        : undefined;
+      // The template renderer owns presentation. A transport adapter must send
+      // the rendered document unchanged so every provider behaves identically.
+      const html = input.html?.trim().slice(0, 100_000) || undefined;
 
       const response = await fetchImpl("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           authorization: `Bearer ${apiKey}`,
           "content-type": "application/json",
+          ...(input.idempotencyKey ? { "idempotency-key": input.idempotencyKey } : {}),
         },
         body: JSON.stringify({
-          from,
+          from: messageFrom,
           to: [to],
           subject,
           text,
           ...(html ? { html } : {}),
+          ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+          ...(input.tags
+            ? { tags: Object.entries(input.tags).map(([name, value]) => ({ name, value })) }
+            : {}),
         }),
+        signal: AbortSignal.timeout(15_000),
       });
 
       const data = (await response.json().catch(() => null)) as {
@@ -81,9 +92,22 @@ export function createResendEmailNotificationProvider(
   };
 }
 
-export function isEmailDeliveryConfigured(env: {
-  RESEND_API_KEY?: string | undefined;
-  EMAIL_FROM?: string | undefined;
-} = process.env): boolean {
-  return Boolean(env.RESEND_API_KEY?.trim() && env.EMAIL_FROM?.trim());
+export function isEmailDeliveryConfigured(
+  env: {
+    RESEND_API_KEY?: string | undefined;
+    EMAIL_FROM?: string | undefined;
+    EMAIL_FROM_ACCOUNTS?: string | undefined;
+    EMAIL_FROM_BILLING?: string | undefined;
+    EMAIL_FROM_NOTIFICATIONS?: string | undefined;
+    EMAIL_FROM_ORDERS?: string | undefined;
+  } = process.env,
+): boolean {
+  return Boolean(
+    env.RESEND_API_KEY?.trim() &&
+      (env.EMAIL_FROM?.trim() ||
+        env.EMAIL_FROM_ACCOUNTS?.trim() ||
+        env.EMAIL_FROM_BILLING?.trim() ||
+        env.EMAIL_FROM_NOTIFICATIONS?.trim() ||
+        env.EMAIL_FROM_ORDERS?.trim()),
+  );
 }

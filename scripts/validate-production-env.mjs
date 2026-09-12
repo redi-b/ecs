@@ -11,6 +11,7 @@ const REQUIRED_SECRETS = [
   "MEDUSA_COOKIE_SECRET",
   "MEDIA_S3_SECRET_ACCESS_KEY",
   "UMAMI_APP_SECRET",
+  "EMAIL_DELIVERY_ENCRYPTION_KEY",
 ];
 
 const OPTIONAL_SECRETS = [
@@ -52,6 +53,11 @@ function validHostname(value) {
     value.split(".").length >= 2 &&
     value.split(".").every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))
   );
+}
+
+function validMailbox(value) {
+  const match = value.trim().match(/^(?:[^<>\r\n]+\s+<)?([^<>\s]+@[^<>\s]+)>?$/);
+  return Boolean(match?.[1] && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(match[1]));
 }
 
 function validateSecret(errors, key, value, required) {
@@ -185,7 +191,10 @@ export function validateProductionEnvironment(environment) {
   );
   if (emailProvider === "resend") {
     expect(errors, Boolean(environment.RESEND_API_KEY), "RESEND_API_KEY is required for Resend");
-    expect(errors, Boolean(environment.EMAIL_FROM), "EMAIL_FROM is required for Resend");
+    for (const profile of ["ACCOUNTS", "NOTIFICATIONS", "BILLING", "ORDERS"]) {
+      const key = `EMAIL_FROM_${profile}`;
+      expect(errors, validMailbox(environment[key] ?? ""), `${key} must be a valid sender mailbox`);
+    }
   } else if (emailProvider) {
     expect(errors, false, `EMAIL_PROVIDER=${emailProvider} has no installed adapter`);
   }

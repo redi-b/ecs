@@ -16,6 +16,7 @@ import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
+import { createEmailDeliverHandler } from "./jobs/handlers/email-deliver.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import {
   createProductImportApplyHandler,
@@ -131,6 +132,17 @@ const telegramCallbackSecret = resolveTelegramCallbackSecret();
 const emailFrom = process.env.EMAIL_FROM?.trim() || "";
 const emailProviderResolution = createEmailNotificationProviderFromEnv(process.env);
 const emailProvider = emailProviderResolution.provider ?? logProvider("email");
+const accountEmailProvider = emailProviderResolution.provider ?? {
+  channel: "email" as const,
+  async send() {
+    throw new Error("email_provider_unavailable");
+  },
+};
+const emailEncryptionKey =
+  process.env.EMAIL_DELIVERY_ENCRYPTION_KEY?.trim() ||
+  process.env.PLATFORM_SECRETS_ENCRYPTION_KEY?.trim() ||
+  process.env.BETTER_AUTH_SECRET?.trim() ||
+  "development-ecs-auth-secret-change-before-production";
 
 if (emailProviderResolution.configured) {
   logger.info(
@@ -180,6 +192,11 @@ const worker = startPlatformWorkers({
   registry: platformJobRegistry,
   handlers: {
     "system.ping": systemPingHandler as JobHandler,
+    "email.deliver": createEmailDeliverHandler({
+      db: platformDb.db,
+      encryptionKey: emailEncryptionKey,
+      provider: accountEmailProvider,
+    }) as JobHandler,
     "notifications.deliver": createNotificationsDeliverHandler({
       db: platformDb.db,
       renderer: notificationRenderer,
