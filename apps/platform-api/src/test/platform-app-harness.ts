@@ -119,6 +119,9 @@ export function appWithResolution(
     getSuperadminCommerceReview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminCommerceReview"];
     listPlatformOperators?: import("../types/platform-app.js").PlatformAppOptions["listPlatformOperators"];
     getPlatformHealth?: import("../types/platform-app.js").PlatformAppOptions["getPlatformHealth"];
+    getJobOperations?: import("../types/platform-app.js").PlatformAppOptions["getJobOperations"];
+    retryFailedJob?: import("../types/platform-app.js").PlatformAppOptions["retryFailedJob"];
+    cancelQueuedJob?: import("../types/platform-app.js").PlatformAppOptions["cancelQueuedJob"];
     recoverSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["recoverSuperadminWork"];
     listSuperadminTenants?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminTenants"];
     getSuperadminTenant?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminTenant"];
@@ -571,6 +574,9 @@ export function appWithResolution(
       getSuperadminCommerceReview: options?.getSuperadminCommerceReview,
       listPlatformOperators: options?.listPlatformOperators,
       getPlatformHealth: options?.getPlatformHealth,
+      getJobOperations: options?.getJobOperations,
+      retryFailedJob: options?.retryFailedJob,
+      cancelQueuedJob: options?.cancelQueuedJob,
       recoverSuperadminWork: options?.recoverSuperadminWork,
       getSuperadminTenant: options?.getSuperadminTenant,
       getPlanAdministrationCatalog: options?.getPlanAdministrationCatalog,

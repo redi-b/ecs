@@ -1112,6 +1112,53 @@ export const operatorHealthSchema = z.object({
 });
 export type OperatorHealth = z.infer<typeof operatorHealthSchema>;
 
+export const operatorJobOperationsSchema = z.object({
+  scheduler: z
+    .object({ buildVersion: z.string().min(1), lastSeenAt: z.string().min(1) })
+    .nullable(),
+  queues: z.array(
+    z.object({
+      queue: z.enum(["critical", "default", "bulk"]),
+      counts: z.object({
+        active: z.number().int().nonnegative(),
+        delayed: z.number().int().nonnegative(),
+        failed: z.number().int().nonnegative(),
+        paused: z.number().int().nonnegative(),
+        prioritized: z.number().int().nonnegative(),
+        waiting: z.number().int().nonnegative(),
+      }),
+      oldestWaitingAt: z.string().min(1).nullable(),
+      workers: z.array(
+        z.object({
+          buildVersion: z.string().min(1),
+          lastSeenAt: z.string().min(1),
+          workerId: z.string().min(1),
+        }),
+      ),
+    }),
+  ),
+  runs: z.array(
+    z.object({
+      id: z.string().uuid(),
+      tenantId: z.string().uuid().nullable(),
+      name: z.string().min(1),
+      status: z.enum(["queued", "active", "completed", "failed", "cancelled"]),
+      errorCode: z.string().min(1).nullable(),
+      attempts: z.number().int().nonnegative(),
+      maxAttempts: z.number().int().positive(),
+      bullmqJobId: z.string().nullable(),
+      queuedAt: z.string().min(1),
+      startedAt: z.string().min(1).nullable(),
+      finishedAt: z.string().min(1).nullable(),
+      createdAt: z.string().min(1),
+      updatedAt: z.string().min(1),
+      canCancel: z.boolean(),
+      canRetry: z.boolean(),
+    }),
+  ),
+});
+export type OperatorJobOperations = z.infer<typeof operatorJobOperationsSchema>;
+
 const safeFailureCategorySchema = z.enum([
   "authentication",
   "configuration",

@@ -255,6 +255,15 @@ export type PlatformAppOptions = {
   getPlatformHealth?: ReturnType<
     typeof import("../modules/superadmin/console-read-service.js").createSuperadminConsoleReadService
   >["getHealth"];
+  getJobOperations?:
+    | (() => Promise<{
+        runs: import("@ecs/jobs").JobRunSummary[];
+        queues: import("@ecs/jobs").JobQueueHealth[];
+        scheduler: import("@ecs/jobs").JobSchedulerHealth;
+      }>)
+    | undefined;
+  retryFailedJob?: ((id: string) => Promise<import("@ecs/jobs").JobControlResult>) | undefined;
+  cancelQueuedJob?: ((id: string) => Promise<import("@ecs/jobs").JobControlResult>) | undefined;
   recoverSuperadminWork?: ReturnType<
     typeof import("../modules/superadmin/work-recovery-service.js").createSuperadminWorkRecoveryService
   >;

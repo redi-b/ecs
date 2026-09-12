@@ -31,6 +31,7 @@ import {
   createPlatformPrincipalAccessLookup,
 } from "./context/platform-authorization.js";
 import { resolveTenantFromHost } from "./context/tenant-resolver.js";
+import { platformJobRegistry } from "./jobs/registry.js";
 import {
   createAnalyticsInsightsService,
   createAnalyticsService,
@@ -182,6 +183,7 @@ const jobsClient = redisUrl
       redisUrl,
       db: platformDb.db,
       logger,
+      registry: platformJobRegistry,
     })
   : null;
 if (!jobsClient) {
@@ -765,6 +767,17 @@ const app = createPlatformApp({
   listSuperadminAudit: superadminConsoleReadService.listAudit,
   listPlatformOperators: superadminConsoleReadService.listOperators,
   getPlatformHealth: superadminConsoleReadService.getHealth,
+  ...(jobsClient
+    ? {
+        getJobOperations: async () => ({
+          runs: await jobsClient.listOperationalJobs({ limit: 30 }),
+          queues: await jobsClient.getQueueHealth(),
+          scheduler: await jobsClient.getSchedulerHealth(),
+        }),
+        retryFailedJob: (id: string) => jobsClient.retryFailedJob(id),
+        cancelQueuedJob: (id: string) => jobsClient.cancelQueuedJob(id),
+      }
+    : {}),
   recoverSuperadminWork,
   getSuperadminTenant: superadminTenantProjectionService.get,
   getSuperadminOperationalSummary,

@@ -3,11 +3,14 @@ import { after, describe, it } from "node:test";
 
 import { createPlatformDb, jobRuns } from "@ecs/db";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { createJobsClient, enqueueWithQueue, type JobsQueueLike } from "./client.js";
 import { DEFAULT_BACKOFF_MS, DEFAULT_MAX_ATTEMPTS } from "./defaults.js";
+import { createJobRegistry, defineJob } from "./registry.js";
 import { findJobRunById, insertJobRun } from "./runs.js";
 import type { PlatformDb } from "./types.js";
+import { startPlatformWorker } from "./worker.js";
 
 const databaseUrl =
   process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5432/platform_db";
@@ -162,7 +165,7 @@ describe("enqueueWithQueue", () => {
     assert.equal(queue.calls.length, 0);
   });
 
-  it("marks the run failed (terminal) and rethrows when queue.add fails", async () => {
+  it("keeps durable queued intent and rethrows when queue.add fails", async () => {
     const boom = new Error("redis unavailable");
     const queue = createRecordingQueue({ throwOnAdd: boom });
 
@@ -179,15 +182,15 @@ describe("enqueueWithQueue", () => {
       },
     );
 
-    // The insert happened before add; find the newest failed run for this name.
+    // PostgreSQL intent survives Redis failure so reconciliation can recover it.
     const rows = await db.select().from(jobRuns).where(eq(jobRuns.name, "test.client.queue-fail"));
 
     assert.ok(rows.length >= 1);
-    const failed = rows[rows.length - 1]!;
-    trackId(failed.id);
-    assert.equal(failed.status, "failed");
-    assert.equal(failed.error, "redis unavailable");
-    assert.ok(failed.finishedAt);
+    const pending = rows[rows.length - 1]!;
+    trackId(pending.id);
+    assert.equal(pending.status, "queued");
+    assert.equal(pending.error, "enqueue_failed:redis unavailable");
+    assert.equal(pending.finishedAt, null);
   });
 });
 
@@ -237,4 +240,225 @@ describe("createJobsClient", () => {
       await client.close();
     }
   });
+
+  it("exposes sanitized operational summaries and preserves failed history on retry", async () => {
+    const registry = createJobRegistry([
+      defineJob({
+        attempts: 2,
+        backoff: { delayMs: 10, jitter: 0, type: "fixed" },
+        idempotency: "required",
+        manualRetry: "safe",
+        name: "test.client.control",
+        payloadSchema: z.object({ secret: z.string() }),
+        queue: "default",
+        retention: { completedSeconds: 60, failedSeconds: 60 },
+        retry: "classified",
+        timeoutMs: 1_000,
+        version: 1,
+      }),
+    ]);
+    const client = createJobsClient({
+      redisUrl,
+      db,
+      queueName: `platform-jobs-control-${crypto.randomUUID()}`,
+      prefix: "ecs-test",
+      registry,
+    });
+
+    try {
+      assert.equal(await client.getSchedulerHealth(), null);
+      await client.recordSchedulerHeartbeat({ buildVersion: "test-build", ttlMs: 5_000 });
+      const scheduler = await client.getSchedulerHealth();
+      assert.equal(scheduler?.buildVersion, "test-build");
+      assert.ok(scheduler?.lastSeenAt instanceof Date);
+
+      const failed = await insertJobRun(db, {
+        idempotencyKey: `failed-${crypto.randomUUID()}`,
+        name: "test.client.control",
+        payload: { secret: "must-not-leak" },
+      });
+      trackId(failed.id);
+      await db
+        .update(jobRuns)
+        .set({ error: "provider_error:customer@example.com", status: "failed" })
+        .where(eq(jobRuns.id, failed.id));
+
+      const summaries = await client.listOperationalJobs();
+      const summary = summaries.find((item) => item.id === failed.id);
+      assert.ok(summary);
+      assert.equal(summary.canRetry, true);
+      assert.equal(summary.errorCode, "provider_error");
+      assert.equal("payload" in summary, false);
+      assert.equal("result" in summary, false);
+      assert.equal("idempotencyKey" in summary, false);
+
+      const retried = await client.retryFailedJob(failed.id);
+      assert.equal(retried.ok, true);
+      if (!retried.ok) return;
+      trackId(retried.run.id);
+      assert.notEqual(retried.run.id, failed.id);
+      assert.equal(retried.run.status, "queued");
+      assert.equal((await client.getJobRun(failed.id))?.status, "failed");
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("cancels a waiting run but refuses a run whose durable state changed", async () => {
+    const registry = createJobRegistry([
+      defineJob({
+        attempts: 1,
+        backoff: { delayMs: 0, jitter: 0, type: "fixed" },
+        idempotency: "optional",
+        manualRetry: "never",
+        name: "test.client.cancel",
+        payloadSchema: z.object({}),
+        queue: "bulk",
+        retention: { completedSeconds: 60, failedSeconds: 60 },
+        retry: "never",
+        timeoutMs: 1_000,
+        version: 1,
+      }),
+    ]);
+    const client = createJobsClient({
+      redisUrl,
+      db,
+      queueName: `platform-jobs-cancel-${crypto.randomUUID()}`,
+      prefix: "ecs-test",
+      registry,
+    });
+
+    try {
+      const queued = await client.enqueueJob({ name: "test.client.cancel", payload: {} });
+      trackId(queued.jobRunId);
+      const cancelled = await client.cancelQueuedJob(queued.jobRunId);
+      assert.equal(cancelled.ok, true);
+      assert.equal((await client.getJobRun(queued.jobRunId))?.status, "cancelled");
+      const refused = await client.cancelQueuedJob(queued.jobRunId);
+      assert.deepEqual(refused, { error: "job_not_cancellable", ok: false });
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("keeps critical work responsive while bulk capacity is occupied", async () => {
+    const registry = createJobRegistry([
+      defineJob({
+        attempts: 1,
+        backoff: { delayMs: 0, jitter: 0, type: "fixed" },
+        idempotency: "required",
+        manualRetry: "never",
+        name: "test.acceptance.critical",
+        payloadSchema: z.object({ key: z.string() }),
+        queue: "critical",
+        retention: { completedSeconds: 60, failedSeconds: 60 },
+        retry: "never",
+        timeoutMs: 5_000,
+        version: 1,
+      }),
+      defineJob({
+        attempts: 1,
+        backoff: { delayMs: 0, jitter: 0, type: "fixed" },
+        idempotency: "required",
+        manualRetry: "never",
+        name: "test.acceptance.bulk",
+        payloadSchema: z.object({ key: z.string() }),
+        queue: "bulk",
+        retention: { completedSeconds: 60, failedSeconds: 60 },
+        retry: "never",
+        timeoutMs: 5_000,
+        version: 1,
+      }),
+    ]);
+    const queueName = `platform-jobs-isolation-${crypto.randomUUID()}`;
+    let releaseBulk = () => {};
+    const bulkGate = new Promise<void>((resolve) => { releaseBulk = resolve; });
+    let bulkStarted = false;
+    const shared = { db, heartbeatMs: 1_000, prefix: "ecs-test", redisUrl, registry };
+    const bulkWorker = startPlatformWorker({
+      ...shared,
+      concurrency: 1,
+      handlers: { "test.acceptance.bulk": async () => { bulkStarted = true; await bulkGate; } },
+      queueName: `${queueName}-bulk`,
+    });
+    const criticalWorker = startPlatformWorker({
+      ...shared,
+      concurrency: 1,
+      handlers: { "test.acceptance.critical": async () => ({ done: true }) },
+      queueName: `${queueName}-critical`,
+    });
+    const client = createJobsClient({ ...shared, queueName });
+
+    try {
+      const bulk = await client.enqueueJob({
+        idempotencyKey: `bulk-${crypto.randomUUID()}`,
+        name: "test.acceptance.bulk",
+        payload: { key: "bulk" },
+      });
+      trackId(bulk.jobRunId);
+      await waitUntil(() => bulkStarted);
+      const critical = await client.enqueueJob({
+        idempotencyKey: `critical-${crypto.randomUUID()}`,
+        name: "test.acceptance.critical",
+        payload: { key: "critical" },
+      });
+      trackId(critical.jobRunId);
+      await waitUntil(async () => (await client.getJobRun(critical.jobRunId))?.status === "completed");
+      assert.equal((await client.getJobRun(bulk.jobRunId))?.status, "active");
+    } finally {
+      releaseBulk();
+      await Promise.all([bulkWorker.close(), criticalWorker.close(), client.close()]);
+    }
+  });
+
+  it("converges concurrent producers on one idempotent run", async () => {
+    const registry = createJobRegistry([
+      defineJob({
+        attempts: 1,
+        backoff: { delayMs: 0, jitter: 0, type: "fixed" },
+        idempotency: "required",
+        manualRetry: "never",
+        name: "test.acceptance.idempotent",
+        payloadSchema: z.object({ key: z.string() }),
+        queue: "critical",
+        retention: { completedSeconds: 60, failedSeconds: 60 },
+        retry: "never",
+        timeoutMs: 1_000,
+        version: 1,
+      }),
+    ]);
+    const client = createJobsClient({
+      db,
+      prefix: "ecs-test",
+      queueName: `platform-jobs-idempotency-${crypto.randomUUID()}`,
+      redisUrl,
+      registry,
+    });
+    const idempotencyKey = `shared-${crypto.randomUUID()}`;
+    try {
+      const runs = await Promise.all(
+        Array.from({ length: 8 }, () =>
+          client.enqueueJob({
+            idempotencyKey,
+            name: "test.acceptance.idempotent",
+            payload: { key: "same-work" },
+          }),
+        ),
+      );
+      const ids = new Set(runs.map((run) => run.jobRunId));
+      assert.equal(ids.size, 1);
+      trackId(runs[0]!.jobRunId);
+    } finally {
+      await client.close();
+    }
+  });
 });
+
+async function waitUntil(check: () => boolean | Promise<boolean>, timeoutMs = 2_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await check()) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("Timed out waiting for acceptance condition");
+}

@@ -20,16 +20,32 @@ import { OperatorReadError } from "@/components/operator-read-error";
 import { RefreshPageButton } from "@/components/refresh-page-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPlatformHealth } from "@/lib/platform-api/superadmin/console";
+import { JobControlAction } from "@/features/superadmin/job-control-action";
+import { getOpsAccess } from "@/lib/ops-access";
+import { getJobOperations, getPlatformHealth } from "@/lib/platform-api/superadmin/console";
 
 export default async function HealthPage() {
   const requestHeaders = await headers();
-  const result = await getPlatformHealth({
+  const requestOptions = {
     cookieHeader: requestHeaders.get("cookie"),
     ...(process.env.PLATFORM_API_BASE_URL
       ? { platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL }
       : {}),
-  }).catch(() => ({ ok: false as const, message: "operator_health_unavailable", status: 503 }));
+  };
+  const [result, jobResult, access] = await Promise.all([
+    getPlatformHealth(requestOptions).catch(() => ({
+      ok: false as const,
+      message: "operator_health_unavailable",
+      status: 503,
+    })),
+    getJobOperations(requestOptions).catch(() => ({
+      ok: false as const,
+      message: "job_operations_unavailable",
+      status: 503,
+    })),
+    getOpsAccess(),
+  ]);
+  const canControlJobs = access.ok && access.permissions.includes("platform.work.retry");
 
   return (
     <div className="flex flex-col gap-6">
@@ -136,6 +152,88 @@ export default async function HealthPage() {
               <Metric label="Cancelled" value={result.data.merchants.cancelled} />
             </HealthCard>
           </div>
+          {jobResult.ok ? (
+            <>
+              <OperationsListShell
+                status={`${jobResult.data.queues.reduce((total, queue) => total + queue.workers.length, 0)} workers online · Scheduler ${jobResult.data.scheduler ? "online" : "unavailable"}`}
+                toolbar={
+                  <div>
+                    <h2 className="font-semibold">Job queues</h2>
+                    <p className="text-sm text-muted-foreground">Live queue and worker state</p>
+                  </div>
+                }
+              >
+                <div className="grid divide-y md:grid-cols-3 md:divide-x md:divide-y-0">
+                  {jobResult.data.queues.map((queue) => (
+                    <div className="p-5" key={queue.queue}>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium capitalize">{queue.queue}</p>
+                        <Badge variant={queue.workers.length ? "success" : "warning"}>
+                          {queue.workers.length ? `${queue.workers.length} online` : "No worker"}
+                        </Badge>
+                      </div>
+                      <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                        <Metric
+                          label="Waiting"
+                          value={
+                            queue.counts.waiting + queue.counts.prioritized + queue.counts.delayed
+                          }
+                        />
+                        <Metric label="Running" value={queue.counts.active} />
+                        <Metric
+                          label="Failed"
+                          value={queue.counts.failed}
+                          warn={queue.counts.failed > 0}
+                        />
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              </OperationsListShell>
+              <OperationsListShell
+                status={`${jobResult.data.runs.length} recent`}
+                toolbar={
+                  <div>
+                    <h2 className="font-semibold">Jobs needing attention</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Queued, running, and failed work
+                    </p>
+                  </div>
+                }
+              >
+                <div className="divide-y">
+                  {jobResult.data.runs.map((run) => (
+                    <div className="flex flex-wrap items-center gap-3 px-5 py-4" key={run.id}>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{formatJobName(run.name)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Attempt {run.attempts} of {run.maxAttempts} · Updated{" "}
+                          {formatRelative(run.updatedAt)}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          run.status === "failed"
+                            ? "destructive"
+                            : run.status === "active"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {run.status}
+                      </Badge>
+                      {canControlJobs && run.canRetry ? (
+                        <JobControlAction action="retry" jobName={run.name} jobRunId={run.id} />
+                      ) : null}
+                      {canControlJobs && run.canCancel ? (
+                        <JobControlAction action="cancel" jobName={run.name} jobRunId={run.id} />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </OperationsListShell>
+            </>
+          ) : null}
           <OperationsListShell
             status="Checked on refresh"
             toolbar={

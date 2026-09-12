@@ -1919,6 +1919,44 @@ describe("platform app storefront, delivery, billing, and operator", () => {
     });
   });
 
+  it("keeps job diagnostics read-only and job controls behind recent retry authority", async () => {
+    const permissions: string[] = [];
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        authorizePlatformPermission: async ({ permission, userId }) => {
+          permissions.push(permission);
+          return { ok: true, permission, principal: { id: "principal_1", userId } };
+        },
+        getSession: async () => ({
+          session: { createdAt: new Date() },
+          user: { id: "operator_1", email: "operator@ecs.local", name: "Operator" },
+        }),
+        getJobOperations: async () => ({ queues: [], runs: [], scheduler: null }),
+        retryFailedJob: async (id) => ({
+          ok: false,
+          error: id === "missing" ? "job_not_found" : "job_not_retryable",
+        }),
+        cancelQueuedJob: async () => ({ ok: false, error: "job_state_changed" }),
+      },
+    );
+
+    assert.equal((await app.request("/platform/operator/jobs")).status, 200);
+    assert.equal(
+      (await app.request("/platform/operator/jobs/missing/retry", { method: "POST" })).status,
+      404,
+    );
+    assert.equal(
+      (await app.request("/platform/operator/jobs/run_1/cancel", { method: "POST" })).status,
+      409,
+    );
+    assert.deepEqual(permissions, [
+      "platform.health.read",
+      "platform.work.retry",
+      "platform.work.retry",
+    ]);
+  });
+
   it("returns entitlement diagnostics through read-only platform authority", async () => {
     let tenantId: string | undefined;
     let permissionSeen: string | undefined;

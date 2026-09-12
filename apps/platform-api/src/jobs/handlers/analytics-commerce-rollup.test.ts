@@ -33,6 +33,7 @@ describe("analytics commerce rollup handler", () => {
 
     const result = await handler({
       attempt: 1,
+      signal: AbortSignal.abort(),
       jobRunId: "job_1",
       name: "analytics.commerce-rollup",
       payload: {},
@@ -78,6 +79,7 @@ describe("analytics commerce rollup handler", () => {
 
     const result = await handler({
       attempt: 1,
+      signal: AbortSignal.abort(),
       jobRunId: "job_2",
       name: "analytics.commerce-rollup",
       payload: { source: "merchant" },

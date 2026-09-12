@@ -18,6 +18,7 @@ describe("systemPingHandler", () => {
       tenantId: null,
       payload: {},
       attempt: 1,
+      signal: AbortSignal.abort(),
     })) as SystemPingResult;
     const after = Date.now();
 
@@ -37,6 +38,7 @@ describe("systemPingHandler", () => {
       tenantId: "tenant_1",
       payload: { message: "hello" },
       attempt: 1,
+      signal: AbortSignal.abort(),
     })) as SystemPingResult;
 
     assert.equal(result.pong, true);
@@ -50,6 +52,7 @@ describe("systemPingHandler", () => {
       tenantId: null,
       payload: { message: "" },
       attempt: 1,
+      signal: AbortSignal.abort(),
     })) as SystemPingResult;
 
     assert.equal(result.pong, true);

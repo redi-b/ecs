@@ -17,7 +17,11 @@ export function registerPlatformOperatorRoutes(
     if (!options.listPlatformStorefrontTemplates) {
       return context.json({ error: "storefront_templates_unavailable" }, 503);
     }
-    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.read");
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "storefront.templates.read",
+    );
     if (!access.ok) return context.json({ error: access.error }, access.status);
     return context.json(await options.listPlatformStorefrontTemplates());
   });
@@ -26,10 +30,14 @@ export function registerPlatformOperatorRoutes(
     if (!options.createPlatformTemplatePreviewUpload) {
       return context.json({ error: "storefront_template_uploads_unavailable" }, 503);
     }
-    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "storefront.templates.update",
+    );
     if (!access.ok) return context.json({ error: access.error }, access.status);
     const body = await getJsonBody(context.req.raw);
-    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
     const result = await options.createPlatformTemplatePreviewUpload({
       byteSize: typeof record.byteSize === "number" ? record.byteSize : 0,
       filename: getRequiredBodyString(body, "filename") ?? "",
@@ -43,10 +51,14 @@ export function registerPlatformOperatorRoutes(
     if (!options.completePlatformTemplatePreviewUpload) {
       return context.json({ error: "storefront_template_uploads_unavailable" }, 503);
     }
-    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "storefront.templates.update",
+    );
     if (!access.ok) return context.json({ error: access.error }, access.status);
     const body = await getJsonBody(context.req.raw);
-    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
     const result = await options.completePlatformTemplatePreviewUpload({
       assetId: context.req.param("assetId"),
       ...(typeof record.height === "number" ? { height: record.height } : {}),
@@ -59,16 +71,26 @@ export function registerPlatformOperatorRoutes(
     if (!options.updatePlatformStorefrontTemplate) {
       return context.json({ error: "storefront_templates_unavailable" }, 503);
     }
-    const access = await getPlatformAccess(options, context.req.raw.headers, "storefront.templates.update");
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "storefront.templates.update",
+    );
     if (!access.ok) return context.json({ error: access.error }, access.status);
     const body = await getJsonBody(context.req.raw);
-    const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
     const result = await options.updatePlatformStorefrontTemplate({
-      ...(typeof record.demoUrl === "string" || record.demoUrl === null ? { demoUrl: record.demoUrl } : {}),
+      ...(typeof record.demoUrl === "string" || record.demoUrl === null
+        ? { demoUrl: record.demoUrl }
+        : {}),
       operatorUserId: access.session.user.id,
       platformPrincipalId: access.authorization.principal.id,
-      ...(typeof record.previewAltText === "string" || record.previewAltText === null ? { previewAltText: record.previewAltText } : {}),
-      ...(typeof record.previewAssetId === "string" || record.previewAssetId === null ? { previewAssetId: record.previewAssetId } : {}),
+      ...(typeof record.previewAltText === "string" || record.previewAltText === null
+        ? { previewAltText: record.previewAltText }
+        : {}),
+      ...(typeof record.previewAssetId === "string" || record.previewAssetId === null
+        ? { previewAssetId: record.previewAssetId }
+        : {}),
       templateVersionId: context.req.param("versionId"),
     });
     return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
@@ -182,6 +204,49 @@ export function registerPlatformOperatorRoutes(
     );
     if (!access.ok) return context.json({ error: access.error }, access.status);
     return context.json(await options.getPlatformHealth());
+  });
+
+  app.get("/platform/operator/jobs", async (context) => {
+    if (!options.getJobOperations) {
+      return context.json({ error: "job_operations_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "platform.health.read",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    return context.json(await options.getJobOperations());
+  });
+
+  app.post("/platform/operator/jobs/:jobRunId/retry", async (context) => {
+    if (!options.retryFailedJob) {
+      return context.json({ error: "job_operations_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "platform.work.retry");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const result = await options.retryFailedJob(context.req.param("jobRunId"));
+    return result.ok
+      ? context.json(result)
+      : context.json(
+          { error: result.error },
+          result.error === "job_not_found" ? 404 : result.error === "job_state_changed" ? 409 : 422,
+        );
+  });
+
+  app.post("/platform/operator/jobs/:jobRunId/cancel", async (context) => {
+    if (!options.cancelQueuedJob) {
+      return context.json({ error: "job_operations_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(options, context.req.raw.headers, "platform.work.retry");
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const result = await options.cancelQueuedJob(context.req.param("jobRunId"));
+    return result.ok
+      ? context.json(result)
+      : context.json(
+          { error: result.error },
+          result.error === "job_not_found" ? 404 : result.error === "job_state_changed" ? 409 : 422,
+        );
   });
 
   app.get("/platform/operator/tenants/:tenantId/entitlements", async (context) => {
