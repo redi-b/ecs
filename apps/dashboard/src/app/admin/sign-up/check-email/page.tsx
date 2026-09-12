@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-
+import { VerificationEmailForm } from "@/components/app/account-recovery-forms";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { AuthShell } from "@/components/onboarding/auth-shell";
@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/button";
 import { getTranslations } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 
-export default async function CheckEmailPage() {
+export default async function CheckEmailPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ email?: string }>;
+}) {
   const t = await getTranslations();
+  const params = await searchParams;
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
 
@@ -32,7 +37,8 @@ export default async function CheckEmailPage() {
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {t("signup.verification.help")}
         </p>
-        <Button asChild className="mt-6 w-full" variant="outline">
+        <VerificationEmailForm initialEmail={params?.email ?? ""} />
+        <Button asChild className="mt-3 w-full" variant="outline">
           <Link href="/admin/sign-in">{t("signup.verification.backToSignIn")}</Link>
         </Button>
       </section>

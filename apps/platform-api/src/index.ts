@@ -62,6 +62,7 @@ import { createEmailDeliveryService } from "./modules/email/delivery-service.js"
 import { createEmailTemplateService } from "./modules/email/template-service.js";
 import { createEntitlementService } from "./modules/entitlements/service.js";
 import { createMediaService } from "./modules/media/index.js";
+import { withPaymentNotificationProjection } from "./modules/notifications/payment-aware-order-management.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createNotificationService } from "./modules/notifications/service.js";
 import { createTenantOnboardingService } from "./modules/onboarding/service.js";
@@ -540,9 +541,16 @@ const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServ
   db: platformDb.db,
 });
 const listTenantProvisioningAttempts = createTenantProvisioningAttemptListService(platformDb.db);
-const orderService = createMedusaOrderService({
+const resolveTenantIdByMedusaSalesChannelId = createResolveTenantIdByMedusaSalesChannel(
+  platformDb.db,
+);
+const baseOrderService = createMedusaOrderService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
+});
+const orderService = withPaymentNotificationProjection(baseOrderService, {
+  recordNotificationEvent: notificationService.recordNotificationEvent,
+  resolveTenantIdBySalesChannelId: resolveTenantIdByMedusaSalesChannelId,
 });
 telegramOrderBridge.mutateMerchantOrder = (input) =>
   orderService.mutateMerchantOrder({
@@ -561,9 +569,6 @@ const manualOrderService = createMedusaManualOrderService({
   adminApiToken: medusaAdminApiToken,
   medusaInternalUrl,
 });
-const resolveTenantIdByMedusaSalesChannelId = createResolveTenantIdByMedusaSalesChannel(
-  platformDb.db,
-);
 const productService = wrapProductServiceWithStorefrontPurge(
   createMedusaProductService({
     adminApiToken: medusaAdminApiToken,

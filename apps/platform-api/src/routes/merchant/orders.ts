@@ -2,16 +2,12 @@ import type { Context, Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import type { OrderSettlementInput } from "../../lib/settlement.js";
 import { parseOrderSettlementInput } from "../../lib/order-settlement-input.js";
+import type { OrderSettlementInput } from "../../lib/settlement.js";
 import {
   exportOrdersToCsv,
   orderExportFilename,
 } from "../../modules/data-transfer/order-export.js";
-import {
-  buildOrderCancelledPayload,
-  buildPaymentPaidPayload,
-} from "../../modules/notifications/order-payload.js";
 import { getPaginationValue, getRequestHost, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
@@ -271,30 +267,6 @@ export function registerMerchantOrderRoutes(
 
     if (!order.ok) {
       return context.json({ error: order.error }, order.status);
-    }
-
-    // Dashboard mark-paid often does not fire Medusa payment.captured (metadata / mark-as-paid
-    // paths). Emit payment.paid from platform so Telegram + in-app stay in sync with Chapa webhooks.
-    if (action === "mark-paid" && options.recordNotificationEvent) {
-      void options
-        .recordNotificationEvent({
-          tenantId: merchant.result.context.tenantId,
-          eventType: "payment.paid",
-          payload: buildPaymentPaidPayload(order.order, "dashboard_mark_paid"),
-        })
-        .catch(() => undefined);
-    }
-
-    // Cancel also emits via Medusa order.canceled subscriber; platform emit is a backup.
-    // recordNotificationEvent dedupes per order so merchants get one alert.
-    if (action === "cancel" && options.recordNotificationEvent) {
-      void options
-        .recordNotificationEvent({
-          tenantId: merchant.result.context.tenantId,
-          eventType: "order.cancelled",
-          payload: buildOrderCancelledPayload(order.order, "dashboard_cancel"),
-        })
-        .catch(() => undefined);
     }
 
     return context.json({

@@ -34,6 +34,8 @@ import {
   registerBillingRepeatableJobs,
 } from "./jobs/schedule-billing-jobs.js";
 import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
+import { createCustomerOrderEmailDispatcher } from "./modules/email/customer-order-dispatcher.js";
+import { createEmailDeliveryService } from "./modules/email/delivery-service.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
@@ -163,6 +165,19 @@ const jobsClient = createJobsClient({
   logger,
   registry: platformJobRegistry,
 });
+const emailDeliveryService = emailProviderResolution.configured
+  ? createEmailDeliveryService({
+      db: platformDb.db,
+      encryptionKey: emailEncryptionKey,
+      enqueueJob: (input) => jobsClient.enqueueJob(input),
+    })
+  : null;
+const dispatchCustomerOrderEmail = emailDeliveryService
+  ? createCustomerOrderEmailDispatcher({
+      db: platformDb.db,
+      enqueueEmail: emailDeliveryService.enqueue,
+    })
+  : null;
 
 const notificationService = createNotificationService(platformDb.db, {
   enqueueJob: (input) => jobsClient.enqueueJob(input),
@@ -199,6 +214,7 @@ const worker = startPlatformWorkers({
       provider: accountEmailProvider,
     }) as JobHandler,
     "notifications.in-app.materialize": createInAppNotificationMaterializeHandler({
+      ...(dispatchCustomerOrderEmail ? { dispatchCustomerEmail: dispatchCustomerOrderEmail } : {}),
       inbox: notificationService.inbox,
     }) as JobHandler,
     "notifications.deliver": createNotificationsDeliverHandler({

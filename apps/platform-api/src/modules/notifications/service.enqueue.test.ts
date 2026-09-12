@@ -93,14 +93,13 @@ describe("createNotificationService enqueue", () => {
     const db = {
       select: () => ({
         from: () => ({
-          where: async () => {
+          where: () => {
             selectCall += 1;
-            // 1: notification_preferences, 2: notification_destinations
+            // 1: entity dedupe, 2: preferences, 3: destinations.
             if (selectCall === 1) {
-              return preferences;
+              return { limit: async () => [] };
             }
-            // Telegram multi-connect destinations empty in this unit test.
-            return [];
+            return Promise.resolve(selectCall === 2 ? preferences : []);
           },
         }),
       }),
@@ -148,7 +147,7 @@ describe("createNotificationService enqueue", () => {
     const result = await service.recordNotificationEvent({
       tenantId: "tenant-1",
       eventType: "order.created",
-      payload: { orderDisplayId: "#9" },
+      payload: { orderDisplayId: "#9", orderId: "order-9" },
     });
 
     // Email preference matches; telegram channel on preferences is ignored (destinations table).

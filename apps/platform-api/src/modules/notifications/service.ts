@@ -17,6 +17,12 @@ import type {
   NotificationPreferenceListResult,
   NotificationPreferenceUpsertResult,
 } from "../../types/index.js";
+import {
+  canonicalizeRegisteredNotificationEvent,
+  getNotificationEventDefinition,
+  NOTIFICATION_EVENT_REGISTRY,
+  validateNotificationEventPayload,
+} from "./event-registry.js";
 import { createInAppNotificationService, type InAppNotificationService } from "./inbox.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -32,48 +38,17 @@ export type CreateNotificationServiceOptions = {
 };
 
 const allowedChannels = new Set<NotificationChannel>(["email", "telegram"]);
-const allowedEvents = new Set<NotificationEventType>([
-  // Legacy alias still accepted on record, then canonicalized to order.created.
-  "cod_order.created",
-  "billing.invoice_ready",
-  "billing.past_due",
-  "chapa.onboarding_needs_review",
-  "domain.misconfigured",
-  "inventory.low",
-  "notification.test",
-  "order.created",
-  "order.cancelled",
-  "order.confirmed",
-  "order.delivered",
-  "order.out_for_delivery",
-  "order.ready",
-  "payment.paid",
-  "payment.failed",
-  "payment.webhook_failed",
-  "shop.provisioning_failed",
-  "shop.published",
-  "shop.suspended",
-  "storefront.inquiry_created",
-]);
-
 /** Map deprecated event ids to the canonical type used for delivery + prefs. */
 export function canonicalizeNotificationEventType(
   eventType: string,
 ): NotificationEventType | string {
-  if (eventType === "cod_order.created") {
-    return "order.created";
-  }
-  return eventType;
+  return canonicalizeRegisteredNotificationEvent(eventType);
 }
 
 export function isAllowedNotificationEventType(
   eventType: string,
 ): eventType is NotificationEventType {
-  const canonical = canonicalizeNotificationEventType(eventType);
-  return (
-    allowedEvents.has(canonical as NotificationEventType) ||
-    allowedEvents.has(eventType as NotificationEventType)
-  );
+  return getNotificationEventDefinition(eventType) !== null;
 }
 
 function eventMatchesPreference(events: unknown, eventType: NotificationEventType) {
@@ -91,16 +66,11 @@ function eventMatchesPreference(events: unknown, eventType: NotificationEventTyp
 }
 
 /** Events that should fire at most once per entity key (24h window). */
-const DEDUPE_EVENTS = new Set<string>([
-  "order.created",
-  "order.cancelled",
-  "payment.paid",
-  "payment.failed",
-  "inventory.low",
-  "billing.past_due",
-  "billing.invoice_ready",
-  "storefront.inquiry_created",
-]);
+const DEDUPE_EVENTS = new Set<string>(
+  [...NOTIFICATION_EVENT_REGISTRY.values()]
+    .filter((definition) => definition.dedupe !== "source_event")
+    .map((definition) => definition.eventType),
+);
 
 function extractDedupeEntityId(eventType: string, payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null) {
@@ -129,7 +99,10 @@ function extractDedupeEntityId(eventType: string, payload: unknown): string | nu
   if (eventType === "storefront.inquiry_created") {
     return pick("inquiryId", "inquiry_id");
   }
-  return pick("orderId", "order_id");
+  if (eventType.startsWith("payment.")) {
+    return pick("txRef", "orderId", "order_id", "eventId", "sourceEventId");
+  }
+  return pick("orderId", "order_id", "fulfillmentId", "txRef", "eventId", "sourceEventId");
 }
 
 function getMatchingPreferences(
@@ -221,12 +194,16 @@ export function createNotificationService(
         input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
           ? input.payload
           : {};
+      const validatedPayload = validateNotificationEventPayload(eventType, payload);
+      if (!validatedPayload.ok) {
+        throw new Error(validatedPayload.error);
+      }
 
       // Store the source event first. Materialization can then survive queue or
       // worker outages without losing the merchant's inbox notification.
       const inboxEvent = await inbox.recordEvent({
         eventType,
-        payload,
+        payload: validatedPayload.payload,
         tenantId: input.tenantId,
       });
       if (inboxEvent) {
@@ -244,7 +221,7 @@ export function createNotificationService(
 
       // Platform + Medusa (or lifecycle retries) can emit the same logical event twice.
       // Skip additional external delivery logs within a 24h window for the same entity.
-      const entityId = extractDedupeEntityId(eventType, payload);
+      const entityId = extractDedupeEntityId(eventType, validatedPayload.payload);
       if (entityId && DEDUPE_EVENTS.has(eventType)) {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const [existing] = await db
@@ -262,6 +239,10 @@ export function createNotificationService(
                 sql`${notificationLogs.payload}->>'productId' = ${entityId}`,
                 sql`${notificationLogs.payload}->>'invoiceId' = ${entityId}`,
                 sql`${notificationLogs.payload}->>'subscriptionId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'fulfillmentId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'inquiryId' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'txRef' = ${entityId}`,
+                sql`${notificationLogs.payload}->>'sourceEventId' = ${entityId}`,
               ),
             ),
           )
@@ -551,7 +532,7 @@ export function createNotificationService(
 
       if (
         events.length === 0 ||
-        events.some((event) => !allowedEvents.has(event as NotificationEventType))
+        events.some((event) => event !== "*" && !isAllowedNotificationEventType(event))
       ) {
         return {
           ok: false,

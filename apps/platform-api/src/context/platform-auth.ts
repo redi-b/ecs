@@ -101,6 +101,7 @@ export function createPlatformAuth(options: {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: options.requireEmailVerification ?? false,
+      revokeSessionsOnPasswordReset: true,
       ...(enqueueAccountEmail
         ? {
             sendResetPassword: async ({

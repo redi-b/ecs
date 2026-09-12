@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  createCodeNotificationRenderer,
-  formatMoneyAmount,
-  formatOrderRef,
-} from "./renderer.js";
+import { createCodeNotificationRenderer, formatMoneyAmount, formatOrderRef } from "./renderer.js";
 
 describe("formatOrderRef", () => {
   it("prefixes numeric display ids for legacy payloads", () => {
@@ -14,10 +10,7 @@ describe("formatOrderRef", () => {
   });
 
   it("turns medusa order ids into shared public references", () => {
-    assert.equal(
-      formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"),
-      "ORD-2T4F0H3FR2",
-    );
+    assert.equal(formatOrderRef("order_01KXE59NRXJY6H5P2T4F0H3FR2"), "ORD-2T4F0H3FR2");
   });
 
   it("keeps short alphanumeric codes", () => {
@@ -135,6 +128,27 @@ describe("createCodeNotificationRenderer", () => {
     assert.doesNotMatch(paid.body, /ecs_pay/i);
   });
 
+  it("renders each fulfillment transition with distinct copy", async () => {
+    const base = {
+      channel: "in_app" as const,
+      tenantId: "tenant-1",
+      recipient: "in_app",
+      payload: {
+        orderId: "order_01TESTFULFILLMENT1",
+        deliveryChoice: "delivery",
+      },
+    };
+    const ready = await renderer.render({ ...base, eventType: "order.ready" });
+    const shipped = await renderer.render({ ...base, eventType: "order.out_for_delivery" });
+    const delivered = await renderer.render({ ...base, eventType: "order.delivered" });
+
+    assert.match(ready.subject ?? "", /prepared/i);
+    assert.match(shipped.subject ?? "", /out for delivery/i);
+    assert.match(delivered.subject ?? "", /delivered/i);
+    assert.notEqual(ready.body, shipped.body);
+    assert.notEqual(shipped.body, delivered.body);
+  });
+
   it("renders recipient-facing test notifications without restating destination", async () => {
     const result = await renderer.render({
       channel: "telegram",
@@ -210,5 +224,26 @@ describe("createCodeNotificationRenderer", () => {
     assert.match(result.body, /due in 3 days/i);
     assert.match(result.body, /ETB 1,000/);
     assert.doesNotMatch(result.body, /invoice_ready|worker|lifecycle/i);
+  });
+
+  it("renders operational events with specific actions instead of the generic fallback", async () => {
+    for (const eventType of [
+      "chapa.onboarding_needs_review",
+      "domain.misconfigured",
+      "payment.webhook_failed",
+      "shop.provisioning_failed",
+      "shop.published",
+      "shop.suspended",
+    ]) {
+      const result = await renderer.render({
+        channel: "in_app",
+        eventType,
+        tenantId: "tenant-1",
+        recipient: "in_app",
+        payload: { hostname: "shop.example.com", reason: "verification_failed", txRef: "tx-1" },
+      });
+      assert.doesNotMatch(result.body, /Something updated in your shop/i, eventType);
+      assert.ok(result.subject, `${eventType} should provide an inbox title`);
+    }
   });
 });

@@ -7,8 +7,12 @@ describe("buildInAppDedupeKey", () => {
   it("uses order id for commerce events", () => {
     assert.equal(buildInAppDedupeKey("order.created", { orderId: "ord_1" }), "order.created:ord_1");
     assert.equal(
-      buildInAppDedupeKey("payment.paid", { order_id: "ord_2", amount: "10" }),
-      "payment.paid:ord_2",
+      buildInAppDedupeKey("payment.paid", {
+        order_id: "ord_2",
+        amount: "10",
+        txRef: "tx-2",
+      }),
+      "payment.paid:tx-2",
     );
   });
 

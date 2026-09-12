@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
@@ -91,7 +92,15 @@ export function SignInForm({
           </InputGroup>
         </Field>
         <Field>
-          <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
+            <Link
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+              href="/admin/forgot-password"
+            >
+              {t("auth.recovery.forgotLink")}
+            </Link>
+          </div>
           <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="current-password"

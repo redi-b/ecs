@@ -81,18 +81,26 @@ export async function changeAccountPassword(
     revokeOtherSessions?: boolean | undefined;
   },
 ) {
-  const response = await fetch(authUrl("/platform/auth/change-password", options.platformApiBaseUrl), {
-    body: JSON.stringify({
-      currentPassword: options.currentPassword,
-      newPassword: options.newPassword,
-      revokeOtherSessions: options.revokeOtherSessions ?? true,
-    }),
-    headers: authHeaders({ ...options, json: true }),
-    method: "POST",
-  }).catch(() => null);
+  const response = await fetch(
+    authUrl("/platform/auth/change-password", options.platformApiBaseUrl),
+    {
+      body: JSON.stringify({
+        currentPassword: options.currentPassword,
+        newPassword: options.newPassword,
+        revokeOtherSessions: options.revokeOtherSessions ?? true,
+      }),
+      headers: authHeaders({ ...options, json: true }),
+      method: "POST",
+    },
+  ).catch(() => null);
 
   if (!response) {
-    return { ok: false as const, message: "auth_unavailable", status: 503, cookies: [] as string[] };
+    return {
+      ok: false as const,
+      message: "auth_unavailable",
+      status: 503,
+      cookies: [] as string[],
+    };
   }
 
   if (!response.ok) {
@@ -153,11 +161,95 @@ export async function updateAccountProfile(
   return { ok: true as const };
 }
 
-export async function listAccountSessions(options: AuthRequestContext) {
-  const response = await fetch(authUrl("/platform/auth/list-sessions", options.platformApiBaseUrl), {
+export async function requestAccountPasswordReset(
+  options: AuthRequestContext & { email: string; redirectTo: string },
+) {
+  return postAccountAuth("/platform/auth/request-password-reset", options, {
+    email: options.email.trim().toLowerCase(),
+    redirectTo: options.redirectTo,
+  });
+}
+
+export async function resetAccountPassword(
+  options: AuthRequestContext & { newPassword: string; token: string },
+) {
+  return postAccountAuth("/platform/auth/reset-password", options, {
+    newPassword: options.newPassword,
+    token: options.token,
+  });
+}
+
+export async function changeAccountEmail(
+  options: AuthRequestContext & { callbackURL: string; newEmail: string },
+) {
+  return postAccountAuth("/platform/auth/change-email", options, {
+    callbackURL: options.callbackURL,
+    newEmail: options.newEmail.trim().toLowerCase(),
+  });
+}
+
+export async function sendAccountVerificationEmail(
+  options: AuthRequestContext & { callbackURL: string; email: string },
+) {
+  return postAccountAuth("/platform/auth/send-verification-email", options, {
+    callbackURL: options.callbackURL,
+    email: options.email.trim().toLowerCase(),
+  });
+}
+
+export async function getAccountIdentity(options: AuthRequestContext) {
+  const response = await fetch(authUrl("/platform/auth/get-session", options.platformApiBaseUrl), {
     headers: authHeaders(options),
     method: "GET",
   }).catch(() => null);
+  if (!response?.ok) return { ok: false as const, status: response?.status ?? 503 };
+  const body = (await response.json().catch(() => null)) as {
+    user?: { email?: unknown; emailVerified?: unknown };
+  } | null;
+  const email = typeof body?.user?.email === "string" ? body.user.email : null;
+  if (!email) return { ok: false as const, status: 502 };
+  return {
+    email,
+    emailVerified: body?.user?.emailVerified === true,
+    ok: true as const,
+  };
+}
+
+async function postAccountAuth(
+  path: string,
+  options: AuthRequestContext,
+  body: Record<string, unknown>,
+) {
+  const response = await fetch(authUrl(path, options.platformApiBaseUrl), {
+    body: JSON.stringify(body),
+    headers: authHeaders({ ...options, json: true }),
+    method: "POST",
+  }).catch(() => null);
+  if (!response) {
+    return { ok: false as const, message: "auth_unavailable", status: 503 };
+  }
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as {
+      code?: string;
+      message?: string;
+    } | null;
+    return {
+      ok: false as const,
+      message: data?.code || data?.message || "account_action_failed",
+      status: response.status,
+    };
+  }
+  return { ok: true as const };
+}
+
+export async function listAccountSessions(options: AuthRequestContext) {
+  const response = await fetch(
+    authUrl("/platform/auth/list-sessions", options.platformApiBaseUrl),
+    {
+      headers: authHeaders(options),
+      method: "GET",
+    },
+  ).catch(() => null);
 
   if (!response) {
     return {
@@ -207,11 +299,14 @@ export async function revokeAccountSession(
     token: string;
   },
 ) {
-  const response = await fetch(authUrl("/platform/auth/revoke-session", options.platformApiBaseUrl), {
-    body: JSON.stringify({ token: options.token }),
-    headers: authHeaders({ ...options, json: true }),
-    method: "POST",
-  }).catch(() => null);
+  const response = await fetch(
+    authUrl("/platform/auth/revoke-session", options.platformApiBaseUrl),
+    {
+      body: JSON.stringify({ token: options.token }),
+      headers: authHeaders({ ...options, json: true }),
+      method: "POST",
+    },
+  ).catch(() => null);
 
   if (!response) {
     return { ok: false as const, message: "auth_unavailable", status: 503 };

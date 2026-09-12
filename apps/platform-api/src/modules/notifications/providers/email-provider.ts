@@ -14,6 +14,31 @@ export type CreateResendEmailProviderOptions = {
   fetchImpl?: typeof fetch;
 };
 
+const resendTagPartPattern = /[^A-Za-z0-9_-]+/g;
+
+/** Resend only accepts ASCII letters, numbers, underscores, and dashes in tags. */
+export function normalizeResendTags(tags: Record<string, string> | undefined) {
+  if (!tags) return undefined;
+
+  const normalized = Object.entries(tags).flatMap(([name, value]) => {
+    const normalizedName = normalizeResendTagPart(name);
+    const normalizedValue = normalizeResendTagPart(value);
+    return normalizedName && normalizedValue
+      ? [{ name: normalizedName, value: normalizedValue }]
+      : [];
+  });
+
+  return normalized.length ? normalized : undefined;
+}
+
+function normalizeResendTagPart(value: string) {
+  return value
+    .trim()
+    .replace(resendTagPartPattern, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 256);
+}
+
 /**
  * Real email delivery via Resend HTTP API.
  * recipient = mailbox address.
@@ -49,6 +74,7 @@ export function createResendEmailNotificationProvider(
       // The template renderer owns presentation. A transport adapter must send
       // the rendered document unchanged so every provider behaves identically.
       const html = input.html?.trim().slice(0, 100_000) || undefined;
+      const tags = normalizeResendTags(input.tags);
 
       const response = await fetchImpl("https://api.resend.com/emails", {
         method: "POST",
@@ -64,9 +90,7 @@ export function createResendEmailNotificationProvider(
           text,
           ...(html ? { html } : {}),
           ...(input.replyTo ? { reply_to: input.replyTo } : {}),
-          ...(input.tags
-            ? { tags: Object.entries(input.tags).map(([name, value]) => ({ name, value })) }
-            : {}),
+          ...(tags ? { tags } : {}),
         }),
         signal: AbortSignal.timeout(15_000),
       });

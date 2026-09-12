@@ -108,7 +108,7 @@ test("POST /admin/sign-up/submit asks the user to verify email when verification
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     ok: true,
-    redirectTo: "http://app.lvh.me/admin/sign-up/check-email",
+    redirectTo: "http://app.lvh.me/admin/sign-up/check-email?email=mahi%40example.com",
   });
 });
 

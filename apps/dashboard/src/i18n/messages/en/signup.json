@@ -12,6 +12,10 @@
     "title": "Check your email",
     "description": "We sent a verification link to the email address you used to create your account.",
     "help": "Open the link to verify your email, then sign in to finish setting up your shop.",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "resend": "Send another link",
+    "sending": "Sending…",
+    "resent": "If this address has an account, a new link is on its way.",
+    "resendError": "We could not send another link right now. Try again shortly."
   }
 }

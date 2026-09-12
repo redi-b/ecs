@@ -1,10 +1,7 @@
 import { formatPublicOrderReference } from "@ecs/contracts";
 
 import type { MerchantOrder } from "../../types/index.js";
-import {
-  buildOrderItemLines,
-  formatOrderLineItemLabel,
-} from "../telegram/telegram-presentation.js";
+import { buildOrderItemLines } from "../telegram/telegram-presentation.js";
 
 /** Hide Medusa placeholder emails from merchant-facing notifications. */
 export function isSyntheticOrderEmail(email: string | null | undefined): boolean {
@@ -55,8 +52,11 @@ export function buildMerchantOrderNotificationPayload(
   if (order.paymentMethod) {
     payload.paymentMethod = order.paymentMethod;
   }
-  if (order.paymentStatus) {
+  if (order.paymentStatus && payload.paymentStatus == null) {
     payload.paymentStatus = order.paymentStatus;
+  }
+  if (order.paymentReference?.trim()) {
+    payload.txRef = order.paymentReference.trim();
   }
   const displayName = deliveryName || customerName;
   if (displayName && !isPlaceholderCustomerName(displayName)) {
@@ -78,106 +78,6 @@ export function buildMerchantOrderNotificationPayload(
   return payload;
 }
 
-/**
- * Build order.created payload after store cart complete when we may not have a full MerchantOrder yet.
- */
-export function buildOrderCreatedPayloadFromComplete(input: {
-  orderId: string;
-  completeBody: unknown;
-  customerName?: string | null;
-  customerPhone?: string | null;
-  customerCity?: string | null;
-  deliveryChoice?: string | null;
-  paymentMethod: string;
-  paymentStatus?: string | null;
-}): Record<string, unknown> {
-  const order = extractCompletedOrderRecord(input.completeBody);
-  const customDisplayId =
-    order && typeof order.custom_display_id === "string" ? order.custom_display_id : null;
-  const payload: Record<string, unknown> = {
-    orderId: input.orderId,
-    orderCode: formatPublicOrderReference(input.orderId, customDisplayId),
-    paymentMethod: input.paymentMethod,
-  };
-  if (input.paymentStatus) payload.paymentStatus = input.paymentStatus;
-  if (input.deliveryChoice) payload.deliveryChoice = input.deliveryChoice;
-
-  const name = input.customerName?.trim() || null;
-  if (name && !isPlaceholderCustomerName(name)) payload.customerName = name;
-  if (input.customerPhone?.trim()) payload.customerPhone = input.customerPhone.trim();
-  if (input.customerCity?.trim()) payload.customerCity = input.customerCity.trim();
-
-  if (order) {
-    const summary =
-      order.summary && typeof order.summary === "object"
-        ? (order.summary as Record<string, unknown>)
-        : null;
-    const total = order.total ?? summary?.total;
-    if (total != null && (typeof total === "number" || typeof total === "string")) {
-      payload.amount = String(total);
-    }
-    const currency =
-      (typeof order.currency_code === "string" && order.currency_code) ||
-      (typeof order.currencyCode === "string" && order.currencyCode);
-    if (currency) payload.currencyCode = String(currency).toUpperCase();
-
-    const rawItems = Array.isArray(order.items) ? order.items : [];
-    const itemLines: string[] = [];
-    for (const raw of rawItems.slice(0, 8)) {
-      if (!raw || typeof raw !== "object") continue;
-      const item = raw as Record<string, unknown>;
-      const productTitle =
-        (typeof item.product_title === "string" && item.product_title) ||
-        (typeof item.title === "string" && item.title) ||
-        "Item";
-      const variantTitle =
-        (typeof item.variant_title === "string" && item.variant_title) ||
-        (typeof item.subtitle === "string" && item.subtitle) ||
-        (item.variant &&
-        typeof item.variant === "object" &&
-        item.variant !== null &&
-        typeof (item.variant as { title?: unknown }).title === "string"
-          ? String((item.variant as { title: string }).title)
-          : null);
-      const quantity =
-        typeof item.quantity === "number"
-          ? item.quantity
-          : typeof item.quantity === "string"
-            ? Number(item.quantity)
-            : null;
-      itemLines.push(
-        formatOrderLineItemLabel({
-          productTitle,
-          title: typeof item.title === "string" ? item.title : productTitle,
-          variantTitle,
-          quantity: quantity != null && Number.isFinite(quantity) ? quantity : null,
-        }),
-      );
-    }
-    if (itemLines.length > 0) {
-      payload.itemLines = itemLines;
-      payload.itemCount = rawItems.length;
-    }
-  }
-
-  return payload;
-}
-
-function extractCompletedOrderRecord(data: unknown): Record<string, unknown> | null {
-  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
-  const body = data as Record<string, unknown>;
-  if (body.type === "order" && typeof body.order === "object" && body.order !== null) {
-    return body.order as Record<string, unknown>;
-  }
-  if (typeof body.id === "string" && body.id.startsWith("order_")) {
-    return body;
-  }
-  if (typeof body.order === "object" && body.order !== null) {
-    return body.order as Record<string, unknown>;
-  }
-  return null;
-}
-
 /** Build a rich, non-secret payload for payment.paid (and similar) from a merchant order. */
 export function buildPaymentPaidPayload(
   order: MerchantOrder,
@@ -187,15 +87,5 @@ export function buildPaymentPaidPayload(
     source,
     paidAt: new Date().toISOString(),
     paymentStatus: "paid",
-  });
-}
-
-export function buildOrderCancelledPayload(
-  order: MerchantOrder,
-  source = "dashboard_cancel",
-): Record<string, unknown> {
-  return buildMerchantOrderNotificationPayload(order, {
-    source,
-    orderStatus: "canceled",
   });
 }

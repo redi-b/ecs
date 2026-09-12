@@ -23,8 +23,32 @@ export type RenderNotificationResult = {
 };
 
 export interface NotificationRenderer {
-  render(input: RenderNotificationInput): RenderNotificationResult | Promise<RenderNotificationResult>;
+  render(
+    input: RenderNotificationInput,
+  ): RenderNotificationResult | Promise<RenderNotificationResult>;
 }
+
+export const CODE_NOTIFICATION_TEMPLATE_EVENTS = new Set([
+  "billing.invoice_ready",
+  "billing.past_due",
+  "chapa.onboarding_needs_review",
+  "cod_order.created",
+  "domain.misconfigured",
+  "inventory.low",
+  "notification.test",
+  "order.cancelled",
+  "order.created",
+  "order.delivered",
+  "order.out_for_delivery",
+  "order.ready",
+  "payment.failed",
+  "payment.paid",
+  "payment.webhook_failed",
+  "shop.provisioning_failed",
+  "shop.published",
+  "shop.suspended",
+  "storefront.inquiry_created",
+]);
 
 function asRecord(payload: unknown): Record<string, unknown> {
   if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
@@ -298,7 +322,9 @@ function pickItemLines(data: Record<string, unknown>): string[] | undefined {
         Boolean(variant.trim()) &&
         !/^default$/i.test(variant) &&
         variant.trim().toLowerCase() !== String(title).trim().toLowerCase();
-      const base = showVariant ? `${String(title).trim()} · ${variant.trim()}` : String(title).trim();
+      const base = showVariant
+        ? `${String(title).trim()} · ${variant.trim()}`
+        : String(title).trim();
       const q = qty != null && Number.isFinite(qty) && qty > 0 ? ` × ${qty}` : "";
       lines.push(`${base}${q}`);
     }
@@ -309,7 +335,15 @@ function pickItemLines(data: Record<string, unknown>): string[] | undefined {
 function buildContext(data: Record<string, unknown>): Context {
   // Prefer the normalized public reference emitted by producers, then derive from order id.
   const orderRef = formatOrderRef(
-    pickScalar(data, "publicOrderReference", "orderCode", "orderId", "order_id", "orderDisplayId", "displayId"),
+    pickScalar(
+      data,
+      "publicOrderReference",
+      "orderCode",
+      "orderId",
+      "order_id",
+      "orderDisplayId",
+      "displayId",
+    ),
   );
   const amount = formatMoneyAmount(
     pickScalar(data, "amount", "total", "totalAmount"),
@@ -401,7 +435,10 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
       const subjectFor = (title: string) =>
         input.channel === "email" || input.channel === "in_app" ? title : undefined;
 
-      const finish = (title: string, message: { body: string; html: string }): RenderNotificationResult => {
+      const finish = (
+        title: string,
+        message: { body: string; html: string },
+      ): RenderNotificationResult => {
         const result: RenderNotificationResult = {
           body: message.body,
           html: message.html,
@@ -416,7 +453,10 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
       switch (input.eventType) {
         case "storefront.inquiry_created": {
           const customerName = pickScalar(data, "customerName") ?? "A customer";
-          const inquiryType = pickScalar(data, "type") === "product_request" ? "Product request" : "Message";
+          const customerEmail = pickScalar(data, "customerEmail");
+          const customerPhone = pickScalar(data, "customerPhone");
+          const inquiryType =
+            pickScalar(data, "type") === "product_request" ? "Product request" : "Message";
           const subject = pickScalar(data, "subject") ?? "New storefront inquiry";
           return finish(
             inquiryType === "Product request" ? "New product request" : "New customer message",
@@ -425,8 +465,8 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
               [
                 { label: "Type", value: inquiryType },
                 { label: "Subject", value: subject },
-                ...(pickScalar(data, "customerEmail") ? [{ label: "Email", value: pickScalar(data, "customerEmail")! }] : []),
-                ...(pickScalar(data, "customerPhone") ? [{ label: "Phone", value: pickScalar(data, "customerPhone")! }] : []),
+                ...(customerEmail ? [{ label: "Email", value: customerEmail }] : []),
+                ...(customerPhone ? [{ label: "Phone", value: customerPhone }] : []),
               ],
               "Open Inquiries in your dashboard to read and respond.",
             ),
@@ -463,8 +503,7 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
         // Legacy cod_order.created still renders if present in old logs; new emits use order.created only.
         case "cod_order.created":
         case "order.created": {
-          const title =
-            ctx.orderRef === "order" ? "New order" : `New order ${ctx.orderRef}`;
+          const title = ctx.orderRef === "order" ? "New order" : `New order ${ctx.orderRef}`;
           const headline =
             ctx.orderRef === "order"
               ? "You received a new order."
@@ -500,6 +539,54 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
               headline,
               orderDetails(ctx, { includePaymentStatus: true }),
               "No further action is required unless you need to restock or refund.",
+            ),
+          );
+        }
+
+        case "order.ready": {
+          const pickup = ctx.deliveryChoice?.toLowerCase().includes("pickup") === true;
+          const title = pickup
+            ? ctx.orderRef === "order"
+              ? "Order ready for pickup"
+              : `${ctx.orderRef} ready for pickup`
+            : ctx.orderRef === "order"
+              ? "Order prepared"
+              : `${ctx.orderRef} is prepared`;
+          return finish(
+            title,
+            composeMessage(
+              pickup ? "An order is ready for customer pickup." : "An order has been prepared.",
+              orderDetails(ctx),
+              pickup
+                ? "Keep the order ready until the customer collects it."
+                : "The order can now move to delivery.",
+            ),
+          );
+        }
+
+        case "order.out_for_delivery": {
+          const title =
+            ctx.orderRef === "order"
+              ? "Order out for delivery"
+              : `${ctx.orderRef} out for delivery`;
+          return finish(
+            title,
+            composeMessage(
+              "An order is now out for delivery.",
+              orderDetails(ctx),
+              "Track its progress until the customer receives it.",
+            ),
+          );
+        }
+
+        case "order.delivered": {
+          const title = ctx.orderRef === "order" ? "Order delivered" : `${ctx.orderRef} delivered`;
+          return finish(
+            title,
+            composeMessage(
+              "An order was delivered.",
+              orderDetails(ctx),
+              "No further fulfillment action is needed.",
             ),
           );
         }
@@ -553,10 +640,15 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
 
         case "inventory.low": {
           const productLabel =
-            pickScalar(asRecord(input.payload), "productTitle", "title", "productId") ?? "a product";
+            pickScalar(asRecord(input.payload), "productTitle", "title", "productId") ??
+            "a product";
           const qty =
-            pickScalar(asRecord(input.payload), "availableQuantity", "stockedQuantity", "quantity") ??
-            "low";
+            pickScalar(
+              asRecord(input.payload),
+              "availableQuantity",
+              "stockedQuantity",
+              "quantity",
+            ) ?? "low";
           const title = "Low stock";
           return finish(
             title,
@@ -620,6 +712,82 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
                 amount ? { label: "Amount", value: amount } : { label: "", value: "" },
               ]),
               "Open Billing in your dashboard to pay before the period ends.",
+            ),
+          );
+        }
+
+        case "payment.webhook_failed": {
+          const reason = pickScalar(data, "reason") ?? "Payment verification did not complete";
+          const txRef = pickScalar(data, "txRef", "transactionReference");
+          return finish(
+            "Payment needs review",
+            composeMessage(
+              "A Chapa payment update could not be verified.",
+              cleanDetails([
+                txRef ? { label: "Reference", value: txRef } : { label: "", value: "" },
+                { label: "Reason", value: humanizeToken(reason) },
+              ]),
+              "Review the payment before changing the order status.",
+            ),
+          );
+        }
+
+        case "shop.published": {
+          const hostname = pickScalar(data, "hostname", "domain", "handle");
+          return finish(
+            "Shop published",
+            composeMessage(
+              "Your storefront is live for customers.",
+              hostname ? [{ label: "Storefront", value: hostname }] : [],
+              "Open the storefront to check the published design and catalog.",
+            ),
+          );
+        }
+
+        case "shop.suspended": {
+          const reason = pickScalar(data, "reason");
+          return finish(
+            "Shop access paused",
+            composeMessage(
+              "Your storefront has been paused.",
+              reason ? [{ label: "Reason", value: humanizeToken(reason) }] : [],
+              "Open shop settings or contact support to resolve this.",
+            ),
+          );
+        }
+
+        case "shop.provisioning_failed": {
+          const step = pickScalar(data, "step", "stage");
+          return finish(
+            "Shop setup needs attention",
+            composeMessage(
+              "We could not finish setting up your shop.",
+              step ? [{ label: "Stopped at", value: humanizeToken(step) }] : [],
+              "Try the setup again. Contact support if it still does not complete.",
+            ),
+          );
+        }
+
+        case "domain.misconfigured": {
+          const hostname = pickScalar(data, "hostname", "domain");
+          return finish(
+            "Domain setup needs attention",
+            composeMessage(
+              "Your custom domain is not pointing to the storefront correctly.",
+              hostname ? [{ label: "Domain", value: hostname }] : [],
+              "Open Domains in shop settings to check the required DNS records.",
+            ),
+          );
+        }
+
+        case "chapa.onboarding_needs_review": {
+          const reason = pickScalar(data, "reason", "status");
+          return finish(
+            "Chapa setup needs review",
+            composeMessage(
+              "Your Chapa payment setup needs more information.",
+              reason ? [{ label: "Status", value: humanizeToken(reason) }] : [],
+              "Open Payments in shop settings to continue setup.",
             ),
           );
         }

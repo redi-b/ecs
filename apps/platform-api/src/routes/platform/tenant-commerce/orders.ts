@@ -1,11 +1,10 @@
 import type { Context, Hono } from "hono";
+import { parseMerchantOrderListQuery } from "../../../adapters/medusa/order/list-query.js";
 import type {
   MerchantOrderAction,
   PlatformAppOptions,
   PlatformAppVariables,
 } from "../../../app.js";
-import { parseMerchantOrderListQuery } from "../../../adapters/medusa/order/list-query.js";
-import { buildPaymentPaidPayload } from "../../../modules/notifications/order-payload.js";
 import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
 import { getPaginationValue } from "../../shared.js";
 
@@ -176,16 +175,6 @@ export function registerPlatformTenantOrdersRoutes(
 
     if (!order.ok) {
       return context.json({ error: order.error }, order.status);
-    }
-
-    if (action === "mark-paid" && options.recordNotificationEvent) {
-      void options
-        .recordNotificationEvent({
-          tenantId,
-          eventType: "payment.paid",
-          payload: buildPaymentPaidPayload(order.order, "dashboard_mark_paid"),
-        })
-        .catch(() => undefined);
     }
 
     return context.json({
