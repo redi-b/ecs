@@ -110,6 +110,7 @@ import {
   createTenantDetailService,
   createTenantHandleAvailabilityService,
   createTenantListService,
+  createTenantMembershipSummaryService,
   createTenantShopSettingsService,
 } from "./modules/tenants/list-service.js";
 import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
@@ -422,6 +423,7 @@ const getTenantCommerceContext = createTenantCommerceContextService(platformDb.d
 const getTenantDashboardSummary = createTenantDashboardSummaryService(platformDb.db);
 const getTenantForUser = createTenantDetailService(platformDb.db);
 const listTenantsForUser = createTenantListService(platformDb.db);
+const getTenantMembershipSummary = createTenantMembershipSummaryService(platformDb.db);
 const tenantStatusService = createTenantStatusService(platformDb.db);
 const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
   paymentsCredentialsEncryptionKey:
@@ -1032,10 +1034,13 @@ const app = createPlatformApp({
   listNotificationPreferences: notificationService.listNotificationPreferences,
   listInAppNotifications: notificationService.inbox.list,
   countInAppNotificationUnread: notificationService.inbox.unreadCount,
-  markInAppNotificationRead: notificationService.inbox.markRead,
+  markInAppNotificationRead: notificationService.inbox.setRead,
+  archiveInAppNotification: notificationService.inbox.archive,
   markAllInAppNotificationsRead: notificationService.inbox.markAllRead,
+  markInAppNotificationsSeen: notificationService.inbox.markSeen,
   notificationChannelAvailability,
   listTenantsForUser,
+  getTenantMembershipSummary,
   listTenantProvisioningAttempts,
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,

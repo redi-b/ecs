@@ -33,6 +33,14 @@ export const appRoutes: AppRoute[] = [
     keywords: ["home", "dashboard", "summary"],
   },
   {
+    id: "notifications",
+    title: "Notifications",
+    href: dashboardRoutes.notifications,
+    icon: AppIcons.notifications,
+    section: "main",
+    keywords: ["alerts", "updates", "inbox", "activity"],
+  },
+  {
     id: "products",
     title: "Products",
     href: dashboardRoutes.products,

@@ -334,6 +334,7 @@ export function appWithResolution(
       offset: number;
       userId: string;
     }) => Promise<TenantListResult>;
+    getTenantMembershipSummary?: import("../types/platform-app.js").PlatformAppOptions["getTenantMembershipSummary"];
     listTenantProvisioningAttempts?: (input: {
       limit: number;
       offset: number;
@@ -628,6 +629,7 @@ export function appWithResolution(
       recordMerchantDataExport: options?.recordMerchantDataExport,
       listNotificationPreferences: options?.listNotificationPreferences,
       listTenantsForUser: options?.listTenantsForUser,
+      getTenantMembershipSummary: options?.getTenantMembershipSummary,
       listTenantProvisioningAttempts: options?.listTenantProvisioningAttempts,
       listPaymentOnboarding: options?.listPaymentOnboarding,
       reviewPaymentOnboarding: options?.reviewPaymentOnboarding,

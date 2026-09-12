@@ -112,6 +112,21 @@ function getMedusaStoreJsonRequest(options: {
   } as RequestInit);
 }
 
+function getMedusaCartRequest(options: {
+  cartId: string;
+  medusaInternalUrl: string;
+  publishableKey: string;
+}) {
+  const medusaUrl = new URL(options.medusaInternalUrl);
+  medusaUrl.pathname = `/store/carts/${encodeURIComponent(options.cartId)}`;
+  medusaUrl.searchParams.set("fields", "id,*items,*items.variant");
+
+  return new Request(medusaUrl, {
+    headers: { "x-publishable-api-key": options.publishableKey },
+    method: "GET",
+  });
+}
+
 async function getJsonResponseBody(response: Response) {
   try {
     return await response.json();
@@ -134,6 +149,18 @@ function getCompletedOrderId(data: unknown) {
   }
 
   return getStringValue(getObjectValue(body.order)?.id);
+}
+
+function hasAvailableCartItems(data: unknown) {
+  const cart = getObjectValue(getObjectValue(data)?.cart);
+  const items = cart?.items;
+  if (!Array.isArray(items) || items.length === 0) return false;
+
+  return items.every((item) => {
+    const row = getObjectValue(item);
+    const variant = getObjectValue(row?.variant);
+    return Boolean(getStringValue(row?.id) && getStringValue(variant?.id));
+  });
 }
 
 function getMedusaPassthroughResponse(response: Response) {
@@ -277,6 +304,20 @@ export async function completeCodCheckout(options: {
     if (deliverySettings.landmarkRequired && !input.address.landmark) {
       return Response.json({ error: "landmark_required" }, { status: 400 });
     }
+  }
+
+  const cartResponse = await options.medusaStoreFetch(
+    getMedusaCartRequest({
+      cartId: input.cartId,
+      medusaInternalUrl: options.medusaInternalUrl,
+      publishableKey: options.medusaPublishableKeyId,
+    }),
+  );
+  if (!cartResponse.ok) {
+    return getMedusaPassthroughResponse(cartResponse);
+  }
+  if (!hasAvailableCartItems(await getJsonResponseBody(cartResponse))) {
+    return Response.json({ error: "cart_items_unavailable" }, { status: 409 });
   }
 
   const shippingAddress =

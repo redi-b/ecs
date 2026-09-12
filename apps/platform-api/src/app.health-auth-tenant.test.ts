@@ -887,4 +887,28 @@ describe("platform app health, auth, and tenant bootstrap", () => {
       },
     });
   });
+
+  it("does not create a second owned shop", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@example.com", name: "Owner" },
+        }),
+        getTenantMembershipSummary: async () => ({ accessibleCount: 2, ownedCount: 1 }),
+        createTenantShop: async () => {
+          throw new Error("should not create another owned shop");
+        },
+      },
+    );
+
+    const response = await app.request("/platform/tenants", {
+      method: "POST",
+      body: JSON.stringify({ handle: "second-shop", name: "Second Shop" }),
+      headers: { "content-type": "application/json" },
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), { error: "shop_owner_limit_reached" });
+  });
 });

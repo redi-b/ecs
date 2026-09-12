@@ -29,11 +29,13 @@ import { cn } from "@/lib/utils";
 
 export function AccountMenu({
   actor,
+  accessibleShopCount = 1,
   currentTenantId,
   demoMode = false,
   shopPickerUrl,
 }: {
   actor: MerchantDashboardSummary["actor"];
+  accessibleShopCount?: number;
   currentTenantId?: string;
   demoMode?: boolean;
   shopPickerUrl?: string;
@@ -164,7 +166,7 @@ export function AccountMenu({
                   )}
                 </DropdownMenuItem>
               ) : null}
-              {!demoMode && shopPickerUrl ? (
+              {!demoMode && shopPickerUrl && accessibleShopCount > 1 ? (
                 <DropdownMenuItem asChild className="py-1.5">
                   <a
                     href={`${shopPickerUrl}?current=${encodeURIComponent(currentTenantId ?? "")}`}
