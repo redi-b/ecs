@@ -63,7 +63,12 @@ export type EmailTemplateKey =
   | "account.email_change_new"
   | "account.email_verification"
   | "account.organization_invitation"
-  | "account.password_reset";
+  | "account.password_reset"
+  | "customer.order_cancelled"
+  | "customer.order_confirmation"
+  | "customer.order_delivered"
+  | "customer.order_out_for_delivery"
+  | "customer.order_ready";
 
 export type EmailTemplateDefinition = {
   description: string;
@@ -97,6 +102,52 @@ const commonFixtures = {
   action_url: "https://app.example.com/continue?token=preview",
   recipient_name: "Liya",
 };
+
+const orderFixtures = {
+  order_reference: "ECS-1042",
+  order_total: "ETB 1,850",
+  recipient_name: "Liya",
+  shop_name: "Bole Style",
+};
+
+const orderTemplate = (input: {
+  am: { body: string; preheader: string; subject: string };
+  description: string;
+  en: { body: string; preheader: string; subject: string };
+  key: Extract<EmailTemplateKey, `customer.${string}`>;
+  label: string;
+}): EmailTemplateDefinition => ({
+  description: input.description,
+  fixtures: orderFixtures,
+  key: input.key,
+  label: input.label,
+  locales: {
+    en: {
+      content: document(
+        paragraph("Hi {{recipient_name}},"),
+        paragraph(input.en.body),
+        paragraph("Order: {{order_reference}}"),
+        paragraph("Total: {{order_total}}"),
+        paragraph("If you have a question, reply to this email and {{shop_name}} will help you."),
+      ),
+      preheader: input.en.preheader,
+      subject: input.en.subject,
+    },
+    am: {
+      content: document(
+        paragraph("ሰላም {{recipient_name}}፣"),
+        paragraph(input.am.body),
+        paragraph("የትዕዛዝ ቁጥር፦ {{order_reference}}"),
+        paragraph("ጠቅላላ፦ {{order_total}}"),
+        paragraph("ጥያቄ ካለዎት ለዚህ ኢሜይል ምላሽ ይስጡ፤ {{shop_name}} ይረዳዎታል።"),
+      ),
+      preheader: input.am.preheader,
+      subject: input.am.subject,
+    },
+  },
+  requiredVariables: ["order_reference", "order_total", "recipient_name", "shop_name"],
+  senderProfile: "orders",
+});
 
 export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
   {
@@ -257,6 +308,81 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
     requiredVariables: ["action_url", "inviter_name", "recipient_name", "shop_name"],
     senderProfile: "accounts",
   },
+  orderTemplate({
+    am: {
+      body: "{{shop_name}} ትዕዛዝዎን ተቀብሏል። ሁኔታው ሲቀየር እናሳውቅዎታለን።",
+      preheader: "{{shop_name}} ትዕዛዝዎን ተቀብሏል።",
+      subject: "ትዕዛዝ {{order_reference}} ደርሷል",
+    },
+    description: "Sent to a customer after the shop receives an order.",
+    en: {
+      body: "{{shop_name}} has received your order. We will let you know when its status changes.",
+      preheader: "{{shop_name}} has received your order.",
+      subject: "Order {{order_reference}} received",
+    },
+    key: "customer.order_confirmation",
+    label: "Order confirmation",
+  }),
+  orderTemplate({
+    am: {
+      body: "ትዕዛዝዎ ዝግጁ ነው። በመደብሩ የመረጡትን የመረከቢያ መመሪያ ይከተሉ።",
+      preheader: "ትዕዛዝዎ ከ{{shop_name}} ለመውሰድ ዝግጁ ነው።",
+      subject: "ትዕዛዝ {{order_reference}} ዝግጁ ነው",
+    },
+    description: "Sent when an order is packed or ready for pickup.",
+    en: {
+      body: "Your order is ready. Follow the collection or delivery instructions provided by the shop.",
+      preheader: "Your order from {{shop_name}} is ready.",
+      subject: "Order {{order_reference}} is ready",
+    },
+    key: "customer.order_ready",
+    label: "Order ready",
+  }),
+  orderTemplate({
+    am: {
+      body: "ትዕዛዝዎ ለመላክ ወጥቷል። {{shop_name}} በቅርቡ ያደርስልዎታል።",
+      preheader: "ትዕዛዝዎ ከ{{shop_name}} ለመላክ ወጥቷል።",
+      subject: "ትዕዛዝ {{order_reference}} በመንገድ ላይ ነው",
+    },
+    description: "Sent when an order leaves the shop for delivery.",
+    en: {
+      body: "Your order is out for delivery. {{shop_name}} will get it to you soon.",
+      preheader: "Your order from {{shop_name}} is out for delivery.",
+      subject: "Order {{order_reference}} is on the way",
+    },
+    key: "customer.order_out_for_delivery",
+    label: "Order out for delivery",
+  }),
+  orderTemplate({
+    am: {
+      body: "ትዕዛዝዎ እንደደረሰ ተመዝግቧል። ከ{{shop_name}} ስለገዙ እናመሰግናለን።",
+      preheader: "ትዕዛዝዎ ደርሷል።",
+      subject: "ትዕዛዝ {{order_reference}} ደርሷል",
+    },
+    description: "Sent when an order is marked as delivered.",
+    en: {
+      body: "Your order has been marked as delivered. Thank you for shopping with {{shop_name}}.",
+      preheader: "Your order has been delivered.",
+      subject: "Order {{order_reference}} was delivered",
+    },
+    key: "customer.order_delivered",
+    label: "Order delivered",
+  }),
+  orderTemplate({
+    am: {
+      body: "ትዕዛዝዎ ተሰርዟል። ክፍያ ከፈጸሙ፣ ስለ ተመላሽ ክፍያው {{shop_name}}ን ያነጋግሩ።",
+      preheader: "ትዕዛዝዎ ተሰርዟል።",
+      subject: "ትዕዛዝ {{order_reference}} ተሰርዟል",
+    },
+    description: "Sent when a shop cancels a customer order.",
+    en: {
+      body: "Your order has been cancelled. If you already paid, contact {{shop_name}} about the refund.",
+      preheader: "Your order has been cancelled.",
+      subject: "Order {{order_reference}} was cancelled",
+    },
+    key: "customer.order_cancelled",
+    label: "Order cancelled",
+  }),
 ] as const;
 
 export function getEmailTemplateDefinition(key: string) {

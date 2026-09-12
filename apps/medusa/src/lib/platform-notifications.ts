@@ -1,3 +1,5 @@
+import { formatPublicOrderReference } from "@ecs/contracts";
+
 export type PlatformNotificationEmitInput = {
   eventType: string;
   medusaSalesChannelId: string;
@@ -100,7 +102,9 @@ export async function emitPlatformNotificationEvent(
 export const medusaToPlatformNotificationEvent: Record<string, string> = {
   "order.placed": "order.created",
   "order.canceled": "order.cancelled",
-  "order.fulfillment_created": "order.out_for_delivery",
+  "order.fulfillment_created": "order.ready",
+  "shipment.created": "order.out_for_delivery",
+  "delivery.created": "order.delivered",
   "payment.captured": "payment.paid",
 };
 
@@ -136,11 +140,9 @@ function pickMetaString(metadata: Record<string, unknown> | null | undefined, ..
 export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   const payload: Record<string, unknown> = {
     orderId: order.id,
+    publicOrderReference: formatPublicOrderReference(order.id, order.custom_display_id),
     source: "medusa",
   };
-  if (order.custom_display_id?.trim()) {
-    payload.publicOrderReference = order.custom_display_id.trim();
-  }
   if (order.currency_code) {
     payload.currencyCode = String(order.currency_code).toUpperCase();
   }
@@ -196,10 +198,21 @@ export function buildOrderNotificationPayload(order: OrderNotificationFields) {
   if (paymentMethod) {
     payload.paymentMethod = paymentMethod;
   }
+  const txRef = pickMetaString(
+    order.metadata,
+    "settlement_reference",
+    "chapa_tx_ref",
+    "tx_ref",
+    "txRef",
+  );
+  if (txRef) {
+    payload.txRef = txRef;
+  }
 
   if (Array.isArray(order.items) && order.items.length > 0) {
     const itemCount = order.items.reduce((sum, item) => {
-      const qty = typeof item.quantity === "number" && Number.isFinite(item.quantity) ? item.quantity : 1;
+      const qty =
+        typeof item.quantity === "number" && Number.isFinite(item.quantity) ? item.quantity : 1;
       return sum + qty;
     }, 0);
     payload.itemCount = itemCount;

@@ -28,6 +28,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 const SESSIONS_PAGE_SIZE = 5;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AccountSession = {
   createdAt: string;
@@ -59,9 +60,17 @@ export function AccountSecurityPanel({
   const currentPasswordId = useId();
   const newPasswordId = useId();
   const confirmPasswordId = useId();
+  const emailId = useId();
 
   const [name, setName] = useState(initialName ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [accountEmail, setAccountEmail] = useState(email);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [emailStateLoading, setEmailStateLoading] = useState(true);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -76,8 +85,8 @@ export function AccountSecurityPanel({
     const nameDirty = name.trim() !== (initialName ?? "").trim();
     const passwordDirty =
       currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
-    return nameDirty || passwordDirty;
-  }, [confirmPassword, currentPassword, initialName, name, newPassword]);
+    return nameDirty || passwordDirty || (editingEmail && newEmail.trim().length > 0);
+  }, [confirmPassword, currentPassword, editingEmail, initialName, name, newEmail, newPassword]);
 
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(accountDirty);
 
@@ -130,6 +139,90 @@ export function AccountSecurityPanel({
   useEffect(() => {
     setName(initialName ?? "");
   }, [initialName]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const verified = url.searchParams.get("verified") === "1";
+    const emailChanged = url.searchParams.get("emailChanged") === "1";
+    if (!verified && !emailChanged) return;
+    toast.success(
+      verified
+        ? t("settings.accountSecurity.toast.emailVerified")
+        : t("settings.accountSecurity.toast.emailChanged"),
+    );
+    url.searchParams.delete("verified");
+    url.searchParams.delete("emailChanged");
+    const query = url.searchParams.toString();
+    router.replace(query ? `${url.pathname}?${query}` : url.pathname, { scroll: false });
+  }, [router, t]);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/admin/account/email", { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as {
+          email?: string;
+          emailVerified?: boolean;
+        } | null;
+        if (!active) return;
+        if (response.ok && data?.email) {
+          setAccountEmail(data.email);
+          setEmailVerified(data.emailVerified === true);
+        }
+        setEmailStateLoading(false);
+      })
+      .catch(() => {
+        if (active) setEmailStateLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function requestEmailChange() {
+    const value = newEmail.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(value) || value.length > 320) {
+      toast.error(t("settings.accountSecurity.toast.emailInvalid"));
+      return;
+    }
+    if (value === accountEmail.toLowerCase()) {
+      toast.error(t("settings.accountSecurity.toast.emailUnchanged"));
+      return;
+    }
+    setSavingEmail(true);
+    const response = await fetch("/admin/account/email", {
+      body: JSON.stringify({ newEmail: value }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    setSavingEmail(false);
+    const data = (await response?.json().catch(() => null)) as { error?: string } | null;
+    if (!response?.ok) {
+      toast.error(
+        data?.error === "email_unchanged"
+          ? t("settings.accountSecurity.toast.emailUnchanged")
+          : t("settings.accountSecurity.toast.emailChangeFailed"),
+      );
+      return;
+    }
+    setEditingEmail(false);
+    setNewEmail("");
+    toast.success(t("settings.accountSecurity.toast.emailChangeSent"));
+  }
+
+  async function resendVerification() {
+    setResendingVerification(true);
+    const response = await fetch("/admin/account/verification", {
+      headers: { accept: "application/json" },
+      method: "POST",
+    }).catch(() => null);
+    setResendingVerification(false);
+    if (!response?.ok) {
+      toast.error(t("settings.accountSecurity.toast.verificationFailed"));
+      return;
+    }
+    toast.success(t("settings.accountSecurity.toast.verificationSent"));
+  }
 
   async function saveProfile() {
     const trimmed = name.trim();
@@ -311,6 +404,102 @@ export function AccountSecurityPanel({
             >
               {savingProfile ? t("common.saving") : t("settings.accountSecurity.saveName")}
             </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3.5">
+          <div className="min-w-0">
+            <h3 className="text-sm font-medium tracking-tight">
+              {t("settings.accountSecurity.emailTitle")}
+            </h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t("settings.accountSecurity.emailDescription")}
+            </p>
+          </div>
+          {!emailStateLoading && emailVerified !== null ? (
+            <Badge variant={emailVerified ? "secondary" : "outline"}>
+              {emailVerified
+                ? t("settings.accountSecurity.emailVerified")
+                : t("settings.accountSecurity.emailNotVerified")}
+            </Badge>
+          ) : null}
+        </div>
+        <div className="space-y-4 px-4 py-3.5">
+          {editingEmail ? (
+            <Field>
+              <FieldLabel htmlFor={emailId}>{t("settings.accountSecurity.newEmail")}</FieldLabel>
+              <Input
+                autoComplete="email"
+                autoFocus
+                disabled={savingEmail}
+                id={emailId}
+                onChange={(event) => setNewEmail(event.target.value)}
+                placeholder={t("auth.emailPlaceholder")}
+                type="email"
+                value={newEmail}
+              />
+              <FieldDescription>{t("settings.accountSecurity.emailChangeHint")}</FieldDescription>
+            </Field>
+          ) : (
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">
+                {t("settings.accountSecurity.currentEmail")}
+              </p>
+              <p className="mt-1 truncate text-sm font-medium">{accountEmail}</p>
+            </div>
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+            {!emailStateLoading && emailVerified === false && !editingEmail ? (
+              <Button
+                disabled={resendingVerification}
+                onClick={() => void resendVerification()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {resendingVerification
+                  ? t("settings.accountSecurity.sendingVerification")
+                  : t("settings.accountSecurity.resendVerification")}
+              </Button>
+            ) : null}
+            {editingEmail ? (
+              <>
+                <Button
+                  disabled={savingEmail}
+                  onClick={() => {
+                    setEditingEmail(false);
+                    setNewEmail("");
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  disabled={savingEmail || !newEmail.trim()}
+                  onClick={() => void requestEmailChange()}
+                  size="sm"
+                  type="button"
+                >
+                  {savingEmail
+                    ? t("common.saving")
+                    : t("settings.accountSecurity.continueEmailChange")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                disabled={emailStateLoading}
+                onClick={() => setEditingEmail(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t("settings.accountSecurity.changeEmail")}
+              </Button>
+            )}
           </div>
         </div>
       </section>

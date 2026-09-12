@@ -13,7 +13,7 @@ import { getCentralDashboardUrl, type ShopHostValidation, validateShopHost } fro
 export default async function AdminSignInPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; next?: string; verified?: string }>;
+  searchParams?: Promise<{ error?: string; next?: string; reset?: string; verified?: string }>;
 }) {
   const params = await searchParams;
   const t = await getTranslations();
@@ -77,6 +77,11 @@ export default async function AdminSignInPage({
             {t("auth.emailVerified")}
           </p>
         ) : null}
+        {params?.reset === "1" ? (
+          <p className="mb-5 rounded-lg border border-success/30 bg-success/8 px-3 py-2 text-sm text-success">
+            {t("auth.recovery.resetComplete")}
+          </p>
+        ) : null}
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">
@@ -123,6 +128,8 @@ function getErrorMessage(value: string | undefined, t: (key: MessageKey) => stri
       return t("auth.error.missingPassword");
     case "invalid_credentials":
       return t("auth.error.invalidCredentials");
+    case "email_not_verified":
+      return t("auth.error.emailNotVerified");
     case "auth_unavailable":
       return t("auth.error.unavailable");
     case "shop_not_found":

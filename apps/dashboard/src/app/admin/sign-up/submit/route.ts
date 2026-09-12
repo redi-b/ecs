@@ -52,12 +52,10 @@ export async function POST(request: Request) {
 
   if (signUpResult.cookies.length === 0) {
     if (process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true") {
-      const redirectTo = new URL(
-        "/admin/sign-up/check-email",
-        getRequestOrigin(request),
-      ).toString();
+      const redirectTo = new URL("/admin/sign-up/check-email", getRequestOrigin(request));
+      redirectTo.searchParams.set("email", email);
       return wantsJson
-        ? NextResponse.json({ ok: true as const, redirectTo })
+        ? NextResponse.json({ ok: true as const, redirectTo: redirectTo.toString() })
         : NextResponse.redirect(redirectTo, { status: 303 });
     }
     return failSignUp(request, "auth_session_missing", payload, wantsJson);

@@ -1,5 +1,4 @@
 import type { PlatformAppOptions } from "../../../app.js";
-import { buildOrderCreatedPayloadFromComplete } from "../../../modules/notifications/order-payload.js";
 
 type CodCheckoutInput = {
   address: {
@@ -457,31 +456,6 @@ export async function completeCodCheckout(options: {
       });
     } catch {
       // Analytics logging must not fail a completed checkout.
-    }
-  }
-
-  if (orderId && options.recordNotificationEvent) {
-    try {
-      // Single merchant event: order.created (items/customer for Telegram/email alerts).
-      await options.recordNotificationEvent({
-        eventType: "order.created",
-        payload: {
-          ...buildOrderCreatedPayloadFromComplete({
-            orderId,
-            completeBody: completeCartBody,
-            customerName: input.customer.name,
-            customerPhone: input.customer.phone,
-            customerCity: input.address.city,
-            deliveryChoice: input.deliveryChoice,
-            paymentMethod: "cod",
-            paymentStatus: "pending",
-          }),
-          cartId: input.cartId,
-        },
-        tenantId: options.tenantId,
-      });
-    } catch {
-      // Notification logging must not fail a completed checkout.
     }
   }
 

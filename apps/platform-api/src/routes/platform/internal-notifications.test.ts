@@ -65,7 +65,11 @@ describe("POST /platform/internal/notifications/events", () => {
     assert.deepEqual(recorded[0], {
       tenantId: "tenant-from-sc",
       eventType: "order.created",
-      payload: { orderId: "o1" },
+      payload: {
+        medusaSalesChannelId: "sc_1",
+        orderId: "o1",
+        source: "medusa",
+      },
     });
   });
 
@@ -86,5 +90,22 @@ describe("POST /platform/internal/notifications/events", () => {
       }),
     });
     assert.equal(res.status, 404);
+  });
+
+  it("rejects non-object and sensitive event payloads", async () => {
+    const app = createTestApp({
+      recordNotificationEvent: async () => ({ ok: true, logCount: 0, logIds: [] }),
+    });
+    for (const payload of ["invalid", { orderId: "o1", token: "secret" }]) {
+      const res = await app.request("/platform/internal/notifications/events", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-platform-internal-token": "secret",
+        },
+        body: JSON.stringify({ eventType: "order.created", tenantId: "t1", payload }),
+      });
+      assert.equal(res.status, 400);
+    }
   });
 });

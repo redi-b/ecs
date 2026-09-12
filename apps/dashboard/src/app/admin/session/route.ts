@@ -46,7 +46,11 @@ export async function POST(request: Request) {
     return failSignIn(
       request,
       nextPath,
-      authResult.status === 401 ? "invalid_credentials" : "auth_unavailable",
+      authResult.code === "EMAIL_NOT_VERIFIED"
+        ? "email_not_verified"
+        : authResult.status === 401
+          ? "invalid_credentials"
+          : "auth_unavailable",
       wantsJson,
     );
   }
@@ -342,6 +346,7 @@ async function signInWithPlatformAuth(input: {
 
   if (result.error) {
     return {
+      code: result.error.code,
       ok: false,
       status: result.error.status === 401 ? 401 : 503,
     } as const;

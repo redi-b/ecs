@@ -2981,23 +2981,8 @@ describe("platform app merchant and tenant catalog", () => {
         payment_method: "cod",
       },
     });
-    assert.deepEqual(notificationEvents, [
-      {
-        eventType: "order.created",
-        payload: {
-          cartId: "cart_1",
-          customerCity: "Addis Ababa",
-          customerName: "Abebe Kebede",
-          customerPhone: "+251911111111",
-          deliveryChoice: "delivery",
-          orderCode: "ORD-1",
-          orderId: "order_1",
-          paymentMethod: "cod",
-          paymentStatus: "pending",
-        },
-        tenantId: "tenant_1",
-      },
-    ]);
+    // Medusa's order.placed subscriber is the sole notification emitter.
+    assert.deepEqual(notificationEvents, []);
     assert.deepEqual(analyticsEvents, [
       {
         eventType: "order.created",

@@ -11,6 +11,9 @@ describe("medusaToPlatformNotificationEvent", () => {
   it("maps core commerce events to platform allowlist types", () => {
     assert.equal(medusaToPlatformNotificationEvent["order.placed"], "order.created");
     assert.equal(medusaToPlatformNotificationEvent["order.canceled"], "order.cancelled");
+    assert.equal(medusaToPlatformNotificationEvent["order.fulfillment_created"], "order.ready");
+    assert.equal(medusaToPlatformNotificationEvent["shipment.created"], "order.out_for_delivery");
+    assert.equal(medusaToPlatformNotificationEvent["delivery.created"], "order.delivered");
     assert.equal(medusaToPlatformNotificationEvent["payment.captured"], "payment.paid");
   });
 });
@@ -24,13 +27,25 @@ describe("buildOrderNotificationPayload", () => {
       currency_code: "etb",
       sales_channel_id: "sc_1",
       email: "buyer@example.com",
+      metadata: { settlement_reference: "ecs_tx_1" },
     });
 
     assert.equal(payload.orderId, "order_1");
+    assert.equal(payload.publicOrderReference, "ORD-1");
     assert.equal(payload.orderCode, undefined);
     assert.equal(payload.orderDisplayId, undefined);
     assert.equal(payload.medusaSalesChannelId, "sc_1");
     assert.equal(payload.amount, "120000");
+    assert.equal(payload.txRef, "ecs_tx_1");
+  });
+
+  it("uses a custom public reference when the order provides one", () => {
+    const payload = buildOrderNotificationPayload({
+      custom_display_id: "WEB-24091",
+      id: "order_01KXE59NRXJY6H5P2T4F0H3FR2",
+    });
+
+    assert.equal(payload.publicOrderReference, "WEB-24091");
   });
 });
 

@@ -12,6 +12,7 @@ import { and, count, desc, eq, gt, ilike, inArray, isNull, lt, or, sql } from "d
 import { createMerchantPermissionLookup } from "../../auth/merchant-authorization.js";
 import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
 import type { NotificationEventType } from "../../types/index.js";
+import { getNotificationEventDefinition, NOTIFICATION_EVENT_REGISTRY } from "./event-registry.js";
 import { createCodeNotificationRenderer } from "./renderer.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -24,16 +25,11 @@ export type InAppAudience =
   | { type: "roles"; roles: string[] }
   | { type: "users"; userIds: string[] };
 
-export const IN_APP_EVENT_SET = new Set<string>([
-  "order.created",
-  "order.cancelled",
-  "payment.paid",
-  "payment.failed",
-  "inventory.low",
-  "billing.past_due",
-  "billing.invoice_ready",
-  "storefront.inquiry_created",
-]);
+export const IN_APP_EVENT_SET = new Set<string>(
+  [...NOTIFICATION_EVENT_REGISTRY.values()]
+    .filter((definition) => definition.channels.includes("in_app"))
+    .map((definition) => definition.eventType),
+);
 
 export type InAppNotificationView = {
   id: string;
@@ -66,31 +62,34 @@ function pickString(record: Record<string, unknown>, ...keys: string[]): string 
   return undefined;
 }
 
-const RECURRING_EVENT_SET = new Set(["billing.past_due", "inventory.low", "payment.failed"]);
-
 export function buildInAppDedupeKey(eventType: string, payload: unknown, now = new Date()): string {
   const data = asRecord(payload);
   const eventId = pickString(data, "eventId", "event_id");
   if (eventId) return `${eventType}:${eventId}`;
   const entity =
-    pickString(
-      data,
-      "orderId",
-      "order_id",
-      "orderDisplayId",
-      "displayId",
-      "txRef",
-      "variantId",
-      "productId",
-      "invoiceId",
-      "subscriptionId",
-      "inquiryId",
-    ) ?? null;
+    (eventType.startsWith("payment.")
+      ? pickString(data, "txRef", "orderId", "order_id", "sourceEventId")
+      : pickString(
+          data,
+          "orderId",
+          "order_id",
+          "orderDisplayId",
+          "displayId",
+          "txRef",
+          "variantId",
+          "productId",
+          "invoiceId",
+          "subscriptionId",
+          "inquiryId",
+        )) ?? null;
   if (eventType === "notification.test") {
     return `notification.test:${pickString(data, "testId", "id") ?? crypto.randomUUID()}`;
   }
   if (entity) {
-    const bucket = RECURRING_EVENT_SET.has(eventType) ? `:${now.toISOString().slice(0, 10)}` : "";
+    const bucket =
+      getNotificationEventDefinition(eventType)?.dedupe === "entity_daily"
+        ? `:${now.toISOString().slice(0, 10)}`
+        : "";
     return `${eventType}:${entity}${bucket}`;
   }
   try {
@@ -104,72 +103,40 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
   const data = asRecord(payload);
   const orderId = pickString(data, "orderId", "order_id");
   const productId = pickString(data, "productId", "product_id");
-  if (
-    orderId &&
-    (eventType.startsWith("order.") ||
-      eventType.startsWith("payment.") ||
-      eventType === "cod_order.created")
-  ) {
-    return `/admin/orders/${encodeURIComponent(orderId)}`;
+  switch (getNotificationEventDefinition(eventType)?.deepLink) {
+    case "order":
+      return orderId ? `/admin/orders/${encodeURIComponent(orderId)}` : "/admin/orders";
+    case "product":
+      return productId ? `/admin/products/${encodeURIComponent(productId)}` : "/admin/products";
+    case "billing":
+      return "/admin/billing";
+    case "inquiries":
+      return "/admin/inquiries";
+    default:
+      return null;
   }
-  if (
-    eventType.startsWith("order.") ||
-    eventType.startsWith("payment.") ||
-    eventType === "cod_order.created"
-  ) {
-    return "/admin/orders";
-  }
-  if (eventType === "inventory.low" && productId) {
-    return `/admin/products/${encodeURIComponent(productId)}`;
-  }
-  if (eventType === "inventory.low") return "/admin/products";
-  if (eventType.startsWith("billing.")) return "/admin/billing";
-  if (eventType === "storefront.inquiry_created") return "/admin/inquiries";
-  return null;
 }
 
 function eventPolicy(eventType: string, payload: unknown) {
   const data = asRecord(payload);
-  if (eventType.startsWith("order.") || eventType.startsWith("payment.")) {
+  const definition = getNotificationEventDefinition(eventType);
+  if (definition) {
+    const entity =
+      definition.category === "inventory"
+        ? pickString(data, "productId", "variantId")
+        : definition.category === "billing"
+          ? pickString(data, "invoiceId", "subscriptionId")
+          : definition.category === "inquiries"
+            ? pickString(data, "inquiryId")
+            : definition.category === "orders"
+              ? pickString(data, "orderId", "order_id")
+              : undefined;
     return {
-      audience: { type: "permission", permission: { orders: ["read"] } } as InAppAudience,
-      category: "orders" as const,
-      groupKey: pickString(data, "orderId", "order_id")
-        ? `${eventType}:${pickString(data, "orderId", "order_id")}`
-        : null,
-      priority: eventType === "payment.failed" ? ("high" as const) : ("normal" as const),
-      retentionDays: eventType === "payment.failed" ? 180 : 90,
-    };
-  }
-  if (eventType === "inventory.low") {
-    return {
-      audience: { type: "permission", permission: { products: ["read"] } } as InAppAudience,
-      category: "inventory" as const,
-      groupKey: `${eventType}:${pickString(data, "productId", "variantId") ?? "all"}`,
-      priority: "normal" as const,
-      retentionDays: 30,
-    };
-  }
-  if (eventType.startsWith("billing.")) {
-    return {
-      audience: { type: "permission", permission: { billing: ["read"] } } as InAppAudience,
-      category: "billing" as const,
-      groupKey: pickString(data, "invoiceId", "subscriptionId")
-        ? `${eventType}:${pickString(data, "invoiceId", "subscriptionId")}`
-        : null,
-      priority: eventType === "billing.past_due" ? ("high" as const) : ("normal" as const),
-      retentionDays: eventType === "billing.past_due" ? 180 : 90,
-    };
-  }
-  if (eventType === "storefront.inquiry_created") {
-    return {
-      audience: { type: "permission", permission: { inquiries: ["read"] } } as InAppAudience,
-      category: "inquiries" as const,
-      groupKey: pickString(data, "inquiryId")
-        ? `${eventType}:${pickString(data, "inquiryId")}`
-        : null,
-      priority: "normal" as const,
-      retentionDays: 90,
+      audience: definition.audience as InAppAudience,
+      category: definition.category,
+      groupKey: entity ? `${definition.eventType}:${entity}` : null,
+      priority: definition.priority,
+      retentionDays: definition.retentionDays,
     };
   }
   return {
