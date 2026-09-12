@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
@@ -67,6 +67,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
   const { t } = useI18n();
   const canManage = usePolicy(merchantPolicies.notificationsManage);
   const emailFieldId = useId();
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -395,7 +396,10 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                 <FieldLabel htmlFor={emailFieldId}>
                   {t("settings.notifications.emailAddress")}
                 </FieldLabel>
-                <InputGroup>
+                <InputGroup className="bg-background shadow-xs transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+                  <InputGroupAddon align="inline-start">
+                    <AppIcons.mail aria-hidden className="size-4" />
+                  </InputGroupAddon>
                   <InputGroupInput
                     autoComplete="email"
                     disabled={!canManage || isPending || savingTarget}
@@ -403,6 +407,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                     placeholder="you@business.com"
                     type="email"
                     value={emailInput}
+                    ref={emailInputRef}
                     onChange={(event) => setEmailInput(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
@@ -413,24 +418,44 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                   />
                   {canManage ? (
                     <InputGroupAddon align="inline-end">
-                      <InputGroupButton
-                        aria-busy={savingTarget}
-                        className="rounded-full"
-                        disabled={isPending || savingTarget || !targetDirty}
-                        size="xs"
-                        type="button"
-                        variant="secondary"
-                        onClick={saveTarget}
-                      >
-                        {savingTarget ? (
-                          <>
-                            <AppIcons.loader className="animate-spin" />
-                            {t("common.saving")}
-                          </>
-                        ) : (
-                          t("common.save")
-                        )}
-                      </InputGroupButton>
+                      {targetDirty || savingTarget ? (
+                        <InputGroupButton
+                          aria-busy={savingTarget}
+                          className="rounded-full"
+                          disabled={isPending || savingTarget}
+                          size="xs"
+                          type="button"
+                          variant="secondary"
+                          onClick={saveTarget}
+                        >
+                          {savingTarget ? (
+                            <>
+                              <AppIcons.loader className="animate-spin" />
+                              {t("common.saving")}
+                            </>
+                          ) : (
+                            t("common.save")
+                          )}
+                        </InputGroupButton>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InputGroupButton
+                              aria-label={t("settings.notifications.editEmail")}
+                              disabled={isPending}
+                              size="icon-xs"
+                              type="button"
+                              onClick={() => {
+                                emailInputRef.current?.focus();
+                                emailInputRef.current?.select();
+                              }}
+                            >
+                              <AppIcons.edit />
+                            </InputGroupButton>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("settings.notifications.editEmail")}</TooltipContent>
+                        </Tooltip>
+                      )}
                     </InputGroupAddon>
                   ) : null}
                 </InputGroup>

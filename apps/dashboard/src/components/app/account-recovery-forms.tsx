@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/input-group";
 import { useI18n } from "@/i18n/provider";
 
+const AUTH_INPUT_CLASS =
+  "h-11 border-border/80 bg-background px-3.5 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-visible:border-ring focus-visible:ring-ring/25";
+const AUTH_INPUT_GROUP_CLASS =
+  "h-11 border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25";
+
 export function ForgotPasswordForm() {
   const { t } = useI18n();
   const id = useId();
@@ -80,6 +85,7 @@ export function ForgotPasswordForm() {
           <Input
             autoComplete="email"
             autoFocus
+            className={AUTH_INPUT_CLASS}
             disabled={pending}
             id={id}
             onChange={(event) => {
@@ -140,6 +146,7 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
         <FieldLabel htmlFor={id}>{t("auth.email")}</FieldLabel>
         <Input
           autoComplete="email"
+          className={AUTH_INPUT_CLASS}
           disabled={pending}
           id={id}
           onChange={(event) => {
@@ -176,7 +183,8 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
   const id = useId();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [visible, setVisible] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const unusable = invalid || !token;
@@ -220,7 +228,8 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
     );
   }
 
-  const EyeIcon = visible ? AppIcons.eyeOff : AppIcons.eye;
+  const PasswordEyeIcon = passwordVisible ? AppIcons.eyeOff : AppIcons.eye;
+  const ConfirmEyeIcon = confirmVisible ? AppIcons.eyeOff : AppIcons.eye;
   return (
     <form className="space-y-6" onSubmit={(event) => void submit(event)}>
       <div>
@@ -232,26 +241,30 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
       <FieldGroup className="gap-4">
         <Field>
           <FieldLabel htmlFor={`${id}-password`}>{t("auth.recovery.newPassword")}</FieldLabel>
-          <InputGroup>
+          <InputGroup className={AUTH_INPUT_GROUP_CLASS}>
             <InputGroupInput
               autoComplete="new-password"
               autoFocus
+              className="px-3 text-sm"
+              disabled={pending}
               id={`${id}-password`}
+              minLength={8}
               onChange={(event) => {
                 setPassword(event.target.value);
                 setError(null);
               }}
               required
-              type={visible ? "text" : "password"}
+              type={passwordVisible ? "text" : "password"}
               value={password}
             />
             <InputGroupAddon align="inline-end">
               <InputGroupButton
-                aria-label={visible ? t("auth.hidePassword") : t("auth.showPassword")}
-                onClick={() => setVisible((value) => !value)}
+                aria-label={passwordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                disabled={pending}
+                onClick={() => setPasswordVisible((value) => !value)}
                 size="icon-xs"
               >
-                <EyeIcon />
+                <PasswordEyeIcon />
               </InputGroupButton>
             </InputGroupAddon>
           </InputGroup>
@@ -259,17 +272,32 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
         </Field>
         <Field data-invalid={Boolean(error) || undefined}>
           <FieldLabel htmlFor={`${id}-confirm`}>{t("auth.confirmPassword")}</FieldLabel>
-          <Input
-            autoComplete="new-password"
-            id={`${id}-confirm`}
-            onChange={(event) => {
-              setConfirm(event.target.value);
-              setError(null);
-            }}
-            required
-            type={visible ? "text" : "password"}
-            value={confirm}
-          />
+          <InputGroup className={AUTH_INPUT_GROUP_CLASS}>
+            <InputGroupInput
+              autoComplete="new-password"
+              className="px-3 text-sm"
+              disabled={pending}
+              id={`${id}-confirm`}
+              minLength={8}
+              onChange={(event) => {
+                setConfirm(event.target.value);
+                setError(null);
+              }}
+              required
+              type={confirmVisible ? "text" : "password"}
+              value={confirm}
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                aria-label={confirmVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                disabled={pending}
+                onClick={() => setConfirmVisible((value) => !value)}
+                size="icon-xs"
+              >
+                <ConfirmEyeIcon />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
           {error ? <FieldError>{error}</FieldError> : null}
         </Field>
       </FieldGroup>
