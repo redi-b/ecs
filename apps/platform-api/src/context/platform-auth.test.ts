@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  getPasswordResetActionUrl,
   getPlatformAuthCookieOptions,
   requiresVerifiedEmailForInvitation,
 } from "./platform-auth.js";
@@ -44,4 +45,16 @@ test("invitation verification follows the account email-verification policy", ()
   assert.equal(requiresVerifiedEmailForInvitation(), false);
   assert.equal(requiresVerifiedEmailForInvitation(false), false);
   assert.equal(requiresVerifiedEmailForInvitation(true), true);
+});
+
+test("password reset emails use an app-hosted verification link", () => {
+  assert.equal(
+    getPasswordResetActionUrl({
+      dashboardPublicBaseUrl: "https://app.example.com",
+      generatedUrl:
+        "https://api.example.com/platform/auth/reset-password/reset-token?callbackURL=https%3A%2F%2Fshop.example.com%2Fadmin%2Freset-password",
+      token: "reset-token",
+    }),
+    "https://shop.example.com/admin/reset-password/verify?token=reset-token",
+  );
 });

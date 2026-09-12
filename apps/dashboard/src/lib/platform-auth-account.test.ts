@@ -4,6 +4,7 @@ import { afterEach, test } from "node:test";
 import {
   changeAccountEmail,
   getAccountIdentity,
+  preflightAccountPasswordReset,
   requestAccountPasswordReset,
   resetAccountPassword,
 } from "./platform-auth-account.js";
@@ -55,6 +56,33 @@ test("password reset submits the token without placing it in the URL", async () 
     newPassword: "a-new-password",
     token: "secret-token",
   });
+});
+
+test("password reset preflight delegates to Better Auth without consuming the token", async () => {
+  let captured: Request | undefined;
+  globalThis.fetch = async (input, init) => {
+    captured = new Request(input, init);
+    return new Response(null, {
+      headers: {
+        location: "https://app.example.com/admin/reset-password?token=secret-token",
+      },
+      status: 302,
+    });
+  };
+
+  const redirectUrl = await preflightAccountPasswordReset({
+    callbackURL: "https://app.example.com/admin/reset-password",
+    origin: "https://app.example.com",
+    platformApiBaseUrl: "https://api.example.com",
+    token: "secret-token",
+  });
+
+  assert.equal(
+    captured?.url,
+    "https://api.example.com/platform/auth/reset-password/secret-token?callbackURL=https%3A%2F%2Fapp.example.com%2Fadmin%2Freset-password",
+  );
+  assert.equal(captured?.redirect, "manual");
+  assert.equal(redirectUrl, "https://app.example.com/admin/reset-password?token=secret-token");
 });
 
 test("email changes forward the current session and host-aware callback", async () => {
