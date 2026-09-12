@@ -16,6 +16,19 @@ export function requiresVerifiedEmailForInvitation(requireEmailVerification?: bo
   return requireEmailVerification === true;
 }
 
+export function getPasswordResetActionUrl(input: {
+  dashboardPublicBaseUrl?: string | undefined;
+  generatedUrl: string;
+  token: string;
+}) {
+  const generatedUrl = new URL(input.generatedUrl);
+  const callbackUrl = generatedUrl.searchParams.get("callbackURL");
+  const dashboardUrl = new URL(callbackUrl || input.dashboardPublicBaseUrl || generatedUrl.origin);
+  const actionUrl = new URL("/admin/reset-password/verify", dashboardUrl.origin);
+  actionUrl.searchParams.set("token", input.token);
+  return actionUrl.toString();
+}
+
 export function createPlatformAuth(options: {
   baseUrl?: string | undefined;
   cookieDomain?: string | undefined;
@@ -104,18 +117,17 @@ export function createPlatformAuth(options: {
       revokeSessionsOnPasswordReset: true,
       ...(enqueueAccountEmail
         ? {
-            sendResetPassword: async ({
-              url,
-              user,
-            }: {
-              url: string;
-              user: { email: string; name: string };
-            }) => {
+            sendResetPassword: async ({ token, url, user }) => {
+              const actionUrl = getPasswordResetActionUrl({
+                dashboardPublicBaseUrl: options.dashboardPublicBaseUrl,
+                generatedUrl: url,
+                token,
+              });
               await enqueueAccountEmail({
                 idempotencySource: url,
                 recipient: user.email,
                 templateKey: "account.password_reset",
-                variables: { action_url: url, recipient_name: user.name || "there" },
+                variables: { action_url: actionUrl, recipient_name: user.name || "there" },
               });
             },
           }

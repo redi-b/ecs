@@ -179,6 +179,27 @@ export async function resetAccountPassword(
   });
 }
 
+export async function preflightAccountPasswordReset(
+  options: AuthRequestContext & { callbackURL: string; token: string },
+) {
+  const url = authUrl(
+    `/platform/auth/reset-password/${encodeURIComponent(options.token)}`,
+    options.platformApiBaseUrl,
+  );
+  url.searchParams.set("callbackURL", options.callbackURL);
+  const response = await fetch(url, {
+    headers: authHeaders(options),
+    method: "GET",
+    redirect: "manual",
+  }).catch(() => null);
+  const location = response?.headers.get("location");
+  if (!response || !location || response.status < 300 || response.status >= 400) return null;
+
+  const redirectUrl = new URL(location, options.callbackURL);
+  if (redirectUrl.origin !== new URL(options.callbackURL).origin) return null;
+  return redirectUrl.toString();
+}
+
 export async function changeAccountEmail(
   options: AuthRequestContext & { callbackURL: string; newEmail: string },
 ) {
