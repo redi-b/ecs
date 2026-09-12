@@ -200,6 +200,40 @@ export async function preflightAccountPasswordReset(
   return redirectUrl.toString();
 }
 
+export function getSafeAccountReturnPath(value: string | null | undefined) {
+  if (!value?.startsWith("/") || value.startsWith("//")) return "/admin/sign-in";
+  const url = new URL(value, "https://dashboard.invalid");
+  if (
+    url.origin !== "https://dashboard.invalid" ||
+    (url.pathname !== "/admin" && !url.pathname.startsWith("/admin/"))
+  ) {
+    return "/admin/sign-in";
+  }
+  return `${url.pathname}${url.search}`;
+}
+
+export async function verifyAccountEmail(
+  options: AuthRequestContext & { callbackURL: string; token: string },
+) {
+  const url = authUrl("/platform/auth/verify-email", options.platformApiBaseUrl);
+  url.searchParams.set("token", options.token);
+  url.searchParams.set("callbackURL", options.callbackURL);
+  const response = await fetch(url, {
+    headers: authHeaders(options),
+    method: "GET",
+    redirect: "manual",
+  }).catch(() => null);
+  const location = response?.headers.get("location");
+  if (!response || !location || response.status < 300 || response.status >= 400) return null;
+
+  const redirectUrl = new URL(location, options.callbackURL);
+  if (redirectUrl.origin !== new URL(options.callbackURL).origin) return null;
+  return {
+    cookies: getSetCookieValues(response.headers),
+    redirectUrl: redirectUrl.toString(),
+  };
+}
+
 export async function changeAccountEmail(
   options: AuthRequestContext & { callbackURL: string; newEmail: string },
 ) {

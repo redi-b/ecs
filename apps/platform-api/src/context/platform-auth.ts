@@ -29,6 +29,35 @@ export function getPasswordResetActionUrl(input: {
   return actionUrl.toString();
 }
 
+export function getEmailVerificationActionUrl(input: {
+  dashboardPublicBaseUrl?: string | undefined;
+  generatedUrl: string;
+  intent: "approve-email-change" | "verify-email";
+  token: string;
+}) {
+  const generatedUrl = new URL(input.generatedUrl);
+  const callbackUrl = new URL(
+    generatedUrl.searchParams.get("callbackURL") || "/",
+    input.dashboardPublicBaseUrl || generatedUrl.origin,
+  );
+  const nestedReturnTo =
+    input.intent === "verify-email" &&
+    callbackUrl.pathname === "/admin/verify-email/result" &&
+    callbackUrl.searchParams.get("intent") === "approve-email-change"
+      ? callbackUrl.searchParams.get("returnTo")
+      : null;
+  const returnTo =
+    (nestedReturnTo === "/admin" || nestedReturnTo?.startsWith("/admin/")) &&
+    !nestedReturnTo.startsWith("//")
+      ? nestedReturnTo
+      : `${callbackUrl.pathname}${callbackUrl.search}`;
+  const actionUrl = new URL("/admin/verify-email", callbackUrl.origin);
+  actionUrl.searchParams.set("token", input.token);
+  actionUrl.searchParams.set("intent", input.intent);
+  actionUrl.searchParams.set("returnTo", returnTo);
+  return actionUrl.toString();
+}
+
 export function createPlatformAuth(options: {
   baseUrl?: string | undefined;
   cookieDomain?: string | undefined;
@@ -139,23 +168,23 @@ export function createPlatformAuth(options: {
             autoSignInAfterVerification: false,
             sendOnSignIn: true,
             sendOnSignUp: true,
-            sendVerificationEmail: async ({
-              url,
-              user,
-            }: {
-              url: string;
-              user: { email: string; name: string };
-            }) => {
+            sendVerificationEmail: async ({ token, url, user }) => {
+              const actionUrl = getEmailVerificationActionUrl({
+                dashboardPublicBaseUrl: options.dashboardPublicBaseUrl,
+                generatedUrl: url,
+                intent: "verify-email",
+                token,
+              });
               if (enqueueAccountEmail) {
                 await enqueueAccountEmail({
                   idempotencySource: url,
                   recipient: user.email,
                   templateKey: "account.email_verification",
-                  variables: { action_url: url, recipient_name: user.name || "there" },
+                  variables: { action_url: actionUrl, recipient_name: user.name || "there" },
                 });
               } else if (emailProvider) {
                 await emailProvider.send({
-                  body: `Verify your email address to finish creating your ECS account:\n\n${url}`,
+                  body: `Verify your email address to finish creating your ECS account:\n\n${actionUrl}`,
                   channel: "email",
                   eventType: "account.email_verification",
                   recipient: user.email,
@@ -281,21 +310,19 @@ export function createPlatformAuth(options: {
         ? {
             changeEmail: {
               enabled: true,
-              sendChangeEmailConfirmation: async ({
-                newEmail,
-                url,
-                user,
-              }: {
-                newEmail: string;
-                url: string;
-                user: { email: string; name: string };
-              }) => {
+              sendChangeEmailConfirmation: async ({ newEmail, token, url, user }) => {
+                const actionUrl = getEmailVerificationActionUrl({
+                  dashboardPublicBaseUrl: options.dashboardPublicBaseUrl,
+                  generatedUrl: url,
+                  intent: "approve-email-change",
+                  token,
+                });
                 await enqueueAccountEmail({
                   idempotencySource: url,
                   recipient: user.email,
                   templateKey: "account.email_change_current",
                   variables: {
-                    action_url: url,
+                    action_url: actionUrl,
                     new_email: newEmail,
                     recipient_name: user.name || "there",
                   },

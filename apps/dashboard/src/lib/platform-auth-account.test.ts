@@ -4,9 +4,11 @@ import { afterEach, test } from "node:test";
 import {
   changeAccountEmail,
   getAccountIdentity,
+  getSafeAccountReturnPath,
   preflightAccountPasswordReset,
   requestAccountPasswordReset,
   resetAccountPassword,
+  verifyAccountEmail,
 } from "./platform-auth-account.js";
 
 const originalFetch = globalThis.fetch;
@@ -83,6 +85,40 @@ test("password reset preflight delegates to Better Auth without consuming the to
   );
   assert.equal(captured?.redirect, "manual");
   assert.equal(redirectUrl, "https://app.example.com/admin/reset-password?token=secret-token");
+});
+
+test("account return paths remain local to dashboard routes", () => {
+  assert.equal(
+    getSafeAccountReturnPath("/admin/settings?tab=account"),
+    "/admin/settings?tab=account",
+  );
+  assert.equal(getSafeAccountReturnPath("https://evil.example/path"), "/admin/sign-in");
+  assert.equal(getSafeAccountReturnPath("//evil.example/path"), "/admin/sign-in");
+  assert.equal(getSafeAccountReturnPath("/storefront"), "/admin/sign-in");
+});
+
+test("email verification delegates mutation to Better Auth and returns session cookies", async () => {
+  globalThis.fetch = async () =>
+    new Response(null, {
+      headers: {
+        location: "https://app.example.com/admin/verify-email/result?intent=verify-email",
+        "set-cookie": "ecs.session_token=session_2; Path=/; HttpOnly",
+      },
+      status: 302,
+    });
+
+  const result = await verifyAccountEmail({
+    callbackURL: "https://app.example.com/admin/verify-email/result?intent=verify-email",
+    origin: "https://app.example.com",
+    platformApiBaseUrl: "https://api.example.com",
+    token: "verify-token",
+  });
+
+  assert.equal(
+    result?.redirectUrl,
+    "https://app.example.com/admin/verify-email/result?intent=verify-email",
+  );
+  assert.deepEqual(result?.cookies, ["ecs.session_token=session_2; Path=/; HttpOnly"]);
 });
 
 test("email changes forward the current session and host-aware callback", async () => {
