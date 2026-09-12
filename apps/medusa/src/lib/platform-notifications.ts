@@ -1,4 +1,4 @@
-import { formatPublicOrderReference } from "@ecs/contracts";
+import { formatPublicOrderReference } from "./public-order-reference";
 
 export type PlatformNotificationEmitInput = {
   eventType: string;
