@@ -1541,15 +1541,19 @@ export const merchantDashboardSummarySchema = z.object({
 export type MerchantDashboardSummary = z.infer<typeof merchantDashboardSummarySchema>;
 
 /** Shell/auth payload only — no operations, analytics, or billing. */
-export const merchantDashboardAccessSchema = merchantDashboardSummarySchema.pick({
-  actor: true,
-  capabilities: true,
-  permissions: true,
-  commerce: true,
-  domain: true,
-  storefront: true,
-  tenant: true,
-});
+export const merchantDashboardAccessSchema = merchantDashboardSummarySchema
+  .pick({
+    actor: true,
+    capabilities: true,
+    permissions: true,
+    commerce: true,
+    domain: true,
+    storefront: true,
+    tenant: true,
+  })
+  .extend({
+    shopAccess: z.object({ accessibleCount: z.number().int().nonnegative() }).optional(),
+  });
 
 export type MerchantDashboardAccess = z.infer<typeof merchantDashboardAccessSchema>;
 

@@ -5,10 +5,7 @@ import { buildInAppDedupeKey, buildInAppHref, IN_APP_EVENT_SET } from "./inbox.j
 
 describe("buildInAppDedupeKey", () => {
   it("uses order id for commerce events", () => {
-    assert.equal(
-      buildInAppDedupeKey("order.created", { orderId: "ord_1" }),
-      "order.created:ord_1",
-    );
+    assert.equal(buildInAppDedupeKey("order.created", { orderId: "ord_1" }), "order.created:ord_1");
     assert.equal(
       buildInAppDedupeKey("payment.paid", { order_id: "ord_2", amount: "10" }),
       "payment.paid:ord_2",
@@ -19,14 +16,26 @@ describe("buildInAppDedupeKey", () => {
     const key = buildInAppDedupeKey("notification.test", { testId: "t1" });
     assert.equal(key, "notification.test:t1");
   });
+
+  it("prefers a producer event id and buckets recurring entity events by day", () => {
+    assert.equal(
+      buildInAppDedupeKey("payment.failed", { eventId: "attempt-1", orderId: "ord-1" }),
+      "payment.failed:attempt-1",
+    );
+    assert.equal(
+      buildInAppDedupeKey(
+        "inventory.low",
+        { productId: "prod-1" },
+        new Date("2026-09-12T10:00:00Z"),
+      ),
+      "inventory.low:prod-1:2026-09-12",
+    );
+  });
 });
 
 describe("buildInAppHref", () => {
   it("links to order detail when orderId present", () => {
-    assert.equal(
-      buildInAppHref("order.created", { orderId: "ord_1" }),
-      "/admin/orders/ord_1",
-    );
+    assert.equal(buildInAppHref("order.created", { orderId: "ord_1" }), "/admin/orders/ord_1");
   });
 
   it("falls back to orders list", () => {

@@ -58,6 +58,7 @@ export const dashboardRoutes = {
   orderDetail: (orderId: string) => `/admin/orders/${encodeURIComponent(orderId)}`,
   editor: "/admin/editor",
   insights: "/admin/insights",
+  notifications: "/admin/notifications",
   billing: "/admin/billing",
   settings: "/admin/settings",
   storefrontTemplate: "/admin/storefront/template",

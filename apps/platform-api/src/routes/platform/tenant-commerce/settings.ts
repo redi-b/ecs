@@ -44,9 +44,11 @@ export function registerPlatformTenantSettingsRoutes(
       return context.json({ error: result.error }, result.status);
     }
 
+    const shopAccess = await options.getTenantMembershipSummary?.({ userId: session.user.id });
     return context.json({
       ...result.summary,
       actor: authorization.actor,
+      shopAccess: { accessibleCount: shopAccess?.accessibleCount ?? 1 },
     });
   });
 

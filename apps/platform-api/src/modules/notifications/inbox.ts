@@ -1,17 +1,29 @@
 import type { createPlatformDb } from "@ecs/db";
-import { inAppNotifications } from "@ecs/db";
-import { and, count, desc, eq, isNull, or } from "drizzle-orm";
+import {
+  inAppNotificationEvents,
+  inAppNotificationReceipts,
+  inAppNotifications,
+  organizationMembers,
+  tenants,
+  users,
+} from "@ecs/db";
+import { and, count, desc, eq, gt, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
+import { createMerchantPermissionLookup } from "../../auth/merchant-authorization.js";
+import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
 import type { NotificationEventType } from "../../types/index.js";
 import { createCodeNotificationRenderer } from "./renderer.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
+type InboxCategory = "billing" | "inquiries" | "inventory" | "orders" | "system";
+type InboxPriority = "high" | "normal";
 
-/**
- * Commerce events that create tenant-wide inbox items in v1.
- * Channel delivery tests (`notification.test`) are intentionally excluded:
- * those only verify Telegram/email pipes, not the in-app bell.
- */
+export type InAppAudience =
+  | { type: "all_members" }
+  | { type: "permission"; permission: MerchantPermissionRequest }
+  | { type: "roles"; roles: string[] }
+  | { type: "users"; userIds: string[] };
+
 export const IN_APP_EVENT_SET = new Set<string>([
   "order.created",
   "order.cancelled",
@@ -26,37 +38,40 @@ export const IN_APP_EVENT_SET = new Set<string>([
 export type InAppNotificationView = {
   id: string;
   eventType: string;
+  category: InboxCategory;
+  priority: InboxPriority;
   title: string;
   body: string;
   href: string | null;
+  groupKey: string | null;
+  occurrenceCount: number;
   readAt: string | null;
+  seenAt: string | null;
   createdAt: string;
 };
 
 const renderer = createCodeNotificationRenderer();
 
 function asRecord(payload: unknown): Record<string, unknown> {
-  if (typeof payload === "object" && payload !== null && !Array.isArray(payload)) {
-    return payload as Record<string, unknown>;
-  }
-  return {};
+  return typeof payload === "object" && payload !== null && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : {};
 }
 
 function pickString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
   for (const key of keys) {
     const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
+    if (typeof value === "string" && value.trim()) return value.trim();
   }
   return undefined;
 }
 
-/**
- * Stable dedupe key so re-ingested commerce events do not spam the feed.
- */
-export function buildInAppDedupeKey(eventType: string, payload: unknown): string {
+const RECURRING_EVENT_SET = new Set(["billing.past_due", "inventory.low", "payment.failed"]);
+
+export function buildInAppDedupeKey(eventType: string, payload: unknown, now = new Date()): string {
   const data = asRecord(payload);
+  const eventId = pickString(data, "eventId", "event_id");
+  if (eventId) return `${eventType}:${eventId}`;
   const entity =
     pickString(
       data,
@@ -65,255 +80,545 @@ export function buildInAppDedupeKey(eventType: string, payload: unknown): string
       "orderDisplayId",
       "displayId",
       "txRef",
-      "eventId",
       "variantId",
       "productId",
       "invoiceId",
       "subscriptionId",
       "inquiryId",
     ) ?? null;
-
   if (eventType === "notification.test") {
-    const testId = pickString(data, "testId", "id") ?? crypto.randomUUID();
-    return `notification.test:${testId}`;
+    return `notification.test:${pickString(data, "testId", "id") ?? crypto.randomUUID()}`;
   }
-
   if (entity) {
-    return `${eventType}:${entity}`;
+    const bucket = RECURRING_EVENT_SET.has(eventType) ? `:${now.toISOString().slice(0, 10)}` : "";
+    return `${eventType}:${entity}${bucket}`;
   }
-
-  // Last resort: still dedupe identical empty payloads for the same event type
-  // by using a short hash of sorted keys (rarely hit).
   try {
-    const stable = JSON.stringify(data, Object.keys(data).sort());
-    return `${eventType}:${stable.slice(0, 120)}`;
+    return `${eventType}:${JSON.stringify(data, Object.keys(data).sort()).slice(0, 120)}`;
   } catch {
     return `${eventType}:${crypto.randomUUID()}`;
   }
 }
 
-/**
- * Dashboard-relative path only. External URLs rejected.
- */
 export function buildInAppHref(eventType: string, payload: unknown): string | null {
   const data = asRecord(payload);
   const orderId = pickString(data, "orderId", "order_id");
   const productId = pickString(data, "productId", "product_id");
-
   if (
     orderId &&
     (eventType.startsWith("order.") ||
       eventType.startsWith("payment.") ||
-      eventType === "cod_order.created") // legacy inbox rows
+      eventType === "cod_order.created")
   ) {
     return `/admin/orders/${encodeURIComponent(orderId)}`;
   }
-
   if (
     eventType.startsWith("order.") ||
     eventType.startsWith("payment.") ||
-    eventType === "cod_order.created" // legacy inbox rows
+    eventType === "cod_order.created"
   ) {
     return "/admin/orders";
   }
-
   if (eventType === "inventory.low" && productId) {
     return `/admin/products/${encodeURIComponent(productId)}`;
   }
-  if (eventType === "inventory.low") {
-    return "/admin/products";
-  }
-
-  if (eventType.startsWith("billing.")) {
-    return "/admin/billing";
-  }
-
-  if (eventType === "storefront.inquiry_created") {
-    return "/admin/inquiries";
-  }
-
+  if (eventType === "inventory.low") return "/admin/products";
+  if (eventType.startsWith("billing.")) return "/admin/billing";
+  if (eventType === "storefront.inquiry_created") return "/admin/inquiries";
   return null;
 }
 
-function titleFromRender(eventType: string, subject: string | undefined, body: string): string {
-  if (subject?.trim()) {
-    return subject.trim().slice(0, 200);
+function eventPolicy(eventType: string, payload: unknown) {
+  const data = asRecord(payload);
+  if (eventType.startsWith("order.") || eventType.startsWith("payment.")) {
+    return {
+      audience: { type: "permission", permission: { orders: ["read"] } } as InAppAudience,
+      category: "orders" as const,
+      groupKey: pickString(data, "orderId", "order_id")
+        ? `${eventType}:${pickString(data, "orderId", "order_id")}`
+        : null,
+      priority: eventType === "payment.failed" ? ("high" as const) : ("normal" as const),
+      retentionDays: eventType === "payment.failed" ? 180 : 90,
+    };
   }
-  const firstLine = body.split("\n").find((line) => line.trim())?.trim();
-  if (firstLine) {
-    return firstLine.slice(0, 200);
+  if (eventType === "inventory.low") {
+    return {
+      audience: { type: "permission", permission: { products: ["read"] } } as InAppAudience,
+      category: "inventory" as const,
+      groupKey: `${eventType}:${pickString(data, "productId", "variantId") ?? "all"}`,
+      priority: "normal" as const,
+      retentionDays: 30,
+    };
   }
-  return eventType;
-}
-
-function serializeRow(
-  row: typeof inAppNotifications.$inferSelect,
-): InAppNotificationView {
+  if (eventType.startsWith("billing.")) {
+    return {
+      audience: { type: "permission", permission: { billing: ["read"] } } as InAppAudience,
+      category: "billing" as const,
+      groupKey: pickString(data, "invoiceId", "subscriptionId")
+        ? `${eventType}:${pickString(data, "invoiceId", "subscriptionId")}`
+        : null,
+      priority: eventType === "billing.past_due" ? ("high" as const) : ("normal" as const),
+      retentionDays: eventType === "billing.past_due" ? 180 : 90,
+    };
+  }
+  if (eventType === "storefront.inquiry_created") {
+    return {
+      audience: { type: "permission", permission: { inquiries: ["read"] } } as InAppAudience,
+      category: "inquiries" as const,
+      groupKey: pickString(data, "inquiryId")
+        ? `${eventType}:${pickString(data, "inquiryId")}`
+        : null,
+      priority: "normal" as const,
+      retentionDays: 90,
+    };
+  }
   return {
-    id: row.id,
-    eventType: row.eventType,
-    title: row.title,
-    body: row.body,
-    href: row.href,
-    readAt: row.readAt ? row.readAt.toISOString() : null,
-    createdAt: row.createdAt.toISOString(),
+    audience: { type: "all_members" } as InAppAudience,
+    category: "system" as const,
+    groupKey: null,
+    priority: "normal" as const,
+    retentionDays: 30,
   };
 }
 
-/**
- * Visibility for actor: tenant-wide (user_id null) + personal rows for this user.
- * v1 always writes user_id null; filter still correct when personal rows appear later.
- */
-export function inAppVisibilitySql(tenantId: string, actorUserId?: string | null) {
-  if (actorUserId?.trim()) {
-    return and(
-      eq(inAppNotifications.tenantId, tenantId),
-      or(isNull(inAppNotifications.userId), eq(inAppNotifications.userId, actorUserId.trim())),
-    );
+function titleFromRender(eventType: string, subject: string | undefined, body: string): string {
+  return (
+    subject?.trim() ||
+    body
+      .split("\n")
+      .find((line) => line.trim())
+      ?.trim() ||
+    eventType
+  ).slice(0, 200);
+}
+
+function encodeCursor(createdAt: Date, id: string) {
+  return Buffer.from(JSON.stringify([createdAt.toISOString(), id]), "utf8").toString("base64url");
+}
+
+function decodeCursor(value: string | undefined) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as unknown;
+    if (!Array.isArray(parsed) || parsed.length !== 2) return null;
+    const date = new Date(String(parsed[0]));
+    const id = String(parsed[1]);
+    return Number.isNaN(date.getTime()) || !id ? null : { createdAt: date, id };
+  } catch {
+    return null;
   }
-  return and(eq(inAppNotifications.tenantId, tenantId), isNull(inAppNotifications.userId));
 }
 
 export function createInAppNotificationService(db: PlatformDb) {
-  return {
-    /**
-     * Create a tenant-wide inbox item when the event is in the v1 allowlist.
-     * Idempotent on (tenantId, dedupeKey). Never throws to callers — returns false on failure.
-     */
-    tryCreateFromEvent: async (input: {
+  const hasPermission = createMerchantPermissionLookup(db);
+
+  async function resolveRecipients(tenantId: string, audience: InAppAudience) {
+    const members = await db
+      .select({
+        organizationId: organizationMembers.organizationId,
+        role: organizationMembers.role,
+        userId: organizationMembers.userId,
+      })
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(tenants.organizationId, organizationMembers.organizationId))
+      .innerJoin(users, eq(users.id, organizationMembers.userId))
+      .where(
+        and(
+          eq(tenants.id, tenantId),
+          eq(organizationMembers.status, "active"),
+          eq(users.status, "active"),
+        ),
+      );
+    if (audience.type === "all_members") return members.map((member) => member.userId);
+    if (audience.type === "users") {
+      const selected = new Set(audience.userIds);
+      return members.filter((member) => selected.has(member.userId)).map((member) => member.userId);
+    }
+    if (audience.type === "roles") {
+      const selected = new Set(audience.roles);
+      return members
+        .filter((member) => member.role.split(",").some((role) => selected.has(role.trim())))
+        .map((member) => member.userId);
+    }
+    const allowed = await Promise.all(
+      members.map(async (member) => ({
+        allowed: await hasPermission({
+          organizationId: member.organizationId,
+          permission: audience.permission,
+          role: member.role,
+        }),
+        userId: member.userId,
+      })),
+    );
+    return allowed.filter((member) => member.allowed).map((member) => member.userId);
+  }
+
+  const core = {
+    createFromEvent: async (input: {
       eventType: string;
       payload?: unknown;
       tenantId: string;
-      /** Reserved; v1 always leaves null (tenant-wide). */
-      userId?: string | null;
-    }): Promise<{ created: boolean; id?: string }> => {
-      if (!IN_APP_EVENT_SET.has(input.eventType)) {
-        return { created: false };
-      }
-
-      const payload =
-        input.payload !== undefined && input.payload !== null && typeof input.payload === "object"
-          ? input.payload
-          : {};
-      const dedupeKey = buildInAppDedupeKey(input.eventType, payload);
+      audience?: InAppAudience;
+      sourceEventId?: string;
+    }): Promise<{ created: boolean; id?: string; recipients: number }> => {
+      if (!IN_APP_EVENT_SET.has(input.eventType)) return { created: false, recipients: 0 };
+      const payload = asRecord(input.payload);
+      const policy = eventPolicy(input.eventType, payload);
+      const audience = input.audience ?? policy.audience;
+      const userIds = await resolveRecipients(input.tenantId, audience);
+      if (!userIds.length) return { created: false, recipients: 0 };
       const rendered = await Promise.resolve(
         renderer.render({
           channel: "in_app",
           eventType: input.eventType,
-          tenantId: input.tenantId,
           payload,
           recipient: "in_app",
+          tenantId: input.tenantId,
         }),
       );
-      const title = titleFromRender(input.eventType, rendered.subject, rendered.body);
-      const body = rendered.body.slice(0, 2000);
-      const href = buildInAppHref(input.eventType, payload);
-
-      try {
-        const [row] = await db
-          .insert(inAppNotifications)
-          .values({
-            tenantId: input.tenantId,
-            userId: input.userId?.trim() || null,
-            eventType: input.eventType,
-            dedupeKey,
-            title,
-            body,
-            href,
-            payload,
-          })
-          .onConflictDoNothing({
-            target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
-          })
-          .returning({ id: inAppNotifications.id });
-
-        if (!row) {
-          return { created: false };
-        }
-        return { created: true, id: row.id };
-      } catch {
-        return { created: false };
-      }
+      const expiresAt = new Date(Date.now() + policy.retentionDays * 86_400_000);
+      return db.transaction(async (transaction) => {
+        const insert = transaction.insert(inAppNotifications).values({
+          audience,
+          audienceType: audience.type,
+          body: rendered.body.slice(0, 2000),
+          category: policy.category,
+          dedupeKey: policy.groupKey ?? buildInAppDedupeKey(input.eventType, payload),
+          eventType: input.eventType,
+          expiresAt,
+          groupKey: policy.groupKey,
+          href: buildInAppHref(input.eventType, payload),
+          lastEventId: input.sourceEventId,
+          payload,
+          priority: policy.priority,
+          tenantId: input.tenantId,
+          title: titleFromRender(input.eventType, rendered.subject, rendered.body),
+        });
+        const [notification] = input.sourceEventId
+          ? await insert
+              .onConflictDoUpdate({
+                set: {
+                  audience,
+                  audienceType: audience.type,
+                  body: rendered.body.slice(0, 2000),
+                  category: policy.category,
+                  expiresAt,
+                  href: buildInAppHref(input.eventType, payload),
+                  lastEventId: input.sourceEventId,
+                  lastOccurredAt: new Date(),
+                  occurrenceCount: sql`${inAppNotifications.occurrenceCount} + 1`,
+                  payload,
+                  priority: policy.priority,
+                  title: titleFromRender(input.eventType, rendered.subject, rendered.body),
+                },
+                setWhere: sql`${inAppNotifications.lastEventId} IS DISTINCT FROM ${input.sourceEventId}`,
+                target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
+              })
+              .returning({ id: inAppNotifications.id })
+          : await insert
+              .onConflictDoNothing({
+                target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
+              })
+              .returning({ id: inAppNotifications.id });
+        if (!notification) return { created: false, recipients: 0 };
+        const occurredAt = new Date();
+        await transaction
+          .insert(inAppNotificationReceipts)
+          .values(
+            userIds.map((userId) => ({
+              notificationId: notification.id,
+              tenantId: input.tenantId,
+              userId,
+            })),
+          )
+          .onConflictDoUpdate({
+            set: { archivedAt: null, readAt: null, seenAt: null, createdAt: occurredAt },
+            target: [inAppNotificationReceipts.notificationId, inAppNotificationReceipts.userId],
+          });
+        return { created: true, id: notification.id, recipients: userIds.length };
+      });
     },
 
     list: async (input: {
       tenantId: string;
-      actorUserId?: string | null;
+      actorUserId: string;
+      category?: InboxCategory;
+      cursor?: string;
       limit?: number;
+      offset?: number;
+      q?: string;
       unreadOnly?: boolean;
-    }): Promise<{ items: InAppNotificationView[] }> => {
-      const limit = Math.min(Math.max(input.limit ?? 50, 1), 50);
-      const visibility = inAppVisibilitySql(input.tenantId, input.actorUserId);
-      const whereClause = input.unreadOnly
-        ? and(visibility, isNull(inAppNotifications.readAt))
-        : visibility;
-
-      const rows = await db
-        .select()
-        .from(inAppNotifications)
-        .where(whereClause)
-        .orderBy(desc(inAppNotifications.createdAt))
-        .limit(limit);
-
-      return { items: rows.map(serializeRow) };
+    }): Promise<{ count: number; items: InAppNotificationView[]; nextCursor: string | null }> => {
+      const limit = Math.min(Math.max(input.limit ?? 20, 1), 50);
+      const offset = Math.min(Math.max(input.offset ?? 0, 0), 10_000);
+      const q = input.q?.trim().slice(0, 120);
+      const cursor = decodeCursor(input.cursor);
+      const baseWhere = and(
+        eq(inAppNotificationReceipts.tenantId, input.tenantId),
+        eq(inAppNotificationReceipts.userId, input.actorUserId),
+        isNull(inAppNotificationReceipts.archivedAt),
+        input.unreadOnly ? isNull(inAppNotificationReceipts.readAt) : undefined,
+        input.category ? eq(inAppNotifications.category, input.category) : undefined,
+        q
+          ? or(ilike(inAppNotifications.title, `%${q}%`), ilike(inAppNotifications.body, `%${q}%`))
+          : undefined,
+        or(isNull(inAppNotifications.expiresAt), gt(inAppNotifications.expiresAt, new Date())),
+      );
+      const cursorWhere = cursor
+        ? or(
+            lt(inAppNotifications.lastOccurredAt, cursor.createdAt),
+            and(
+              eq(inAppNotifications.lastOccurredAt, cursor.createdAt),
+              lt(inAppNotifications.id, cursor.id),
+            ),
+          )
+        : undefined;
+      const [rows, total] = await Promise.all([
+        db
+          .select({ notification: inAppNotifications, receipt: inAppNotificationReceipts })
+          .from(inAppNotificationReceipts)
+          .innerJoin(
+            inAppNotifications,
+            eq(inAppNotifications.id, inAppNotificationReceipts.notificationId),
+          )
+          .where(and(baseWhere, cursorWhere))
+          .orderBy(desc(inAppNotifications.lastOccurredAt), desc(inAppNotifications.id))
+          .limit(limit + 1)
+          .offset(cursor ? 0 : offset),
+        db
+          .select({ value: count() })
+          .from(inAppNotificationReceipts)
+          .innerJoin(
+            inAppNotifications,
+            eq(inAppNotifications.id, inAppNotificationReceipts.notificationId),
+          )
+          .where(baseWhere),
+      ]);
+      const page = rows.slice(0, limit);
+      const items = page.map(({ notification, receipt }) => ({
+        id: notification.id,
+        body: notification.body,
+        category: notification.category as InboxCategory,
+        createdAt: notification.lastOccurredAt.toISOString(),
+        eventType: notification.eventType,
+        groupKey: notification.groupKey,
+        href: notification.href,
+        occurrenceCount: notification.occurrenceCount,
+        priority: notification.priority as InboxPriority,
+        readAt: receipt.readAt?.toISOString() ?? null,
+        seenAt: receipt.seenAt?.toISOString() ?? null,
+        title: notification.title,
+      }));
+      const last = page.at(-1)?.notification;
+      return {
+        count: Number(total[0]?.value ?? 0),
+        items,
+        nextCursor: rows.length > limit && last ? encodeCursor(last.lastOccurredAt, last.id) : null,
+      };
     },
 
-    unreadCount: async (input: {
-      tenantId: string;
-      actorUserId?: string | null;
-    }): Promise<{ count: number }> => {
-      const visibility = inAppVisibilitySql(input.tenantId, input.actorUserId);
+    unreadCount: async (input: { tenantId: string; actorUserId: string }) => {
       const [row] = await db
         .select({ value: count() })
-        .from(inAppNotifications)
-        .where(and(visibility, isNull(inAppNotifications.readAt)));
-
+        .from(inAppNotificationReceipts)
+        .innerJoin(
+          inAppNotifications,
+          eq(inAppNotifications.id, inAppNotificationReceipts.notificationId),
+        )
+        .where(
+          and(
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+            isNull(inAppNotificationReceipts.readAt),
+            isNull(inAppNotificationReceipts.archivedAt),
+            or(isNull(inAppNotifications.expiresAt), gt(inAppNotifications.expiresAt, new Date())),
+          ),
+        );
       return { count: Number(row?.value ?? 0) };
     },
 
-    markRead: async (input: {
+    setRead: async (input: {
       tenantId: string;
       id: string;
-      actorUserId?: string | null;
-    }): Promise<{ ok: true } | { ok: false; error: "not_found"; status: 404 }> => {
-      const visibility = inAppVisibilitySql(input.tenantId, input.actorUserId);
+      actorUserId: string;
+      read: boolean;
+    }) => {
       const [updated] = await db
-        .update(inAppNotifications)
-        .set({ readAt: new Date() })
+        .update(inAppNotificationReceipts)
+        .set({ readAt: input.read ? new Date() : null })
         .where(
-          and(visibility, eq(inAppNotifications.id, input.id), isNull(inAppNotifications.readAt)),
+          and(
+            eq(inAppNotificationReceipts.notificationId, input.id),
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+            isNull(inAppNotificationReceipts.archivedAt),
+          ),
         )
-        .returning({ id: inAppNotifications.id });
-
-      if (updated) {
-        return { ok: true };
-      }
-
-      // Already read or missing: treat existing readable row as success.
-      const [existing] = await db
-        .select({ id: inAppNotifications.id })
-        .from(inAppNotifications)
-        .where(and(visibility, eq(inAppNotifications.id, input.id)))
-        .limit(1);
-
-      if (!existing) {
-        return { ok: false, error: "not_found", status: 404 };
-      }
-      return { ok: true };
+        .returning({ id: inAppNotificationReceipts.id });
+      return updated
+        ? ({ ok: true } as const)
+        : ({ error: "not_found", ok: false, status: 404 } as const);
     },
 
-    markAllRead: async (input: {
-      tenantId: string;
-      actorUserId?: string | null;
-    }): Promise<{ ok: true; updated: number }> => {
-      const visibility = inAppVisibilitySql(input.tenantId, input.actorUserId);
+    markAllRead: async (input: { tenantId: string; actorUserId: string }) => {
       const updated = await db
-        .update(inAppNotifications)
+        .update(inAppNotificationReceipts)
         .set({ readAt: new Date() })
-        .where(and(visibility, isNull(inAppNotifications.readAt)))
-        .returning({ id: inAppNotifications.id });
+        .where(
+          and(
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+            isNull(inAppNotificationReceipts.readAt),
+            isNull(inAppNotificationReceipts.archivedAt),
+          ),
+        )
+        .returning({ id: inAppNotificationReceipts.id });
+      return { ok: true as const, updated: updated.length };
+    },
 
-      return { ok: true, updated: updated.length };
+    markSeen: async (input: { tenantId: string; actorUserId: string; ids: string[] }) => {
+      const ids = [...new Set(input.ids.filter(Boolean))].slice(0, 50);
+      if (!ids.length) return { ok: true as const, updated: 0 };
+      const updated = await db
+        .update(inAppNotificationReceipts)
+        .set({ seenAt: new Date() })
+        .where(
+          and(
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+            inArray(inAppNotificationReceipts.notificationId, ids),
+            isNull(inAppNotificationReceipts.seenAt),
+            isNull(inAppNotificationReceipts.archivedAt),
+          ),
+        )
+        .returning({ id: inAppNotificationReceipts.id });
+      return { ok: true as const, updated: updated.length };
+    },
+
+    deleteExpired: async (now = new Date()) => {
+      const deleted = await db
+        .delete(inAppNotifications)
+        .where(lt(inAppNotifications.expiresAt, now))
+        .returning({ id: inAppNotifications.id });
+      return { deleted: deleted.length };
+    },
+
+    archive: async (input: { tenantId: string; id: string; actorUserId: string }) => {
+      const [updated] = await db
+        .update(inAppNotificationReceipts)
+        .set({ archivedAt: new Date(), readAt: new Date() })
+        .where(
+          and(
+            eq(inAppNotificationReceipts.notificationId, input.id),
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+          ),
+        )
+        .returning({ id: inAppNotificationReceipts.id });
+      return updated
+        ? ({ ok: true } as const)
+        : ({ error: "not_found", ok: false, status: 404 } as const);
+    },
+  };
+
+  return {
+    ...core,
+    recordEvent: async (input: { eventType: string; payload?: unknown; tenantId: string }) => {
+      if (!IN_APP_EVENT_SET.has(input.eventType)) return null;
+      const [event] = await db
+        .insert(inAppNotificationEvents)
+        .values({
+          dedupeKey: buildInAppDedupeKey(input.eventType, input.payload),
+          eventType: input.eventType,
+          payload: asRecord(input.payload),
+          tenantId: input.tenantId,
+        })
+        .onConflictDoUpdate({
+          target: [inAppNotificationEvents.tenantId, inAppNotificationEvents.dedupeKey],
+          set: { updatedAt: new Date() },
+        })
+        .returning({ id: inAppNotificationEvents.id, status: inAppNotificationEvents.status });
+      return event ?? null;
+    },
+    materializeEvent: async (eventId: string) => {
+      const staleBefore = new Date(Date.now() - 5 * 60_000);
+      const [claimed] = await db
+        .update(inAppNotificationEvents)
+        .set({
+          attempts: sql`${inAppNotificationEvents.attempts} + 1`,
+          lastError: null,
+          status: "processing",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(inAppNotificationEvents.id, eventId),
+            or(
+              inArray(inAppNotificationEvents.status, ["pending", "failed"]),
+              and(
+                eq(inAppNotificationEvents.status, "processing"),
+                lt(inAppNotificationEvents.updatedAt, staleBefore),
+              ),
+            ),
+          ),
+        )
+        .returning();
+      if (!claimed) {
+        const [existing] = await db
+          .select({ status: inAppNotificationEvents.status })
+          .from(inAppNotificationEvents)
+          .where(eq(inAppNotificationEvents.id, eventId))
+          .limit(1);
+        if (!existing) throw new Error("in_app_event_not_found");
+        return { alreadyProcessed: true };
+      }
+      try {
+        const result = await core.createFromEvent({
+          eventType: claimed.eventType,
+          payload: claimed.payload,
+          sourceEventId: claimed.id,
+          tenantId: claimed.tenantId,
+        });
+        await db
+          .update(inAppNotificationEvents)
+          .set({ processedAt: new Date(), status: "processed", updatedAt: new Date() })
+          .where(eq(inAppNotificationEvents.id, claimed.id));
+        return { alreadyProcessed: false, ...result };
+      } catch (error) {
+        await db
+          .update(inAppNotificationEvents)
+          .set({
+            lastError: error instanceof Error ? error.message.slice(0, 500) : "unknown_error",
+            status: "failed",
+            updatedAt: new Date(),
+          })
+          .where(eq(inAppNotificationEvents.id, claimed.id));
+        throw error;
+      }
+    },
+    listRecoverableEvents: async (limit = 100) => {
+      const staleBefore = new Date(Date.now() - 5 * 60_000);
+      return db
+        .select({
+          attempts: inAppNotificationEvents.attempts,
+          id: inAppNotificationEvents.id,
+          tenantId: inAppNotificationEvents.tenantId,
+        })
+        .from(inAppNotificationEvents)
+        .where(
+          and(
+            lt(inAppNotificationEvents.attempts, 10),
+            or(
+              inArray(inAppNotificationEvents.status, ["pending", "failed"]),
+              and(
+                eq(inAppNotificationEvents.status, "processing"),
+                lt(inAppNotificationEvents.updatedAt, staleBefore),
+              ),
+            ),
+          ),
+        )
+        .orderBy(inAppNotificationEvents.createdAt)
+        .limit(Math.min(Math.max(limit, 1), 500));
     },
   };
 }

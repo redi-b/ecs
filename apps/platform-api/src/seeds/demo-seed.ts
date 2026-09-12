@@ -35,6 +35,7 @@ import {
   dailyMetrics,
   deliverySettings,
   domains,
+  inAppNotificationReceipts,
   inAppNotifications,
   invoices,
   mediaAssets,
@@ -613,13 +614,11 @@ async function seedCommerce(
 
   for (const [index, product] of shop.products.entries()) {
     const category =
-      (product.categoryHandle
-        ? categoryByHandle.get(product.categoryHandle)
-        : undefined) ?? categories[index % Math.max(categories.length, 1)];
+      (product.categoryHandle ? categoryByHandle.get(product.categoryHandle) : undefined) ??
+      categories[index % Math.max(categories.length, 1)];
     const collection =
-      (product.collectionHandle
-        ? collectionByHandle.get(product.collectionHandle)
-        : undefined) ?? collections[index % Math.max(collections.length, 1)];
+      (product.collectionHandle ? collectionByHandle.get(product.collectionHandle) : undefined) ??
+      collections[index % Math.max(collections.length, 1)];
 
     const imageCount = product.imageCount ?? 2;
     const uploaded = await seedProductMediaAssets({
@@ -745,7 +744,11 @@ async function seedDemoOrders(input: {
   let drafts = 0;
   let cancelled = 0;
   let completed = 0;
-  const orderCount = Math.min(14, Math.max(shop.customers.length * 2, 6), Math.max(variants.length, 1));
+  const orderCount = Math.min(
+    14,
+    Math.max(shop.customers.length * 2, 6),
+    Math.max(variants.length, 1),
+  );
   const orderIdsToBackdate: Array<{ id: string; createdAt: Date }> = [];
 
   for (let index = 0; index < orderCount; index += 1) {
@@ -789,10 +792,7 @@ async function seedDemoOrders(input: {
           delivery_choice: index % 3 === 0 ? "pickup" : "delivery",
           customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
           customer_phone: customer.phone,
-          note:
-            index % 5 === 0
-              ? "Please call before delivery — demo note"
-              : "Demo cash order",
+          note: index % 5 === 0 ? "Please call before delivery — demo note" : "Demo cash order",
           demo_placed_at: placedAt.toISOString(),
         },
         region_id: resources.regionId,
@@ -907,17 +907,20 @@ async function ensureDemoCustomer(
   return customerId;
 }
 
-async function seedPromotions(
-  tenantId: string,
-  handle: string,
-  products: ProductSeedResult[],
-) {
+async function seedPromotions(tenantId: string, handle: string, products: ProductSeedResult[]) {
   const now = new Date();
   const startsAt = addDays(now, -21).toISOString();
   const endsAt = addDays(now, 60).toISOString();
   const campaignPrefix = `ecs_${tenantId}_`;
-  const slug = handle.replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase() || "SHOP";
-  const productIds = products.slice(0, 4).map((product) => product.id).filter(Boolean);
+  const slug =
+    handle
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 6)
+      .toUpperCase() || "SHOP";
+  const productIds = products
+    .slice(0, 4)
+    .map((product) => product.id)
+    .filter(Boolean);
 
   type PromoSeed = {
     allocation?: "across" | "each";
@@ -1050,8 +1053,7 @@ async function seedProductStock(
         const skuTail = item.sku;
         return Boolean(variant.sku?.endsWith(skuTail) || variant.sku?.includes(skuTail));
       }) ?? product.variants[index];
-    const stockedQuantity =
-      definition?.stock ?? (25 + (index % 5) * 5);
+    const stockedQuantity = definition?.stock ?? 25 + (index % 5) * 5;
 
     await medusaPost(
       `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`,
@@ -1325,7 +1327,8 @@ async function fetchDemoImageBytes(seed: string): Promise<{ bytes: Buffer; mimeT
     if (response.ok) {
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.byteLength > 0) {
-        const mimeType = response.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
+        const mimeType =
+          response.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
         return { bytes, mimeType };
       }
     }
@@ -1351,7 +1354,9 @@ async function seedProductMediaAssets(input: {
 }): Promise<SeededMediaAsset[]> {
   const config = getMediaS3Config();
   if (!config) {
-    console.warn("[seed:demo] MEDIA_S3_* not configured — product images will use remote URLs only.");
+    console.warn(
+      "[seed:demo] MEDIA_S3_* not configured — product images will use remote URLs only.",
+    );
     return [];
   }
 
@@ -1525,9 +1530,7 @@ async function seedPlatformExtras(
   const existingPayment = await platformDb.db
     .select({ id: paymentOnboarding.id })
     .from(paymentOnboarding)
-    .where(
-      and(eq(paymentOnboarding.tenantId, tenantId), eq(paymentOnboarding.provider, "chapa")),
-    )
+    .where(and(eq(paymentOnboarding.tenantId, tenantId), eq(paymentOnboarding.provider, "chapa")))
     .limit(1);
 
   if (existingPayment[0]?.id) {
@@ -1590,7 +1593,7 @@ async function seedPlatformExtras(
   ];
 
   for (const row of inboxRows) {
-    await platformDb.db
+    const [notification] = await platformDb.db
       .insert(inAppNotifications)
       .values({
         body: row.body,
@@ -1601,10 +1604,10 @@ async function seedPlatformExtras(
           demo_seed: DEMO_SEED_MARKER,
           shop_handle: shop.tenant.handle,
         },
-        readAt: row.readAt,
+        category: row.eventType === "inventory.low" ? "inventory" : "orders",
+        priority: "normal",
         tenantId,
         title: row.title,
-        userId: null,
       })
       .onConflictDoUpdate({
         target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
@@ -1612,13 +1615,21 @@ async function seedPlatformExtras(
           body: row.body,
           eventType: row.eventType,
           href: row.href,
-          readAt: row.readAt,
           title: row.title,
         },
-      });
+      })
+      .returning({ id: inAppNotifications.id });
+    if (notification) {
+      await platformDb.db
+        .insert(inAppNotificationReceipts)
+        .values({ notificationId: notification.id, readAt: row.readAt, tenantId, userId })
+        .onConflictDoUpdate({
+          target: [inAppNotificationReceipts.notificationId, inAppNotificationReceipts.userId],
+          set: { archivedAt: null, readAt: row.readAt },
+        });
+    }
   }
 
-  void userId;
   void commerce;
 
   return {
@@ -1692,9 +1703,7 @@ async function seedMetrics(tenantId: string) {
 }
 
 async function seedAnalyticsEvents(tenantId: string, handle: string) {
-  await platformDb.db
-    .delete(analyticsEvents)
-    .where(eq(analyticsEvents.tenantId, tenantId));
+  await platformDb.db.delete(analyticsEvents).where(eq(analyticsEvents.tenantId, tenantId));
 
   const now = new Date();
   const types = [
@@ -1751,14 +1760,8 @@ function addDays(value: Date, days: number) {
 }
 
 async function cleanAllDemoData() {
-  const handles = [
-    ...demoShops.map((shop) => shop.tenant.handle),
-    ...LEGACY_DEMO_HANDLES,
-  ];
-  const emails = [
-    ...demoShops.map((shop) => shop.user.email),
-    ...LEGACY_DEMO_EMAILS,
-  ];
+  const handles = [...demoShops.map((shop) => shop.tenant.handle), ...LEGACY_DEMO_HANDLES];
+  const emails = [...demoShops.map((shop) => shop.user.email), ...LEGACY_DEMO_EMAILS];
   const tenantIds = demoShops.map((shop) => shop.ids.tenant);
 
   await platformDb.db
@@ -1784,14 +1787,19 @@ async function cleanAllDemoData() {
     .from(tenants)
     .where(inArray(tenants.handle, handles));
 
-  const idsToRemove = [
-    ...new Set([...tenantIds, ...existingTenants.map((row) => row.id)]),
-  ];
+  const idsToRemove = [...new Set([...tenantIds, ...existingTenants.map((row) => row.id)])];
   const organizationIdsToRemove = existingTenants.flatMap((row) =>
     row.organizationId ? [row.organizationId] : [],
   );
 
-  let commerce = { categories: 0, collections: 0, customers: 0, orders: 0, products: 0, promotions: 0 };
+  let commerce = {
+    categories: 0,
+    collections: 0,
+    customers: 0,
+    orders: 0,
+    products: 0,
+    promotions: 0,
+  };
 
   for (const shop of demoShops) {
     const live =
@@ -1848,9 +1856,7 @@ async function cleanAllDemoData() {
       .where(inArray(tenantMemberships.tenantId, idsToRemove));
     await platformDb.db.delete(domains).where(inArray(domains.tenantId, idsToRemove));
     await platformDb.db.delete(invoices).where(inArray(invoices.tenantId, idsToRemove));
-    await platformDb.db
-      .delete(subscriptions)
-      .where(inArray(subscriptions.tenantId, idsToRemove));
+    await platformDb.db.delete(subscriptions).where(inArray(subscriptions.tenantId, idsToRemove));
     await platformDb.db
       .delete(tenantProvisioningAttempts)
       .where(inArray(tenantProvisioningAttempts.tenantId, idsToRemove));
@@ -1878,9 +1884,7 @@ async function cleanAllDemoData() {
     await platformDb.db
       .delete(inAppNotifications)
       .where(inArray(inAppNotifications.tenantId, idsToRemove));
-    await platformDb.db
-      .delete(operatorNotes)
-      .where(inArray(operatorNotes.tenantId, idsToRemove));
+    await platformDb.db.delete(operatorNotes).where(inArray(operatorNotes.tenantId, idsToRemove));
     await platformDb.db.delete(mediaUsages).where(inArray(mediaUsages.tenantId, idsToRemove));
     await platformDb.db.delete(mediaAssets).where(inArray(mediaAssets.tenantId, idsToRemove));
     await platformDb.db.delete(tenants).where(inArray(tenants.id, idsToRemove));
@@ -1939,11 +1943,7 @@ function isDemoMetadata(
   return false;
 }
 
-async function cleanShopCommerce(
-  handle: string,
-  tenantId: string,
-  salesChannelId?: string | null,
-) {
+async function cleanShopCommerce(handle: string, tenantId: string, salesChannelId?: string | null) {
   const summary = {
     categories: 0,
     collections: 0,
@@ -2088,8 +2088,7 @@ async function cleanDemoOrders(input: {
     if (batch.length === 0) break;
 
     for (const order of batch) {
-      const channelMatch =
-        !input.salesChannelId || order.sales_channel_id === input.salesChannelId;
+      const channelMatch = !input.salesChannelId || order.sales_channel_id === input.salesChannelId;
       const demoOrder =
         isDemoMetadata(order.metadata ?? undefined, input.tenantId, input.handle) ||
         (channelMatch && order.email && input.demoEmails.has(order.email));
@@ -2127,8 +2126,7 @@ async function cleanDemoDraftOrders(input: {
     metadata?: Record<string, unknown> | null;
     sales_channel_id?: string | null;
   }>("/admin/draft-orders", "draft_orders", "id,metadata,sales_channel_id,email")) {
-    const channelMatch =
-      !input.salesChannelId || draft.sales_channel_id === input.salesChannelId;
+    const channelMatch = !input.salesChannelId || draft.sales_channel_id === input.salesChannelId;
     const isDemo =
       isDemoMetadata(draft.metadata ?? undefined, input.tenantId, input.handle) ||
       (channelMatch && draft.email && input.demoEmails.has(draft.email));
@@ -2168,7 +2166,11 @@ async function* paginateMedusaList<T extends { id: string }>(
 async function cleanTenantPromotions(tenantId: string, handle: string) {
   let removed = 0;
   const campaignPrefix = `ecs_${tenantId}_`;
-  const slug = handle.replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase() || "SHOP";
+  const slug =
+    handle
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 6)
+      .toUpperCase() || "SHOP";
   const promotions = await medusaGet<{
     promotions?: Array<{
       id: string;
@@ -2359,10 +2361,7 @@ async function medusaDelete(path: string) {
   await medusaRequest(path, { method: "DELETE" });
 }
 
-async function medusaRequest<T = unknown>(
-  path: string,
-  init: RequestInit,
-): Promise<T | null> {
+async function medusaRequest<T = unknown>(path: string, init: RequestInit): Promise<T | null> {
   if (!medusaAdminApiToken) return null;
 
   const response = await fetch(`${medusaInternalUrl}${path}`, {

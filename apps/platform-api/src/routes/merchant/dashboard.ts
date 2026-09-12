@@ -70,9 +70,11 @@ export function registerMerchantDashboardRoutes(
       tenantId: result.context.tenantId,
       userId: session.user.id,
     });
+    const shopAccess = await options.getTenantMembershipSummary?.({ userId: session.user.id });
     return context.json({
       ...payload,
       ...(access ?? {}),
+      shopAccess: { accessibleCount: shopAccess?.accessibleCount ?? 1 },
     });
   });
 

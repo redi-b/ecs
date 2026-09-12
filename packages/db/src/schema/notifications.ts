@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -8,7 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-
+import { users } from "./auth.js";
 import { notificationStatus, telegramConnectSessionStatus } from "./enums.js";
 import { tenants } from "./tenants.js";
 
@@ -176,32 +177,104 @@ export const telegramOperatorLinkSessions = pgTable(
   ],
 );
 
-/**
- * Dashboard inbox items (in-app notifications).
- * userId null = tenant-wide (v1); later personal rows set userId.
- * Separate from notification_logs (external delivery ledger).
- */
+/** Immutable dashboard inbox content shared by its materialized recipient receipts. */
 export const inAppNotifications = pgTable(
   "in_app_notifications",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     tenantId: uuid("tenant_id")
       .notNull()
-      .references(() => tenants.id),
-    /** Better Auth user id when personal; null = visible to all shop members. */
-    userId: text("user_id"),
+      .references(() => tenants.id, { onDelete: "cascade" }),
     eventType: text("event_type").notNull(),
     dedupeKey: text("dedupe_key").notNull(),
+    category: text("category").notNull().default("system"),
+    priority: text("priority").notNull().default("normal"),
+    audienceType: text("audience_type").notNull().default("all_members"),
+    audience: jsonb("audience").notNull().default({}),
+    groupKey: text("group_key"),
+    lastEventId: uuid("last_event_id"),
+    occurrenceCount: integer("occurrence_count").notNull().default(1),
     title: text("title").notNull(),
     body: text("body").notNull(),
     href: text("href"),
     payload: jsonb("payload").notNull().default({}),
-    readAt: timestamp("read_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastOccurredAt: timestamp("last_occurred_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex("in_app_notifications_tenant_dedupe_uidx").on(table.tenantId, table.dedupeKey),
     index("in_app_notifications_tenant_created_idx").on(table.tenantId, table.createdAt),
-    index("in_app_notifications_tenant_unread_idx").on(table.tenantId, table.readAt),
+    index("in_app_notifications_tenant_last_occurred_idx").on(table.tenantId, table.lastOccurredAt),
+    index("in_app_notifications_tenant_category_last_occurred_idx").on(
+      table.tenantId,
+      table.category,
+      table.lastOccurredAt,
+    ),
+    index("in_app_notifications_expires_idx").on(table.expiresAt),
+  ],
+);
+
+/** Durable event inbox used to materialize personal in-app notifications. */
+export const inAppNotificationEvents = pgTable(
+  "in_app_notification_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    payload: jsonb("payload").notNull().default({}),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("in_app_notification_events_tenant_dedupe_uidx").on(
+      table.tenantId,
+      table.dedupeKey,
+    ),
+    index("in_app_notification_events_status_created_idx").on(table.status, table.createdAt),
+  ],
+);
+
+/** Personal state and audience materialization for an in-app notification. */
+export const inAppNotificationReceipts = pgTable(
+  "in_app_notification_receipts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    notificationId: uuid("notification_id")
+      .notNull()
+      .references(() => inAppNotifications.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    seenAt: timestamp("seen_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("in_app_notification_receipts_notification_user_uidx").on(
+      table.notificationId,
+      table.userId,
+    ),
+    index("in_app_notification_receipts_user_created_idx").on(
+      table.tenantId,
+      table.userId,
+      table.createdAt,
+    ),
+    index("in_app_notification_receipts_user_unread_idx").on(
+      table.tenantId,
+      table.userId,
+      table.readAt,
+    ),
   ],
 );

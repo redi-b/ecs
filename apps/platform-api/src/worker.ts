@@ -17,6 +17,7 @@ import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
 import { createEmailDeliverHandler } from "./jobs/handlers/email-deliver.js";
+import { createInAppNotificationMaterializeHandler } from "./jobs/handlers/in-app-notification-materialize.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import {
   createProductImportApplyHandler,
@@ -197,6 +198,9 @@ const worker = startPlatformWorkers({
       encryptionKey: emailEncryptionKey,
       provider: accountEmailProvider,
     }) as JobHandler,
+    "notifications.in-app.materialize": createInAppNotificationMaterializeHandler({
+      inbox: notificationService.inbox,
+    }) as JobHandler,
     "notifications.deliver": createNotificationsDeliverHandler({
       db: platformDb.db,
       renderer: notificationRenderer,
@@ -262,8 +266,28 @@ const reconciliationIntervalMs = Math.max(
   5_000,
   Number.parseInt(process.env.JOB_RECONCILE_INTERVAL_MS ?? "30000", 10) || 30_000,
 );
+const recoverInboxEvents = async () => {
+  const events = await notificationService.inbox.listRecoverableEvents(100);
+  let queued = 0;
+  let failed = 0;
+  for (const event of events) {
+    try {
+      await jobsClient.enqueueJob({
+        idempotencyKey: `notifications.in-app.materialize:${event.id}:${event.attempts}`,
+        name: "notifications.in-app.materialize",
+        payload: { eventId: event.id },
+        tenantId: event.tenantId,
+      });
+      queued += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  if (queued || failed) logger.info({ failed, queued }, "Inbox event recovery scan completed");
+};
 const reconcileQueued = () =>
   jobsClient.reconcileQueued().then(async (summary) => {
+    await recoverInboxEvents();
     await jobsClient.recordSchedulerHeartbeat({
       buildVersion: workerBuildVersion,
       ttlMs: reconciliationIntervalMs * 3,
@@ -293,9 +317,12 @@ const retentionIntervalMs = Math.max(
   Number.parseInt(process.env.JOB_RETENTION_INTERVAL_MS ?? "3600000", 10) || 3_600_000,
 );
 const cleanupExpiredRuns = () =>
-  jobsClient.cleanupExpiredRuns().then(({ deleted }) => {
-    if (deleted) logger.info({ deleted }, "Expired job records removed");
-  });
+  Promise.all([jobsClient.cleanupExpiredRuns(), notificationService.inbox.deleteExpired()]).then(
+    ([jobs, inbox]) => {
+      if (jobs.deleted) logger.info({ deleted: jobs.deleted }, "Expired job records removed");
+      if (inbox.deleted) logger.info({ deleted: inbox.deleted }, "Expired inbox items removed");
+    },
+  );
 void cleanupExpiredRuns().catch((error) => {
   logger.warn(
     { err: error instanceof Error ? error.message : String(error) },
@@ -336,6 +363,7 @@ logger.info(
   {
     handlers: [
       "system.ping",
+      "notifications.in-app.materialize",
       "notifications.deliver",
       "billing.lifecycle",
       "billing.reconcile-payments",

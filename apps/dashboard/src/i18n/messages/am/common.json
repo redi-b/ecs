@@ -78,11 +78,31 @@
     "unreadAria": "ማሳወቂያዎች፣ {count} ያልተነበቡ",
     "markAllRead": "ሁሉንም እንደተነበበ",
     "markAsRead": "እንደተነበበ ምልክት",
+    "markAsUnread": "እንዳልተነበበ ምልክት",
+    "archive": "ወደ ማህደር",
+    "occurrences": "{count} ዝማኔዎች",
+    "all": "ሁሉም",
+    "unreadFilter": "ያልተነበቡ",
+    "view": "የማሳወቂያ እይታ",
+    "category": "ምድብ",
+    "searchLabel": "ማሳወቂያዎችን ፈልግ",
+    "searchPlaceholder": "ማሳወቂያዎችን ፈልግ...",
+    "viewAll": "ሁሉንም ማሳወቂያዎች ይመልከቱ",
+    "updateError": "ማሳወቂያውን ማዘመን አልተቻለም",
     "markItemReadAria": "“{title}” እንደተነበበ ምልክት",
     "loadErrorTitle": "ማሳወቂያዎችን መጫን አልተቻለም",
     "loadErrorDesc": "ግንኙነትዎን ይመልከቱና እንደገና ይሞክሩ።",
     "emptyTitle": "ሁሉም ተነብቧል",
-    "emptyDesc": "የትዕዛዝ እና የክፍያ ዜናዎች ለዚህ ሱቅ እዚህ ይታያሉ።"
+    "emptyDesc": "አስፈላጊ የሱቅ ዜናዎች እዚህ ይታያሉ።",
+    "emptyHistoryDesc": "በዚህ እይታ ውስጥ ማሳወቂያ የለም።",
+    "categories": {
+      "all": "ሁሉም ምድቦች",
+      "orders": "ትዕዛዞች",
+      "inventory": "ክምችት",
+      "inquiries": "ጥያቄዎች",
+      "billing": "ክፍያ አስተዳደር",
+      "system": "የሱቅ ዜናዎች"
+    }
   },
   "moreInfo": "ተጨማሪ መረጃ",
   "unsaved": {
