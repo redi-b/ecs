@@ -146,6 +146,7 @@ describe("product import execution PostgreSQL boundary", () => {
           store: createProductImportApplyStore(platform.db),
         })({
           attempt: 2,
+          signal: AbortSignal.abort(),
           jobRunId: randomUUID(),
           name: "product-import.apply",
           payload: { executionId: first.execution.id },

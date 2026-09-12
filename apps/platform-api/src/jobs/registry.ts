@@ -1,0 +1,78 @@
+import { createJobRegistry, defineJob } from "@ecs/jobs";
+import { z } from "zod";
+
+const maintenancePayload = z.object({ source: z.literal("bullmq_repeatable") });
+const standardRetention = { completedSeconds: 7 * 86_400, failedSeconds: 30 * 86_400 };
+const exponential = { delayMs: 5_000, jitter: 0.2, type: "exponential" as const };
+
+export const platformJobRegistry = createJobRegistry([
+  defineJob({
+    attempts: 1,
+    backoff: exponential,
+    idempotency: "optional",
+    manualRetry: "never",
+    name: "system.ping",
+    payloadSchema: z.object({ message: z.string().min(1).optional() }),
+    queue: "default",
+    retention: { completedSeconds: 86_400, failedSeconds: 7 * 86_400 },
+    retry: "never",
+    timeoutMs: 10_000,
+    version: 1,
+  }),
+  defineJob({
+    attempts: 5,
+    backoff: exponential,
+    idempotency: "required",
+    manualRetry: "safe",
+    name: "notifications.deliver",
+    payloadSchema: z.object({ notificationLogId: z.string().min(1) }),
+    queue: "critical",
+    retention: standardRetention,
+    retry: "classified",
+    timeoutMs: 30_000,
+    version: 1,
+  }),
+  ...(["billing.lifecycle", "billing.reconcile-payments"] as const).map((name) =>
+    defineJob({
+      attempts: name === "billing.lifecycle" ? 3 : 4,
+      backoff: exponential,
+      idempotency: "optional",
+      manualRetry: "safe",
+      name,
+      payloadSchema: maintenancePayload,
+      queue: "critical",
+      retention: standardRetention,
+      retry: "classified",
+      timeoutMs: 120_000,
+      version: 1,
+    }),
+  ),
+  defineJob({
+    attempts: 3,
+    backoff: exponential,
+    idempotency: "required",
+    manualRetry: "safe",
+    name: "analytics.commerce-rollup",
+    payloadSchema: z.object({
+      source: z.enum(["bullmq_repeatable", "merchant", "worker_startup"]),
+    }),
+    queue: "bulk",
+    retention: { completedSeconds: 3 * 86_400, failedSeconds: 14 * 86_400 },
+    retry: "classified",
+    timeoutMs: 10 * 60_000,
+    version: 1,
+  }),
+  defineJob({
+    attempts: 3,
+    backoff: exponential,
+    idempotency: "required",
+    manualRetry: "safe",
+    name: "product-import.apply",
+    payloadSchema: z.object({ executionId: z.string().min(1) }),
+    queue: "bulk",
+    retention: standardRetention,
+    retry: "classified",
+    timeoutMs: 30 * 60_000,
+    version: 1,
+  }),
+]);

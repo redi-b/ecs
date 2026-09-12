@@ -56,6 +56,7 @@ function context() {
 function job() {
   return {
     attempt: 1,
+    signal: AbortSignal.abort(),
     jobRunId: "job_1",
     name: "product-import.apply",
     payload: { executionId: "execution_1" },
@@ -145,9 +146,7 @@ describe("product import apply handler", () => {
     assert.deepEqual(createInput?.options, [
       {
         title: "Size",
-        values: [
-          { label: "250g", swatch: { kind: "color", value: "#4a2c1b" } },
-        ],
+        values: [{ label: "250g", swatch: { kind: "color", value: "#4a2c1b" } }],
       },
     ]);
   });

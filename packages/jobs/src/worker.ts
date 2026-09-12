@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { UnrecoverableError, Worker } from "bullmq";
 import type { Redis } from "ioredis";
 
@@ -8,6 +9,13 @@ import {
   DEFAULT_QUEUE_NAME,
   DEFAULT_REDIS_PREFIX,
 } from "./defaults.js";
+import {
+  InvalidJobPayloadError,
+  InvalidJobResultError,
+  type JobQueueClass,
+  type JobRegistry,
+  UnknownJobDefinitionError,
+} from "./registry.js";
 import {
   findJobRunByIdempotency,
   insertJobRun,
@@ -34,6 +42,10 @@ export type StartPlatformWorkerOptions = {
   prefix?: string;
   concurrency?: number;
   logger?: WorkerLogger;
+  registry?: JobRegistry;
+  buildVersion?: string;
+  heartbeatMs?: number;
+  workerId?: string;
 };
 
 export type PlatformJobData = {
@@ -60,11 +72,7 @@ export type PlatformWorkerJob = {
 export type JobProcessorLifecycle = {
   markActive: (jobRunId: string, attempt: number) => Promise<unknown>;
   markCompleted: (jobRunId: string, result: unknown) => Promise<unknown>;
-  markFailed: (
-    jobRunId: string,
-    error: string,
-    terminal: boolean,
-  ) => Promise<unknown>;
+  markFailed: (jobRunId: string, error: string, terminal: boolean) => Promise<unknown>;
 };
 
 export type CreateJobProcessorOptions = {
@@ -73,6 +81,7 @@ export type CreateJobProcessorOptions = {
   logger?: WorkerLogger;
   /** Optional lifecycle override for unit tests without a real DB. */
   lifecycle?: JobProcessorLifecycle;
+  registry?: JobRegistry;
 };
 
 function errorMessage(error: unknown): string {
@@ -80,6 +89,16 @@ function errorMessage(error: unknown): string {
     return error.message;
   }
   return String(error);
+}
+
+function safeFailureCode(error: unknown) {
+  const value = errorMessage(error);
+  if (value === "job_timeout" || /^job_[a-z0-9_]+$/.test(value)) return value;
+  if (typeof error === "object" && error && "code" in error) {
+    const code = String(error.code).trim().toLowerCase();
+    if (/^[a-z][a-z0-9_-]{1,79}$/.test(code)) return code;
+  }
+  return error instanceof UnrecoverableError ? "job_unrecoverable" : "job_failed";
 }
 
 export function resolveHandler(
@@ -93,8 +112,7 @@ function createDefaultLifecycle(db: PlatformDb): JobProcessorLifecycle {
   return {
     markActive: (jobRunId, attempt) => markJobRunActive(db, jobRunId, attempt),
     markCompleted: (jobRunId, result) => markJobRunCompleted(db, jobRunId, result),
-    markFailed: (jobRunId, error, terminal) =>
-      markJobRunFailed(db, jobRunId, error, terminal),
+    markFailed: (jobRunId, error, terminal) => markJobRunFailed(db, jobRunId, error, terminal),
   };
 }
 
@@ -110,7 +128,7 @@ export function createJobProcessor(
 
   return async function processJob(job: PlatformWorkerJob): Promise<unknown> {
     const name = job.name;
-    const payload = job.data.payload;
+    const rawPayload = job.data.payload;
     const tenantId = job.data.tenantId ?? null;
     const attempt = job.attemptsMade + 1;
 
@@ -130,7 +148,7 @@ export function createJobProcessor(
           const run = await insertJobRun(options.db, {
             name,
             tenantId,
-            payload: payload ?? {},
+            payload: rawPayload ?? {},
             ...(idempotencyKey ? { idempotencyKey } : {}),
           });
           jobRunId = run.id;
@@ -141,6 +159,20 @@ export function createJobProcessor(
       } else {
         // Unit tests inject lifecycle without DB insert support.
         jobRunId = job.id?.trim() || `synthetic:${name}:${attempt}`;
+      }
+    }
+
+    let payload = rawPayload;
+    if (options.registry) {
+      try {
+        payload = options.registry.parsePayload(name, rawPayload ?? {});
+      } catch (error) {
+        if (error instanceof InvalidJobPayloadError || error instanceof UnknownJobDefinitionError) {
+          logger?.error?.({ code: error.code, jobRunId, name }, "Job rejected before handling");
+          await lifecycle.markFailed(jobRunId, error.code, true);
+          throw new UnrecoverableError(error.code);
+        }
+        throw error;
       }
     }
 
@@ -155,22 +187,47 @@ export function createJobProcessor(
     await lifecycle.markActive(jobRunId, attempt);
     logger?.debug?.({ jobRunId, name, attempt }, "Job active");
 
+    const controller = new AbortController();
+    const timeoutMs = options.registry?.get(name)?.timeoutMs;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const result = await handler({
+      const handling = handler({
+        attempt,
         jobRunId,
         name,
-        tenantId,
         payload,
-        attempt,
+        signal: controller.signal,
+        tenantId,
       });
+      const rawResult = timeoutMs
+        ? await Promise.race([
+            handling,
+            new Promise<never>((_resolve, reject) => {
+              timeout = setTimeout(() => {
+                controller.abort(new Error("job_timeout"));
+                reject(new Error("job_timeout"));
+              }, timeoutMs);
+            }),
+          ])
+        : await handling;
+      let result = rawResult;
+      try {
+        result = options.registry ? options.registry.parseResult(name, rawResult) : rawResult;
+      } catch (error) {
+        if (error instanceof InvalidJobResultError) {
+          throw new UnrecoverableError(error.code);
+        }
+        throw error;
+      }
       await lifecycle.markCompleted(jobRunId, result);
       logger?.info?.({ jobRunId, name, attempt }, "Job completed");
       return result;
     } catch (error) {
-      const message = errorMessage(error);
+      const failureCode = safeFailureCode(error);
       const maxAttempts = job.opts.attempts ?? DEFAULT_MAX_ATTEMPTS;
       const isUnrecoverable = error instanceof UnrecoverableError;
-      const terminal = isUnrecoverable || attempt >= maxAttempts;
+      const retryPolicy = options.registry?.get(name)?.retry ?? "always";
+      const terminal = isUnrecoverable || retryPolicy === "never" || attempt >= maxAttempts;
 
       logger?.error?.(
         {
@@ -178,22 +235,30 @@ export function createJobProcessor(
           name,
           attempt,
           terminal,
-          err: message,
+          code: failureCode,
         },
         "Job failed",
       );
-      await lifecycle.markFailed(jobRunId, message, terminal);
+      await lifecycle.markFailed(jobRunId, failureCode, terminal);
+      if (terminal && !isUnrecoverable && attempt < maxAttempts) {
+        throw new UnrecoverableError(failureCode);
+      }
       throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
   };
 }
 
 export function startPlatformWorker(options: StartPlatformWorkerOptions): {
-  close: () => Promise<void>;
+  close: (force?: boolean) => Promise<void>;
 } {
   const queueName = options.queueName ?? DEFAULT_QUEUE_NAME;
   const prefix = options.prefix ?? DEFAULT_REDIS_PREFIX;
-  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  const concurrency =
+    options.concurrency && Number.isInteger(options.concurrency) && options.concurrency > 0
+      ? options.concurrency
+      : DEFAULT_CONCURRENCY;
   const connection: Redis = createRedisConnection(options.redisUrl);
 
   const processorOptions: CreateJobProcessorOptions = {
@@ -203,6 +268,9 @@ export function startPlatformWorker(options: StartPlatformWorkerOptions): {
   if (options.logger !== undefined) {
     processorOptions.logger = options.logger;
   }
+  if (options.registry !== undefined) {
+    processorOptions.registry = options.registry;
+  }
 
   const processJob = createJobProcessor(processorOptions);
 
@@ -211,6 +279,50 @@ export function startPlatformWorker(options: StartPlatformWorkerOptions): {
     prefix,
     concurrency,
   });
+  const workerId = options.workerId?.trim() || randomUUID();
+  const heartbeatMs =
+    options.heartbeatMs && Number.isFinite(options.heartbeatMs) && options.heartbeatMs >= 1_000
+      ? options.heartbeatMs
+      : 10_000;
+  const heartbeatKey = `${prefix}:${queueName}:worker-heartbeat:${workerId}`;
+
+  worker.on("error", (error) => {
+    options.logger?.error?.({ err: error.message, queueName, workerId }, "Worker error");
+  });
+  worker.on("failed", (job, error) => {
+    options.logger?.warn?.(
+      { err: error.message, jobId: job?.id, name: job?.name, queueName, workerId },
+      "Worker job attempt failed",
+    );
+  });
+  worker.on("stalled", (jobId) => {
+    options.logger?.warn?.({ jobId, queueName, workerId }, "Worker job stalled");
+  });
+  worker.on("completed", (job) => {
+    options.logger?.debug?.(
+      { jobId: job.id, name: job.name, queueName, workerId },
+      "Worker job completed",
+    );
+  });
+
+  const writeHeartbeat = async () => {
+    const heartbeat = JSON.stringify({
+      buildVersion: options.buildVersion ?? "unknown",
+      lastSeenAt: new Date().toISOString(),
+      queueName,
+      workerId,
+    });
+    await connection.set(heartbeatKey, heartbeat, "PX", Math.max(heartbeatMs * 3, 1_000));
+  };
+  void writeHeartbeat().catch((error) => {
+    options.logger?.warn?.({ err: errorMessage(error), workerId }, "Worker heartbeat failed");
+  });
+  const heartbeatTimer = setInterval(() => {
+    void writeHeartbeat().catch((error) => {
+      options.logger?.warn?.({ err: errorMessage(error), workerId }, "Worker heartbeat failed");
+    });
+  }, heartbeatMs);
+  heartbeatTimer.unref();
 
   options.logger?.info?.(
     {
@@ -223,9 +335,41 @@ export function startPlatformWorker(options: StartPlatformWorkerOptions): {
   );
 
   return {
-    async close() {
-      await worker.close();
+    async close(force = false) {
+      clearInterval(heartbeatTimer);
+      await connection.del(heartbeatKey).catch(() => undefined);
+      await worker.close(force);
       await connection.quit();
+    },
+  };
+}
+
+export function startPlatformWorkers(
+  options: Omit<StartPlatformWorkerOptions, "queueName"> & {
+    concurrencyByQueue?: Partial<Record<JobQueueClass, number>>;
+    queueName?: string;
+    registry: JobRegistry;
+  },
+): { close: (force?: boolean) => Promise<void> } {
+  const baseQueueName = options.queueName ?? DEFAULT_QUEUE_NAME;
+  const workers = (["critical", "default", "bulk"] as const).map((queueClass) => {
+    const handlers = Object.fromEntries(
+      Object.entries(options.handlers).filter(
+        ([name]) => options.registry.get(name)?.queue === queueClass,
+      ),
+    );
+    const concurrency = options.concurrencyByQueue?.[queueClass] ?? options.concurrency;
+    return startPlatformWorker({
+      ...options,
+      ...(concurrency === undefined ? {} : { concurrency }),
+      handlers,
+      queueName: `${baseQueueName}-${queueClass}`,
+    });
+  });
+
+  return {
+    async close(force = false) {
+      await Promise.all(workers.map((worker) => worker.close(force)));
     },
   };
 }

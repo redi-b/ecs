@@ -10,11 +10,10 @@ export type JobHandlerContext<TPayload = unknown> = {
   tenantId: string | null;
   payload: TPayload;
   attempt: number;
+  signal: AbortSignal;
 };
 
-export type JobHandler<TPayload = unknown> = (
-  ctx: JobHandlerContext<TPayload>,
-) => Promise<unknown>;
+export type JobHandler<TPayload = unknown> = (ctx: JobHandlerContext<TPayload>) => Promise<unknown>;
 
 export type EnqueueJobInput = {
   name: string;
@@ -49,3 +48,42 @@ export type JobRunRecord = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type JobQueueHealth = {
+  queue: "bulk" | "critical" | "default";
+  counts: {
+    active: number;
+    delayed: number;
+    failed: number;
+    paused: number;
+    prioritized: number;
+    waiting: number;
+  };
+  oldestWaitingAt: Date | null;
+  workers: Array<{
+    buildVersion: string;
+    lastSeenAt: Date;
+    workerId: string;
+  }>;
+};
+
+export type JobSchedulerHealth = {
+  buildVersion: string;
+  lastSeenAt: Date;
+} | null;
+
+export type JobRunSummary = Omit<
+  JobRunRecord,
+  "error" | "idempotencyKey" | "payload" | "result"
+> & {
+  canCancel: boolean;
+  canRetry: boolean;
+  errorCode: string | null;
+};
+
+export type JobControlResult =
+  | { ok: true; run: JobRunSummary }
+  | {
+      error: "job_not_found" | "job_not_retryable" | "job_not_cancellable" | "job_state_changed";
+      ok: false;
+    };

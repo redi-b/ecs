@@ -1,5 +1,5 @@
 import { jobRuns } from "@ecs/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
 
 import { DEFAULT_MAX_ATTEMPTS } from "./defaults.js";
 import type { JobRunRecord, JobRunStatus, PlatformDb } from "./types.js";
@@ -71,9 +71,14 @@ export async function insertJobRun(
       queuedAt: now,
       updatedAt: now,
     })
+    .onConflictDoNothing()
     .returning();
 
   if (!row) {
+    if (input.idempotencyKey) {
+      const existing = await findJobRunByIdempotency(db, input.name, input.idempotencyKey);
+      if (existing) return existing;
+    }
     throw new Error("Failed to insert job run");
   }
 
@@ -94,10 +99,7 @@ export async function findJobRunByIdempotency(
   return row ? serializeJobRun(row) : null;
 }
 
-export async function findJobRunById(
-  db: PlatformDb,
-  id: string,
-): Promise<JobRunRecord | null> {
+export async function findJobRunById(db: PlatformDb, id: string): Promise<JobRunRecord | null> {
   const [row] = await db.select().from(jobRuns).where(eq(jobRuns.id, id)).limit(1);
 
   return row ? serializeJobRun(row) : null;
@@ -185,4 +187,122 @@ export async function setBullmqJobId(
     .returning();
 
   return row ? serializeJobRun(row) : null;
+}
+
+export async function recordJobRunError(
+  db: PlatformDb,
+  id: string,
+  error: string | null,
+): Promise<JobRunRecord | null> {
+  const [row] = await db
+    .update(jobRuns)
+    .set({ error, updatedAt: new Date() })
+    .where(and(eq(jobRuns.id, id), eq(jobRuns.status, "queued")))
+    .returning();
+  return row ? serializeJobRun(row) : null;
+}
+
+export async function listQueuedJobRunsBefore(
+  db: PlatformDb,
+  before: Date,
+  limit: number,
+): Promise<JobRunRecord[]> {
+  const rows = await db
+    .select()
+    .from(jobRuns)
+    .where(and(eq(jobRuns.status, "queued"), lt(jobRuns.queuedAt, before)))
+    .orderBy(asc(jobRuns.queuedAt))
+    .limit(limit);
+  return rows.map(serializeJobRun);
+}
+
+export async function listActiveJobRunsBefore(
+  db: PlatformDb,
+  before: Date,
+  limit: number,
+): Promise<JobRunRecord[]> {
+  const rows = await db
+    .select()
+    .from(jobRuns)
+    .where(and(eq(jobRuns.status, "active"), lt(jobRuns.updatedAt, before)))
+    .orderBy(asc(jobRuns.updatedAt))
+    .limit(limit);
+  return rows.map(serializeJobRun);
+}
+
+export async function markJobRunQueued(db: PlatformDb, id: string): Promise<JobRunRecord | null> {
+  const [row] = await db
+    .update(jobRuns)
+    .set({ error: null, status: "queued", updatedAt: new Date() })
+    .where(and(eq(jobRuns.id, id), eq(jobRuns.status, "active")))
+    .returning();
+  return row ? serializeJobRun(row) : null;
+}
+
+export async function listFailedJobRuns(db: PlatformDb, limit: number): Promise<JobRunRecord[]> {
+  const rows = await db
+    .select()
+    .from(jobRuns)
+    .where(eq(jobRuns.status, "failed"))
+    .orderBy(desc(jobRuns.finishedAt), desc(jobRuns.createdAt))
+    .limit(limit);
+  return rows.map(serializeJobRun);
+}
+
+export async function listOperationalJobRuns(
+  db: PlatformDb,
+  limit: number,
+): Promise<JobRunRecord[]> {
+  const rows = await db
+    .select()
+    .from(jobRuns)
+    .where(inArray(jobRuns.status, ["queued", "active", "failed"]))
+    .orderBy(desc(jobRuns.updatedAt))
+    .limit(limit);
+  return rows.map(serializeJobRun);
+}
+
+export async function markJobRunCancelled(
+  db: PlatformDb,
+  id: string,
+): Promise<JobRunRecord | null> {
+  const now = new Date();
+  const [row] = await db
+    .update(jobRuns)
+    .set({ status: "cancelled", error: null, finishedAt: now, updatedAt: now })
+    .where(and(eq(jobRuns.id, id), eq(jobRuns.status, "queued")))
+    .returning();
+  return row ? serializeJobRun(row) : null;
+}
+
+export async function deleteExpiredJobRuns(
+  db: PlatformDb,
+  policies: ReadonlyArray<{
+    completedSeconds: number;
+    failedSeconds: number;
+    name: string;
+  }>,
+  now = new Date(),
+) {
+  let deleted = 0;
+  for (const policy of policies) {
+    for (const [status, seconds] of [
+      ["completed", policy.completedSeconds],
+      ["failed", policy.failedSeconds],
+    ] as const) {
+      const cutoff = new Date(now.getTime() - seconds * 1_000);
+      const rows = await db
+        .delete(jobRuns)
+        .where(
+          and(
+            eq(jobRuns.name, policy.name),
+            eq(jobRuns.status, status),
+            lt(jobRuns.finishedAt, cutoff),
+          ),
+        )
+        .returning({ id: jobRuns.id });
+      deleted += rows.length;
+    }
+  }
+  return { deleted };
 }

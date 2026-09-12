@@ -1,6 +1,7 @@
 import {
   operatorAuditListSchema,
   operatorHealthSchema,
+  operatorJobOperationsSchema,
   operatorWorkListSchema,
   platformErrorSchema,
   platformOperatorListSchema,
@@ -38,6 +39,10 @@ export function getPlatformOperators(options: Options) {
 
 export function getPlatformHealth(options: Options) {
   return request(options, "/platform/operator/health", operatorHealthSchema);
+}
+
+export function getJobOperations(options: Options) {
+  return request(options, "/platform/operator/jobs", operatorJobOperationsSchema);
 }
 
 async function request<T>(

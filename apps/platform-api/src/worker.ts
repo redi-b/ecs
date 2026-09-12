@@ -1,6 +1,12 @@
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
-import { createJobsClient, type JobHandler, startPlatformWorker } from "@ecs/jobs";
+import {
+  createJobsClient,
+  createShutdownController,
+  type JobHandler,
+  parseShutdownDeadlineMs,
+  startPlatformWorkers,
+} from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
@@ -16,6 +22,7 @@ import {
   createProductImportApplyStore,
 } from "./jobs/handlers/product-import-apply.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
+import { platformJobRegistry } from "./jobs/registry.js";
 import {
   DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
   registerAnalyticsRepeatableJobs,
@@ -141,6 +148,7 @@ const jobsClient = createJobsClient({
   redisUrl,
   db: platformDb.db,
   logger,
+  registry: platformJobRegistry,
 });
 
 const notificationService = createNotificationService(platformDb.db, {
@@ -159,9 +167,17 @@ if (!process.env.CHAPA_SECRET_KEY?.trim()) {
   );
 }
 
-const worker = startPlatformWorker({
+const workerBuildVersion = process.env.APP_VERSION ?? process.env.GIT_SHA ?? "development";
+const worker = startPlatformWorkers({
+  buildVersion: workerBuildVersion,
+  concurrencyByQueue: {
+    bulk: Number.parseInt(process.env.WORKER_BULK_CONCURRENCY ?? "2", 10),
+    critical: Number.parseInt(process.env.WORKER_CRITICAL_CONCURRENCY ?? "8", 10),
+    default: Number.parseInt(process.env.WORKER_DEFAULT_CONCURRENCY ?? "4", 10),
+  },
   redisUrl,
   db: platformDb.db,
+  registry: platformJobRegistry,
   handlers: {
     "system.ping": systemPingHandler as JobHandler,
     "notifications.deliver": createNotificationsDeliverHandler({
@@ -225,6 +241,59 @@ void registerBillingRepeatableJobs({
 });
 
 const analyticsStartupController = new AbortController();
+const reconciliationIntervalMs = Math.max(
+  5_000,
+  Number.parseInt(process.env.JOB_RECONCILE_INTERVAL_MS ?? "30000", 10) || 30_000,
+);
+const reconcileQueued = () =>
+  jobsClient.reconcileQueued().then(async (summary) => {
+    await jobsClient.recordSchedulerHeartbeat({
+      buildVersion: workerBuildVersion,
+      ttlMs: reconciliationIntervalMs * 3,
+    });
+    if (summary.recovered || summary.rejected) {
+      logger.info(summary, "Queued job reconciliation completed");
+    }
+  });
+void reconcileQueued().catch((error) => {
+  logger.warn(
+    { err: error instanceof Error ? error.message : String(error) },
+    "Queued job reconciliation failed",
+  );
+});
+const reconciliationTimer = setInterval(() => {
+  void reconcileQueued().catch((error) => {
+    logger.warn(
+      { err: error instanceof Error ? error.message : String(error) },
+      "Queued job reconciliation failed",
+    );
+  });
+}, reconciliationIntervalMs);
+reconciliationTimer.unref();
+
+const retentionIntervalMs = Math.max(
+  60_000,
+  Number.parseInt(process.env.JOB_RETENTION_INTERVAL_MS ?? "3600000", 10) || 3_600_000,
+);
+const cleanupExpiredRuns = () =>
+  jobsClient.cleanupExpiredRuns().then(({ deleted }) => {
+    if (deleted) logger.info({ deleted }, "Expired job records removed");
+  });
+void cleanupExpiredRuns().catch((error) => {
+  logger.warn(
+    { err: error instanceof Error ? error.message : String(error) },
+    "Job record retention cleanup failed",
+  );
+});
+const retentionTimer = setInterval(() => {
+  void cleanupExpiredRuns().catch((error) => {
+    logger.warn(
+      { err: error instanceof Error ? error.message : String(error) },
+      "Job record retention cleanup failed",
+    );
+  });
+}, retentionIntervalMs);
+retentionTimer.unref();
 
 void registerAnalyticsRepeatableJobs({
   jobsClient,
@@ -260,18 +329,33 @@ logger.info(
   "platform worker started",
 );
 
+const shutdownController = createShutdownController({
+  deadlineMs: parseShutdownDeadlineMs(process.env.WORKER_SHUTDOWN_DEADLINE_MS),
+  force: () => worker.close(true),
+  logger,
+  steps: [
+    {
+      name: "scheduling",
+      run: () => {
+        analyticsStartupController.abort();
+        clearInterval(reconciliationTimer);
+        clearInterval(retentionTimer);
+      },
+    },
+    { name: "worker", run: () => worker.close() },
+    { name: "producers", run: () => jobsClient.close() },
+    { name: "database", run: () => platformDb.pool.end() },
+  ],
+});
+
 async function shutdown(signal: string) {
-  logger.info({ signal }, "platform worker shutting down");
-  analyticsStartupController.abort();
   try {
-    await jobsClient.close();
-    await worker.close();
-    await platformDb.pool.end();
+    const outcome = await shutdownController.request(signal);
+    process.exit(outcome === "completed" ? 0 : 1);
   } catch (error) {
-    logger.error({ err: error }, "error during platform worker shutdown");
+    logger.error({ err: error }, "Error during platform worker shutdown");
     process.exit(1);
   }
-  process.exit(0);
 }
 
 process.on("SIGINT", () => {
