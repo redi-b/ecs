@@ -3,6 +3,12 @@ import { describe, it } from "node:test";
 
 import { createNotificationService } from "./service.js";
 
+function inboxStub() {
+  return {
+    recordEvent: async () => ({ id: "inbox-event-1", status: "pending" }),
+  } as never;
+}
+
 describe("createNotificationService enqueue", () => {
   it("returns empty logIds when no preferences match", async () => {
     let selectCall = 0;
@@ -27,6 +33,7 @@ describe("createNotificationService enqueue", () => {
 
     const enqueued: unknown[] = [];
     const service = createNotificationService(db as never, {
+      inbox: inboxStub(),
       enqueueJob: async (input) => {
         enqueued.push(input);
         return {
@@ -45,7 +52,14 @@ describe("createNotificationService enqueue", () => {
     });
 
     assert.deepEqual(result, { ok: true, logCount: 0, logIds: [] });
-    assert.deepEqual(enqueued, []);
+    assert.deepEqual(enqueued, [
+      {
+        idempotencyKey: "notifications.in-app.materialize:inbox-event-1:0",
+        name: "notifications.in-app.materialize",
+        payload: { eventId: "inbox-event-1" },
+        tenantId: "tenant-1",
+      },
+    ]);
   });
 
   it("inserts logs and enqueues one job per matching preference", async () => {
@@ -119,6 +133,7 @@ describe("createNotificationService enqueue", () => {
     };
 
     const service = createNotificationService(db as never, {
+      inbox: inboxStub(),
       enqueueJob: async (input) => {
         enqueued.push(input);
         return {
@@ -139,8 +154,8 @@ describe("createNotificationService enqueue", () => {
     // Email preference matches; telegram channel on preferences is ignored (destinations table).
     assert.equal(result.logCount, 1);
     assert.deepEqual(result.logIds, ["log-1"]);
-    assert.equal(enqueued.length, 1);
-    assert.deepEqual(enqueued[0], {
+    assert.equal(enqueued.length, 2);
+    assert.deepEqual(enqueued[1], {
       name: "notifications.deliver",
       payload: { notificationLogId: "log-1" },
       tenantId: "tenant-1",

@@ -560,6 +560,9 @@ export type PlatformAppOptions = {
   listTenantsForUser?:
     | ((input: { limit: number; offset: number; userId: string }) => Promise<TenantListResult>)
     | undefined;
+  getTenantMembershipSummary?:
+    | ((input: { userId: string }) => Promise<{ accessibleCount: number; ownedCount: number }>)
+    | undefined;
   checkTenantHandleAvailability?:
     | ((input: { handle: string }) => Promise<TenantHandleAvailabilityResult>)
     | undefined;
@@ -1091,35 +1094,58 @@ export type PlatformAppOptions = {
   listInAppNotifications?:
     | ((input: {
         tenantId: string;
-        actorUserId?: string | null;
+        actorUserId: string;
+        category?: "billing" | "inquiries" | "inventory" | "orders" | "system";
+        cursor?: string;
         limit?: number;
+        offset?: number;
+        q?: string;
         unreadOnly?: boolean;
       }) => Promise<{
+        count: number;
         items: Array<{
           id: string;
           eventType: string;
+          category: "billing" | "inquiries" | "inventory" | "orders" | "system";
+          priority: "high" | "normal";
           title: string;
           body: string;
           href: string | null;
+          groupKey: string | null;
+          occurrenceCount: number;
           readAt: string | null;
+          seenAt: string | null;
           createdAt: string;
         }>;
+        nextCursor: string | null;
       }>)
     | undefined;
   countInAppNotificationUnread?:
-    | ((input: { tenantId: string; actorUserId?: string | null }) => Promise<{ count: number }>)
+    | ((input: { tenantId: string; actorUserId: string }) => Promise<{ count: number }>)
     | undefined;
   markInAppNotificationRead?:
     | ((input: {
         tenantId: string;
         id: string;
-        actorUserId?: string | null;
+        actorUserId: string;
+        read: boolean;
+      }) => Promise<{ ok: true } | { ok: false; error: "not_found"; status: 404 }>)
+    | undefined;
+  archiveInAppNotification?:
+    | ((input: {
+        tenantId: string;
+        id: string;
+        actorUserId: string;
       }) => Promise<{ ok: true } | { ok: false; error: "not_found"; status: 404 }>)
     | undefined;
   markAllInAppNotificationsRead?:
+    | ((input: { tenantId: string; actorUserId: string }) => Promise<{ ok: true; updated: number }>)
+    | undefined;
+  markInAppNotificationsSeen?:
     | ((input: {
         tenantId: string;
-        actorUserId?: string | null;
+        actorUserId: string;
+        ids: string[];
       }) => Promise<{ ok: true; updated: number }>)
     | undefined;
   recordNotificationEvent?:

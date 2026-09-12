@@ -2442,10 +2442,7 @@ describe("platform app merchant and tenant catalog", () => {
 
     assert.equal(response.status, 200);
     assert.ok(forwardedRequest);
-    assert.equal(
-      forwardedRequest.url,
-      "http://medusa:9000/store/product-search?q=cofee&limit=24",
-    );
+    assert.equal(forwardedRequest.url, "http://medusa:9000/store/product-search?q=cofee&limit=24");
     assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
   });
 
@@ -2814,6 +2811,15 @@ describe("platform app merchant and tenant catalog", () => {
       forwardedRequests.push(forwardedRequest.clone());
       const path = new URL(forwardedRequest.url).pathname;
 
+      if (forwardedRequest.method === "GET" && path === "/store/carts/cart_1") {
+        return Response.json({
+          cart: {
+            id: "cart_1",
+            items: [{ id: "item_1", variant: { id: "variant_1" } }],
+          },
+        });
+      }
+
       if (path === "/store/payment-collections") {
         return Response.json({
           payment_collection: {
@@ -2917,11 +2923,11 @@ describe("platform app merchant and tenant catalog", () => {
         id: "order_1",
       },
     });
-    assert.equal(forwardedRequests.length, 5);
-    const updateCartRequest = forwardedRequests[0];
-    const shippingMethodRequest = forwardedRequests[1];
-    const paymentCollectionRequest = forwardedRequests[2];
-    const paymentSessionRequest = forwardedRequests[3];
+    assert.equal(forwardedRequests.length, 6);
+    const updateCartRequest = forwardedRequests[1];
+    const shippingMethodRequest = forwardedRequests[2];
+    const paymentCollectionRequest = forwardedRequests[3];
+    const paymentSessionRequest = forwardedRequests[4];
 
     assert.ok(updateCartRequest);
     assert.ok(shippingMethodRequest);
@@ -2930,6 +2936,7 @@ describe("platform app merchant and tenant catalog", () => {
     assert.deepEqual(
       forwardedRequests.map((request) => [request.method, new URL(request.url).pathname]),
       [
+        ["GET", "/store/carts/cart_1"],
         ["POST", "/store/carts/cart_1"],
         ["POST", "/store/carts/cart_1/shipping-methods"],
         ["POST", "/store/payment-collections"],
@@ -3007,6 +3014,60 @@ describe("platform app merchant and tenant catalog", () => {
         tenantId: "tenant_1",
       },
     ]);
+  });
+
+  it("rejects a stale COD cart before starting checkout completion", async () => {
+    const forwardedRequests: Request[] = [];
+    const app = appWithResolution(
+      {
+        ok: true,
+        context: resolvedTenantContext,
+      },
+      {
+        getDeliverySettings: async (input) => ({
+          ok: true,
+          delivery: {
+            tenantId: input.tenantId,
+            deliveryEnabled: true,
+            pickupEnabled: true,
+            phoneConfirmationRequired: true,
+            notesEnabled: true,
+            landmarkRequired: false,
+            defaultDeliveryFee: "50.00",
+            currency: "ETB",
+            zones: [],
+            updatedAt: "2026-06-02T10:00:00.000Z",
+          },
+        }),
+        medusaStoreFetch: async (request) => {
+          const forwardedRequest = request instanceof Request ? request : new Request(request);
+          forwardedRequests.push(forwardedRequest.clone());
+          return Response.json({
+            cart: {
+              id: "cart_stale",
+              items: [{ id: "item_stale", requires_shipping: true, variant: null }],
+            },
+          });
+        },
+      },
+    );
+
+    const response = await app.request("/store/checkout/cod", {
+      body: JSON.stringify({
+        cartId: "cart_stale",
+        shippingOptionId: "so_1",
+        deliveryChoice: "delivery",
+        customer: { name: "Abebe Kebede", phone: "+251911111111" },
+        address: { address1: "Bole Road", city: "Addis Ababa" },
+      }),
+      headers: { "content-type": "application/json", Host: "abebe.lvh.me" },
+      method: "POST",
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), { error: "cart_items_unavailable" });
+    assert.equal(forwardedRequests.length, 1);
+    assert.equal(forwardedRequests[0]?.method, "GET");
   });
 
   it("rejects store Chapa checkout when merchant credentials are missing", async () => {

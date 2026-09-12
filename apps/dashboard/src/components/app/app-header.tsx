@@ -1,5 +1,6 @@
 "use client";
 
+import { PermissionGate } from "@/components/app/access-context";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { CommandCenter } from "@/components/app/command-center";
 import { LanguageSwitcher } from "@/components/app/language-switcher";
@@ -34,7 +35,11 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
         )}
         <div aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-border/70 sm:block" />
         <div className="flex items-center gap-0.5 rounded-full border border-border/70 bg-muted/30 p-0.5">
-          {demoMode ? null : <NotificationCenter />}
+          {demoMode ? null : (
+            <PermissionGate permission="notifications.read">
+              <NotificationCenter />
+            </PermissionGate>
+          )}
           <LanguageSwitcher />
           <ThemeToggle />
         </div>

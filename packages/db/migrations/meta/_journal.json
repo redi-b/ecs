@@ -330,6 +330,48 @@
       "when": 1789194231436,
       "tag": "0046_rainy_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1789197290092,
+      "tag": "0047_gigantic_talon",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1789198233413,
+      "tag": "0048_fair_blockbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1789199036277,
+      "tag": "0049_noisy_ultragirl",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1789199100963,
+      "tag": "0050_swift_the_captain",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1789201443255,
+      "tag": "0051_lying_owl",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1789207020118,
+      "tag": "0052_backfill_in_app_notification_categories",
+      "breakpoints": true
     }
   ]
 }

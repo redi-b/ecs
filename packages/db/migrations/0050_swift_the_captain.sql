@@ -1,0 +1,2 @@
+DROP INDEX "in_app_notifications_tenant_category_created_idx";--> statement-breakpoint
+CREATE INDEX "in_app_notifications_tenant_category_last_occurred_idx" ON "in_app_notifications" USING btree ("tenant_id","category","last_occurred_at");

@@ -91,6 +91,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     tenant_handle_taken: t("onboarding.error.handleTaken"),
     tenant_provisioning_failed: t("onboarding.error.provisioningFailed"),
     tenant_provisioning_unavailable: t("onboarding.error.provisioningUnavailable"),
+    shop_owner_limit_reached: t("onboarding.error.ownerLimit"),
     commerce_backend_unavailable: t("onboarding.error.provisioningFailed"),
     commerce_credentials_missing: t("onboarding.error.commerceCredentials"),
     commerce_credentials_invalid: t("onboarding.error.commerceCredentials"),

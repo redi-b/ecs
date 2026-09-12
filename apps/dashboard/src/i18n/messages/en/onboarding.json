@@ -95,6 +95,7 @@
     "description": "Select the shop you want to work in. Your access can be different in each shop.",
     "current": "Current",
     "open": "Open {shop}",
+    "opening": "Opening shop",
     "errorTitle": "That shop could not be opened",
     "errorDescription": "Your access may have changed. Choose another shop or try again."
   },
@@ -109,6 +110,7 @@
     "invalidResponse": "Something went wrong while creating your shop. Please try again.",
     "provisioningFailed": "We couldn’t finish creating your shop. Please try again in a few minutes. If it keeps happening, contact support.",
     "provisioningUnavailable": "Shop setup is temporarily unavailable. Please try again later.",
+    "ownerLimit": "This account already owns a shop.",
     "commerceCredentials": "We couldn’t finish creating your shop. Please try again later or contact support.",
     "failed": "Something went wrong. Please try again."
   }

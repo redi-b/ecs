@@ -8,6 +8,7 @@ export {
   createTenantDetailService,
   createTenantHandleAvailabilityService,
   createTenantListService,
+  createTenantMembershipSummaryService,
   createTenantShopSettingsService,
 } from "./list-service.js";
 export {
