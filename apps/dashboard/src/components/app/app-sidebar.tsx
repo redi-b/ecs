@@ -216,7 +216,7 @@ export function AppSidebar({
   centralDashboardUrl,
   demoMode = false,
 }: {
-  access: Pick<MerchantDashboardAccess, "actor" | "permissions" | "tenant">;
+  access: Pick<MerchantDashboardAccess, "actor" | "permissions" | "shopAccess" | "tenant">;
   centralDashboardUrl?: string;
   demoMode?: boolean;
 }) {
@@ -297,6 +297,7 @@ export function AppSidebar({
 
       <SidebarFooter className="border-t border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-2">
         <AccountMenu
+          accessibleShopCount={access.shopAccess?.accessibleCount ?? 1}
           actor={access.actor}
           currentTenantId={access.tenant.id}
           demoMode={demoMode}

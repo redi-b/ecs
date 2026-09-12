@@ -59,6 +59,10 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
     matches: (pathname) => pathname === dashboardRoutes.billing,
     requirement: merchantPolicies.billing,
   },
+  {
+    matches: (pathname) => pathname === dashboardRoutes.notifications,
+    requirement: merchantPolicies.notifications,
+  },
   // Personal account settings remain available to every active shop member.
   {
     matches: (pathname) => pathname === dashboardRoutes.settings,

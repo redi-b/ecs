@@ -109,6 +109,7 @@ export function mapOnboardingError(code: string | undefined, t: (key: MessageKey
     tenant_handle_taken: "onboarding.error.handleTaken",
     tenant_provisioning_failed: "onboarding.error.provisioningFailed",
     tenant_provisioning_unavailable: "onboarding.error.provisioningUnavailable",
+    shop_owner_limit_reached: "onboarding.error.ownerLimit",
   };
   return t(messages[code ?? ""] ?? "onboarding.error.failed");
 }

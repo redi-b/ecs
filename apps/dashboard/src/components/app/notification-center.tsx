@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,14 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
+import {
+  claimNotificationPollLease,
+  createNotificationPollOwner,
+  NOTIFICATION_CHANGED_EVENT,
+  notifyInboxChanged,
+  openNotificationSync,
+} from "@/lib/notification-sync";
+import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type InboxItem = {
@@ -22,7 +31,9 @@ type InboxItem = {
   title: string;
   body: string;
   href: string | null;
+  occurrenceCount?: number;
   readAt: string | null;
+  seenAt?: string | null;
   createdAt: string;
 };
 
@@ -153,17 +164,13 @@ export function parseInboxDetails(item: InboxItem, locale = "en"): InboxDetail[]
         continue;
       }
       // Skip redundant order ref already in the title.
-      if (
-        labelKey === "order" &&
-        title.includes(value.toLowerCase().replace(/^#/, ""))
-      ) {
+      if (labelKey === "order" && title.includes(value.toLowerCase().replace(/^#/, ""))) {
         continue;
       }
       details.push({
         label,
         value: formatDetailValue(label, value, locale),
       });
-      continue;
     }
   }
 
@@ -230,6 +237,7 @@ export function NotificationCenter() {
   /** Shift panel toward the viewport edge on small screens (lang + theme sit after the bell). */
   const [alignOffset, setAlignOffset] = useState(0);
   const openRef = useRef(open);
+  const syncRef = useRef<BroadcastChannel | null>(null);
   openRef.current = open;
 
   useEffect(() => {
@@ -253,6 +261,7 @@ export function NotificationCenter() {
       if (!response.ok) return;
       if (typeof data?.count === "number") {
         setCount(data.count);
+        syncRef.current?.postMessage({ count: data.count, type: "count" });
       }
     } catch {
       // ignore poll errors
@@ -263,7 +272,7 @@ export function NotificationCenter() {
     setLoadingList(true);
     setListError(false);
     try {
-      const response = await fetch("/admin/notifications/inbox", {
+      const response = await fetch("/admin/notifications/inbox?limit=6", {
         headers: { accept: "application/json" },
         cache: "no-store",
       });
@@ -274,6 +283,14 @@ export function NotificationCenter() {
       }
       const list = Array.isArray(data?.items) ? (data.items as InboxItem[]) : [];
       setItems(list);
+      const unseenIds = list.filter((item) => !item.seenAt).map((item) => item.id);
+      if (openRef.current && unseenIds.length) {
+        void fetch("/admin/notifications/inbox", {
+          body: JSON.stringify({ action: "seen", ids: unseenIds }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }).catch(() => undefined);
+      }
       await refreshCount();
     } catch {
       setListError(true);
@@ -283,9 +300,18 @@ export function NotificationCenter() {
   }, [refreshCount]);
 
   useEffect(() => {
-    void refreshCount();
+    const owner = createNotificationPollOwner();
+    const poll = () => {
+      if (
+        document.visibilityState === "visible" &&
+        claimNotificationPollLease(localStorage, owner, Date.now(), POLL_MS + 10_000)
+      ) {
+        void refreshCount();
+      }
+    };
+    poll();
     const id = window.setInterval(() => {
-      void refreshCount();
+      poll();
     }, POLL_MS);
 
     function onFocus() {
@@ -308,6 +334,23 @@ export function NotificationCenter() {
       window.clearInterval(id);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refreshCount, refreshList]);
+
+  useEffect(() => {
+    const refresh = () => {
+      void refreshCount();
+      if (openRef.current) void refreshList();
+    };
+    syncRef.current = openNotificationSync((message) => {
+      if (message.type === "count") setCount(message.count);
+      if (message.type === "changed") refresh();
+    });
+    window.addEventListener(NOTIFICATION_CHANGED_EVENT, refresh);
+    return () => {
+      window.removeEventListener(NOTIFICATION_CHANGED_EVENT, refresh);
+      syncRef.current?.close();
+      syncRef.current = null;
     };
   }, [refreshCount, refreshList]);
 
@@ -347,6 +390,7 @@ export function NotificationCenter() {
       await refreshList();
     } finally {
       setBusy(false);
+      notifyInboxChanged();
     }
   }
 
@@ -380,6 +424,7 @@ export function NotificationCenter() {
       setCount(previousCount);
     } finally {
       setBusy(false);
+      notifyInboxChanged();
     }
   }
 
@@ -400,9 +445,7 @@ export function NotificationCenter() {
       <PopoverTrigger asChild>
         <Button
           aria-label={
-            count > 0
-              ? t("common.inbox.unreadAria", { count })
-              : t("common.inbox.unreadNoneAria")
+            count > 0 ? t("common.inbox.unreadAria", { count }) : t("common.inbox.unreadNoneAria")
           }
           className="relative"
           size="icon-lg"
@@ -447,9 +490,7 @@ export function NotificationCenter() {
               {t("common.inbox.title")}
             </PopoverTitle>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              {count === 1
-                ? t("common.inbox.unreadOne")
-                : t("common.inbox.unread", { count })}
+              {count === 1 ? t("common.inbox.unreadOne") : t("common.inbox.unread", { count })}
             </p>
           </div>
           <Button
@@ -466,10 +507,10 @@ export function NotificationCenter() {
 
         <div className="max-h-[min(26rem,min(64vh,calc(100dvh-5.5rem)))] overflow-y-auto overscroll-contain">
           {loadingList && items.length === 0 ? (
-            <div
-              className="flex flex-col gap-0 px-1 py-1"
+            <output
               aria-busy
               aria-label={t("common.loading")}
+              className="flex flex-col gap-0 px-1 py-1"
             >
               {[0, 1, 2, 3].map((key) => (
                 <div key={key} className="flex gap-3 px-3.5 py-3">
@@ -484,7 +525,7 @@ export function NotificationCenter() {
                   </div>
                 </div>
               ))}
-            </div>
+            </output>
           ) : null}
 
           {listError && items.length === 0 ? (
@@ -526,10 +567,7 @@ export function NotificationCenter() {
                 return (
                   <li
                     key={item.id}
-                    className={cn(
-                      "group/item relative",
-                      unread && "bg-primary/[0.04]",
-                    )}
+                    className={cn("group/item relative", unread && "bg-primary/[0.04]")}
                   >
                     {/* Open row — simple flex, no reserved action column. */}
                     <button
@@ -563,6 +601,13 @@ export function NotificationCenter() {
                           >
                             {item.title}
                           </span>
+                          {(item.occurrenceCount ?? 1) > 1 ? (
+                            <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              {t("common.inbox.occurrences", {
+                                count: item.occurrenceCount ?? 1,
+                              })}
+                            </span>
+                          ) : null}
                           <span
                             className={cn(
                               "shrink-0 text-[11px] tabular-nums whitespace-nowrap text-muted-foreground transition-opacity",
@@ -645,6 +690,13 @@ export function NotificationCenter() {
               })}
             </ul>
           ) : null}
+        </div>
+        <div className="border-t bg-muted/15 p-2">
+          <Button asChild className="w-full" size="sm" variant="ghost">
+            <Link href={dashboardRoutes.notifications} onClick={() => setOpen(false)}>
+              {t("common.inbox.viewAll")}
+            </Link>
+          </Button>
         </div>
       </PopoverContent>
     </Popover>

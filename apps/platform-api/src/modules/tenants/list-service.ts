@@ -8,7 +8,7 @@ import {
   tenants,
   users,
 } from "@ecs/db";
-import { and, count, desc, eq, ne, or } from "drizzle-orm";
+import { and, count, desc, eq, ne, or, sql } from "drizzle-orm";
 
 import type {
   PlatformOnboardingStateResult,
@@ -111,6 +111,31 @@ export function createTenantListService(db: PlatformDb) {
       count: total?.count ?? 0,
       limit: input.limit,
       offset: input.offset,
+    };
+  };
+}
+
+export function createTenantMembershipSummaryService(db: PlatformDb) {
+  return async function getTenantMembershipSummary(input: { userId: string }) {
+    const [summary] = await db
+      .select({
+        accessibleCount: sql<number>`count(*) filter (where ${tenants.status} = 'active' and ${tenants.primaryDomainId} is not null)::int`,
+        ownedCount: sql<number>`count(*) filter (where ${organizationMembers.role} = 'owner')::int`,
+      })
+      .from(organizationMembers)
+      .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .where(
+        and(
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.status, "active"),
+          eq(users.status, "active"),
+        ),
+      );
+
+    return {
+      accessibleCount: summary?.accessibleCount ?? 0,
+      ownedCount: summary?.ownedCount ?? 0,
     };
   };
 }

@@ -18,6 +18,11 @@ export function registerPlatformTenantRoutes(
       return context.json({ error: "auth_required" }, 401);
     }
 
+    const membership = await options.getTenantMembershipSummary?.({ userId: session.user.id });
+    if (membership && membership.ownedCount > 0) {
+      return context.json({ error: "shop_owner_limit_reached" }, 409);
+    }
+
     const body = await getJsonBody(context.req.raw);
     const name = getRequiredBodyString(body, "name");
     const handle = getRequiredBodyString(body, "handle");

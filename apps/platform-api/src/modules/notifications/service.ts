@@ -17,18 +17,18 @@ import type {
   NotificationPreferenceListResult,
   NotificationPreferenceUpsertResult,
 } from "../../types/index.js";
-import { createInAppNotificationService } from "./inbox.js";
+import { createInAppNotificationService, type InAppNotificationService } from "./inbox.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type NotificationPreferenceRow = typeof notificationPreferences.$inferSelect;
 
-export type NotificationServiceEnqueue = (
-  input: EnqueueJobInput,
-) => Promise<EnqueueJobResult>;
+export type NotificationServiceEnqueue = (input: EnqueueJobInput) => Promise<EnqueueJobResult>;
 
 export type CreateNotificationServiceOptions = {
   /** When omitted, logs stay pending (tests / no-worker harness). */
   enqueueJob?: NotificationServiceEnqueue;
+  /** Test seam for the durable personal inbox. */
+  inbox?: InAppNotificationService;
 };
 
 const allowedChannels = new Set<NotificationChannel>(["email", "telegram"]);
@@ -66,9 +66,14 @@ export function canonicalizeNotificationEventType(
   return eventType;
 }
 
-export function isAllowedNotificationEventType(eventType: string): eventType is NotificationEventType {
+export function isAllowedNotificationEventType(
+  eventType: string,
+): eventType is NotificationEventType {
   const canonical = canonicalizeNotificationEventType(eventType);
-  return allowedEvents.has(canonical as NotificationEventType) || allowedEvents.has(eventType as NotificationEventType);
+  return (
+    allowedEvents.has(canonical as NotificationEventType) ||
+    allowedEvents.has(eventType as NotificationEventType)
+  );
 }
 
 function eventMatchesPreference(events: unknown, eventType: NotificationEventType) {
@@ -178,7 +183,7 @@ export function createNotificationService(
   options: CreateNotificationServiceOptions = {},
 ) {
   const enqueueJob = options.enqueueJob;
-  const inbox = createInAppNotificationService(db);
+  const inbox = options.inbox ?? createInAppNotificationService(db);
 
   return {
     inbox,
@@ -194,8 +199,7 @@ export function createNotificationService(
       const newestEmailByUpdatedAt = preferences
         .filter((preference) => preference.channel === "email")
         .sort(
-          (left, right) =>
-            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+          (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
         )[0];
       const deduped = preferences.filter((preference) => {
         if (preference.channel !== "email") return true;
@@ -218,17 +222,24 @@ export function createNotificationService(
           ? input.payload
           : {};
 
-      // In-app inbox is independent of email/Telegram configuration.
-      // Failures here must not block external delivery (and vice versa).
-      try {
-        await inbox.tryCreateFromEvent({
-          eventType,
-          payload,
-          tenantId: input.tenantId,
-          userId: null,
-        });
-      } catch {
-        // Swallow — tryCreateFromEvent already isolates errors; belt-and-suspenders.
+      // Store the source event first. Materialization can then survive queue or
+      // worker outages without losing the merchant's inbox notification.
+      const inboxEvent = await inbox.recordEvent({
+        eventType,
+        payload,
+        tenantId: input.tenantId,
+      });
+      if (inboxEvent) {
+        if (enqueueJob) {
+          await enqueueJob({
+            idempotencyKey: `notifications.in-app.materialize:${inboxEvent.id}:0`,
+            name: "notifications.in-app.materialize",
+            payload: { eventId: inboxEvent.id },
+            tenantId: input.tenantId,
+          });
+        } else {
+          await inbox.materializeEvent(inboxEvent.id);
+        }
       }
 
       // Platform + Medusa (or lifecycle retries) can emit the same logical event twice.
