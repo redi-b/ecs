@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { demoProductImages, demoShops } from "./demo-shops.js";
+import { DEMO_OPERATIONS, demoProductImages, demoShops } from "./demo-shops.js";
 
 describe("demo showcase fixtures", () => {
   it("keeps handles unique and relationships resolvable", () => {
@@ -42,5 +42,18 @@ describe("demo showcase fixtures", () => {
       assert.ok(shop.categories.length >= 7);
       assert.ok(shop.collections.length >= 3);
     }
+  });
+
+  it("uses branded demo identities without hyphenated emails or shop handles", () => {
+    const identities = [
+      ...demoShops.map((shop) => shop.user.email),
+      DEMO_OPERATIONS.operator.email,
+      DEMO_OPERATIONS.approver.email,
+    ];
+    for (const email of identities) {
+      assert.doesNotMatch(email, /-/);
+      assert.match(email, /@(?:[a-z0-9]+\.)*ecs\.et$/);
+    }
+    for (const shop of demoShops) assert.doesNotMatch(shop.tenant.handle, /-/);
   });
 });

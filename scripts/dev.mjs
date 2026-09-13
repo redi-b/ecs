@@ -72,7 +72,7 @@ box([
   "Medusa      http://localhost:9000",
   "",
   "Demo shops (after pnpm seed:demo):",
-  "  addistech.lvh.me  ·  bole-style.lvh.me",
+  "  addistech.lvh.me  ·  bolestyle.lvh.me",
 ]);
 blank();
 

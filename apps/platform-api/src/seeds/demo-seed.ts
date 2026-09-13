@@ -53,7 +53,6 @@ import {
   storefrontInquiries,
   storefrontRevisions,
   subscriptions,
-  subscriptionTrials,
   telegramConnectSessions,
   tenantMemberships,
   tenantOnboarding,
@@ -62,7 +61,7 @@ import {
   users,
 } from "@ecs/db";
 import { hashPassword } from "better-auth/crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
@@ -80,8 +79,10 @@ import {
   type DemoShopDefinition,
   demoProductImages,
   demoShops,
+  fashionShop,
   LEGACY_DEMO_EMAILS,
   LEGACY_DEMO_HANDLES,
+  techShop,
 } from "./demo-shops.js";
 
 loadPlatformApiEnvFiles();
@@ -293,15 +294,15 @@ Local operations demo ready.
 Demo shops ready (safe to re-run).
 
   Tech shop:    http://addistech.${platformBaseDomain}/admin
-  Owner:        owner@addistech.local
+  Owner:        ${techShop.user.email}
   Password:     ${DEMO_OWNER_PASSWORD}
 
   Operations:   http://localhost:3002
   Operator:     ${DEMO_OPERATIONS.operator.email}
   Password:     ${DEMO_OPERATIONS_PASSWORD}
 
-  Fashion shop: http://bole-style.${platformBaseDomain}/admin
-  Owner:        owner@bole-style.local
+  Fashion shop: http://${fashionShop.tenant.handle}.${platformBaseDomain}/admin
+  Owner:        ${fashionShop.user.email}
   Password:     ${DEMO_OWNER_PASSWORD}
 
 Reverse demo data: pnpm seed:demo:clean   (or pnpm seed:unseed)
@@ -1627,12 +1628,12 @@ async function seedPlatformExtras(
     const invoiceNow = new Date();
     await platformDb.db.insert(invoices).values([
       {
-        amount: "0",
+        amount: "499",
         currency: "ETB",
         paidAt: addDays(invoiceNow, -42),
         planVersionId: subscription.planVersionId,
-        provider: "trial",
-        providerReference: `demo-${shop.tenant.handle}-trial`,
+        provider: "manual",
+        providerReference: `demo-${shop.tenant.handle}-previous`,
         status: "paid",
         subscriptionId: subscription.id,
         tenantId,
@@ -1766,10 +1767,10 @@ async function seedPlatformExtras(
       readAt: null as Date | null,
     },
     {
-      dedupeKey: `demo:${tenantId}:billing.trial_ending`,
-      eventType: "billing.trial_ending",
-      title: "Trial ends in 5 days",
-      body: "Review your plan before the trial ends to keep paid features active.",
+      dedupeKey: `demo:${tenantId}:billing.invoice_ready`,
+      eventType: "billing.invoice_ready",
+      title: "Plan invoice ready",
+      body: "Your next plan invoice is ready to review.",
       href: "/admin/settings?tab=billing",
       category: "billing",
       priority: "high",
@@ -2088,9 +2089,17 @@ async function cleanAllDemoData() {
       .where(inArray(tenantMemberships.tenantId, idsToRemove));
     await platformDb.db.delete(domains).where(inArray(domains.tenantId, idsToRemove));
     await platformDb.db.delete(invoices).where(inArray(invoices.tenantId, idsToRemove));
-    await platformDb.db
-      .delete(subscriptionTrials)
-      .where(inArray(subscriptionTrials.tenantId, idsToRemove));
+    // Trial history belongs to the configurable-plan schema, which may not be
+    // deployed in environments running the base billing model yet. Keep this
+    // seed compatible with both schemas without importing an optional table.
+    const trialTable = await platformDb.db.execute<{ table_name: string | null }>(
+      sql`select to_regclass('public.subscription_trials')::text as table_name`,
+    );
+    if (trialTable.rows[0]?.table_name) {
+      await platformDb.db.execute(
+        sql`delete from subscription_trials where tenant_id = any(${idsToRemove}::uuid[])`,
+      );
+    }
     await platformDb.db.delete(subscriptions).where(inArray(subscriptions.tenantId, idsToRemove));
     await platformDb.db
       .delete(tenantProvisioningAttempts)
