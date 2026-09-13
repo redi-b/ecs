@@ -10,6 +10,14 @@ This glossary describes business meaning. It intentionally does not prescribe st
 
 **Plan version** — One immutable set of a plan's price, billing interval, capabilities, and limits.
 
+**Public plan** — A plan that a merchant may discover and choose without an individual offer.
+
+**Private plan** — A reusable plan available only through a deliberate assignment or invitation.
+
+**Custom plan** — A plan scoped to one account, derived from an accepted plan version with explicit negotiated terms.
+
+**Plan presentation** — Mutable customer-facing language and ordering used to explain a plan without changing its commercial terms.
+
 **Capability** — A named permission or allowance offered to an account.
 
 **Boolean capability** — A capability that is either available or unavailable.
@@ -19,6 +27,12 @@ This glossary describes business meaning. It intentionally does not prescribe st
 **Entitlement** — The effective capability granted to an account by its subscription and any valid override.
 
 **Subscription** — An account's assignment to one plan version over a period of time.
+
+**Trial** — A time-limited subscription phase that grants one plan version without collecting its recurring price.
+
+**Trial policy** — Immutable plan-version terms defining whether a trial is offered, its duration, eligibility, activation, and fallback.
+
+**Trial fallback** — The plan version assigned when a trial ends without conversion.
 
 **Billing period** — The interval for which subscription access and recurring allowances apply.
 
@@ -45,6 +59,9 @@ This glossary describes business meaning. It intentionally does not prescribe st
 - Published plan versions never change.
 - A subscription always identifies the exact plan version whose terms it receives.
 - A plan change never silently changes an existing subscription.
+- Trial eligibility is claimed durably and cannot be recovered by deleting or recreating a subscription.
+- Trial expiry never deletes account data and always resolves to its pinned fallback version.
+- Customer-facing presentation cannot grant capabilities or change billing terms.
 - Missing or invalid capability data cannot grant access.
 - Committed usage plus active reservations cannot exceed a hard limit.
 - A reservation can be committed at most once and released at most once.

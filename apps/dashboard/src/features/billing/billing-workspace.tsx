@@ -25,6 +25,16 @@ type CatalogPlan = {
   price: string;
   isFree: boolean;
   isCurrent: boolean;
+  publicName?: string | null | undefined;
+  summary?: string | null | undefined;
+  featureList?: string[] | undefined;
+  trial?:
+    | {
+        available: boolean;
+        durationDays?: number | undefined;
+        versionId?: string | undefined;
+      }
+    | undefined;
 };
 
 type InvoiceRow = MerchantBillingStatus["invoices"][number];
@@ -43,34 +53,10 @@ function getBooleanFeature(value: unknown, key: string): boolean {
   return Boolean(value && typeof value === "object" && Reflect.get(value, key) === true);
 }
 
-/**
- * Merchant-facing plan copy for stable positioning. Enforced capabilities and
- * limits are rendered from the published plan version, not this copy.
- */
-function planCopy(name: string, t: Translate) {
-  if (name === "Starter") {
-    return {
-      tagline: t("billing.plans.starter.tagline"),
-      highlights: [
-        t("billing.plans.starter.highlights.storefront"),
-        t("billing.plans.starter.highlights.orders"),
-        t("billing.plans.starter.highlights.noPayment"),
-      ],
-    };
-  }
-  if (name === "Growth") {
-    return {
-      tagline: t("billing.plans.growth.tagline"),
-      highlights: [
-        t("billing.plans.growth.highlights.everythingStarter"),
-        t("billing.plans.growth.highlights.monthlyPrepaid"),
-        t("billing.plans.growth.highlights.payChapa"),
-      ],
-    };
-  }
+function planCopy(plan: CatalogPlan, t: Translate) {
   return {
-    tagline: t("billing.plan.fallbackTagline"),
-    highlights: [] as string[],
+    tagline: plan.summary?.trim() || t("billing.plan.fallbackTagline"),
+    highlights: plan.featureList ?? [],
   };
 }
 
@@ -172,6 +158,7 @@ export function BillingWorkspace({
   const history = invoices.filter((invoice) => invoice.id !== openInvoice?.id);
 
   const isCurrentFree = activePlan.isFree;
+  const isTrialing = subscription.status === "trialing";
   const selectedIsCurrent = chosenPlan.id === activePlan.id;
   const selectedIsFree = chosenPlan.isFree;
   const periodEndMs = subscription.currentPeriodEnd
@@ -322,6 +309,14 @@ export function BillingWorkspace({
       return;
     }
 
+    if (!selectedIsFree && chosenPlan.trial?.available && chosenPlan.trial.versionId) {
+      runBillingAction(
+        { action: "trial", planId: chosenPlan.trial.versionId },
+        t("billing.toast.trialStarted", { days: chosenPlan.trial.durationDays ?? 0 }),
+      );
+      return;
+    }
+
     if (!selectedIsFree) {
       runBillingAction({
         action: "upgrade",
@@ -371,6 +366,9 @@ export function BillingWorkspace({
           })
         : t("billing.primary.switchTo", { name: chosenPlan.name });
     }
+    if (!selectedIsFree && chosenPlan.trial?.available) {
+      return t("billing.primary.startTrial", { days: chosenPlan.trial.durationDays ?? 0 });
+    }
     if (!selectedIsFree) {
       return t("billing.primary.continueWith", { name: chosenPlan.name });
     }
@@ -399,7 +397,11 @@ export function BillingWorkspace({
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-2xl font-medium tracking-tight">{activePlan.name}</h2>
           <Badge variant="secondary">
-            {isCurrentFree ? t("billing.plan.free") : formatStatus(subscription.status, t)}
+            {isCurrentFree
+              ? t("billing.plan.free")
+              : isTrialing
+                ? t("billing.plan.trial")
+                : formatStatus(subscription.status, t)}
           </Badge>
           {hasScheduledDowngrade ? (
             <Badge variant="outline">
@@ -410,18 +412,22 @@ export function BillingWorkspace({
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground">
-          {isCurrentFree
-            ? t("billing.plan.noPaymentRequired")
-            : subscription.currentPeriodEnd
-              ? t("billing.plan.paidThrough", {
-                  date: formatBillingDate(subscription.currentPeriodEnd, locale),
-                  price: formatPlanPrice(activePlan.price, t, formatNumber),
-                  cycle: formatCycle(subscription.billingCycle, t),
-                })
-              : t("billing.plan.priceCycle", {
-                  price: formatPlanPrice(activePlan.price, t, formatNumber),
-                  cycle: formatCycle(subscription.billingCycle, t),
-                })}
+          {isTrialing && subscription.trialEndsAt
+            ? t("billing.plan.trialEnds", {
+                date: formatBillingDate(subscription.trialEndsAt, locale),
+              })
+            : isCurrentFree
+              ? t("billing.plan.noPaymentRequired")
+              : subscription.currentPeriodEnd
+                ? t("billing.plan.paidThrough", {
+                    date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                    price: formatPlanPrice(activePlan.price, t, formatNumber),
+                    cycle: formatCycle(subscription.billingCycle, t),
+                  })
+                : t("billing.plan.priceCycle", {
+                    price: formatPlanPrice(activePlan.price, t, formatNumber),
+                    cycle: formatCycle(subscription.billingCycle, t),
+                  })}
         </p>
         {hasScheduledDowngrade && scheduledEffectiveAt ? (
           <p className="text-sm text-muted-foreground">
@@ -533,7 +539,7 @@ export function BillingWorkspace({
           )}
         >
           {catalog.map((plan) => {
-            const copy = planCopy(plan.name, t);
+            const copy = planCopy(plan, t);
             const productLimit = getProductLimit(plan.limits);
             const includesCustomDomains = getBooleanFeature(plan.features, "customDomains");
             const selected = plan.id === chosenPlan.id;
@@ -551,7 +557,7 @@ export function BillingWorkspace({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-semibold">{plan.name}</p>
+                    <p className="font-semibold">{plan.publicName || plan.name}</p>
                     <p className="mt-0.5 text-sm text-muted-foreground">{copy.tagline}</p>
                   </div>
                   {plan.isCurrent ? (
@@ -567,6 +573,11 @@ export function BillingWorkspace({
                     </span>
                   ) : null}
                 </p>
+                {plan.trial?.available ? (
+                  <p className="mt-1 text-xs font-medium text-primary">
+                    {t("billing.plan.trialAvailable", { days: plan.trial.durationDays ?? 0 })}
+                  </p>
+                ) : null}
                 {copy.highlights.length > 0 ? (
                   <ul className="mt-3 flex flex-col gap-1.5">
                     {copy.highlights.map((line) => (

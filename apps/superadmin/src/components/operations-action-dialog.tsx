@@ -37,16 +37,18 @@ export function OperationsActionDialog({
       <DialogContent
         className={
           wide
-            ? "max-h-[min(44rem,calc(100dvh-1.5rem))] gap-0 overflow-hidden p-0 sm:max-w-2xl"
-            : "max-h-[min(40rem,calc(100dvh-1.5rem))] gap-0 overflow-hidden p-0 sm:max-w-lg"
+            ? "flex max-h-[calc(100dvh-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(44rem,calc(100dvh-2rem))] sm:max-w-2xl"
+            : "flex max-h-[calc(100dvh-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(40rem,calc(100dvh-2rem))] sm:max-w-lg"
         }
       >
-        <DialogHeader className="border-b px-4 py-4 pe-12 sm:px-5">
+        <DialogHeader className="shrink-0 border-b px-4 py-4 pe-12 sm:px-5">
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
-        <div className="min-h-0 overflow-y-auto px-4 py-5 sm:px-5">{children}</div>
-        <DialogFooter className="m-0 rounded-none border-t px-4 py-3 sm:px-5">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-5 sm:px-5">
+          {children}
+        </div>
+        <DialogFooter className="m-0 shrink-0 rounded-none border-t bg-popover px-4 py-3 sm:px-5">
           {footer}
         </DialogFooter>
       </DialogContent>

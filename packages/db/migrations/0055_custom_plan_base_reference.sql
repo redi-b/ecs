@@ -1,0 +1,1 @@
+ALTER TABLE "plans" ADD CONSTRAINT "plans_base_plan_version_id_plan_versions_id_fk" FOREIGN KEY ("base_plan_version_id") REFERENCES "public"."plan_versions"("id") ON DELETE no action ON UPDATE no action;

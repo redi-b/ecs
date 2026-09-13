@@ -96,6 +96,9 @@ function extractDedupeEntityId(eventType: string, payload: unknown): string | nu
   if (eventType === "billing.invoice_ready") {
     return pick("invoiceId", "invoice_id", "subscriptionId");
   }
+  if (eventType.startsWith("billing.trial_")) {
+    return pick("subscriptionId", "tenantId") ?? "subscription";
+  }
   if (eventType === "storefront.inquiry_created") {
     return pick("inquiryId", "inquiry_id");
   }

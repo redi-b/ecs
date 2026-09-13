@@ -31,6 +31,9 @@ export interface NotificationRenderer {
 export const CODE_NOTIFICATION_TEMPLATE_EVENTS = new Set([
   "billing.invoice_ready",
   "billing.past_due",
+  "billing.trial_started",
+  "billing.trial_ending",
+  "billing.trial_expired",
   "chapa.onboarding_needs_review",
   "cod_order.created",
   "domain.misconfigured",
@@ -712,6 +715,46 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
                 amount ? { label: "Amount", value: amount } : { label: "", value: "" },
               ]),
               "Open Billing in your dashboard to pay before the period ends.",
+            ),
+          );
+        }
+
+        case "billing.trial_started":
+        case "billing.trial_ending":
+        case "billing.trial_expired": {
+          const data = asRecord(input.payload);
+          const planName = pickScalar(data, "planName") ?? "your plan";
+          const endsAt = pickScalar(data, "endsAt");
+          if (input.eventType === "billing.trial_started") {
+            return finish(
+              "Free trial started",
+              composeMessage(
+                `Your free trial of ${planName} has started.`,
+                cleanDetails([
+                  endsAt ? { label: "Ends", value: endsAt } : { label: "", value: "" },
+                ]),
+                "Open Billing to review the plan and choose what happens next.",
+              ),
+            );
+          }
+          if (input.eventType === "billing.trial_ending") {
+            return finish(
+              "Free trial ending soon",
+              composeMessage(
+                `Your free trial of ${planName} is ending soon.`,
+                cleanDetails([
+                  endsAt ? { label: "Ends", value: endsAt } : { label: "", value: "" },
+                ]),
+                "Choose the paid plan in Billing to keep these features.",
+              ),
+            );
+          }
+          return finish(
+            "Free trial ended",
+            composeMessage(
+              `Your free trial of ${planName} has ended.`,
+              [],
+              "Your shop has returned to its previous free plan. No payment was taken.",
             ),
           );
         }

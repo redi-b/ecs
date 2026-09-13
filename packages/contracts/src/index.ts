@@ -689,6 +689,8 @@ export const merchantBillingStatusSchema = z.object({
       manualPaymentState: z.string().min(1),
       currentPeriodStart: z.string().min(1).nullable(),
       currentPeriodEnd: z.string().min(1).nullable(),
+      trialStartedAt: z.string().min(1).nullable().optional(),
+      trialEndsAt: z.string().min(1).nullable().optional(),
       /** Free plan scheduled to start at period end (no refund of remaining paid days). */
       scheduledPlanId: z.string().min(1).nullable().optional(),
       scheduledPlanName: z.string().min(1).nullable().optional(),
@@ -733,6 +735,16 @@ export const merchantBillingStatusSchema = z.object({
         price: z.string().min(1),
         limits: z.unknown(),
         features: z.unknown(),
+        trial: z
+          .object({
+            available: z.boolean(),
+            durationDays: z.number().int().positive().optional(),
+            versionId: z.string().min(1).optional(),
+          })
+          .optional(),
+        publicName: z.string().nullable().optional(),
+        summary: z.string().nullable().optional(),
+        featureList: z.array(z.string()).optional(),
       }),
     )
     .optional(),
@@ -747,6 +759,16 @@ export const merchantBillingStatusSchema = z.object({
         isCurrent: z.boolean(),
         limits: z.unknown(),
         features: z.unknown(),
+        trial: z
+          .object({
+            available: z.boolean(),
+            durationDays: z.number().int().positive().optional(),
+            versionId: z.string().min(1).optional(),
+          })
+          .optional(),
+        publicName: z.string().nullable().optional(),
+        summary: z.string().nullable().optional(),
+        featureList: z.array(z.string()).optional(),
       }),
     )
     .optional(),
@@ -764,6 +786,47 @@ export const merchantBillingResponseSchema = z.object({
 export type MerchantBillingStatus = z.infer<typeof merchantBillingStatusSchema>;
 export type MerchantDashboardBilling = z.infer<typeof merchantDashboardBillingSchema>;
 
+export const planTrialPolicySchema = z.discriminatedUnion("enabled", [
+  z.object({ enabled: z.literal(false) }),
+  z.object({
+    activation: z.enum(["automatic", "manual"]),
+    durationDays: z.number().int().min(1).max(365),
+    eligibilityScope: z.enum(["tenant", "account"]),
+    enabled: z.literal(true),
+    fallbackPlanVersionId: z.string().min(1),
+    paymentMethodRequired: z.boolean(),
+  }),
+]);
+
+export const publicPlanCatalogSchema = z.object({
+  plans: z.array(
+    z.object({
+      badge: z.string().nullable(),
+      billingInterval: z.enum(["day", "week", "month", "year"]),
+      code: z.string().min(1),
+      ctaLabel: z.string().min(1),
+      description: z.string(),
+      displayOrder: z.number().int().nonnegative(),
+      featureList: z.array(z.string().min(1)),
+      featured: z.boolean(),
+      name: z.string().min(1),
+      price: z.string().min(1),
+      currency: z.string().min(1),
+      summary: z.string(),
+      trial: z.discriminatedUnion("available", [
+        z.object({ available: z.literal(false) }),
+        z.object({
+          activation: z.enum(["automatic", "manual"]),
+          available: z.literal(true),
+          durationDays: z.number().int().positive(),
+          paymentMethodRequired: z.boolean(),
+        }),
+      ]),
+    }),
+  ),
+});
+export type PublicPlanCatalog = z.infer<typeof publicPlanCatalogSchema>;
+
 const operatorPlanVersionSummarySchema = z.object({
   id: z.string().min(1),
   version: z.number().int().positive(),
@@ -772,12 +835,18 @@ const operatorPlanVersionSummarySchema = z.object({
   currency: z.string().min(1),
   billingInterval: z.string().min(1),
   publishedAt: z.string().min(1),
+  trialPolicy: planTrialPolicySchema,
 });
 
 export const operatorPlanCatalogSchema = z.object({
   plans: z.array(
     z.object({
       id: z.string().min(1),
+      code: z.string().min(1),
+      kind: z.enum(["standard", "custom"]),
+      visibility: z.enum(["public", "private"]),
+      tenantId: z.string().min(1).nullable(),
+      basePlanVersionId: z.string().min(1).nullable(),
       name: z.string().min(1),
       price: z.string().min(1),
       status: z.string().min(1),
@@ -798,6 +867,21 @@ export const operatorPlanCatalogSchema = z.object({
           billingInterval: z.string().min(1),
           features: z.unknown(),
           limits: z.unknown(),
+          trialPolicy: planTrialPolicySchema,
+          updatedAt: z.string().min(1),
+        })
+        .nullable(),
+      presentation: z
+        .object({
+          badge: z.string().nullable(),
+          ctaLabel: z.string().min(1),
+          description: z.string(),
+          displayOrder: z.number().int().nonnegative(),
+          featureList: z.unknown(),
+          featured: z.boolean(),
+          landingVisible: z.boolean(),
+          publicName: z.string().min(1),
+          summary: z.string(),
           updatedAt: z.string().min(1),
         })
         .nullable(),

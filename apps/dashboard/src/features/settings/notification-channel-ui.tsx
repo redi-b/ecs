@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,8 @@ import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n/messages";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,11 +31,29 @@ export const NOTIFICATION_EVENT_OPTIONS = [
   { id: "payment.paid", labelKey: "settings.notifications.events.paymentPaid" as MessageKey },
   { id: "payment.failed", labelKey: "settings.notifications.events.paymentFailed" as MessageKey },
   { id: "inventory.low", labelKey: "settings.notifications.events.inventoryLow" as MessageKey },
-  { id: "storefront.inquiry_created", labelKey: "settings.notifications.events.storefrontInquiry" as MessageKey },
-  { id: "billing.past_due", labelKey: "settings.notifications.events.billingPastDue" as MessageKey },
+  {
+    id: "storefront.inquiry_created",
+    labelKey: "settings.notifications.events.storefrontInquiry" as MessageKey,
+  },
+  {
+    id: "billing.past_due",
+    labelKey: "settings.notifications.events.billingPastDue" as MessageKey,
+  },
   {
     id: "billing.invoice_ready",
     labelKey: "settings.notifications.events.billingInvoiceReady" as MessageKey,
+  },
+  {
+    id: "billing.trial_started",
+    labelKey: "settings.notifications.events.trialStarted" as MessageKey,
+  },
+  {
+    id: "billing.trial_ending",
+    labelKey: "settings.notifications.events.trialEnding" as MessageKey,
+  },
+  {
+    id: "billing.trial_expired",
+    labelKey: "settings.notifications.events.trialEnded" as MessageKey,
   },
 ] as const;
 
@@ -58,7 +76,13 @@ export const NOTIFICATION_EVENT_GROUPS = [
     id: "system",
     labelKey: "settings.notifications.eventGroups.system" as MessageKey,
     descriptionKey: "settings.notifications.eventGroups.systemDesc" as MessageKey,
-    eventIds: ["billing.past_due", "billing.invoice_ready"] as const,
+    eventIds: [
+      "billing.past_due",
+      "billing.invoice_ready",
+      "billing.trial_started",
+      "billing.trial_ending",
+      "billing.trial_expired",
+    ] as const,
   },
 ] as const;
 
@@ -243,6 +267,7 @@ export function NotificationEventPicker({
   onSave: () => void;
 }) {
   const { t } = useI18n();
+  const pickerId = useId();
   const eventById = new Map(NOTIFICATION_EVENT_OPTIONS.map((event) => [event.id, event]));
 
   return (
@@ -267,8 +292,10 @@ export function NotificationEventPicker({
                 const event = eventById.get(eventId);
                 if (!event) return null;
                 const checked = events.includes(event.id);
+                const checkboxId = `${pickerId}-${event.id.replaceAll(".", "-")}`;
                 return (
                   <label
+                    htmlFor={checkboxId}
                     key={event.id}
                     className={cn(
                       "flex cursor-pointer items-center gap-2.5 rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
@@ -279,6 +306,7 @@ export function NotificationEventPicker({
                     )}
                   >
                     <Checkbox
+                      id={checkboxId}
                       checked={checked}
                       disabled={disabled}
                       onCheckedChange={(value) => {

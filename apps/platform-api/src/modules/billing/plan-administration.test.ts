@@ -22,6 +22,7 @@ describe("plan administration validation", () => {
         name: "Growth",
         price: "1499.50",
         priceMinor: 149_950,
+        trialPolicy: { enabled: false },
       },
     );
   });
@@ -64,6 +65,7 @@ describe("plan administration validation", () => {
         name: "Growth",
         price: "1499",
         priceMinor: 149_900,
+        trialPolicy: { enabled: false },
       },
     );
     assert.equal(
@@ -74,6 +76,21 @@ describe("plan administration validation", () => {
         limits: { unimplementedQuota: 100 },
         name: "Growth",
         price: "1499",
+      }),
+      null,
+    );
+  });
+
+  it("rejects malformed enabled trials instead of silently disabling them", () => {
+    assert.equal(
+      validatePlanDraft({
+        billingInterval: "month",
+        currency: "ETB",
+        features: { customDomains: false },
+        limits: {},
+        name: "Growth",
+        price: "1499",
+        trialPolicy: { enabled: true, durationDays: 14 },
       }),
       null,
     );

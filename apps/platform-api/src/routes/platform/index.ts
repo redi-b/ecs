@@ -1,8 +1,10 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import { registerPlatformBillingCatalogRoutes } from "./billing-catalog.js";
 import { registerDeliveryRoutes } from "./delivery-routes.js";
 import { registerPlatformHealthAuthRoutes } from "./health-auth.js";
+import { registerPlatformInquiryRoutes } from "./inquiries.js";
 import { registerPlatformInternalNotificationRoutes } from "./internal-notifications.js";
 import { registerPlatformOnboardingRoutes } from "./onboarding.js";
 import { registerPlatformOperatorRoutes } from "./operator.js";
@@ -10,13 +12,13 @@ import { registerPlatformStorefrontRoutes } from "./storefront.js";
 import { registerPlatformTenantCommerceRoutes } from "./tenant-commerce.js";
 import { registerPlatformTenantOpsRoutes } from "./tenant-ops.js";
 import { registerPlatformTenantRoutes } from "./tenants.js";
-import { registerPlatformInquiryRoutes } from "./inquiries.js";
 
 export function registerPlatformRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
 ) {
   registerPlatformHealthAuthRoutes(app, options);
+  registerPlatformBillingCatalogRoutes(app, options);
   registerPlatformInternalNotificationRoutes(app, options);
   registerPlatformOnboardingRoutes(app, options);
   registerPlatformTenantCommerceRoutes(app, options);

@@ -243,6 +243,36 @@ const definitions = [
       retentionDays: eventType === "billing.past_due" ? 180 : 90,
     }),
   ),
+  ...(["billing.trial_started", "billing.trial_ending", "billing.trial_expired"] as const).map(
+    (eventType) =>
+      defineEvent({
+        eventType,
+        version: 1,
+        context: "billing",
+        status: "production",
+        emitter: "Billing trial lifecycle",
+        fixture: {
+          endsAt: "2026-09-27T00:00:00.000Z",
+          planName: "Business",
+          subscriptionId: "subscription_fixture",
+        },
+        audience: billingAudience,
+        channels: ["email", "in_app", "telegram"],
+        configurable: true,
+        payloadSchema: subscriptionPayload,
+        prohibitedPayloadFields: prohibited,
+        dedupe: "entity",
+        templateIds: {
+          email: `merchant.${eventType}.v1`,
+          in_app: `merchant.${eventType}.v1`,
+          telegram: `merchant.${eventType}.v1`,
+        },
+        deepLink: "billing",
+        priority: eventType === "billing.trial_ending" ? "high" : "normal",
+        category: "billing",
+        retentionDays: 90,
+      }),
+  ),
   defineEvent({
     eventType: "storefront.inquiry_created",
     version: 1,

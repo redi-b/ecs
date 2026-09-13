@@ -254,7 +254,8 @@ const telegramConnectService = createTelegramConnectService(platformDb.db, teleg
       const tools = await handleTelegramToolsCallback(telegramToolsBridge.deps, update);
       if (tools.handled) return tools;
     }
-    if (!telegramOrderBridge.mutateMerchantOrder) {
+    const mutateMerchantOrder = telegramOrderBridge.mutateMerchantOrder;
+    if (!mutateMerchantOrder) {
       return { handled: true, reason: "actions_unavailable" };
     }
     return handleTelegramCallbackQuery(
@@ -263,7 +264,7 @@ const telegramConnectService = createTelegramConnectService(platformDb.db, teleg
         botToken: telegramBotToken,
         operatorService: telegramOperatorService,
         mutateMerchantOrder: (input) =>
-          telegramOrderBridge.mutateMerchantOrder!({
+          mutateMerchantOrder({
             action: input.action as "mark-paid" | "fulfill" | "cancel",
             orderId: input.orderId,
             salesChannelId: input.salesChannelId,
@@ -836,6 +837,8 @@ const app = createPlatformApp({
   checkTenantHandleAvailability,
   getBillingStatus: billingService.getBillingStatus,
   createPlanUpgradeInvoice: billingService.createPlanUpgradeInvoice,
+  getPublicPlanCatalog: billingService.getPublicPlanCatalog,
+  startPlanTrial: billingService.startPlanTrial,
   schedulePlanDowngrade: billingService.schedulePlanDowngrade,
   cancelScheduledPlanDowngrade: billingService.cancelScheduledPlanDowngrade,
   confirmBillingPayments: async (input) => {
@@ -999,6 +1002,8 @@ const app = createPlatformApp({
   clearMerchantChapaSecret: paymentOnboardingService.clearMerchantChapaSecret,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
   getPlanAdministrationCatalog: planAdministrationService.getCatalog,
+  createPlan: planAdministrationService.createPlan,
+  savePlanPresentation: planAdministrationService.savePresentation,
   savePlanDraft: planAdministrationService.saveDraft,
   publishPlanDraft: planAdministrationService.publishDraft,
   migrateSubscriptionPlanVersion: planAdministrationService.migrateSubscriptionNow,

@@ -15,6 +15,7 @@ const terms = {
   currency: "ETB",
   interval: "month",
   priceMinor: 100_00,
+  trialPolicy: { enabled: false },
 } as const;
 
 test("canonical terms do not depend on object key insertion order", () => {
@@ -23,6 +24,7 @@ test("canonical terms do not depend on object key insertion order", () => {
     interval: "month",
     currency: "ETB",
     capabilities: { products: 500, customDomains: true },
+    trialPolicy: { enabled: false },
   } as const;
   assert.equal(
     canonicalPlanTerms({ catalog, terms }),

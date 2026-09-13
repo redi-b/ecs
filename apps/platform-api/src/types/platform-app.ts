@@ -167,6 +167,12 @@ export type PlatformAppOptions = {
   getPlanAdministrationCatalog?: ReturnType<
     typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
   >["getCatalog"];
+  createPlan?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["createPlan"];
+  savePlanPresentation?: ReturnType<
+    typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
+  >["savePresentation"];
   savePlanDraft?: ReturnType<
     typeof import("../modules/billing/plan-administration.js").createPlanAdministrationService
   >["saveDraft"];
@@ -353,6 +359,12 @@ export type PlatformAppOptions = {
     | ((input: { tenantId: string; userId: string }) => Promise<StorefrontUnpublishResult>)
     | undefined;
   getBillingStatus?: ((input: { tenantId: string }) => Promise<BillingStatusResult>) | undefined;
+  getPublicPlanCatalog?: ReturnType<
+    typeof import("../modules/billing/service.js").createBillingService
+  >["getPublicPlanCatalog"];
+  startPlanTrial?: ReturnType<
+    typeof import("../modules/billing/service.js").createBillingService
+  >["startPlanTrial"];
   createPlanUpgradeInvoice?:
     | ((input: { planId: string; tenantId: string }) => Promise<BillingPlanUpgradeResult>)
     | undefined;

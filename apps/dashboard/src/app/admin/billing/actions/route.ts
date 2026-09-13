@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 import { withMerchantAction } from "@/lib/platform-api/action-route";
 import { getPlatformApiBaseUrl } from "@/lib/platform-api/client";
 
@@ -35,14 +33,11 @@ export async function POST(request: Request) {
 
     // normalizeBaseUrl ends with `/`; join paths via URL so we never hit `//platform/...` (404).
     const base = getPlatformApiBaseUrl();
-    const platformUrl = (path: string) =>
-      new URL(path.replace(/^\//, ""), base).toString();
+    const platformUrl = (path: string) => new URL(path.replace(/^\//, ""), base).toString();
 
     if (action === "confirm") {
       const response = await fetch(
-        platformUrl(
-          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/confirm`,
-        ),
+        platformUrl(`platform/tenants/${encodeURIComponent(context.tenantId)}/billing/confirm`),
         { method: "POST", headers },
       );
       const data = await response.json().catch(() => ({}));
@@ -63,9 +58,7 @@ export async function POST(request: Request) {
       }
 
       const response = await fetch(
-        platformUrl(
-          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/upgrade`,
-        ),
+        platformUrl(`platform/tenants/${encodeURIComponent(context.tenantId)}/billing/upgrade`),
         {
           method: "POST",
           headers,
@@ -83,6 +76,26 @@ export async function POST(request: Request) {
       return { ok: true, data };
     }
 
+    if (action === "trial") {
+      const planVersionId = body.planId?.trim();
+      if (!planVersionId) {
+        return { ok: false, message: "billing_plan_required", status: 400 };
+      }
+      const response = await fetch(
+        platformUrl(`platform/tenants/${encodeURIComponent(context.tenantId)}/billing/trial`),
+        { method: "POST", headers, body: JSON.stringify({ planVersionId }) },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: extractErrorText(data) ?? "billing_trial_not_available",
+          status: response.status,
+        };
+      }
+      return { ok: true, data };
+    }
+
     if (action === "downgrade") {
       const planId = body.planId?.trim();
       if (!planId) {
@@ -90,9 +103,7 @@ export async function POST(request: Request) {
       }
 
       const response = await fetch(
-        platformUrl(
-          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/downgrade`,
-        ),
+        platformUrl(`platform/tenants/${encodeURIComponent(context.tenantId)}/billing/downgrade`),
         {
           method: "POST",
           headers,
@@ -133,9 +144,7 @@ export async function POST(request: Request) {
       if (!invoiceId) {
         return { ok: false, message: "billing_invoice_required", status: 400 };
       }
-      const returnUrl =
-        body.returnUrl?.trim() ||
-        new URL("/admin/billing", request.url).toString();
+      const returnUrl = body.returnUrl?.trim() || new URL("/admin/billing", request.url).toString();
 
       const response = await fetch(
         platformUrl(
@@ -166,10 +175,18 @@ export async function POST(request: Request) {
 function extractErrorText(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const record = data as Record<string, unknown>;
-  if (typeof record.message === "string" && record.message.trim() && record.message !== "[object Object]") {
+  if (
+    typeof record.message === "string" &&
+    record.message.trim() &&
+    record.message !== "[object Object]"
+  ) {
     return record.message.trim();
   }
-  if (typeof record.error === "string" && record.error.trim() && record.error !== "[object Object]") {
+  if (
+    typeof record.error === "string" &&
+    record.error.trim() &&
+    record.error !== "[object Object]"
+  ) {
     return record.error.trim();
   }
   return null;

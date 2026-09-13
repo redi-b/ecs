@@ -5,7 +5,34 @@ import type {
   PlanTerms,
   PlanVersionId,
   PublishedPlanVersion,
+  TrialPolicy,
 } from "./domain.js";
+
+export function parseTrialPolicy(value: unknown): TrialPolicy {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { enabled: false };
+  const source = value as Record<string, unknown>;
+  if (source.enabled !== true) return { enabled: false };
+  if (
+    (source.activation !== "automatic" && source.activation !== "manual") ||
+    !Number.isSafeInteger(source.durationDays) ||
+    Number(source.durationDays) < 1 ||
+    Number(source.durationDays) > 365 ||
+    (source.eligibilityScope !== "tenant" && source.eligibilityScope !== "account") ||
+    typeof source.fallbackPlanVersionId !== "string" ||
+    !source.fallbackPlanVersionId ||
+    typeof source.paymentMethodRequired !== "boolean"
+  ) {
+    return { enabled: false };
+  }
+  return {
+    activation: source.activation,
+    durationDays: Number(source.durationDays),
+    eligibilityScope: source.eligibilityScope,
+    enabled: true,
+    fallbackPlanVersionId: source.fallbackPlanVersionId as PlanVersionId,
+    paymentMethodRequired: source.paymentMethodRequired,
+  };
+}
 
 export type PlanFingerprint = {
   digest(canonicalTerms: string): Promise<string>;
@@ -40,6 +67,16 @@ export function validatePlanTerms<TCatalog extends CapabilityCatalog>(input: {
   }
   if (!Number.isSafeInteger(input.terms.priceMinor) || input.terms.priceMinor < 0) {
     throw new Error("Plan price must be a non-negative safe integer in minor units.");
+  }
+  const trial = input.terms.trialPolicy;
+  if (
+    trial.enabled &&
+    (!Number.isSafeInteger(trial.durationDays) ||
+      trial.durationDays < 1 ||
+      trial.durationDays > 365 ||
+      !trial.fallbackPlanVersionId)
+  ) {
+    throw new Error("Enabled trials require a fallback plan version and 1 to 365 days.");
   }
   const catalogKeys = Object.keys(input.catalog).sort();
   const valueKeys = Object.keys(input.terms.capabilities).sort();

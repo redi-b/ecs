@@ -17,10 +17,13 @@
     "current": "የአሁኑ ዕቅድ",
     "currentBadge": "አሁን",
     "free": "ነፃ",
+    "trial": "ነፃ ሙከራ",
+    "trialEnds": "ነፃ ሙከራዎ በ{date} ያበቃል። እነዚህን ባህሪያት ለማስቀጠል ከዚያ በፊት የሚከፈልበት ዕቅድ ይምረጡ።",
     "plansHeading": "ዕቅዶች",
     "plansDescription": "ለዚህ ሱቅ ዕቅድ ይምረጡ። ክፍያ የሚጠይቁ ዕቅድ ሲመርጡ ብቻ ይከፍላሉ።",
     "perMonth": "/ ወር",
     "fallbackTagline": "ለሱቅዎ የዕቅድ ዝርዝሮች።",
+    "trialAvailable": "የ{days} ቀን ነፃ ሙከራ ይገኛል",
     "noPaymentRequired": "ለዚህ ሱቅ ክፍያ አያስፈልግም።",
     "paidThrough": "እስከ {date} ተከፍሏል · {price} / {cycle}",
     "priceCycle": "{price} · {cycle}",
@@ -104,6 +107,7 @@
     "switchAfter": "ከ{date} በኋላ ቀይር",
     "switchTo": "ወደ {name} ቀይር",
     "continueWith": "በ{name} ቀጥል",
+    "startTrial": "የ{days} ቀን ነፃ ሙከራ ጀምር",
     "selectPlan": "ዕቅድ ይምረጡ"
   },
   "hint": {
@@ -121,6 +125,7 @@
   },
   "toast": {
     "invoiceReady": "የክፍያ መጠየቂያ ዝግጁ ነው።",
+    "trialStarted": "የ{days} ቀን ነፃ ሙከራዎ ተጀምሯል።",
     "paymentConfirmed": "ክፍያ ተረጋግጧል።",
     "openingCheckout": "ደህንነቱ የተጠበቀ ክፍያ በመክፈት ላይ…",
     "switchesOn": "በ{date} ወደ ነፃ ዕቅድ ይቀየራል።",

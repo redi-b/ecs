@@ -10,6 +10,7 @@ import {
   plans,
   planVersions,
   subscriptions,
+  subscriptionTrials,
   tenants,
 } from "@ecs/db";
 import { and, eq } from "drizzle-orm";
@@ -104,5 +105,138 @@ describe("billing lifecycle with PostgreSQL", { skip: !connectionString }, () =>
     fail = false;
     assert.equal((await outbox.processDue({ tenantId })).completed, 1);
     assert.equal(deliveries, 2);
+  });
+
+  it("claims a trial once, pins its fallback, and returns there at expiry", async () => {
+    const trialTenantId = randomUUID();
+    const trialOrganizationId = `org_${trialTenantId.replaceAll("-", "")}`;
+    const freePlanId = randomUUID();
+    const freeVersionId = randomUUID();
+    const trialPlanId = randomUUID();
+    const trialVersionId = randomUUID();
+    const trialSubscriptionId = randomUUID();
+    const billing = createBillingService(database.db);
+
+    try {
+      await database.db.insert(organizations).values({
+        id: trialOrganizationId,
+        name: "Trial Lifecycle Integration",
+        slug: `trial-lifecycle-${trialTenantId.slice(0, 8)}`,
+      });
+      await database.db.insert(tenants).values({
+        id: trialTenantId,
+        handle: `trial-lifecycle-${trialTenantId.slice(0, 8)}`,
+        name: "Trial Lifecycle Integration",
+        organizationId: trialOrganizationId,
+      });
+      await database.db.insert(plans).values({
+        id: freePlanId,
+        name: "Trial fallback",
+        price: "0",
+      });
+      await database.db.insert(planVersions).values({
+        id: freeVersionId,
+        planId: freePlanId,
+        version: 1,
+        fingerprint: `trial-fallback-${freeVersionId}`,
+        name: "Trial fallback",
+        price: "0",
+      });
+      await database.db.insert(plans).values({
+        id: trialPlanId,
+        name: "Trial offer",
+        price: "1000",
+        visibility: "public",
+      });
+      await database.db.insert(planVersions).values({
+        id: trialVersionId,
+        planId: trialPlanId,
+        version: 1,
+        fingerprint: `trial-offer-${trialVersionId}`,
+        name: "Trial offer",
+        price: "1000",
+        trialPolicy: {
+          activation: "manual",
+          durationDays: 14,
+          eligibilityScope: "tenant",
+          enabled: true,
+          fallbackPlanVersionId: freeVersionId,
+          paymentMethodRequired: false,
+        },
+      });
+      await database.db.insert(subscriptions).values({
+        id: trialSubscriptionId,
+        tenantId: trialTenantId,
+        planId: freePlanId,
+        planVersionId: freeVersionId,
+        status: "active",
+        manualPaymentState: "none",
+      });
+
+      const attempts = await Promise.all(
+        Array.from({ length: 8 }, () =>
+          billing.startPlanTrial({
+            actorUserId: "trial-test-user",
+            planVersionId: trialVersionId,
+            tenantId: trialTenantId,
+          }),
+        ),
+      );
+      assert.equal(attempts.filter((attempt) => attempt.ok).length, 1);
+
+      const [activeTrial] = await database.db
+        .select({
+          fallbackPlanVersionId: subscriptions.trialFallbackPlanVersionId,
+          planVersionId: subscriptions.planVersionId,
+          status: subscriptions.status,
+        })
+        .from(subscriptions)
+        .where(eq(subscriptions.id, trialSubscriptionId));
+      assert.deepEqual(activeTrial, {
+        fallbackPlanVersionId: freeVersionId,
+        planVersionId: trialVersionId,
+        status: "trialing",
+      });
+
+      const expiredAt = new Date(Date.now() - 1_000);
+      await database.db
+        .update(subscriptions)
+        .set({ trialEndsAt: expiredAt })
+        .where(eq(subscriptions.id, trialSubscriptionId));
+
+      const lifecycle = await billing.syncTenantBillingLifecycle({ tenantId: trialTenantId });
+      assert.equal(lifecycle.trialExpired, true);
+
+      const [afterExpiry] = await database.db
+        .select({ planVersionId: subscriptions.planVersionId, status: subscriptions.status })
+        .from(subscriptions)
+        .where(eq(subscriptions.id, trialSubscriptionId));
+      assert.deepEqual(afterExpiry, { planVersionId: freeVersionId, status: "active" });
+
+      const reused = await billing.startPlanTrial({
+        actorUserId: "trial-test-user",
+        planVersionId: trialVersionId,
+        tenantId: trialTenantId,
+      });
+      assert.deepEqual(reused, {
+        error: "billing_trial_already_used",
+        ok: false,
+        status: 409,
+      });
+    } finally {
+      await database.db
+        .delete(billingOutboxEvents)
+        .where(eq(billingOutboxEvents.tenantId, trialTenantId));
+      await database.db
+        .delete(subscriptionTrials)
+        .where(eq(subscriptionTrials.tenantId, trialTenantId));
+      await database.db.delete(subscriptions).where(eq(subscriptions.tenantId, trialTenantId));
+      await database.db.delete(planVersions).where(eq(planVersions.planId, trialPlanId));
+      await database.db.delete(planVersions).where(eq(planVersions.planId, freePlanId));
+      await database.db.delete(plans).where(eq(plans.id, trialPlanId));
+      await database.db.delete(plans).where(eq(plans.id, freePlanId));
+      await database.db.delete(tenants).where(eq(tenants.id, trialTenantId));
+      await database.db.delete(organizations).where(eq(organizations.id, trialOrganizationId));
+    }
   });
 });

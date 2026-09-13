@@ -44,6 +44,7 @@ describe("billing lifecycle time boundaries", () => {
       {
         applyScheduledDowngrade: false,
         createRenewalInvoice: false,
+        expireTrial: false,
         markPastDue: false,
         scheduledPlanId: null,
       },
@@ -68,6 +69,24 @@ describe("billing lifecycle time boundaries", () => {
     });
     assert.equal(expired.createRenewalInvoice, true);
     assert.equal(expired.markPastDue, true);
+  });
+
+  it("expires a trial at its boundary without creating an invoice or past-due state", () => {
+    assert.deepEqual(
+      planBillingLifecycle({
+        currentPeriodEnd: periodEnd,
+        manualPaymentState: "trial",
+        now: periodEnd,
+        status: "trialing",
+      }),
+      {
+        applyScheduledDowngrade: false,
+        createRenewalInvoice: false,
+        expireTrial: true,
+        markPastDue: false,
+        scheduledPlanId: null,
+      },
+    );
   });
 
   it("suppresses renewal and past-due while a downgrade waits, then applies it at expiry", () => {

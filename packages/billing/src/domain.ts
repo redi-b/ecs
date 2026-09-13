@@ -7,6 +7,17 @@ export type ReservationId = string & { readonly __reservationId: unique symbol }
 export type BillingInterval = "day" | "week" | "month" | "year";
 export type LimitWindow = "billing_period" | "lifetime";
 
+export type TrialPolicy =
+  | { readonly enabled: false }
+  | {
+      readonly activation: "automatic" | "manual";
+      readonly durationDays: number;
+      readonly eligibilityScope: "tenant" | "account";
+      readonly enabled: true;
+      readonly fallbackPlanVersionId: PlanVersionId;
+      readonly paymentMethodRequired: boolean;
+    };
+
 export type BooleanCapabilityDefinition = {
   readonly kind: "boolean";
   readonly defaultValue: false;
@@ -31,6 +42,7 @@ export type PlanTerms<TCatalog extends CapabilityCatalog> = {
   readonly currency: string;
   readonly interval: BillingInterval;
   readonly priceMinor: number;
+  readonly trialPolicy: TrialPolicy;
 };
 
 export type PublishedPlanVersion<TCatalog extends CapabilityCatalog> = {
