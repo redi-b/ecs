@@ -4,6 +4,7 @@ import {
   type PlanId,
   type PlanVersionId,
   type PublishedPlanVersion,
+  parseTrialPolicy,
   publishPlanVersion,
 } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
@@ -11,11 +12,13 @@ import {
   auditLogs,
   billingOutboxEvents,
   invoices,
+  planPresentations,
   plans,
   planVersions,
   subscriptions,
+  subscriptionTrials,
 } from "@ecs/db";
-import { and, desc, eq, lte, sql } from "drizzle-orm";
+import { and, desc, eq, lte, or, sql } from "drizzle-orm";
 
 import type {
   BillingInvoice,
@@ -141,9 +144,19 @@ export function planBillingLifecycle(input: {
   const scheduledPlanId = parseScheduledDowngradePlanId(input.manualPaymentState);
   const periodEnded =
     input.currentPeriodEnd != null && input.currentPeriodEnd.getTime() <= input.now.getTime();
+  if (input.status === "trialing") {
+    return {
+      applyScheduledDowngrade: false,
+      createRenewalInvoice: false,
+      expireTrial: periodEnded,
+      markPastDue: false,
+      scheduledPlanId: null,
+    };
+  }
   if (scheduledPlanId) {
     return {
       createRenewalInvoice: false,
+      expireTrial: false,
       markPastDue: false,
       scheduledPlanId,
       applyScheduledDowngrade: periodEnded,
@@ -155,7 +168,8 @@ export function planBillingLifecycle(input: {
   return {
     applyScheduledDowngrade: false,
     createRenewalInvoice: renewalWindowStart != null && input.now.getTime() >= renewalWindowStart,
-    markPastDue: periodEnded && (input.status === "active" || input.status === "trialing"),
+    expireTrial: false,
+    markPastDue: periodEnded && input.status === "active",
     scheduledPlanId: null,
   };
 }
@@ -177,6 +191,7 @@ export function createBillingService(db: PlatformDb) {
         planId: planVersions.planId,
         price: planVersions.price,
         publishedAt: planVersions.publishedAt,
+        trialPolicy: planVersions.trialPolicy,
         version: planVersions.version,
       })
       .from(planVersions)
@@ -199,6 +214,7 @@ export function createBillingService(db: PlatformDb) {
             ? row.billingInterval
             : "month",
         priceMinor: Math.round(Number(row.price) * 100),
+        trialPolicy: parseTrialPolicy(row.trialPolicy),
       },
       version: row.version,
     };
@@ -220,6 +236,7 @@ export function createBillingService(db: PlatformDb) {
         currency: "ETB",
         interval: "month",
         priceMinor: Math.round(Number(plan.price) * 100),
+        trialPolicy: { enabled: false },
       },
     });
     if (publication.action === "published") {
@@ -236,6 +253,7 @@ export function createBillingService(db: PlatformDb) {
           billingInterval: publication.version.terms.interval,
           limits: plan.limits,
           features: publication.version.terms.capabilities,
+          trialPolicy: publication.version.terms.trialPolicy,
           publishedAt: publication.version.publishedAt,
         })
         .onConflictDoNothing();
@@ -254,10 +272,13 @@ export function createBillingService(db: PlatformDb) {
             set: {
               // Transitional latest-version projection for legacy readers.
               features: plan.features,
+              code: plan.code,
+              kind: plan.kind,
               limits: plan.limits,
               name: plan.name,
               price: plan.price,
               status: plan.status,
+              visibility: plan.visibility,
             },
           });
         await ensurePublishedPlanVersion(plan);
@@ -325,6 +346,39 @@ export function createBillingService(db: PlatformDb) {
         .returning({ id: subscriptions.id });
 
       if (subscription) {
+        const automaticCandidates = await db
+          .select({
+            id: planVersions.id,
+            planId: planVersions.planId,
+            trialPolicy: planVersions.trialPolicy,
+          })
+          .from(planVersions)
+          .innerJoin(plans, eq(plans.id, planVersions.planId))
+          .where(
+            and(
+              eq(plans.kind, "standard"),
+              eq(plans.status, "active"),
+              eq(plans.visibility, "public"),
+            ),
+          )
+          .orderBy(desc(planVersions.version));
+        const latestSeen = new Set<string>();
+        const automatic = automaticCandidates.filter((candidate) => {
+          if (latestSeen.has(candidate.planId)) return false;
+          latestSeen.add(candidate.planId);
+          const policy = parseTrialPolicy(candidate.trialPolicy);
+          if (!policy.enabled || policy.activation !== "automatic") return false;
+          return true;
+        });
+        if (automatic.length === 1) {
+          const [automaticPlan] = automatic;
+          if (!automaticPlan) throw new Error("Automatic trial candidate disappeared.");
+          await self().startPlanTrial({
+            actorUserId: "system",
+            planVersionId: automaticPlan.id,
+            tenantId: input.tenantId,
+          });
+        }
         return { created: true as const, subscriptionId: subscription.id };
       }
 
@@ -341,7 +395,7 @@ export function createBillingService(db: PlatformDb) {
       return self().ensureFreeSubscription(input);
     },
 
-    listPlans: async () => {
+    listPlans: async (input?: { tenantId?: string }) => {
       await self().ensureDefaultPlans();
       const rows = await db
         .select({
@@ -350,23 +404,126 @@ export function createBillingService(db: PlatformDb) {
           price: plans.price,
           limits: plans.limits,
           features: plans.features,
+          kind: plans.kind,
           status: plans.status,
+          tenantId: plans.tenantId,
+          visibility: plans.visibility,
+          publicName: planPresentations.publicName,
+          summary: planPresentations.summary,
+          featureList: planPresentations.featureList,
         })
         .from(plans)
-        .where(eq(plans.status, "active"))
+        .leftJoin(planPresentations, eq(planPresentations.planId, plans.id))
+        .where(
+          and(
+            eq(plans.status, "active"),
+            input?.tenantId
+              ? or(
+                  and(eq(plans.kind, "standard"), eq(plans.visibility, "public")),
+                  and(eq(plans.kind, "custom"), eq(plans.tenantId, input.tenantId)),
+                )
+              : eq(plans.kind, "standard"),
+          ),
+        )
         .orderBy(plans.price);
 
+      const availablePlans = await Promise.all(
+        rows.map(async (plan) => {
+          const version = await latestPlanVersion(plan.id);
+          const trialPolicy = version?.terms.trialPolicy ?? null;
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: plan.price,
+            limits: plan.limits,
+            features: plan.features,
+            kind: plan.kind,
+            status: plan.status,
+            tenantId: plan.tenantId,
+            visibility: plan.visibility,
+            isFree: isFreePlanPrice(plan.price),
+            versionId: version?.id ?? null,
+            trialPolicy: trialPolicy ?? { enabled: false as const },
+            publicName: plan.publicName,
+            summary: plan.summary,
+            featureList: Array.isArray(plan.featureList)
+              ? plan.featureList.filter((item): item is string => typeof item === "string")
+              : [],
+          };
+        }),
+      );
       return {
         ok: true as const,
-        plans: rows.map((plan) => ({
-          id: plan.id,
-          name: plan.name,
-          price: plan.price,
-          limits: plan.limits,
-          features: plan.features,
-          status: plan.status,
-          isFree: isFreePlanPrice(plan.price),
-        })),
+        plans: availablePlans,
+      };
+    },
+
+    getPublicPlanCatalog: async () => {
+      const rows = await db
+        .select({
+          badge: planPresentations.badge,
+          billingInterval: planVersions.billingInterval,
+          code: plans.code,
+          ctaLabel: planPresentations.ctaLabel,
+          currency: planVersions.currency,
+          description: planPresentations.description,
+          displayOrder: planPresentations.displayOrder,
+          featureList: planPresentations.featureList,
+          featured: planPresentations.featured,
+          name: planPresentations.publicName,
+          planId: plans.id,
+          price: planVersions.price,
+          summary: planPresentations.summary,
+          trialPolicy: planVersions.trialPolicy,
+          version: planVersions.version,
+        })
+        .from(plans)
+        .innerJoin(planPresentations, eq(planPresentations.planId, plans.id))
+        .innerJoin(planVersions, eq(planVersions.planId, plans.id))
+        .where(
+          and(
+            eq(plans.kind, "standard"),
+            eq(plans.status, "active"),
+            eq(plans.visibility, "public"),
+            eq(planPresentations.landingVisible, true),
+          ),
+        )
+        .orderBy(planPresentations.displayOrder, plans.name, desc(planVersions.version));
+      const latestByPlan = new Map<string, (typeof rows)[number]>();
+      for (const row of rows) if (!latestByPlan.has(row.planId)) latestByPlan.set(row.planId, row);
+      return {
+        plans: [...latestByPlan.values()].map((row) => {
+          const trial = parseTrialPolicy(row.trialPolicy);
+          return {
+            badge: row.badge,
+            billingInterval:
+              row.billingInterval === "day" ||
+              row.billingInterval === "week" ||
+              row.billingInterval === "year"
+                ? row.billingInterval
+                : ("month" as const),
+            code: row.code,
+            ctaLabel: row.ctaLabel,
+            currency: row.currency,
+            description: row.description,
+            displayOrder: row.displayOrder,
+            featureList: Array.isArray(row.featureList)
+              ? row.featureList.filter((item): item is string => typeof item === "string")
+              : [],
+            featured: row.featured,
+            name: row.name,
+            price: String(row.price),
+            summary: row.summary,
+            trial: trial.enabled
+              ? {
+                  activation: trial.activation,
+                  available: true as const,
+                  durationDays: trial.durationDays,
+                  paymentMethodRequired: trial.paymentMethodRequired,
+                }
+              : { available: false as const },
+          };
+        }),
       };
     },
 
@@ -389,6 +546,8 @@ export function createBillingService(db: PlatformDb) {
             planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
             planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
             currentPeriodEnd: subscriptions.currentPeriodEnd,
+            trialEndsAt: subscriptions.trialEndsAt,
+            trialFallbackPlanVersionId: subscriptions.trialFallbackPlanVersionId,
             manualPaymentState: subscriptions.manualPaymentState,
           })
           .from(subscriptions)
@@ -397,8 +556,9 @@ export function createBillingService(db: PlatformDb) {
           .where(eq(subscriptions.tenantId, input.tenantId))
           .limit(1);
 
-        if (!row || isFreePlanPrice(row.planPrice)) {
+        if (!row || (isFreePlanPrice(row.planPrice) && row.status !== "trialing")) {
           return {
+            trialExpired: false,
             renewed: false,
             pastDue: false,
             scheduled: null as null | { planId: string; subscriptionId: string },
@@ -406,15 +566,65 @@ export function createBillingService(db: PlatformDb) {
         }
 
         const lifecycle = planBillingLifecycle({
-          currentPeriodEnd: row.currentPeriodEnd,
+          currentPeriodEnd: row.status === "trialing" ? row.trialEndsAt : row.currentPeriodEnd,
           manualPaymentState: row.manualPaymentState,
           now: new Date(),
           status: row.status,
         });
+        if (lifecycle.expireTrial) {
+          if (!row.trialFallbackPlanVersionId) {
+            throw new Error(`Trial subscription ${row.subscriptionId} has no fallback version.`);
+          }
+          const [fallback] = await transaction
+            .select({ id: planVersions.id, planId: planVersions.planId, price: planVersions.price })
+            .from(planVersions)
+            .where(eq(planVersions.id, row.trialFallbackPlanVersionId))
+            .limit(1);
+          if (!fallback) throw new Error("Trial fallback plan version no longer exists.");
+          const endedAt = new Date();
+          await transaction
+            .update(subscriptions)
+            .set({
+              currentPeriodEnd: isFreePlanPrice(fallback.price) ? null : endedAt,
+              currentPeriodStart: endedAt,
+              manualPaymentState: isFreePlanPrice(fallback.price) ? "none" : "pending",
+              planId: fallback.planId,
+              planVersionId: fallback.id,
+              status: "active",
+              trialEndsAt: null,
+            })
+            .where(
+              and(eq(subscriptions.id, row.subscriptionId), eq(subscriptions.status, "trialing")),
+            );
+          await transaction
+            .update(subscriptionTrials)
+            .set({ endedAt, status: "expired" })
+            .where(
+              and(
+                eq(subscriptionTrials.subscriptionId, row.subscriptionId),
+                eq(subscriptionTrials.status, "active"),
+              ),
+            );
+          await transaction
+            .insert(billingOutboxEvents)
+            .values({
+              eventKey: `billing.trial_expired:${row.subscriptionId}`,
+              eventType: "billing.trial_expired",
+              tenantId: input.tenantId,
+              payload: {
+                fallbackPlanVersionId: fallback.id,
+                planName: row.planName,
+                subscriptionId: row.subscriptionId,
+              },
+            })
+            .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
+          return { renewed: false, pastDue: false, scheduled: null, trialExpired: true };
+        }
         if (lifecycle.scheduledPlanId) {
           return {
             renewed: false,
             pastDue: false,
+            trialExpired: false,
             scheduled: lifecycle.applyScheduledDowngrade
               ? { planId: lifecycle.scheduledPlanId, subscriptionId: row.subscriptionId }
               : null,
@@ -502,6 +712,7 @@ export function createBillingService(db: PlatformDb) {
           renewed,
           pastDue,
           scheduled: null as null | { planId: string; subscriptionId: string },
+          trialExpired: false,
         };
       });
 
@@ -511,9 +722,155 @@ export function createBillingService(db: PlatformDb) {
           subscriptionId: result.scheduled.subscriptionId,
           planId: result.scheduled.planId,
         });
-        return { renewed: false, pastDue: false, downgraded: applied };
+        return { renewed: false, pastDue: false, downgraded: applied, trialExpired: false };
       }
-      return { renewed: result.renewed, pastDue: result.pastDue, downgraded: false };
+      return {
+        renewed: result.renewed,
+        pastDue: result.pastDue,
+        downgraded: false,
+        trialExpired: result.trialExpired,
+      };
+    },
+
+    startPlanTrial: async (input: {
+      actorUserId: string;
+      planVersionId: string;
+      tenantId: string;
+    }) => {
+      return db.transaction(async (transaction) => {
+        await transaction.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${`billing-trial:${input.tenantId}`}, 0))`,
+        );
+        const [target] = await transaction
+          .select({
+            kind: plans.kind,
+            planId: plans.id,
+            planStatus: plans.status,
+            price: planVersions.price,
+            tenantId: plans.tenantId,
+            trialPolicy: planVersions.trialPolicy,
+            versionId: planVersions.id,
+            visibility: plans.visibility,
+          })
+          .from(planVersions)
+          .innerJoin(plans, eq(plans.id, planVersions.planId))
+          .where(eq(planVersions.id, input.planVersionId))
+          .limit(1);
+        if (!target || target.planStatus !== "active") {
+          return {
+            ok: false as const,
+            error: "billing_trial_not_available" as const,
+            status: 404 as const,
+          };
+        }
+        const policy = parseTrialPolicy(target.trialPolicy);
+        if (
+          !policy.enabled ||
+          isFreePlanPrice(target.price) ||
+          (target.kind === "standard" && target.visibility !== "public") ||
+          (target.kind === "custom" && target.tenantId !== input.tenantId) ||
+          policy.paymentMethodRequired
+        ) {
+          return {
+            ok: false as const,
+            error: "billing_trial_not_available" as const,
+            status: 400 as const,
+          };
+        }
+        const [fallback] = await transaction
+          .select({ id: planVersions.id, planId: planVersions.planId, price: planVersions.price })
+          .from(planVersions)
+          .where(eq(planVersions.id, policy.fallbackPlanVersionId))
+          .limit(1);
+        if (!fallback || !isFreePlanPrice(fallback.price)) {
+          return {
+            ok: false as const,
+            error: "billing_trial_configuration_invalid" as const,
+            status: 409 as const,
+          };
+        }
+        const [subscription] = await transaction
+          .select({
+            id: subscriptions.id,
+            planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
+            status: subscriptions.status,
+          })
+          .from(subscriptions)
+          .innerJoin(plans, eq(plans.id, subscriptions.planId))
+          .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
+          .where(eq(subscriptions.tenantId, input.tenantId))
+          .limit(1);
+        if (
+          !subscription ||
+          subscription.status === "trialing" ||
+          !isFreePlanPrice(subscription.planPrice)
+        ) {
+          return {
+            ok: false as const,
+            error: "billing_trial_subscription_ineligible" as const,
+            status: 409 as const,
+          };
+        }
+        const eligibilityKey =
+          policy.eligibilityScope === "account"
+            ? `account:${input.actorUserId}`
+            : `tenant:${input.tenantId}`;
+        const now = new Date();
+        const endsAt = new Date(now.getTime() + policy.durationDays * MS_PER_DAY);
+        const [claim] = await transaction
+          .insert(subscriptionTrials)
+          .values({
+            eligibilityKey,
+            endsAt,
+            fallbackPlanVersionId: fallback.id,
+            initiatedByUserId: input.actorUserId,
+            planId: target.planId,
+            planVersionId: target.versionId,
+            startedAt: now,
+            subscriptionId: subscription.id,
+            tenantId: input.tenantId,
+          })
+          .onConflictDoNothing({
+            target: [subscriptionTrials.planId, subscriptionTrials.eligibilityKey],
+          })
+          .returning({ id: subscriptionTrials.id });
+        if (!claim) {
+          return {
+            ok: false as const,
+            error: "billing_trial_already_used" as const,
+            status: 409 as const,
+          };
+        }
+        await transaction
+          .update(subscriptions)
+          .set({
+            currentPeriodEnd: endsAt,
+            currentPeriodStart: now,
+            manualPaymentState: "trial",
+            planId: target.planId,
+            planVersionId: target.versionId,
+            status: "trialing",
+            trialEndsAt: endsAt,
+            trialFallbackPlanVersionId: fallback.id,
+            trialStartedAt: now,
+          })
+          .where(eq(subscriptions.id, subscription.id));
+        await transaction
+          .insert(billingOutboxEvents)
+          .values({
+            eventKey: `billing.trial_started:${claim.id}`,
+            eventType: "billing.trial_started",
+            tenantId: input.tenantId,
+            payload: {
+              durationDays: policy.durationDays,
+              endsAt: endsAt.toISOString(),
+              planVersionId: target.versionId,
+              subscriptionId: subscription.id,
+            },
+          })
+          .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
+        return { ok: true as const, endsAt: endsAt.toISOString(), subscriptionId: subscription.id };
+      });
     },
 
     /** Apply a free (or other) plan change at period end; void open pay invoices. */
@@ -590,15 +947,25 @@ export function createBillingService(db: PlatformDb) {
       const [plan] = await db
         .select({
           id: plans.id,
+          kind: plans.kind,
           name: plans.name,
+          ownerTenantId: plans.tenantId,
           price: plans.price,
           status: plans.status,
+          visibility: plans.visibility,
         })
         .from(plans)
         .where(and(eq(plans.id, input.planId), eq(plans.status, "active")))
         .limit(1);
 
       if (!plan) {
+        return { ok: false, error: "billing_plan_not_found", status: 404 };
+      }
+
+      if (
+        (plan.kind === "standard" && plan.visibility !== "public") ||
+        (plan.kind === "custom" && plan.ownerTenantId !== input.tenantId)
+      ) {
         return { ok: false, error: "billing_plan_not_found", status: 404 };
       }
 
@@ -613,6 +980,8 @@ export function createBillingService(db: PlatformDb) {
           status: subscriptions.status,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
           manualPaymentState: subscriptions.manualPaymentState,
+          trialStartedAt: subscriptions.trialStartedAt,
+          trialEndsAt: subscriptions.trialEndsAt,
           planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
         })
         .from(subscriptions)
@@ -886,7 +1255,48 @@ export function createBillingService(db: PlatformDb) {
         if (created) reminders += 1;
       }
 
-      return { scanned, renewed, pastDue, reminders };
+      const endingTrials = await db
+        .select({
+          endsAt: subscriptions.trialEndsAt,
+          planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
+          subscriptionId: subscriptions.id,
+          tenantId: subscriptions.tenantId,
+        })
+        .from(subscriptions)
+        .innerJoin(plans, eq(plans.id, subscriptions.planId))
+        .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
+        .where(
+          and(
+            eq(subscriptions.status, "trialing"),
+            sql`${subscriptions.trialEndsAt} is not null`,
+            sql`${subscriptions.trialEndsAt} > ${now}`,
+            lte(subscriptions.trialEndsAt, reminderCutoff),
+          ),
+        );
+      let trialReminders = 0;
+      for (const trial of endingTrials) {
+        if (!trial.endsAt) continue;
+        const daysRemaining = Math.ceil((trial.endsAt.getTime() - now.getTime()) / MS_PER_DAY);
+        if (daysRemaining !== 3 && daysRemaining !== 1) continue;
+        const [created] = await db
+          .insert(billingOutboxEvents)
+          .values({
+            eventKey: `billing.trial_ending:${trial.subscriptionId}:${daysRemaining}`,
+            eventType: "billing.trial_ending",
+            tenantId: trial.tenantId,
+            payload: {
+              daysRemaining,
+              endsAt: trial.endsAt.toISOString(),
+              planName: trial.planName,
+              subscriptionId: trial.subscriptionId,
+            },
+          })
+          .onConflictDoNothing({ target: billingOutboxEvents.eventKey })
+          .returning({ id: billingOutboxEvents.id });
+        if (created) trialReminders += 1;
+      }
+
+      return { scanned, renewed, pastDue, reminders, trialReminders };
     },
 
     getBillingStatus: async (input: { tenantId: string }): Promise<BillingStatusResult> => {
@@ -906,6 +1316,8 @@ export function createBillingService(db: PlatformDb) {
           currentPeriodStart: subscriptions.currentPeriodStart,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
           manualPaymentState: subscriptions.manualPaymentState,
+          trialStartedAt: subscriptions.trialStartedAt,
+          trialEndsAt: subscriptions.trialEndsAt,
           planId: plans.id,
           planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
           planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
@@ -932,6 +1344,8 @@ export function createBillingService(db: PlatformDb) {
             currentPeriodStart: subscriptions.currentPeriodStart,
             currentPeriodEnd: subscriptions.currentPeriodEnd,
             manualPaymentState: subscriptions.manualPaymentState,
+            trialStartedAt: subscriptions.trialStartedAt,
+            trialEndsAt: subscriptions.trialEndsAt,
             planId: plans.id,
             planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
             planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
@@ -966,6 +1380,8 @@ export function createBillingService(db: PlatformDb) {
         currentPeriodStart: Date | null;
         currentPeriodEnd: Date | null;
         manualPaymentState: string;
+        trialStartedAt: Date | null;
+        trialEndsAt: Date | null;
         planId: string;
         planName: string;
         planPrice: string;
@@ -981,7 +1397,7 @@ export function createBillingService(db: PlatformDb) {
         .orderBy(desc(invoices.createdAt))
         .limit(20);
 
-      const planList = await self().listPlans();
+      const planList = await self().listPlans({ tenantId });
       const catalog = planList.plans.map((plan) => ({
         id: plan.id,
         name: plan.name,
@@ -990,6 +1406,18 @@ export function createBillingService(db: PlatformDb) {
         isCurrent: plan.id === subscription.planId,
         limits: plan.limits,
         features: plan.features,
+        publicName: plan.publicName,
+        summary: plan.summary,
+        featureList: plan.featureList,
+        trial:
+          plan.versionId && plan.trialPolicy.enabled
+            ? {
+                available:
+                  subscription.status !== "trialing" && isFreePlanPrice(subscription.planPrice),
+                durationDays: plan.trialPolicy.durationDays,
+                versionId: plan.versionId,
+              }
+            : { available: false as const },
       }));
       const availablePaidPlans = planList.plans.filter(
         (plan) => !plan.isFree && plan.id !== subscription.planId,
@@ -1017,6 +1445,8 @@ export function createBillingService(db: PlatformDb) {
             manualPaymentState: clientPaymentState,
             currentPeriodStart: serializeDate(subscription.currentPeriodStart),
             currentPeriodEnd: serializeDate(subscription.currentPeriodEnd),
+            trialStartedAt: serializeDate(subscription.trialStartedAt),
+            trialEndsAt: serializeDate(subscription.trialEndsAt),
             scheduledPlanId: scheduledPlan?.id ?? null,
             scheduledPlanName: scheduledPlan?.name ?? null,
             /** When a free switch is scheduled, it takes effect at period end. */
@@ -1040,6 +1470,18 @@ export function createBillingService(db: PlatformDb) {
             price: String(plan.price),
             limits: plan.limits ?? {},
             features: plan.features ?? {},
+            publicName: plan.publicName,
+            summary: plan.summary,
+            featureList: plan.featureList,
+            trial:
+              plan.versionId && plan.trialPolicy.enabled
+                ? {
+                    available:
+                      subscription.status !== "trialing" && isFreePlanPrice(subscription.planPrice),
+                    durationDays: plan.trialPolicy.durationDays,
+                    versionId: plan.versionId,
+                  }
+                : { available: false as const },
           })),
           catalog,
         },
@@ -1070,15 +1512,25 @@ export function createBillingService(db: PlatformDb) {
       const [plan] = await db
         .select({
           id: plans.id,
+          kind: plans.kind,
           name: plans.name,
+          ownerTenantId: plans.tenantId,
           price: plans.price,
           status: plans.status,
+          visibility: plans.visibility,
         })
         .from(plans)
         .where(and(eq(plans.id, input.planId), eq(plans.status, "active")))
         .limit(1);
 
       if (!plan) {
+        return { ok: false, error: "billing_plan_not_found", status: 404 };
+      }
+
+      if (
+        (plan.kind === "standard" && plan.visibility !== "public") ||
+        (plan.kind === "custom" && plan.ownerTenantId !== input.tenantId)
+      ) {
         return { ok: false, error: "billing_plan_not_found", status: 404 };
       }
 
@@ -1348,6 +1800,7 @@ export function createBillingService(db: PlatformDb) {
             currentPeriodEnd: subscriptions.currentPeriodEnd,
             planId: subscriptions.planId,
             planVersionId: subscriptions.planVersionId,
+            status: subscriptions.status,
           })
           .from(subscriptions)
           .where(
@@ -1360,7 +1813,9 @@ export function createBillingService(db: PlatformDb) {
 
         const now = new Date();
         const base =
-          sub?.currentPeriodEnd && sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
+          sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
+            ? sub.currentPeriodEnd
+            : now;
         const months = sub?.billingCycle === "yearly" ? 12 : 1;
         const nextEnd = addBillingMonths(base, months);
         const nextPlanId = planIdFromProvider ?? sub?.planId ?? DEFAULT_PLAN_IDS.growth;
@@ -1386,6 +1841,8 @@ export function createBillingService(db: PlatformDb) {
             currentPeriodStart: now,
             manualPaymentState: "paid",
             status: "active",
+            trialConvertedAt: sub?.status === "trialing" ? now : undefined,
+            trialEndsAt: sub?.status === "trialing" ? null : undefined,
           })
           .where(
             and(
@@ -1393,6 +1850,17 @@ export function createBillingService(db: PlatformDb) {
               eq(subscriptions.tenantId, input.tenantId),
             ),
           );
+        if (sub?.status === "trialing") {
+          await transaction
+            .update(subscriptionTrials)
+            .set({ convertedAt: now, status: "converted" })
+            .where(
+              and(
+                eq(subscriptionTrials.subscriptionId, invoice.subscriptionId),
+                eq(subscriptionTrials.status, "active"),
+              ),
+            );
+        }
       });
 
       return { ok: true, applied: true };
@@ -1452,6 +1920,7 @@ export function createBillingService(db: PlatformDb) {
             .select({
               billingCycle: subscriptions.billingCycle,
               currentPeriodEnd: subscriptions.currentPeriodEnd,
+              status: subscriptions.status,
             })
             .from(subscriptions)
             .where(
@@ -1464,7 +1933,9 @@ export function createBillingService(db: PlatformDb) {
 
           const now = new Date();
           const base =
-            sub?.currentPeriodEnd && sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
+            sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
+              ? sub.currentPeriodEnd
+              : now;
           const months = sub?.billingCycle === "yearly" ? 12 : 1;
           const nextEnd = addBillingMonths(base, months);
 
@@ -1475,6 +1946,8 @@ export function createBillingService(db: PlatformDb) {
               currentPeriodStart: now,
               manualPaymentState: "paid",
               status: "active",
+              trialConvertedAt: sub?.status === "trialing" ? now : undefined,
+              trialEndsAt: sub?.status === "trialing" ? null : undefined,
             })
             .where(
               and(
@@ -1482,6 +1955,17 @@ export function createBillingService(db: PlatformDb) {
                 eq(subscriptions.tenantId, input.tenantId),
               ),
             );
+          if (sub?.status === "trialing") {
+            await transaction
+              .update(subscriptionTrials)
+              .set({ convertedAt: now, status: "converted" })
+              .where(
+                and(
+                  eq(subscriptionTrials.subscriptionId, row.subscriptionId),
+                  eq(subscriptionTrials.status, "active"),
+                ),
+              );
+          }
         }
 
         await transaction.insert(auditLogs).values({

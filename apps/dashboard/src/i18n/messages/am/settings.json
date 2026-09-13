@@ -469,7 +469,10 @@
       "inventoryLow": "ከሽያጭ በኋላ ዝቅተኛ ክምችት",
       "storefrontInquiry": "አዲስ የመደብር ጥያቄዎች",
       "billingPastDue": "የደንበኝነት ክፍያ አልፏል",
-      "billingInvoiceReady": "የክፍያ ደረሰኝ ዝግጁ ነው"
+      "billingInvoiceReady": "የክፍያ ደረሰኝ ዝግጁ ነው",
+      "trialStarted": "ነፃ ሙከራ ተጀምሯል",
+      "trialEnding": "ነፃ ሙከራ ሊያበቃ ነው",
+      "trialEnded": "ነፃ ሙከራ አብቅቷል"
     },
     "telegramPanel": {
       "description": "የሱቅ ክስተት ማሳወቂያዎችን በTelegram በፍጥነት ይቀበሉ።",

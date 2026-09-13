@@ -5,9 +5,18 @@ import {
   type PlanVersionId,
   type PublishedPlanVersion,
   publishPlanVersion,
+  type TrialPolicy,
 } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
-import { auditLogs, planDrafts, plans, planVersions, subscriptions } from "@ecs/db";
+import {
+  auditLogs,
+  planDrafts,
+  planPresentations,
+  plans,
+  planVersions,
+  subscriptions,
+  tenants,
+} from "@ecs/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import {
@@ -26,6 +35,7 @@ export type PlanDraftInput = {
   limits: unknown;
   name: string;
   price: string;
+  trialPolicy?: unknown;
 };
 
 export type ValidPlanDraft = {
@@ -36,10 +46,25 @@ export type ValidPlanDraft = {
   name: string;
   price: string;
   priceMinor: number;
+  trialPolicy: TrialPolicy;
+};
+
+export type PlanPresentationInput = {
+  badge: string | null;
+  ctaLabel: string;
+  description: string;
+  displayOrder: number;
+  featureList: unknown;
+  featured: boolean;
+  landingVisible: boolean;
+  publicName: string;
+  summary: string;
+  visibility: "public" | "private";
 };
 
 export type PlanAdministrationError =
   | "plan_admin_invalid"
+  | "plan_admin_code_conflict"
   | "plan_admin_plan_not_found"
   | "plan_admin_draft_not_found"
   | "plan_admin_version_not_found"
@@ -48,6 +73,70 @@ export type PlanAdministrationError =
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseTrialPolicy(value: unknown): TrialPolicy | null {
+  if (value == null) return { enabled: false };
+  if (!isPlainRecord(value) || typeof value.enabled !== "boolean") return null;
+  if (!value.enabled) return { enabled: false };
+  if (
+    (value.activation !== "automatic" && value.activation !== "manual") ||
+    !Number.isSafeInteger(value.durationDays) ||
+    Number(value.durationDays) < 1 ||
+    Number(value.durationDays) > 365 ||
+    (value.eligibilityScope !== "tenant" && value.eligibilityScope !== "account") ||
+    typeof value.fallbackPlanVersionId !== "string" ||
+    !value.fallbackPlanVersionId ||
+    typeof value.paymentMethodRequired !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    activation: value.activation,
+    durationDays: Number(value.durationDays),
+    eligibilityScope: value.eligibilityScope,
+    enabled: true,
+    fallbackPlanVersionId: value.fallbackPlanVersionId as PlanVersionId,
+    paymentMethodRequired: value.paymentMethodRequired,
+  };
+}
+
+function parsePresentation(input: PlanPresentationInput) {
+  const publicName = input.publicName.trim();
+  const summary = input.summary.trim();
+  const description = input.description.trim();
+  const ctaLabel = input.ctaLabel.trim();
+  const badge = input.badge?.trim() || null;
+  if (
+    publicName.length < 2 ||
+    summary.length > 180 ||
+    description.length > 2_000 ||
+    ctaLabel.length < 2 ||
+    ctaLabel.length > 60 ||
+    (badge?.length ?? 0) > 40 ||
+    !Number.isSafeInteger(input.displayOrder) ||
+    input.displayOrder < 0 ||
+    !Array.isArray(input.featureList) ||
+    input.featureList.length > 20
+  ) {
+    return null;
+  }
+  const featureList = input.featureList.map((item) =>
+    typeof item === "string" ? item.trim() : "",
+  );
+  if (featureList.some((item) => item.length < 2 || item.length > 120)) return null;
+  return {
+    badge,
+    ctaLabel,
+    description,
+    displayOrder: input.displayOrder,
+    featureList,
+    featured: input.featured,
+    landingVisible: input.landingVisible,
+    publicName,
+    summary,
+    visibility: input.visibility,
+  };
 }
 
 export function validatePlanDraft(input: PlanDraftInput): ValidPlanDraft | null {
@@ -60,6 +149,22 @@ export function validatePlanDraft(input: PlanDraftInput): ValidPlanDraft | null 
   const priceMinor = Math.round(Number(price) * 100);
   if (!Number.isSafeInteger(priceMinor) || priceMinor < 0) return null;
   if (!isPlainRecord(input.features)) return null;
+  const trialPolicy = parseTrialPolicy(input.trialPolicy);
+  if (!trialPolicy) return null;
+  if (
+    isPlainRecord(input.trialPolicy) &&
+    input.trialPolicy.enabled === true &&
+    !trialPolicy.enabled
+  ) {
+    return null;
+  }
+  if (
+    trialPolicy.enabled &&
+    (trialPolicy.paymentMethodRequired ||
+      (trialPolicy.activation === "automatic" && trialPolicy.eligibilityScope !== "tenant"))
+  ) {
+    return null;
+  }
   if (
     Object.keys(input.features).sort().join("\u0000") !==
     [...ENTITLEMENT_KEYS].sort().join("\u0000")
@@ -91,6 +196,7 @@ export function validatePlanDraft(input: PlanDraftInput): ValidPlanDraft | null 
     name,
     price,
     priceMinor,
+    trialPolicy,
   };
 }
 
@@ -104,6 +210,11 @@ export function createPlanAdministrationService(db: PlatformDb) {
     getCatalog: async () => {
       const planRows = await db
         .select({
+          code: plans.code,
+          kind: plans.kind,
+          visibility: plans.visibility,
+          tenantId: plans.tenantId,
+          basePlanVersionId: plans.basePlanVersionId,
           id: plans.id,
           name: plans.name,
           price: plans.price,
@@ -118,6 +229,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
         .from(planVersions)
         .orderBy(planVersions.planId, desc(planVersions.version));
       const draftRows = await db.select().from(planDrafts);
+      const presentationRows = await db.select().from(planPresentations);
       const subscriptionCounts = await db
         .select({ planId: subscriptions.planId, count: sql<number>`count(*)::int` })
         .from(subscriptions)
@@ -130,13 +242,22 @@ export function createPlanAdministrationService(db: PlatformDb) {
         versionsByPlan.set(version.planId, versions);
       }
       const draftsByPlan = new Map(draftRows.map((draft) => [draft.planId, draft]));
+      const presentationsByPlan = new Map(
+        presentationRows.map((presentation) => [presentation.planId, presentation]),
+      );
       const countsByPlan = new Map(subscriptionCounts.map((item) => [item.planId, item.count]));
 
       return {
         plans: planRows.map((plan) => {
           const versions = versionsByPlan.get(plan.id) ?? [];
           const draft = draftsByPlan.get(plan.id);
+          const presentation = presentationsByPlan.get(plan.id);
           return {
+            code: plan.code,
+            kind: plan.kind,
+            visibility: plan.visibility,
+            tenantId: plan.tenantId,
+            basePlanVersionId: plan.basePlanVersionId,
             id: plan.id,
             name: plan.name,
             price: String(plan.price),
@@ -154,6 +275,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
                   billingInterval: versions[0].billingInterval,
                   features: versions[0].features,
                   limits: versions[0].limits,
+                  trialPolicy: parseTrialPolicy(versions[0].trialPolicy) ?? { enabled: false },
                   publishedAt: versions[0].publishedAt.toISOString(),
                 }
               : null,
@@ -165,6 +287,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
               currency: version.currency,
               billingInterval: version.billingInterval,
               publishedAt: version.publishedAt.toISOString(),
+              trialPolicy: parseTrialPolicy(version.trialPolicy) ?? { enabled: false },
             })),
             draft: draft
               ? {
@@ -176,12 +299,223 @@ export function createPlanAdministrationService(db: PlatformDb) {
                   billingInterval: draft.billingInterval,
                   features: draft.features,
                   limits: draft.limits,
+                  trialPolicy: parseTrialPolicy(draft.trialPolicy) ?? { enabled: false },
                   updatedAt: draft.updatedAt.toISOString(),
+                }
+              : null,
+            presentation: presentation
+              ? {
+                  badge: presentation.badge,
+                  ctaLabel: presentation.ctaLabel,
+                  description: presentation.description,
+                  displayOrder: presentation.displayOrder,
+                  featureList: presentation.featureList,
+                  featured: presentation.featured,
+                  landingVisible: presentation.landingVisible,
+                  publicName: presentation.publicName,
+                  summary: presentation.summary,
+                  updatedAt: presentation.updatedAt.toISOString(),
                 }
               : null,
           };
         }),
       };
+    },
+
+    createPlan: async (input: {
+      actorUserId: string;
+      basePlanVersionId: string | null;
+      code: string;
+      draft: PlanDraftInput;
+      kind: "standard" | "custom";
+      platformPrincipalId: string;
+      reason: string;
+      tenantId: string | null;
+      visibility: "public" | "private";
+    }) => {
+      const code = input.code.trim().toLowerCase();
+      const draft = validatePlanDraft(input.draft);
+      const reason = validReason(input.reason);
+      if (
+        !draft ||
+        !reason ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(code) ||
+        code.length > 64 ||
+        (input.kind === "standard" && (input.tenantId || input.basePlanVersionId)) ||
+        (input.kind === "custom" && (!input.tenantId || !input.basePlanVersionId)) ||
+        (input.kind === "custom" && input.visibility !== "private") ||
+        (draft.trialPolicy.enabled && draft.priceMinor === 0)
+      ) {
+        return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
+      }
+      return db.transaction(async (transaction) => {
+        if (input.kind === "custom") {
+          const tenantId = input.tenantId;
+          const basePlanVersionId = input.basePlanVersionId;
+          if (!tenantId || !basePlanVersionId) {
+            return {
+              ok: false as const,
+              error: "plan_admin_invalid" as const,
+              status: 400 as const,
+            };
+          }
+          const [[tenant], [baseVersion]] = await Promise.all([
+            transaction.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, tenantId)),
+            transaction
+              .select({ id: planVersions.id })
+              .from(planVersions)
+              .where(eq(planVersions.id, basePlanVersionId)),
+          ]);
+          if (!tenant || !baseVersion) {
+            return {
+              ok: false as const,
+              error: "plan_admin_invalid" as const,
+              status: 400 as const,
+            };
+          }
+        }
+        if (draft.trialPolicy.enabled) {
+          const [fallback] = await transaction
+            .select({ price: planVersions.price })
+            .from(planVersions)
+            .where(eq(planVersions.id, draft.trialPolicy.fallbackPlanVersionId))
+            .limit(1);
+          if (!fallback || Number(fallback.price) !== 0) {
+            return {
+              ok: false as const,
+              error: "plan_admin_invalid" as const,
+              status: 400 as const,
+            };
+          }
+        }
+        const [existing] = await transaction
+          .select({ id: plans.id })
+          .from(plans)
+          .where(eq(plans.code, code))
+          .limit(1);
+        if (existing) {
+          return {
+            ok: false as const,
+            error: "plan_admin_code_conflict" as const,
+            status: 409 as const,
+          };
+        }
+        const [created] = await transaction
+          .insert(plans)
+          .values({
+            basePlanVersionId: input.basePlanVersionId,
+            code,
+            features: draft.features,
+            kind: input.kind,
+            limits: draft.limits,
+            name: draft.name,
+            price: draft.price,
+            status: "draft",
+            tenantId: input.tenantId,
+            visibility: input.visibility,
+          })
+          .returning({ id: plans.id });
+        if (!created) throw new Error("Plan insert returned no row.");
+        await transaction.insert(planDrafts).values({
+          billingInterval: draft.billingInterval,
+          currency: draft.currency,
+          features: draft.features,
+          limits: draft.limits,
+          name: draft.name,
+          planId: created.id,
+          price: draft.price,
+          trialPolicy: draft.trialPolicy,
+          updatedByUserId: input.actorUserId,
+        });
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.actorUserId,
+          platformPrincipalId: input.platformPrincipalId,
+          action: "billing.plan_created",
+          targetType: "plan",
+          targetId: created.id,
+          metadata: { code, kind: input.kind, reason, tenantId: input.tenantId },
+        });
+        return { ok: true as const, planId: created.id };
+      });
+    },
+
+    savePresentation: async (input: {
+      actorUserId: string;
+      planId: string;
+      platformPrincipalId: string;
+      presentation: PlanPresentationInput;
+      reason: string;
+    }) => {
+      const presentation = parsePresentation(input.presentation);
+      const reason = validReason(input.reason);
+      if (!presentation || !reason) {
+        return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
+      }
+      return db.transaction(async (transaction) => {
+        const presentationValues = {
+          badge: presentation.badge,
+          ctaLabel: presentation.ctaLabel,
+          description: presentation.description,
+          displayOrder: presentation.displayOrder,
+          featureList: presentation.featureList,
+          featured: presentation.featured,
+          landingVisible: presentation.landingVisible,
+          publicName: presentation.publicName,
+          summary: presentation.summary,
+        };
+        const [plan] = await transaction
+          .select({ id: plans.id, kind: plans.kind, visibility: plans.visibility })
+          .from(plans)
+          .where(eq(plans.id, input.planId))
+          .limit(1);
+        if (!plan) {
+          return {
+            ok: false as const,
+            error: "plan_admin_plan_not_found" as const,
+            status: 404 as const,
+          };
+        }
+        if (
+          presentation.landingVisible &&
+          (plan.kind !== "standard" || presentation.visibility !== "public")
+        ) {
+          return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
+        }
+        await transaction
+          .update(plans)
+          .set({ visibility: presentation.visibility })
+          .where(eq(plans.id, input.planId));
+        const [saved] = await transaction
+          .insert(planPresentations)
+          .values({
+            ...presentationValues,
+            planId: input.planId,
+            updatedByUserId: input.actorUserId,
+          })
+          .onConflictDoUpdate({
+            target: planPresentations.planId,
+            set: {
+              ...presentationValues,
+              updatedAt: new Date(),
+              updatedByUserId: input.actorUserId,
+            },
+          })
+          .returning({ id: planPresentations.id });
+        if (!saved) throw new Error("Plan presentation upsert returned no row.");
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.actorUserId,
+          platformPrincipalId: input.platformPrincipalId,
+          action: "billing.plan_presentation_updated",
+          targetType: "plan",
+          targetId: input.planId,
+          metadata: {
+            landingVisible: presentation.landingVisible,
+            reason,
+            visibility: presentation.visibility,
+          },
+        });
+        return { ok: true as const, presentationId: saved.id };
+      });
     },
 
     saveDraft: async (input: {
@@ -196,6 +530,9 @@ export function createPlanAdministrationService(db: PlatformDb) {
       if (!draft || !reason) {
         return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
       }
+      if (draft.trialPolicy.enabled && draft.priceMinor === 0) {
+        return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
+      }
       return db.transaction(async (transaction) => {
         const [plan] = await transaction
           .select({ id: plans.id })
@@ -208,6 +545,20 @@ export function createPlanAdministrationService(db: PlatformDb) {
             status: 404 as const,
           };
         }
+        if (draft.trialPolicy.enabled) {
+          const [fallback] = await transaction
+            .select({ price: planVersions.price })
+            .from(planVersions)
+            .where(eq(planVersions.id, draft.trialPolicy.fallbackPlanVersionId))
+            .limit(1);
+          if (!fallback || Number(fallback.price) !== 0) {
+            return {
+              ok: false as const,
+              error: "plan_admin_invalid" as const,
+              status: 400 as const,
+            };
+          }
+        }
         const [saved] = await transaction
           .insert(planDrafts)
           .values({
@@ -218,6 +569,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
             billingInterval: draft.billingInterval,
             features: draft.features,
             limits: draft.limits,
+            trialPolicy: draft.trialPolicy,
             updatedByUserId: input.actorUserId,
           })
           .onConflictDoUpdate({
@@ -230,6 +582,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
               billingInterval: draft.billingInterval,
               features: draft.features,
               limits: draft.limits,
+              trialPolicy: draft.trialPolicy,
               updatedAt: new Date(),
               updatedByUserId: input.actorUserId,
             },
@@ -295,6 +648,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
           limits: draftRow.limits,
           name: draftRow.name,
           price: draftRow.price,
+          trialPolicy: draftRow.trialPolicy,
         });
         if (!draft) {
           return { ok: false as const, error: "plan_admin_invalid" as const, status: 400 as const };
@@ -321,6 +675,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
                     ? latestRow.billingInterval
                     : "month",
                 priceMinor: Math.round(Number(latestRow.price) * 100),
+                trialPolicy: parseTrialPolicy(latestRow.trialPolicy) ?? { enabled: false },
               },
               version: latestRow.version,
             }
@@ -340,6 +695,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
             currency: draft.currency,
             interval: draft.billingInterval,
             priceMinor: draft.priceMinor,
+            trialPolicy: draft.trialPolicy,
           },
         });
         if (publication.action === "published") {
@@ -354,6 +710,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
             billingInterval: draft.billingInterval,
             limits: draft.limits,
             features: draft.features,
+            trialPolicy: draft.trialPolicy,
             publishedAt: publication.version.publishedAt,
           });
           await transaction
@@ -363,6 +720,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
               price: draft.price,
               limits: draft.limits,
               features: draft.features,
+              status: "active",
             })
             .where(eq(plans.id, input.planId));
         }
@@ -399,13 +757,23 @@ export function createPlanAdministrationService(db: PlatformDb) {
         const [target] = await transaction
           .select({
             id: planVersions.id,
+            kind: plans.kind,
+            ownerTenantId: plans.tenantId,
             planId: planVersions.planId,
             version: planVersions.version,
           })
           .from(planVersions)
+          .innerJoin(plans, eq(plans.id, planVersions.planId))
           .where(eq(planVersions.id, input.planVersionId))
           .limit(1);
         if (!target) {
+          return {
+            ok: false as const,
+            error: "plan_admin_version_not_found" as const,
+            status: 404 as const,
+          };
+        }
+        if (target.kind === "custom" && target.ownerTenantId !== input.tenantId) {
           return {
             ok: false as const,
             error: "plan_admin_version_not_found" as const,

@@ -7,6 +7,7 @@ export const DEFAULT_PLAN_IDS = {
 } as const;
 
 type DefaultPlanDefinition = {
+  code: string;
   id: (typeof DEFAULT_PLAN_IDS)[keyof typeof DEFAULT_PLAN_IDS];
   name: string;
   price: string;
@@ -14,24 +15,32 @@ type DefaultPlanDefinition = {
   /** Only enforced quotas belong here. Do not publish aspirational limits. */
   limits: Record<string, never>;
   features: PlanEntitlements;
+  kind: "standard";
+  visibility: "public";
 };
 
 export const DEFAULT_PLAN_CATALOG = {
   starter: {
     id: DEFAULT_PLAN_IDS.starter,
+    code: "starter",
     name: "Starter",
     price: "0",
     status: "active",
     limits: {},
     features: definePlanEntitlements({ customDomains: false }),
+    kind: "standard",
+    visibility: "public",
   },
   growth: {
     id: DEFAULT_PLAN_IDS.growth,
+    code: "growth",
     name: "Growth",
     price: "2499",
     status: "active",
     limits: {},
     features: definePlanEntitlements({ customDomains: false }),
+    kind: "standard",
+    visibility: "public",
   },
 } as const satisfies Record<keyof typeof DEFAULT_PLAN_IDS, DefaultPlanDefinition>;
 

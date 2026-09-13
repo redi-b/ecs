@@ -372,6 +372,27 @@
       "when": 1789207020118,
       "tag": "0052_backfill_in_app_notification_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1789289025632,
+      "tag": "0053_parched_gressill",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1789289768294,
+      "tag": "0054_configurable_plan_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1789289813945,
+      "tag": "0055_custom_plan_base_reference",
+      "breakpoints": true
     }
   ]
 }

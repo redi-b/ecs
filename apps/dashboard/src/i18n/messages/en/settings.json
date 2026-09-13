@@ -469,7 +469,10 @@
       "inventoryLow": "Low stock after sales",
       "storefrontInquiry": "New storefront inquiries",
       "billingPastDue": "Subscription past due",
-      "billingInvoiceReady": "Billing invoice ready"
+      "billingInvoiceReady": "Billing invoice ready",
+      "trialStarted": "Free trial started",
+      "trialEnding": "Free trial ending soon",
+      "trialEnded": "Free trial ended"
     },
     "telegramPanel": {
       "description": "Instant shop event alerts on Telegram.",

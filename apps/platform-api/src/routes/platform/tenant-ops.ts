@@ -244,6 +244,37 @@ export function registerPlatformTenantOpsRoutes(
     });
   });
 
+  app.post("/platform/tenants/:tenantId/billing/trial", async (context) => {
+    if (!options.startPlanTrial) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+      permission: { billing: ["manage"] },
+    });
+    if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+    const body = await getJsonBody(context.req.raw);
+    const planVersionId =
+      typeof body === "object" &&
+      body &&
+      typeof (body as { planVersionId?: unknown }).planVersionId === "string"
+        ? (body as { planVersionId: string }).planVersionId.trim()
+        : "";
+    if (!planVersionId) return context.json({ error: "billing_plan_version_required" }, 400);
+    const result = await options.startPlanTrial({
+      actorUserId: session.user.id,
+      planVersionId,
+      tenantId,
+    });
+    return result.ok
+      ? context.json({ endsAt: result.endsAt, subscriptionId: result.subscriptionId })
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.post("/platform/tenants/:tenantId/billing/confirm", async (context) => {
     if (!options.confirmBillingPayments) {
       return context.json({ error: "billing_unavailable" }, 503);
@@ -405,9 +436,7 @@ export function registerPlatformTenantOpsRoutes(
         ? (body as { returnUrl: string }).returnUrl.trim()
         : "";
     const payerEmail =
-      (typeof body === "object" &&
-      body &&
-      typeof (body as { email?: unknown }).email === "string"
+      (typeof body === "object" && body && typeof (body as { email?: unknown }).email === "string"
         ? (body as { email: string }).email.trim()
         : "") ||
       session.user.email?.trim() ||
@@ -425,10 +454,7 @@ export function registerPlatformTenantOpsRoutes(
     });
 
     if (!result.ok) {
-      return context.json(
-        { error: result.error, message: result.message },
-        result.status,
-      );
+      return context.json({ error: result.error, message: result.message }, result.status);
     }
 
     return context.json({

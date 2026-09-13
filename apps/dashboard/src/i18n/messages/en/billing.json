@@ -17,10 +17,13 @@
     "current": "Current plan",
     "currentBadge": "Current",
     "free": "Free",
+    "trial": "Free trial",
+    "trialEnds": "Your trial ends on {date}. Choose a paid plan before then to keep these features.",
     "plansHeading": "Plans",
     "plansDescription": "Choose a plan for this shop. You only pay when you select a paid plan.",
     "perMonth": "/ month",
     "fallbackTagline": "Plan details for your shop.",
+    "trialAvailable": "{days}-day free trial available",
     "noPaymentRequired": "No payment is required for this shop.",
     "paidThrough": "Paid through {date} · {price} / {cycle}",
     "priceCycle": "{price} · {cycle}",
@@ -104,6 +107,7 @@
     "switchAfter": "Switch after {date}",
     "switchTo": "Switch to {name}",
     "continueWith": "Continue with {name}",
+    "startTrial": "Start {days}-day trial",
     "selectPlan": "Select a plan"
   },
   "hint": {
@@ -121,6 +125,7 @@
   },
   "toast": {
     "invoiceReady": "Invoice ready.",
+    "trialStarted": "Your {days}-day trial has started.",
     "paymentConfirmed": "Payment confirmed.",
     "openingCheckout": "Opening secure checkout…",
     "switchesOn": "Switches to free plan on {date}.",

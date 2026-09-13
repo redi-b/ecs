@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
+  boolean,
   check,
   index,
   integer,
@@ -15,14 +17,34 @@ import {
 import { subscriptionStatus } from "./enums.js";
 import { tenants } from "./tenants.js";
 
-export const plans = pgTable("plans", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  price: numeric("price").notNull(),
-  limits: jsonb("limits").notNull().default({}),
-  features: jsonb("features").notNull().default({}),
-  status: text("status").notNull().default("active"),
-});
+export const plans = pgTable(
+  "plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull().default(sql`gen_random_uuid()::text`),
+    name: text("name").notNull(),
+    price: numeric("price").notNull(),
+    limits: jsonb("limits").notNull().default({}),
+    features: jsonb("features").notNull().default({}),
+    kind: text("kind").notNull().default("standard"),
+    visibility: text("visibility").notNull().default("private"),
+    tenantId: uuid("tenant_id").references(() => tenants.id),
+    basePlanVersionId: uuid("base_plan_version_id").references((): AnyPgColumn => planVersions.id),
+    status: text("status").notNull().default("active"),
+  },
+  (table) => [
+    uniqueIndex("plans_code_unique").on(table.code),
+    index("plans_catalog_idx").on(table.status, table.visibility, table.kind),
+    index("plans_tenant_id_idx").on(table.tenantId),
+    check("plans_kind_valid", sql`${table.kind} in ('standard', 'custom')`),
+    check("plans_visibility_valid", sql`${table.visibility} in ('public', 'private')`),
+    check("plans_status_valid", sql`${table.status} in ('draft', 'active', 'archived')`),
+    check(
+      "plans_custom_scope_valid",
+      sql`(${table.kind} = 'standard' and ${table.tenantId} is null) or (${table.kind} = 'custom' and ${table.tenantId} is not null)`,
+    ),
+  ],
+);
 
 /**
  * Published commercial terms are append-only. `plans` remains the stable plan
@@ -43,6 +65,7 @@ export const planVersions = pgTable(
     billingInterval: text("billing_interval").notNull().default("month"),
     limits: jsonb("limits").notNull().default({}),
     features: jsonb("features").notNull().default({}),
+    trialPolicy: jsonb("trial_policy").notNull().default({}),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -66,6 +89,7 @@ export const planDrafts = pgTable(
     billingInterval: text("billing_interval").notNull().default("month"),
     limits: jsonb("limits").notNull().default({}),
     features: jsonb("features").notNull().default({}),
+    trialPolicy: jsonb("trial_policy").notNull().default({}),
     updatedByUserId: text("updated_by_user_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -91,11 +115,84 @@ export const subscriptions = pgTable(
     billingCycle: text("billing_cycle").notNull().default("monthly"),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    trialFallbackPlanVersionId: uuid("trial_fallback_plan_version_id").references(
+      () => planVersions.id,
+    ),
+    trialConvertedAt: timestamp("trial_converted_at", { withTimezone: true }),
     manualPaymentState: text("manual_payment_state").notNull().default("pending"),
   },
   (table) => [
     uniqueIndex("subscriptions_tenant_id_unique").on(table.tenantId),
     index("subscriptions_plan_version_id_idx").on(table.planVersionId),
+  ],
+);
+
+/** Mutable marketing projection. Commercial and entitlement terms remain versioned separately. */
+export const planPresentations = pgTable(
+  "plan_presentations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id),
+    publicName: text("public_name").notNull(),
+    summary: text("summary").notNull().default(""),
+    description: text("description").notNull().default(""),
+    featureList: jsonb("feature_list").notNull().default([]),
+    badge: text("badge"),
+    ctaLabel: text("cta_label").notNull().default("Choose plan"),
+    landingVisible: boolean("landing_visible").notNull().default(false),
+    featured: boolean("featured").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0),
+    updatedByUserId: text("updated_by_user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("plan_presentations_plan_id_unique").on(table.planId),
+    index("plan_presentations_landing_idx").on(table.landingVisible, table.displayOrder),
+  ],
+);
+
+/** Durable proof that a shop has consumed its one-time trial offer. */
+export const subscriptionTrials = pgTable(
+  "subscription_trials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => subscriptions.id),
+    planVersionId: uuid("plan_version_id")
+      .notNull()
+      .references(() => planVersions.id),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id),
+    fallbackPlanVersionId: uuid("fallback_plan_version_id")
+      .notNull()
+      .references(() => planVersions.id),
+    status: text("status").notNull().default("active"),
+    eligibilityKey: text("eligibility_key").notNull(),
+    initiatedByUserId: text("initiated_by_user_id").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    convertedAt: timestamp("converted_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("subscription_trials_offer_claim_unique").on(table.planId, table.eligibilityKey),
+    index("subscription_trials_expiry_idx").on(table.status, table.endsAt),
+    check(
+      "subscription_trials_status_valid",
+      sql`${table.status} in ('active', 'converted', 'expired', 'canceled')`,
+    ),
+    check("subscription_trials_dates_valid", sql`${table.endsAt} > ${table.startedAt}`),
   ],
 );
 

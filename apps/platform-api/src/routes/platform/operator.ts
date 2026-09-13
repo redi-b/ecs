@@ -426,6 +426,85 @@ export function registerPlatformOperatorRoutes(
     return context.json(await options.getPlanAdministrationCatalog());
   });
 
+  app.post("/platform/operator/billing/plans", async (context) => {
+    if (!options.createPlan) return context.json({ error: "billing_plans_unavailable" }, 503);
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.plans.update",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    const draftRecord =
+      record.draft && typeof record.draft === "object"
+        ? (record.draft as Record<string, unknown>)
+        : {};
+    const result = await options.createPlan({
+      actorUserId: access.session.user.id,
+      basePlanVersionId:
+        typeof record.basePlanVersionId === "string" ? record.basePlanVersionId : null,
+      code: typeof record.code === "string" ? record.code : "",
+      draft: {
+        billingInterval:
+          draftRecord.billingInterval === "day" ||
+          draftRecord.billingInterval === "week" ||
+          draftRecord.billingInterval === "year"
+            ? draftRecord.billingInterval
+            : "month",
+        currency: typeof draftRecord.currency === "string" ? draftRecord.currency : "",
+        features: draftRecord.features,
+        limits: draftRecord.limits,
+        name: typeof draftRecord.name === "string" ? draftRecord.name : "",
+        price: typeof draftRecord.price === "string" ? draftRecord.price : "",
+        trialPolicy: draftRecord.trialPolicy,
+      },
+      kind: record.kind === "custom" ? "custom" : "standard",
+      platformPrincipalId: access.authorization.principal.id,
+      reason: typeof record.reason === "string" ? record.reason : "",
+      tenantId: typeof record.tenantId === "string" ? record.tenantId : null,
+      visibility: record.visibility === "public" ? "public" : "private",
+    });
+    return result.ok
+      ? context.json({ planId: result.planId }, 201)
+      : context.json({ error: result.error }, result.status);
+  });
+
+  app.put("/platform/operator/billing/plans/:planId/presentation", async (context) => {
+    if (!options.savePlanPresentation) {
+      return context.json({ error: "billing_plans_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.plans.update",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const body = await getJsonBody(context.req.raw);
+    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    const result = await options.savePlanPresentation({
+      actorUserId: access.session.user.id,
+      planId: context.req.param("planId"),
+      platformPrincipalId: access.authorization.principal.id,
+      presentation: {
+        badge: typeof record.badge === "string" ? record.badge : null,
+        ctaLabel: typeof record.ctaLabel === "string" ? record.ctaLabel : "",
+        description: typeof record.description === "string" ? record.description : "",
+        displayOrder: typeof record.displayOrder === "number" ? record.displayOrder : -1,
+        featureList: record.featureList,
+        featured: record.featured === true,
+        landingVisible: record.landingVisible === true,
+        publicName: typeof record.publicName === "string" ? record.publicName : "",
+        summary: typeof record.summary === "string" ? record.summary : "",
+        visibility: record.visibility === "public" ? "public" : "private",
+      },
+      reason: typeof record.reason === "string" ? record.reason : "",
+    });
+    return result.ok
+      ? context.json({ presentationId: result.presentationId })
+      : context.json({ error: result.error }, result.status);
+  });
+
   app.put("/platform/operator/billing/plans/:planId/draft", async (context) => {
     if (!options.savePlanDraft) {
       return context.json({ error: "billing_plans_unavailable" }, 503);
@@ -455,6 +534,7 @@ export function registerPlatformOperatorRoutes(
         limits: record.limits,
         name: getRequiredBodyString(body, "name") ?? "",
         price: getRequiredBodyString(body, "price") ?? "",
+        trialPolicy: record.trialPolicy,
       },
     });
     return result.ok

@@ -19,6 +19,16 @@ export type BillingPlanSummary = {
   limits: unknown;
   features: unknown;
   isFree?: boolean;
+  trial?: BillingTrialAvailability;
+  publicName?: string | null;
+  summary?: string | null;
+  featureList?: string[];
+};
+
+export type BillingTrialAvailability = {
+  available: boolean;
+  durationDays?: number;
+  versionId?: string;
 };
 
 export type BillingCatalogPlan = {
@@ -27,6 +37,12 @@ export type BillingCatalogPlan = {
   price: string;
   isFree: boolean;
   isCurrent: boolean;
+  limits?: unknown;
+  features?: unknown;
+  trial?: BillingTrialAvailability;
+  publicName?: string | null;
+  summary?: string | null;
+  featureList?: string[];
 };
 
 export type BillingStatus = {
@@ -39,6 +55,8 @@ export type BillingStatus = {
     manualPaymentState: string;
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
     /** Free plan id scheduled to take effect at period end (no refund). */
     scheduledPlanId?: string | null;
     scheduledPlanName?: string | null;
