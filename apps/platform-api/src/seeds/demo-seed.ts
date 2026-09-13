@@ -40,6 +40,7 @@ import {
   invoices,
   mediaAssets,
   mediaUsages,
+  metricRollupCheckpoints,
   notificationDestinations,
   notificationLogs,
   notificationPreferences,
@@ -67,6 +68,11 @@ import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
 import { getPlatformApiServiceDir, loadPlatformApiEnvFiles } from "../config/env.js";
 import { PLATFORM_PERMISSIONS } from "../context/platform-authorization.js";
+import {
+  COMMERCE_ROLLUP_KEY,
+  COMMERCE_ROLLUP_VERSION,
+  DEFAULT_REPORTING_TIMEZONE,
+} from "../modules/analytics/commerce-rollup.js";
 import { createBillingService, DEFAULT_PLAN_IDS } from "../modules/billing/service.js";
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import {
@@ -84,6 +90,7 @@ import {
   LEGACY_DEMO_HANDLES,
   techShop,
 } from "./demo-shops.js";
+import { ensureS3Bucket } from "./seed-media-storage.js";
 
 loadPlatformApiEnvFiles();
 
@@ -540,7 +547,7 @@ async function seedShop(
   await createBillingService(platformDb.db).ensureTrialSubscription({
     tenantId: provisioned.tenant.id,
   });
-  await seedMetrics(provisioned.tenant.id, shop.products.length);
+  await seedMetrics(provisioned.tenant.id, shop.products.length, shop.customers.length);
   await seedAnalyticsEvents(provisioned.tenant.id, shop);
   const platformExtras = await seedPlatformExtras(shop, provisioned.tenant.id, userId, commerce);
 
@@ -1410,6 +1417,16 @@ async function seedProductMediaAssets(input: {
   }
 
   const client = createSeedS3Client(config);
+  const bucket = await ensureS3Bucket(client, config.bucket);
+  if (!bucket.ok) {
+    console.warn(
+      `[seed:demo] Media bucket ${config.bucket} is unavailable (${formatS3Error(bucket.error)}); using curated CDN URLs.`,
+    );
+    return input.images.map((image) => ({ id: null, publicUrl: image.url }));
+  }
+  if (bucket.created) {
+    console.info(`[seed:demo] Created media bucket ${config.bucket}.`);
+  }
   const assets: SeededMediaAsset[] = [];
 
   for (const [index, image] of input.images.entries()) {
@@ -1843,7 +1860,7 @@ function demoAddress(customer: DemoShopDefinition["customers"][number]) {
   };
 }
 
-async function seedMetrics(tenantId: string, productCount: number) {
+async function seedMetrics(tenantId: string, productCount: number, customerCount: number) {
   // Replace prior demo metrics so re-seeds refresh the chart series.
   await platformDb.db.delete(dailyMetrics).where(eq(dailyMetrics.tenantId, tenantId));
 
@@ -1874,6 +1891,13 @@ async function seedMetrics(tenantId: string, productCount: number) {
   const latest = addDays(now, 0).toISOString().slice(0, 10);
   rows.push(
     metricRow(tenantId, latest, "overview.products", productCount),
+    metricRow(tenantId, latest, "overview.customers.unique", customerCount),
+    metricRow(
+      tenantId,
+      latest,
+      "overview.customers.repeat",
+      Math.max(2, Math.floor(customerCount * 0.4)),
+    ),
     metricRow(tenantId, latest, "overview.attention.unfulfilled", 4),
     metricRow(tenantId, latest, "overview.attention.unpaid", 3),
     metricRow(tenantId, latest, "overview.attention.draft_products", 1),
@@ -1891,6 +1915,33 @@ async function seedMetrics(tenantId: string, productCount: number) {
   if (rows.length) {
     await platformDb.db.insert(dailyMetrics).values(rows);
   }
+
+  await platformDb.db
+    .insert(metricRollupCheckpoints)
+    .values({
+      lastSuccessfulAt: now,
+      metadata: { demoSeed: DEMO_SEED_MARKER, rowCount: rows.length },
+      rollupKey: COMMERCE_ROLLUP_KEY,
+      rollupVersion: COMMERCE_ROLLUP_VERSION,
+      tenantId,
+      timezone: DEFAULT_REPORTING_TIMEZONE,
+      updatedAt: now,
+      watermark: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        metricRollupCheckpoints.tenantId,
+        metricRollupCheckpoints.rollupKey,
+        metricRollupCheckpoints.rollupVersion,
+      ],
+      set: {
+        lastSuccessfulAt: now,
+        metadata: { demoSeed: DEMO_SEED_MARKER, rowCount: rows.length },
+        timezone: DEFAULT_REPORTING_TIMEZONE,
+        updatedAt: now,
+        watermark: now,
+      },
+    });
 }
 
 async function seedAnalyticsEvents(tenantId: string, shop: DemoShopDefinition) {
@@ -2072,6 +2123,9 @@ async function cleanAllDemoData() {
       .delete(analyticsEvents)
       .where(inArray(analyticsEvents.tenantId, idsToRemove));
     await platformDb.db.delete(dailyMetrics).where(inArray(dailyMetrics.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(metricRollupCheckpoints)
+      .where(inArray(metricRollupCheckpoints.tenantId, idsToRemove));
     await platformDb.db
       .delete(storefrontInquiries)
       .where(inArray(storefrontInquiries.tenantId, idsToRemove));
