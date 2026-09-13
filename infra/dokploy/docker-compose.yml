@@ -284,7 +284,7 @@ services:
         "300",
         "node_modules/.bin/medusa",
         "exec",
-        "./src/scripts/reindex-product-search.ts",
+        "./src/scripts/reindex-product-search.js",
       ]
     depends_on:
       migrate-medusa:
