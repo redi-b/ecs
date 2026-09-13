@@ -130,6 +130,11 @@ Demo seed runs **inside** the `platform-api` container (no host `pnpm` required)
 
 **Media:** seed PutObject uses `MEDIA_S3_INTERNAL_ENDPOINT` (default `http://seaweedfs:8333`), not the public `MEDIA_S3_ENDPOINT`. Browser URLs still use `MEDIA_S3_PUBLIC_BASE_URL`.
 
+The showcase catalog uses a checked-in manifest of product-matched Pexels photographs under the
+[Pexels license](https://www.pexels.com/license/). The seed copies each image into ECS media storage
+and records its source page in Medusa product metadata. If an individual copy fails, that image uses
+its curated CDN URL instead; the seed never substitutes an unrelated random photograph.
+
 ```sh
 # Ensure platform-api has started at least once (token bootstrap), then:
 docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts
