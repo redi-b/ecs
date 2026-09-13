@@ -44,13 +44,18 @@ export type DemoProduct = {
   collectionHandle?: string;
   description: string;
   handle: string;
-  /** Used for image seed variety (picsum / Seaweed keys). */
+  /** Broad merchandising family retained in seeded product metadata. */
   imageCategory: string;
-  /** Number of gallery images to seed (default 2). */
-  imageCount?: number;
   options: readonly DemoProductOption[];
   title: string;
   variants: readonly DemoProductVariant[];
+};
+
+export type DemoProductImage = {
+  /** Stable Pexels photo page retained for license/source auditing. */
+  sourceUrl: string;
+  /** CDN rendition copied into ECS media storage by the demo seed. */
+  url: string;
 };
 
 export type DemoShopDefinition = {
@@ -126,10 +131,7 @@ function matrixProduct(
     title,
     handle,
     imageCategory,
-    imageCount: 3,
-    description:
-      description ??
-      `${title}. Local delivery and cash on delivery available.`,
+    description: description ?? `${title}. Local delivery and cash on delivery available.`,
     options: optionAxes,
     variants: combos.map((options, index) => {
       const label = optionAxes.map((axis) => options[axis.title]).join(" / ");
@@ -167,7 +169,7 @@ function singleAxisProduct(
   );
 }
 
-export const DEMO_SEED_MARKER = "ecs-demo-v3";
+export const DEMO_SEED_MARKER = "ecs-demo-v4";
 export const DEMO_OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? "password1234";
 
 /** Prior demo handles/emails still cleaned so renames do not leave orphans. */
@@ -263,11 +265,35 @@ export const techShop: DemoShopDefinition = {
       area: "Sarbet",
       address: "Sarbet Roundabout",
     },
+    {
+      firstName: "Kalkidan",
+      lastName: "Wondimu",
+      email: "kalkidan.wondimu.tech@example.com",
+      phone: "+251911200107",
+      area: "Ayat",
+      address: "Ayat Square",
+    },
+    {
+      firstName: "Mikiyas",
+      lastName: "Tadesse",
+      email: "mikiyas.tadesse.tech@example.com",
+      phone: "+251911200108",
+      area: "Mexico",
+      address: "Mexico Square",
+    },
+    {
+      firstName: "Eyerusalem",
+      lastName: "Kassa",
+      email: "eyerusalem.kassa.tech@example.com",
+      phone: "+251911200109",
+      area: "Gerji",
+      address: "Gerji Mebrat Hail",
+    },
   ],
   products: [
     {
       ...singleAxisProduct(
-        "Galaxy A35 5G",
+        "A35 5G Smartphone",
         "demo-tech-galaxy-a35",
         "phones",
         28900,
@@ -280,7 +306,7 @@ export const techShop: DemoShopDefinition = {
     },
     {
       ...singleAxisProduct(
-        "iPhone 13 Refurbished",
+        'Refurbished 6.1" Smartphone',
         "demo-tech-iphone-13",
         "phones",
         42500,
@@ -293,7 +319,7 @@ export const techShop: DemoShopDefinition = {
     },
     {
       ...singleAxisProduct(
-        "Redmi Note 13",
+        "Note 13 Android Phone",
         "demo-tech-redmi-note-13",
         "phones",
         18900,
@@ -306,7 +332,7 @@ export const techShop: DemoShopDefinition = {
     },
     {
       ...singleAxisProduct(
-        "ThinkPad E14 Gen 5",
+        'E14 14" Business Laptop',
         "demo-tech-thinkpad-e14",
         "laptops",
         68900,
@@ -319,7 +345,7 @@ export const techShop: DemoShopDefinition = {
     },
     {
       ...singleAxisProduct(
-        "MacBook Air M1",
+        'M1 13" Ultralight Laptop',
         "demo-tech-mba-m1",
         "laptops",
         79500,
@@ -345,7 +371,6 @@ export const techShop: DemoShopDefinition = {
       ),
       categoryHandle: "demo-tech-audio",
       collectionHandle: "demo-tech-best-sellers",
-      imageCount: 3,
     },
     {
       ...singleAxisProduct(
@@ -525,6 +550,22 @@ export const fashionShop: DemoShopDefinition = {
       area: "Piassa",
       address: "Piassa Churchill",
     },
+    {
+      firstName: "Meron",
+      lastName: "Desta",
+      email: "meron.desta.style@example.com",
+      phone: "+251911300208",
+      area: "Hayahulet",
+      address: "Hayahulet Mazoria",
+    },
+    {
+      firstName: "Eyob",
+      lastName: "Solomon",
+      email: "eyob.solomon.style@example.com",
+      phone: "+251911300209",
+      area: "Lebu",
+      address: "Lebu Mebrat Hail",
+    },
   ],
   products: [
     {
@@ -584,7 +625,6 @@ export const fashionShop: DemoShopDefinition = {
       ),
       categoryHandle: "demo-fashion-men",
       collectionHandle: "demo-fashion-essentials",
-      imageCount: 3,
     },
     {
       ...singleAxisProduct(
@@ -697,12 +737,46 @@ export const fashionShop: DemoShopDefinition = {
 
 export const demoShops = [techShop, fashionShop] as const;
 
-/** Picsum URL fallback when Seaweed is unavailable (not preferred for media library). */
-export function demoImageUrl(category: string, index = 0) {
-  const customBase = process.env.SEED_DEMO_IMAGE_BASE?.trim().replace(/\/$/, "");
-  const seed = `ecs-${category}-${index}`;
-  if (customBase) {
-    return `${customBase}/${encodeURIComponent(seed)}/1200/1200`;
-  }
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/1200/1200`;
+/**
+ * Curated, product-matched photography for the public showcase.
+ *
+ * This is a checked-in manifest instead of a search/random-photo API. Re-seeds
+ * therefore produce the same catalog, and every source can be audited or
+ * replaced independently. Pexels permits commercial use without attribution;
+ * source pages are still retained in product metadata as a maintenance trail.
+ */
+const DEMO_PRODUCT_PHOTO_IDS: Record<string, readonly number[]> = {
+  "demo-tech-galaxy-a35": [404280, 607812],
+  "demo-tech-iphone-13": [699122, 1092644],
+  "demo-tech-redmi-note-13": [47261, 1092644],
+  "demo-tech-thinkpad-e14": [24790756, 4073705],
+  "demo-tech-mba-m1": [4073705, 7888648],
+  "demo-tech-earbuds-pro": [30608591, 3394650],
+  "demo-tech-studio-headphones": [3394666, 1649771],
+  "demo-tech-gan-charger": [3921696, 4526407],
+  "demo-tech-usb-c-hub": [4219861, 3921696],
+  "demo-tech-laptop-sleeve": [89723, 4065891],
+  "demo-tech-bt-speaker": [35436825, 13658002],
+  "demo-tech-powerbank-20k": [3921704, 5208777],
+  "demo-fashion-linen-midi": [985635, 1755428],
+  "demo-fashion-wrap-blouse": [994523, 1462637],
+  "demo-fashion-chino": [1598507, 2983464],
+  "demo-fashion-crew-tee": [996329, 8532616],
+  "demo-fashion-crossbody": [1152077, 1936848],
+  "demo-fashion-canvas-tote": [904350, 2905238],
+  "demo-fashion-sneakers": [2529148, 1598505],
+  "demo-fashion-ankle-boots": [267242, 1464625],
+  "demo-fashion-silk-scarf": [45982, 45055],
+  "demo-fashion-blazer": [4964992, 19380820],
+  "demo-fashion-denim-jacket": [1082529, 7679720],
+  "demo-fashion-gift-box": [264985, 1666065],
+};
+
+export function demoProductImages(productHandle: string): readonly DemoProductImage[] {
+  return (DEMO_PRODUCT_PHOTO_IDS[productHandle] ?? []).map((photoId) => ({
+    sourceUrl: `https://www.pexels.com/photo/${photoId}/`,
+    url:
+      `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg` +
+      "?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=1200",
+  }));
 }

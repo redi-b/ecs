@@ -44,13 +44,16 @@ import {
   notificationLogs,
   notificationPreferences,
   operatorNotes,
+  organizationRoles,
   organizations,
   paymentOnboarding,
   platformPermissionGrants,
   platformPrincipals,
   storefrontConfigs,
+  storefrontInquiries,
   storefrontRevisions,
   subscriptions,
+  subscriptionTrials,
   telegramConnectSessions,
   tenantMemberships,
   tenantOnboarding,
@@ -73,8 +76,9 @@ import {
   DEMO_OWNER_PASSWORD,
   DEMO_SEED_MARKER,
   type DemoProduct,
+  type DemoProductImage,
   type DemoShopDefinition,
-  demoImageUrl,
+  demoProductImages,
   demoShops,
   LEGACY_DEMO_EMAILS,
   LEGACY_DEMO_HANDLES,
@@ -136,12 +140,6 @@ type ProductSeedResult = {
   variants?: Array<{ id: string; title: string; sku?: string | null }>;
 };
 
-/** 1×1 PNG used when picsum is unreachable (offline / CI). */
-const FALLBACK_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-);
-
 const DEMO_NOTIFICATION_EVENTS = [
   "order.created",
   "order.cancelled",
@@ -153,6 +151,53 @@ const DEMO_NOTIFICATION_EVENTS = [
   "payment.failed",
   "inventory.low",
 ] as const;
+
+function assertDemoFixtureIntegrity() {
+  for (const shop of demoShops) {
+    const productHandles = new Set<string>();
+    const categoryHandles = new Set<string>();
+    const collectionHandles = new Set<string>();
+
+    for (const category of shop.categories) {
+      if (categoryHandles.has(category.handle)) {
+        throw new Error(`Duplicate demo category handle: ${category.handle}`);
+      }
+      categoryHandles.add(category.handle);
+    }
+    for (const category of shop.categories) {
+      if (category.parentHandle && !categoryHandles.has(category.parentHandle)) {
+        throw new Error(
+          `Demo category ${category.handle} references missing parent ${category.parentHandle}`,
+        );
+      }
+    }
+    for (const collection of shop.collections) {
+      if (collectionHandles.has(collection.handle)) {
+        throw new Error(`Duplicate demo collection handle: ${collection.handle}`);
+      }
+      collectionHandles.add(collection.handle);
+    }
+    for (const product of shop.products) {
+      if (productHandles.has(product.handle)) {
+        throw new Error(`Duplicate demo product handle: ${product.handle}`);
+      }
+      productHandles.add(product.handle);
+      if (product.categoryHandle && !categoryHandles.has(product.categoryHandle)) {
+        throw new Error(
+          `Demo product ${product.handle} references missing category ${product.categoryHandle}`,
+        );
+      }
+      if (product.collectionHandle && !collectionHandles.has(product.collectionHandle)) {
+        throw new Error(
+          `Demo product ${product.handle} references missing collection ${product.collectionHandle}`,
+        );
+      }
+      if (demoProductImages(product.handle).length < 2) {
+        throw new Error(`Demo product ${product.handle} needs at least two curated images`);
+      }
+    }
+  }
+}
 
 async function main() {
   if (cleanOnly) {
@@ -207,6 +252,7 @@ Local operations demo ready.
   // Idempotent path: do not wipe platform tenants. Refresh commerce per shop instead.
   const billing = createBillingService(platformDb.db);
   await billing.ensureDefaultPlans();
+  assertDemoFixtureIntegrity();
 
   const provisionCommerceResources = createMedusaCommerceProvisioningClient({
     internalApiToken: platformInternalApiToken,
@@ -489,14 +535,13 @@ async function seedShop(
     commerce = { skipped: true, reason: "MEDUSA_ADMIN_API_TOKEN missing" };
   }
 
-  await seedMetrics(provisioned.tenant.id);
-  await seedAnalyticsEvents(provisioned.tenant.id, shop.tenant.handle);
-  const platformExtras = await seedPlatformExtras(shop, provisioned.tenant.id, userId, commerce);
-
   // Ensure trial billing row exists (provisioning may already insert one).
   await createBillingService(platformDb.db).ensureTrialSubscription({
     tenantId: provisioned.tenant.id,
   });
+  await seedMetrics(provisioned.tenant.id, shop.products.length);
+  await seedAnalyticsEvents(provisioned.tenant.id, shop);
+  const platformExtras = await seedPlatformExtras(shop, provisioned.tenant.id, userId, commerce);
 
   return {
     handle: shop.tenant.handle,
@@ -620,24 +665,25 @@ async function seedCommerce(
       (product.collectionHandle ? collectionByHandle.get(product.collectionHandle) : undefined) ??
       collections[index % Math.max(collections.length, 1)];
 
-    const imageCount = product.imageCount ?? 2;
+    const curatedImages = demoProductImages(product.handle);
     const uploaded = await seedProductMediaAssets({
-      imageCategory: product.imageCategory,
-      imageCount,
+      images: curatedImages,
       productHandle: product.handle,
       productTitle: product.title,
       tenantId,
       userId,
     });
-    mediaAssetsCreated += uploaded.length;
+    mediaAssetsCreated += uploaded.filter((asset) => asset.id).length;
     const imageUrls = uploaded.map((asset) => asset.publicUrl).filter(Boolean) as string[];
-    // Fallback remote URLs if Seaweed is down so products still get thumbnails.
+    // If Seaweed is unavailable, use the same curated sources rather than
+    // replacing a real product with a random category image.
     if (!imageUrls.length) {
-      for (let i = 0; i < imageCount; i += 1) {
-        imageUrls.push(demoImageUrl(product.imageCategory, i));
-      }
+      imageUrls.push(...curatedImages.map((image) => image.url));
     }
-    const thumbnail = imageUrls[0] ?? demoImageUrl(product.imageCategory, 0);
+    const thumbnail = imageUrls[0];
+    if (!thumbnail) {
+      throw new Error(`Demo product ${product.handle} has no usable product image`);
+    }
 
     const result = await medusaPost<{ product?: ProductSeedResult }>("/admin/products", {
       categories: category ? [{ id: category.id }] : [],
@@ -645,7 +691,12 @@ async function seedCommerce(
       description: product.description,
       handle: product.handle,
       images: imageUrls.map((url) => ({ url })),
-      metadata,
+      metadata: {
+        ...metadata,
+        image_license: "Pexels License",
+        image_sources: curatedImages.map((image) => image.sourceUrl),
+        merchandising_family: product.imageCategory,
+      },
       options: product.options.map((option) => ({
         title: option.title,
         values: [...option.values],
@@ -745,8 +796,8 @@ async function seedDemoOrders(input: {
   let cancelled = 0;
   let completed = 0;
   const orderCount = Math.min(
-    14,
-    Math.max(shop.customers.length * 2, 6),
+    24,
+    Math.max(shop.customers.length * 3, 12),
     Math.max(variants.length, 1),
   );
   const orderIdsToBackdate: Array<{ id: string; createdAt: Date }> = [];
@@ -1315,14 +1366,13 @@ async function resetTenantDemoMedia(tenantId: string) {
   await platformDb.db.delete(mediaAssets).where(eq(mediaAssets.tenantId, tenantId));
 }
 
-async function fetchDemoImageBytes(seed: string): Promise<{ bytes: Buffer; mimeType: string }> {
-  const url = demoImageUrl(seed.replace(/^ecs-/, "").split("-")[0] ?? seed, 0);
-  // Prefer a unique picsum seed derived from the full key.
-  const picsum = `https://picsum.photos/seed/${encodeURIComponent(seed)}/900/900`;
+async function fetchDemoImageBytes(
+  url: string,
+): Promise<{ bytes: Buffer; mimeType: string } | null> {
   try {
-    const response = await fetch(picsum, {
+    const response = await fetch(url, {
       redirect: "follow",
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(20_000),
     });
     if (response.ok) {
       const bytes = Buffer.from(await response.arrayBuffer());
@@ -1335,18 +1385,16 @@ async function fetchDemoImageBytes(seed: string): Promise<{ bytes: Buffer; mimeT
   } catch {
     // fall through
   }
-  void url;
-  return { bytes: FALLBACK_PNG, mimeType: "image/png" };
+  return null;
 }
 
 type SeededMediaAsset = {
-  id: string;
+  id: string | null;
   publicUrl: string | null;
 };
 
 async function seedProductMediaAssets(input: {
-  imageCategory: string;
-  imageCount: number;
+  images: readonly DemoProductImage[];
   productHandle: string;
   productTitle: string;
   tenantId: string;
@@ -1363,9 +1411,14 @@ async function seedProductMediaAssets(input: {
   const client = createSeedS3Client(config);
   const assets: SeededMediaAsset[] = [];
 
-  for (let index = 0; index < input.imageCount; index += 1) {
-    const seed = `ecs-${input.productHandle}-${index}`;
-    const { bytes, mimeType } = await fetchDemoImageBytes(seed);
+  for (const [index, image] of input.images.entries()) {
+    const fetched = await fetchDemoImageBytes(image.url);
+    if (!fetched) {
+      console.warn(`[seed:demo] Could not copy curated image ${image.sourceUrl}; using CDN URL.`);
+      assets.push({ id: null, publicUrl: image.url });
+      continue;
+    }
+    const { bytes, mimeType } = fetched;
     const ext = mimeType.includes("png") ? "png" : "jpg";
     const filename = `${input.productHandle}-${index + 1}.${ext}`;
     const assetId = crypto.randomUUID();
@@ -1394,6 +1447,7 @@ async function seedProductMediaAssets(input: {
             "(server PutObject). Keep MEDIA_S3_PUBLIC_BASE_URL for browser URLs.",
         );
       }
+      assets.push({ id: null, publicUrl: image.url });
       continue;
     }
 
@@ -1429,7 +1483,9 @@ async function linkMediaUsages(input: {
   thumbnailUrl: string;
 }) {
   const rows = input.assets
-    .filter((asset) => asset.publicUrl)
+    .filter((asset): asset is SeededMediaAsset & { id: string; publicUrl: string } =>
+      Boolean(asset.id && asset.publicUrl),
+    )
     .map((asset, position) => ({
       field: "images",
       isPrimary: asset.publicUrl === input.thumbnailUrl || position === 0,
@@ -1493,6 +1549,107 @@ async function seedPlatformExtras(
         updatedAt: new Date(),
       },
     });
+
+  const [tenantContext] = await platformDb.db
+    .select({ organizationId: tenants.organizationId })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1);
+  if (tenantContext?.organizationId) {
+    await platformDb.db
+      .insert(organizationRoles)
+      .values({
+        id: `demo:${shop.tenant.handle}:catalog-specialist`,
+        organizationId: tenantContext.organizationId,
+        permission: JSON.stringify({
+          media: ["read", "create", "update", "delete"],
+          products: ["read", "create", "update", "import", "export"],
+          storefront: ["read"],
+        }),
+        role: "catalog-specialist",
+      })
+      .onConflictDoUpdate({
+        target: [organizationRoles.organizationId, organizationRoles.role],
+        set: {
+          permission: JSON.stringify({
+            media: ["read", "create", "update", "delete"],
+            products: ["read", "create", "update", "import", "export"],
+            storefront: ["read"],
+          }),
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  // A useful mix for the inquiries workspace: unread work, active follow-up,
+  // resolved history, contact messages, and product requests.
+  await platformDb.db.delete(storefrontInquiries).where(eq(storefrontInquiries.tenantId, tenantId));
+  const inquiryCustomers = shop.customers.slice(0, 6);
+  const inquiryRows = inquiryCustomers.map((customer, index) => {
+    const isRequest = index % 2 === 0;
+    const createdAt = addDays(new Date(), -(index * 2 + 1));
+    return {
+      createdAt,
+      customerEmail: customer.email,
+      customerName: `${customer.firstName} ${customer.lastName}`,
+      customerPhone: customer.phone,
+      details: isRequest
+        ? {
+            requestedProduct:
+              shop.tenant.handle === "addistech"
+                ? (["Mechanical keyboard", "Wi-Fi router", "Smart watch"][index % 3] ??
+                  "New accessory")
+                : (["Traditional dress", "Leather belt", "Kids collection"][index % 3] ??
+                  "New collection"),
+            preferredContact: index % 3 === 0 ? "phone" : "email",
+          }
+        : { preferredContact: "phone" },
+      message: isRequest
+        ? "Please let me know whether you can source this item and the expected delivery time."
+        : "I would like help choosing the right option before placing my order.",
+      sourcePath: isRequest ? "/request-item" : "/contact",
+      status: ["new", "read", "resolved", "new", "read", "archived"][index] ?? "new",
+      subject: isRequest ? "Product availability request" : "Question before ordering",
+      tenantId,
+      type: isRequest ? "product_request" : "contact",
+      updatedAt: createdAt,
+    };
+  });
+  if (inquiryRows.length) await platformDb.db.insert(storefrontInquiries).values(inquiryRows);
+
+  const [subscription] = await platformDb.db
+    .select({ id: subscriptions.id, planVersionId: subscriptions.planVersionId })
+    .from(subscriptions)
+    .where(eq(subscriptions.tenantId, tenantId))
+    .limit(1);
+  await platformDb.db.delete(invoices).where(eq(invoices.tenantId, tenantId));
+  if (subscription) {
+    const invoiceNow = new Date();
+    await platformDb.db.insert(invoices).values([
+      {
+        amount: "0",
+        currency: "ETB",
+        paidAt: addDays(invoiceNow, -42),
+        planVersionId: subscription.planVersionId,
+        provider: "trial",
+        providerReference: `demo-${shop.tenant.handle}-trial`,
+        status: "paid",
+        subscriptionId: subscription.id,
+        tenantId,
+      },
+      {
+        amount: "499",
+        currency: "ETB",
+        dueAt: addDays(invoiceNow, 12),
+        planVersionId: subscription.planVersionId,
+        provider: "manual",
+        providerReference: `demo-${shop.tenant.handle}-next`,
+        status: "pending",
+        subscriptionId: subscription.id,
+        tenantId,
+      },
+    ]);
+  }
 
   // Email preference (no Telegram destinations — needs bot connect).
   const existingPrefs = await platformDb.db
@@ -1562,33 +1719,61 @@ async function seedPlatformExtras(
       dedupeKey: `demo:${tenantId}:order.created`,
       eventType: "order.created",
       title: "New cash order",
-      body: "A demo COD order was placed and needs confirmation.",
+      body: "Order ECS-1048 was placed and is waiting for confirmation.",
       href: "/admin/orders",
+      category: "orders",
+      priority: "normal",
       readAt: null as Date | null,
     },
     {
       dedupeKey: `demo:${tenantId}:inventory.low`,
       eventType: "inventory.low",
       title: "Low stock on popular SKUs",
-      body: "Some demo variants are at or near zero stock — restock from Products.",
+      body: "Two popular variants have fewer than five items available.",
       href: "/admin/products",
+      category: "inventory",
+      priority: "high",
       readAt: null as Date | null,
     },
     {
       dedupeKey: `demo:${tenantId}:payment.paid`,
       eventType: "payment.paid",
       title: "Payment received",
-      body: "A demo payment.paid event for the inbox UI (read).",
+      body: "ETB 4,850 was recorded for order ECS-1042.",
       href: "/admin/orders",
+      category: "orders",
+      priority: "normal",
       readAt: addDays(new Date(), -1),
     },
     {
       dedupeKey: `demo:${tenantId}:order.cancelled`,
       eventType: "order.cancelled",
       title: "Order cancelled",
-      body: "A customer cancelled a demo order.",
+      body: "Order ECS-1039 was cancelled before fulfillment.",
       href: "/admin/orders",
+      category: "orders",
+      priority: "normal",
       readAt: addDays(new Date(), -2),
+    },
+    {
+      dedupeKey: `demo:${tenantId}:inquiry.created`,
+      eventType: "storefront.inquiry_created",
+      title: "New product request",
+      body: "A customer asked whether you can source an item that is not in the catalog.",
+      href: "/admin/inquiries",
+      category: "inquiries",
+      priority: "normal",
+      readAt: null as Date | null,
+    },
+    {
+      dedupeKey: `demo:${tenantId}:billing.trial_ending`,
+      eventType: "billing.trial_ending",
+      title: "Trial ends in 5 days",
+      body: "Review your plan before the trial ends to keep paid features active.",
+      href: "/admin/settings?tab=billing",
+      category: "billing",
+      priority: "high",
+      readAt: null as Date | null,
     },
   ];
 
@@ -1604,8 +1789,8 @@ async function seedPlatformExtras(
           demo_seed: DEMO_SEED_MARKER,
           shop_handle: shop.tenant.handle,
         },
-        category: row.eventType === "inventory.low" ? "inventory" : "orders",
-        priority: "normal",
+        category: row.category,
+        priority: row.priority,
         tenantId,
         title: row.title,
       })
@@ -1613,8 +1798,10 @@ async function seedPlatformExtras(
         target: [inAppNotifications.tenantId, inAppNotifications.dedupeKey],
         set: {
           body: row.body,
+          category: row.category,
           eventType: row.eventType,
           href: row.href,
+          priority: row.priority,
           title: row.title,
         },
       })
@@ -1633,7 +1820,10 @@ async function seedPlatformExtras(
   void commerce;
 
   return {
+    customRoles: tenantContext?.organizationId ? 1 : 0,
     deliveryZones: 7,
+    inquiries: inquiryRows.length,
+    invoices: subscription ? 2 : 0,
     notificationPrefs: 1,
     inbox: inboxRows.length,
     paymentOnboarding: shop.paymentOnboarding.status,
@@ -1652,7 +1842,7 @@ function demoAddress(customer: DemoShopDefinition["customers"][number]) {
   };
 }
 
-async function seedMetrics(tenantId: string) {
+async function seedMetrics(tenantId: string, productCount: number) {
   // Replace prior demo metrics so re-seeds refresh the chart series.
   await platformDb.db.delete(dailyMetrics).where(eq(dailyMetrics.tenantId, tenantId));
 
@@ -1682,7 +1872,7 @@ async function seedMetrics(tenantId: string) {
 
   const latest = addDays(now, 0).toISOString().slice(0, 10);
   rows.push(
-    metricRow(tenantId, latest, "overview.products", 12),
+    metricRow(tenantId, latest, "overview.products", productCount),
     metricRow(tenantId, latest, "overview.attention.unfulfilled", 4),
     metricRow(tenantId, latest, "overview.attention.unpaid", 3),
     metricRow(tenantId, latest, "overview.attention.draft_products", 1),
@@ -1702,35 +1892,74 @@ async function seedMetrics(tenantId: string) {
   }
 }
 
-async function seedAnalyticsEvents(tenantId: string, handle: string) {
+async function seedAnalyticsEvents(tenantId: string, shop: DemoShopDefinition) {
   await platformDb.db.delete(analyticsEvents).where(eq(analyticsEvents.tenantId, tenantId));
 
   const now = new Date();
-  const types = [
-    "storefront.page_viewed",
-    "storefront.product_viewed",
-    "storefront.collection_viewed",
-    "storefront.add_to_cart_clicked",
-    "storefront.checkout_started",
-  ] as const;
+  const events: Array<typeof analyticsEvents.$inferInsert> = [];
+  const referrers = ["direct", "google.com", "instagram.com", "t.me", "facebook.com"];
+  const devices = ["mobile", "mobile", "mobile", "desktop", "tablet"];
+  const areas = ["Bole", "Kazanchis", "CMC", "Megenagna", "Piassa", "Sarbet"];
+  const products = shop.products.map((product) => product.handle);
+  let sequence = 0;
 
-  // Spread events across ~40 days with denser recent activity.
-  const events = Array.from({ length: 90 }, (_, index) => {
-    const eventType = types[index % types.length] ?? "storefront.page_viewed";
-    const daysAgo = Math.min(39, Math.floor((index * 0.45) % 40));
+  // Model sessions instead of inserting equal event totals. Every session opens
+  // the shop; progressively smaller cohorts browse, search, cart, and checkout.
+  for (let session = 0; session < 180; session += 1) {
+    const daysAgo = Math.min(59, Math.floor((session * 0.34) % 60));
     const occurredAt = addDays(now, -daysAgo);
-    occurredAt.setUTCHours(9 + (index % 10), (index * 7) % 60, index % 60, 0);
-    return {
-      eventType,
-      idempotencyKey: `demo:${handle}:${eventType}:${index}`,
-      occurredAt,
-      properties: { demo_seed: DEMO_SEED_MARKER, handle },
-      source: "storefront" as const,
-      subjectId: null,
-      subjectType: null,
-      tenantId,
+    occurredAt.setUTCHours(8 + (session % 13), (session * 11) % 60, session % 60, 0);
+    const sessionIdHash = session.toString(16).padStart(64, "0");
+    const productHandle = products[session % Math.max(products.length, 1)] ?? null;
+    const baseProperties = {
+      area: areas[session % areas.length],
+      demo_seed: DEMO_SEED_MARKER,
+      device: devices[session % devices.length],
+      handle: shop.tenant.handle,
+      referrer: referrers[session % referrers.length],
     };
-  });
+    const push = (
+      eventType: string,
+      offsetMinutes: number,
+      properties: Record<string, unknown> = {},
+      subjectId: string | null = null,
+      subjectType: string | null = null,
+    ) => {
+      const eventTime = new Date(occurredAt.getTime() + offsetMinutes * 60_000);
+      events.push({
+        eventType,
+        idempotencyKey: `demo:${shop.tenant.handle}:${session}:${sequence++}`,
+        occurredAt: eventTime,
+        properties: { ...baseProperties, ...properties },
+        sessionIdHash,
+        source: "storefront",
+        subjectId,
+        subjectType,
+        tenantId,
+      });
+    };
+
+    push("storefront.page_viewed", 0, { path: "/" });
+    if (session % 10 < 8 && productHandle) {
+      push(
+        "storefront.product_viewed",
+        2,
+        { path: `/products/${productHandle}` },
+        productHandle,
+        "product",
+      );
+    }
+    if (session % 5 === 0) {
+      push("storefront.search_submitted", 1, {
+        query: shop.tenant.handle === "addistech" ? "wireless" : "new season",
+      });
+    }
+    if (session % 10 < 4 && productHandle) {
+      push("storefront.add_to_cart_clicked", 4, {}, productHandle, "product");
+    }
+    if (session % 10 < 2) push("storefront.checkout_started", 7);
+    if (session % 20 === 0) push("storefront.contact_clicked", 3);
+  }
 
   await platformDb.db.insert(analyticsEvents).values(events);
 }
@@ -1843,6 +2072,9 @@ async function cleanAllDemoData() {
       .where(inArray(analyticsEvents.tenantId, idsToRemove));
     await platformDb.db.delete(dailyMetrics).where(inArray(dailyMetrics.tenantId, idsToRemove));
     await platformDb.db
+      .delete(storefrontInquiries)
+      .where(inArray(storefrontInquiries.tenantId, idsToRemove));
+    await platformDb.db
       .delete(storefrontConfigs)
       .where(inArray(storefrontConfigs.tenantId, idsToRemove));
     await platformDb.db
@@ -1856,6 +2088,9 @@ async function cleanAllDemoData() {
       .where(inArray(tenantMemberships.tenantId, idsToRemove));
     await platformDb.db.delete(domains).where(inArray(domains.tenantId, idsToRemove));
     await platformDb.db.delete(invoices).where(inArray(invoices.tenantId, idsToRemove));
+    await platformDb.db
+      .delete(subscriptionTrials)
+      .where(inArray(subscriptionTrials.tenantId, idsToRemove));
     await platformDb.db.delete(subscriptions).where(inArray(subscriptions.tenantId, idsToRemove));
     await platformDb.db
       .delete(tenantProvisioningAttempts)
