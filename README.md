@@ -74,27 +74,27 @@ Development uses `lvh.me`, which resolves to localhost:
 - Platform API: `http://api.lvh.me`
 - Dashboard: `http://app.lvh.me` (`http://dashboard.lvh.me` redirects here)
 - Operations: `http://ops.lvh.me`
-- Demo storefront: `http://bole-style.lvh.me`
-- Demo merchant dashboard: `http://bole-style.lvh.me/admin`
+- Demo storefront: `http://bolestyle.lvh.me`
+- Demo merchant dashboard: `http://bolestyle.lvh.me/admin`
 
 The demo seed creates local-only accounts for development:
 
 | Shop | Email | Password |
 | --- | --- | --- |
-| Addis Tech Hub | `owner@addistech.local` | `password1234` |
-| Bole Style | `owner@bole-style.local` | `password1234` |
+| Addis Tech Hub | `yonatan@addistech.ecs.et` | `password1234` |
+| Bole Style | `liya@bolestyle.ecs.et` | `password1234` |
 
 The standalone operations console uses a separate platform identity; merchant accounts never receive
 platform access:
 
 | Console | Email | Password |
 | --- | --- | --- |
-| ECS Operations | `operations@ecs.local` | `operations1234` |
+| ECS Operations | `operationsdemo@ecs.et` | `operations1234` |
 
 Run `pnpm seed:operations` to create or refresh only this account without requiring Medusa. The full
 `pnpm seed:demo` command includes it as well. Set `SEED_OPERATIONS_PASSWORD` before either command to
 override the local password. The
-seed records grants under a separate, non-login `access-approver@ecs.local` identity so the demo keeps
+seed records grants under a separate, non-login `approvalsdemo@ecs.et` identity so the demo keeps
 the same authorization and audit boundary as a deployed environment without requiring a manual local
 bootstrap.
 

@@ -1,6 +1,6 @@
 const platformApiUrl = normalizeBaseUrl(process.env.PLATFORM_API_URL ?? "http://localhost:3000");
 const platformOrigin = process.env.PLATFORM_ORIGIN ?? "http://app.lvh.me";
-const ownerEmail = process.env.SMOKE_OWNER_EMAIL ?? "owner@addistech.local";
+const ownerEmail = process.env.SMOKE_OWNER_EMAIL ?? "yonatan@addistech.ecs.et";
 const ownerPassword = process.env.SMOKE_OWNER_PASSWORD ?? "password1234";
 const runId = process.env.SMOKE_RUN_ID ?? Date.now().toString(36);
 const tenantHandle = process.env.SMOKE_TENANT_HANDLE ?? `smoke-${runId}`;

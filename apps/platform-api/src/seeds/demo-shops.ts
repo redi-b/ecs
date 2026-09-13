@@ -4,7 +4,7 @@
  *
  * Handles:
  *   - addistech  (tech; no dashes — easy to type)
- *   - bole-style (fashion; kept stable for shared test links)
+ *   - bolestyle   (fashion)
  */
 
 export type DemoCustomer = {
@@ -91,12 +91,12 @@ export type DemoShopDefinition = {
 
 export const DEMO_OPERATIONS = {
   approver: {
-    email: "access-approver@ecs.local",
+    email: "approvalsdemo@ecs.et",
     id: "d0000000-0000-4000-8000-000000000002",
     name: "ECS Access Approver",
   },
   operator: {
-    email: "operations@ecs.local",
+    email: "operationsdemo@ecs.et",
     id: "d0000000-0000-4000-8000-000000000001",
     name: "ECS Operations Demo",
   },
@@ -169,11 +169,11 @@ function singleAxisProduct(
   );
 }
 
-export const DEMO_SEED_MARKER = "ecs-demo-v4";
+export const DEMO_SEED_MARKER = "ecs-demo-v5";
 export const DEMO_OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? "password1234";
 
 /** Prior demo handles/emails still cleaned so renames do not leave orphans. */
-export const LEGACY_DEMO_HANDLES = ["addis-tech"] as const;
+export const LEGACY_DEMO_HANDLES = ["addis-tech", "bole-style"] as const;
 export const LEGACY_DEMO_EMAILS = ["owner@addis-tech.local"] as const;
 
 /** Tech shop — phones, laptops, accessories. Handle has no dashes. */
@@ -193,7 +193,7 @@ export const techShop: DemoShopDefinition = {
     name: "Addis Tech Hub",
   },
   user: {
-    email: "owner@addistech.local",
+    email: "yonatan@addistech.ecs.et",
     name: "Yonatan Bekele",
     phone: "+251911100001",
   },
@@ -466,11 +466,11 @@ export const fashionShop: DemoShopDefinition = {
     storefrontConfig: "d2000000-0000-4000-8000-000000000007",
   },
   tenant: {
-    handle: "bole-style",
+    handle: "bolestyle",
     name: "Bole Style",
   },
   user: {
-    email: "owner@bole-style.local",
+    email: "liya@bolestyle.ecs.et",
     name: "Liya Tadesse",
     phone: "+251911100002",
   },

@@ -502,7 +502,7 @@ services:
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
       # Explicit platform and approved beta hosts receive normal HTTP-01 certs.
       # Keep beta hosts bounded here; arbitrary managed shops require wildcard DNS-01.
-      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`app.${BASE_DOMAIN}`) || Host(`dashboard.${BASE_DOMAIN}`) || Host(`ops.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`) || Host(`addistech.${BASE_DOMAIN}`) || Host(`bole-style.${BASE_DOMAIN}`)
+      - traefik.http.routers.ecs-caddy-demo-certs.rule=Host(`app.${BASE_DOMAIN}`) || Host(`dashboard.${BASE_DOMAIN}`) || Host(`ops.${BASE_DOMAIN}`) || Host(`api.${BASE_DOMAIN}`) || Host(`shop.${BASE_DOMAIN}`) || Host(`media.${BASE_DOMAIN}`) || Host(`addistech.${BASE_DOMAIN}`) || Host(`bolestyle.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-demo-certs.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-demo-certs.priority=100
       - traefik.http.routers.ecs-caddy-demo-certs.tls=true
