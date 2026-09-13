@@ -68,17 +68,31 @@ cleanup() {
 trap cleanup INT TERM
 
 i=0
+READY=false
 while [ "$i" -lt 90 ]; do
   if wget -q -O /dev/null "http://127.0.0.1:${FILER_PORT}/" 2>/dev/null \
     && wget -q -O /dev/null "http://127.0.0.1:${S3_PORT}/" 2>/dev/null; then
+    READY=true
     break
   fi
   i=$((i + 1))
   sleep 1
 done
 
-wget -q -O /dev/null --method=POST "http://127.0.0.1:${FILER_PORT}/buckets/" 2>/dev/null || true
-wget -q -O /dev/null --method=POST "http://127.0.0.1:${FILER_PORT}/buckets/${BUCKET}/" 2>/dev/null || true
+if [ "$READY" != "true" ]; then
+  echo "seaweedfs failed to become ready" >&2
+  exit 1
+fi
+
+# A plain filer directory is not sufficient S3 bucket metadata. Use Seaweed's
+# supported bucket command, then independently verify the bucket path exists.
+if ! wget -q -O /dev/null "http://127.0.0.1:${FILER_PORT}/buckets/${BUCKET}/?limit=1" 2>/dev/null; then
+  printf 's3.bucket.create -name %s\n' "$BUCKET" | weed shell
+fi
+if ! wget -q -O /dev/null "http://127.0.0.1:${FILER_PORT}/buckets/${BUCKET}/?limit=1" 2>/dev/null; then
+  echo "seaweedfs bucket bootstrap failed: ${BUCKET}" >&2
+  exit 1
+fi
 
 echo "seaweedfs ready: s3=:${S3_PORT} bucket=${BUCKET}"
 
