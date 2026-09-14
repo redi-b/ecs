@@ -97,20 +97,11 @@ export function appWithResolution(
     getStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
     updateStorefrontInquiryStatus?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
     authHandler?: (request: Request) => Promise<Response>;
-    authorizeDashboardForTenant?: (input: { tenantId: string; userId: string }) => Promise<
-      | {
-          ok: true;
-          actor: {
-            id: string;
-            email: string;
-            name: string | null;
-            role: "owner" | "manager" | "staff" | "operator";
-          };
-        }
-      | {
-          ok: false;
-        }
-    >;
+    authorizeDashboardForTenant?: PlatformAppOptions["authorizeDashboardForTenant"];
+    getInsightsSales?: PlatformAppOptions["getInsightsSales"];
+    getInsightsProducts?: PlatformAppOptions["getInsightsProducts"];
+    getInsightsDemand?: PlatformAppOptions["getInsightsDemand"];
+    getInsightsStorefront?: PlatformAppOptions["getInsightsStorefront"];
     authorizePlatformPermission?: import("../types/platform-app.js").PlatformAppOptions["authorizePlatformPermission"];
     getPlatformPrincipalAccess?: import("../types/platform-app.js").PlatformAppOptions["getPlatformPrincipalAccess"];
     getSuperadminOverview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminOverview"];
@@ -616,6 +607,10 @@ export function appWithResolution(
       getTenantCommerceContext: options?.getTenantCommerceContext,
       getTenantDashboardSummary: options?.getTenantDashboardSummary ?? defaultDashboardSummary,
       getDashboardMetrics: options?.getDashboardMetrics,
+      getInsightsSales: options?.getInsightsSales,
+      getInsightsProducts: options?.getInsightsProducts,
+      getInsightsDemand: options?.getInsightsDemand,
+      getInsightsStorefront: options?.getInsightsStorefront,
       requestInsightsRefresh: options?.requestInsightsRefresh,
       getTenantInsightsSummary: options?.getTenantInsightsSummary,
       getTenantReadiness: options?.getTenantReadiness,

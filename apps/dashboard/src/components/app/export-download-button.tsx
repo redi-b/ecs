@@ -12,6 +12,9 @@ type ExportDownloadButtonProps = {
   href: string;
   label: string;
   pendingLabel: string;
+  disabled?: boolean;
+  variant?: "outline" | "ghost";
+  size?: "sm" | "default";
 };
 
 export function ExportDownloadButton({
@@ -20,6 +23,9 @@ export function ExportDownloadButton({
   href,
   label,
   pendingLabel,
+  disabled = false,
+  variant = "outline",
+  size = "default",
 }: ExportDownloadButtonProps) {
   const [pending, setPending] = useState(false);
 
@@ -51,9 +57,10 @@ export function ExportDownloadButton({
   return (
     <Button
       aria-busy={pending}
-      disabled={pending}
+      disabled={pending || disabled}
       onClick={() => void download()}
-      variant="outline"
+      variant={variant}
+      size={size}
     >
       {pending ? (
         <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />

@@ -4,15 +4,20 @@ interface Props {
 }
 
 const { disabled = false } = Astro.props;
+const product = Astro.locals.analyticsProduct;
 ---
 
-<span data-storefront-analytics={disabled ? "disabled" : "enabled"} hidden></span>
+<span data-storefront-analytics={disabled ? "disabled" : "enabled"} data-analytics-product={product ? JSON.stringify(product) : undefined} hidden></span>
 
 <script>
   import { resolveStorefrontAnalyticsSession } from "../../lib/analytics-session";
+  import { cartAnalyticsSubject, type AnalyticsProduct } from "../../lib/analytics-product";
 
   const analyticsMarker = document.querySelector<HTMLElement>("[data-storefront-analytics]");
   if (analyticsMarker?.dataset.storefrontAnalytics === "enabled") {
+    const product: AnalyticsProduct | null = analyticsMarker.dataset.analyticsProduct
+      ? JSON.parse(analyticsMarker.dataset.analyticsProduct)
+      : null;
     const sessionKey = "ecs:storefront-session";
     let storedSession: string | null = null;
     try {
@@ -70,9 +75,13 @@ const { disabled = false } = Astro.props;
     };
 
     record("storefront.page_viewed");
-    const productMatch = location.pathname.match(/^\/products\/([^/]+)\/?$/);
-    const productHandle = productMatch?.[1];
-    if (productHandle) record("storefront.product_viewed", "product", productHandle);
+    // Product IDs join to sales; a missing/failed product page is not a product view.
+    if (product) record("storefront.product_viewed", "product", product.id, {
+      productId: product.id,
+      productHandle: product.handle,
+      productTitle: product.title,
+      identityVersion: 2,
+    });
     if (location.pathname === "/checkout") record("storefront.checkout_started");
 
     document.addEventListener("submit", (event) => {
@@ -83,11 +92,12 @@ const { disabled = false } = Astro.props;
       }
       if (form instanceof HTMLFormElement && form.action.includes("/actions/cart/add")) {
         const variantId = String(new FormData(form).get("variantId") ?? "");
-        record(
+        const subject = cartAnalyticsSubject(variantId, product);
+        if (subject) record(
           "storefront.add_to_cart_clicked",
-          productHandle ? "product" : "variant",
-          productHandle ?? variantId,
-          { variantId },
+          subject.subjectType,
+          subject.subjectId,
+          subject.properties,
         );
       }
     });

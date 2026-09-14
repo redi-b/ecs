@@ -35,7 +35,9 @@ describe("dashboard demo runtime boundaries", () => {
     assert.match(overview, /<MerchantOverview demoMode/);
     assert.match(sections, /<ProductsTable/);
     assert.match(sections, /<OrdersTable/);
-    assert.match(sections, /<InsightsWorkspace/);
+    assert.match(sections, /<SalesReport/);
+    assert.match(sections, /<DemandReport/);
+    assert.match(sections, /<StorefrontReport/);
   });
 
   it("keeps not-found recovery inside the public preview", async () => {

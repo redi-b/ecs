@@ -1,9 +1,10 @@
 import type { createPlatformDb } from "@ecs/db";
-import { dailyMetrics, metricRollupCheckpoints } from "@ecs/db";
+import { dailyMetrics, metricRollupCheckpoints, productSalesDaily } from "@ecs/db";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 
 import type { MerchantOrdersResult } from "../../types/index.js";
 import type { MerchantOrderListQuery } from "../../types/merchant-order.js";
+import { computeProductSalesRollup } from "./product-sales-rollup.js";
 import {
   COMMERCE_ROLLUP_KEY,
   COMMERCE_ROLLUP_VERSION,
@@ -35,6 +36,7 @@ export type CommerceRollupWriteInput = {
   timezone: string;
   to: Date;
   watermark: Date;
+  products?: ReturnType<typeof computeProductSalesRollup>;
 };
 
 export type WriteCommerceRollup = (input: CommerceRollupWriteInput) => Promise<void>;
@@ -75,7 +77,9 @@ export async function runCommerceRollup(input: {
     }
     orders.push(...page.orders);
     offset += page.orders.length;
-    if (page.orders.length === 0) break;
+    if (page.orders.length === 0 && offset < count) {
+      return { ok: false as const, error: "commerce_rollup_source_incomplete", status: 503 };
+    }
   } while (offset < (count ?? 0));
 
   const rollup = computeCommerceDailyRollup({
@@ -93,6 +97,7 @@ export async function runCommerceRollup(input: {
     timezone: rollup.timezone,
     to: input.to,
     watermark: input.to,
+    products: computeProductSalesRollup(orders),
   });
 
   return {
@@ -108,6 +113,27 @@ export function createCommerceRollupWriter(db: PlatformDb): WriteCommerceRollup 
     await db.transaction(async (transaction) => {
       const fromDate = localDate(input.from, input.timezone);
       const toDate = localDate(new Date(input.to.getTime() - 1), input.timezone);
+      if (input.products) {
+        await transaction
+          .delete(productSalesDaily)
+          .where(
+            and(
+              eq(productSalesDaily.tenantId, input.tenantId),
+              gte(productSalesDaily.date, fromDate),
+              lte(productSalesDaily.date, toDate),
+            ),
+          );
+        for (let offset = 0; offset < input.products.rows.length; offset += 500) {
+          await transaction.insert(productSalesDaily).values(
+            input.products.rows.slice(offset, offset + 500).map((row) => ({
+              ...row,
+              tenantId: input.tenantId,
+              units: String(row.units),
+              paidUnits: String(row.paidUnits),
+            })),
+          );
+        }
+      }
       await transaction
         .delete(dailyMetrics)
         .where(
@@ -143,6 +169,11 @@ export function createCommerceRollupWriter(db: PlatformDb): WriteCommerceRollup 
           metadata: {
             currencyCode: input.currencyCode,
             rowCount: input.rows.length,
+            sourceWindowStart: input.from.toISOString(),
+            sourceWindowEnd: input.to.toISOString(),
+            productReportVersion: input.products ? 1 : null,
+            unassignedProductUnits: input.products?.unassignedUnits ?? null,
+            missingItemOrders: input.products?.missingItemOrders ?? null,
           },
           rollupKey: COMMERCE_ROLLUP_KEY,
           rollupVersion: COMMERCE_ROLLUP_VERSION,
@@ -162,6 +193,11 @@ export function createCommerceRollupWriter(db: PlatformDb): WriteCommerceRollup 
             metadata: {
               currencyCode: input.currencyCode,
               rowCount: input.rows.length,
+              sourceWindowStart: input.from.toISOString(),
+              sourceWindowEnd: input.to.toISOString(),
+              productReportVersion: input.products ? 1 : null,
+              unassignedProductUnits: input.products?.unassignedUnits ?? null,
+              missingItemOrders: input.products?.missingItemOrders ?? null,
             },
             timezone: input.timezone,
             updatedAt: now,

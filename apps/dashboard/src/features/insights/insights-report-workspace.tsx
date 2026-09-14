@@ -1,1 +1,1 @@
-export type InsightsReport = "sales" | "journey" | "traffic";
+export type InsightsReport = "sales" | "products" | "storefront" | "journey" | "traffic";

@@ -20,6 +20,7 @@ type SegmentedControlProps<T extends string> = {
   active?: "primary" | "muted";
   className?: string;
   fullWidth?: boolean;
+  disabled?: boolean;
 };
 
 /**
@@ -35,6 +36,7 @@ export function SegmentedControl<T extends string>({
   active = "primary",
   className,
   fullWidth = true,
+  disabled = false,
 }: SegmentedControlProps<T>) {
   const activeIndex = Math.max(
     0,
@@ -46,18 +48,19 @@ export function SegmentedControl<T extends string>({
     <div
       aria-label={ariaLabel}
       className={cn(
-        "relative flex overflow-hidden rounded-full border p-0.5",
-        fullWidth ? "w-full" : "w-fit",
+        "relative grid rounded-full border p-0.5",
+        fullWidth ? "w-full" : "w-max max-w-full",
         size === "sm" ? "h-8" : "h-9",
         active === "primary" ? "border-border/80 bg-muted/55" : "border-border/80 bg-muted/45",
         className,
       )}
       role="tablist"
+      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
     >
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+          "pointer-events-none absolute inset-y-0.5 left-0.5 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none",
           active === "primary"
             ? "bg-primary shadow-sm ring-1 ring-primary/25"
             : "bg-background shadow-sm ring-1 ring-border",
@@ -74,8 +77,10 @@ export function SegmentedControl<T extends string>({
           <button
             aria-label={option.ariaLabel}
             aria-selected={isActive}
+            disabled={disabled}
+            tabIndex={isActive ? 0 : -1}
             className={cn(
-              "relative z-10 flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 font-medium transition-colors duration-200",
+              "relative z-10 flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 motion-reduce:transition-none",
               fullWidth ? "min-w-0" : "min-w-8",
               size === "sm" ? "text-xs" : "text-sm",
               isActive
@@ -86,6 +91,25 @@ export function SegmentedControl<T extends string>({
             )}
             key={option.id}
             onClick={() => onChange(option.id)}
+            onKeyDown={(event) => {
+              const index = options.indexOf(option);
+              const next =
+                event.key === "ArrowRight"
+                  ? (index + 1) % count
+                  : event.key === "ArrowLeft"
+                    ? (index + count - 1) % count
+                    : event.key === "Home"
+                      ? 0
+                      : event.key === "End"
+                        ? count - 1
+                        : null;
+              if (next === null || !options[next]) return;
+              event.preventDefault();
+              onChange(options[next].id);
+              event.currentTarget.parentElement
+                ?.querySelectorAll<HTMLButtonElement>("button")
+                [next]?.focus();
+            }}
             role="tab"
             type="button"
           >

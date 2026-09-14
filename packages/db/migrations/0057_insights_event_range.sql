@@ -1,0 +1,1 @@
+CREATE INDEX "analytics_events_tenant_source_occurred_idx" ON "analytics_events" USING btree ("tenant_id","source","occurred_at");

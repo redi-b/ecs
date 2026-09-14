@@ -5,6 +5,25 @@ import type { MerchantOrder } from "../../types/merchant-order.js";
 import { runCommerceRollup } from "./commerce-rollup-service.js";
 
 describe("commerce rollup service", () => {
+  it("does not certify coverage when pagination ends before the reported count", async () => {
+    let writes = 0;
+    const result = await runCommerceRollup({
+      from: new Date("2026-08-01T00:00:00Z"),
+      to: new Date("2026-09-01T00:00:00Z"),
+      tenantId: "tenant_1",
+      salesChannelId: "channel_1",
+      listOrders: async () => ({ ok: true, count: 2, orders: [], limit: 100, offset: 0 }),
+      writeRollup: async () => {
+        writes += 1;
+      },
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      error: "commerce_rollup_source_incomplete",
+      status: 503,
+    });
+    assert.equal(writes, 0);
+  });
   it("paginates a tenant sales channel and writes one deterministic replacement", async () => {
     const calls: Array<{ limit: number; offset: number; salesChannelId: string }> = [];
     const writes: unknown[] = [];

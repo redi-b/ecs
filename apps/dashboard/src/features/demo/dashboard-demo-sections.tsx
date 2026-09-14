@@ -4,14 +4,20 @@ import { ListSummary } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Button } from "@/components/ui/button";
-import { dashboardDemoFixture } from "@/features/demo/dashboard-demo-fixture";
 import { DemoActionButton } from "@/features/demo/demo-action-button";
 import type { InsightsReport } from "@/features/insights/insights-report-workspace";
-import { InsightsWorkspace } from "@/features/insights/insights-workspace";
 import type { OrderListFilterState } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
 import { ProductsTable } from "@/features/products/products-table";
 import { getTranslations } from "@/i18n/server";
+import { DemandReport } from "@/features/insights/demand-report";
+import { InsightsReportNav } from "@/features/insights/insights-report-nav";
+import { SalesProductContributions } from "@/features/insights/sales-product-contributions";
+import { SalesReport } from "@/features/insights/sales-report";
+import { StorefrontReport } from "@/features/insights/storefront-report";
+import {
+  createDemoInsightsReports,
+} from "./dashboard-demo-insights";
 
 export const demoProducts: MerchantProduct[] = [
   product("woven-market-tote", "Woven Market Tote", "published", 1_850, 24),
@@ -99,14 +105,26 @@ export async function DemoOrders() {
 }
 
 export async function DemoInsights({
-  report = "overview",
+  report = "sales",
+  searchParams,
 }: {
   report?: "overview" | InsightsReport;
+  searchParams?: Promise<Record<string, string | undefined>> | undefined;
 }) {
   const t = await getTranslations();
+  const reports = createDemoInsightsReports((await searchParams) ?? {});
   return (
     <PageShell title={t("insights.title")}>
-      <InsightsWorkspace demoMode report={report} summary={dashboardDemoFixture} />
+      <InsightsReportNav demoMode />
+      {report === "products" ? (
+        <DemandReport report={reports.demand} />
+      ) : report === "storefront" || report === "journey" || report === "traffic" ? (
+        <StorefrontReport report={reports.storefront} />
+      ) : (
+        <SalesReport report={reports.sales}>
+          <SalesProductContributions report={reports.products} failed={false} />
+        </SalesReport>
+      )}
     </PageShell>
   );
 }
