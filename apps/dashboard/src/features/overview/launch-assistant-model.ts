@@ -37,12 +37,19 @@ export function getLaunchChecklistItems(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
   );
   const hasCatalog = (summary.productCount ?? 0) > 0;
+  const catalogUnknown = summary.productCount === null || summary.productCountUnavailable === true;
   const hasStorefrontDraft = Boolean(
     summary.storefront.templateKey ?? summary.storefront.templateId,
   );
   const hasPublishedStorefront = summary.storefront.isPublished;
-  const hasReviewedStorefront = hasPublishedStorefront || (hasStorefrontDraft && summary.hasVisitedEditor);
-  const requiredStates = [hasShopProfile, hasReviewedStorefront, hasCatalog, hasPublishedStorefront];
+  const hasReviewedStorefront =
+    hasPublishedStorefront || (hasStorefrontDraft && summary.hasVisitedEditor);
+  const requiredStates = [
+    hasShopProfile,
+    hasReviewedStorefront,
+    hasCatalog,
+    hasPublishedStorefront,
+  ];
   const nextRequiredIndex = requiredStates.findIndex((state) => !state);
 
   const required: Omit<LaunchChecklistItem, "current">[] = [
@@ -81,7 +88,10 @@ export function getLaunchChecklistItems(
             )
           : t("overview.launch.catalogEmpty"),
       ready: hasCatalog,
-      href: hasCatalog ? dashboardRoutes.products : withCreate(dashboardRoutes.products, "product"),
+      href:
+        hasCatalog || catalogUnknown
+          ? dashboardRoutes.products
+          : withCreate(dashboardRoutes.products, "product"),
       required: true,
     },
     {
@@ -116,7 +126,10 @@ export function getLaunchChecklistItems(
   ];
 
   return [
-    ...required.map((item, index) => ({ ...item, current: index === nextRequiredIndex })),
+    ...required.map((item, index) => ({
+      ...item,
+      current: index === nextRequiredIndex && !(item.id === "catalog" && catalogUnknown),
+    })),
     ...optional.map((item) => ({ ...item, current: false })),
   ];
 }

@@ -90,4 +90,6 @@ test("keeps the setup path useful when the product count cannot be loaded", () =
 
   assert.equal(catalog?.ready, false);
   assert.equal(catalog?.description, "overview.launch.catalogUnavailable");
+  assert.equal(catalog?.current, false);
+  assert.equal(catalog?.href.includes("create="), false);
 });
