@@ -701,7 +701,7 @@ export function ProductOptionsBuilder({
                 >
                   {option.values.map((value, valueIndex) => (
                     <span
-                      className="inline-flex h-7 items-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
+                      className="inline-flex h-7 items-center rounded-full border border-border bg-secondary text-xs font-medium text-secondary-foreground"
                       key={value.id ?? `${value.label}-${valueIndex}`}
                     >
                       {isColorOptionTitle(option.title) ? (

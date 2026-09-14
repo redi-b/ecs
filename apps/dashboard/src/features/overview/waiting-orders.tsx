@@ -72,15 +72,15 @@ export function WaitingOrders({
                   <Link
                     href={href(dashboardRoutes.orderDetail(order.id))}
                     prefetch={false}
-                    className="group grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 px-3 py-1.5 text-sm transition-colors first:rounded-t-[calc(var(--radius)-1px)] last:rounded-b-[calc(var(--radius)-1px)] hover:bg-muted/45 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring"
+                    className="group grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-sm transition-colors first:rounded-t-[calc(var(--radius)-1px)] last:rounded-b-[calc(var(--radius)-1px)] hover:bg-muted/45 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring"
                   >
-                    <span className="relative isolate block h-10 w-14 shrink-0" aria-hidden>
+                    <span className="relative isolate block h-11 w-16 shrink-0" aria-hidden>
                       {(order.products.length ? order.products : [{ id: "empty", thumbnail: null }])
                         .slice(0, 3)
                         .map((product, index) => (
                           <span
                             key={product.id}
-                            className="absolute top-0 flex size-10 items-center justify-center overflow-hidden rounded-md bg-muted ring-2 ring-background"
+                            className={`absolute top-0.5 flex size-10 items-center justify-center overflow-hidden rounded-lg border border-foreground/10 bg-muted shadow-sm ring-2 ring-card transition-transform duration-200 ease-out motion-reduce:transition-none ${index === 0 ? "group-hover:-translate-x-0.5 group-focus-visible:-translate-x-0.5" : index === 1 ? "rotate-3 group-hover:translate-x-1 group-hover:rotate-6 group-focus-visible:translate-x-1 group-focus-visible:rotate-6" : "rotate-6 group-hover:translate-x-1.5 group-hover:rotate-12 group-focus-visible:translate-x-1.5 group-focus-visible:rotate-12"}`}
                             style={{ left: `${index * 0.5}rem`, zIndex: 3 - index }}
                           >
                             <ProductPreview key={product.thumbnail} src={product.thumbnail} />
@@ -102,36 +102,36 @@ export function WaitingOrders({
                       </span>
                       <span className="mt-0.5 flex min-w-0 items-center gap-x-2 text-xs text-muted-foreground">
                         {customer ? <span className="truncate">{customer}</span> : null}
-                        <span className="truncate" title={formatOrderReference(order)}>
-                          {formatOrderReference(order)}
-                        </span>
+                        <span className="sr-only">{formatOrderReference(order)}</span>
                         {order.createdAt ? (
                           <time className="shrink-0" dateTime={order.createdAt}>
                             {formatShortDate(order.createdAt, locale)}
                           </time>
                         ) : null}
                       </span>
-                      <span className="block truncate text-[11px] leading-4">
+                    </span>
+                    <span className="flex min-w-0 flex-col items-end gap-1 text-xs">
+                      <span className="font-medium tabular-nums">
+                        {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
+                      </span>
+                      <span className="flex flex-wrap justify-end gap-x-2 gap-y-0.5 text-[11px] leading-4">
                         {order.reasons.map((reason) => (
                           <span
                             key={reason}
                             className={
                               reason === "payment"
-                                ? "mr-2 text-amber-700 dark:text-amber-400"
-                                : "mr-2 text-muted-foreground"
+                                ? "text-amber-700 dark:text-amber-400"
+                                : "text-muted-foreground"
                             }
                           >
                             {t(
                               reason === "payment"
                                 ? "overview.attention.awaitingPayment"
-                                : "overview.attention.unfulfilledOrders",
+                                : "overview.attention.toPack",
                             )}
                           </span>
                         ))}
                       </span>
-                    </span>
-                    <span className="shrink-0 self-start pt-0.5 text-xs font-medium tabular-nums">
-                      {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
                     </span>
                   </Link>
                 </li>
@@ -140,9 +140,17 @@ export function WaitingOrders({
           </ul>
         </section>
       ) : (
-        <p className="py-5 text-sm text-muted-foreground">
-          {t(orders ? "overview.attention.emptyQueue" : "overview.attention.queueUnavailable")}
-        </p>
+        <div className="flex min-h-24 items-center gap-3 rounded-lg border border-dashed px-4 py-5">
+          <span
+            aria-hidden
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground"
+          >
+            <AppIcons.products className="size-5" />
+          </span>
+          <p className="text-sm text-muted-foreground">
+            {t(orders ? "overview.attention.emptyQueue" : "overview.attention.queueUnavailable")}
+          </p>
+        </div>
       )}
     </div>
   );

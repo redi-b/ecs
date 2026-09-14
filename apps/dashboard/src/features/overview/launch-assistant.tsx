@@ -130,9 +130,10 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   return (
     <div className="fixed right-4 bottom-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-2">
       <div
+        data-slot="launch-assistant"
         aria-hidden={!open}
         className={cn(
-          "w-[min(420px,calc(100vw-2rem))] origin-bottom-right overflow-hidden rounded-xl border bg-background shadow-lg transition-all duration-200 ease-out",
+          "w-[min(420px,calc(100vw-2rem))] origin-bottom-right overflow-hidden rounded-xl border bg-background dark:bg-popover shadow-lg transition-all duration-200 ease-out",
           open
             ? "max-h-[min(720px,calc(100dvh-6rem))] translate-y-0 scale-100 opacity-100"
             : "pointer-events-none max-h-0 translate-y-2 scale-95 opacity-0",

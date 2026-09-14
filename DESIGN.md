@@ -10,6 +10,8 @@ Calm blue operator console for Ethiopian merchants: dense, bilingual, precise. S
 
 Restrained. Tinted neutrals (blue hue) + primary accent for actions and selection. Semantic tokens: `--success`, `--warning`, `--info`, `--destructive`.
 
+Merchant dark mode uses matte-black surfaces with a restrained satin finish. The navigation rail is darkest, cards sit close to the canvas, and floating panels have a distinct raised tone. Shared material tokens control cool reflected edges, bounded top-of-panel sheen, and elevation shadows. Card reflections stop within 72px; floating reflections stop within 112px so large surfaces remain matte. Fields are recessed, filled buttons have a slight upper-edge highlight, and selected navigation carries a restrained ECS-blue reflection. Avoid broad navy fills, animated shine, noise textures, or page-wide glows. Preserve keyboard focus rings when composing material shadows. Match geometry, border placement, and interaction behavior across themes. Overview metrics form a quiet rail in both themes, header utilities have no enclosing capsule, and charts use fading fills in both themes. Light mode uses restrained cool whites and blue interaction accents.
+
 No glass, mesh gradients, purple AI glows, or side-stripe card accents.
 
 ## Radius

@@ -18,6 +18,23 @@
     "closeLaunch": "የሱቅ ማዋቀሪያውን ዝጋ"
   },
   "metrics": {
+    "detailUnavailable": "ዝርዝር መረጃ አይገኝም",
+    "noProducts": "ገና ምርቶች የሉም",
+    "noOrders": "የተመዘገቡ ትዕዛዞች የሉም",
+    "noCustomers": "ገና ደንበኞች የሉም",
+    "strongest": "ከፍተኛ ሽያጭ፦ {date}",
+    "noRevenue": "የተመዘገበ ገቢ የለም",
+    "activeDays": "{count, plural, one {በ# ቀን ትዕዛዝ ነበር} other {በ# ቀናት ትዕዛዝ ነበር}}",
+    "draftCount": "{count, plural, =0 {ረቂቅ ምርቶች የሉም} one {# ረቂቅ ምርት} other {# ረቂቅ ምርቶች}}",
+    "productStatus": {
+      "draft": "ረቂቅ",
+      "published": "የታተመ",
+      "proposed": "የቀረበ",
+      "rejected": "ውድቅ የተደረገ"
+    },
+    "returningCount": "{count} ተመላሽ · {first} የአንድ ጊዜ",
+    "returning": "2 ወይም ከዚያ በላይ ትዕዛዝ ያላቸው",
+    "oneOrder": "1 ትዕዛዝ ያላቸው ደንበኞች",
     "revenue": "ገቢ",
     "orders": "ትዕዛዞች",
     "products": "ምርቶች",
@@ -47,6 +64,7 @@
     "periodEndingDesc": "የተከፈለ ጊዜዎ በ{date} ያበቃል። ለማደስ ክፍያን ይክፈቱ።"
   },
   "attention": {
+    "toPack": "ለማሸግ",
     "orderItems": "የትዕዛዝ እቃዎች",
     "moreProducts": "+{count} ተጨማሪ",
     "emptyQueue": "እርስዎን የሚጠብቁ ትዕዛዞች የሉም።",
@@ -78,7 +96,7 @@
     "viewInsights": "ዝርዝር ሪፖርት"
   },
   "trading": {
-    "title": "ሽያጭ እንዴት እያደገ ነው",
+    "title": "የሽያጭ እንቅስቃሴ",
     "description": "ገቢ፣ ትዕዛዞች እና ደንበኞች በጊዜ።",
     "empty": "ትዕዛዝ ሲጀመር እዚህ ይታያል።",
     "emptyTitle": "ገና የሽያጭ እንቅስቃሴ የለም",
@@ -111,7 +129,7 @@
     "emptyTitle": "ገና አማካይ ዋጋ የለም"
   },
   "demand": {
-    "title": "የትኛው ቀን ይበዛል",
+    "title": "ትዕዛዞች በሳምንቱ ቀናት",
     "description": "ትዕዛዞች በሳምንቱ ቀናት እንዴት እንደሚከፈሉ።",
     "empty": "ጥቂት ቀናት ትዕዛዝ ካለ በኋላ የትኛው ቀን እንደሚበዛ ይታያል።",
     "emptyTitle": "ገና በቂ ቀናት የሉም"

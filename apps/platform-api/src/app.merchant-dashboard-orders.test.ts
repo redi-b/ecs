@@ -11,6 +11,7 @@ describe("platform app merchant dashboard and orders", () => {
   it("reads the current draft count after publishing instead of the reporting snapshot", async () => {
     let draftCount = 1;
     let catalogUnavailable = false;
+    let publishedUnavailable = false;
     const app = appWithResolution(
       { ok: true, context: resolvedTenantContext },
       {
@@ -41,14 +42,14 @@ describe("platform app merchant dashboard and orders", () => {
         }),
         listMerchantProducts: async (input) => {
           assert.equal(input.salesChannelId, "channel_1");
-          assert.equal(input.status, "draft");
-          if (catalogUnavailable) {
+          assert.ok(["draft", "proposed", "published", "rejected"].includes(input.status ?? ""));
+          if (catalogUnavailable || (publishedUnavailable && input.status === "published")) {
             return { ok: false, error: "commerce_backend_unavailable", status: 503 };
           }
           return {
             ok: true,
             products: [],
-            count: draftCount,
+            count: input.status === "draft" ? draftCount : input.status === "published" ? 5 : 0,
             limit: input.limit,
             offset: input.offset,
           };
@@ -60,11 +61,40 @@ describe("platform app merchant dashboard and orders", () => {
         headers: { Host: "abebe.lvh.me" },
       });
       assert.equal(response.status, 200);
-      return (await response.json()).operations.attention.draftProducts;
+      const { operations } = await response.json();
+      if (!catalogUnavailable) {
+        assert.deepEqual(operations.productStatuses, [
+          { status: "draft", count: draftCount },
+          { status: "proposed", count: 0 },
+          { status: "published", count: 5 },
+          { status: "rejected", count: 0 },
+        ]);
+        assert.equal(operations.totals.products, draftCount + 5);
+      } else {
+        assert.equal(operations.productStatuses, null);
+      }
+      return operations.attention.draftProducts;
     };
     assert.equal(await readCount(), 1);
     draftCount = 0;
     assert.equal(await readCount(), 0);
+    publishedUnavailable = true;
+    const partialResponse = await app.request("/platform/merchant/dashboard", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+    assert.equal(partialResponse.status, 200);
+    const partial = (await partialResponse.json()).operations;
+    assert.equal(
+      partial.productStatuses,
+      null,
+      "Do not chart partial status counts as a complete catalog",
+    );
+    assert.equal(
+      partial.attention.draftProducts,
+      0,
+      "An unavailable published count must not hide a verified draft count",
+    );
+    publishedUnavailable = false;
     catalogUnavailable = true;
     assert.equal(
       await readCount(),
@@ -248,6 +278,7 @@ describe("platform app merchant dashboard and orders", () => {
           unique: null,
           repeat: null,
         },
+        productStatuses: null,
         breakdowns: {
           orderStatus: [],
           paymentStatus: [],
