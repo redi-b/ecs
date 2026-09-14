@@ -113,6 +113,8 @@
     "noRolesFound": "No roles found",
     "sendInvite": "Send invitation",
     "inviteFailed": "Could not send the invitation",
+    "alreadyMember": "This person is already on your team. You can change their role in Members.",
+    "alreadyInvited": "This person already has an invitation. You can resend it from the invitations list.",
     "sending": "Sending invitation…",
     "updating": "Updating team…",
     "updateFailed": "Could not update team access",
