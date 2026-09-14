@@ -6,7 +6,7 @@
     "copyIds": "Copy IDs",
     "publish": "Publish",
     "moveToDraft": "Move to draft",
-    "deleteSelected": "Delete selected",
+    "deleteSelected": "Delete",
     "viewDetails": "View details",
     "copyEmail": "Copy customer email",
     "copyEmailSuccess": "Customer email copied to clipboard.",

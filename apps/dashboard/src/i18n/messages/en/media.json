@@ -82,7 +82,7 @@
   "selectAsset": "Select {name}",
   "selectAll": "Select all visible assets",
   "selectedSummary": "selected",
-  "deleteSelected": "Delete selected",
+  "deleteSelected": "Delete",
   "allTypes": "All file types",
   "fileSize": "File size",
   "allSizes": "All sizes",
