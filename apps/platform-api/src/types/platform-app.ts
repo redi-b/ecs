@@ -1,4 +1,8 @@
 import type { SuperadminTenant } from "@ecs/contracts";
+import type { createInsightsSalesService } from "../modules/analytics/insights-sales.js";
+import type { createInsightsProductsService } from "../modules/analytics/insights-products.js";
+import type { createInsightsDemandService } from "../modules/analytics/insights-demand.js";
+import type { createInsightsStorefrontService } from "../modules/analytics/insights-storefront.js";
 import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
 import type {
   PlatformAuthorizationResult,
@@ -393,6 +397,10 @@ export type PlatformAppOptions = {
   getDashboardMetrics?:
     | ((input: { days: number | null; tenantId: string }) => Promise<DashboardMetricsResult>)
     | undefined;
+  getInsightsSales?: ReturnType<typeof createInsightsSalesService> | undefined;
+  getInsightsProducts?: ReturnType<typeof createInsightsProductsService> | undefined;
+  getInsightsDemand?: ReturnType<typeof createInsightsDemandService> | undefined;
+  getInsightsStorefront?: ReturnType<typeof createInsightsStorefrontService> | undefined;
   requestInsightsRefresh?:
     | ((input: { tenantId: string }) => Promise<{
         jobId: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantDashboardSummary } from "@ecs/contracts";
+import type { InsightsSalesReport, MerchantDashboardSummary } from "@ecs/contracts";
 import { RefreshCwIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -15,14 +15,21 @@ import {
   restoreInsightsRefreshState,
 } from "./insights-refresh-state";
 
-export function InsightsHeaderActions({ summary }: { summary: MerchantDashboardSummary }) {
+export function InsightsHeaderActions(
+  props:
+    | { summary: MerchantDashboardSummary; report?: never }
+    | { report: InsightsSalesReport; summary?: never },
+) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const [requesting, setRequesting] = useState(false);
   const [state, setState] = useState<InsightsRefreshState>(EMPTY_INSIGHTS_REFRESH_STATE);
   const [now, setNow] = useState(0);
-  const storageKey = `ecs:insights-refresh:${summary.tenant.id}`;
-  const lastSuccessfulAt = summary.operations?.quality.lastSuccessfulAt ?? null;
+  const tenantId = props.report ? props.report.tenantId : props.summary.tenant.id;
+  const qualityStatus = props.report?.quality.status ?? props.summary?.operations?.quality.status;
+  const storageKey = `ecs:insights-refresh:${tenantId}`;
+  const lastSuccessfulAt =
+    props.report?.quality.updatedAt ?? props.summary?.operations?.quality.lastSuccessfulAt ?? null;
   const retryAtMs = state.retryAt ? new Date(state.retryAt).getTime() : 0;
   const coolingDown = retryAtMs > now;
   const awaitingReport = isAwaitingInsightsReport({ lastSuccessfulAt, nowMs: now, state });
@@ -85,7 +92,7 @@ export function InsightsHeaderActions({ summary }: { summary: MerchantDashboardS
   async function requestUpdate() {
     setRequesting(true);
     const response = await fetch(
-      `/admin/insights/actions/refresh?tenantId=${encodeURIComponent(summary.tenant.id)}`,
+      `/admin/insights/actions/refresh?tenantId=${encodeURIComponent(tenantId)}`,
       {
         headers: { accept: "application/json" },
         method: "POST",
@@ -116,7 +123,7 @@ export function InsightsHeaderActions({ summary }: { summary: MerchantDashboardS
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
       <div className="text-right">
-        <p className="text-xs font-medium">{qualityLabel(summary.operations?.quality.status, t)}</p>
+        <p className="text-xs font-medium">{qualityLabel(qualityStatus, t)}</p>
         <p className="text-xs text-muted-foreground">
           {lastSuccessfulAt
             ? t("insights.freshness.updated", { date: shortDate(lastSuccessfulAt, locale) })

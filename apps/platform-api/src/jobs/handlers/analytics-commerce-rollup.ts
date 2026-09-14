@@ -14,6 +14,11 @@ import {
   type WriteCommerceSnapshot,
 } from "../../modules/analytics/commerce-snapshot-service.js";
 import type { ListProductsForExport } from "../../modules/data-transfer/product-export.js";
+import {
+  reportingDay,
+  reportingDayStart,
+  shiftReportingDay,
+} from "../../modules/analytics/reporting-calendar.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -46,8 +51,7 @@ export function createAnalyticsCommerceRollupHandler(options: {
     );
 
     const to = now();
-    const from = new Date(to);
-    from.setUTCDate(from.getUTCDate() - 90);
+    const from = reportingDayStart(shiftReportingDay(reportingDay(to), -90));
     const results: Array<{
       error?: string;
       rowCount?: number;

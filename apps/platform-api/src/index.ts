@@ -39,6 +39,15 @@ import {
   createDrizzleAnalyticsInsightsStore,
 } from "./modules/analytics/analytics-service.js";
 import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
+import { createInsightsSalesService } from "./modules/analytics/insights-sales.js";
+import { createSalesSourceReader } from "./modules/analytics/insights-sales-repository.js";
+import { createInsightsProductsService } from "./modules/analytics/insights-products.js";
+import { createInsightsDemandService } from "./modules/analytics/insights-demand.js";
+import { createProductDemandReader } from "./modules/analytics/insights-demand-repository.js";
+import { createInsightsTrafficReader } from "./modules/analytics/insights-traffic.js";
+import { createInsightsStorefrontService } from "./modules/analytics/insights-storefront.js";
+import { createStorefrontReportReader } from "./modules/analytics/insights-storefront-repository.js";
+import { createProductContributionReader } from "./modules/analytics/insights-products-repository.js";
 import {
   createStorefrontAnalyticsBridge,
   createStorefrontInsightsService,
@@ -981,6 +990,10 @@ const app = createPlatformApp({
     }
   },
   getDashboardMetrics: dashboardMetricsService,
+  getInsightsSales: createInsightsSalesService(createSalesSourceReader(platformDb.db)),
+  getInsightsProducts: createInsightsProductsService(createProductContributionReader(platformDb.db)),
+  getInsightsDemand: createInsightsDemandService(createProductDemandReader(platformDb.db)),
+  getInsightsStorefront: createInsightsStorefrontService(createStorefrontReportReader(platformDb.db), undefined, createInsightsTrafficReader(umamiProvider, logger)),
   listPlatformStorefrontTemplates: platformTemplateAssetService.listTemplates,
   listEmailTemplates: emailTemplateService.list,
   getEmailTemplate: emailTemplateService.get,

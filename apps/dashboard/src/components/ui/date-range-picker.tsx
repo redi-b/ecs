@@ -28,6 +28,8 @@ export type DateRangePickerLabels = {
   clear: string;
   end: string;
   start: string;
+  notSet?: string;
+  invalidRange?: string;
 };
 
 const defaultLabels: DateRangePickerLabels = {
@@ -43,6 +45,10 @@ const defaultLabels: DateRangePickerLabels = {
 
 export function DateRangePicker({
   className,
+  disabled = false,
+  showBounds = true,
+  maxDays,
+  formatDate = (date: Date) => format(date, "PP"),
   id,
   labels = defaultLabels,
   max,
@@ -57,6 +63,10 @@ export function DateRangePicker({
   value,
 }: {
   className?: string;
+  disabled?: boolean;
+  showBounds?: boolean;
+  maxDays?: number;
+  formatDate?: (date: Date) => string;
   id?: string;
   labels?: DateRangePickerLabels;
   max?: string;
@@ -70,7 +80,7 @@ export function DateRangePicker({
     label: string;
     value: string;
     options: { label: string; value: string }[];
-    onChange: (value: string) => void;
+    onChange: (value: string) => void | false;
   };
   placeholder?: string;
   value: DateRangeValue;
@@ -90,6 +100,13 @@ export function DateRangePicker({
   const selectedStart = useMemo(() => fromDateValue(value.start), [value.start]);
   const selectedEnd = useMemo(() => fromDateValue(value.end), [value.end]);
   const [month, setMonth] = useState<Date>(selectedStart ?? maxDate ?? new Date());
+  const validDraft =
+    !!draftStart &&
+    !!draftEnd &&
+    draft.start <= draft.end &&
+    (!min || draft.start >= min) &&
+    (!max || draft.end <= max) &&
+    (!maxDays || (Date.parse(draft.end) - Date.parse(draft.start)) / 86_400_000 < maxDays);
 
   useEffect(() => {
     if (!open) return;
@@ -126,6 +143,7 @@ export function DateRangePicker({
       <PopoverTrigger asChild>
         <Button
           aria-expanded={open}
+          disabled={disabled}
           className={cn(
             "h-9 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
             "hover:border-foreground/20 hover:bg-background",
@@ -141,7 +159,7 @@ export function DateRangePicker({
             <AppIcons.calendar className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate">
               {selectedStart && selectedEnd
-                ? `${format(selectedStart, "PP")} – ${format(selectedEnd, "PP")}`
+                ? `${formatDate(selectedStart)} – ${formatDate(selectedEnd)}`
                 : placeholder}
             </span>
           </span>
@@ -160,8 +178,7 @@ export function DateRangePicker({
             <Select
               value={presets.value}
               onValueChange={(next) => {
-                presets.onChange(next);
-                setOpen(false);
+                if (presets.onChange(next) !== false) setOpen(false);
               }}
             >
               <SelectTrigger aria-label={presets.label} className="w-full">
@@ -185,21 +202,21 @@ export function DateRangePicker({
               active={activeEndpoint === "start"}
               label={labels.start}
               onClick={() => chooseEndpoint("start")}
-              value={draftStart ? format(draftStart, "PP") : "Not set"}
+              value={draftStart ? formatDate(draftStart) : (labels.notSet ?? "Not set")}
             />
             <EndpointButton
               active={activeEndpoint === "end"}
               label={labels.end}
               onClick={() => chooseEndpoint("end")}
-              value={draftEnd ? format(draftEnd, "PP") : "Not set"}
+              value={draftEnd ? formatDate(draftEnd) : (labels.notSet ?? "Not set")}
             />
           </div>
-          <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
+          <div className="mt-2 flex flex-col gap-1 px-1 text-xs text-muted-foreground">
             <span>{activeEndpoint === "start" ? labels.chooseStart : labels.chooseEnd}</span>
-            {minDate || maxDate ? (
+            {showBounds && (minDate || maxDate) ? (
               <span>
-                {labels.available}: {minDate ? format(minDate, "PP") : "Not set"} –{" "}
-                {maxDate ? format(maxDate, "PP") : "Not set"}
+                {labels.available}: {minDate ? formatDate(minDate) : (labels.notSet ?? "Not set")} –{" "}
+                {maxDate ? formatDate(maxDate) : (labels.notSet ?? "Not set")}
               </span>
             ) : null}
           </div>
@@ -214,6 +231,11 @@ export function DateRangePicker({
             selectedRange={draftStart ? { start: draftStart, end: draftEnd } : null}
           />
         </div>
+        {draftStart && draftEnd && !validDraft && labels.invalidRange ? (
+          <p className="px-3 pb-3 text-sm text-destructive" role="alert">
+            {labels.invalidRange}
+          </p>
+        ) : null}
         <div className="flex items-center justify-between gap-2 border-t bg-muted/15 p-3">
           <Button
             onClick={() => {
@@ -234,7 +256,7 @@ export function DateRangePicker({
               {labels.cancel}
             </Button>
             <Button
-              disabled={!draft.start || !draft.end}
+              disabled={!validDraft}
               onClick={() => {
                 onChange(draft);
                 setOpen(false);

@@ -32,6 +32,11 @@ export const analyticsEvents = pgTable(
     properties: jsonb("properties").notNull().default({}),
   },
   (table) => [
+    index("analytics_events_tenant_source_occurred_idx").on(
+      table.tenantId,
+      table.source,
+      table.occurredAt,
+    ),
     uniqueIndex("analytics_events_tenant_source_idempotency_key_idx").on(
       table.tenantId,
       table.source,
@@ -95,5 +100,35 @@ export const metricRollupCheckpoints = pgTable(
       table.rollupKey,
       table.rollupVersion,
     ),
+  ],
+);
+
+/** Order-time product identity survives renames/deletions; tenant and day bound every report. */
+export const productSalesDaily = pgTable(
+  "product_sales_daily",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    date: text("date").notNull(),
+    productId: text("product_id").notNull(),
+    variantId: text("variant_id").notNull().default(""),
+    productTitle: text("product_title"),
+    variantTitle: text("variant_title"),
+    thumbnail: text("thumbnail"),
+    units: numeric("units").notNull(),
+    paidUnits: numeric("paid_units").notNull(),
+    orders: integer("orders").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("product_sales_daily_bucket_uidx").on(
+      table.tenantId,
+      table.date,
+      table.productId,
+      table.variantId,
+    ),
+    index("product_sales_daily_tenant_date_idx").on(table.tenantId, table.date),
   ],
 );

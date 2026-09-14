@@ -33,6 +33,14 @@ if (productResult && isStoreError(productResult)) {
 
 const product: StoreProduct | null =
   productResult && !isStoreError(productResult) ? productResult.product : null;
+if (product) {
+  Astro.locals.analyticsProduct = {
+    id: product.id,
+    handle: product.handle,
+    title: product.title,
+    variantIds: product.variants.map((variant) => variant.id),
+  };
+}
 const seo = ctx.ok
   ? buildStorefrontSeo({
       description: product?.description,
