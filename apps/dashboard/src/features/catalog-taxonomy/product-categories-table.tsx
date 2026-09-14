@@ -21,7 +21,7 @@ import {
   ListViewToggle,
   listToolbarControlClassName,
 } from "@/components/app/list-toolbar";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,17 +40,16 @@ import {
   type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import { TaxonomyLoadNotice } from "./taxonomy-load-notice";
 
-async function copyToClipboard(
-  value: string,
-  label: string,
-  t: (key: any, values?: Record<string, string | number>) => string,
-) {
+type Translate = (key: MessageKey, values?: Record<string, string | number>) => string;
+
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
 
@@ -65,13 +64,76 @@ async function copyToClipboard(
   }
 }
 
+function getCategoryRowActions(
+  category: MerchantProductCategory,
+  canUpdate: boolean,
+  canDelete: boolean,
+  onDelete: (categoryId: string) => void,
+  onEdit: (category: MerchantProductCategory) => void,
+  t: Translate,
+): ResourceRowActions {
+  return {
+    actions: [
+      ...(canUpdate
+        ? [
+            {
+              icon: AppIcons.edit,
+              label: t("taxonomy.table.actions.edit", {
+                entity: t("taxonomy.entity.category.label"),
+              }),
+              onSelect: () => onEdit(category),
+              type: "button" as const,
+            },
+          ]
+        : []),
+      {
+        icon: AppIcons.copy,
+        label: t("taxonomy.table.actions.copyId", {
+          entity: t("taxonomy.entity.category.label"),
+        }),
+        onSelect: () =>
+          copyToClipboard(
+            category.id,
+            t("taxonomy.table.actions.copyId", {
+              entity: t("taxonomy.entity.category.label"),
+            }),
+            t,
+          ),
+        type: "button",
+      },
+      {
+        disabled: !category.handle,
+        icon: AppIcons.copy,
+        label: t("taxonomy.table.actions.copyHandle"),
+        onSelect: () => copyToClipboard(category.handle ?? "", t("taxonomy.table.handle"), t),
+        type: "button",
+      },
+      ...(canDelete
+        ? [
+            { id: "danger", type: "separator" as const },
+            {
+              icon: AppIcons.trash,
+              label: t("taxonomy.table.actions.delete", {
+                entity: t("taxonomy.entity.category.label"),
+              }),
+              onSelect: () => onDelete(category.id),
+              type: "button" as const,
+              variant: "destructive" as const,
+            },
+          ]
+        : []),
+    ],
+    label: `Open actions for ${getCategoryDisplayName(category)}`,
+  };
+}
+
 function getCategoryColumns(
   categoriesById: Map<string, MerchantProductCategory>,
   canUpdate: boolean,
   canDelete: boolean,
   onDelete: (categoryId: string) => void,
   onEdit: (category: MerchantProductCategory) => void,
-  t: (key: any, values?: Record<string, string | number>) => string,
+  t: Translate,
 ): ColumnDef<MerchantProductCategory>[] {
   return [
     {
@@ -172,58 +234,7 @@ function getCategoryColumns(
 
         return (
           <RowActionsMenu
-            actions={[
-              ...(canUpdate
-                ? [
-                    {
-                      icon: AppIcons.edit,
-                      label: t("taxonomy.table.actions.edit", {
-                        entity: t("taxonomy.entity.category.label"),
-                      }),
-                      onSelect: () => onEdit(category),
-                      type: "button" as const,
-                    },
-                  ]
-                : []),
-              {
-                icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyId", {
-                  entity: t("taxonomy.entity.category.label"),
-                }),
-                onSelect: () =>
-                  copyToClipboard(
-                    category.id,
-                    t("taxonomy.table.actions.copyId", {
-                      entity: t("taxonomy.entity.category.label"),
-                    }),
-                    t,
-                  ),
-                type: "button",
-              },
-              {
-                disabled: !category.handle,
-                icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyHandle"),
-                onSelect: () =>
-                  copyToClipboard(category.handle ?? "", t("taxonomy.table.handle"), t),
-                type: "button",
-              },
-              ...(canDelete
-                ? [
-                    { id: "danger", type: "separator" as const },
-                    {
-                      icon: AppIcons.trash,
-                      label: t("taxonomy.table.actions.delete", {
-                        entity: t("taxonomy.entity.category.label"),
-                      }),
-                      onSelect: () => onDelete(category.id),
-                      type: "button" as const,
-                      variant: "destructive" as const,
-                    },
-                  ]
-                : []),
-            ]}
-            label={`Open actions for ${getCategoryDisplayName(category)}`}
+            {...getCategoryRowActions(category, canUpdate, canDelete, onDelete, onEdit, t)}
           />
         );
       },
@@ -322,6 +333,18 @@ export function ProductCategoriesTable({
     () =>
       new Map([...taxonomy.categories, ...categories].map((category) => [category.id, category])),
     [categories, taxonomy.categories],
+  );
+  const categoryRowActions = useCallback(
+    (category: MerchantProductCategory) =>
+      getCategoryRowActions(
+        category,
+        canUpdate,
+        canDelete,
+        setDeleteCategoryId,
+        setEditingCategory,
+        t,
+      ),
+    [canDelete, canUpdate, t],
   );
 
   const columns = useMemo(
@@ -582,6 +605,7 @@ export function ProductCategoriesTable({
             getRowId={(category) => category.id}
             isFiltered={counts.hasActiveFilter}
             isLoading={pending}
+            rowActions={categoryRowActions}
             selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
           />
         )}

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -13,7 +13,7 @@ import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { PageShell } from "@/components/app/page-shell";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -33,8 +35,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { ProductColorPopover } from "@/features/products/product-form-sections";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
@@ -129,6 +129,39 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
       ]),
     [options, search],
   );
+  const optionRowActions = useCallback(
+    (option: SavedOption): ResourceRowActions | null =>
+      canUpdate || canDelete
+        ? {
+            actions: [
+              ...(canUpdate
+                ? [
+                    {
+                      icon: AppIcons.edit,
+                      label: t("common.edit"),
+                      onSelect: () => setEditing(cloneForEditing(option)),
+                      type: "button" as const,
+                    },
+                  ]
+                : []),
+              ...(canUpdate && canDelete ? [{ id: "delete", type: "separator" as const }] : []),
+              ...(canDelete
+                ? [
+                    {
+                      icon: AppIcons.trash,
+                      label: t("common.delete"),
+                      onSelect: () => setPendingDelete(option),
+                      type: "button" as const,
+                      variant: "destructive" as const,
+                    },
+                  ]
+                : []),
+            ],
+            label: t("products.savedOptions.actionsAria", { name: option.title }),
+          }
+        : null,
+    [canDelete, canUpdate, t],
+  );
   const columns = useMemo<ColumnDef<SavedOption>[]>(
     () => [
       {
@@ -186,42 +219,17 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
       {
         id: "actions",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex justify-end">
-            {canUpdate || canDelete ? (
-              <RowActionsMenu
-                actions={[
-                  ...(canUpdate
-                    ? [
-                        {
-                          icon: AppIcons.edit,
-                          label: t("common.edit"),
-                          onSelect: () => setEditing(cloneForEditing(row.original)),
-                          type: "button" as const,
-                        },
-                      ]
-                    : []),
-                  ...(canUpdate && canDelete ? [{ id: "delete", type: "separator" as const }] : []),
-                  ...(canDelete
-                    ? [
-                        {
-                          icon: AppIcons.trash,
-                          label: t("common.delete"),
-                          onSelect: () => setPendingDelete(row.original),
-                          type: "button" as const,
-                          variant: "destructive" as const,
-                        },
-                      ]
-                    : []),
-                ]}
-                label={t("products.savedOptions.actionsAria", { name: row.original.title })}
-              />
-            ) : null}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const actions = optionRowActions(row.original);
+          return (
+            <div className="flex justify-end">
+              {actions ? <RowActionsMenu {...actions} /> : null}
+            </div>
+          );
+        },
       },
     ],
-    [canDelete, canUpdate, t],
+    [canUpdate, optionRowActions, t],
   );
 
   return (
@@ -270,6 +278,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
             isFiltered={hasSearch}
             isLoading={query.isPending}
             pageSize={20}
+            rowActions={optionRowActions}
             toolbar={
               <ListToolbarSearch
                 clearLabel={t("common.clearSearch")}

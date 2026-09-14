@@ -46,6 +46,7 @@ type ProductsTableProps = {
 import {
   getDeletionErrorMessage,
   getProductColumns,
+  getProductRowActions,
   getProductStatusFilterOptions,
   getStatusLoadingMessage,
   getStatusSuccessMessage,
@@ -236,6 +237,24 @@ export function ProductsTable({
     t,
     tenantId,
   ]);
+
+  const productRowActions = useCallback(
+    (product: MerchantProduct) =>
+      getProductRowActions(
+        product,
+        tenantId,
+        canDelete ? (id) => setDeleteProductId(id) : undefined,
+        handleStatusChange,
+        t,
+        canUpdate && !tenantId
+          ? (item) => {
+              setSelectedProductsForInventory([item]);
+              setShowBulkInventoryDialog(true);
+            }
+          : undefined,
+      ),
+    [canDelete, canUpdate, handleStatusChange, t, tenantId],
+  );
 
   const pushServerFilters = useCallback(
     (
@@ -505,6 +524,7 @@ export function ProductsTable({
         getRowId={(product) => product.id}
         isFiltered={counts.hasActiveFilter}
         isLoading={pending}
+        rowActions={productRowActions}
         skeletonShowMedia
         selectedSummaryLabel={t("products.table.selectedSummary")}
         toolbar={toolbar}

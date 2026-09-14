@@ -2,6 +2,7 @@
 
 import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "@/components/app/link";
 
 export type RowAction =
   | {
@@ -38,6 +38,8 @@ type RowActionsMenuProps = {
   actions: RowAction[];
   label: string;
 };
+
+export type ResourceRowActions = RowActionsMenuProps;
 
 export function RowActionsMenu({ actions, label }: RowActionsMenuProps) {
   return (

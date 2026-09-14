@@ -5,24 +5,14 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
 } from "@ecs/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { DataTable } from "@/components/app/data-table";
-import {
-  type DataTableFilterDefinition,
-  DataTableFilters,
-} from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatProductDate,
@@ -32,12 +22,9 @@ import {
   ProductStatusBadge,
 } from "@/features/products/product-table-cells";
 import {
-  filterProductsForTable,
   getProductMediaCount,
   getProductPriceSortValue,
-  getProductTableCounts,
   normalizeProductStatus,
-  type ProductMediaFilter,
   type ProductStatusFilter,
 } from "@/features/products/product-table-state";
 import type { MessageKey } from "@/i18n/messages";
@@ -46,20 +33,6 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
-
-type ProductsTableProps = {
-  categories: MerchantProductCategory[];
-  collections: MerchantProductCollection[];
-  initialCategoryId?: string | undefined;
-  initialCollectionId?: string | undefined;
-  initialMedia?: ProductMediaFilter | undefined;
-  initialQuery?: string | undefined;
-  initialStatus?: ProductStatusFilter | undefined;
-  pageSize: number;
-  products: MerchantProduct[];
-  tenantId?: string | undefined;
-  totalCount: number;
-};
 
 export function getProductStatusFilterOptions(t: Translate): Array<{
   label: string;
@@ -85,6 +58,85 @@ export const productStatusFilterOptions: Array<{
 ];
 
 export type ProductStatusValue = "draft" | "published";
+
+export function getProductRowActions(
+  product: MerchantProduct,
+  tenantId: string | null | undefined,
+  onDelete: ((productId: string) => void) | undefined,
+  onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
+  t: Translate,
+  onSetInventory?: (product: MerchantProduct) => void,
+): ResourceRowActions {
+  const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
+  const normalizedStatus = normalizeProductStatus(product.status);
+  const nextStatus = normalizedStatus === "published" ? "draft" : "published";
+
+  return {
+    actions: [
+      { href, icon: AppIcons.eye, label: t("products.table.viewDetails"), type: "link" },
+      ...(onSetInventory
+        ? [
+            {
+              icon: AppIcons.products,
+              label: t("products.stock.bulkAction"),
+              type: "button" as const,
+              onSelect: () => onSetInventory(product),
+            },
+          ]
+        : []),
+      {
+        icon: nextStatus === "published" ? AppIcons.check : AppIcons.eyeOff,
+        label:
+          nextStatus === "published"
+            ? t("products.table.publishProduct")
+            : t("products.table.moveToDraft"),
+        onSelect: () => onStatusChange([product.id], nextStatus),
+        type: "button",
+      },
+      { id: "identity", type: "separator" },
+      {
+        icon: AppIcons.copy,
+        label: t("products.table.copyProductId"),
+        onSelect: () => void copyToClipboard(product.id, t("products.table.productId"), t),
+        type: "button",
+      },
+      {
+        disabled: !product.handle,
+        icon: AppIcons.copy,
+        label: t("products.table.copyHandle"),
+        onSelect: () => void copyToClipboard(product.handle ?? "", t("products.table.handle"), t),
+        type: "button",
+      },
+      {
+        disabled: !product.handle,
+        icon: AppIcons.externalLink,
+        label: t("products.table.copyPath"),
+        onSelect: () =>
+          void copyToClipboard(
+            product.handle ? `/products/${product.handle}` : "",
+            t("products.table.productPath"),
+            t,
+          ),
+        type: "button",
+      },
+      ...(onDelete
+        ? [
+            { id: "danger", type: "separator" as const },
+            {
+              icon: AppIcons.trash,
+              label: t("products.table.deleteProduct"),
+              onSelect: () => onDelete(product.id),
+              type: "button" as const,
+              variant: "destructive" as const,
+            },
+          ]
+        : []),
+    ],
+    label: t("products.table.actionsFor", {
+      name: product.title || t("products.table.unnamed"),
+    }),
+  };
+}
 
 async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
@@ -242,79 +294,16 @@ export function getProductColumns(
     {
       id: "actions",
       cell: ({ row }) => {
-        const product = row.original;
-        const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
-        const normalizedStatus = normalizeProductStatus(product.status);
-        const nextStatus = normalizedStatus === "published" ? "draft" : "published";
-
-        return (
-          <RowActionsMenu
-            actions={[
-              { href, icon: AppIcons.eye, label: t("products.table.viewDetails"), type: "link" },
-              ...(onSetInventory
-                ? [
-                    {
-                      icon: AppIcons.products,
-                      label: t("products.stock.bulkAction"),
-                      type: "button" as const,
-                      onSelect: () => onSetInventory(product),
-                    },
-                  ]
-                : []),
-              {
-                icon: nextStatus === "published" ? AppIcons.check : AppIcons.eyeOff,
-                label:
-                  nextStatus === "published"
-                    ? t("products.table.publishProduct")
-                    : t("products.table.moveToDraft"),
-                onSelect: () => onStatusChange([product.id], nextStatus),
-                type: "button",
-              },
-              { id: "identity", type: "separator" },
-              {
-                icon: AppIcons.copy,
-                label: t("products.table.copyProductId"),
-                onSelect: () => void copyToClipboard(product.id, t("products.table.productId"), t),
-                type: "button",
-              },
-              {
-                disabled: !product.handle,
-                icon: AppIcons.copy,
-                label: t("products.table.copyHandle"),
-                onSelect: () =>
-                  void copyToClipboard(product.handle ?? "", t("products.table.handle"), t),
-                type: "button",
-              },
-              {
-                disabled: !product.handle,
-                icon: AppIcons.externalLink,
-                label: t("products.table.copyPath"),
-                onSelect: () =>
-                  void copyToClipboard(
-                    product.handle ? `/products/${product.handle}` : "",
-                    t("products.table.productPath"),
-                    t,
-                  ),
-                type: "button",
-              },
-              ...(onDelete
-                ? [
-                    { id: "danger", type: "separator" as const },
-                    {
-                      icon: AppIcons.trash,
-                      label: t("products.table.deleteProduct"),
-                      onSelect: () => onDelete(product.id),
-                      type: "button" as const,
-                      variant: "destructive" as const,
-                    },
-                  ]
-                : []),
-            ]}
-            label={t("products.table.actionsFor", {
-              name: product.title || t("products.table.unnamed"),
-            })}
-          />
+        const rowActions = getProductRowActions(
+          row.original,
+          tenantId,
+          onDelete,
+          onStatusChange,
+          t,
+          onSetInventory,
         );
+
+        return <RowActionsMenu {...rowActions} />;
       },
       enableHiding: false,
       enableSorting: false,

@@ -503,6 +503,7 @@ export function MediaLibrary({
             getRowId={(asset) => asset.id}
             isFiltered={isFiltered}
             isLoading={pending}
+            rowActions={(asset) => ({ actions: assetActions(asset), label: t("media.rowActions") })}
             selectedSummaryLabel={t("media.selectedSummary")}
             skeletonShowMedia
           />
