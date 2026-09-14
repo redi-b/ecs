@@ -1,4 +1,5 @@
 "use client";
+import { teamErrorKey } from "./team-errors";
 
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -164,7 +165,13 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
       const work = teamMutation(path, method, body)
         .then(refresh)
         .then((nextTeam) => after?.(nextTeam));
-      toast.promise(work, messages);
+      toast.promise(work, {
+        ...messages,
+        error: (error: unknown) => {
+          const key = teamErrorKey(error);
+          return key ? t(key) : messages.error;
+        },
+      });
     });
   }
 
@@ -490,7 +497,15 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
         open={inviteOpen}
         roles={availableRoles}
         onOpenChange={setInviteOpen}
-        onSubmit={(body) =>
+        onSubmit={(body) => {
+          if (
+            team.team.members.some(
+              (member) => member.email.trim().toLowerCase() === body.email.trim().toLowerCase(),
+            )
+          ) {
+            toast.error(t("settings.team.alreadyMember"));
+            return;
+          }
           mutate(
             "invitations",
             "POST",
@@ -507,8 +522,8 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
               setInviteOpen(false);
               if (invitation) setShareInvitation(invitation);
             },
-          )
-        }
+          );
+        }}
       />
 
       <InvitationShareDialog
