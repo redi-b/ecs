@@ -12,7 +12,7 @@ import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -86,6 +86,47 @@ export function CustomersTable({
   );
 
   const hasActiveFilter = Boolean(initialQuery.trim());
+
+  const customerRowActions = useCallback(
+    (customer: MerchantCustomer): ResourceRowActions => ({
+      actions: [
+        {
+          href: dashboardRoutes.customerDetail(customer.id),
+          icon: AppIcons.eye,
+          label: t("table.actions.viewDetails"),
+          type: "link",
+        },
+        ...(canUpdate
+          ? [
+              {
+                icon: AppIcons.edit,
+                label: t("customers.detail.editCustomer"),
+                onSelect: () => setEditing(customer),
+                type: "button" as const,
+              },
+            ]
+          : []),
+        { id: "copy", type: "separator" },
+        {
+          disabled: !customer.phone,
+          icon: AppIcons.copy,
+          label: t("table.actions.copyPhone"),
+          onSelect: () =>
+            void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
+          type: "button",
+        },
+        {
+          disabled: !getDisplayCustomerEmail(customer.email),
+          icon: AppIcons.copy,
+          label: t("table.actions.copyEmail"),
+          onSelect: () => void copyToClipboard(customer.email, t("customers.detail.email"), t),
+          type: "button",
+        },
+      ],
+      label: t("table.actions.openActionsFor", { name: customerDisplayName(customer) }),
+    }),
+    [canUpdate, t],
+  );
 
   const columns = useMemo<ColumnDef<MerchantCustomer>[]>(
     () => [
@@ -193,54 +234,12 @@ export function CustomersTable({
       {
         id: "actions",
         header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
-        cell: ({ row }) => {
-          const customer = row.original;
-          return (
-            <RowActionsMenu
-              actions={[
-                {
-                  href: dashboardRoutes.customerDetail(customer.id),
-                  icon: AppIcons.eye,
-                  label: t("table.actions.viewDetails"),
-                  type: "link",
-                },
-                ...(canUpdate
-                  ? [
-                      {
-                        icon: AppIcons.edit,
-                        label: t("customers.detail.editCustomer"),
-                        onSelect: () => setEditing(customer),
-                        type: "button" as const,
-                      },
-                    ]
-                  : []),
-                { id: "copy", type: "separator" },
-                {
-                  disabled: !customer.phone,
-                  icon: AppIcons.copy,
-                  label: t("table.actions.copyPhone"),
-                  onSelect: () =>
-                    void copyToClipboard(customer.phone ?? "", t("customers.detail.phone"), t),
-                  type: "button",
-                },
-                {
-                  disabled: !getDisplayCustomerEmail(customer.email),
-                  icon: AppIcons.copy,
-                  label: t("table.actions.copyEmail"),
-                  onSelect: () =>
-                    void copyToClipboard(customer.email, t("customers.detail.email"), t),
-                  type: "button",
-                },
-              ]}
-              label={t("table.actions.openActionsFor", { name: customerDisplayName(customer) })}
-            />
-          );
-        },
+        cell: ({ row }) => <RowActionsMenu {...customerRowActions(row.original)} />,
         enableHiding: false,
         enableSorting: false,
       },
     ],
-    [canUpdate, t, locale],
+    [customerRowActions, t, locale],
   );
 
   return (
@@ -301,6 +300,7 @@ export function CustomersTable({
         getRowId={(row) => row.id}
         isFiltered={hasActiveFilter}
         isLoading={pending}
+        rowActions={customerRowActions}
         selectedSummaryLabel={t("customers.table.selectedSummary")}
         footer={footer}
         toolbar={

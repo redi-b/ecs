@@ -19,6 +19,8 @@ import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
 import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
 import { PaginationBar } from "@/components/app/pagination-bar";
+import { ResourceContextMenu } from "@/components/app/resource-context-menu";
+import type { ResourceRowActions } from "@/components/app/row-actions-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   Table,
@@ -52,6 +54,8 @@ type DataTableProps<TData> = {
   isLoading?: boolean;
   onGlobalFilterChange?: (value: string) => void;
   pageSize?: number;
+  /** Optional desktop shortcut. The visible row action button remains the primary affordance. */
+  rowActions?: (row: TData) => ResourceRowActions | null;
   selectedSummaryLabel?: string | ((selectedCount: number) => string);
   /** Thumbnail/avatar placeholder in loading skeleton (products, media). */
   skeletonShowMedia?: boolean;
@@ -80,6 +84,7 @@ export function DataTable<TData>({
   isLoading = false,
   onGlobalFilterChange,
   pageSize,
+  rowActions,
   selectedSummaryLabel,
   skeletonShowMedia = false,
   toolbar,
@@ -254,34 +259,46 @@ export function DataTable<TData>({
                 ))}
               </TableHeader>
               <TableBody>
-                {rows.map((row) => (
-                  <TableRow
-                    className="group/row border-border/50 transition-colors hover:bg-muted/35 data-[state=selected]:bg-primary/[0.06] data-[state=selected]:hover:bg-primary/10"
-                    data-state={row.getIsSelected() ? "selected" : undefined}
-                    key={row.id}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const isSticky = cell.column.id === "select" || cell.column.id === "actions";
-                      return (
-                        <TableCell
-                          className={cn(
-                            "px-4 py-3.5",
-                            isSticky
-                              ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
-                              : cn(
-                                  "bg-card group-hover/row:bg-muted/35",
-                                  row.getIsSelected() &&
-                                    "bg-primary/[0.06] group-hover/row:bg-primary/10",
-                                ),
-                          )}
-                          key={cell.id}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  const tableRow = (
+                    <TableRow
+                      className="group/row border-border/50 transition-colors hover:bg-muted/35 data-[state=selected]:bg-primary/[0.06] data-[state=selected]:hover:bg-primary/10"
+                      data-state={row.getIsSelected() ? "selected" : undefined}
+                      key={row.id}
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const isSticky =
+                          cell.column.id === "select" || cell.column.id === "actions";
+                        return (
+                          <TableCell
+                            className={cn(
+                              "px-4 py-3.5",
+                              isSticky
+                                ? getStickyColumnClass(cell.column.id, false, row.getIsSelected())
+                                : cn(
+                                    "bg-card group-hover/row:bg-muted/35",
+                                    row.getIsSelected() &&
+                                      "bg-primary/[0.06] group-hover/row:bg-primary/10",
+                                  ),
+                            )}
+                            key={cell.id}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                  const contextActions = rowActions?.(row.original);
+
+                  return contextActions ? (
+                    <ResourceContextMenu {...contextActions} key={row.id}>
+                      {tableRow}
+                    </ResourceContextMenu>
+                  ) : (
+                    tableRow
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

@@ -17,7 +17,7 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,10 +32,13 @@ import {
   getTaxonomyTableCounts,
   type TaxonomyVisibilityFilter,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
+import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+
+type Translate = (key: MessageKey, values?: Record<string, string | number>) => string;
 
 type ProductCollectionsTableProps = {
   collections: MerchantProductCollection[];
@@ -47,11 +50,7 @@ type ProductCollectionsTableProps = {
   tenantId?: string | undefined;
 };
 
-async function copyToClipboard(
-  value: string,
-  label: string,
-  t: (key: any, values?: Record<string, string | number>) => string,
-) {
+async function copyToClipboard(value: string, label: string, t: Translate) {
   try {
     const copied = await copyTextToClipboard(value);
 
@@ -66,12 +65,75 @@ async function copyToClipboard(
   }
 }
 
+function getCollectionRowActions(
+  collection: MerchantProductCollection,
+  canUpdate: boolean,
+  canDelete: boolean,
+  onDelete: (collectionId: string) => void,
+  onEdit: (collection: MerchantProductCollection) => void,
+  t: Translate,
+): ResourceRowActions {
+  return {
+    actions: [
+      ...(canUpdate
+        ? [
+            {
+              icon: AppIcons.edit,
+              label: t("taxonomy.table.actions.edit", {
+                entity: t("taxonomy.entity.collection.label"),
+              }),
+              onSelect: () => onEdit(collection),
+              type: "button" as const,
+            },
+          ]
+        : []),
+      {
+        icon: AppIcons.copy,
+        label: t("taxonomy.table.actions.copyId", {
+          entity: t("taxonomy.entity.collection.label"),
+        }),
+        onSelect: () =>
+          copyToClipboard(
+            collection.id,
+            t("taxonomy.table.actions.copyId", {
+              entity: t("taxonomy.entity.collection.label"),
+            }),
+            t,
+          ),
+        type: "button",
+      },
+      {
+        disabled: !collection.handle,
+        icon: AppIcons.copy,
+        label: t("taxonomy.table.actions.copyHandle"),
+        onSelect: () => copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
+        type: "button",
+      },
+      ...(canDelete
+        ? [
+            { id: "danger", type: "separator" as const },
+            {
+              icon: AppIcons.trash,
+              label: t("taxonomy.table.actions.delete", {
+                entity: t("taxonomy.entity.collection.label"),
+              }),
+              onSelect: () => onDelete(collection.id),
+              type: "button" as const,
+              variant: "destructive" as const,
+            },
+          ]
+        : []),
+    ],
+    label: `Open actions for ${getCollectionDisplayName(collection)}`,
+  };
+}
+
 function getCollectionColumns(
   canUpdate: boolean,
   canDelete: boolean,
   onDelete: (collectionId: string) => void,
   onEdit: (collection: MerchantProductCollection) => void,
-  t: (key: any, values?: Record<string, string | number>) => string,
+  t: Translate,
 ): ColumnDef<MerchantProductCollection>[] {
   return [
     {
@@ -147,58 +209,7 @@ function getCollectionColumns(
 
         return (
           <RowActionsMenu
-            actions={[
-              ...(canUpdate
-                ? [
-                    {
-                      icon: AppIcons.edit,
-                      label: t("taxonomy.table.actions.edit", {
-                        entity: t("taxonomy.entity.collection.label"),
-                      }),
-                      onSelect: () => onEdit(collection),
-                      type: "button" as const,
-                    },
-                  ]
-                : []),
-              {
-                icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyId", {
-                  entity: t("taxonomy.entity.collection.label"),
-                }),
-                onSelect: () =>
-                  copyToClipboard(
-                    collection.id,
-                    t("taxonomy.table.actions.copyId", {
-                      entity: t("taxonomy.entity.collection.label"),
-                    }),
-                    t,
-                  ),
-                type: "button",
-              },
-              {
-                disabled: !collection.handle,
-                icon: AppIcons.copy,
-                label: t("taxonomy.table.actions.copyHandle"),
-                onSelect: () =>
-                  copyToClipboard(collection.handle ?? "", t("taxonomy.table.handle"), t),
-                type: "button",
-              },
-              ...(canDelete
-                ? [
-                    { id: "danger", type: "separator" as const },
-                    {
-                      icon: AppIcons.trash,
-                      label: t("taxonomy.table.actions.delete", {
-                        entity: t("taxonomy.entity.collection.label"),
-                      }),
-                      onSelect: () => onDelete(collection.id),
-                      type: "button" as const,
-                      variant: "destructive" as const,
-                    },
-                  ]
-                : []),
-            ]}
-            label={`Open actions for ${getCollectionDisplayName(collection)}`}
+            {...getCollectionRowActions(collection, canUpdate, canDelete, onDelete, onEdit, t)}
           />
         );
       },
@@ -279,6 +290,18 @@ export function ProductCollectionsTable({
     [],
   );
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+  const collectionRowActions = useCallback(
+    (collection: MerchantProductCollection) =>
+      getCollectionRowActions(
+        collection,
+        canUpdate,
+        canDelete,
+        setDeleteCollectionId,
+        setEditingCollection,
+        t,
+      ),
+    [canDelete, canUpdate, t],
+  );
 
   const columns = useMemo(
     () =>
@@ -467,6 +490,7 @@ export function ProductCollectionsTable({
         getRowId={(collection) => collection.id}
         isFiltered={counts.hasActiveFilter}
         isLoading={pending}
+        rowActions={collectionRowActions}
         selectedSummaryLabel={t("taxonomy.table.selectedSummary")}
         toolbar={toolbar}
         footer={footer}

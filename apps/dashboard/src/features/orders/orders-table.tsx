@@ -12,7 +12,7 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -60,6 +60,43 @@ async function copyToClipboard(value: string, label: string, t: Translate) {
   } catch {
     toast.error(t("table.actions.copyFailed"));
   }
+}
+
+function getOrderRowActions(
+  order: MerchantOrder,
+  t: Translate,
+  tenantId?: string,
+): ResourceRowActions {
+  const phone = getOrderCustomerPhone(order);
+  const ref = formatOrderReference(order);
+
+  return {
+    label: t("orders.table.actionsFor", { name: ref }),
+    actions: [
+      {
+        type: "link",
+        label: t("table.actions.viewDetails"),
+        href: getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId),
+        icon: AppIcons.eye,
+      },
+      {
+        type: "button",
+        label: t("table.actions.copyId", { entity: t("taxonomy.entity.order.label") }),
+        icon: AppIcons.copy,
+        onSelect: () => void copyToClipboard(ref, t("orders.table.orderCode"), t),
+      },
+      ...(phone
+        ? [
+            {
+              type: "button" as const,
+              label: t("table.actions.copyPhone"),
+              icon: AppIcons.copy,
+              onSelect: () => void copyToClipboard(phone, t("orders.table.phone"), t),
+            },
+          ]
+        : []),
+    ],
+  };
 }
 
 function getOrderColumns(
@@ -153,42 +190,7 @@ function getOrderColumns(
     {
       id: "actions",
       header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
-      cell: ({ row }) => {
-        const order = row.original;
-        const phone = getOrderCustomerPhone(order);
-        const detailHref = getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId);
-        const ref = formatOrderReference(order);
-
-        return (
-          <RowActionsMenu
-            label={t("orders.table.actionsFor", { name: ref })}
-            actions={[
-              {
-                type: "link",
-                label: t("table.actions.viewDetails"),
-                href: detailHref,
-                icon: AppIcons.eye,
-              },
-              {
-                type: "button",
-                label: t("table.actions.copyId", { entity: t("taxonomy.entity.order.label") }),
-                icon: AppIcons.copy,
-                onSelect: () => void copyToClipboard(ref, t("orders.table.orderCode"), t),
-              },
-              ...(phone
-                ? [
-                    {
-                      type: "button" as const,
-                      label: t("table.actions.copyPhone"),
-                      icon: AppIcons.copy,
-                      onSelect: () => void copyToClipboard(phone, t("orders.table.phone"), t),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        );
-      },
+      cell: ({ row }) => <RowActionsMenu {...getOrderRowActions(row.original, t, tenantId)} />,
       enableSorting: false,
     },
   ];
@@ -215,6 +217,10 @@ export function OrdersTable({
     const resolved = getOrderColumns(t, tenantId, readOnly);
     return readOnly ? resolved.filter((column) => column.id !== "actions") : resolved;
   }, [readOnly, t, tenantId]);
+  const orderRowActions = useCallback(
+    (order: MerchantOrder) => getOrderRowActions(order, t, tenantId),
+    [t, tenantId],
+  );
 
   const pushFilters = useCallback(
     (next: Partial<OrderListFilterState>) => {
@@ -422,6 +428,7 @@ export function OrdersTable({
       getRowId={(row) => row.id}
       isFiltered={hasActiveFilters}
       isLoading={pending}
+      {...(!readOnly ? { rowActions: orderRowActions } : {})}
       selectedSummaryLabel={t("orders.table.selectedSummary")}
       toolbar={toolbar}
     />

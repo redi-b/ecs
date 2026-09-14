@@ -15,7 +15,7 @@ import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import { RowActionsMenu } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -161,6 +161,48 @@ export function PromotionsManager({
     initialSchedule !== "all";
   const hasClientPageFilter = false;
   const isFiltered = hasServerFilter || offer !== "all" || apply !== "all";
+
+  const promotionRowActions = useCallback(
+    (item: MerchantPromotion): ResourceRowActions => ({
+      actions: [
+        ...(canManage
+          ? [
+              {
+                icon: AppIcons.edit,
+                label: t("promotions.action.edit"),
+                onSelect: () => setEditing(item),
+                type: "button" as const,
+              },
+            ]
+          : []),
+        ...(!item.isAutomatic
+          ? [
+              {
+                icon: AppIcons.copy,
+                label: t("promotions.action.copy"),
+                onSelect: () =>
+                  void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
+                type: "button" as const,
+              },
+            ]
+          : []),
+        ...(canManage
+          ? [
+              { id: "danger", type: "separator" as const },
+              {
+                icon: AppIcons.trash,
+                label: t("table.actions.deletePromotion"),
+                onSelect: () => setDeleteTarget(item),
+                type: "button" as const,
+                variant: "destructive" as const,
+              },
+            ]
+          : []),
+      ],
+      label: t("table.actions.openActionsFor", { name: item.code }),
+    }),
+    [canManage, t],
+  );
 
   const filters: DataTableFilterDefinition[] = [
     {
@@ -383,54 +425,12 @@ export function PromotionsManager({
       {
         id: "actions",
         header: () => <span className="sr-only">{t("table.headers.actions")}</span>,
-        cell: ({ row }) => {
-          const item = row.original;
-          return (
-            <RowActionsMenu
-              actions={[
-                ...(canManage
-                  ? [
-                      {
-                        icon: AppIcons.edit,
-                        label: t("promotions.action.edit"),
-                        onSelect: () => setEditing(item),
-                        type: "button" as const,
-                      },
-                    ]
-                  : []),
-                ...(!item.isAutomatic
-                  ? [
-                      {
-                        icon: AppIcons.copy,
-                        label: t("promotions.action.copy"),
-                        onSelect: () =>
-                          void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
-                        type: "button" as const,
-                      },
-                    ]
-                  : []),
-                ...(canManage
-                  ? [
-                      { id: "danger", type: "separator" as const },
-                      {
-                        icon: AppIcons.trash,
-                        label: t("table.actions.deletePromotion"),
-                        onSelect: () => setDeleteTarget(item),
-                        type: "button" as const,
-                        variant: "destructive" as const,
-                      },
-                    ]
-                  : []),
-              ]}
-              label={t("table.actions.openActionsFor", { name: item.code })}
-            />
-          );
-        },
+        cell: ({ row }) => <RowActionsMenu {...promotionRowActions(row.original)} />,
         enableHiding: false,
         enableSorting: false,
       },
     ],
-    [canManage, t],
+    [promotionRowActions, t],
   );
 
   const deleteTargets = deleteTarget ? [deleteTarget] : bulkDeleteTargets;
@@ -483,6 +483,7 @@ export function PromotionsManager({
         getRowId={(item) => item.id}
         isFiltered={isFiltered}
         isLoading={pending}
+        rowActions={promotionRowActions}
         selectedSummaryLabel={t("promotions.table.selectedSummary")}
         footer={footer}
         toolbar={
