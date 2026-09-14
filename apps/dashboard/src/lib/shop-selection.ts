@@ -18,6 +18,11 @@ export type ShopDestination =
   | { kind: "picker"; href: "/admin/shops" }
   | { kind: "shop"; href: string; tenantId: string };
 
+/** Onboarding is a valid terminal page for accounts with unfinished shops. */
+export function getOnboardingExit(destination: ShopDestination): string | null {
+  return destination.kind === "onboarding" ? null : destination.href;
+}
+
 export function getShopDashboardUrl(hostname: string, protocol: string) {
   const normalizedProtocol = protocol.replace(":", "") === "https" ? "https" : "http";
   return `${normalizedProtocol}://${hostname}/admin`;

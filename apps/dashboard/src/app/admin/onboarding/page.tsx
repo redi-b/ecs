@@ -10,7 +10,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
-import { resolveShopDestination } from "@/lib/shop-selection";
+import { getOnboardingExit, resolveShopDestination } from "@/lib/shop-selection";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type OnboardingPageProps = {
@@ -67,13 +67,15 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   }
 
   if (onboardingResult.ok && onboardingResult.state.tenants.length > 0) {
-    redirect(
-      resolveShopDestination({
-        lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,
-        protocol: requestHeaders.get("x-forwarded-proto") ?? "http",
-        state: onboardingResult.state,
-      }).href,
-    );
+    const destination = resolveShopDestination({
+      lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,
+      protocol: requestHeaders.get("x-forwarded-proto") ?? "http",
+      state: onboardingResult.state,
+    });
+    // Provisioning/inactive tenants are not destinations. Stay here instead of
+    // redirecting this page back to itself while setup is incomplete.
+    const exit = getOnboardingExit(destination);
+    if (exit) redirect(exit);
   }
 
   const templates = templatesResult.ok ? templatesResult.templates : [];
