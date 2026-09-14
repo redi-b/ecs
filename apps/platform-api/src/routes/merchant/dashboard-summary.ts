@@ -174,7 +174,8 @@ export function createMerchantDashboardSummary(
     const orderLimit = useMetricOperations ? 8 : 45;
     const needProductSample = metricData?.products == null;
 
-    const [orders, products, waiting, drafts] = await Promise.all([
+    const productStates = ["draft", "proposed", "published", "rejected"] as const;
+    const [orders, products, waiting, statusResults] = await Promise.all([
       input.commerce && options.listMerchantOrders
         ? options.listMerchantOrders({
             limit: orderLimit,
@@ -197,15 +198,26 @@ export function createMerchantDashboardSummary(
             salesChannelId: input.commerce.medusaSalesChannelId,
           })
         : Promise.resolve(null),
-      input.commerce && options.listMerchantProducts
-        ? options.listMerchantProducts({
-            limit: 1,
-            offset: 0,
-            status: "draft",
-            salesChannelId: input.commerce.medusaSalesChannelId,
-          })
-        : Promise.resolve(null),
+      Promise.all(
+        productStates.map((status) =>
+          input.commerce && options.listMerchantProducts
+            ? options.listMerchantProducts({
+                limit: 1,
+                offset: 0,
+                status,
+                salesChannelId: input.commerce.medusaSalesChannelId,
+              })
+            : Promise.resolve(null),
+        ),
+      ),
     ]);
+    const drafts = statusResults[0];
+    const productStatuses = statusResults.every((result) => result?.ok)
+      ? productStates.map((status, index) => {
+          const result = statusResults[index];
+          return { status, count: result?.ok ? result.count : 0 };
+        })
+      : null;
 
     if (!input.commerce) {
       unavailable.push("commerce_context");
@@ -243,7 +255,10 @@ export function createMerchantDashboardSummary(
           : orders?.ok
             ? orders.count
             : null,
-        products: metricData?.products ?? (products?.ok ? products.count : null),
+        products:
+          productStatuses?.reduce((sum, row) => sum + row.count, 0) ??
+          metricData?.products ??
+          (products?.ok ? products.count : null),
         customers: null,
         currencyCode: useMetricOperations ? (metricData?.currencyCode ?? null) : currencyCode,
       },
@@ -259,6 +274,7 @@ export function createMerchantDashboardSummary(
         unique: useMetricOperations ? (metricData?.customers.unique ?? null) : null,
         repeat: useMetricOperations ? (metricData?.customers.repeat ?? null) : null,
       },
+      productStatuses,
       breakdowns: {
         orderStatus: useMetricOperations
           ? (metricData?.breakdowns.orderStatus ?? [])

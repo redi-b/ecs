@@ -323,15 +323,15 @@ export function CommandCenter() {
           type="button"
           variant="ghost"
           aria-label={t("commandCenter.openAria")}
+          data-command-trigger=""
           size="icon"
           className={cn(
             "size-9 shrink-0 text-muted-foreground",
-            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:border sm:border-border/80 sm:bg-background sm:px-3 sm:shadow-sm",
-            "sm:hover:bg-accent sm:hover:text-accent-foreground",
+            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:border sm:border-border/80 sm:bg-background sm:px-3",
           )}
         >
           <AppIcons.search className="size-4 opacity-80" />
-          <span className="hidden text-sm text-muted-foreground sm:inline">
+          <span className="hidden text-sm sm:inline">
             {t("commandCenter.triggerLabel")}
           </span>
           <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">

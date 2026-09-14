@@ -1462,6 +1462,15 @@ export const merchantDashboardSummarySchema = z.object({
         unique: z.number().int().nonnegative().nullable(),
         repeat: z.number().int().nonnegative().nullable(),
       }),
+      productStatuses: z
+        .array(
+          z.object({
+            status: z.enum(["draft", "proposed", "published", "rejected"]),
+            count: z.number().int().nonnegative(),
+          }),
+        )
+        .nullable()
+        .optional(),
       breakdowns: z.object({
         orderStatus: z.array(
           z.object({

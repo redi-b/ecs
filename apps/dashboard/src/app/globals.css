@@ -7,8 +7,10 @@
 :root {
   color-scheme: light;
   --background: oklch(0.987 0.008 248);
+  --chart-area-start-opacity: 0.18;
+  --chart-area-end-opacity: 0.015;
   --foreground: oklch(0.214 0.026 255);
-  --card: oklch(0.998 0.004 248);
+  --card: oklch(0.995 0.002 248);
   --card-foreground: oklch(0.214 0.026 255);
   --popover: oklch(0.998 0.004 248);
   --popover-foreground: oklch(0.214 0.026 255);
@@ -18,11 +20,11 @@
   --secondary-foreground: oklch(0.286 0.035 255);
   --muted: oklch(0.948 0.015 248);
   --muted-foreground: oklch(0.49 0.038 255);
-  --accent: oklch(0.922 0.046 251);
+  --accent: oklch(0.94 0.025 251);
   --accent-foreground: oklch(0.34 0.115 257);
   --destructive: oklch(0.592 0.218 24);
   --destructive-foreground: oklch(0.985 0.006 248);
-  --border: oklch(0.884 0.022 248);
+  --border: oklch(0.895 0.009 248);
   --input: oklch(0.904 0.022 248);
   --ring: oklch(0.62 0.18 257);
   --chart-1: oklch(0.62 0.18 257);
@@ -34,7 +36,7 @@
   --sidebar-foreground: oklch(0.246 0.031 255);
   --sidebar-primary: oklch(0.56 0.196 257);
   --sidebar-primary-foreground: oklch(0.985 0.006 248);
-  --sidebar-accent: oklch(0.929 0.031 251);
+  --sidebar-accent: oklch(0.94 0.025 251);
   --sidebar-accent-foreground: oklch(0.34 0.115 257);
   --sidebar-border: oklch(0.884 0.022 248);
   --sidebar-ring: oklch(0.62 0.18 257);
@@ -123,37 +125,40 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.184 0.027 255);
-  --foreground: oklch(0.942 0.011 248);
-  --card: oklch(0.218 0.031 255);
-  --card-foreground: oklch(0.942 0.011 248);
-  --popover: oklch(0.218 0.031 255);
-  --popover-foreground: oklch(0.942 0.011 248);
+  --chart-area-start-opacity: 0.2;
+  --chart-area-end-opacity: 0.015;
+  /* Matte black foundation. Blue belongs to reflected edges and interactions. */
+  --background: oklch(0.185 0.003 255);
+  --foreground: oklch(0.955 0.003 270);
+  --card: oklch(0.215 0.004 255);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.235 0.006 255);
+  --popover-foreground: var(--foreground);
   --primary: oklch(0.684 0.155 250);
-  --primary-foreground: oklch(0.174 0.025 255);
-  --secondary: oklch(0.274 0.034 255);
-  --secondary-foreground: oklch(0.926 0.014 248);
-  --muted: oklch(0.274 0.034 255);
-  --muted-foreground: oklch(0.713 0.034 248);
-  --accent: oklch(0.315 0.067 253);
-  --accent-foreground: oklch(0.884 0.06 246);
+  --primary-foreground: oklch(0.17 0.005 255);
+  --secondary: oklch(0.28 0.012 255);
+  --secondary-foreground: oklch(0.93 0.003 270);
+  --muted: oklch(0.26 0.006 255);
+  --muted-foreground: oklch(0.77 0.005 270);
+  --accent: oklch(0.30 0.035 250);
+  --accent-foreground: oklch(0.91 0.028 250);
   --destructive: oklch(0.58 0.19 25);
   --destructive-foreground: oklch(0.99 0.01 25);
-  --border: oklch(0.34 0.036 255);
-  --input: oklch(0.34 0.036 255);
+  --border: oklch(0.32 0.006 270);
+  --input: var(--border);
   --ring: oklch(0.684 0.155 250);
   --chart-1: oklch(0.684 0.155 250);
   --chart-2: oklch(0.73 0.12 188);
   --chart-3: oklch(0.76 0.14 72);
   --chart-4: oklch(0.72 0.15 302);
   --chart-5: oklch(0.72 0.16 24);
-  --sidebar: oklch(0.157 0.024 255);
-  --sidebar-foreground: oklch(0.91 0.014 248);
+  --sidebar: oklch(0.16 0.003 255);
+  --sidebar-foreground: oklch(0.87 0.005 270);
   --sidebar-primary: oklch(0.684 0.155 250);
-  --sidebar-primary-foreground: oklch(0.174 0.025 255);
-  --sidebar-accent: oklch(0.278 0.04 255);
-  --sidebar-accent-foreground: oklch(0.884 0.06 246);
-  --sidebar-border: oklch(0.315 0.034 255);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.30 0.035 250);
+  --sidebar-accent-foreground: oklch(0.91 0.035 250);
+  --sidebar-border: oklch(0.285 0.005 270);
   --sidebar-ring: oklch(0.684 0.155 250);
   --success: oklch(0.72 0.14 155);
   --success-foreground: oklch(0.18 0.03 155);
@@ -161,11 +166,133 @@
   --warning-foreground: oklch(0.22 0.04 80);
   --info: oklch(0.72 0.11 240);
   --info-foreground: oklch(0.18 0.03 240);
-  --table-sticky-header: oklch(0.235 0.03 255);
+  --table-sticky-header: oklch(0.255 0.005 270);
   --table-sticky-cell: var(--card);
-  --table-sticky-cell-hover: oklch(0.26 0.032 255);
-  --table-sticky-cell-selected: oklch(0.255 0.04 253);
-  --table-sticky-cell-selected-hover: oklch(0.28 0.05 253);
+  --table-sticky-cell-hover: oklch(0.275 0.006 270);
+  --table-sticky-cell-selected: oklch(0.325 0.028 255);
+  --table-sticky-cell-selected-hover: oklch(0.355 0.032 255);
+  --material-reflection: oklch(0.88 0.025 250);
+  --material-edge: color-mix(in oklch, var(--material-reflection) 5%, transparent);
+  --material-sheen: color-mix(in oklch, var(--material-reflection) 1%, transparent);
+  --material-raised-sheen: color-mix(in oklch, var(--material-reflection) 2%, transparent);
+  --material-panel-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+  --material-floating-shadow: inset 0 1px 0 var(--material-edge),
+    0 0 0 1px color-mix(in oklch, var(--border) 80%, transparent),
+    0 8px 16px rgb(0 0 0 / 18%), 0 24px 64px rgb(0 0 0 / 32%);
+}
+
+/* Quiet framing keeps the data brighter than its enclosure. */
+[data-slot="card"] {
+  border-radius: 0.8rem;
+  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+  --tw-ring-shadow: 0 0 transparent;
+}
+
+[data-slot="card-header"] {
+  border-color: color-mix(in oklch, var(--border) 55%, transparent);
+}
+
+/* A bounded reflection at the top leaves large working surfaces matte. */
+.dark [data-slot="card"] {
+  background-image: linear-gradient(to bottom, var(--material-sheen), transparent);
+  background-size: 100% 72px;
+  background-repeat: no-repeat;
+  border-color: color-mix(in oklch, var(--border) 55%, transparent);
+  --tw-shadow: var(--material-panel-shadow);
+}
+
+.dark :is([data-slot="app-header"], [data-slot="sidebar-inner"]) {
+  background-image: linear-gradient(115deg, var(--material-sheen), transparent 65%);
+  box-shadow: inset 0 1px 0 var(--material-edge);
+}
+
+.dark :is(
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="select-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="context-menu-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="launch-assistant"]
+) {
+  background-color: var(--popover);
+  background-image: linear-gradient(to bottom, var(--material-raised-sheen), transparent);
+  background-size: 100% 112px;
+  background-repeat: no-repeat;
+  box-shadow: var(--material-floating-shadow);
+}
+
+/* Single quiet outline; surface tone provides depth without a doubled bevel. */
+.dark :is([data-slot="input"], [data-slot="textarea"], [data-slot="input-group"], [data-slot="select-trigger"]) {
+  background-color: color-mix(in oklch, var(--background) 85%, var(--card));
+  --tw-shadow: 0 0 transparent;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 transparent), var(--tw-ring-shadow, 0 0 transparent), var(--tw-shadow);
+}
+
+.dark [data-slot="button"]:is([data-variant="default"], [data-variant="secondary"], [data-variant="outline"]):not(:disabled) {
+  background-image: linear-gradient(to bottom, var(--material-raised-sheen), transparent 75%);
+  --tw-shadow: inset 0 1px 0 var(--material-edge), inset 0 -1px 0 rgb(0 0 0 / 15%),
+    0 1px 2px rgb(0 0 0 / 18%);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 transparent), var(--tw-ring-shadow, 0 0 transparent), var(--tw-shadow);
+}
+
+.dark [data-slot="button"][data-variant="outline"] {
+  background-color: var(--card);
+}
+
+.dark [data-slot="button"][data-variant="outline"]:not(:disabled):hover {
+  background-color: var(--secondary);
+}
+
+.dark [data-slot="button"]:is([data-variant="default"], [data-variant="secondary"], [data-variant="outline"]):not(:disabled):active {
+  --tw-shadow: inset 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+.dark :is([data-slot="sidebar-menu-button"], [data-slot="sidebar-menu-sub-button"])[data-active="true"] {
+  background-image: linear-gradient(110deg, color-mix(in oklch, var(--primary) 9%, transparent), transparent);
+  --tw-shadow: inset 0 1px 0 color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+/* One metric rail, rather than another row of equally prominent cards. */
+[data-slot="select-trigger"]:not(:disabled):hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Explicit shared state avoids the ghost button's dark-only hover override. */
+[data-slot="button"][data-command-trigger]:not(:disabled):is(:hover, [aria-expanded="true"]) {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+[data-slot="overview-metrics"] {
+  gap: 0;
+  padding-block: 0.25rem;
+  border-block: 1px solid var(--border);
+}
+
+[data-slot="overview-metrics"] > a {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 1rem;
+}
+
+[data-slot="overview-metrics"] > a:hover {
+  background: var(--card);
+}
+
+[data-slot="overview-metrics"] > a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+/* Recharts may supply a fill directly on tspans; inherit our text token. */
+.dark [data-slot="chart"] .recharts-cartesian-axis-tick text,
+.dark [data-slot="chart"] .recharts-cartesian-axis-tick tspan {
+  fill: var(--muted-foreground);
 }
 
 @keyframes dashboard-enter {

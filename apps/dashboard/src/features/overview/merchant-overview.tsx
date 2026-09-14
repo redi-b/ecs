@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import {
   Area,
   Bar,
@@ -48,7 +48,6 @@ import {
   formatReadableDate,
   formatShortDate,
   getDemandRhythmRows,
-  MetricCard,
   StatusDonutChart,
 } from "@/features/overview/overview-helpers";
 import {
@@ -58,6 +57,7 @@ import {
   type OverviewRangePreset,
 } from "@/features/overview/overview-range";
 import { WaitingOrders } from "@/features/overview/waiting-orders";
+import { OverviewKpiStrip } from "@/features/overview/overview-kpi-strip";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -184,6 +184,7 @@ function getBillingNotice(
 export function MerchantOverview({ demoMode = false, summary }: MerchantOverviewProps) {
   const { t, locale } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
+  const revenueFillId = `revenue-fill-${useId().replace(/:/g, "")}`;
   const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
   const [mixView, setMixView] = useState<MixView>("payment");
@@ -248,19 +249,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
         })
       : t(`overview.trading.range.${rangePreset}` as MessageKey);
   const currencyCode = operations?.totals.currencyCode?.toUpperCase() ?? "ETB";
-  const metricLabel =
-    metric === "revenue"
-      ? t("overview.metrics.revenue")
-      : metric === "orders"
-        ? t("overview.metrics.orders")
-        : t("overview.metrics.customers");
-  const visibleTotals = visibleSeries.reduce(
-    (total, row) => ({
-      orders: total.orders + row.orders,
-      revenue: total.revenue + row.revenue,
-    }),
-    { orders: 0, revenue: 0 },
-  );
   const averageOrderRows = visibleSeries
     .filter((row) => row.orders > 0)
     .map((row) => ({
@@ -404,7 +392,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   <Link
                     className={cn(
                       "group flex cursor-pointer flex-col gap-1 rounded-lg border border-transparent px-3 py-2 text-sm transition-[background-color,border-color] hover:border-primary/20 hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring",
-                      hot ? "bg-primary/7" : "bg-muted/45",
+                      hot ? "bg-primary/7 dark:bg-secondary/35" : "bg-muted/45",
                     )}
                     href={item.href}
                     key={item.label}
@@ -473,7 +461,10 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     value: storefrontActivity.checkoutVisits,
                   },
                 ].map((item) => (
-                  <div className="flex min-w-0 flex-col justify-center gap-1 bg-card px-3 py-3" key={item.label}>
+                  <div
+                    className="flex min-w-0 flex-col justify-center gap-1 bg-card px-3 py-3"
+                    key={item.label}
+                  >
                     <span className="truncate text-xs text-muted-foreground">{item.label}</span>
                     <span className="font-mono text-xl font-semibold tabular-nums">
                       {formatNumber(item.value, locale)}
@@ -509,33 +500,14 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       </div>
 
       {/* Commerce KPIs only — storefront analytics stay out of the ops strip */}
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          href={previewHref(dashboardRoutes.orders)}
-          label={t("overview.metrics.revenue")}
-          note={hasSeries ? rangeLabel : t("overview.metrics.noSalesYet")}
-          value={formatMoney(hasSeries ? visibleTotals.revenue : operations?.totals.revenue, currencyCode, locale)}
-        />
-        <MetricCard
-          href={previewHref(dashboardRoutes.orders)}
-          label={t("overview.metrics.orders")}
-          {...(hasSeries ? { note: rangeLabel } : {})}
-          value={formatNumber(hasSeries ? visibleTotals.orders : operations?.totals.orders, locale)}
-        />
-        <MetricCard
-          href={previewHref(dashboardRoutes.products)}
-          label={t("overview.metrics.products")}
-          value={formatNumber(operations?.totals.products, locale)}
-        />
-        <MetricCard
-          href={previewHref(dashboardRoutes.customers)}
-          label={t("overview.metrics.customers")}
-          note={t("overview.metrics.repeatCount", {
-            count: formatNumber(operations?.customers.repeat, locale),
-          })}
-          value={formatNumber(operations?.customers.unique, locale)}
-        />
-      </div>
+      <OverviewKpiStrip
+        operations={operations}
+        rows={visibleSeries}
+        range={selectedRange}
+        rangeLabel={rangeLabel}
+        currencyCode={currencyCode}
+        previewHref={previewHref}
+      />
 
       <Card className="flex min-h-0 flex-col overflow-hidden">
         <CardHeader className="shrink-0 border-b">
@@ -617,6 +589,20 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     // left margin + YAxis width must fit compact "ETB 60K" ticks
                     margin={{ bottom: 8, left: 4, right: 20, top: 8 }}
                   >
+                    <defs>
+                      <linearGradient id={revenueFillId} x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="0%"
+                          stopColor="var(--color-revenue)"
+                          stopOpacity="var(--chart-area-start-opacity)"
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="var(--color-revenue)"
+                          stopOpacity="var(--chart-area-end-opacity)"
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid vertical={false} />
                     <XAxis
                       dataKey="date"
@@ -663,8 +649,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                       yAxisId="value"
                       type="monotone"
                       dataKey="revenue"
-                      fill="var(--color-revenue)"
-                      fillOpacity={metric === "revenue" ? 0.22 : 0.08}
+                      fill={`url(#${revenueFillId})`}
                       stroke="var(--color-revenue)"
                       strokeWidth={metric === "revenue" ? 2.5 : 1.5}
                       hide={metric !== "revenue"}
@@ -703,12 +688,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
               title={t("overview.trading.emptyTitle")}
             />
           )}
-          {hasSeries ? (
-            <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>{t("overview.metrics.metricView", { label: String(metricLabel) })}</span>
-              <span>{rangeLabel}</span>
-            </div>
-          ) : null}
         </CardContent>
       </Card>
 
@@ -898,7 +877,6 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           </CardContent>
         </Card>
       </div>
-
     </section>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -17,7 +17,22 @@ import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ProductColorPopover } from "@/features/products/product-form-sections";
@@ -308,6 +323,7 @@ function SavedOptionEditDialog({
 }) {
   const { t } = useI18n();
   const [draftValue, setDraftValue] = useState("");
+  const nameId = useId();
   if (!option) return null;
   const currentOption = option;
   const isColor = /^(colou?r)$/i.test(currentOption.title.trim());
@@ -324,105 +340,124 @@ function SavedOptionEditDialog({
     });
     setDraftValue("");
   }
+  const Root = option.isNew ? Dialog : Sheet;
+  const Content = option.isNew ? DialogContent : SheetContent;
+  const Header = option.isNew ? DialogHeader : SheetHeader;
+  const Title = option.isNew ? DialogTitle : SheetTitle;
+  const Description = option.isNew ? DialogDescription : SheetDescription;
+  const Footer = option.isNew ? DialogFooter : SheetFooter;
   return (
-    <Dialog onOpenChange={onOpenChange} open>
-      <DialogContent className="max-w-lg">
-        <DialogTitle>
-          {option.isNew
-            ? t("products.savedOptions.createTitle")
-            : t("products.savedOptions.editTitle")}
-        </DialogTitle>
-        <DialogDescription>
-          {option.isNew
-            ? t("products.savedOptions.createDescription")
-            : t("products.savedOptions.editDescription")}
-        </DialogDescription>
-        <div className="grid gap-4 py-2">
-          <Field>
-            <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
-            <Input
-              onChange={(event) => update({ title: event.target.value })}
-              value={option.title}
-            />
-          </Field>
-          <Field>
-            <FieldLabel>{t("products.formReview.values")}</FieldLabel>
-            <ProductOptionValuesField
-              addControl={
-                isColor ? (
-                  <ProductColorPopover
-                    onSave={(label, color) => addValue(label, { kind: "color", value: color })}
-                  />
-                ) : undefined
-              }
-              addLabel={t("products.formReview.addValue")}
-              inputLabel={t("products.formReview.addValueAria", {
-                option: option.title || t("products.formReview.optionFallback"),
-              })}
-              onChange={setDraftValue}
-              onCommit={() => addValue(draftValue)}
-              onPasteMany={(rawValue) => {
-                const labels = rawValue
-                  .split(/[,\n]/)
-                  .map((label) => label.trim())
-                  .filter(Boolean);
-                const seen = new Set(option.values.map((value) => value.label.toLowerCase()));
-                const additions = labels
-                  .filter((label) => {
-                    const normalized = label.toLowerCase();
-                    if (seen.has(normalized)) return false;
-                    seen.add(normalized);
-                    return true;
-                  })
-                  .map((label) => ({ label }));
-                update({ values: [...option.values, ...additions] });
-                setDraftValue("");
-              }}
-              onRemoveLast={
-                currentOption.values.length
-                  ? () => update({ values: currentOption.values.slice(0, -1) })
-                  : undefined
-              }
-              placeholder={t("products.formReview.addAnotherValue")}
-              value={draftValue}
-            >
-              {option.values.map((value, index) => (
-                <span
-                  className="inline-flex items-center rounded-full bg-secondary text-xs"
-                  key={`${value.label}-${index}`}
-                >
-                  {isColor ? (
+    <Root onOpenChange={(open) => !saving && onOpenChange(open)} open>
+      <Content
+        className={
+          option.isNew
+            ? "flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
+            : "gap-0 sm:max-w-lg"
+        }
+      >
+        <Header className="shrink-0 gap-1.5 border-b p-4 pr-12 text-left sm:px-5">
+          <Title>
+            {option.isNew
+              ? t("products.savedOptions.createTitle")
+              : t("products.savedOptions.editTitle")}
+          </Title>
+          <Description>
+            {option.isNew
+              ? t("products.savedOptions.createDescription")
+              : t("products.savedOptions.editDescription")}
+          </Description>
+        </Header>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+          <fieldset disabled={saving} className="grid min-w-0 gap-5">
+            <Field>
+              <FieldLabel htmlFor={nameId}>{t("products.formReview.optionName")}</FieldLabel>
+              <Input
+                id={nameId}
+                onChange={(event) => update({ title: event.target.value })}
+                value={option.title}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{t("products.formReview.values")}</FieldLabel>
+              <ProductOptionValuesField
+                addControl={
+                  isColor ? (
                     <ProductColorPopover
-                      label={value.label}
-                      onSave={(label, color) =>
-                        update({
-                          values: option.values.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { label, swatch: { kind: "color", value: color } }
-                              : item,
-                          ),
-                        })
-                      }
-                      value={value.swatch?.value ?? "#808080"}
+                      onSave={(label, color) => addValue(label, { kind: "color", value: color })}
                     />
-                  ) : (
-                    <span className="px-2 py-1.5">{value.label}</span>
-                  )}
-                  <button
-                    aria-label={t("products.formReview.removeValueAria", { value: value.label })}
-                    className="mr-1 grid size-6 place-items-center rounded-full hover:bg-background"
-                    onClick={() => update({ values: option.values.filter((_, i) => i !== index) })}
-                    type="button"
+                  ) : undefined
+                }
+                addLabel={t("products.formReview.addValue")}
+                inputLabel={t("products.formReview.addValueAria", {
+                  option: option.title || t("products.formReview.optionFallback"),
+                })}
+                onChange={setDraftValue}
+                onCommit={() => addValue(draftValue)}
+                onPasteMany={(rawValue) => {
+                  const labels = rawValue
+                    .split(/[,\n]/)
+                    .map((label) => label.trim())
+                    .filter(Boolean);
+                  const seen = new Set(option.values.map((value) => value.label.toLowerCase()));
+                  const additions = labels
+                    .filter((label) => {
+                      const normalized = label.toLowerCase();
+                      if (seen.has(normalized)) return false;
+                      seen.add(normalized);
+                      return true;
+                    })
+                    .map((label) => ({ label }));
+                  update({ values: [...option.values, ...additions] });
+                  setDraftValue("");
+                }}
+                onRemoveLast={
+                  currentOption.values.length
+                    ? () => update({ values: currentOption.values.slice(0, -1) })
+                    : undefined
+                }
+                placeholder={t("products.formReview.addAnotherValue")}
+                value={draftValue}
+              >
+                {option.values.map((value, index) => (
+                  <span
+                    className="inline-flex items-center rounded-full border border-border bg-secondary text-xs text-secondary-foreground"
+                    key={`${value.label}-${index}`}
                   >
-                    <AppIcons.close className="size-3" />
-                  </button>
-                </span>
-              ))}
-            </ProductOptionValuesField>
-            <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
-          </Field>
+                    {isColor ? (
+                      <ProductColorPopover
+                        label={value.label}
+                        onSave={(label, color) =>
+                          update({
+                            values: option.values.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { label, swatch: { kind: "color", value: color } }
+                                : item,
+                            ),
+                          })
+                        }
+                        value={value.swatch?.value ?? "#808080"}
+                      />
+                    ) : (
+                      <span className="px-2 py-1.5">{value.label}</span>
+                    )}
+                    <button
+                      aria-label={t("products.formReview.removeValueAria", { value: value.label })}
+                      className="mr-1 grid size-6 place-items-center rounded-full hover:bg-background"
+                      onClick={() =>
+                        update({ values: option.values.filter((_, i) => i !== index) })
+                      }
+                      type="button"
+                    >
+                      <AppIcons.close className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </ProductOptionValuesField>
+              <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
+            </Field>
+          </fieldset>
         </div>
-        <div className="flex justify-end gap-2 border-t pt-4">
+        <Footer className="m-0 shrink-0 flex-row justify-end gap-2 rounded-none border-t p-4">
           <Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">
             {t("common.cancel")}
           </Button>
@@ -432,8 +467,8 @@ function SavedOptionEditDialog({
           >
             {saving ? t("common.saving") : t("common.save")}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </Footer>
+      </Content>
+    </Root>
   );
 }
