@@ -218,9 +218,24 @@ export function ProductsTable({
       productDetailHrefBase
         ? (product) => `${productDetailHrefBase}/${encodeURIComponent(product.id)}`
         : undefined,
+      canUpdate && !tenantId
+        ? (product) => {
+            setSelectedProductsForInventory([product]);
+            setShowBulkInventoryDialog(true);
+          }
+        : undefined,
     );
     return resolved;
-  }, [canDelete, categories, collections, handleStatusChange, productDetailHrefBase, t, tenantId]);
+  }, [
+    canDelete,
+    canUpdate,
+    categories,
+    collections,
+    handleStatusChange,
+    productDetailHrefBase,
+    t,
+    tenantId,
+  ]);
 
   const pushServerFilters = useCallback(
     (
@@ -474,7 +489,7 @@ export function ProductsTable({
                 variant="destructive-outline"
               >
                 <AppIcons.trash data-icon="inline-start" />
-                Delete
+                {t("table.actions.deleteSelected")}
               </Button>
             ) : null}
           </>

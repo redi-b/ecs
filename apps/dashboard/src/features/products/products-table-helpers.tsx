@@ -117,6 +117,7 @@ export function getProductColumns(
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
   t: Translate,
   productDetailHref?: (product: MerchantProduct) => string,
+  onSetInventory?: (product: MerchantProduct) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -250,12 +251,16 @@ export function getProductColumns(
           <RowActionsMenu
             actions={[
               { href, icon: AppIcons.eye, label: t("products.table.viewDetails"), type: "link" },
-              {
-                href,
-                icon: AppIcons.products,
-                label: t("products.table.manageInventory"),
-                type: "link",
-              },
+              ...(onSetInventory
+                ? [
+                    {
+                      icon: AppIcons.products,
+                      label: t("products.stock.bulkAction"),
+                      type: "button" as const,
+                      onSelect: () => onSetInventory(product),
+                    },
+                  ]
+                : []),
               {
                 icon: nextStatus === "published" ? AppIcons.check : AppIcons.eyeOff,
                 label:
