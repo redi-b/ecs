@@ -3,6 +3,7 @@
 import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { usePathname } from "next/navigation";
 import { AccountMenu } from "@/components/app/account-menu";
+import { CommandCenter } from "@/components/app/command-center";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -267,7 +268,15 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0 py-2">
+      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 py-0"}>
+        {!demoMode ? (
+          <>
+            <div className="px-3 py-3 group-data-[collapsible=icon]:px-2">
+              <CommandCenter placement="sidebar" />
+            </div>
+            <SidebarSeparator className="mb-2" />
+          </>
+        ) : null}
         {visibleSections.map((section, index) => {
           const routes = routesForSection(section).map((route) =>
             demoMode ? getDemoSidebarRoute(route) : route,

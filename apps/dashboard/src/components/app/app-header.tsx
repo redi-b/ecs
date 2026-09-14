@@ -13,7 +13,10 @@ import { useI18n } from "@/i18n/provider";
 export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
   const { t } = useI18n();
   return (
-    <header data-slot="app-header" className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 dark:border-sidebar-border dark:bg-sidebar dark:backdrop-blur-none dark:supports-backdrop-filter:bg-sidebar sm:gap-3 sm:px-6">
+    <header
+      data-slot="app-header"
+      className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 dark:border-sidebar-border dark:bg-sidebar dark:backdrop-blur-none dark:supports-backdrop-filter:bg-sidebar sm:gap-3 sm:px-6"
+    >
       <SidebarTrigger
         aria-label={t("common.toggleSidebar")}
         className="size-9 shrink-0 rounded-full"
@@ -31,10 +34,8 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
             {t("overview.demo.readOnly")}
           </Badge>
         ) : (
-          <CommandCenter />
+          <CommandCenter placement="header" />
         )}
-        {/* Balance against the icon's inset within its full-size hit target. */}
-        <div aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-border/70 sm:ml-2.5 sm:block" />
         <div className="flex items-center gap-0.5">
           {demoMode ? null : (
             <PermissionGate permission="notifications.read">

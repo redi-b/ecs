@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import {
   loadRecentCommands,
@@ -108,11 +109,12 @@ function useModKeyLabel() {
   return modKey;
 }
 
-export function CommandCenter() {
+export function CommandCenter({ placement = "header" }: { placement?: "header" | "sidebar" }) {
   const { t } = useI18n();
   const { permissions } = useAccess();
   const router = useRouter();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, state: sidebarState } = useSidebar();
+  const activeAtBreakpoint = placement === "header" ? isMobile : !isMobile;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [remoteByType, setRemoteByType] = useState<
@@ -145,6 +147,8 @@ export function CommandCenter() {
   const remoteLoading = pendingWaves > 0;
 
   useEffect(() => {
+    if (!activeAtBreakpoint) return;
+
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -153,7 +157,7 @@ export function CommandCenter() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [activeAtBreakpoint]);
 
   useEffect(() => {
     if (!open) {
@@ -316,32 +320,57 @@ export function CommandCenter() {
     return () => mq.removeEventListener("change", update);
   }, [t]);
 
+  // Keep a single palette instance mounted at each breakpoint. This avoids
+  // duplicate keyboard listeners while letting discovery live with desktop
+  // navigation and remain reachable from the mobile header.
+  if (!activeAtBreakpoint) {
+    return null;
+  }
+
+  const trigger = (
+    <DialogTrigger asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        aria-label={t("commandCenter.openAria")}
+        data-command-trigger=""
+        size="icon"
+        className={cn(
+          placement === "header" && "size-9 shrink-0 text-muted-foreground",
+          placement === "sidebar" &&
+            "h-9 w-full justify-start gap-2 overflow-hidden border border-sidebar-border/80 bg-sidebar-accent/45 px-2.5 text-sidebar-foreground shadow-[inset_0_1px_0_color-mix(in_oklch,var(--sidebar-foreground)_5%,transparent)] hover:bg-sidebar-accent group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:shadow-none",
+        )}
+      >
+        <AppIcons.search className="size-4 opacity-80" />
+        {placement === "sidebar" && sidebarState === "expanded" ? (
+          <>
+            <span className="min-w-0 flex-1 truncate text-left text-sm text-muted-foreground">
+              {t("commandCenter.triggerLabel")}
+            </span>
+            <KbdGroup className="ml-auto shrink-0">
+              <Kbd className={cn(modKey === "⌘" && "min-w-5 px-1 text-[13px] leading-none")}>
+                {modKey}
+              </Kbd>
+              <Kbd>K</Kbd>
+            </KbdGroup>
+          </>
+        ) : null}
+      </Button>
+    </DialogTrigger>
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          aria-label={t("commandCenter.openAria")}
-          data-command-trigger=""
-          size="icon"
-          className={cn(
-            "size-9 shrink-0 text-muted-foreground",
-            "sm:h-9 sm:w-auto sm:min-w-[15.5rem] sm:justify-start sm:gap-2 sm:border sm:border-border/80 sm:bg-background sm:px-3",
-          )}
-        >
-          <AppIcons.search className="size-4 opacity-80" />
-          <span className="hidden text-sm sm:inline">
-            {t("commandCenter.triggerLabel")}
-          </span>
-          <KbdGroup className="ml-auto hidden shrink-0 sm:inline-flex">
-            <Kbd className={cn(modKey === "⌘" && "min-w-5 px-1 text-[13px] leading-none")}>
-              {modKey}
-            </Kbd>
-            <Kbd>K</Kbd>
-          </KbdGroup>
-        </Button>
-      </DialogTrigger>
+      {placement === "sidebar" && sidebarState === "collapsed" ? (
+        <Tooltip>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipContent align="center" side="right">
+            {t("commandCenter.openAria")}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        trigger
+      )}
       <DialogContent
         className={cn(
           // Mobile: near full-screen sheet from top for thumb reach + more list room.
