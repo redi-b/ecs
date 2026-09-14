@@ -37,6 +37,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   const optionalItems = items.filter((item) => !item.required);
   const completedRequired = requiredItems.filter((item) => item.ready).length;
   const launchReady = completedRequired === requiredItems.length;
+  const catalogUnknown = productCount === null || productCountUnavailable;
   const liveShopHref = `//${access.domain.hostname}`;
   const canCompleteSetup = allows(access.permissions ?? [], merchantPolicies.launchSetup);
 
@@ -77,6 +78,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
 
     let cancelled = false;
     setProductCountUnavailable(false);
+    setProductCount(null);
 
     void fetch(`${dashboardRoutes.productListAction}?limit=1&offset=0`, {
       credentials: "same-origin",
@@ -101,7 +103,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     return () => {
       cancelled = true;
     };
-  }, [hidden, hydrated]);
+  }, [hidden, hydrated, access.tenant.id]);
 
   function dismissAssistant() {
     setLaunchAssistantHidden(access.tenant.id, true);
@@ -145,12 +147,18 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
               {launchReady ? t("overview.launch.titleReady") : t("overview.launch.title")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {launchReady
-                ? t("overview.launch.progressReady")
-                : t("overview.launch.progress", {
-                    done: completedRequired,
-                    total: requiredItems.length,
-                  })}
+              {catalogUnknown
+                ? t(
+                    productCountUnavailable
+                      ? "overview.launch.catalogUnavailable"
+                      : "overview.launch.catalogChecking",
+                  )
+                : launchReady
+                  ? t("overview.launch.progressReady")
+                  : t("overview.launch.progress", {
+                      done: completedRequired,
+                      total: requiredItems.length,
+                    })}
             </p>
           </div>
           <Button
@@ -222,12 +230,14 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         type="button"
         onClick={toggleOpen}
       >
-        {launchReady
-          ? t("overview.launch.launchButtonReady")
-          : t("overview.launch.launchButton", {
-              done: completedRequired,
-              total: requiredItems.length,
-            })}
+        {catalogUnknown
+          ? t("overview.launch.title")
+          : launchReady
+            ? t("overview.launch.launchButtonReady")
+            : t("overview.launch.launchButton", {
+                done: completedRequired,
+                total: requiredItems.length,
+              })}
       </Button>
     </div>
   );
