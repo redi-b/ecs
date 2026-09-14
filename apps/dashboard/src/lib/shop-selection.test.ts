@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import type { PlatformOnboardingState, PlatformTenant } from "@ecs/contracts";
 
-import { resolveShopDestination } from "./shop-selection.js";
+import { getOnboardingExit, resolveShopDestination } from "./shop-selection.js";
 
 const shop = (id: string, status: PlatformTenant["status"] = "active"): PlatformTenant => ({
   createdAt: "2026-09-01T00:00:00.000Z",
@@ -24,6 +24,14 @@ const state = (tenants: PlatformTenant[]): PlatformOnboardingState => ({
 });
 
 describe("shop destination", () => {
+  it("does not redirect onboarding back to itself for an unfinished shop", () => {
+    const destination = resolveShopDestination({
+      protocol: "https",
+      state: state([shop("unfinished", "draft")]),
+    });
+    assert.equal(getOnboardingExit(destination), null);
+    assert.equal(getOnboardingExit({ kind: "picker", href: "/admin/shops" }), "/admin/shops");
+  });
   it("sends accounts without an available shop to onboarding", () => {
     assert.deepEqual(resolveShopDestination({ protocol: "https", state: state([]) }), {
       href: "/admin/onboarding",
