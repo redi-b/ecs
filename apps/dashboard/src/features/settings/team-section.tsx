@@ -1,21 +1,11 @@
 "use client";
-import { teamErrorKey } from "./team-errors";
 
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 
 import { AppIcons } from "@/components/app/icons";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +46,7 @@ import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantTeam } from "@/lib/platform-api/team";
 import { cn } from "@/lib/utils";
+import { teamErrorKey } from "./team-errors";
 import { invitationUrl, telegramInvitationShareUrl } from "./team-invitation-links";
 import { roleKey } from "./team-role-name";
 
@@ -601,40 +592,31 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
         onSubmit={() => undefined}
       />
 
-      <AlertDialog
+      <ConfirmDialog
         open={confirmAction !== null}
         onOpenChange={(open) => !open && setConfirmAction(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirmAction?.label}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmAction?.description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isPending}
-              onClick={() => {
-                if (!confirmAction) return;
-                const action = confirmAction;
-                mutate(
-                  action.path,
-                  action.method,
-                  undefined,
-                  {
-                    error: t("settings.team.updateFailed"),
-                    loading: t("settings.team.updating"),
-                    success: action.success,
-                  },
-                  () => setConfirmAction(null),
-                );
-              }}
-            >
-              {confirmAction?.label}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={confirmAction?.label}
+        description={confirmAction?.description}
+        confirmLabel={confirmAction?.label}
+        confirmDisabled={isPending}
+        cancelDisabled={isPending}
+        onConfirm={(event) => {
+          event.preventDefault();
+          if (!confirmAction) return;
+          const action = confirmAction;
+          mutate(
+            action.path,
+            action.method,
+            undefined,
+            {
+              error: t("settings.team.updateFailed"),
+              loading: t("settings.team.updating"),
+              success: action.success,
+            },
+            () => setConfirmAction(null),
+          );
+        }}
+      />
     </SettingsSectionBody>
   );
 }

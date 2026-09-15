@@ -2,7 +2,6 @@
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { useEffect, useId, useMemo, useState } from "react";
-
 import { AppIcons } from "@/components/app/icons";
 import {
   CategoryCombobox,
@@ -653,14 +652,8 @@ export function ShopOnboardingForm({
                   form={formId}
                   type="submit"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <AppIcons.loader className="animate-spin" data-icon="inline-start" />
-                      {t("onboarding.creatingShop")}
-                    </>
-                  ) : (
-                    t("onboarding.createShop")
-                  )}
+                  {isSubmitting ? <AppIcons.loader className="motion-safe:animate-spin" /> : null}
+                  {isSubmitting ? t("onboarding.creatingShop") : t("onboarding.createShop")}
                 </Button>
               </div>
             </div>

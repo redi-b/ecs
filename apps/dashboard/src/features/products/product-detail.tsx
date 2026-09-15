@@ -46,7 +46,8 @@ type ProductDetailProps = {
 
 export function ProductDetail({ action, product, readOnly = false, tenantId }: ProductDetailProps) {
   const { t } = useI18n();
-  const effectiveReadOnly = readOnly || !usePermission("products.update");
+  const canUpdate = usePermission("products.update");
+  const effectiveReadOnly = readOnly || !canUpdate;
   const taxonomy = useProductTaxonomy({ enabled: !effectiveReadOnly, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
@@ -427,7 +428,7 @@ function ProductThumbnail({
         className="size-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
         src={src}
       />
-      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100">
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-[background-color,opacity] duration-200 group-hover:bg-black/25 group-hover:opacity-100">
         <AppIcons.expand className="size-4" />
       </span>
     </button>

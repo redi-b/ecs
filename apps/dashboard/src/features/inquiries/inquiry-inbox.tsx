@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -208,9 +209,13 @@ export function InquiryInbox({
             ))}
           </div>
         ) : (
-          <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
-            <span className="mb-4 grid size-11 place-items-center rounded-2xl bg-muted">
-              <AppIcons.mail className="size-5 text-muted-foreground" />
+          <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
+            <span className="mb-4">
+              {search || status !== "all" || type !== "all" || range ? (
+                <AppIcons.search className="size-5 text-muted-foreground" aria-hidden />
+              ) : (
+                <EcsArtwork kind="inquiries" />
+              )}
             </span>
             <h2 className="text-sm font-semibold">No inquiries found</h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">

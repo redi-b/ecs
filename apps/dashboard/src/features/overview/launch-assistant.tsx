@@ -4,6 +4,7 @@ import type { MerchantDashboardAccess } from "@ecs/contracts";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
@@ -134,19 +135,30 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
       <div
         data-slot="launch-assistant"
         aria-hidden={!open}
+        inert={!open}
         className={cn(
-          "w-[min(420px,calc(100vw-2rem))] origin-bottom-right overflow-hidden rounded-xl border bg-background dark:bg-popover shadow-lg transition-all duration-200 ease-out",
-          open
-            ? "max-h-[min(720px,calc(100dvh-6rem))] translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none max-h-0 translate-y-2 scale-95 opacity-0",
+          "absolute bottom-full mb-2 flex max-h-[min(720px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-xl border bg-background dark:bg-popover shadow-lg transition-[opacity,transform] duration-200 ease-[var(--ease-dashboard)] motion-reduce:transition-none",
+          open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         )}
       >
-        <div className="flex items-start justify-between gap-3 border-b p-4">
-          <div className="min-w-0">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
+          <EcsArtwork kind="storefront" size="compact" />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">
               {launchReady ? t("overview.launch.titleReady") : t("overview.launch.title")}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <div aria-hidden="true" className="mt-3 flex gap-1.5">
+              {requiredItems.map((item) => (
+                <span
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full",
+                    item.ready ? "bg-primary" : item.current ? "bg-primary/30" : "bg-muted",
+                  )}
+                  key={item.id}
+                />
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
               {catalogUnknown
                 ? t(
                     productCountUnavailable
@@ -160,6 +172,21 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
                       total: requiredItems.length,
                     })}
             </p>
+            {launchReady ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                  <a href={liveShopHref} rel="noreferrer" target="_blank">
+                    <AppIcons.externalLink data-icon="inline-start" />
+                    {t("overview.launch.viewShop")}
+                  </a>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={dashboardRoutes.editor} prefetch={false}>
+                    {t("overview.launch.openEditor")}
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
           </div>
           <Button
             aria-label={t("overview.aria.closeLaunch")}
@@ -176,28 +203,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
           </Button>
         </div>
 
-        {launchReady ? (
-          <div className="space-y-3 border-b p-4">
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {t("overview.launch.readyBody")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm">
-                <a href={liveShopHref} rel="noreferrer" target="_blank">
-                  <AppIcons.externalLink data-icon="inline-start" />
-                  {t("overview.launch.viewShop")}
-                </a>
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link href={dashboardRoutes.editor} prefetch={false}>
-                  {t("overview.launch.openEditor")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="flex max-h-[min(360px,50dvh)] flex-col gap-2 overflow-y-auto p-3">
+        <div className="flex min-h-0 max-h-[min(360px,50dvh)] flex-col gap-2 overflow-y-auto p-3">
           <p className="px-1 text-xs font-medium text-muted-foreground">
             {t("overview.launch.requiredSection")}
           </p>
@@ -212,7 +218,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t p-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t p-3">
           <Button asChild size="sm" variant="outline">
             <Link href={`${dashboardRoutes.settings}?tab=storefront`} prefetch={false}>
               {t("overview.launch.storefrontSettings")}
@@ -224,12 +230,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         </div>
       </div>
 
-      <Button
-        aria-expanded={open}
-        className="shadow-lg transition-transform duration-150 hover:-translate-y-0.5"
-        type="button"
-        onClick={toggleOpen}
-      >
+      <Button aria-expanded={open} className="shadow-lg" type="button" onClick={toggleOpen}>
         {catalogUnknown
           ? t("overview.launch.title")
           : launchReady

@@ -86,7 +86,7 @@
 			reverse_proxy ecs-dashboard:3001
 		}
 
-		@dashboard_assets path /_next/* /__nextjs* /favicon.ico
+		@dashboard_assets path /_next/* /__nextjs* /favicon.ico /brand/*
 		handle @dashboard_assets {
 			reverse_proxy ecs-dashboard:3001
 		}

@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 import {
   isVariantOutOfStock,
   optionLabelFromVariantTitle,
-  resolveVariantByOptions,
   type ProductCatalogPickVariant,
   type ProductOptionAxis,
+  resolveVariantByOptions,
 } from "./product-catalog-picker-model";
 
 export function ProductOptionConfigurator({
@@ -72,7 +72,10 @@ export function ProductOptionConfigurator({
         return Object.entries(trial).every(([k, v]) => !v || opts[k] === v);
       }
       const label = optionLabelFromVariantTitle(variant.title, productTitle);
-      const parts = label.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+      const parts = label
+        .split(/\s*\/\s*/)
+        .map((p) => p.trim())
+        .filter(Boolean);
       const axisIndex = axes.findIndex((a) => a.title === axisTitle);
       if (axisIndex < 0) return true;
       if (parts[axisIndex] !== value && label !== value) return false;
@@ -148,9 +151,7 @@ export function ProductOptionConfigurator({
     <div className="space-y-3.5 border-t bg-muted/10 px-3.5 py-3.5">
       {axes.map((axis) => (
         <div className="space-y-2" key={axis.title}>
-          <p className="text-xs font-semibold text-foreground/80">
-            {displayAxisTitle(axis.title)}
-          </p>
+          <p className="text-xs font-semibold text-foreground/80">{displayAxisTitle(axis.title)}</p>
           <div className="flex flex-wrap gap-2">
             {axis.values.map((value) => {
               const active = picks[axis.title] === value;
@@ -158,7 +159,7 @@ export function ProductOptionConfigurator({
               return (
                 <button
                   className={cn(
-                    "min-w-10 rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
+                    "min-w-10 rounded-full border px-3.5 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity]",
                     active
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/80 bg-background shadow-sm hover:border-primary/35 hover:bg-primary/[0.04]",

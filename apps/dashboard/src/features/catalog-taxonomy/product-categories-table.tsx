@@ -15,6 +15,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import {
   ListToolbarSearch,
@@ -596,7 +597,7 @@ export function ProductCategoriesTable({
             enableSorting={false}
             data={filteredCategories}
             embedded
-            emptyIcon={<AppIcons.tree className="size-5" aria-hidden />}
+            emptyIcon={<EcsArtwork kind="categories" />}
             emptyMessage={t("taxonomy.table.emptyMessage")}
             emptyTitle={t("taxonomy.table.emptyTitle")}
             filteredEmptyMessage={t("taxonomy.table.filteredEmptyMessage")}

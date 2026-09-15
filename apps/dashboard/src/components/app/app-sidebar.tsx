@@ -268,13 +268,13 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 py-0"}>
+      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 pt-2 pb-0 md:pt-0"}>
         {!demoMode ? (
           <>
-            <div className="px-3 py-3 group-data-[collapsible=icon]:px-2">
+            <div className="hidden px-3 py-3 md:block group-data-[collapsible=icon]:px-2">
               <CommandCenter placement="sidebar" />
             </div>
-            <SidebarSeparator className="mb-2" />
+            <SidebarSeparator className="mb-2 hidden md:block" />
           </>
         ) : null}
         {visibleSections.map((section, index) => {

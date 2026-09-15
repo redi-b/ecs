@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
@@ -62,6 +63,11 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
   const canDelete = usePermission("products.delete");
   const url = getTenantScopedPath("/admin/products/actions/option-sets", tenantId);
   const [editing, setEditing] = useState<SavedOptionDraft | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const openEditor = useCallback((option: SavedOptionDraft) => {
+    setEditing(option);
+    setEditorOpen(true);
+  }, []);
   const [pendingDelete, setPendingDelete] = useState<SavedOption | null>(null);
   const [search, setSearch] = useState("");
   const query = useQuery({
@@ -86,7 +92,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
       if (!response.ok) throw new Error(body.error ?? "save_failed");
     },
     onSuccess: async (_data, option) => {
-      setEditing(null);
+      setEditorOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["product-option-sets", tenantId] });
       toast.success(
         option.isNew ? t("products.savedOptions.created") : t("products.savedOptions.updated"),
@@ -118,7 +124,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
     onError: () => toast.error(t("products.savedOptions.deleteFailed")),
   });
 
-  const startCreating = () => setEditing({ id: "", isNew: true, title: "", values: [] });
+  const startCreating = () => openEditor({ id: "", isNew: true, title: "", values: [] });
   const options = query.data?.optionSets ?? [];
   const hasSearch = Boolean(search.trim());
   const filteredOptions = useMemo(
@@ -139,7 +145,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
                     {
                       icon: AppIcons.edit,
                       label: t("common.edit"),
-                      onSelect: () => setEditing(cloneForEditing(option)),
+                      onSelect: () => openEditor(cloneForEditing(option)),
                       type: "button" as const,
                     },
                   ]
@@ -160,7 +166,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
             label: t("products.savedOptions.actionsAria", { name: option.title }),
           }
         : null,
-    [canDelete, canUpdate, t],
+    [canDelete, canUpdate, openEditor, t],
   );
   const columns = useMemo<ColumnDef<SavedOption>[]>(
     () => [
@@ -173,7 +179,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
           canUpdate ? (
             <button
               className="font-medium text-foreground transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
-              onClick={() => setEditing(cloneForEditing(row.original))}
+              onClick={() => openEditor(cloneForEditing(row.original))}
               type="button"
             >
               {row.original.title}
@@ -229,7 +235,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         },
       },
     ],
-    [canUpdate, optionRowActions, t],
+    [canUpdate, openEditor, optionRowActions, t],
   );
 
   return (
@@ -269,7 +275,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
           <DataTable
             columns={columns}
             data={filteredOptions}
-            emptyIcon={<AppIcons.tag />}
+            emptyIcon={<EcsArtwork size="compact" />}
             emptyMessage={t("products.savedOptions.emptyDescription")}
             emptyTitle={t("products.savedOptions.emptyTitle")}
             filteredEmptyMessage={t("products.savedOptions.filteredEmptyDescription")}
@@ -295,7 +301,8 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         <SavedOptionEditDialog
           key={editing ? (editing.isNew ? "new" : editing.id) : "closed"}
           onChange={setEditing}
-          onOpenChange={(open) => !open && setEditing(null)}
+          onOpenChange={setEditorOpen}
+          open={editorOpen}
           onSave={(option) => save.mutate(option)}
           option={editing}
           saving={save.isPending}
@@ -322,12 +329,14 @@ function SavedOptionEditDialog({
   onOpenChange,
   onSave,
   option,
+  open,
   saving,
 }: {
   onChange: (option: SavedOptionDraft) => void;
   onOpenChange: (open: boolean) => void;
   onSave: (option: SavedOptionDraft) => void;
   option: SavedOptionDraft | null;
+  open: boolean;
   saving: boolean;
 }) {
   const { t } = useI18n();
@@ -356,7 +365,7 @@ function SavedOptionEditDialog({
   const Description = option.isNew ? DialogDescription : SheetDescription;
   const Footer = option.isNew ? DialogFooter : SheetFooter;
   return (
-    <Root onOpenChange={(open) => !saving && onOpenChange(open)} open>
+    <Root onOpenChange={(open) => !saving && onOpenChange(open)} open={open}>
       <Content
         className={
           option.isNew

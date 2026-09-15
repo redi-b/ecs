@@ -384,7 +384,7 @@ export function CollectionEditSheet({
                     {t("taxonomy.edit.loadingMembers")}
                   </p>
                 ) : members.length === 0 ? (
-                  <div className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                  <div className="rounded-[max(0px,calc(var(--radius-xl)-1rem))] border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
                     <p>{t("taxonomy.edit.noProductsYet")}</p>
                     <Link
                       className="mt-2 inline-block font-medium text-primary hover:underline"
@@ -395,7 +395,7 @@ export function CollectionEditSheet({
                     </Link>
                   </div>
                 ) : (
-                  <ul className="max-h-48 divide-y overflow-y-auto rounded-lg border">
+                  <ul className="max-h-48 divide-y overflow-y-auto rounded-[max(0px,calc(var(--radius-xl)-1rem))] border">
                     {members.map((product) => (
                       <li className="flex items-center gap-2 px-3 py-2.5" key={product.id}>
                         <div className="min-w-0 flex-1">

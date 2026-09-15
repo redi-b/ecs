@@ -4,6 +4,7 @@ import type { MerchantProductCategory } from "@ecs/contracts";
 import { useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -65,9 +66,7 @@ export function CategoryTreeView({
       <div className="flex min-h-56 items-center justify-center px-5 py-12 sm:min-h-64 sm:px-8">
         <Empty className="max-w-sm border-0 p-0">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <AppIcons.tree />
-            </EmptyMedia>
+            <EcsArtwork kind="categories" />
             <EmptyTitle>{t("taxonomy.table.emptyTitle")}</EmptyTitle>
             <EmptyDescription>{t("taxonomy.table.emptyMessage")}</EmptyDescription>
           </EmptyHeader>
