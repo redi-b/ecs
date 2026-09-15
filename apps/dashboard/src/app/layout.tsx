@@ -45,6 +45,10 @@ export const metadata: Metadata = {
     template: "%s · ECS",
   },
   description: "Merchant console for commerce operations",
+  icons: {
+    icon: { url: "/favicon.svg?v=ecs-logo-1", type: "image/svg+xml" },
+    shortcut: "/favicon.svg?v=ecs-logo-1",
+  },
   robots: {
     index: false,
     follow: false,
@@ -57,7 +61,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const isAmharic = locale === "am";
   const cookieStore = await cookies();
   const themePreference: SharedTheme =
-    parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "light";
+    parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "system";
   // Only bake explicit dark into SSR class (system still resolved client-side).
   const ssrDark = themePreference === "dark";
 

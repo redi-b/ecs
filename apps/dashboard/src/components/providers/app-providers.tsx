@@ -16,7 +16,7 @@ export function AppProviders({
   children,
   locale,
   messages,
-  theme = "light",
+  theme = "system",
 }: {
   children: ReactNode;
   locale: AppLocale;
