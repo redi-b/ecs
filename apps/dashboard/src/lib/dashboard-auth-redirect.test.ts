@@ -19,43 +19,45 @@ describe("getAuthenticatedDashboardRedirect", () => {
     assert.equal(redirect, null);
   });
 
-  it("routes authenticated central dashboard users to their primary shop", async () => {
-    globalThis.fetch = async () =>
-      Response.json({
-        user: {
-          id: "user_1",
-          email: "owner@example.com",
-          name: "Mahi Bekele",
-        },
-        tenants: [
-          {
-            createdAt: "2026-09-01T00:00:00.000Z",
-            handle: "addis-pantry",
-            id: "tenant_1",
-            name: "Addis Pantry",
-            primaryDomain: { hostname: "addis-pantry.lvh.me" },
-            role: "owner",
-            status: "active",
-            updatedAt: "2026-09-01T00:00:00.000Z",
+  for (const shopStatus of ["active", "draft"] as const) {
+    it(`routes central dashboard users to their existing ${shopStatus} shop`, async () => {
+      globalThis.fetch = async () =>
+        Response.json({
+          user: {
+            id: "user_1",
+            email: "owner@example.com",
+            name: "Mahi Bekele",
           },
-        ],
-        primaryTenant: {
-          id: "tenant_1",
-          handle: "addis-pantry",
-          primaryDomain: "addis-pantry.lvh.me",
-          dashboardUrl: "http://addis-pantry.lvh.me/admin",
-        },
-        latestProvisioningAttempt: null,
+          tenants: [
+            {
+              createdAt: "2026-09-01T00:00:00.000Z",
+              handle: "addis-pantry",
+              id: "tenant_1",
+              name: "Addis Pantry",
+              primaryDomain: { hostname: "addis-pantry.lvh.me" },
+              role: "owner",
+              status: shopStatus,
+              updatedAt: "2026-09-01T00:00:00.000Z",
+            },
+          ],
+          primaryTenant: {
+            id: "tenant_1",
+            handle: "addis-pantry",
+            primaryDomain: "addis-pantry.lvh.me",
+            dashboardUrl: "http://addis-pantry.lvh.me/admin",
+          },
+          latestProvisioningAttempt: null,
+        });
+
+      const redirect = await getAuthenticatedDashboardRedirect({
+        cookieHeader: "better-auth.session_token=session_1",
+        platformApiBaseUrl: "http://platform.local",
+        requestHost: "app.lvh.me",
       });
 
-    const redirect = await getAuthenticatedDashboardRedirect({
-      cookieHeader: "better-auth.session_token=session_1",
-      platformApiBaseUrl: "http://platform.local",
-      requestHost: "app.lvh.me",
+      assert.equal(redirect, "http://addis-pantry.lvh.me/admin");
     });
-
-    assert.equal(redirect, "http://addis-pantry.lvh.me/admin");
-  });
+  }
 
   it("routes an existing Operations session away from merchant onboarding", async () => {
     globalThis.fetch = async () =>

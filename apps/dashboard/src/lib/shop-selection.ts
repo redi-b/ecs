@@ -18,7 +18,7 @@ export type ShopDestination =
   | { kind: "picker"; href: "/admin/shops" }
   | { kind: "shop"; href: string; tenantId: string };
 
-/** Onboarding is a valid terminal page for accounts with unfinished shops. */
+/** Onboarding is terminal only when no existing shop can be opened. */
 export function getOnboardingExit(destination: ShopDestination): string | null {
   return destination.kind === "onboarding" ? null : destination.href;
 }
@@ -48,7 +48,10 @@ export function resolveShopDestination(input: {
 export function isAvailableShop(
   tenant: PlatformTenant,
 ): tenant is PlatformTenant & { primaryDomain: { hostname: string } } {
-  return tenant.status === "active" && Boolean(tenant.primaryDomain.hostname?.trim());
+  return (
+    (tenant.status === "active" || tenant.status === "draft") &&
+    Boolean(tenant.primaryDomain.hostname?.trim())
+  );
 }
 
 function toShopDestination(
