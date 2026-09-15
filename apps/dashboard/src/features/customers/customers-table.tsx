@@ -9,6 +9,7 @@ import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import Link from "@/components/app/link";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -292,7 +293,7 @@ export function CustomersTable({
         columns={columns}
         data={customers}
         enableSorting={false}
-        emptyIcon={<AppIcons.user className="size-5" aria-hidden />}
+        emptyIcon={<EcsArtwork kind="customers" />}
         emptyMessage={t("customers.table.emptyMessage")}
         emptyTitle={t("customers.table.emptyTitle")}
         filteredEmptyMessage={t("customers.table.filteredEmptyMessage")}

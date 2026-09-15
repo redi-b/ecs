@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/app/data-table";
 import { type DataTableFilter, DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -415,7 +416,7 @@ export function OrdersTable({
       columns={columns}
       data={orders}
       enableSorting={false}
-      emptyIcon={<AppIcons.orders className="size-5" aria-hidden />}
+      emptyIcon={<EcsArtwork kind="orders" />}
       emptyMessage={
         hasActiveFilters ? t("orders.table.filteredEmptyMessage") : t("orders.table.emptyMessage")
       }

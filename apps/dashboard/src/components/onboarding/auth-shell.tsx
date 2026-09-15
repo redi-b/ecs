@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-
+import { EcsArtwork, EcsWordmark } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import { LanguageSwitcher } from "@/components/app/language-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
@@ -58,14 +58,17 @@ export async function AuthShell({
               </div>
               <div>{tools}</div>
             </div>
-            <div className="mt-6 max-w-2xl sm:mt-10">
-              <BrandCopy
-                brandDescription={brandDescription ?? ""}
-                brandPoints={brandPoints}
-                brandTitle={brandTitle ?? ""}
-                compactOnMobile
-                titleClassName="text-xl sm:text-2xl sm:text-3xl"
-              />
+            <div className="mt-6 flex items-center justify-between gap-8 sm:mt-10">
+              <div className="max-w-2xl">
+                <BrandCopy
+                  brandDescription={brandDescription ?? ""}
+                  brandPoints={brandPoints}
+                  brandTitle={brandTitle ?? ""}
+                  compactOnMobile
+                  titleClassName="text-xl sm:text-2xl sm:text-3xl"
+                />
+              </div>
+              <EcsArtwork className="hidden sm:inline-flex" kind="storefront" />
             </div>
           </aside>
           <div className="px-4 pb-10 pt-6 sm:px-10 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-12">
@@ -79,18 +82,10 @@ export async function AuthShell({
 
 function BrandMark({ tagline }: { tagline: string }) {
   return (
-    <>
-      <span
-        aria-hidden
-        className="grid size-9 place-items-center rounded-[0.7rem] bg-primary text-sm font-bold tracking-tight text-primary-foreground"
-      >
-        E
-      </span>
-      <div>
-        <p className="text-sm font-semibold tracking-tight">ECS</p>
-        <p className="text-xs text-muted-foreground">{tagline}</p>
-      </div>
-    </>
+    <div className="flex min-w-0 flex-col items-start gap-2">
+      <EcsWordmark />
+      <p className="text-xs text-muted-foreground">{tagline}</p>
+    </div>
   );
 }
 

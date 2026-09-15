@@ -11,6 +11,7 @@ import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch, ListViewToggle } from "@/components/app/list-toolbar";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -492,7 +493,7 @@ export function MediaLibrary({
             columns={columns}
             data={filtered}
             embedded
-            emptyIcon={<AppIcons.image className="size-5" aria-hidden />}
+            emptyIcon={<EcsArtwork kind="media" />}
             emptyMessage={
               isFiltered ? t("media.filteredEmptyDescription") : t("media.libraryEmptyDescription")
             }
@@ -614,7 +615,7 @@ export function MediaLibrary({
                     {isFiltered ? (
                       <AppIcons.search className="size-5" aria-hidden />
                     ) : (
-                      <AppIcons.image className="size-5" aria-hidden />
+                      <EcsArtwork kind="media" />
                     )}
                   </span>
                   <EmptyTitle className="font-medium">

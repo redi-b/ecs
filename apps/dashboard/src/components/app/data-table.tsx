@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 
 type DataTableProps<TData> = {
   bulkActions?: (selectedRows: TData[]) => React.ReactNode;
@@ -200,7 +201,7 @@ export function DataTable<TData>({
   const resolvedEmptyIcon = isFiltered ? (
     <AppIcons.search className="size-5" aria-hidden />
   ) : (
-    (emptyIcon ?? <AppIcons.list className="size-5" aria-hidden />)
+    (emptyIcon ?? <EcsArtwork />)
   );
 
   return (

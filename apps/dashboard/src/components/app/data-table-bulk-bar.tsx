@@ -83,10 +83,8 @@ export function DataTableBulkBar({
         className={cn(
           "pointer-events-auto w-full max-w-lg rounded-2xl border border-border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5",
           "sm:w-auto sm:max-w-[min(44rem,calc(100vw-1.5rem))] sm:rounded-full",
-          "transition-all duration-200 ease-out",
-          showBar
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0",
+          "transition-[transform,opacity] duration-200 ease-out",
+          showBar ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
         )}
       >
         {/* Mobile: stacked. Desktop: single row via sm:flex */}

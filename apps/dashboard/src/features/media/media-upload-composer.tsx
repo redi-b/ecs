@@ -445,7 +445,7 @@ export function MediaUploadComposer({
                                 className="size-full object-cover transition-transform duration-200 ease-out group-hover/item:scale-[1.02]"
                                 src={previewUrls.current.get(file.id)}
                               />
-                              <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-all duration-200 ease-out group-hover/item:bg-black/25 group-hover/item:opacity-100">
+                              <span className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-[background-color,opacity] duration-200 ease-out group-hover/item:bg-black/25 group-hover/item:opacity-100">
                                 <span className="rounded-full border border-white/20 bg-black/50 p-2 text-white">
                                   <AppIcons.expand className="size-4" />
                                 </span>

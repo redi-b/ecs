@@ -12,6 +12,7 @@ import {
   type DataTableFilterDefinition,
   DataTableFilters,
 } from "@/components/app/data-table-filters";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -516,7 +517,7 @@ export function ProductsTable({
         columns={columns}
         data={filteredProducts}
         enableSorting={false}
-        emptyIcon={<AppIcons.products className="size-5" aria-hidden />}
+        emptyIcon={<EcsArtwork kind="products" />}
         emptyMessage={t("products.table.emptyMessage")}
         emptyTitle={t("products.table.emptyTitle")}
         filteredEmptyMessage={t("products.table.filteredEmptyMessage")}

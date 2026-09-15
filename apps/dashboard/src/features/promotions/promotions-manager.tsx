@@ -13,6 +13,7 @@ import {
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -475,7 +476,7 @@ export function PromotionsManager({
         )}
         columns={columns}
         data={filtered}
-        emptyIcon={<AppIcons.tag className="size-5" aria-hidden />}
+        emptyIcon={<EcsArtwork kind="promotions" />}
         emptyMessage={t("promotions.table.emptyMessage")}
         emptyTitle={t("promotions.table.emptyTitle")}
         filteredEmptyMessage={t("promotions.table.filteredEmptyMessage")}
