@@ -119,7 +119,7 @@ export function createTenantMembershipSummaryService(db: PlatformDb) {
   return async function getTenantMembershipSummary(input: { userId: string }) {
     const [summary] = await db
       .select({
-        accessibleCount: sql<number>`count(*) filter (where ${tenants.status} = 'active' and ${tenants.primaryDomainId} is not null)::int`,
+        accessibleCount: sql<number>`count(*) filter (where ${tenants.status} in ('active', 'draft') and ${tenants.primaryDomainId} is not null)::int`,
         ownedCount: sql<number>`count(*) filter (where ${organizationMembers.role} = 'owner')::int`,
       })
       .from(organizationMembers)

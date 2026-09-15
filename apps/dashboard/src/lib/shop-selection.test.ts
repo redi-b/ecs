@@ -24,12 +24,12 @@ const state = (tenants: PlatformTenant[]): PlatformOnboardingState => ({
 });
 
 describe("shop destination", () => {
-  it("does not redirect onboarding back to itself for an unfinished shop", () => {
+  it("opens an existing draft shop instead of offering to create another", () => {
     const destination = resolveShopDestination({
       protocol: "https",
       state: state([shop("unfinished", "draft")]),
     });
-    assert.equal(getOnboardingExit(destination), null);
+    assert.equal(getOnboardingExit(destination), "https://unfinished.lvh.me/admin");
     assert.equal(getOnboardingExit({ kind: "picker", href: "/admin/shops" }), "/admin/shops");
   });
   it("sends accounts without an available shop to onboarding", () => {
