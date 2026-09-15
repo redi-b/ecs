@@ -6,7 +6,7 @@ import { usePolicy } from "@/components/app/access-context";
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ProfileAvatar } from "@/components/app/profile-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +49,6 @@ export function AccountMenu({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const canViewBilling = usePolicy(merchantPolicies.billing);
   const accountName = liveActor.name?.trim() || liveActor.email;
-  const accountInitials = getAccountInitials(accountName);
   const openBeside = !isMobile && collapsed;
 
   function closeMobileSidebar() {
@@ -101,12 +100,13 @@ export function AccountMenu({
                 "group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:p-0!",
               )}
             >
-              <Avatar
+              <ProfileAvatar
+                userId={liveActor.id}
+                name={liveActor.name}
+                preferences={liveActor.avatar}
                 className={cn(collapsed && "size-full after:border-0")}
                 size={collapsed ? "default" : "sm"}
-              >
-                <AvatarFallback>{accountInitials}</AvatarFallback>
-              </Avatar>
+              />
               <span className="truncate group-data-[collapsible=icon]:hidden">{accountName}</span>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -196,13 +196,4 @@ export function AccountMenu({
       </SidebarMenuItem>
     </SidebarMenu>
   );
-}
-
-function getAccountInitials(value: string) {
-  const [first = "", second = ""] = value
-    .split(/[\s@._-]+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  return `${first.charAt(0)}${second.charAt(0) || first.charAt(1) || ""}`.toUpperCase();
 }

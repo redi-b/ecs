@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 
 import { AppIcons } from "@/components/app/icons";
+import { ProfileAvatar } from "@/components/app/profile-avatar";
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -94,14 +94,6 @@ const BUILT_IN_PERMISSION_GROUP = {
     ["ownership", ["transfer"]],
   ],
 } as const;
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 function roleLabel(role: string) {
   return role.replace(/[-_]+/g, " ").replace(/^./, (letter) => letter.toUpperCase());
@@ -244,10 +236,12 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
                 const isCurrent = member.userId === team.currentUserId;
                 return (
                   <div className="flex min-w-0 items-center gap-3 px-4 py-3" key={member.id}>
-                    <Avatar className="size-9 shrink-0">
-                      <AvatarImage alt="" src={member.image ?? undefined} />
-                      <AvatarFallback>{initials(member.name)}</AvatarFallback>
-                    </Avatar>
+                    <ProfileAvatar
+                      className="size-9 shrink-0"
+                      userId={member.userId}
+                      name={member.name}
+                      preferences={member.avatar}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 items-center gap-2">
                         <p className="truncate text-sm font-medium">{member.name}</p>

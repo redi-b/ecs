@@ -1,4 +1,5 @@
 /** Better Auth built-in/custom merchant role name, or the isolated platform support role. */
+import type { ProfileAvatarPreferences } from "@ecs/contracts";
 export type DashboardActorRole = string;
 
 export type PlatformSessionUser = {
@@ -22,6 +23,7 @@ export type DashboardAuthorizationResult =
         email: string;
         name: string | null;
         role: DashboardActorRole;
+        avatar?: ProfileAvatarPreferences | null;
         supportAccess?: {
           grantId: string;
           expiresAt: string;

@@ -3,12 +3,12 @@
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 
 type Actor = MerchantDashboardSummary["actor"];
@@ -16,17 +16,12 @@ type Actor = MerchantDashboardSummary["actor"];
 type ActorContextValue = {
   actor: Actor;
   setActorName: (name: string) => void;
+  setActorAvatar: (avatar: Actor["avatar"]) => void;
 };
 
 const ActorContext = createContext<ActorContextValue | null>(null);
 
-export function ActorProvider({
-  actor,
-  children,
-}: {
-  actor: Actor;
-  children: ReactNode;
-}) {
+export function ActorProvider({ actor, children }: { actor: Actor; children: ReactNode }) {
   const [current, setCurrent] = useState(actor);
 
   useEffect(() => {
@@ -38,12 +33,17 @@ export function ActorProvider({
     setCurrent((prev) => ({ ...prev, name: trimmed.length ? trimmed : null }));
   }, []);
 
+  const setActorAvatar = useCallback((avatar: Actor["avatar"]) => {
+    setCurrent((prev) => ({ ...prev, avatar }));
+  }, []);
+
   const value = useMemo(
     () => ({
       actor: current,
       setActorName,
+      setActorAvatar,
     }),
-    [current, setActorName],
+    [current, setActorName, setActorAvatar],
   );
 
   return <ActorContext.Provider value={value}>{children}</ActorContext.Provider>;
@@ -64,5 +64,6 @@ export function useActorOrFallback(fallback: Actor): ActorContextValue {
   return {
     actor: fallback,
     setActorName: () => undefined,
+    setActorAvatar: () => undefined,
   };
 }

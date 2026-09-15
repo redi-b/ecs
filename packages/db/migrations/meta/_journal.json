@@ -407,6 +407,13 @@
       "when": 1789375080023,
       "tag": "0057_insights_event_range",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1789465448398,
+      "tag": "0058_profile_avatar_preferences",
+      "breakpoints": true
     }
   ]
 }
