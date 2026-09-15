@@ -1,3 +1,4 @@
+import { parseProfileAvatar } from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
 import {
   organizationMembers,
@@ -29,6 +30,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         id: users.id,
         email: users.email,
         name: users.name,
+        avatarPreferences: users.avatarPreferences,
         organizationId: organizationMembers.organizationId,
         role: organizationMembers.role,
       })
@@ -53,6 +55,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
           id: users.id,
           email: users.email,
           name: users.name,
+          avatarPreferences: users.avatarPreferences,
         })
         .from(tenantSupportAccessGrants)
         .innerJoin(
@@ -82,6 +85,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
           id: support.id,
           email: support.email,
           name: support.name,
+          avatar: parseProfileAvatar(support.avatarPreferences),
           role: "operator" as const,
           supportAccess: {
             grantId: support.grantId,
@@ -108,6 +112,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         id: row.id,
         email: row.email,
         name: row.name,
+        avatar: parseProfileAvatar(row.avatarPreferences),
         role: row.role,
       },
     };

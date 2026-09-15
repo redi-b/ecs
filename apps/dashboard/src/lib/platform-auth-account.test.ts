@@ -8,10 +8,31 @@ import {
   preflightAccountPasswordReset,
   requestAccountPasswordReset,
   resetAccountPassword,
+  updateAccountProfile,
   verifyAccountEmail,
 } from "./platform-auth-account.js";
 
 const originalFetch = globalThis.fetch;
+
+test("profile updates forward avatar preferences with trusted auth headers", async () => {
+  let captured: Request | undefined;
+  globalThis.fetch = async (input, init) => {
+    captured = new Request(input, init);
+    return Response.json({ status: true });
+  };
+  const avatarPreferences = JSON.stringify({ version: 1, color: "blue", variation: 7 });
+  const result = await updateAccountProfile({
+    name: " Liya ",
+    avatarPreferences,
+    cookieHeader: "ecs.session_token=test",
+    origin: "https://shop.example.com",
+    platformApiBaseUrl: "https://api.example.com",
+  });
+  assert.equal(result.ok, true);
+  assert.equal(captured?.headers.get("cookie"), "ecs.session_token=test");
+  assert.equal(captured?.headers.get("origin"), "https://shop.example.com");
+  assert.deepEqual(await captured?.json(), { name: "Liya", avatarPreferences });
+});
 
 afterEach(() => {
   globalThis.fetch = originalFetch;

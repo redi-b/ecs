@@ -1,3 +1,4 @@
+import type { ProfileAvatarPreferences } from "@ecs/contracts";
 import { getOrderAttentionReasons } from "../../adapters/medusa/order/attention.js";
 import type { BillingStatus, DashboardMetricsResult, PlatformAppOptions } from "../../app.js";
 import type { DashboardActorRole } from "../../types/session.js";
@@ -9,6 +10,7 @@ type MerchantDashboardBase = {
     email: string;
     name: string | null;
     role: DashboardActorRole;
+    avatar?: ProfileAvatarPreferences | null;
     supportAccess?: { grantId: string; expiresAt: string };
   };
   commerce: {

@@ -1,3 +1,4 @@
+import { profileAvatarSchema } from "@ecs/contracts";
 import { z } from "zod";
 
 import { type PlatformRequestContext, platformFetch } from "./client";
@@ -7,6 +8,7 @@ const teamMemberSchema = z.object({
   email: z.string(),
   id: z.string(),
   image: z.string().nullable(),
+  avatar: profileAvatarSchema.nullable().optional(),
   name: z.string(),
   role: z.string(),
   status: z.string(),

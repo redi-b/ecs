@@ -134,10 +134,16 @@ function getSetCookieValues(headers: Headers) {
 export async function updateAccountProfile(
   options: AuthRequestContext & {
     name: string;
+    avatarPreferences?: string;
   },
 ) {
   const response = await fetch(authUrl("/platform/auth/update-user", options.platformApiBaseUrl), {
-    body: JSON.stringify({ name: options.name.trim() }),
+    body: JSON.stringify({
+      name: options.name.trim(),
+      ...(options.avatarPreferences !== undefined
+        ? { avatarPreferences: options.avatarPreferences }
+        : {}),
+    }),
     headers: authHeaders({ ...options, json: true }),
     method: "POST",
   }).catch(() => null);

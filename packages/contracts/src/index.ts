@@ -1,5 +1,55 @@
 import { z } from "zod";
 
+/** Store preferences, never SVG or a third-party image URL. */
+export const profileAvatarSchema = z
+  .object({
+    version: z.literal(1),
+    color: z.enum(["blue", "sky", "mint", "lavender", "sand", "coral", "rose"]),
+    variation: z.number().int().min(0).max(999999),
+    eyes: z
+      .enum([
+        "auto",
+        "variant01",
+        "variant02",
+        "variant03",
+        "variant04",
+        "variant05",
+        "variant06",
+        "variant07",
+        "variant08",
+      ])
+      .default("auto"),
+    angle: z.enum(["left", "straight", "right"]).default("straight"),
+  })
+  .strict();
+
+export type ProfileAvatarPreferences = z.infer<typeof profileAvatarSchema>;
+
+export const defaultProfileAvatar: ProfileAvatarPreferences = {
+  version: 1,
+  color: "blue",
+  variation: 0,
+  eyes: "auto",
+  angle: "straight",
+};
+
+export function parseProfileAvatar(value: unknown): ProfileAvatarPreferences | null {
+  try {
+    const parsed = profileAvatarSchema.safeParse(
+      typeof value === "string" ? JSON.parse(value) : value,
+    );
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Also validates direct Better Auth requests, not only the dashboard proxy. */
+export const serializedProfileAvatarSchema = z
+  .string()
+  .max(150)
+  .refine((value) => parseProfileAvatar(value) !== null, "Invalid avatar preferences");
+
 /** ECS merchant permissions shared by authorization and every dashboard policy consumer. */
 export const merchantPermissionActions = {
   team: ["create", "update", "delete", "read", "invite", "manage", "roles"],
@@ -1357,6 +1407,7 @@ export const superadminMerchantTeamSchema = z.object({
       email: z.string().email(),
       id: z.string().min(1),
       image: z.string().nullable(),
+      avatar: profileAvatarSchema.nullable().optional(),
       name: z.string().min(1),
       role: z.string().min(1),
       status: z.string().min(1),
@@ -1391,6 +1442,7 @@ export const merchantDashboardSummarySchema = z.object({
     email: z.string().email(),
     name: z.string().min(1).nullable(),
     role: merchantRoleNameSchema,
+    avatar: profileAvatarSchema.nullable().optional(),
     supportAccess: z
       .object({ grantId: z.string().min(1), expiresAt: z.string().min(1) })
       .optional(),

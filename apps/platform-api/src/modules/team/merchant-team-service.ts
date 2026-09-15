@@ -1,3 +1,4 @@
+import { parseProfileAvatar } from "@ecs/contracts";
 import {
   auditLogs,
   type createPlatformDb,
@@ -128,6 +129,7 @@ export function createMerchantTeamService(input: {
             email: users.email,
             id: organizationMembers.id,
             image: users.image,
+            avatarPreferences: users.avatarPreferences,
             name: users.name,
             role: organizationMembers.role,
             status: organizationMembers.status,
@@ -164,8 +166,9 @@ export function createMerchantTeamService(input: {
             id: invitation.id,
             role: invitation.role ?? "staff",
           })),
-          members: members.map((member) => ({
+          members: members.map(({ avatarPreferences, ...member }) => ({
             ...member,
+            avatar: parseProfileAvatar(avatarPreferences),
             createdAt: member.createdAt.toISOString(),
           })),
           roles: roles.map((role) => ({

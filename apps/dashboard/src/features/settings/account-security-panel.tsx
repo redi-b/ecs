@@ -1,5 +1,6 @@
 "use client";
 
+import { defaultProfileAvatar, type ProfileAvatarPreferences } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -7,10 +8,21 @@ import { toast } from "sonner";
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
+import { ProfileAvatar } from "@/components/app/profile-avatar";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -18,10 +30,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   formatDateTime,
   formatSessionIp,
-  getInitials,
   PasswordField,
   parseUserAgent,
 } from "@/features/settings/account-security-parts";
+import { ProfileAvatarEditor } from "@/features/settings/profile-avatar-editor";
 import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
@@ -50,7 +62,7 @@ export function AccountSecurityPanel({
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { setActorName } = useActorOrFallback({
+  const { actor, setActorName, setActorAvatar } = useActorOrFallback({
     email,
     id: "",
     name: initialName,
@@ -63,6 +75,27 @@ export function AccountSecurityPanel({
   const emailId = useId();
 
   const [name, setName] = useState(initialName ?? "");
+  const [avatar, setAvatar] = useState<ProfileAvatarPreferences>(
+    actor.avatar ?? defaultProfileAvatar,
+  );
+  const [savedAvatar, setSavedAvatar] = useState<ProfileAvatarPreferences>(
+    actor.avatar ?? defaultProfileAvatar,
+  );
+  const [avatarDraft, setAvatarDraft] = useState<ProfileAvatarPreferences>(
+    actor.avatar ?? defaultProfileAvatar,
+  );
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const avatarDirty =
+    avatar.color !== savedAvatar.color ||
+    avatar.variation !== savedAvatar.variation ||
+    avatar.eyes !== savedAvatar.eyes ||
+    avatar.angle !== savedAvatar.angle;
+  useEffect(() => {
+    const next = actor.avatar ?? defaultProfileAvatar;
+    setAvatar(next);
+    setSavedAvatar(next);
+    setAvatarDraft(next);
+  }, [actor.avatar]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [accountEmail, setAccountEmail] = useState(email);
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
@@ -85,8 +118,19 @@ export function AccountSecurityPanel({
     const nameDirty = name.trim() !== (initialName ?? "").trim();
     const passwordDirty =
       currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
-    return nameDirty || passwordDirty || (editingEmail && newEmail.trim().length > 0);
-  }, [confirmPassword, currentPassword, editingEmail, initialName, name, newEmail, newPassword]);
+    return (
+      nameDirty || avatarDirty || passwordDirty || (editingEmail && newEmail.trim().length > 0)
+    );
+  }, [
+    avatarDirty,
+    confirmPassword,
+    currentPassword,
+    editingEmail,
+    initialName,
+    name,
+    newEmail,
+    newPassword,
+  ]);
 
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(accountDirty);
 
@@ -232,7 +276,7 @@ export function AccountSecurityPanel({
     }
     setSavingProfile(true);
     const response = await fetch("/admin/account/profile", {
-      body: JSON.stringify({ name: trimmed }),
+      body: JSON.stringify({ name: trimmed, avatar }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     }).catch(() => null);
@@ -249,6 +293,8 @@ export function AccountSecurityPanel({
     }
 
     setActorName(trimmed);
+    setSavedAvatar(avatar);
+    setActorAvatar(avatar);
     toast.success(t("settings.accountSecurity.toast.profileUpdated"));
     router.refresh();
   }
@@ -362,7 +408,6 @@ export function AccountSecurityPanel({
 
   const otherSessionCount = sessions.filter((session) => !session.isCurrent).length;
 
-  const initials = getInitials(name.trim() || email);
   const nameDirty = name.trim() !== (initialName ?? "").trim();
   const passwordReady =
     currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
@@ -373,9 +418,67 @@ export function AccountSecurityPanel({
 
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
         <div className="flex items-center gap-3.5 border-b border-border/60 bg-muted/20 px-4 py-3.5 sm:px-4">
-          <div className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold tracking-wide text-primary-foreground">
-            {initials}
-          </div>
+          <Dialog
+            open={avatarDialogOpen}
+            onOpenChange={(open) => {
+              if (open) setAvatarDraft(avatar);
+              setAvatarDialogOpen(open);
+            }}
+          >
+            <DialogTrigger asChild>
+              <button
+                aria-label={t("settings.accountSecurity.avatar.edit")}
+                className="group/avatar-edit relative shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                disabled={savingProfile}
+                type="button"
+              >
+                <ProfileAvatar
+                  className="size-11 transition-[filter,transform] duration-150 group-hover/avatar-edit:brightness-75 group-active/avatar-edit:scale-[0.96]"
+                  userId={actor.id}
+                  name={name}
+                  preferences={avatar}
+                />
+                <span className="pointer-events-none absolute inset-0 hidden place-items-center rounded-full bg-black/35 text-white opacity-0 transition-opacity duration-150 group-hover/avatar-edit:grid group-hover/avatar-edit:opacity-100 group-focus-visible/avatar-edit:grid group-focus-visible/avatar-edit:opacity-100 sm:grid">
+                  <AppIcons.edit className="size-4" aria-hidden />
+                </span>
+                <span className="pointer-events-none absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground ring-2 ring-card sm:hidden">
+                  <AppIcons.edit className="size-3" aria-hidden />
+                </span>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl p-0 sm:max-w-3xl">
+              <DialogHeader className="px-4 pt-4">
+                <DialogTitle>{t("settings.accountSecurity.avatar.title")}</DialogTitle>
+                <DialogDescription>{t("settings.accountSecurity.avatar.hint")}</DialogDescription>
+              </DialogHeader>
+              <div className="overflow-y-auto px-4 pb-4">
+                <ProfileAvatarEditor
+                  userId={actor.id}
+                  name={name}
+                  value={avatarDraft}
+                  onChange={setAvatarDraft}
+                  disabled={savingProfile}
+                />
+              </div>
+              <DialogFooter className="mx-0 mb-0 rounded-none">
+                <DialogClose asChild>
+                  <Button variant="outline" type="button">
+                    {t("common.cancel")}
+                  </Button>
+                </DialogClose>
+                <Button
+                  disabled={savingProfile}
+                  onClick={() => {
+                    setAvatar(avatarDraft);
+                    setAvatarDialogOpen(false);
+                  }}
+                  type="button"
+                >
+                  {t("settings.accountSecurity.avatar.use")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">
               {name.trim() || t("settings.accountSecurity.addName")}
@@ -388,16 +491,29 @@ export function AccountSecurityPanel({
             <FieldLabel htmlFor={nameId}>{t("settings.accountSecurity.displayName")}</FieldLabel>
             <Input
               id={nameId}
+              disabled={savingProfile}
               onChange={(event) => setName(event.target.value)}
               placeholder={t("settings.accountSecurity.namePlaceholder")}
               value={name}
             />
             <FieldDescription>{t("settings.accountSecurity.nameHint")}</FieldDescription>
           </Field>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              disabled={savingProfile || (!nameDirty && !avatarDirty)}
+              onClick={() => {
+                setName(initialName ?? "");
+                setAvatar(savedAvatar);
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
             <Button
               className="w-full rounded-full sm:w-auto"
-              disabled={savingProfile || !nameDirty}
+              disabled={savingProfile || (!nameDirty && !avatarDirty)}
               onClick={() => void saveProfile()}
               size="sm"
               type="button"

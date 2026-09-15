@@ -1,4 +1,5 @@
 import { getAuthCookiePrefix } from "@ecs/config";
+import { serializedProfileAvatarSchema } from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
 import * as schema from "@ecs/db";
 import { betterAuth } from "better-auth";
@@ -306,6 +307,14 @@ export function createPlatformAuth(options: {
       }),
     ],
     user: {
+      additionalFields: {
+        avatarPreferences: {
+          type: "string",
+          required: false,
+          input: true,
+          validator: { input: serializedProfileAvatarSchema },
+        },
+      },
       ...(enqueueAccountEmail
         ? {
             changeEmail: {
