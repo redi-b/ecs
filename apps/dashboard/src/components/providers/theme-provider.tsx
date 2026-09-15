@@ -35,7 +35,8 @@ export function ThemeProvider({ children, ...props }: ComponentProps<typeof Next
 
 function applyThemeClass(theme: SharedTheme) {
   const root = document.documentElement;
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const prefersDark = typeof window.matchMedia !== "function" ||
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
   const dark = theme === "dark" || (theme === "system" && prefersDark);
   root.classList.toggle("dark", dark);
   root.style.colorScheme = dark ? "dark" : "light";
@@ -68,7 +69,7 @@ function SharedThemeBridge() {
   }, [activeTheme]);
 
   useEffect(() => {
-    if (activeTheme !== "system") return;
+    if (activeTheme !== "system" || typeof window.matchMedia !== "function") return;
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => applyThemeClass("system");
     media.addEventListener("change", onChange);
