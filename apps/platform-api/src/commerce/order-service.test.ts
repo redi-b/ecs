@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { createMedusaOrderService } from "./order-service.js";
+import { decodeRefundNote } from "../adapters/medusa/order/refunds.js";
 
 describe("createMedusaOrderService", () => {
   it("lists orders through the Medusa Admin API scoped by sales channel", async () => {
@@ -30,7 +31,9 @@ describe("createMedusaOrderService", () => {
                 delivery_choice: "delivery",
                 customer_name: "Abebe Kebede",
               },
-              items: [{ id: "item_1", title: "Phone case", quantity: 2, unit_price: 625, total: 1250 }],
+              items: [
+                { id: "item_1", title: "Phone case", quantity: 2, unit_price: 625, total: 1250 },
+              ],
               created_at: "2026-01-01T00:00:00.000Z",
               updated_at: "2026-01-02T00:00:00.000Z",
             },
@@ -401,6 +404,112 @@ describe("createMedusaOrderService", () => {
     assert.equal(result.ok && result.order.paymentMethod, "unknown");
   });
 
+  it("records a partial manual refund against the captured payment", async () => {
+    const forwardedRequests: Request[] = [];
+    let refunded = false;
+    const order = () => ({
+      id: "order_1",
+      display_id: 1001,
+      status: "pending",
+      payment_status: refunded ? "partially_refunded" : "captured",
+      fulfillment_status: "not_fulfilled",
+      currency_code: "etb",
+      total: 1_250,
+      sales_channel_id: "sc_1",
+      items: [],
+      payment_collections: [
+        {
+          payments: [
+            {
+              id: "pay_1",
+              amount: 1_250,
+              captures: [{ id: "capt_1" }],
+              refunds: refunded
+                ? [{ id: "refund_1", amount: 250, note: "", created_at: "2026-09-16T10:00:00Z" }]
+                : [],
+            },
+          ],
+        },
+      ],
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+    });
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+        if (request.method === "POST") {
+          refunded = true;
+          return Response.json({ payment: { id: "pay_1" } });
+        }
+        return Response.json({ order: order() });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "refund",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+      refund: {
+        amount: 250,
+        method: "telebirr",
+        reason: "customer_request",
+        reference: "TX-42",
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 3);
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/payments/pay_1/refund");
+    const body = JSON.parse(await forwardedRequests[1]!.text()) as { amount: number; note: string };
+    assert.equal(body.amount, 250);
+    assert.deepEqual(decodeRefundNote(body.note), {
+      method: "telebirr",
+      reason: "customer_request",
+      reference: "TX-42",
+    });
+    assert.equal(result.ok && result.order.refundableTotal, 1_000);
+    assert.equal(result.ok && result.order.refundedTotal, 250);
+  });
+
+  it("requires the remaining payment to be refunded before cancellation", async () => {
+    let calls = 0;
+    const service = createMedusaOrderService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async () => {
+        calls += 1;
+        return Response.json({
+          order: {
+            id: "order_1",
+            sales_channel_id: "sc_1",
+            status: "pending",
+            payment_status: "partially_refunded",
+            fulfillment_status: "not_fulfilled",
+            currency_code: "etb",
+            total: 1_250,
+            items: [],
+          },
+        });
+      },
+    });
+
+    const result = await service.mutateMerchantOrder({
+      action: "cancel",
+      orderId: "order_1",
+      salesChannelId: "sc_1",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      error: "order_refund_required",
+      status: 409,
+    });
+    assert.equal(calls, 1);
+  });
+
   it("completes one order through the Medusa Admin API", async () => {
     const forwardedRequests: Request[] = [];
     let completed = false;
@@ -658,7 +767,10 @@ describe("createMedusaOrderService", () => {
     );
     assert.equal(await forwardedRequests[1]?.text(), "{}");
     assert.equal(result.ok && result.order.fulfillmentStatus, "delivered");
-    assert.equal(result.ok && result.order.fulfillments?.[0]?.deliveredAt, "2026-01-03T00:00:00.000Z");
+    assert.equal(
+      result.ok && result.order.fulfillments?.[0]?.deliveredAt,
+      "2026-01-03T00:00:00.000Z",
+    );
   });
 
   it("does not deliver fulfillments outside the scoped order", async () => {

@@ -1967,6 +1967,10 @@ describe("platform app merchant dashboard and orders", () => {
         error: "shop_context_required",
       },
       {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner", role: "owner" },
+        }),
         getSession: async () => ({
           user: {
             id: "user_1",
@@ -2063,6 +2067,10 @@ describe("platform app merchant dashboard and orders", () => {
         error: "shop_context_required",
       },
       {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner", role: "owner" },
+        }),
         getSession: async () => ({
           user: {
             id: "user_1",
@@ -2162,6 +2170,10 @@ describe("platform app merchant dashboard and orders", () => {
         error: "shop_context_required",
       },
       {
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner", role: "owner" },
+        }),
         getSession: async () => ({
           user: {
             id: "user_1",

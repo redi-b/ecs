@@ -8,6 +8,7 @@ const ORDER_ACTIONS = new Set<MerchantOrderAction>([
   "fulfill",
   "ship",
   "mark-paid",
+  "refund",
   "recheck-payment",
   "finish",
 ]);
@@ -27,6 +28,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       receivingAccountId?: unknown;
       reference?: unknown;
       note?: unknown;
+      amount?: unknown;
+      method?: unknown;
+      reason?: unknown;
     };
     const action = typeof body.action === "string" ? body.action : "";
 
@@ -70,6 +74,35 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       };
     }
 
+    const refund =
+      action === "refund" &&
+      typeof body.amount === "number" &&
+      typeof body.method === "string" &&
+      typeof body.reason === "string"
+        ? {
+            amount: body.amount,
+            method: body.method as
+              | "cash"
+              | "telebirr"
+              | "cbe_birr"
+              | "bank_transfer"
+              | "chapa"
+              | "other",
+            reason: body.reason as
+              | "customer_request"
+              | "item_unavailable"
+              | "wrong_item"
+              | "damaged_item"
+              | "duplicate_payment"
+              | "other",
+            ...(typeof body.reference === "string" ? { reference: body.reference } : {}),
+            ...(typeof body.note === "string" ? { note: body.note } : {}),
+          }
+        : undefined;
+    if (action === "refund" && !refund) {
+      return { ok: false, message: "order_refund_amount_invalid", status: 400 };
+    }
+
     const result = await mutateMerchantOrder({
       action: action as MerchantOrderAction,
       cookieHeader: context.cookieHeader,
@@ -79,6 +112,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       requestHost: context.requestHost,
       tenantId: context.tenantId,
       settlement,
+      refund,
     });
 
     if (!result.ok) {
