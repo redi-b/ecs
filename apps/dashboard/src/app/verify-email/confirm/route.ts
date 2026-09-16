@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAccountAuthRequestContext } from "@/lib/account-request-context";
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
 import { getSafeVerificationReturnPath, verifyAccountEmail } from "@/lib/platform-auth-account";
+import { isAllowedVerificationPost } from "@/lib/verification-request";
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
@@ -25,8 +26,12 @@ export async function POST(request: Request) {
   if (
     !token ||
     token.length > 4096 ||
-    request.headers.get("sec-fetch-site") === "cross-site" ||
-    (submittedOrigin !== null && submittedOrigin !== origin)
+    !isAllowedVerificationPost({
+      publicOrigin: origin,
+      requestOrigin: requestUrl.origin,
+      secFetchSite: request.headers.get("sec-fetch-site"),
+      submittedOrigin,
+    })
   ) {
     resultUrl.searchParams.set("error", "INVALID_TOKEN");
     return NextResponse.redirect(resultUrl, 303);

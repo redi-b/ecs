@@ -8,6 +8,7 @@ import { z } from "@medusajs/framework/zod";
 import { listProductQueryConfig } from "@medusajs/medusa/api/admin/products/query-config";
 import { manualOrderAdjustmentSchema } from "../lib/manual-order-adjustment";
 import { productMediaQuerySchema } from "../lib/product-media-query";
+import { platformProductUpdateSchema } from "../lib/platform-product-update";
 import {
   adminProductSearchQuerySchema,
   productSearchQuerySchema,
@@ -66,6 +67,11 @@ export default defineMiddlewares({
           filterableField: "sales_channel_id",
         }),
       ],
+    },
+    {
+      method: "POST",
+      matcher: "/admin/platform-products/:id",
+      middlewares: [validateAndTransformBody(platformProductUpdateSchema)],
     },
     {
       method: "GET",

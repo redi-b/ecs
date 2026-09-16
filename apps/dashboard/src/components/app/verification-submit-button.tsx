@@ -11,8 +11,9 @@ export function VerificationSubmitButton({ label }: { label: string }) {
   return (
     <Button
       aria-busy={pending}
-      className="h-11 w-full rounded-full"
+      className="w-full"
       disabled={pending}
+      size="lg"
       type="submit"
     >
       {pending ? <AppIcons.loader aria-hidden className="animate-spin" /> : null}

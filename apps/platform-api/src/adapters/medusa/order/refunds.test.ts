@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { decodeRefundNote, encodeRefundNote, getOrderRefundSummary } from "./refunds.js";
+import { normalizeOrder } from "./normalize.js";
 
 test("round-trips merchant-facing manual refund details", () => {
   const note = encodeRefundNote({
@@ -64,4 +65,21 @@ test("calculates partial refund history and remaining captured amount", () => {
       },
     ],
   });
+});
+
+test("legacy manually-paid orders expose a refundable balance for native ledger repair", () => {
+  const order = normalizeOrder(
+    {
+      id: "order_legacy",
+      sales_channel_id: "sc_1",
+      total: 1200,
+      payment_status: "not_paid",
+      metadata: { payment_status_override: "paid" },
+    },
+    "sc_1",
+  )[0];
+
+  assert.equal(order?.paymentStatus, "captured");
+  assert.equal(order?.refundableTotal, 1200);
+  assert.equal(order?.refundedTotal, 0);
 });

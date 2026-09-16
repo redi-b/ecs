@@ -55,8 +55,8 @@ function PopoverContent({
   collisionPadding = 12,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  // Inside sheet/dialog: portal into the modal surface so collision + stacking
-  // stay with the field (same pattern as Combobox).
+  // Dialogs and sheets provide their document body as the floating root. This
+  // keeps nested surfaces above the modal without clipping them to its scroll area.
   const portalContainer = useFloatingPortalContainer();
   const nested = Boolean(portalContainer);
 

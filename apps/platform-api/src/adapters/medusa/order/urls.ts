@@ -218,6 +218,20 @@ export function getPaymentRefundUrl(medusaInternalUrl: string, paymentId: string
   );
 }
 
+export function getPaymentCaptureUrl(medusaInternalUrl: string, paymentId: string) {
+  return new URL(
+    `/admin/payments/${encodeURIComponent(paymentId)}/capture`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getEnsureOrderPaymentUrl(medusaInternalUrl: string, orderId: string) {
+  return new URL(
+    `/admin/platform-orders/${encodeURIComponent(orderId)}/ensure-payment`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
 export function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value : `${value}/`;
 }

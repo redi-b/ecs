@@ -367,8 +367,10 @@ const emailTemplateService = createEmailTemplateService({
   db: platformDb.db,
   emailProvider: authEmailProvider,
 });
-if (requireEmailVerification && !authEmailProvider) {
-  throw new Error("AUTH_REQUIRE_EMAIL_VERIFICATION requires a configured EMAIL_PROVIDER");
+if (requireEmailVerification && !emailDeliveryService) {
+  throw new Error(
+    "AUTH_REQUIRE_EMAIL_VERIFICATION requires EMAIL_PROVIDER and REDIS_URL for durable delivery",
+  );
 }
 if (emailDeliveryConfigured) {
   logger.info(
@@ -754,7 +756,7 @@ const auth = createPlatformAuth({
   cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
   dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
   db: platformDb.db,
-  ...(authEmailProvider ? { emailProvider: authEmailProvider } : {}),
+  ...(!emailDeliveryService && authEmailProvider ? { emailProvider: authEmailProvider } : {}),
   ...(emailDeliveryService ? { enqueueAccountEmail: emailDeliveryService.enqueue } : {}),
   requireEmailVerification,
   secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",

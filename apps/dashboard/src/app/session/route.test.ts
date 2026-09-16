@@ -137,6 +137,28 @@ test("POST /session rejects unsafe next redirects", async () => {
   assert.equal(response.headers.get("location"), "http://abebe.lvh.me/dashboard");
 });
 
+test("POST /session reports an unverified account instead of an auth outage", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  globalThis.fetch = async () =>
+    Response.json({ code: "EMAIL_NOT_VERIFIED", message: "Email not verified" }, { status: 403 });
+
+  const response = await POST(
+    new Request("http://app.lvh.me/session", {
+      body: JSON.stringify({ email: "mahi@example.com", password: "password1234" }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "x-forwarded-host": "app.lvh.me",
+        "x-forwarded-proto": "http",
+      },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: "email_not_verified", ok: false });
+});
+
 test("POST /session routes central dashboard sign-in to the user's primary shop", async () => {
   process.env.PLATFORM_API_BASE_URL = "http://platform.test";
   const requestedUrls: string[] = [];

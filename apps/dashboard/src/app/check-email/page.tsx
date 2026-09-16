@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { VerificationEmailForm } from "@/components/app/account-recovery-forms";
 import { AppIcons } from "@/components/app/icons";
@@ -7,20 +7,28 @@ import { AuthShell } from "@/components/onboarding/auth-shell";
 import { Button } from "@/components/ui/button";
 import { getTranslations } from "@/i18n/server";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import {
+  readVerificationEmailCookie,
+  VERIFICATION_EMAIL_COOKIE,
+} from "@/lib/verification-email-cookie";
 
 export default async function CheckEmailPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ email?: string }>;
+  searchParams?: Promise<{ delivery?: string }>;
 }) {
   const t = await getTranslations();
   const params = await searchParams;
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const cookieStore = await cookies();
+  const email =
+    readVerificationEmailCookie(cookieStore.get(VERIFICATION_EMAIL_COOKIE)?.value) ?? "";
 
   if (!isCentralDashboardHost(requestHost)) {
     redirect("/sign-in");
   }
+  if (!email) redirect("/sign-in");
 
   return (
     <AuthShell>
@@ -34,11 +42,17 @@ export default async function CheckEmailPage({
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {t("signup.verification.description")}
         </p>
+        <p className="mt-3 break-all text-sm font-medium">{email}</p>
+        {params?.delivery === "failed" ? (
+          <p className="mt-3 text-sm text-destructive" role="alert">
+            {t("signup.verification.resendError")}
+          </p>
+        ) : null}
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {t("signup.verification.help")}
         </p>
-        <VerificationEmailForm initialEmail={params?.email ?? ""} />
-        <Button asChild className="mt-3 w-full" variant="outline">
+        <VerificationEmailForm initialEmail={email} />
+        <Button asChild className="mt-3 w-full" size="lg" variant="outline">
           <Link href="/sign-in">{t("signup.verification.backToSignIn")}</Link>
         </Button>
       </section>

@@ -10,12 +10,12 @@
   },
   "verification": {
     "title": "Check your email",
-    "description": "We sent a verification link to the email address you used to create your account.",
+    "description": "We sent a verification link to:",
     "help": "Open the link to verify your email, then sign in to finish setting up your shop.",
     "backToSignIn": "Back to sign in",
     "resend": "Send another link",
     "sending": "Sending…",
-    "resent": "If this address has an account, a new link is on its way.",
+    "resent": "A new verification link was sent to {email}.",
     "resendError": "We could not send another link right now. Try again shortly."
   }
 }

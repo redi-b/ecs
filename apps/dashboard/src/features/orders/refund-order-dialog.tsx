@@ -178,7 +178,7 @@ export function RefundOrderDialog({
             {t("orders.refund.confirmation")}
           </div>
         </div>
-        <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-5">
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button
             disabled={pending}
             onClick={() => onOpenChange(false)}

@@ -183,8 +183,9 @@ export function AccountSignUpForm({
         ) : null}
         <Button
           aria-busy={isSubmitting}
-          className="mt-2 h-11 w-full text-sm font-semibold"
+          className="mt-2 w-full text-sm font-semibold"
           disabled={isSubmitting}
+          size="lg"
           type="submit"
         >
           {isSubmitting ? (

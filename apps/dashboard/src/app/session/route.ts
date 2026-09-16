@@ -140,14 +140,16 @@ async function readSignInPayload(request: Request) {
 function failSignIn(request: Request, nextPath: string, error: string, wantsJson: boolean) {
   if (wantsJson) {
     const status =
-      error === "invalid_credentials" ||
-      error === "missing_email" ||
-      error === "missing_password" ||
-      error === "shop_access_denied"
-        ? 401
-        : error === "shop_not_found" || error === "shop_unavailable"
-          ? 404
-          : 503;
+      error === "email_not_verified"
+        ? 403
+        : error === "invalid_credentials" ||
+            error === "missing_email" ||
+            error === "missing_password" ||
+            error === "shop_access_denied"
+          ? 401
+          : error === "shop_not_found" || error === "shop_unavailable"
+            ? 404
+            : 503;
     return NextResponse.json({ error, ok: false as const }, { status });
   }
   return redirectToSignIn(request, nextPath, error);
@@ -348,7 +350,7 @@ async function signInWithPlatformAuth(input: {
     return {
       code: result.error.code,
       ok: false,
-      status: result.error.status === 401 ? 401 : 503,
+      status: result.error.status,
     } as const;
   }
 

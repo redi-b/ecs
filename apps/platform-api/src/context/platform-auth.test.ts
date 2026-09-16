@@ -2,11 +2,50 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  deliverAccountVerificationEmail,
   getEmailVerificationActionUrl,
   getPasswordResetActionUrl,
   getPlatformAuthCookieOptions,
+  renderAccountVerificationEmail,
   requiresVerifiedEmailForInvitation,
 } from "./platform-auth.js";
+
+test("account verification email keeps the branded action button", () => {
+  const rendered = renderAccountVerificationEmail({
+    actionUrl: "https://app.example.com/verify-email?token=token-1",
+    recipientName: "Mahi",
+  });
+
+  assert.match(rendered.html, />Verify email<\/a>/);
+  assert.match(rendered.html, /href="https:\/\/app\.example\.com\/verify-email\?token=token-1"/);
+  assert.match(
+    rendered.text,
+    /Verify email: https:\/\/app\.example\.com\/verify-email\?token=token-1/,
+  );
+});
+
+test("account verification uses the durable outbox when both delivery paths exist", async () => {
+  const calls: string[] = [];
+  const result = await deliverAccountVerificationEmail({
+    actionUrl: "https://app.example.com/verify-email?token=token-1",
+    emailProvider: {
+      channel: "email",
+      async send() {
+        calls.push("direct");
+        return {};
+      },
+    },
+    enqueueAccountEmail: async (input) => {
+      calls.push(`queue:${input.templateKey}:${input.recipient}`);
+    },
+    generatedUrl: "https://api.example.com/platform/auth/verify-email?token=token-1",
+    recipient: "mahi@example.com",
+    recipientName: "Mahi",
+  });
+
+  assert.equal(result, "queued");
+  assert.deepEqual(calls, ["queue:account.email_verification:mahi@example.com"]);
+});
 
 test("production auth cookies are secure, branded, and shared across the parent domain", () => {
   const options = getPlatformAuthCookieOptions({

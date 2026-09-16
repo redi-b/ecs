@@ -44,13 +44,19 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
     items.length > 0
       ? items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
       : (getNumber(value.items_count) ?? null);
-  const refundSummary = getOrderRefundSummary(value);
-
   // Prefer real payment_status; allow explicit dashboard override only when still unpaid-ish.
   const rawPaymentStatus = getString(value.payment_status);
   const overridePaid = normalizeKey(getString(metadata.payment_status_override)) === "paid";
   const paymentStatus =
     overridePaid && isUnpaidPaymentStatus(rawPaymentStatus) ? "captured" : rawPaymentStatus;
+  const nativeRefundSummary = getOrderRefundSummary(value);
+  const refundSummary =
+    nativeRefundSummary &&
+    (nativeRefundSummary.refundableTotal > 0 || nativeRefundSummary.refundedTotal > 0)
+      ? nativeRefundSummary
+      : isPaidPaymentStatus(paymentStatus) && typeof total === "number" && total > 0
+        ? { refundableTotal: total, refundedTotal: 0, refunds: [] }
+        : nativeRefundSummary;
 
   return [
     {
@@ -84,6 +90,11 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+function isPaidPaymentStatus(value: string | null) {
+  const key = normalizeKey(value);
+  return key.includes("captured") || key === "paid" || key.includes("refund");
 }
 
 function normalizeKey(value: string | null | undefined) {

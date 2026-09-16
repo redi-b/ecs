@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
 import { requestWantsJson } from "@/lib/request-wants-json";
+import { getVerificationEmailCookie } from "@/lib/verification-email-cookie";
 
 type SignUpResult =
   | {
       ok: true;
       cookies: string[];
+      requiresVerification: boolean;
     }
   | {
       ok: false;
@@ -51,12 +53,23 @@ export async function POST(request: Request) {
   }
 
   if (signUpResult.cookies.length === 0) {
-    if (process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true") {
+    if (signUpResult.requiresVerification) {
+      const delivery = await requestVerificationDelivery({
+        callbackURL: new URL(
+          `/sign-in?verified=1${nextPath === "/dashboard" ? "" : `&next=${encodeURIComponent(nextPath)}`}`,
+          getRequestOrigin(request),
+        ).toString(),
+        email,
+        forwardedHost: getForwardedHost(request),
+        forwardedProto: getForwardedProto(request),
+      });
       const redirectTo = new URL("/check-email", getRequestOrigin(request));
-      redirectTo.searchParams.set("email", email);
-      return wantsJson
+      if (!delivery) redirectTo.searchParams.set("delivery", "failed");
+      const response = wantsJson
         ? NextResponse.json({ ok: true as const, redirectTo: redirectTo.toString() })
         : NextResponse.redirect(redirectTo, { status: 303 });
+      response.headers.append("set-cookie", getVerificationEmailCookie(email));
+      return response;
     }
     return failSignUp(request, "auth_session_missing", payload, wantsJson);
   }
@@ -76,6 +89,30 @@ export async function POST(request: Request) {
     response.headers.append("set-cookie", getSharedAuthCookie(cookie));
   }
   return response;
+}
+
+async function requestVerificationDelivery(input: {
+  callbackURL: string;
+  email: string;
+  forwardedHost: string;
+  forwardedProto: string;
+}) {
+  const response = await fetch(
+    new URL("/platform/auth/send-verification-email", getPlatformBaseUrl()),
+    {
+      body: JSON.stringify({ callbackURL: input.callbackURL, email: input.email }),
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        origin: `${input.forwardedProto}://${input.forwardedHost}`,
+        "x-forwarded-host": input.forwardedHost,
+        "x-forwarded-proto": input.forwardedProto,
+      },
+      method: "POST",
+    },
+  ).catch(() => null);
+  return response?.ok === true;
 }
 
 async function readSignUpPayload(request: Request) {
@@ -177,9 +214,15 @@ async function signUpWithPlatformAuth(input: {
     };
   }
 
+  const body = (await response.json().catch(() => null)) as { token?: unknown } | null;
+
   return {
     ok: true,
     cookies: getSetCookieValues(response.headers),
+    // Better Auth returns a null token when signup succeeded but the account
+    // must verify its email before a session can be created. Derive this from
+    // the auth response instead of duplicating platform configuration in Next.
+    requiresVerification: body?.token === null,
   };
 }
 

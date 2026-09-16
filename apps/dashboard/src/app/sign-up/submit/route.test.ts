@@ -84,13 +84,19 @@ test("POST /sign-up/submit creates an account and redirects to onboarding", asyn
 
 test("POST /sign-up/submit asks the user to verify email when verification is required", async () => {
   process.env.PLATFORM_API_BASE_URL = "http://platform.test";
-  process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = "true";
+  delete process.env.AUTH_REQUIRE_EMAIL_VERIFICATION;
+  const requests: Array<{ body: unknown; url: string }> = [];
 
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ user: { id: "user_1" } }), {
-      headers: { "content-type": "application/json" },
-      status: 200,
-    });
+  globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init);
+    requests.push({ body: await request.json(), url: request.url });
+    return request.url.endsWith("/sign-up/email")
+      ? new Response(JSON.stringify({ token: null, user: { id: "user_1" } }), {
+          headers: { "content-type": "application/json" },
+          status: 200,
+        })
+      : new Response(JSON.stringify({ status: true }), { status: 200 });
+  };
 
   const response = await POST(
     new Request("http://app.lvh.me/sign-up/submit", {
@@ -108,7 +114,55 @@ test("POST /sign-up/submit asks the user to verify email when verification is re
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     ok: true,
-    redirectTo: "http://app.lvh.me/check-email?email=mahi%40example.com",
+    redirectTo: "http://app.lvh.me/check-email",
+  });
+  assert.match(response.headers.get("set-cookie") ?? "", /ecs\.verification_email=mahi%40example\.com/);
+  assert.deepEqual(requests, [
+    {
+      body: {
+        callbackURL: "http://app.lvh.me/sign-in?verified=1&next=%2Fonboarding",
+        email: "mahi@example.com",
+        name: "Mahi Bekele",
+        password: "password1234",
+      },
+      url: "http://platform.test/platform/auth/sign-up/email",
+    },
+    {
+      body: {
+        callbackURL: "http://app.lvh.me/sign-in?verified=1&next=%2Fonboarding",
+        email: "mahi@example.com",
+      },
+      url: "http://platform.test/platform/auth/send-verification-email",
+    },
+  ]);
+});
+
+test("POST /sign-up/submit reports a failed initial verification delivery without losing the account", async () => {
+  process.env.PLATFORM_API_BASE_URL = "http://platform.test";
+  let call = 0;
+  globalThis.fetch = async () => {
+    call += 1;
+    return call === 1
+      ? new Response(JSON.stringify({ token: null, user: { id: "user_1" } }), { status: 200 })
+      : new Response(JSON.stringify({ code: "DELIVERY_FAILED" }), { status: 503 });
+  };
+
+  const response = await POST(
+    new Request("http://app.lvh.me/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "password1234",
+        email: "mahi@example.com",
+        ownerName: "Mahi Bekele",
+        password: "password1234",
+      }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }),
+  );
+
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    redirectTo: "http://app.lvh.me/check-email?delivery=failed",
   });
 });
 
