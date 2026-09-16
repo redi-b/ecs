@@ -30,6 +30,7 @@ export type MerchantDeliverySettingsResult =
     };
 
 export type MerchantSettingsInput = {
+  shopDetails?: import("@ecs/contracts").ShopDetails;
   handle: string;
   name: string;
 };

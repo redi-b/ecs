@@ -1,4 +1,4 @@
-import type { MerchantDashboardAccess } from "@ecs/contracts";
+import type { LaunchReadiness, MerchantDashboardAccess } from "@ecs/contracts";
 
 import type { MessageKey } from "@/i18n/messages";
 import { dashboardRoutes } from "@/lib/routes";
@@ -21,18 +21,79 @@ export type LaunchChecklistItem = {
   href: string;
   required: boolean;
   current: boolean;
+  unavailable?: boolean;
 };
 
 export type LaunchAssistantData = MerchantDashboardAccess & {
   hasVisitedEditor: boolean;
   productCount: number | null;
   productCountUnavailable?: boolean;
+  readiness?: LaunchReadiness | null;
 };
 
 export function getLaunchChecklistItems(
   summary: LaunchAssistantData,
   t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
 ): LaunchChecklistItem[] {
+  if (summary.readiness !== undefined) {
+    const readiness = summary.readiness;
+    const required: Omit<LaunchChecklistItem, "current">[] = (
+      ["profile", "catalog", "review"] as const
+    ).map((id) => {
+      const check = readiness?.checks.find((item) => item.id === id);
+      const status = check?.status ?? "unavailable";
+      const href =
+        id === "profile"
+          ? `${dashboardRoutes.settings}?tab=shop`
+          : id === "catalog"
+            ? dashboardRoutes.products
+            : dashboardRoutes.editor;
+      return {
+        id,
+        label: t(`overview.launch.checks.${id}`),
+        description:
+          status === "unavailable"
+            ? t("overview.launch.checks.unavailable")
+            : t(`overview.launch.checks.${id}${status === "ready" ? "Ready" : "Help"}`),
+        ready: status === "ready",
+        unavailable: status === "unavailable",
+        href,
+        required: true,
+      };
+    });
+    const fulfillment = readiness?.checks.find((item) => item.id === "fulfillment");
+    if (fulfillment && fulfillment.status !== "ready") {
+      required.splice(2, 0, {
+        id: "fulfillment",
+        label: t("overview.launch.checks.fulfillment"),
+        description: t(
+          fulfillment.status === "unavailable"
+            ? "overview.launch.checks.unavailable"
+            : "overview.launch.checks.fulfillmentHelp",
+        ),
+        ready: false,
+        unavailable: fulfillment.status === "unavailable",
+        href: `${dashboardRoutes.settings}?tab=fulfillment`,
+        required: true,
+      });
+    }
+    const isPublished = readiness?.isPublished ?? summary.storefront.isPublished;
+    required.push({
+      id: "publish",
+      label: t("overview.launch.publishStorefront"),
+      description: t(
+        isPublished ? "overview.launch.customersCanAccess" : "overview.launch.reviewAndPublish",
+      ),
+      ready: isPublished,
+      href: dashboardRoutes.editor,
+      required: true,
+    });
+    const next = required.findIndex((item) => !item.ready);
+    return required.map((item, index) => ({
+      ...item,
+      current: index === next && !item.unavailable,
+    }));
+  }
   const hasShopProfile = Boolean(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),
   );

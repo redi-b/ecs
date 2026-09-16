@@ -92,6 +92,7 @@ services:
       SEAWEED_IP: seaweedfs
       # Dev: allow every origin (shops use dynamic *.lvh.me hosts).
       S3_ALLOWED_ORIGINS: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-*}
+      S3_MIN_FREE_SPACE: ${MEDIA_S3_MIN_FREE_SPACE:-512MiB}
     ports:
       # Keep host :9002 so existing MEDIA_S3_ENDPOINT=http://localhost:9002 still works.
       - "${MEDIA_S3_HOST_PORT:-9002}:8333"

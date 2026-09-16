@@ -1,7 +1,8 @@
 "use client";
-
-import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
+import { type StorefrontTemplateCatalogItem, shopDetailsSchema } from "@ecs/contracts";
+import { getBrandPresets } from "@ecs/storefront-templates";
 import { useEffect, useId, useMemo, useState } from "react";
+import { z } from "zod";
 import { AppIcons } from "@/components/app/icons";
 import {
   CategoryCombobox,
@@ -21,11 +22,18 @@ import {
   serializeCategories,
   slugify,
 } from "@/components/onboarding/onboarding-helpers";
+import { ShopBrandPicker } from "@/components/onboarding/shop-brand-picker";
+import {
+  emptyShopDetails,
+  ShopContactFields,
+  shopContactDraftSchema,
+} from "@/components/onboarding/shop-contact-fields";
+import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname, normalizeStorefrontBaseDomain } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
@@ -59,6 +67,12 @@ export function ShopOnboardingForm({
           detail: t("onboarding.shopStepDetail"),
         },
         {
+          id: "contact",
+          title: t("onboarding.contactStep"),
+          description: t("onboarding.contactStepDescription"),
+          detail: t("onboarding.contactStepDetail"),
+        },
+        {
           id: "storefront",
           title: t("onboarding.storefrontStep"),
           description: t("onboarding.storefrontStepDescription"),
@@ -76,6 +90,7 @@ export function ShopOnboardingForm({
 
   const lastStep = steps.length - 1;
   const [step, setStep] = useState(0);
+  const [draftHydrated, setDraftHydrated] = useState(false);
   const [shopName, setShopName] = useState(defaultValues.shopName ?? "");
   const [handle, setHandle] = useState(defaultValues.handle ?? "");
   const [handleTouched, setHandleTouched] = useState(Boolean(defaultValues.handle));
@@ -84,10 +99,12 @@ export function ShopOnboardingForm({
   const [businessCategories, setBusinessCategories] = useState<string[]>(() =>
     parseCategories(defaultValues.businessCategory),
   );
-  const [contactPhone, setContactPhone] = useState(defaultValues.contactPhone ?? "");
+  const [shopDetails, setShopDetails] = useState(() => ({
+    ...emptyShopDetails(),
+    primaryPhone: defaultValues.contactPhone ?? "",
+  }));
   const [deliveryEnabled, setDeliveryEnabled] = useState(true);
   const [pickupEnabled, setPickupEnabled] = useState(true);
-  const [phoneConfirmationRequired, setPhoneConfirmationRequired] = useState(true);
   const [handleState, setHandleState] = useState<HandleState>({
     status: "idle",
     message: t("onboarding.handle.choose"),
@@ -102,6 +119,9 @@ export function ShopOnboardingForm({
       templates.find((template) => template.version.templateKey === templateKey) ?? templates[0],
     [templateKey, templates],
   );
+  const selectedBrand = getBrandPresets(templateKey).find(
+    (preset) => preset.id === (shopDetails.brand?.presetId ?? "original"),
+  );
 
   const previewHostname =
     handleState.status === "available"
@@ -114,16 +134,36 @@ export function ShopOnboardingForm({
   }, [handleTouched, shopName]);
 
   useEffect(() => {
+    setDraftHydrated(true);
     if (defaultValues.shopName || defaultValues.handle) return;
-    const draft = window.localStorage.getItem(ONBOARDING_DRAFT_KEY);
-    if (!draft) return;
     try {
-      const value = JSON.parse(draft) as Record<string, string>;
+      const draft = window.localStorage.getItem(ONBOARDING_DRAFT_KEY);
+      if (!draft) return;
+      const value = z
+        .object({
+          shopName: z.string().max(120).optional(),
+          handle: z.string().max(63).optional(),
+          businessCategory: z.string().max(500).optional(),
+          contactPhone: z.string().max(40).optional(),
+          shopDetails: z.unknown().optional(),
+          deliveryEnabled: z.boolean().optional(),
+          pickupEnabled: z.boolean().optional(),
+          templateKey: z.string().max(100).optional(),
+          step: z.number().int().min(0).max(3).optional(),
+        })
+        .parse(JSON.parse(draft));
       setShopName(value.shopName ?? "");
       setHandle(value.handle ?? "");
       setHandleTouched(Boolean(value.handle));
       setBusinessCategories(parseCategories(value.businessCategory));
-      setContactPhone(value.contactPhone ?? "");
+      const details = shopContactDraftSchema.safeParse(value.shopDetails);
+      setShopDetails(
+        details.success
+          ? details.data
+          : { ...emptyShopDetails(), primaryPhone: value.contactPhone ?? "" },
+      );
+      if (typeof value.deliveryEnabled === "boolean") setDeliveryEnabled(value.deliveryEnabled);
+      if (typeof value.pickupEnabled === "boolean") setPickupEnabled(value.pickupEnabled);
       if (
         value.templateKey &&
         templates.some((item) => item.version.templateKey === value.templateKey)
@@ -131,23 +171,42 @@ export function ShopOnboardingForm({
         setTemplateKey(value.templateKey);
         setTemplateTouched(true);
       }
+      setStep(value.step ?? 0);
     } catch {
-      window.localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+      // A blocked or old browser draft must not prevent setup.
     }
   }, [defaultValues.handle, defaultValues.shopName, templates]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      ONBOARDING_DRAFT_KEY,
-      JSON.stringify({
-        businessCategory: serializeCategories(businessCategories),
-        contactPhone,
-        handle,
-        shopName,
-        templateKey,
-      }),
-    );
-  }, [businessCategories, contactPhone, handle, shopName, templateKey]);
+    if (!draftHydrated) return;
+    try {
+      window.localStorage.setItem(
+        ONBOARDING_DRAFT_KEY,
+        JSON.stringify({
+          businessCategory: serializeCategories(businessCategories),
+          shopDetails,
+          deliveryEnabled,
+          pickupEnabled,
+          handle,
+          shopName,
+          templateKey,
+          step,
+        }),
+      );
+    } catch {
+      /* Setup remains usable when local storage is unavailable. */
+    }
+  }, [
+    businessCategories,
+    handle,
+    shopName,
+    templateKey,
+    shopDetails,
+    deliveryEnabled,
+    pickupEnabled,
+    draftHydrated,
+    step,
+  ]);
 
   const recommendedTemplateKey = useMemo(
     () => getRecommendedTemplateKey(businessCategories, templates),
@@ -218,14 +277,23 @@ export function ShopOnboardingForm({
   }, [handle, storefrontBaseDomain, t]);
 
   const canContinueShop =
-    Boolean(shopName.trim()) &&
-    businessCategories.length > 0 &&
-    Boolean(contactPhone.trim()) &&
-    handleState.status === "available";
+    Boolean(shopName.trim()) && businessCategories.length > 0 && handleState.status === "available";
+  const parsedDetails = shopDetailsSchema.safeParse({
+    ...shopDetails,
+    categories: businessCategories,
+  });
+  const canContinueContact = parsedDetails.success && (deliveryEnabled || pickupEnabled);
   const canContinueStorefront = Boolean(templateKey);
   const canContinue =
-    (step === 0 && canContinueShop) || (step === 1 && canContinueStorefront) || step === 2;
-  const canSubmit = canContinueShop && canContinueStorefront && handleState.status === "available";
+    (step === 0 && canContinueShop) ||
+    (step === 1 && canContinueContact) ||
+    (step === 2 && canContinueStorefront) ||
+    step === 3;
+  const canSubmit =
+    canContinueShop &&
+    canContinueContact &&
+    canContinueStorefront &&
+    handleState.status === "available";
 
   const current = steps[step] ?? steps[0];
 
@@ -243,15 +311,15 @@ export function ShopOnboardingForm({
 
     setIsSubmitting(true);
     setSubmitError(null);
-    window.localStorage.removeItem(ONBOARDING_DRAFT_KEY);
 
     const response = await fetch("/admin/onboarding/submit", {
       body: JSON.stringify({
         businessCategory,
-        contactPhone: contactPhone.trim(),
+        contactPhone: shopDetails.primaryPhone.trim(),
+        ...(parsedDetails.success ? { shopDetails: parsedDetails.data } : {}),
         deliveryEnabled,
         handle,
-        phoneConfirmationRequired,
+        phoneConfirmationRequired: true,
         pickupEnabled,
         shopName,
         templateKey,
@@ -286,6 +354,11 @@ export function ShopOnboardingForm({
       }
     }
 
+    try {
+      window.localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+    } catch {
+      /* Shop creation already succeeded. */
+    }
     window.location.assign(data.redirectTo);
   }
 
@@ -442,7 +515,7 @@ export function ShopOnboardingForm({
                     id={`${fieldId}-shopName`}
                     name="shopName"
                     onChange={(event) => setShopName(event.target.value)}
-                    placeholder="Addis Pantry"
+                    placeholder={t("onboarding.shopNamePlaceholder")}
                     required
                     value={shopName}
                   />
@@ -481,7 +554,7 @@ export function ShopOnboardingForm({
                   </div>
                 </Field>
 
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-6">
                   <Field>
                     <FieldLabel htmlFor={`${fieldId}-businessCategory`}>
                       {t("onboarding.category")}
@@ -497,23 +570,31 @@ export function ShopOnboardingForm({
                     <FieldDescription>{t("onboarding.categoryHelp")}</FieldDescription>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor={`${fieldId}-contactPhone`}>
-                      {t("onboarding.contactPhone")}
+                    <FieldLabel htmlFor={`${fieldId}-description`}>
+                      {t("onboarding.contact.description")}
                     </FieldLabel>
-                    <Input
-                      autoComplete="tel"
-                      className="h-11 px-3.5"
-                      id={`${fieldId}-contactPhone`}
-                      name="contactPhone"
-                      onChange={(event) => setContactPhone(event.target.value)}
-                      placeholder="+251..."
-                      required
-                      value={contactPhone}
+                    <Textarea
+                      className="min-h-24 resize-y"
+                      id={`${fieldId}-description`}
+                      maxLength={300}
+                      value={shopDetails.description}
+                      onChange={(event) =>
+                        setShopDetails((current) => ({
+                          ...current,
+                          description: event.target.value,
+                        }))
+                      }
                     />
-                    <FieldDescription>{t("onboarding.contactPhoneHelp")}</FieldDescription>
                   </Field>
                 </div>
-
+              </div>
+              <div className={cn(step === 1 ? "grid gap-6" : "hidden")}>
+                <ShopContactFields
+                  showShopFields={false}
+                  value={shopDetails}
+                  disabled={isSubmitting}
+                  onChange={setShopDetails}
+                />
                 <div className="rounded-xl border border-border/90 p-4 sm:p-5">
                   <p className="text-sm font-semibold tracking-tight">
                     {t("onboarding.checkoutPrefsTitle")}
@@ -541,17 +622,11 @@ export function ShopOnboardingForm({
                         setPickupEnabled(checked);
                       }}
                     />
-                    <PreferenceToggle
-                      checked={phoneConfirmationRequired}
-                      description={t("onboarding.requirePhoneHelp")}
-                      label={t("onboarding.requirePhone")}
-                      onCheckedChange={setPhoneConfirmationRequired}
-                    />
                   </div>
                 </div>
               </div>
 
-              <div className={cn(step === 1 ? "grid gap-5" : "hidden")}>
+              <div className={cn(step === 2 ? "grid gap-5" : "hidden")}>
                 <input name="templateKey" type="hidden" value={templateKey} />
                 <div className="grid gap-4">
                   {templates.map((template) => (
@@ -574,51 +649,159 @@ export function ShopOnboardingForm({
                     <AlertDescription>{t("onboarding.noStorefrontsDescription")}</AlertDescription>
                   </Alert>
                 ) : null}
+                {templateKey ? (
+                  <ShopBrandPicker
+                    templateKey={templateKey}
+                    shopName={shopName}
+                    value={shopDetails.brand}
+                    disabled={isSubmitting}
+                    onChange={(brand) => setShopDetails((current) => ({ ...current, brand }))}
+                  />
+                ) : null}
               </div>
 
-              <div className={cn(step === 2 ? "grid gap-6" : "hidden")}>
-                <section className="rounded-xl border border-border/90 bg-muted/15 p-6 sm:p-7">
-                  <div className="mb-5 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold tracking-tight">
-                        {t("onboarding.reviewTitle")}
-                      </p>
+              <div className={cn(step === 3 ? "grid gap-4" : "hidden")}>
+                <div className="overflow-hidden rounded-xl border border-border/90 bg-background">
+                  <section className="p-5 sm:p-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold tracking-tight">
+                        {t("onboarding.shopStep")}
+                      </h3>
+                      <Button size="sm" variant="outline" type="button" onClick={() => setStep(0)}>
+                        <AppIcons.edit aria-hidden />
+                        {t("onboarding.contact.edit")}
+                      </Button>
                     </div>
-                    <Badge variant="secondary">{t("onboarding.ready")}</Badge>
-                  </div>
-                  <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-                    <ReviewItem label={t("onboarding.shopName")} value={shopName} />
-                    <ReviewItem label={t("onboarding.shopAddress")} value={previewHostname} />
-                    <ReviewItem
-                      label={t("onboarding.category")}
-                      value={
-                        businessCategories.length
-                          ? businessCategories.join(", ")
-                          : t("common.notSet")
-                      }
-                    />
-                    <ReviewItem
-                      label={t("onboarding.contactPhone")}
-                      value={contactPhone || t("common.notSet")}
-                    />
-                    <ReviewItem
-                      className="sm:col-span-2"
-                      label={t("onboarding.selectedStorefront")}
-                      value={selectedTemplate?.name ?? templateKey}
-                    />
-                    <ReviewItem
-                      className="sm:col-span-2"
-                      label={t("onboarding.reviewFulfillment")}
-                      value={[
-                        deliveryEnabled ? t("onboarding.deliveryOn") : t("onboarding.deliveryOff"),
-                        pickupEnabled ? t("onboarding.pickupOn") : t("onboarding.pickupOff"),
-                        phoneConfirmationRequired
-                          ? t("onboarding.phoneRequired")
-                          : t("onboarding.phoneOptional"),
-                      ].join(" · ")}
-                    />
-                  </dl>
-                </section>
+                    <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                      <ReviewItem label={t("onboarding.shopName")} value={shopName} />
+                      <ReviewItem label={t("onboarding.shopAddress")} value={previewHostname} />
+                      <ReviewItem
+                        label={t("onboarding.category")}
+                        value={
+                          businessCategories.length
+                            ? businessCategories.join(", ")
+                            : t("common.notSet")
+                        }
+                      />
+                      {shopDetails.description ? (
+                        <ReviewItem
+                          className="sm:col-span-2"
+                          label={t("onboarding.contact.description")}
+                          value={shopDetails.description}
+                        />
+                      ) : null}
+                    </dl>
+                  </section>
+                  <section className="border-t p-5 sm:p-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{t("onboarding.contactStep")}</h3>
+                      <Button size="sm" variant="outline" type="button" onClick={() => setStep(1)}>
+                        <AppIcons.edit aria-hidden />
+                        {t("onboarding.contact.edit")}
+                      </Button>
+                    </div>
+                    <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                      <ReviewItem
+                        label={t("onboarding.contact.phone")}
+                        value={
+                          parsedDetails.success
+                            ? parsedDetails.data.primaryPhone
+                            : shopDetails.primaryPhone
+                        }
+                      />
+                      {shopDetails.additionalPhones.length ? (
+                        <ReviewItem
+                          label={t("onboarding.contact.addPhone")}
+                          value={shopDetails.additionalPhones.join(" · ")}
+                        />
+                      ) : null}
+                      {shopDetails.publicEmail ? (
+                        <ReviewItem
+                          label={t("onboarding.contact.email")}
+                          value={shopDetails.publicEmail}
+                        />
+                      ) : null}
+                      {shopDetails.address?.streetAddress || shopDetails.address?.city ? (
+                        <ReviewItem
+                          label={t("onboarding.contact.address")}
+                          value={[
+                            shopDetails.address.streetAddress,
+                            shopDetails.address.city,
+                            shopDetails.address.directions,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        />
+                      ) : null}
+                      {shopDetails.socialProfiles.length ? (
+                        <ReviewItem
+                          className="sm:col-span-2"
+                          label={t("onboarding.contact.social")}
+                          value={shopDetails.socialProfiles
+                            .map((profile) => `${profile.platform}: ${profile.url}`)
+                            .join(" · ")}
+                        />
+                      ) : null}
+                      <ReviewItem
+                        className="sm:col-span-2"
+                        label={t("onboarding.reviewFulfillment")}
+                        value={[
+                          deliveryEnabled
+                            ? t("onboarding.deliveryOn")
+                            : t("onboarding.deliveryOff"),
+                          pickupEnabled ? t("onboarding.pickupOn") : t("onboarding.pickupOff"),
+                        ].join(" · ")}
+                      />
+                    </dl>
+                  </section>
+                  <section className="border-t p-5 sm:p-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{t("onboarding.storefrontStep")}</h3>
+                      <Button size="sm" variant="outline" type="button" onClick={() => setStep(2)}>
+                        <AppIcons.edit aria-hidden />
+                        {t("onboarding.contact.edit")}
+                      </Button>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:items-center">
+                      {selectedTemplate ? (
+                        <StorefrontTemplatePreview
+                          compact
+                          demoLabel={t("common.viewDemo")}
+                          previewLabel={t("common.preview")}
+                          template={selectedTemplate}
+                        />
+                      ) : null}
+                      <div className="min-w-0 space-y-4">
+                        <ReviewItem
+                          label={t("onboarding.selectedStorefront")}
+                          value={selectedTemplate?.name ?? templateKey}
+                        />
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {t("onboarding.brand.title")}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            {selectedBrand
+                              ? Object.values(selectedBrand.colors)
+                                  .slice(0, 4)
+                                  .map((color) => (
+                                    <span
+                                      aria-hidden
+                                      className="size-7 rounded-full border shadow-sm"
+                                      key={color}
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))
+                              : null}
+                            <span className="ml-1 text-sm font-medium">
+                              {t(`onboarding.brand.${shopDetails.brand?.presetId ?? "original"}`)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
               </div>
             </form>
 

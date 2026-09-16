@@ -43,7 +43,7 @@ const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
 const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
-const phoneRequired = delivery?.phoneConfirmationRequired !== false;
+const phoneRequired = true;
 const deliveryChoiceDefault = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
 const paidOptions = shippingOptions.filter(
   (option) => (option.amount == null || option.amount > 0) && !/pickup|collect/i.test(option.name ?? ""),

@@ -1,4 +1,5 @@
 import type { PlatformAppOptions } from "../../../app.js";
+import { normalizeEthiopianPhone, ethiopianPhoneSchema } from "@ecs/contracts";
 
 type CodCheckoutInput = {
   address: {
@@ -63,7 +64,7 @@ function getCodCheckoutInput(body: Record<string, unknown>): CodCheckoutInput | 
   const cartId = getStringValue(body.cartId);
   const shippingOptionId = getStringValue(body.shippingOptionId);
   const name = getStringValue(customer.name);
-  // Phone may be optional depending on merchant delivery settings (validated later).
+  // Online checkout always needs a phone; merchant-entered offline orders are separate.
   const phone = getStringValue(customer.phone) ?? "";
   const address1 = getStringValue(address.address1) ?? "";
   const city = getStringValue(address.city) ?? "";
@@ -261,6 +262,11 @@ export async function completeCodCheckout(options: {
     return Response.json({ error: "invalid_cod_checkout_request" }, { status: 400 });
   }
 
+  if (!input.customer.phone.trim()) return Response.json({ error: "phone_required" }, { status: 400 });
+  const phone = ethiopianPhoneSchema.safeParse(normalizeEthiopianPhone(input.customer.phone));
+  if (!phone.success) return Response.json({ error: "phone_invalid" }, { status: 400 });
+  input.customer.phone = phone.data;
+
   const delivery = await options.delivery({ tenantId: options.tenantId });
   const deliverySettings = delivery.delivery;
 
@@ -290,10 +296,6 @@ export async function completeCodCheckout(options: {
     if (freeId) {
       input.shippingOptionId = freeId;
     }
-  }
-
-  if (deliverySettings.phoneConfirmationRequired && !input.customer.phone.trim()) {
-    return Response.json({ error: "phone_required" }, { status: 400 });
   }
 
   if (input.deliveryChoice === "delivery") {

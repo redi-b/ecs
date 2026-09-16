@@ -1,4 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
+import { shopDetailsSchema, type ShopDetails } from "@ecs/contracts";
+import { getStartingBrandTokens } from "@ecs/storefront-templates";
 import {
   auditLogs,
   domains,
@@ -25,6 +27,7 @@ import type {
 } from "../../types/index.js";
 import { DEFAULT_PLAN_CATALOG } from "../billing/plan-catalog.js";
 import { createBillingService } from "../billing/service.js";
+import { createBrandedShopData } from "../storefront/shop-details.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -40,6 +43,7 @@ type ExistingTenantShop = {
 };
 
 type ActiveStorefrontTemplate = {
+  templateKey?: string;
   templateId: string;
   templateVersion: number;
   defaultData: unknown;
@@ -61,6 +65,7 @@ type CreatedTenantShop = {
 
 type TenantShopProvisionerOptions = {
   createTenantShopRecord: (input: {
+    shopDetails?: ShopDetails;
     activeTemplate: ActiveStorefrontTemplate;
     commerceResources: {
       storeId: string;
@@ -103,6 +108,7 @@ type TenantShopProvisionerOptions = {
     tenantId: string;
   }) => Promise<{ ok: boolean }>;
   recordProvisioningAttempt?: (input: {
+    shopDetails?: ShopDetails;
     error?: string | null | undefined;
     handle: string;
     name?: string | null | undefined;
@@ -128,6 +134,7 @@ type TenantShopProvisioningOptions = {
 
 type TenantShopProvisioningRetryOptions = {
   createTenantShop: (input: {
+    shopDetails?: ShopDetails;
     handle: string;
     name: string;
     ownerUserId: string;
@@ -204,6 +211,7 @@ export function buildInitialTenantOnboardingState() {
 
 export function createTenantShopProvisioner(options: TenantShopProvisionerOptions) {
   return async function createTenantShop(input: {
+    shopDetails?: ShopDetails;
     handle: string;
     name: string;
     ownerUserId: string;
@@ -282,6 +290,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     if (!commerceResources.ok) {
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
         error: commerceResources.error,
+        ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
         handle,
         name,
         ownerUserId: input.ownerUserId,
@@ -308,6 +317,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     if (!activeTemplate) {
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
         error: "storefront_template_unavailable",
+        ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
         handle,
         name,
         ownerUserId: input.ownerUserId,
@@ -330,6 +340,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     }
 
     const tenant = await options.createTenantShopRecord({
+      ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
       activeTemplate,
       commerceResources: commerceResources.resources,
       handle,
@@ -340,6 +351,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     });
 
     await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+      ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
       handle,
       name,
       ownerUserId: input.ownerUserId,
@@ -384,6 +396,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
 export function createTenantShopProvisioningService(options: TenantShopProvisioningOptions) {
   const provisionerOptions: TenantShopProvisionerOptions = {
     createTenantShopRecord: async ({
+      shopDetails,
       activeTemplate,
       commerceResources,
       handle,
@@ -416,6 +429,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
             organizationId,
             name,
             handle,
+            shopDetails: shopDetails ?? null,
             status: "draft",
             medusaStoreId: commerceResources.storeId,
             medusaSalesChannelId: commerceResources.salesChannelId,
@@ -467,8 +481,13 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           tenantId,
           draftTemplateId: activeTemplate.templateId,
           draftTemplateVersion: activeTemplate.templateVersion,
-          draftData: activeTemplate.defaultData,
-          draftThemeTokens: activeTemplate.defaultThemeTokens,
+          draftData: createBrandedShopData(activeTemplate.defaultData, name, shopDetails),
+          draftThemeTokens: getStartingBrandTokens(activeTemplate.templateKey ?? "luvia@1", activeTemplate.defaultThemeTokens, shopDetails?.brand),
+          seoSettings: {
+            title: null,
+            description: shopDetails?.description?.trim().slice(0, 160) || null,
+            socialImageUrl: null,
+          },
         });
 
         await transaction.insert(tenantOnboarding).values({
@@ -558,6 +577,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
         .select({
           templateId: storefrontTemplates.id,
           templateVersion: storefrontTemplateVersions.version,
+          templateKey: storefrontTemplateVersions.templateKey,
           defaultData: storefrontTemplateVersions.defaultData,
           defaultThemeTokens: storefrontTemplateVersions.defaultThemeTokens,
         })
@@ -631,6 +651,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
         error: input.error ?? null,
         metadata: {
           name: input.name ?? null,
+          ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
           templateId: "templateId" in input ? (input.templateId ?? null) : null,
           templateKey: "templateKey" in input ? (input.templateKey ?? null) : null,
         },
@@ -677,8 +698,10 @@ export function createTenantShopProvisioningRetryService(
 
     const templateId = getRetryAttemptTemplateId(attempt.metadata);
     const templateKey = getRetryAttemptTemplateKey(attempt.metadata);
+    const details = shopDetailsSchema.safeParse(attempt.metadata && typeof attempt.metadata === "object" && "shopDetails" in attempt.metadata ? attempt.metadata.shopDetails : undefined);
 
     return options.createTenantShop({
+      ...(details.success ? { shopDetails: details.data } : {}),
       handle: attempt.handle,
       name: attempt.name,
       ownerUserId: input.userId,

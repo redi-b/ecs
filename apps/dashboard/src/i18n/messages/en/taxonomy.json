@@ -54,8 +54,8 @@
     "createBtn": "Create {entity}",
     "nameLabel": "Name",
     "titleLabel": "Title",
-    "namePlaceholder": "Clothing",
-    "titlePlaceholder": "Featured",
+    "namePlaceholder": "Category name",
+    "titlePlaceholder": "Collection name",
     "searchParent": "Search parent categories…"
   },
   "actions": {

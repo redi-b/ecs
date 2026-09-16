@@ -51,6 +51,7 @@ export type StorefrontPageProps = {
   featuredProductsEnabled?: boolean;
   footerAddress?: string;
   footerPhone?: string;
+  managedShopContact?: boolean;
   foregroundColor?: string;
   headingFont?: string;
   heroEnabled?: boolean;
@@ -108,6 +109,7 @@ export function buildDraftPayload(input: {
   const manifest = requireEditorManifest(input.templateKey);
   for (const section of manifest.sections) {
     for (const field of section.fields) {
+      if (props.managedShopContact && ["footer.phone", "footer.email", "footer.address", "footer.socialLinks", "footer.blurb"].includes(field.path)) continue;
       const value = (props as Record<string, unknown>)[field.prop];
       const draftValue = coerceFieldValue(field.kind, value);
 
@@ -293,6 +295,7 @@ function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "luvia@
   }
 
   // Always expose generated palette fields for preview (even if not in editor manifest).
+  props.managedShopContact = getPathValue(data, "footer.managedContact") === true;
   const tokens =
     themeTokens && typeof themeTokens === "object"
       ? (themeTokens as {

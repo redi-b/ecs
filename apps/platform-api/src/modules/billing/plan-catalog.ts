@@ -45,3 +45,48 @@ export const DEFAULT_PLAN_CATALOG = {
 } as const satisfies Record<keyof typeof DEFAULT_PLAN_IDS, DefaultPlanDefinition>;
 
 export const DEFAULT_PLANS = Object.freeze(Object.values(DEFAULT_PLAN_CATALOG));
+
+/**
+ * Truthful public copy for the built-in plans. Database presentation rows override
+ * this completely, so operators can change or hide a plan without a deployment.
+ */
+export const DEFAULT_PLAN_PRESENTATIONS = {
+  starter: {
+    badge: null,
+    ctaLabel: "Start free",
+    description: "Everything you need to open and run your first online shop.",
+    displayOrder: 0,
+    featureList: [
+      "Hosted online storefront",
+      "Product and inventory management",
+      "Orders and customer management",
+      "Store performance insights",
+    ],
+    featured: false,
+    publicName: "Starter",
+    summary: "Start selling online with no monthly fee.",
+  },
+  growth: {
+    badge: "For growing shops",
+    ctaLabel: "Choose Growth",
+    description: "Keep your shop running with a paid monthly subscription.",
+    displayOrder: 1,
+    featureList: [
+      "Everything in Starter",
+      "Product and inventory management",
+      "Orders and customer management",
+      "Store performance insights",
+    ],
+    featured: true,
+    publicName: "Growth",
+    summary: "A monthly plan for your growing shop.",
+  },
+} as const;
+
+export type DefaultPlanCode = keyof typeof DEFAULT_PLAN_PRESENTATIONS;
+
+export function getDefaultPlanPresentation(code: string) {
+  return Object.hasOwn(DEFAULT_PLAN_PRESENTATIONS, code)
+    ? DEFAULT_PLAN_PRESENTATIONS[code as DefaultPlanCode]
+    : null;
+}

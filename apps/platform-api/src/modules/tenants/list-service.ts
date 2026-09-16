@@ -9,6 +9,7 @@ import {
   users,
 } from "@ecs/db";
 import { and, count, desc, eq, ne, or, sql } from "drizzle-orm";
+import { purgeStorefrontTenantCache } from "../storefront/cache-purge.js";
 
 import type {
   PlatformOnboardingStateResult,
@@ -343,6 +344,7 @@ export function createTenantShopSettingsService(options: {
   platformBaseDomain: string;
 }) {
   return async function updateTenantShopSettings(input: {
+    shopDetails?: import("@ecs/contracts").ShopDetails;
     handle: string;
     name: string;
     tenantId: string;
@@ -442,6 +444,7 @@ export function createTenantShopSettingsService(options: {
         .set({
           handle,
           name,
+          ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
           updatedAt: new Date(),
         })
         .where(eq(tenants.id, input.tenantId));
@@ -507,6 +510,7 @@ export function createTenantShopSettingsService(options: {
       };
     }
 
+    await purgeStorefrontTenantCache({ tenantId: input.tenantId });
     return {
       ok: true,
       tenant: toTenantListItem(updated),

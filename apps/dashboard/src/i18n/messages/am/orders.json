@@ -168,7 +168,7 @@
     "lastName": "የአባት ስም",
     "phone": "ስልክ",
     "phoneDesc": "የዚህ ደንበኛ ዋና መገኛ እና መፈለጊያ ቁጥር።",
-    "emailPlaceholder": "buyer@example.com",
+    "emailPlaceholder": "የደንበኛ ኢሜይል",
     "products": "ምርቶች",
     "productsDesc": "አንድ ወይም ከዚያ በላይ አማራጮችን ይምረጡ፣ ከዚያ ብዛት ያስገቡ።",
     "quantities": "ብዛት",

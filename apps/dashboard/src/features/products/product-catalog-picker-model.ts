@@ -17,6 +17,7 @@ export type ProductCatalogPickVariant = {
   priceLabel?: string | null;
   /** Structured options: { Size: "M", Color: "Blue" }. */
   options?: Record<string, string>;
+  optionSwatches?: Record<string, string>;
   /**
    * Available inventory when stock is tracked.
    * `null` / omitted = not tracked or unknown (selection allowed).

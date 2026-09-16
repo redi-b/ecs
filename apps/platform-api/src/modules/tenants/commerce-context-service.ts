@@ -1,4 +1,5 @@
 import type { createPlatformDb } from "@ecs/db";
+import { shopDetailsSchema } from "@ecs/contracts";
 import {
   domains,
   organizationMembers,
@@ -154,6 +155,7 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
       .select({
         tenantId: tenants.id,
         tenantName: tenants.name,
+        shopDetails: tenants.shopDetails,
         tenantHandle: tenants.handle,
         tenantStatus: tenants.status,
         domainId: domains.id,
@@ -236,6 +238,7 @@ export function createTenantDashboardSummaryService(db: PlatformDb) {
       tenantHandle: row.tenantHandle,
       tenantId: row.tenantId,
       tenantName: row.tenantName,
+      shopDetails: shopDetailsSchema.safeParse(row.shopDetails).data ?? null,
     };
 
     return {

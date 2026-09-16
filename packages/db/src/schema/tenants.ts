@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { tenantStatus } from "./enums.js";
 
@@ -24,6 +24,8 @@ export const tenants = pgTable("tenants", {
     .unique(),
   name: text("name").notNull(),
   handle: text("handle").notNull().unique(),
+  // Nullable for existing shops: never infer public contacts from private accounts.
+  shopDetails: jsonb("shop_details"),
   status: tenantStatus("status").notNull().default("draft"),
   primaryDomainId: uuid("primary_domain_id"),
   planId: uuid("plan_id"),

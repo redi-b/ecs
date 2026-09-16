@@ -93,3 +93,57 @@ test("keeps the setup path useful when the product count cannot be loaded", () =
   assert.equal(catalog?.current, false);
   assert.equal(catalog?.href.includes("create="), false);
 });
+
+test("uses refreshed readiness for publish state and hides completed fulfillment", () => {
+  const items = getLaunchChecklistItems(
+    {
+      ...access,
+      hasVisitedEditor: false,
+      productCount: null,
+      readiness: {
+        tenantId: "tenant_1",
+        isPublished: true,
+        canPublish: true,
+        draftFingerprint: "draft",
+        checks: [
+          { id: "profile", status: "ready" },
+          { id: "catalog", status: "ready" },
+          { id: "fulfillment", status: "ready" },
+          { id: "review", status: "ready" },
+        ],
+      },
+    },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  );
+
+  assert.equal(items.find((item) => item.id === "publish")?.ready, true);
+  assert.equal(
+    items.some((item) => item.id === "fulfillment"),
+    false,
+  );
+});
+
+test("keeps fulfillment visible when an older shop needs attention", () => {
+  const items = getLaunchChecklistItems(
+    {
+      ...access,
+      hasVisitedEditor: false,
+      productCount: null,
+      readiness: {
+        tenantId: "tenant_1",
+        isPublished: false,
+        canPublish: false,
+        draftFingerprint: "draft",
+        checks: [
+          { id: "profile", status: "ready" },
+          { id: "catalog", status: "ready" },
+          { id: "fulfillment", status: "action_required" },
+          { id: "review", status: "ready" },
+        ],
+      },
+    },
+    translate as Parameters<typeof getLaunchChecklistItems>[1],
+  );
+
+  assert.equal(items.find((item) => item.id === "fulfillment")?.ready, false);
+});

@@ -156,7 +156,7 @@ export function StorefrontVisualEditor({
 
     setIsPending(true);
     toast.promise(promise, {
-      error: (error) => getErrorMessage(error, t("editor.toast.publishFailed")),
+      error: (error) => error instanceof Error && error.message === "launch_not_ready" ? t("editor.toast.launchNotReady") : error instanceof Error && error.message === "launch_check_unavailable" ? t("editor.toast.launchCheckUnavailable") : getErrorMessage(error, t("editor.toast.publishFailed")),
       finally: () => setIsPending(false),
       loading: t("editor.toast.publishing"),
       success: t("editor.toast.published"),

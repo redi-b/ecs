@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
 import {
   hexToHsl,
   hexToRgb,
@@ -415,6 +416,7 @@ export function ColorPickerField({
   /** Compact trigger for palette grids */
   swatchOnly?: boolean;
 }) {
+  const portalContainer = useFloatingPortalContainer();
   const normalizedValue = isHexColor(value) ? normalizeHex(value) : "#000000";
   const [color, setColor] = useState(normalizedValue);
   const [format, setFormat] = useState<ColorFormat>("hex");
@@ -510,7 +512,8 @@ export function ColorPickerField({
       <PopoverContent
         align="start"
         avoidCollisions
-        className="w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-3.5"
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-3.5"
+        {...(portalContainer ? { collisionBoundary: portalContainer } : {})}
         collisionPadding={20}
         side="bottom"
         sideOffset={8}

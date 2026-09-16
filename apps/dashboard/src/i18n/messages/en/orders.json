@@ -168,7 +168,7 @@
     "lastName": "Last name",
     "phone": "Phone",
     "phoneDesc": "Primary contact and lookup number for this customer.",
-    "emailPlaceholder": "buyer@example.com",
+    "emailPlaceholder": "Customer email",
     "products": "Products",
     "productsDesc": "Select one or more options, then set quantities for this order.",
     "quantities": "Quantities",

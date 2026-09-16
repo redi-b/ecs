@@ -765,7 +765,7 @@
       "dialogEditTitle": "Edit receiving account",
       "dialogDescription": "Give it a short name and choose the bank or wallet. Account number is optional.",
       "label": "Display name",
-      "labelPlaceholder": "e.g. Shop CBE",
+      "labelPlaceholder": "Account label",
       "labelHint": "Shown when marking orders paid.",
       "bank": "Bank or wallet",
       "bankPlaceholder": "Select bank or wallet",

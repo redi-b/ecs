@@ -109,6 +109,8 @@ import type {
 } from "./tenant.js";
 
 export type PlatformAppOptions = {
+  /** Browser origins allowed to perform the read-only landing-page session probe. */
+  landingPublicOrigins?: string[];
   listEmailTemplates?: ReturnType<
     typeof import("../modules/email/template-service.js").createEmailTemplateService
   >["list"];
@@ -571,6 +573,7 @@ export type PlatformAppOptions = {
     | undefined;
   updateTenantShopSettings?:
     | ((input: {
+        shopDetails?: import("@ecs/contracts").ShopDetails;
         handle: string;
         name: string;
         tenantId: string;
@@ -739,6 +742,7 @@ export type PlatformAppOptions = {
     | undefined;
   createTenantShop?:
     | ((input: {
+        shopDetails?: import("@ecs/contracts").ShopDetails;
         handle: string;
         name: string;
         ownerUserId: string;
@@ -746,6 +750,8 @@ export type PlatformAppOptions = {
         templateKey?: string | undefined;
       }) => Promise<TenantShopProvisioningResult>)
     | undefined;
+  getLaunchReadiness?: (input: { tenantId: string }) => Promise<import("@ecs/contracts").LaunchReadiness | null>;
+  confirmStorefrontReview?: (input: { tenantId: string; userId: string; draftFingerprint: string }) => Promise<boolean>;
   retryTenantShopProvisioningAttempt?:
     | ((input: { attemptId: string; userId: string }) => Promise<TenantShopProvisioningResult>)
     | undefined;

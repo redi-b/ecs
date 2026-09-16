@@ -18,7 +18,7 @@ import {
   subscriptions,
   subscriptionTrials,
 } from "@ecs/db";
-import { and, desc, eq, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, or, sql } from "drizzle-orm";
 
 import type {
   BillingInvoice,
@@ -32,7 +32,12 @@ import {
   parsePlanEntitlements,
 } from "../entitlements/catalog.js";
 import { createEntitlementService } from "../entitlements/service.js";
-import { DEFAULT_PLAN_CATALOG, DEFAULT_PLAN_IDS, DEFAULT_PLANS } from "./plan-catalog.js";
+import {
+  DEFAULT_PLAN_CATALOG,
+  DEFAULT_PLAN_IDS,
+  DEFAULT_PLANS,
+  getDefaultPlanPresentation,
+} from "./plan-catalog.js";
 
 export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
@@ -461,6 +466,7 @@ export function createBillingService(db: PlatformDb) {
     getPublicPlanCatalog: async () => {
       const rows = await db
         .select({
+          presentationId: planPresentations.id,
           badge: planPresentations.badge,
           billingInterval: planVersions.billingInterval,
           code: plans.code,
@@ -478,24 +484,37 @@ export function createBillingService(db: PlatformDb) {
           version: planVersions.version,
         })
         .from(plans)
-        .innerJoin(planPresentations, eq(planPresentations.planId, plans.id))
+        .leftJoin(planPresentations, eq(planPresentations.planId, plans.id))
         .innerJoin(planVersions, eq(planVersions.planId, plans.id))
         .where(
           and(
             eq(plans.kind, "standard"),
             eq(plans.status, "active"),
             eq(plans.visibility, "public"),
-            eq(planPresentations.landingVisible, true),
+            or(eq(planPresentations.landingVisible, true), isNull(planPresentations.id)),
           ),
         )
         .orderBy(planPresentations.displayOrder, plans.name, desc(planVersions.version));
       const latestByPlan = new Map<string, (typeof rows)[number]>();
       for (const row of rows) if (!latestByPlan.has(row.planId)) latestByPlan.set(row.planId, row);
       return {
-        plans: [...latestByPlan.values()].map((row) => {
+        plans: [...latestByPlan.values()].flatMap((row) => {
+          const presentation = row.presentationId
+            ? {
+                badge: row.badge,
+                ctaLabel: row.ctaLabel ?? "Choose plan",
+                description: row.description ?? "",
+                displayOrder: row.displayOrder ?? 0,
+                featureList: row.featureList ?? [],
+                featured: row.featured ?? false,
+                publicName: row.name ?? row.code,
+                summary: row.summary ?? "",
+              }
+            : getDefaultPlanPresentation(row.code);
+          if (!presentation) return [];
           const trial = parseTrialPolicy(row.trialPolicy);
-          return {
-            badge: row.badge,
+          return [{
+            badge: presentation.badge,
             billingInterval:
               row.billingInterval === "day" ||
               row.billingInterval === "week" ||
@@ -503,17 +522,17 @@ export function createBillingService(db: PlatformDb) {
                 ? row.billingInterval
                 : ("month" as const),
             code: row.code,
-            ctaLabel: row.ctaLabel,
+            ctaLabel: presentation.ctaLabel,
             currency: row.currency,
-            description: row.description,
-            displayOrder: row.displayOrder,
-            featureList: Array.isArray(row.featureList)
-              ? row.featureList.filter((item): item is string => typeof item === "string")
+            description: presentation.description,
+            displayOrder: presentation.displayOrder,
+            featureList: Array.isArray(presentation.featureList)
+              ? presentation.featureList.filter((item): item is string => typeof item === "string")
               : [],
-            featured: row.featured,
-            name: row.name,
+            featured: presentation.featured,
+            name: presentation.publicName,
             price: String(row.price),
-            summary: row.summary,
+            summary: presentation.summary,
             trial: trial.enabled
               ? {
                   activation: trial.activation,
@@ -522,7 +541,7 @@ export function createBillingService(db: PlatformDb) {
                   paymentMethodRequired: trial.paymentMethodRequired,
                 }
               : { available: false as const },
-          };
+          }];
         }),
       };
     },

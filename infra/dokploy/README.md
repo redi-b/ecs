@@ -167,6 +167,7 @@ This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (r
 | `MEDIA_S3_ENDPOINT` | Browser **presigned** PUT host (public `https://media.${BASE_DOMAIN}`) |
 | `MEDIA_S3_INTERNAL_ENDPOINT` | Server Head/Put/Delete + demo-seed; default `http://seaweedfs:8333` |
 | `MEDIA_S3_PUBLIC_BASE_URL` | Object URLs stored on media assets / product images |
+| `MEDIA_S3_MIN_FREE_SPACE` | Disk reserve before uploads pause; defaults to `1GiB` |
 
 Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
 

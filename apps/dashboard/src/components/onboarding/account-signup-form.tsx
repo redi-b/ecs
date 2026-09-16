@@ -94,7 +94,7 @@ export function AccountSignUpForm({
               id={`${fieldId}-ownerName`}
               name="ownerName"
               onChange={(event) => setOwnerName(event.target.value)}
-              placeholder="Mahi Bekele"
+              placeholder={t("auth.ownerNamePlaceholder")}
               required
               value={ownerName}
             />
@@ -110,7 +110,7 @@ export function AccountSignUpForm({
               id={`${fieldId}-email`}
               name="email"
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="mahi@example.com"
+              placeholder={t("auth.emailPlaceholder")}
               required
               type="email"
               value={email}

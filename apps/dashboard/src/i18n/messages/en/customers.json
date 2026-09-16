@@ -42,9 +42,9 @@
     "toastUpdated": "Customer updated.",
     "toastCreated": "Customer created.",
     "saveChanges": "Save changes",
-    "firstNamePlaceholder": "Abebe",
-    "lastNamePlaceholder": "Kebede",
-    "emailPlaceholder": "customer@example.com",
+    "firstNamePlaceholder": "First name",
+    "lastNamePlaceholder": "Last name",
+    "emailPlaceholder": "Email address",
     "phonePlaceholder": "+251…"
   },
   "table": {

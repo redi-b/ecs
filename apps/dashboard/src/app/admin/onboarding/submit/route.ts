@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { shopDetailsSchema } from "@ecs/contracts";
 
 import { updateMerchantDeliverySettings } from "@/lib/merchant-settings";
 import { createTenantShop } from "@/lib/platform-onboarding";
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
   const businessCategory = payload.businessCategory;
   const contactPhone = payload.contactPhone;
   const cookieHeader = request.headers.get("cookie") ?? "";
+  const details = payload.shopDetails === undefined ? null : shopDetailsSchema.safeParse(payload.shopDetails);
+  if (details && !details.success) {
+    return failOnboarding(request, "invalid_shop_setup", payload, wantsJson);
+  }
 
   if (!cookieHeader) {
     return failOnboarding(request, "auth_required", payload, wantsJson);
@@ -31,6 +36,7 @@ export async function POST(request: Request) {
       handle,
       name: shopName,
       templateKey,
+      ...(details?.success ? { shopDetails: details.data } : {}),
     },
     platformApiBaseUrl,
   });
@@ -102,6 +108,7 @@ async function readOnboardingPayload(request: Request) {
     const body = (await request.json().catch(() => null)) as {
       businessCategory?: unknown;
       contactPhone?: unknown;
+      shopDetails?: unknown;
       deliveryEnabled?: unknown;
       handle?: unknown;
       phoneConfirmationRequired?: unknown;
@@ -112,6 +119,7 @@ async function readOnboardingPayload(request: Request) {
     return {
       businessCategory: optionalString(body?.businessCategory),
       contactPhone: optionalString(body?.contactPhone),
+      shopDetails: body?.shopDetails,
       deliveryEnabled: optionalBoolean(body?.deliveryEnabled, true),
       handle: requiredString(body?.handle),
       phoneConfirmationRequired: optionalBoolean(body?.phoneConfirmationRequired, true),
@@ -125,6 +133,7 @@ async function readOnboardingPayload(request: Request) {
   return {
     businessCategory: getOptionalString(formData, "businessCategory"),
     contactPhone: getOptionalString(formData, "contactPhone"),
+    shopDetails: undefined,
     deliveryEnabled: formData.get("deliveryEnabled") !== "false",
     handle: getRequiredString(formData, "handle"),
     phoneConfirmationRequired: formData.get("phoneConfirmationRequired") !== "false",

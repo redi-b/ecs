@@ -105,11 +105,11 @@ const marquee = ["PURE", "RADIANT", "ORGANIC", "POWERFUL", "LUMINOUS", "COSMETIC
     {(editorMode || template.home.hero.enabled) && <section class="lv-hero" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" data-editor-background-image-path="home.hero.imageAssetId" hidden={!template.home.hero.enabled}>
       <TemplateImage class="lv-hero__background" src={heroBackground} fallback={heroBg} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
       <div class="lv-hero__copy"><h1 data-editor-path="home.hero.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.title}</h1><p data-editor-path="home.hero.subtitle" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.subtitle}</p><ActionButton href={template.home.hero.primaryCtaHref} iconSrc={bagIcon.src} editorPath="home.hero.primaryCtaLabel" editorRelatedPaths={["home.hero.primaryCtaHref"]} editorMode={editorMode}>{template.home.hero.primaryCtaLabel}</ActionButton>
-        <ul>{template.home.hero.trustLabels.map((label, index) => <li><TrustBadge /><span data-editor-path={`home.hero.trustLabels.${index}`} contenteditable={editorMode ? "plaintext-only" : undefined}>{label}</span></li>)}</ul>
+        {template.home.hero.trustLabels.length > 0 && <ul>{template.home.hero.trustLabels.map((label, index) => <li><TrustBadge /><span data-editor-path={`home.hero.trustLabels.${index}`} contenteditable={editorMode ? "plaintext-only" : undefined}>{label}</span></li>)}</ul>}
       </div>
       <div class="lv-hero__portrait">
         <TemplateImage src={portrait} fallback={heroPortrait} alt="Model with radiant skin" widths={[480, 768, 1024]} sizes="(max-width: 900px) 100vw, 50vw" loading="eager" fetchpriority="high" data-editor-image-path="home.hero.portraitAssetId" />
-        <img class="lv-hero__scroll" src={scrollMark.src} alt="" />
+        {!template.header.useShopName && <img class="lv-hero__scroll" src={scrollMark.src} alt="" />}
         {heroProducts.length > 0 && <article class="lv-promo" data-promo-carousel data-editor-products-path="home.hero.featuredProductIds" aria-label="Featured products">
           <div class="lv-promo__viewport" data-promo-viewport>
             <div class="lv-promo__track" data-promo-track>

@@ -33,6 +33,22 @@ describe("platform app health, auth, and tenant bootstrap", () => {
     });
   });
 
+  it("allows the configured landing origin to check session state with credentials", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      { landingPublicOrigins: ["http://ecs.lvh.me:4321"] },
+    );
+
+    const response = await app.request("/platform/me", {
+      headers: { origin: "http://ecs.lvh.me:4321" },
+    });
+
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+    assert.equal(response.headers.get("access-control-allow-origin"), "http://ecs.lvh.me:4321");
+    assert.equal(response.headers.get("vary"), "Origin");
+  });
+
   it("handles Chapa payment callbacks with verified payment state", async () => {
     let callbackInput:
       | {

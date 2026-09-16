@@ -20,15 +20,16 @@ import {
   normalizeProductOptions,
 } from "@/features/products/product-form-state";
 import type { ProductFormValues } from "@/features/products/product-form-types";
+import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
-import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
+import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -75,6 +76,7 @@ export function ProductColorPopover({
   onSave: (label: string, value: string) => void;
   value?: string;
 }) {
+  const portalContainer = useFloatingPortalContainer();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"browse" | "custom">("browse");
   const [query, setQuery] = useState("");
@@ -122,7 +124,8 @@ export function ProductColorPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-80 p-0"
+        {...(portalContainer ? { collisionBoundary: portalContainer } : {})}
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain p-0"
         onKeyDown={(event) => event.stopPropagation()}
       >
         {step === "browse" ? (
@@ -201,7 +204,7 @@ export function ProductColorPopover({
               <Input
                 autoFocus
                 onChange={(event) => setCustomLabel(event.currentTarget.value)}
-                placeholder="e.g. Ocean blue"
+                placeholder="Color name"
                 value={customLabel}
               />
             </Field>
@@ -267,15 +270,6 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
     ...(values.hasVariants
       ? [
           {
-            label: t("products.formReview.options"),
-            value: normalizedOptions
-              .map(
-                (option) =>
-                  `${option.title}: ${option.values.map((value) => value.label).join(", ")}`,
-              )
-              .join(" · "),
-          },
-          {
             label: t("products.formReview.sellableRows"),
             value: String(enabledRows.length),
           },
@@ -303,6 +297,35 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
             <dd className="break-words text-sm font-medium">{row.value}</dd>
           </div>
         ))}
+        {values.hasVariants && normalizedOptions.length ? (
+          <div className="grid gap-3 px-4 py-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <dt className="text-sm text-muted-foreground">{t("products.formReview.options")}</dt>
+            <dd className="grid min-w-0 gap-4">
+              {normalizedOptions.map((option) => (
+                <div className="grid gap-2" key={option.title}>
+                  <p className="text-sm font-medium">{option.title}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {option.values.map((value) => (
+                      <span
+                        className="inline-flex max-w-full items-center gap-2 rounded-full border bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground"
+                        key={value.id ?? value.label}
+                      >
+                        {value.swatch ? (
+                          <span
+                            aria-hidden="true"
+                            className="size-3.5 shrink-0 rounded-full border border-black/15 dark:border-white/20"
+                            style={{ backgroundColor: value.swatch.value }}
+                          />
+                        ) : null}
+                        <span className="break-words">{value.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </dd>
+          </div>
+        ) : null}
       </dl>
     </div>
   );

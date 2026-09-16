@@ -170,7 +170,7 @@ export function registerDeliveryRoutes(
       deliveryEnabled,
       landmarkRequired,
       notesEnabled,
-      phoneConfirmationRequired,
+      phoneConfirmationRequired: true,
       pickupEnabled,
       tenantId,
       userId: session.user.id,

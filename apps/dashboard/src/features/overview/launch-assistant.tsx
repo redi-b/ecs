@@ -1,6 +1,10 @@
 "use client";
 
-import type { MerchantDashboardAccess } from "@ecs/contracts";
+import {
+  type LaunchReadiness,
+  launchReadinessSchema,
+  type MerchantDashboardAccess,
+} from "@ecs/contracts";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,11 +13,11 @@ import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { allows, merchantPolicies } from "@/lib/access-policy";
 import {
   getLaunchAssistantOpenPreference,
-  hasVisitedStorefrontEditor,
   isLaunchAssistantHidden,
   LAUNCH_ASSISTANT_PREFERENCE_EVENT,
   setLaunchAssistantHidden,
@@ -26,19 +30,21 @@ import { getLaunchChecklistItems, type LaunchChecklistItem } from "./launch-assi
 export function LaunchAssistant({ access }: { access: MerchantDashboardAccess }) {
   const { t } = useI18n();
   const pathname = usePathname();
-  const [productCount, setProductCount] = useState<number | null>(null);
   const [productCountUnavailable, setProductCountUnavailable] = useState(false);
-  const [hasVisitedEditor, setHasVisitedEditor] = useState(false);
+  const [checksLoading, setChecksLoading] = useState(false);
+  const [readiness, setReadiness] = useState<LaunchReadiness | null>(null);
+  const [refresh, setRefresh] = useState(0);
+  const [reviewPending, setReviewPending] = useState(false);
   const summary = useMemo(
-    () => ({ ...access, hasVisitedEditor, productCount, productCountUnavailable }),
-    [access, hasVisitedEditor, productCount, productCountUnavailable],
+    () => ({ ...access, hasVisitedEditor: false, productCount: null, readiness }),
+    [access, readiness],
   );
   const items = useMemo(() => getLaunchChecklistItems(summary, t), [summary, t]);
   const requiredItems = items.filter((item) => item.required);
-  const optionalItems = items.filter((item) => !item.required);
   const completedRequired = requiredItems.filter((item) => item.ready).length;
   const launchReady = completedRequired === requiredItems.length;
-  const catalogUnknown = productCount === null || productCountUnavailable;
+  const catalogUnknown =
+    !readiness || readiness.checks.some((check) => check.status === "unavailable");
   const liveShopHref = `//${access.domain.hostname}`;
   const canCompleteSetup = allows(access.permissions ?? [], merchantPolicies.launchSetup);
 
@@ -49,7 +55,6 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   useEffect(() => {
     const nextHidden = isLaunchAssistantHidden(access.tenant.id);
     const nextOpen = getLaunchAssistantOpenPreference(access.tenant.id);
-    setHasVisitedEditor(hasVisitedStorefrontEditor(access.tenant.id));
 
     setHidden(nextHidden);
     // Keep unfinished setup close at hand, then collapse it once the required work is done.
@@ -74,37 +79,66 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     };
   }, [access.tenant.id]);
 
+  // Route changes and the refresh nonce intentionally re-run this request even though they are
+  // not read inside the effect body. The assistant lives in the persistent dashboard layout.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refresh readiness after navigation, publishing, and explicit refreshes.
   useEffect(() => {
     if (!hydrated || hidden) return;
 
     let cancelled = false;
     setProductCountUnavailable(false);
-    setProductCount(null);
+    setChecksLoading(true);
 
-    void fetch(`${dashboardRoutes.productListAction}?limit=1&offset=0`, {
+    void fetch(`/admin/setup?tenantId=${encodeURIComponent(access.tenant.id)}`, {
       credentials: "same-origin",
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: unknown) => {
         if (cancelled) return;
-        const count =
-          data && typeof data === "object" && "count" in data
-            ? (data as { count?: unknown }).count
+        setChecksLoading(false);
+        const payload =
+          data && typeof data === "object" && "readiness" in data
+            ? (data as { readiness?: unknown }).readiness
             : undefined;
-        if (typeof count === "number" && count >= 0) {
-          setProductCount(count);
+        const parsed = launchReadinessSchema.safeParse(payload);
+        if (parsed.success) {
+          setReadiness(parsed.data);
           return;
         }
         setProductCountUnavailable(true);
       })
       .catch(() => {
-        if (!cancelled) setProductCountUnavailable(true);
+        if (!cancelled) {
+          setProductCountUnavailable(true);
+          setChecksLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [hidden, hydrated, access.tenant.id]);
+  }, [hidden, hydrated, access.tenant.id, access.storefront.isPublished, refresh, pathname]);
+
+  async function confirmReview() {
+    if (!readiness || reviewPending) return;
+    setReviewPending(true);
+    try {
+      const response = await fetch(
+        `/admin/setup?tenantId=${encodeURIComponent(access.tenant.id)}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ reviewed: true, draftFingerprint: readiness.draftFingerprint }),
+        },
+      );
+      if (!response.ok) throw new Error();
+      setRefresh((current) => current + 1);
+    } catch {
+      toast.error(t("overview.launch.checks.reviewFailed"));
+    } finally {
+      setReviewPending(false);
+    }
+  }
 
   function dismissAssistant() {
     setLaunchAssistantHidden(access.tenant.id, true);
@@ -161,9 +195,9 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
             <p className="mt-2 text-xs text-muted-foreground">
               {catalogUnknown
                 ? t(
-                    productCountUnavailable
-                      ? "overview.launch.catalogUnavailable"
-                      : "overview.launch.catalogChecking",
+                    productCountUnavailable || !checksLoading
+                      ? "overview.launch.checks.unavailable"
+                      : "overview.launch.checks.checking",
                   )
                 : launchReady
                   ? t("overview.launch.progressReady")
@@ -173,14 +207,14 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
                     })}
             </p>
             {launchReady ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button asChild size="sm">
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                <Button asChild size="xs">
                   <a href={liveShopHref} rel="noreferrer" target="_blank">
                     <AppIcons.externalLink data-icon="inline-start" />
                     {t("overview.launch.viewShop")}
                   </a>
                 </Button>
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="xs" variant="outline">
                   <Link href={dashboardRoutes.editor} prefetch={false}>
                     {t("overview.launch.openEditor")}
                   </Link>
@@ -188,19 +222,38 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
               </div>
             ) : null}
           </div>
-          <Button
-            aria-label={t("overview.aria.closeLaunch")}
-            className="shrink-0 text-xl leading-none"
-            size="icon"
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setLaunchAssistantOpenPreference(access.tenant.id, false);
-              setOpen(false);
-            }}
-          >
-            <AppIcons.close className="size-4" aria-hidden />
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={t("overview.launch.checks.refresh")}
+                  disabled={checksLoading}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setRefresh((current) => current + 1)}
+                >
+                  <AppIcons.refresh
+                    className={cn("size-4", checksLoading && "animate-spin")}
+                    aria-hidden
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("overview.launch.checks.refresh")}</TooltipContent>
+            </Tooltip>
+            <Button
+              aria-label={t("overview.aria.closeLaunch")}
+              size="icon"
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setLaunchAssistantOpenPreference(access.tenant.id, false);
+                setOpen(false);
+              }}
+            >
+              <AppIcons.close className="size-4" aria-hidden />
+            </Button>
+          </div>
         </div>
 
         <div className="flex min-h-0 max-h-[min(360px,50dvh)] flex-col gap-2 overflow-y-auto p-3">
@@ -208,13 +261,15 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
             {t("overview.launch.requiredSection")}
           </p>
           {requiredItems.map((item) => (
-            <ChecklistRow item={item} key={item.id} />
-          ))}
-          <p className="mt-2 px-1 text-xs font-medium text-muted-foreground">
-            {t("overview.launch.optionalSection")}
-          </p>
-          {optionalItems.map((item) => (
-            <ChecklistRow item={item} key={item.id} />
+            <ChecklistRow
+              item={item}
+              key={item.id}
+              loading={checksLoading && !readiness}
+              pending={reviewPending}
+              {...(item.id === "review" && !item.ready
+                ? { onConfirm: () => void confirmReview() }
+                : {})}
+            />
           ))}
         </div>
 
@@ -244,7 +299,17 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   );
 }
 
-function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
+function ChecklistRow({
+  item,
+  loading = false,
+  onConfirm,
+  pending = false,
+}: {
+  item: LaunchChecklistItem;
+  loading?: boolean;
+  onConfirm?: () => void;
+  pending?: boolean;
+}) {
   const { t } = useI18n();
   return (
     <Link
@@ -275,20 +340,45 @@ function ChecklistRow({ item }: { item: LaunchChecklistItem }) {
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{item.label}</span>
-        <span className="block truncate text-xs text-muted-foreground">{item.description}</span>
+        <span className="block text-xs text-muted-foreground">
+          {loading ? t("overview.launch.checks.checking") : item.description}
+        </span>
       </span>
-      {item.current && !item.ready ? (
+      {loading ? (
+        <Badge variant="outline">
+          <AppIcons.loader className="size-3.5 animate-spin" aria-hidden />
+          {t("overview.launch.checks.checking")}
+        </Badge>
+      ) : onConfirm ? (
+        <Button
+          aria-busy={pending}
+          disabled={pending || item.unavailable}
+          size="sm"
+          type="button"
+          variant="outline"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onConfirm();
+          }}
+        >
+          <AppIcons.check className="size-4" aria-hidden />
+          {t("overview.launch.checks.confirmReview")}
+        </Button>
+      ) : item.current && !item.ready ? (
         <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary">
           {t("overview.launch.go")}
           <AppIcons.arrowRight className="size-3.5 opacity-80" aria-hidden />
         </span>
       ) : (
         <Badge variant={item.ready ? "secondary" : item.required ? "outline" : "outline"}>
-          {item.ready
-            ? t("overview.launch.done")
-            : item.required
-              ? t("overview.launch.open")
-              : t("overview.launch.optional")}
+          {item.unavailable
+            ? t("overview.launch.checks.unavailable")
+            : item.ready
+              ? t("overview.launch.done")
+              : item.required
+                ? t("overview.launch.open")
+                : t("overview.launch.optional")}
         </Badge>
       )}
     </Link>

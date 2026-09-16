@@ -1,7 +1,6 @@
 "use client";
 
-import type { MerchantDashboardAccess } from "@ecs/contracts";
-import { PolicyGate, usePolicy } from "@/components/app/access-context";
+import { usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,18 +16,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { HandleAvailability } from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
-  SettingsLinkRow,
   SettingsPanel,
-  SettingsRow,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { merchantPolicies } from "@/lib/access-policy";
-import { dashboardRoutes } from "@/lib/routes";
 
 export function ShopSection({
+  contactFields,
+  detailsDirty = false,
   canSaveShop,
-  currentHost,
   handle,
   handleAvailability,
   handleChanged,
@@ -43,10 +40,10 @@ export function ShopSection({
   onNameChange,
   onSave,
   onToggleHandleLock,
-  summary,
 }: {
+  contactFields?: import("react").ReactNode;
+  detailsDirty?: boolean;
   canSaveShop: boolean;
-  currentHost: string;
   handle: string;
   handleAvailability: HandleAvailability;
   handleChanged: boolean;
@@ -61,20 +58,19 @@ export function ShopSection({
   onNameChange: (value: string) => void;
   onSave: () => void;
   onToggleHandleLock: () => void;
-  summary: MerchantDashboardAccess;
 }) {
   const { t } = useI18n();
   const canManage = usePolicy(merchantPolicies.shopSettingsManage);
-  const dirty = nameChanged || handleChanged;
+  const dirty = nameChanged || handleChanged || detailsDirty;
 
   return (
     <SettingsSectionBody>
       <SectionIntro title={t("settings.sections.shop.label")} />
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
+      <div className="w-full max-w-5xl">
         <SettingsPanel
           description={t("settings.shop.detailsDescription")}
           title={t("settings.shop.detailsTitle")}
-          contentClassName="flex flex-col gap-4"
+          contentClassName="flex flex-col gap-6"
         >
           <FieldGroup>
             <Field>
@@ -141,6 +137,7 @@ export function ShopSection({
               </FieldDescription>
             </Field>
           </FieldGroup>
+          <div className="border-t pt-6">{contactFields}</div>
           {handleChanged ? (
             <Alert>
               <AlertTitle>{t("settings.shop.addressChangeTitle")}</AlertTitle>
@@ -161,31 +158,6 @@ export function ShopSection({
             </div>
           ) : null}
         </SettingsPanel>
-
-        <div className="flex flex-col gap-4 lg:sticky lg:top-20">
-          <SettingsPanel title={t("settings.shop.hostname")} contentClassName="flex flex-col gap-3">
-            <SettingsLinkRow
-              label={handleChanged ? t("settings.shop.current") : t("settings.shop.primary")}
-              value={currentHost}
-            />
-            {handleChanged ? (
-              <SettingsLinkRow label={t("settings.shop.afterSave")} value={nextHost} />
-            ) : null}
-            <SettingsRow label={t("settings.shop.status")} value={summary.tenant.status} />
-          </SettingsPanel>
-          <SettingsPanel title={t("settings.shop.related")} contentClassName="flex flex-col gap-2">
-            <PolicyGate requirement={merchantPolicies.billing}>
-              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.billing}>{t("settings.shop.billingPlan")}</a>
-              </Button>
-            </PolicyGate>
-            <PolicyGate requirement={merchantPolicies.storefront}>
-              <Button asChild className="justify-start rounded-full" size="sm" variant="outline">
-                <a href={dashboardRoutes.editor}>{t("settings.shop.storefrontEditor")}</a>
-              </Button>
-            </PolicyGate>
-          </SettingsPanel>
-        </div>
       </div>
     </SettingsSectionBody>
   );

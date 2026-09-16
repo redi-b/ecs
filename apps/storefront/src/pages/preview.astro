@@ -181,9 +181,17 @@ function resolveConfiguredEditorOrigin() {
           const path = node.getAttribute('data-editor-image-path');
           if (!(node instanceof HTMLImageElement) || !path) return;
           const value = typeof fields[path] === 'string' ? fields[path].trim() : '';
-          const nextSource = value || node.dataset.editorOriginalSrc || '';
+          const nextSource = value || node.dataset.editorEmptySrc || '';
           if (nextSource) node.src = nextSource;
           else node.removeAttribute('src');
+          node.hidden = !nextSource;
+          node.toggleAttribute('hidden', !nextSource);
+          const scope = node.closest('[data-editor-image-scope]') || node.parentElement;
+          const fallback = scope?.querySelector('[data-editor-image-fallback]');
+          if (fallback instanceof HTMLElement) {
+            fallback.hidden = Boolean(nextSource);
+            fallback.toggleAttribute('hidden', Boolean(nextSource));
+          }
         });
         document.querySelectorAll('[data-editor-background-image-path]').forEach((node) => {
           const path = node.getAttribute('data-editor-background-image-path');

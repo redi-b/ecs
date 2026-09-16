@@ -166,6 +166,7 @@ async function publishDraftAction(tenantId: string) {
 
   const requestHeaders = await headers();
   const result = await publishStorefrontDraft({
+    reviewed: true,
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     tenantId,

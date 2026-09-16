@@ -54,8 +54,8 @@
     "createBtn": "{entity} ጨምር",
     "nameLabel": "ስም",
     "titleLabel": "ርዕስ",
-    "namePlaceholder": "ልብስ",
-    "titlePlaceholder": "ልዩ ምርቶች",
+    "namePlaceholder": "የምድብ ስም",
+    "titlePlaceholder": "የስብስብ ስም",
     "searchParent": "የወላጅ ምድቦችን ፈልግ…"
   },
   "actions": {

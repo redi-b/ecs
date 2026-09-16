@@ -342,7 +342,7 @@ export function normalizeDeliveryOptions(value: unknown): StoreDeliveryOptions {
   return {
     deliveryEnabled: getBoolean(value.deliveryEnabled),
     pickupEnabled: getBoolean(value.pickupEnabled),
-    phoneConfirmationRequired: getBoolean(value.phoneConfirmationRequired),
+    phoneConfirmationRequired: true,
     notesEnabled: getBoolean(value.notesEnabled),
     landmarkRequired: getBoolean(value.landmarkRequired),
     defaultDeliveryFee: getString(value.defaultDeliveryFee) ?? "0",

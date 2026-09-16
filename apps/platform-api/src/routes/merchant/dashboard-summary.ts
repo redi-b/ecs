@@ -33,6 +33,7 @@ type MerchantDashboardBase = {
     templateVersion: number | null;
   };
   tenant: {
+    shopDetails?: import("@ecs/contracts").ShopDetails | null;
     id: string;
     name: string;
     handle: string;
@@ -66,6 +67,7 @@ export function createMerchantDashboardSummary(
       },
 ) {
   type DashboardContextInput = {
+    shopDetails?: import("@ecs/contracts").ShopDetails | null;
     domainId: string;
     hostname: string;
     medusaPublishableKeyId: string | null;
@@ -92,6 +94,7 @@ export function createMerchantDashboardSummary(
   }): MerchantDashboardBase {
     return {
       tenant: {
+        shopDetails: input.context.shopDetails ?? null,
         id: input.context.tenantId,
         name: input.context.tenantName,
         handle: input.context.tenantHandle,

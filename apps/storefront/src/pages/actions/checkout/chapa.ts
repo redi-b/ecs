@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { ethiopianPhoneSchema } from "@ecs/contracts";
 
 import { associateRequestCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { updateStoreCart } from "../../../lib/commerce/cart.js";
@@ -38,7 +39,8 @@ export const POST: APIRoute = async ({ request }) => {
     !isStoreError(deliveryResult) ? deliveryResult.delivery : null;
 
   const name = String(form.get("name") ?? `${form.get("firstName") ?? ""} ${form.get("lastName") ?? ""}`).trim();
-  const phone = String(form.get("phone") ?? "").trim();
+  const parsedPhone = ethiopianPhoneSchema.safeParse(String(form.get("phone") ?? "").trim());
+  const phone = parsedPhone.success ? parsedPhone.data : "";
   const email = String(form.get("email") ?? "").trim() || null;
   const deliveryChoice = String(form.get("deliveryChoice") ?? "").trim();
   const address1 = String(form.get("address1") ?? "").trim();
@@ -72,8 +74,8 @@ export const POST: APIRoute = async ({ request }) => {
     return redirect("/checkout?error=" + encodeURIComponent("Pickup is not available for this shop."));
   }
 
-  if (delivery?.phoneConfirmationRequired !== false && !phone) {
-    return redirect("/checkout?error=" + encodeURIComponent("Phone number is required."));
+  if (!phone) {
+    return redirect("/checkout?error=" + encodeURIComponent("Enter a valid Ethiopian phone number, such as 0912345678."));
   }
 
   if (deliveryChoice === "delivery") {
