@@ -97,6 +97,7 @@ export function ProductForm({
   const [isHandleLocked, setIsHandleLocked] = useState(isInitialHandleLocked(product));
   const [actionError, setActionError] = useState<string | null>(null);
   const [suggestedHandle, setSuggestedHandle] = useState<string | null>(null);
+  const [handleServerError, setHandleServerError] = useState<string | null>(null);
   const [adjustedHandle, setAdjustedHandle] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<{
     count: number;
@@ -231,6 +232,7 @@ export function ProductForm({
     }
 
     if (error instanceof ProductMutationError && error.code === "product_conflict") {
+      setHandleServerError(message);
       setSuggestedHandle(suggestAvailableProductHandle(form.state.values.handle));
     }
 
@@ -482,18 +484,21 @@ export function ProductForm({
 
                           <form.Field name="handle">
                             {(field) => (
-                              <Field>
+                              <Field data-invalid={Boolean(handleServerError)}>
                                 <FieldLabel htmlFor={field.name}>
                                   {t("products.composer.fieldHandle")}
                                 </FieldLabel>
                                 <InputGroup className="pr-1">
                                   <InputGroupInput
+                                    aria-invalid={Boolean(handleServerError)}
                                     id={field.name}
                                     name={field.name}
                                     onBlur={field.handleBlur}
                                     onChange={(event) => {
                                       const nextHandle = slugifyProductHandle(event.target.value);
                                       setAdjustedHandle(null);
+                                      setHandleServerError(null);
+                                      setSuggestedHandle(null);
                                       const currentSkuPrefix = form.state.values.skuPrefix.trim();
                                       const shouldUpdateSkuPrefix =
                                         !product &&
@@ -559,6 +564,9 @@ export function ProductForm({
                                     </Tooltip>
                                   </InputGroupAddon>
                                 </InputGroup>
+                                {handleServerError ? (
+                                  <FieldError errors={[{ message: handleServerError }]} touched />
+                                ) : null}
                                 <FieldDescription>
                                   {adjustedHandle
                                     ? t("products.validation.handleAdjusted", { handle: adjustedHandle })
@@ -909,6 +917,7 @@ export function ProductForm({
                               form.setFieldValue("handle", suggestedHandle);
                               setIsHandleLocked(false);
                               setActionError(null);
+                              setHandleServerError(null);
                               setSuggestedHandle(null);
                             }}
                             size="sm"

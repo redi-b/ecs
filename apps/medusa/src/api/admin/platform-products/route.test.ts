@@ -17,6 +17,9 @@ test("media product request resolves sales-channel links before querying Product
   ) => unknown;
   const calls: QueryInput[] = [];
   const req = {
+    // Medusa 2.21 initializes this on every real request before route middleware runs.
+    // Keep the route-level harness aligned with the framework request contract.
+    allowed: [],
     query: {
       media: "without_media",
       sales_channel_id: ["sc_1"],

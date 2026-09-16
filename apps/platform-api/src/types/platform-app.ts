@@ -630,6 +630,7 @@ export type PlatformAppOptions = {
         shippingProfileId?: string | null | undefined;
         status?: string | null | undefined;
         stockLocationId?: string | null | undefined;
+        tenantId?: string;
         thumbnail?: string | null | undefined;
         title: string;
         variants?:
@@ -1387,6 +1388,7 @@ export type PlatformAppOptions = {
         regionId?: string | null | undefined;
         salesChannelId: string;
         status?: string | null | undefined;
+        tenantId?: string;
         thumbnail?: string | null | undefined;
         title?: string | null | undefined;
         variants?:

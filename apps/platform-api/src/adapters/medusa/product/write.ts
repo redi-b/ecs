@@ -7,7 +7,8 @@ import type {
   MerchantProductCollectionWriteResult,
   MerchantProductWriteResult,
 } from "../../../types/index.js";
-import { mapMedusaHttpFailure } from "../map-medusa-failure.js";
+import { mapMedusaFailure, mapMedusaHttpFailure } from "../map-medusa-failure.js";
+import { getTenantProductHandle, getTenantProductMetadata } from "./handles.js";
 import {
   normalizeProduct,
   normalizeProductCategory,
@@ -19,9 +20,14 @@ import type {
   ProductVariantWriteInput,
   ProductWriteInput,
 } from "./types.js";
-import { getBoolean, getString } from "./values.js";
+import { getBoolean, getString, isRecord } from "./values.js";
 
 export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInput) {
+  const publicHandle = input.handle;
+  const storedHandle =
+    input.tenantId?.trim() && publicHandle?.trim()
+      ? getTenantProductHandle(input.tenantId, publicHandle)
+      : publicHandle;
   const body: Record<string, unknown> = Object.fromEntries(
     [
       ["title", input.title],
@@ -29,7 +35,7 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
         "description",
         input.description === undefined ? undefined : sanitizeProductDescription(input.description),
       ],
-      ["handle", input.handle],
+      ["handle", storedHandle],
       ["collection_id", input.collectionId],
       ["shipping_profile_id", input.shippingProfileId],
       ["status", input.status],
@@ -49,8 +55,11 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
     body.images = input.imageUrls.map((url) => ({ url }));
   }
 
-  if (input.metadata && Object.keys(input.metadata).length > 0) {
-    body.metadata = input.metadata;
+  const metadata = input.tenantId?.trim()
+    ? getTenantProductMetadata(input.tenantId, publicHandle, input.metadata)
+    : input.metadata;
+  if (metadata && Object.keys(metadata).length > 0) {
+    body.metadata = metadata;
   }
 
   const optionValuePresentations = getOptionValuePresentationsForWrite(input.options);
@@ -68,7 +77,7 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
   const productOptions = getProductOptionsForWrite(input.options);
   const productVariants = getProductVariantsForWrite(input.variants);
 
-  if (hasExplicitOptions || (input.priceAmount !== undefined && !isUpdate)) {
+  if (!isUpdate && (hasExplicitOptions || input.priceAmount !== undefined)) {
     body.options = productOptions;
   }
 
@@ -92,6 +101,115 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
   }
 
   return body;
+}
+
+type ProductOptionBatchBody = {
+  add?: Array<{ title: string; values: string[] }>;
+  remove?: string[];
+  update?: Array<{ product_option_id: string; add?: string[]; remove?: string[] }>;
+};
+
+/** Build the Medusa 2.16+ product-option batch mutation from the editor's desired state. */
+export function getProductOptionBatchBody(
+  product: unknown,
+  desiredOptions: ProductOptionInput[] | undefined,
+): ProductOptionBatchBody | null {
+  if (desiredOptions === undefined) return null;
+
+  const existingOptions = getExistingProductOptions(product);
+  const existingById = new Map(existingOptions.map((option) => [option.id, option]));
+  const retainedIds = new Set(
+    desiredOptions.flatMap((option) => (option.id?.trim() ? [option.id.trim()] : [])),
+  );
+  const add: Array<{ title: string; values: string[] }> = [];
+  const remove = existingOptions
+    .filter((option) => !retainedIds.has(option.id))
+    .map((option) => option.id);
+  const update: NonNullable<ProductOptionBatchBody["update"]> = [];
+
+  for (const desired of desiredOptions) {
+    const title = desired.title.trim();
+    const values = desired.values.map(getOptionValueLabel).filter(Boolean);
+    const existing = desired.id?.trim() ? existingById.get(desired.id.trim()) : undefined;
+
+    if (!existing) {
+      if (title && values.length) add.push({ title, values: [...new Set(values)] });
+      continue;
+    }
+
+    if (existing.title !== title) {
+      if (!remove.includes(existing.id)) remove.push(existing.id);
+      if (title && values.length) add.push({ title, values: [...new Set(values)] });
+      continue;
+    }
+
+    const desiredValueIds = new Set(
+      desired.values.flatMap((value) =>
+        typeof value !== "string" && value.id?.trim() ? [value.id.trim()] : [],
+      ),
+    );
+    const existingByLabel = new Map(existing.values.map((value) => [value.label, value]));
+    const addValues: string[] = [];
+    const removeValues: string[] = [];
+
+    for (const desiredValue of desired.values) {
+      const label = getOptionValueLabel(desiredValue);
+      const id = typeof desiredValue === "string" ? undefined : desiredValue.id?.trim();
+      const existingValue = id
+        ? existing.values.find((value) => value.id === id)
+        : existingByLabel.get(label);
+
+      if (!existingValue) {
+        addValues.push(label);
+      } else if (existingValue.label !== label) {
+        removeValues.push(existingValue.id);
+        addValues.push(label);
+      }
+    }
+
+    for (const existingValue of existing.values) {
+      const retainedByLabel = values.includes(existingValue.label);
+      if (!desiredValueIds.has(existingValue.id) && !retainedByLabel) {
+        removeValues.push(existingValue.id);
+      }
+    }
+
+    const uniqueAdd = [...new Set(addValues.filter(Boolean))];
+    const uniqueRemove = [...new Set(removeValues.filter(Boolean))];
+    if (uniqueAdd.length || uniqueRemove.length) {
+      update.push({
+        product_option_id: existing.id,
+        ...(uniqueAdd.length ? { add: uniqueAdd } : {}),
+        ...(uniqueRemove.length ? { remove: uniqueRemove } : {}),
+      });
+    }
+  }
+
+  if (!add.length && !remove.length && !update.length) return null;
+  return {
+    ...(add.length ? { add } : {}),
+    ...(remove.length ? { remove: [...new Set(remove)] } : {}),
+    ...(update.length ? { update } : {}),
+  };
+}
+
+function getExistingProductOptions(product: unknown) {
+  if (!isRecord(product) || !Array.isArray(product.options)) return [];
+  return product.options.flatMap((option) => {
+    if (!isRecord(option)) return [];
+    const id = getString(option.id);
+    const title = getString(option.title);
+    if (!id || !title) return [];
+    const values = Array.isArray(option.values)
+      ? option.values.flatMap((value) => {
+          if (!isRecord(value)) return [];
+          const valueId = getString(value.id);
+          const label = getString(value.value);
+          return valueId && label ? [{ id: valueId, label }] : [];
+        })
+      : [];
+    return [{ id, title, values }];
+  });
 }
 
 export function getProductOptionsForWrite(options: ProductOptionInput[] | undefined) {
@@ -273,12 +391,16 @@ export async function parseProductCollectionWriteResponse(
   };
 }
 
-export function getWriteError(response: Response): MerchantProductWriteResult {
-  return mapMedusaHttpFailure(response, {
+export async function getWriteError(response: Response): Promise<MerchantProductWriteResult> {
+  return (await mapMedusaFailure(response, {
     conflictError: "product_conflict",
     invalidError: "product_write_invalid",
     notFoundError: "product_not_found",
-  }) as Extract<MerchantProductWriteResult, { ok: false }>;
+    refine: ({ blob }) =>
+      blob.includes("handle") && blob.includes("already exists")
+        ? { error: "product_conflict", status: 409 }
+        : null,
+  })) as Extract<MerchantProductWriteResult, { ok: false }>;
 }
 
 export function getCategoryWriteError(response: Response): MerchantProductCategoryWriteResult {
