@@ -204,7 +204,7 @@ export function CommandCenter({ placement = "header" }: { placement?: "header" |
           params.set("tenantId", tenantId);
         }
 
-        void fetch(`/admin/search?${params}`, {
+        void fetch(`/dashboard/search?${params}`, {
           headers: { accept: "application/json" },
           signal: controller.signal,
           cache: "no-store",

@@ -92,7 +92,7 @@ export function InsightsHeaderActions(
   async function requestUpdate() {
     setRequesting(true);
     const response = await fetch(
-      `/admin/insights/actions/refresh?tenantId=${encodeURIComponent(tenantId)}`,
+      `/dashboard/insights/actions/refresh?tenantId=${encodeURIComponent(tenantId)}`,
       {
         headers: { accept: "application/json" },
         method: "POST",

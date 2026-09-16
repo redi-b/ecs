@@ -105,7 +105,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     setLoadError(null);
     try {
       const response = await fetch(
-        `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
+        `/dashboard/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
         {
           headers: { accept: "application/json" },
           cache: "no-store",
@@ -157,7 +157,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     successMessage: string;
   }) {
     const response = await fetch(
-      `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
+      `/dashboard/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
       {
         method: "POST",
         headers: {
@@ -274,7 +274,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
     startTransition(async () => {
       try {
         const response = await fetch(
-          `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
+          `/dashboard/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
           {
             method: "POST",
             headers: {

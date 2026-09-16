@@ -541,7 +541,7 @@ describe("platform app merchant dashboard and orders", () => {
 
           return {
             ok: true,
-            redirectTo: "//new-abebe.lvh.me/admin/settings",
+            redirectTo: "//new-abebe.lvh.me/dashboard/settings",
             tenant: {
               id: "tenant_1",
               name: input.name,
@@ -578,7 +578,7 @@ describe("platform app merchant dashboard and orders", () => {
       userId: "user_1",
     });
     assert.deepEqual(await response.json(), {
-      redirectTo: "//new-abebe.lvh.me/admin/settings",
+      redirectTo: "//new-abebe.lvh.me/dashboard/settings",
       tenant: {
         id: "tenant_1",
         name: "New Abebe Market",

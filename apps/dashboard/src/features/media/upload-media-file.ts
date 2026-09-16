@@ -17,7 +17,7 @@ export async function uploadMediaFile(file: File): Promise<string> {
   if (validation === "invalid_type") throw new Error("invalid_type");
   if (validation === "too_large") throw new Error("too_large");
 
-  const createResponse = await fetch("/admin/media/uploads", {
+  const createResponse = await fetch("/dashboard/media/uploads", {
     body: JSON.stringify({
       byteSize: file.size,
       filename: file.name,
@@ -45,7 +45,7 @@ export async function uploadMediaFile(file: File): Promise<string> {
 
   const dimensions = await getImageDimensions(file);
   const completeResponse = await fetch(
-    `/admin/media/uploads/${encodeURIComponent(assetId)}/complete`,
+    `/dashboard/media/uploads/${encodeURIComponent(assetId)}/complete`,
     {
       body: JSON.stringify({
         altText: filenameToAlt(file.name),

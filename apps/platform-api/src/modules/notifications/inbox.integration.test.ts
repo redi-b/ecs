@@ -165,7 +165,7 @@ test(
 
       const groupedAfterFirst = (
         await inbox.list({ actorUserId: ownerId, limit: 20, tenantId: tenant.id })
-      ).items.find((item) => item.href === `/admin/orders/${groupedOrderId}`);
+      ).items.find((item) => item.href === `/dashboard/orders/${groupedOrderId}`);
       assert.ok(groupedAfterFirst);
       assert.equal(groupedAfterFirst.occurrenceCount, 1);
       assert.equal(
@@ -192,7 +192,7 @@ test(
 
       const groupedAfterSecond = (
         await inbox.list({ actorUserId: ownerId, limit: 20, tenantId: tenant.id })
-      ).items.filter((item) => item.href === `/admin/orders/${groupedOrderId}`);
+      ).items.filter((item) => item.href === `/dashboard/orders/${groupedOrderId}`);
       assert.equal(groupedAfterSecond.length, 1);
       assert.equal(groupedAfterSecond[0]?.id, groupedAfterFirst.id);
       assert.equal(groupedAfterSecond[0]?.occurrenceCount, 2);

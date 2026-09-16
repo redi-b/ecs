@@ -14,7 +14,7 @@ export async function fetchMediaPickerPage(
   signal: AbortSignal,
   fetcher: typeof fetch = fetch,
 ) {
-  const response = await fetcher(`/admin/media/assets?${params}`, { signal });
+  const response = await fetcher(`/dashboard/media/assets?${params}`, { signal });
   if (!response.ok) throw new Error("media_list_failed");
   const page = mediaPickerPageSchema.parse(await response.json());
   if (

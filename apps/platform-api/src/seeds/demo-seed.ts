@@ -300,7 +300,7 @@ Local operations demo ready.
   console.info(`
 Demo shops ready (safe to re-run).
 
-  Tech shop:    http://addistech.${platformBaseDomain}/admin
+  Tech shop:    http://addistech.${platformBaseDomain}/dashboard
   Owner:        ${techShop.user.email}
   Password:     ${DEMO_OWNER_PASSWORD}
 
@@ -308,7 +308,7 @@ Demo shops ready (safe to re-run).
   Operator:     ${DEMO_OPERATIONS.operator.email}
   Password:     ${DEMO_OPERATIONS_PASSWORD}
 
-  Fashion shop: http://${fashionShop.tenant.handle}.${platformBaseDomain}/admin
+  Fashion shop: http://${fashionShop.tenant.handle}.${platformBaseDomain}/dashboard
   Owner:        ${fashionShop.user.email}
   Password:     ${DEMO_OWNER_PASSWORD}
 
@@ -557,7 +557,7 @@ async function seedShop(
     tenantId: provisioned.tenant.id,
     domain: hostname,
     user: shop.user.email,
-    dashboard: `http://${hostname}/admin`,
+    dashboard: `http://${hostname}/dashboard`,
     commerce,
     platform: platformExtras,
   };
@@ -1738,7 +1738,7 @@ async function seedPlatformExtras(
       eventType: "order.created",
       title: "New cash order",
       body: "Order ECS-1048 was placed and is waiting for confirmation.",
-      href: "/admin/orders",
+      href: "/dashboard/orders",
       category: "orders",
       priority: "normal",
       readAt: null as Date | null,
@@ -1748,7 +1748,7 @@ async function seedPlatformExtras(
       eventType: "inventory.low",
       title: "Low stock on popular SKUs",
       body: "Two popular variants have fewer than five items available.",
-      href: "/admin/products",
+      href: "/dashboard/products",
       category: "inventory",
       priority: "high",
       readAt: null as Date | null,
@@ -1758,7 +1758,7 @@ async function seedPlatformExtras(
       eventType: "payment.paid",
       title: "Payment received",
       body: "ETB 4,850 was recorded for order ECS-1042.",
-      href: "/admin/orders",
+      href: "/dashboard/orders",
       category: "orders",
       priority: "normal",
       readAt: addDays(new Date(), -1),
@@ -1768,7 +1768,7 @@ async function seedPlatformExtras(
       eventType: "order.cancelled",
       title: "Order cancelled",
       body: "Order ECS-1039 was cancelled before fulfillment.",
-      href: "/admin/orders",
+      href: "/dashboard/orders",
       category: "orders",
       priority: "normal",
       readAt: addDays(new Date(), -2),
@@ -1778,7 +1778,7 @@ async function seedPlatformExtras(
       eventType: "storefront.inquiry_created",
       title: "New product request",
       body: "A customer asked whether you can source an item that is not in the catalog.",
-      href: "/admin/inquiries",
+      href: "/dashboard/inquiries",
       category: "inquiries",
       priority: "normal",
       readAt: null as Date | null,
@@ -1788,7 +1788,7 @@ async function seedPlatformExtras(
       eventType: "billing.invoice_ready",
       title: "Plan invoice ready",
       body: "Your next plan invoice is ready to review.",
-      href: "/admin/settings?tab=billing",
+      href: "/dashboard/settings?tab=billing",
       category: "billing",
       priority: "high",
       readAt: null as Date | null,

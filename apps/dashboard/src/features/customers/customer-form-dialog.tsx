@@ -104,8 +104,8 @@ export function CustomerFormDialog({
 
     const response = await fetch(
       customer
-        ? `/admin/customers/actions/${encodeURIComponent(customer.id)}`
-        : "/admin/customers/actions",
+        ? `/dashboard/customers/actions/${encodeURIComponent(customer.id)}`
+        : "/dashboard/customers/actions",
       {
         body: JSON.stringify(payload),
         headers: {

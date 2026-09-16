@@ -63,7 +63,7 @@ export function NotificationHistory({
   async function mutate(id: string, action: "archive" | "read" | "unread") {
     setBusyId(id);
     try {
-      const response = await fetch("/admin/notifications/inbox", {
+      const response = await fetch("/dashboard/notifications/inbox", {
         body: JSON.stringify({ action, id }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -91,7 +91,7 @@ export function NotificationHistory({
   async function markAllRead() {
     setBusyId("all");
     try {
-      const response = await fetch("/admin/notifications/inbox", {
+      const response = await fetch("/dashboard/notifications/inbox", {
         body: JSON.stringify({ action: "read-all" }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -213,7 +213,7 @@ export function NotificationHistory({
                         className="min-w-0 flex-1 text-left"
                         onClick={() => {
                           if (unread) void mutate(item.id, "read");
-                          if (item.href?.startsWith("/admin")) router.push(item.href);
+                          if (item.href?.startsWith("/dashboard")) router.push(item.href);
                         }}
                         type="button"
                       >

@@ -33,7 +33,7 @@ export function StorefrontSeoSettingsForm({
       socialImageUrl: initialSeo.socialImageUrl ?? "",
     },
     onSubmit: async ({ value }) => {
-      const response = await fetch("/admin/storefront/seo", {
+      const response = await fetch("/dashboard/storefront/seo", {
         body: JSON.stringify({
           tenantId,
           seo: {

@@ -3,12 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { DASHBOARD_PATH_HEADER } from "@/lib/dashboard-auth";
 import { getDashboardPublicUrl, isLegacyCentralDashboardHost } from "@/lib/dashboard-hosts";
 
-const excludedAdminPrefixes = [
-  "/admin/onboarding",
-  "/admin/sign-in",
-  "/admin/sign-up",
-  "/admin/session",
-  "/admin/storefront/template",
+const excludedDashboardPrefixes = [
+  "/onboarding",
+  "/sign-in",
+  "/sign-up",
+  "/session",
+  "/dashboard/storefront/template",
 ] as const;
 
 export function proxy(request: NextRequest) {
@@ -29,7 +29,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
-  if (!isAdminPath(pathname) || isExcludedAdminPath(pathname)) {
+  if (!isDashboardPath(pathname) || isExcludedDashboardPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -43,12 +43,12 @@ export function proxy(request: NextRequest) {
   });
 }
 
-function isAdminPath(pathname: string) {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
+function isDashboardPath(pathname: string) {
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
 
-function isExcludedAdminPath(pathname: string) {
-  return excludedAdminPrefixes.some(
+function isExcludedDashboardPath(pathname: string) {
+  return excludedDashboardPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }

@@ -1,0 +1,86 @@
+import { createMerchantProductCollection } from "@/lib/merchant-products";
+import { withMerchantAction } from "@/lib/platform-api/action-route";
+import { getTaxonomyFormInput } from "@/lib/taxonomy-form-data";
+
+export async function POST(request: Request) {
+  return withMerchantAction(request, async (context) => {
+    const collection = await getCollectionInput(context.request);
+
+    if (!collection.title) {
+      if (context.wantsJson) {
+        return { ok: false, message: "missing_title", status: 400 };
+      }
+
+      return {
+        ok: false,
+        message: "missing_title",
+        status: 400,
+        redirectPath: "/dashboard/products/collections",
+        redirectStatusParam: "missing_title",
+      };
+    }
+
+    const result = await createMerchantProductCollection({
+      cookieHeader: context.cookieHeader,
+      handle: collection.handle,
+      mediaUrl: collection.mediaUrl,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+      title: collection.title,
+      visibility: collection.visibility,
+    });
+
+    if (!result.ok) {
+      if (context.wantsJson) {
+        return { ok: false, message: result.message, status: result.status };
+      }
+
+      return {
+        ok: false,
+        message: result.message,
+        status: result.status,
+        redirectPath: "/dashboard/products/collections",
+        redirectStatusParam: result.message,
+      };
+    }
+
+    if (context.wantsJson) {
+      return { ok: true, data: { collection: result.collection } };
+    }
+
+    return {
+      ok: true,
+      data: { collection: result.collection },
+      redirectPath: "/dashboard/products/collections",
+      redirectStatusParam: "collection_created",
+    };
+  });
+}
+
+async function getCollectionInput(request: Request) {
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    const body = (await request.json().catch(() => ({}))) as {
+      handle?: unknown;
+      mediaUrl?: unknown;
+      title?: unknown;
+      visibility?: unknown;
+    };
+
+    return {
+      handle: typeof body.handle === "string" && body.handle.trim() ? body.handle.trim() : null,
+      mediaUrl:
+        typeof body.mediaUrl === "string" && body.mediaUrl.trim() ? body.mediaUrl.trim() : null,
+      title: typeof body.title === "string" && body.title.trim() ? body.title.trim() : null,
+      visibility: body.visibility === "hidden" ? ("hidden" as const) : ("public" as const),
+    };
+  }
+
+  const form = await getTaxonomyFormInput(await request.formData());
+  return {
+    handle: form.handle,
+    mediaUrl: form.mediaUrl,
+    title: form.title ?? form.name,
+    visibility: "public" as const,
+  };
+}

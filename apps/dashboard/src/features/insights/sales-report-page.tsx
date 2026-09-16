@@ -76,8 +76,8 @@ export async function SalesReportPage({
               className="underline underline-offset-4"
               href={
                 tenantId
-                  ? `/admin/insights/sales?tenantId=${encodeURIComponent(tenantId)}`
-                  : "/admin/insights/sales"
+                  ? `/dashboard/insights/sales?tenantId=${encodeURIComponent(tenantId)}`
+                  : "/dashboard/insights/sales"
               }
             >
               {t("insights.salesWorkspace.resetRange")}

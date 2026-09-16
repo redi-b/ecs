@@ -888,7 +888,7 @@ describe("platform app health, auth, and tenant bootstrap", () => {
 
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), {
-      redirectTo: "http://new-shop.lvh.me/admin",
+      redirectTo: "http://new-shop.lvh.me/dashboard",
       tenant: {
         createdAt: "2026-07-06T08:00:00.000Z",
         id: "tenant_2",

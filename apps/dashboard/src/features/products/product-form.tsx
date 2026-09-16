@@ -181,7 +181,7 @@ export function ProductForm({
       }
 
       const mediaResponse = await fetch(
-        `/admin/media/products/${encodeURIComponent(data.product.id)}`,
+        `/dashboard/media/products/${encodeURIComponent(data.product.id)}`,
         {
           body: JSON.stringify({
             imageUrls: payload.imageUrls,

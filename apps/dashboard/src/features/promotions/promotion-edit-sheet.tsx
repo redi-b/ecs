@@ -206,7 +206,7 @@ export function PromotionEditSheet({
   useEffect(() => {
     if (!open || !needsProducts) return;
     setCatalogLoading(true);
-    void fetch("/admin/products/actions/list?limit=100", {
+    void fetch("/dashboard/products/actions/list?limit=100", {
       headers: { accept: "application/json" },
     })
       .then(async (response) => {
@@ -268,7 +268,7 @@ export function PromotionEditSheet({
     }
 
     setSaving(true);
-    const response = await fetch(`/admin/promotions/actions/${encodeURIComponent(promotion.id)}`, {
+    const response = await fetch(`/dashboard/promotions/actions/${encodeURIComponent(promotion.id)}`, {
       body: JSON.stringify({
         allocation: showAllocation ? allocation : null,
         applyToQuantity: isBuyGet ? Number(applyToQuantity) || null : promotion.applyToQuantity,

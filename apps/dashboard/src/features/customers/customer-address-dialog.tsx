@@ -194,8 +194,8 @@ export function CustomerAddressDialog({
     };
 
     const url = address
-      ? `/admin/customers/actions/${encodeURIComponent(customerId)}/addresses/${encodeURIComponent(address.id)}`
-      : `/admin/customers/actions/${encodeURIComponent(customerId)}/addresses`;
+      ? `/dashboard/customers/actions/${encodeURIComponent(customerId)}/addresses/${encodeURIComponent(address.id)}`
+      : `/dashboard/customers/actions/${encodeURIComponent(customerId)}/addresses`;
 
     const response = await fetch(url, {
       body: JSON.stringify(payload),
@@ -472,7 +472,7 @@ export function CustomerAddressDeleteButton({
     if (deleting) return;
     setDeleting(true);
     const response = await fetch(
-      `/admin/customers/actions/${encodeURIComponent(customerId)}/addresses/${encodeURIComponent(addressId)}`,
+      `/dashboard/customers/actions/${encodeURIComponent(customerId)}/addresses/${encodeURIComponent(addressId)}`,
       {
         headers: { accept: "application/json" },
         method: "DELETE",

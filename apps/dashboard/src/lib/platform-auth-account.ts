@@ -207,13 +207,13 @@ export async function preflightAccountPasswordReset(
 }
 
 export function getSafeAccountReturnPath(value: string | null | undefined) {
-  if (!value?.startsWith("/") || value.startsWith("//")) return "/admin/sign-in";
+  if (!value?.startsWith("/") || value.startsWith("//")) return "/sign-in";
   const url = new URL(value, "https://dashboard.invalid");
   if (
     url.origin !== "https://dashboard.invalid" ||
-    (url.pathname !== "/admin" && !url.pathname.startsWith("/admin/"))
+    (url.pathname !== "/dashboard" && !url.pathname.startsWith("/dashboard/"))
   ) {
-    return "/admin/sign-in";
+    return "/sign-in";
   }
   return `${url.pathname}${url.search}`;
 }

@@ -105,13 +105,15 @@ export function buildInAppHref(eventType: string, payload: unknown): string | nu
   const productId = pickString(data, "productId", "product_id");
   switch (getNotificationEventDefinition(eventType)?.deepLink) {
     case "order":
-      return orderId ? `/admin/orders/${encodeURIComponent(orderId)}` : "/admin/orders";
+      return orderId ? `/dashboard/orders/${encodeURIComponent(orderId)}` : "/dashboard/orders";
     case "product":
-      return productId ? `/admin/products/${encodeURIComponent(productId)}` : "/admin/products";
+      return productId
+        ? `/dashboard/products/${encodeURIComponent(productId)}`
+        : "/dashboard/products";
     case "billing":
-      return "/admin/billing";
+      return "/dashboard/billing";
     case "inquiries":
-      return "/admin/inquiries";
+      return "/dashboard/inquiries";
     default:
       return null;
   }

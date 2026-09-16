@@ -89,7 +89,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     setProductCountUnavailable(false);
     setChecksLoading(true);
 
-    void fetch(`/admin/setup?tenantId=${encodeURIComponent(access.tenant.id)}`, {
+    void fetch(`/dashboard/setup?tenantId=${encodeURIComponent(access.tenant.id)}`, {
       credentials: "same-origin",
     })
       .then((response) => (response.ok ? response.json() : null))
@@ -124,7 +124,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     setReviewPending(true);
     try {
       const response = await fetch(
-        `/admin/setup?tenantId=${encodeURIComponent(access.tenant.id)}`,
+        `/dashboard/setup?tenantId=${encodeURIComponent(access.tenant.id)}`,
         {
           method: "POST",
           headers: { "content-type": "application/json" },

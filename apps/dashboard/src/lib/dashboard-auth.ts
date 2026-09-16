@@ -71,31 +71,32 @@ export async function getMerchantDashboardAccess(options: {
 
 export function getSafeDashboardPath(value: string | null | undefined) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/admin";
+    return "/dashboard";
   }
 
   const url = new URL(value, "https://dashboard.local");
 
-  if (url.pathname !== "/admin" && !url.pathname.startsWith("/admin/")) {
-    return "/admin";
+  if (url.pathname !== "/dashboard" && !url.pathname.startsWith("/dashboard/")) {
+    return "/dashboard";
   }
 
   if (
-    url.pathname === "/admin/sign-in" ||
-    url.pathname.startsWith("/admin/sign-in/") ||
-    url.pathname === "/admin/session" ||
-    url.pathname.startsWith("/admin/session/")
+    url.pathname === "/sign-in" ||
+    url.pathname.startsWith("/sign-in/") ||
+    url.pathname === "/session" ||
+    url.pathname.startsWith("/session/")
   ) {
-    return "/admin";
+    return "/dashboard";
   }
 
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function getDashboardAuthRedirectPath(nextPath: string | null | undefined) {
-  const params = new URLSearchParams({
-    next: getSafeDashboardPath(nextPath),
-  });
+  const next = getSafeDashboardPath(nextPath);
 
-  return `/admin/sign-in?${params.toString()}`;
+  if (next === "/dashboard") return "/sign-in";
+
+  const params = new URLSearchParams({ next });
+  return `/sign-in?${params.toString()}`;
 }

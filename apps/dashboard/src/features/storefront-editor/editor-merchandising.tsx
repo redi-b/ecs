@@ -31,7 +31,7 @@ export function StorefrontCollectionPicker({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch("/admin/products/collections/actions/list?limit=100", { credentials: "same-origin" })
+    fetch("/dashboard/products/collections/actions/list?limit=100", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((payload) => {
         if (cancelled) return;
@@ -129,7 +129,7 @@ export function StorefrontProductsPicker({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch("/admin/products/actions/list?limit=100", { credentials: "same-origin" })
+    fetch("/dashboard/products/actions/list?limit=100", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((payload) => {
         if (cancelled) return;
@@ -245,7 +245,7 @@ export function StorefrontCollectionsPicker({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch("/admin/products/collections/actions/list?limit=100", { credentials: "same-origin" })
+    fetch("/dashboard/products/collections/actions/list?limit=100", { credentials: "same-origin" })
       .then((response) => response.json())
       .then((payload) => {
         if (cancelled) return;

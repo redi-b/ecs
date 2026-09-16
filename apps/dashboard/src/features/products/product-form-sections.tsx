@@ -343,8 +343,8 @@ export function ProductOptionsBuilder({
   const searchParams = useSearchParams();
   const tenantId = searchParams.get("tenantId")?.trim() || null;
   const optionSetsUrl = tenantId
-    ? `/admin/products/actions/option-sets?tenantId=${encodeURIComponent(tenantId)}`
-    : "/admin/products/actions/option-sets";
+    ? `/dashboard/products/actions/option-sets?tenantId=${encodeURIComponent(tenantId)}`
+    : "/dashboard/products/actions/option-sets";
   const [draftValues, setDraftValues] = useState<Record<number, string>>({});
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const optionSetsQuery = useQuery({
@@ -368,7 +368,7 @@ export function ProductOptionsBuilder({
       optionSetId?: string | undefined;
     }) => {
       const actionUrl = optionSetId
-        ? `/admin/products/actions/option-sets/${encodeURIComponent(optionSetId)}${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ""}`
+        ? `/dashboard/products/actions/option-sets/${encodeURIComponent(optionSetId)}${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ""}`
         : optionSetsUrl;
       const response = await fetch(actionUrl, {
         body: JSON.stringify({ title: option.title, values: option.values }),

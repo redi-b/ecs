@@ -15,7 +15,7 @@ export function TelegramSection({ tenantId }: { tenantId: string }) {
     void (async () => {
       try {
         const response = await fetch(
-          `/admin/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
+          `/dashboard/settings/notifications?tenantId=${encodeURIComponent(tenantId)}`,
           { headers: { accept: "application/json" }, cache: "no-store" },
         );
         const data = await response.json().catch(() => undefined);

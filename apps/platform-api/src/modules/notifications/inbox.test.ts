@@ -39,11 +39,11 @@ describe("buildInAppDedupeKey", () => {
 
 describe("buildInAppHref", () => {
   it("links to order detail when orderId present", () => {
-    assert.equal(buildInAppHref("order.created", { orderId: "ord_1" }), "/admin/orders/ord_1");
+    assert.equal(buildInAppHref("order.created", { orderId: "ord_1" }), "/dashboard/orders/ord_1");
   });
 
   it("falls back to orders list", () => {
-    assert.equal(buildInAppHref("order.cancelled", {}), "/admin/orders");
+    assert.equal(buildInAppHref("order.cancelled", {}), "/dashboard/orders");
   });
 
   it("returns null for unknown non-commerce paths", () => {

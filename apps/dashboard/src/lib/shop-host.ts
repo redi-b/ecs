@@ -12,7 +12,7 @@ export type ShopHostValidation =
   | { ok: false; error: "shop_not_found" | "shop_unavailable" | "auth_unavailable" };
 
 /**
- * Public host probe (no session). Used before shop-host sign-in UI and on POST /admin/session.
+ * Public host probe (no session). Used before shop-host sign-in UI and on POST /session.
  */
 export async function validateShopHost(options: {
   forwardedHost: string;
@@ -108,7 +108,7 @@ export async function sessionCanAccessShopHost(options: {
 }
 
 /** Absolute URL for the central merchant dashboard (sign-in / home). */
-export function getCentralDashboardUrl(path = "/admin/sign-in") {
+export function getCentralDashboardUrl(path = "/sign-in") {
   const base = process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me";
   const normalized = base.endsWith("/") ? base : `${base}/`;
   const relative = path.startsWith("/") ? path.slice(1) : path;

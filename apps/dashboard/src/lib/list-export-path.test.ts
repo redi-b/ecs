@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { listExportPath } from "./list-export-path";
 
 test("export carries normalized filters, preserves tenant context and excludes pagination", () => {
-  const path = listExportPath("/admin/products/actions/export?tenantId=one", {
+  const path = listExportPath("/dashboard/products/actions/export?tenantId=one", {
     q: "coffee & tea",
     status: "draft",
     categoryId: "none",

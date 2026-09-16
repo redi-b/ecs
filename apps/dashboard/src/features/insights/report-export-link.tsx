@@ -24,7 +24,7 @@ export function ReportExportLink({
   params.set("to", range.to);
   return (
     <ExportDownloadButton
-      href={`/admin/insights/actions/export?${params}`}
+      href={`/dashboard/insights/actions/export?${params}`}
       fallbackFilename={`${report}-${range.from}-${range.to}.csv`}
       label={t("insights.salesWorkspace.export")}
       pendingLabel={t("insights.salesWorkspace.exporting")}

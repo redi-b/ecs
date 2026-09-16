@@ -20,7 +20,7 @@ describe("command registry", () => {
     const nav = getNavigationCommands(translate);
     const routes = getNavigableAppRoutes().filter((route) => !route.disabled);
     assert.equal(nav.length, routes.length);
-    assert.ok(nav.some((command) => command.href === "/admin/products"));
+    assert.ok(nav.some((command) => command.href === "/dashboard/products"));
     assert.ok(nav.some((command) => command.label === "Products"));
   });
 

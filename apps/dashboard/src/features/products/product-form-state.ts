@@ -131,7 +131,7 @@ export function validateProductVariantConfiguration(values: ProductFormValues, t
 }
 
 export function getProductSuccessPath(action: string, productId: string, isEdit: boolean) {
-  const path = isEdit ? `/admin/products/${encodeURIComponent(productId)}` : "/admin/products";
+  const path = isEdit ? `/dashboard/products/${encodeURIComponent(productId)}` : "/dashboard/products";
 
   if (typeof window === "undefined") {
     return path;

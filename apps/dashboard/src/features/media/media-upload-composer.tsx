@@ -68,7 +68,7 @@ export function MediaUploadComposer({
       restrictions: { allowedFileTypes: allowedTypes, maxFileSize: 15 * 1024 * 1024 },
     }).use(AwsS3, {
       async getUploadParameters(file) {
-        const response = await fetch("/admin/media/uploads", {
+        const response = await fetch("/dashboard/media/uploads", {
           body: JSON.stringify({
             byteSize: file.size,
             context: "media-library",
@@ -210,7 +210,7 @@ export function MediaUploadComposer({
     bump();
     const source = file.data as File;
     const dimensions = await getImageDimensions(source);
-    const response = await fetch(`/admin/media/uploads/${encodeURIComponent(assetId)}/complete`, {
+    const response = await fetch(`/dashboard/media/uploads/${encodeURIComponent(assetId)}/complete`, {
       body: JSON.stringify({ altText: filenameToAlt(source.name), ...dimensions }),
       headers: { "content-type": "application/json" },
       method: "POST",

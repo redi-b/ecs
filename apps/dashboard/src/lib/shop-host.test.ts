@@ -74,6 +74,6 @@ describe("sessionCanAccessShopHost", () => {
 describe("getCentralDashboardUrl", () => {
   it("builds an absolute central URL", () => {
     process.env.DASHBOARD_PUBLIC_BASE_URL = "https://app.example.com";
-    assert.equal(getCentralDashboardUrl("/admin/sign-in"), "https://app.example.com/admin/sign-in");
+    assert.equal(getCentralDashboardUrl("/sign-in"), "https://app.example.com/sign-in");
   });
 });

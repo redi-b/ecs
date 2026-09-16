@@ -50,7 +50,7 @@ export function AccountSignUpForm({
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const response = await fetch("/admin/sign-up/submit", {
+    const response = await fetch("/sign-up/submit", {
       body: JSON.stringify({ confirmPassword, email, next: nextPath, ownerName, password }),
       headers: {
         accept: "application/json",
@@ -202,7 +202,7 @@ export function AccountSignUpForm({
         {t("auth.alreadyRegistered")}{" "}
         <Link
           className="font-medium text-primary underline-offset-4 hover:underline"
-          href="/admin/sign-in"
+          href="/sign-in"
         >
           {t("auth.signIn")}
         </Link>

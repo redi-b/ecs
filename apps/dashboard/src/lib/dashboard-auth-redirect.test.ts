@@ -44,7 +44,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
             id: "tenant_1",
             handle: "addis-pantry",
             primaryDomain: "addis-pantry.lvh.me",
-            dashboardUrl: "http://addis-pantry.lvh.me/admin",
+            dashboardUrl: "http://addis-pantry.lvh.me/dashboard",
           },
           latestProvisioningAttempt: null,
         });
@@ -55,7 +55,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
         requestHost: "app.lvh.me",
       });
 
-      assert.equal(redirect, "http://addis-pantry.lvh.me/admin");
+      assert.equal(redirect, "http://addis-pantry.lvh.me/dashboard");
     });
   }
 
@@ -115,6 +115,6 @@ describe("getAuthenticatedDashboardRedirect", () => {
       requestHost: "addis-pantry.lvh.me",
     });
 
-    assert.equal(redirect, "/admin");
+    assert.equal(redirect, "/dashboard");
   });
 });

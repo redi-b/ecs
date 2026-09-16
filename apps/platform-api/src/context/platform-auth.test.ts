@@ -53,10 +53,10 @@ test("password reset emails use an app-hosted verification link", () => {
     getPasswordResetActionUrl({
       dashboardPublicBaseUrl: "https://app.example.com",
       generatedUrl:
-        "https://api.example.com/platform/auth/reset-password/reset-token?callbackURL=https%3A%2F%2Fshop.example.com%2Fadmin%2Freset-password",
+        "https://api.example.com/platform/auth/reset-password/reset-token?callbackURL=https%3A%2F%2Fshop.example.com%2Freset-password",
       token: "reset-token",
     }),
-    "https://shop.example.com/admin/reset-password/verify?token=reset-token",
+    "https://shop.example.com/reset-password/verify?token=reset-token",
   );
 });
 
@@ -65,23 +65,38 @@ test("email actions use an app-hosted confirmation link and preserve the return 
     getEmailVerificationActionUrl({
       dashboardPublicBaseUrl: "https://app.example.com",
       generatedUrl:
-        "https://api.example.com/platform/auth/verify-email?token=verify-token&callbackURL=https%3A%2F%2Fshop.example.com%2Fadmin%2Fsettings%3Ftab%3Daccount",
+        "https://api.example.com/platform/auth/verify-email?token=verify-token&callbackURL=https%3A%2F%2Fshop.example.com%2Fdashboard%2Fsettings%3Ftab%3Daccount",
       intent: "approve-email-change",
       token: "verify-token",
     }),
-    "https://shop.example.com/admin/verify-email?token=verify-token&intent=approve-email-change&returnTo=%2Fadmin%2Fsettings%3Ftab%3Daccount",
+    "https://shop.example.com/verify-email?token=verify-token&intent=approve-email-change&returnTo=%2Fdashboard%2Fsettings%3Ftab%3Daccount",
   );
 });
 
-test("the new-address verification link skips the intermediate approval result", () => {
+test("new-account verification uses Better Auth's one-click link", () => {
+  const generatedUrl =
+    "https://api.example.com/platform/auth/verify-email?token=verify-token&callbackURL=https%3A%2F%2Fapp.example.com%2Fsign-in%3Fverified%3D1";
   assert.equal(
     getEmailVerificationActionUrl({
       dashboardPublicBaseUrl: "https://app.example.com",
-      generatedUrl:
-        "https://api.example.com/platform/auth/verify-email?token=new-token&callbackURL=https%3A%2F%2Fshop.example.com%2Fadmin%2Fverify-email%2Fresult%3Fintent%3Dapprove-email-change%26returnTo%3D%252Fadmin%252Fsettings%253Ftab%253Daccount%2526emailChanged%253D1",
+      generatedUrl,
+      intent: "verify-email",
+      token: "verify-token",
+    }),
+    generatedUrl,
+  );
+});
+
+test("the new-address verification link completes through Better Auth", () => {
+  const generatedUrl =
+    "https://api.example.com/platform/auth/verify-email?token=new-token&callbackURL=https%3A%2F%2Fshop.example.com%2Fverify-email%2Fresult%3Fintent%3Dapprove-email-change%26returnTo%3D%252Fdashboard%252Fsettings%253Ftab%253Daccount%2526emailChanged%253D1";
+  assert.equal(
+    getEmailVerificationActionUrl({
+      dashboardPublicBaseUrl: "https://app.example.com",
+      generatedUrl,
       intent: "verify-email",
       token: "new-token",
     }),
-    "https://shop.example.com/admin/verify-email?token=new-token&intent=verify-email&returnTo=%2Fadmin%2Fsettings%3Ftab%3Daccount%26emailChanged%3D1",
+    generatedUrl,
   );
 });

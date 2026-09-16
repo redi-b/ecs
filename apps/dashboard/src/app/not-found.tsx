@@ -6,7 +6,7 @@ export default async function NotFound() {
 
   return (
     <FailureState
-      actionHref="/admin"
+      actionHref="/dashboard"
       actionLabel={t("common.errors.notFoundAction")}
       code="404"
       description={t("common.errors.notFoundDescription")}

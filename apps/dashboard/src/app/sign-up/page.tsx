@@ -1,0 +1,68 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { AccountSignUpForm } from "@/components/onboarding/account-signup-form";
+import { AuthShell } from "@/components/onboarding/auth-shell";
+import { getTranslations } from "@/i18n/server";
+import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
+import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+
+type SignUpPageProps = {
+  searchParams?: Promise<{
+    email?: string;
+    error?: string;
+    ownerName?: string;
+    next?: string;
+  }>;
+};
+
+export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const t = await getTranslations();
+  const requestHeaders = await headers();
+  const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const authenticatedRedirect = await getAuthenticatedDashboardRedirect({
+    cookieHeader: requestHeaders.get("cookie"),
+    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+    requestHost,
+  });
+
+  if (authenticatedRedirect) {
+    redirect(authenticatedRedirect);
+  }
+
+  const isCentralAccess = isCentralDashboardHost(requestHost);
+
+  if (!isCentralAccess) {
+    redirect("/sign-in");
+  }
+
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const errorMessages: Record<string, string> = {
+    auth_session_missing: t("signup.error.sessionMissing"),
+    auth_unavailable: t("signup.error.unavailable"),
+    email_already_exists: t("signup.error.emailExists"),
+    missing_required_fields: t("signup.error.required"),
+    password_too_short: t("signup.error.passwordShort"),
+    signup_failed: t("signup.error.failed"),
+  };
+  const errorMessage = resolvedSearchParams.error
+    ? (errorMessages[resolvedSearchParams.error] ?? t("signup.error.failed"))
+    : null;
+
+  return (
+    <AuthShell>
+      <AccountSignUpForm
+        defaultValues={{
+          email: resolvedSearchParams.email,
+          ownerName: resolvedSearchParams.ownerName,
+        }}
+        errorMessage={errorMessage}
+        nextPath={getSafeNextPath(resolvedSearchParams.next)}
+      />
+    </AuthShell>
+  );
+}
+
+function getSafeNextPath(value: string | undefined) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/onboarding";
+}

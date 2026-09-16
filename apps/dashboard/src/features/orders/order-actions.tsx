@@ -147,8 +147,8 @@ export function OrderActions({
   useEffect(() => {
     if (!canUpdate) return;
     void Promise.all([
-      fetch("/admin/settings/payments/receiving-accounts", { cache: "no-store" }),
-      fetch("/admin/settings/payments/banks", { cache: "no-store" }),
+      fetch("/dashboard/settings/payments/receiving-accounts", { cache: "no-store" }),
+      fetch("/dashboard/settings/payments/banks", { cache: "no-store" }),
     ])
       .then(async ([a, b]) => {
         if (a.ok) setAccounts((await a.json().catch(() => ({})))?.accounts ?? []);
