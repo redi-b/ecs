@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/app-providers";
 import type { AppLocale } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
+import { getDashboardPublicUrl } from "@/lib/dashboard-hosts";
 import {
   getThemeBootstrapScript,
   parseSharedThemeCookieValue,
@@ -46,8 +47,14 @@ export const metadata: Metadata = {
   },
   description: "Merchant console for commerce operations",
   icons: {
-    icon: { url: "/favicon.svg?v=ecs-logo-1", type: "image/svg+xml" },
-    shortcut: "/favicon.svg?v=ecs-logo-1",
+    icon: [
+      {
+        url: new URL("/favicon.svg?v=ecs-logo-3", getDashboardPublicUrl()),
+        type: "image/svg+xml",
+        sizes: "any",
+      },
+    ],
+    shortcut: new URL("/favicon.svg?v=ecs-logo-3", getDashboardPublicUrl()),
   },
   robots: {
     index: false,
@@ -64,6 +71,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "system";
   // Only bake explicit dark into SSR class (system still resolved client-side).
   const ssrDark = themePreference === "dark";
+  const faviconUrl = new URL("/favicon.svg?v=ecs-logo-3", getDashboardPublicUrl()).toString();
 
   return (
     <html
@@ -86,6 +94,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       }
     >
       <head>
+        <link href={faviconUrl} rel="icon" sizes="any" type="image/svg+xml" />
+        <link href={faviconUrl} rel="shortcut icon" type="image/svg+xml" />
         {/* Cookie-first theme before paint — critical on first hit of a new shop host. */}
         {/* biome-ignore lint/correctness/useUniqueElementIds: root bootstrap needs one stable document ID */}
         <Script id="ecs-theme-bootstrap" strategy="beforeInteractive">

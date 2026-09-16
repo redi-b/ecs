@@ -9,12 +9,13 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No contract tests yet\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "typescript": "^5.9.0"
   }
 }

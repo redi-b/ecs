@@ -27,11 +27,11 @@ const submitError = Astro.url.searchParams.get("error");
         <article class="lv-contact-info"><h2>Contact Information</h2><div>
           {address && <p><span><img src={locationIcon.src} alt="" /></span><span><small>Address</small><strong>{address}</strong></span></p>}
           {email && <p><span><img src={mailIcon.src} alt="" /></span><span><small>Email</small><a href={`mailto:${email}`}>{email}</a></span></p>}
-          {phone && <p><span><img src={phoneIcon.src} alt="" /></span><span><small>Phone</small><a href={`tel:${phone}`}>{phone}</a></span></p>}
+          {[phone, ...(template.footer.additionalPhones ?? [])].filter(Boolean).map((number) => <p><span><img src={phoneIcon.src} alt="" /></span><span><small>Phone</small><a href={`tel:${number}`}>{number}</a></span></p>)}
           {socials.length > 0 && <p><span><img src={socialsIcon.src} alt="" /></span><span><small>Socials</small><span class="lv-contact-socials">{socials.map((social, index) => <><a href={social.href}>{social.label}</a>{index < socials.length - 1 && " · "}</>)}</span></span></p>}
           {!address && !email && !phone && !socials.length && <p class="lv-contact-info__empty">Contact details will appear here when the shop adds them.</p>}
         </div></article>
-        <div class="lv-contact-map"><TemplateImage fallback={contactMap} alt="Map preview for the shop location" widths={[480, 768, 1024, 1440]} sizes="(max-width: 900px) calc(100vw - 40px), 36vw" /></div>
+        {!template.footer.managedContact && <div class="lv-contact-map"><TemplateImage fallback={contactMap} alt="Map preview for the shop location" widths={[480, 768, 1024, 1440]} sizes="(max-width: 900px) calc(100vw - 40px), 36vw" /></div>}
       </div>
 
       <form class="lv-contact-form" action="/actions/inquiries" method="post" data-inquiry-form>

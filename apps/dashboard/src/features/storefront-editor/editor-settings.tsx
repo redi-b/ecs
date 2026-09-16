@@ -5,6 +5,7 @@ import { RiArrowDownSLine, RiExpandUpDownLine } from "@remixicon/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -350,6 +351,9 @@ export function StorefrontSettingsPanel({
                       )}
                     >
                       {bodyFields.map((field) => {
+                        if (props.managedShopContact && ["footer.phone", "footer.email", "footer.address", "footer.socialLinks", "footer.blurb"].includes(field.path)) {
+                          return field.path === "footer.phone" ? <div key={field.path} className="rounded-xl border p-3 text-sm"><p className="text-muted-foreground">{t("editor.settings.sharedContactHelp")}</p><Button asChild className="mt-2" size="sm" variant="outline"><Link href="/admin/settings?tab=shop">{t("editor.settings.shopSettings")}</Link></Button></div> : null;
+                        }
                         const value = (props as Record<string, unknown>)[field.prop];
                         const helpText = "helpText" in field ? field.helpText : undefined;
 

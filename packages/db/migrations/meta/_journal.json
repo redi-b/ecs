@@ -414,6 +414,13 @@
       "when": 1789465448398,
       "tag": "0058_profile_avatar_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1789502718510,
+      "tag": "0059_shop_details",
+      "breakpoints": true
     }
   ]
 }

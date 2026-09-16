@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { shopDetailsSchema } from "@ecs/contracts";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
 import { createMerchantRouteHelpers } from "../../merchant/context.js";
@@ -153,6 +154,10 @@ export function registerPlatformTenantSettingsRoutes(
     const body = await getJsonBody(context.req.raw);
     const name = getRequiredBodyString(body, "name");
     const handle = getRequiredBodyString(body, "handle");
+    const details = body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
+    if (details && !details.success) {
+      return context.json({ error: "invalid_shop_details", issues: details.error.issues }, 400);
+    }
 
     if (!name) {
       return context.json({ error: "missing_name" }, 400);
@@ -163,6 +168,7 @@ export function registerPlatformTenantSettingsRoutes(
     }
 
     const result = await options.updateTenantShopSettings({
+      ...(details?.success ? { shopDetails: details.data } : {}),
       handle,
       name,
       tenantId,

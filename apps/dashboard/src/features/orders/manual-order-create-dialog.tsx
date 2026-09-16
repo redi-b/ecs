@@ -34,6 +34,7 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+import { resolveProductColorSwatch } from "@/lib/product-color";
 import { dashboardRoutes } from "@/lib/routes";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,7 @@ function ManualOrderCreateDialogInner() {
   const [discountType, setDiscountType] = useState<"none" | "fixed" | "percentage">("none");
   const [discountValue, setDiscountValue] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
+  const [adjustmentReasonTouched, setAdjustmentReasonTouched] = useState(false);
   const [note, setNote] = useState("");
   const [includeAddress, setIncludeAddress] = useState(true);
   const [address, setAddress] = useState<AddressForm>(emptyAddress);
@@ -117,6 +119,10 @@ function ManualOrderCreateDialogInner() {
           title?: string | null;
           handle?: string | null;
           thumbnail?: string | null;
+          options?: Array<{
+            title: string;
+            values: Array<{ label: string; swatch?: { kind: "color"; value: string } }>;
+          }>;
           variants?: Array<{
             id: string;
             prices?: Array<{ amount?: number | null; currencyCode?: string | null }>;
@@ -149,11 +155,21 @@ function ManualOrderCreateDialogInner() {
           const productTitle = product.title ?? t("orders.create.productFallback");
           const variantTitle = variant.title ?? t("orders.create.defaultOption");
           const options: Record<string, string> = {};
+          const optionSwatches: Record<string, string> = {};
           for (const option of variant.optionValues ?? []) {
             const title = option.optionTitle?.trim();
             const value = option.value?.trim();
             if (!title || !value || title === "Default") continue;
             options[title] = value;
+            const swatch = product.options
+              ?.find(
+                (axis) => axis.title.localeCompare(title, undefined, { sensitivity: "base" }) === 0,
+              )
+              ?.values.find(
+                (item) => item.label.localeCompare(value, undefined, { sensitivity: "base" }) === 0,
+              )?.swatch;
+            const resolvedSwatch = resolveProductColorSwatch(title, value, swatch?.value);
+            if (resolvedSwatch) optionSwatches[title] = resolvedSwatch;
           }
           const stock = variant.stock;
           const availableQuantity =
@@ -170,6 +186,7 @@ function ManualOrderCreateDialogInner() {
             currencyCode: price?.currencyCode ?? "etb",
             label: [productTitle, variantTitle].filter(Boolean).join(" · "),
             options,
+            optionSwatches,
             priceAmount: price?.amount ?? null,
             priceLabel,
             productId: product.id,
@@ -303,6 +320,7 @@ function ManualOrderCreateDialogInner() {
         sku: variant.sku,
         priceLabel: variant.priceLabel,
         options: variant.options,
+        optionSwatches: variant.optionSwatches,
         availableQuantity: variant.availableQuantity,
       });
       product.searchText = [
@@ -332,6 +350,7 @@ function ManualOrderCreateDialogInner() {
     setDiscountType("none");
     setDiscountValue("");
     setAdjustmentReason("");
+    setAdjustmentReasonTouched(false);
     setNote("");
     setIncludeAddress(true);
     setAddress(emptyAddress);
@@ -1005,21 +1024,32 @@ function ManualOrderCreateDialogInner() {
                         </Field>
                       ) : null}
                       {hasPriceAdjustment ? (
-                        <Field data-invalid={adjustmentReason.trim().length < 3}>
+                        <Field
+                          data-invalid={
+                            adjustmentReasonTouched && adjustmentReason.trim().length < 3
+                              ? true
+                              : undefined
+                          }
+                        >
                           <FieldLabel htmlFor="mo-adjustment-reason">
                             {t("orders.create.adjustmentReason")} {t("orders.create.required")}
                           </FieldLabel>
                           <Input
                             aria-describedby="mo-adjustment-reason-error"
-                            aria-invalid={adjustmentReason.trim().length < 3}
+                            aria-invalid={
+                              adjustmentReasonTouched && adjustmentReason.trim().length < 3
+                                ? true
+                                : undefined
+                            }
                             aria-required="true"
                             id="mo-adjustment-reason"
+                            onBlur={() => setAdjustmentReasonTouched(true)}
                             onChange={(event) => setAdjustmentReason(event.target.value)}
                             placeholder={t("orders.create.adjustmentReasonPlaceholder")}
                             required
                             value={adjustmentReason}
                           />
-                          {adjustmentReason.trim().length < 3 ? (
+                          {adjustmentReasonTouched && adjustmentReason.trim().length < 3 ? (
                             <FieldDescription
                               className="text-destructive"
                               id="mo-adjustment-reason-error"

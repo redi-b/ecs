@@ -143,6 +143,8 @@ export function getProductVariants(value: unknown) {
       {
         id,
         inventoryItemId: getVariantInventoryItemId(variant),
+        ...(typeof variant.manage_inventory === "boolean" ? { manageInventory: variant.manage_inventory } : {}),
+        ...(typeof variant.allow_backorder === "boolean" ? { allowBackorder: variant.allow_backorder } : {}),
         title: getString(variant.title),
         sku: getString(variant.sku),
         ...(optionValues.length === 0 ? {} : { optionValues }),

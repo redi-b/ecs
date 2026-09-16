@@ -42,9 +42,9 @@
     "toastUpdated": "ለውጦቹ ተቀይረዋል።",
     "toastCreated": "ደንበኛው ተመዝግቧል።",
     "saveChanges": "ለውጦቹን አስቀምጥ",
-    "firstNamePlaceholder": "አበበ",
-    "lastNamePlaceholder": "ከበደ",
-    "emailPlaceholder": "customer@example.com",
+    "firstNamePlaceholder": "ስም",
+    "lastNamePlaceholder": "የአባት ስም",
+    "emailPlaceholder": "የኢሜይል አድራሻ",
     "phonePlaceholder": "+251…"
   },
   "table": {

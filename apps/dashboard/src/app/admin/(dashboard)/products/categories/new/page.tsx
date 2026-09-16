@@ -26,7 +26,7 @@ export default async function MerchantProductCategoryCreatePage({
         entityLabel="category"
         name="name"
         nameLabel={t("taxonomy.create.nameLabel")}
-        namePlaceholder="Coffee beans"
+        namePlaceholder={t("taxonomy.create.namePlaceholder")}
         submitLabel={t("categories.create.submitLabel")}
       />
     </PageShell>

@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
+import { createHash } from "node:crypto";
 import type { createPlatformDb } from "@ecs/db";
 import {
   platformAssets,
@@ -9,6 +10,7 @@ import {
   storefrontTemplateDrafts,
   storefrontTemplateVersions,
   tenants,
+  tenantOnboarding,
 } from "@ecs/db";
 import { storefrontTemplates as templateRegistry } from "@ecs/storefront-templates";
 import { and, asc, eq } from "drizzle-orm";
@@ -25,6 +27,7 @@ import type {
 } from "../../types/index.js";
 import { purgeStorefrontTenantCache } from "./cache-purge.js";
 import { getDefaultTemplateDemoUrl } from "./template-demo-url.js";
+import { applyShopDetails } from "./shop-details.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -192,12 +195,13 @@ export function resolveTemplateDraft(input: {
 
 export function createStorefrontTemplateService(
   db: PlatformDb,
-  options: { demoBaseUrl?: string | null } = {},
+  options: { demoBaseUrl?: string | null; getLaunchReadiness?: (input: { tenantId: string }) => Promise<import("@ecs/contracts").LaunchReadiness | null> } = {},
 ) {
   async function getStorefrontDraft(input: { tenantId: string }): Promise<StorefrontDraftResult> {
     const [draft] = await db
       .select({
         tenantId: storefrontConfigs.tenantId,
+        shopDetails: tenants.shopDetails,
         templateId: storefrontConfigs.draftTemplateId,
         templateVersion: storefrontConfigs.draftTemplateVersion,
         templateKey: storefrontTemplateVersions.templateKey,
@@ -211,6 +215,7 @@ export function createStorefrontTemplateService(
         publishedThemeTokens: storefrontRevisions.themeTokens,
       })
       .from(storefrontConfigs)
+      .innerJoin(tenants, eq(tenants.id, storefrontConfigs.tenantId))
       .innerJoin(
         storefrontTemplateVersions,
         and(
@@ -239,7 +244,7 @@ export function createStorefrontTemplateService(
         templateId: draft.templateId,
         templateVersion: draft.templateVersion,
         templateKey: draft.templateKey,
-        data: draft.data,
+        data: applyShopDetails(draft.data, draft.shopDetails),
         themeTokens: draft.themeTokens,
         updatedAt: draft.updatedAt.toISOString(),
         published:
@@ -248,7 +253,7 @@ export function createStorefrontTemplateService(
                 revisionId: draft.publishedRevisionId,
                 publishedAt: draft.publishedAt.toISOString(),
                 templateKey: draft.publishedTemplateKey,
-                data: draft.publishedData,
+                data: applyShopDetails(draft.publishedData, draft.shopDetails),
                 themeTokens: draft.publishedThemeTokens,
               }
             : null,
@@ -264,6 +269,7 @@ export function createStorefrontTemplateService(
       const [revision] = await db
         .select({
           publishedRevisionId: storefrontRevisions.id,
+          shopDetails: tenants.shopDetails,
           templateId: storefrontRevisions.templateId,
           templateVersion: storefrontRevisions.templateVersion,
           templateKey: storefrontRevisions.templateKey,
@@ -273,6 +279,7 @@ export function createStorefrontTemplateService(
           seoSettings: storefrontConfigs.seoSettings,
         })
         .from(storefrontRevisions)
+        .innerJoin(tenants, eq(tenants.id, storefrontRevisions.tenantId))
         .innerJoin(storefrontConfigs, eq(storefrontConfigs.tenantId, storefrontRevisions.tenantId))
         .where(
           and(
@@ -293,7 +300,7 @@ export function createStorefrontTemplateService(
           templateId: revision.templateId,
           templateVersion: revision.templateVersion,
           templateKey: revision.templateKey,
-          data: revision.data,
+          data: applyShopDetails(revision.data, revision.shopDetails),
           themeTokens: revision.themeTokens,
           publishedAt: revision.publishedAt.toISOString(),
           seo: normalizeStorefrontSeoSettings(revision.seoSettings),
@@ -501,7 +508,22 @@ export function createStorefrontTemplateService(
       tenantId: string;
       userId: string;
     }): Promise<StorefrontPublishResult> => {
+      let reviewedFingerprint: string | undefined;
+      if (options.getLaunchReadiness) {
+        const readiness = await options.getLaunchReadiness({ tenantId: input.tenantId });
+        if (!readiness || !readiness.canPublish) return {
+          ok: false,
+          error: readiness?.checks.some((check) => check.status === "unavailable") ? "launch_check_unavailable" : "launch_not_ready",
+          ...(readiness ? { readiness } : {}),
+        };
+        reviewedFingerprint = readiness.draftFingerprint;
+      }
       const published = await db.transaction(async (transaction) => {
+        if (reviewedFingerprint) {
+          const [config] = await transaction.select().from(storefrontConfigs).where(eq(storefrontConfigs.tenantId, input.tenantId)).for("update").limit(1);
+          const [tenant] = await transaction.select().from(tenants).where(eq(tenants.id, input.tenantId)).for("update").limit(1);
+          if (!config || !tenant || createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, config.draftTemplateId, config.draftData, config.draftThemeTokens])).digest("hex") !== reviewedFingerprint) return "review_stale";
+        }
         const [draft] = await transaction
           .select({
             tenantId: storefrontConfigs.tenantId,
@@ -582,6 +604,17 @@ export function createStorefrontTemplateService(
           },
         });
 
+        const [onboarding] = await transaction.select().from(tenantOnboarding).where(eq(tenantOnboarding.tenantId, input.tenantId)).for("update").limit(1);
+        let completedSteps = onboarding?.completedSteps;
+        if (reviewedFingerprint) {
+          const [tenant] = await transaction.select({ name: tenants.name, shopDetails: tenants.shopDetails }).from(tenants).where(eq(tenants.id, input.tenantId)).limit(1);
+          if (tenant) {
+            const publishedFingerprint = createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, draft.templateId, normalizedDraft.data, normalizedDraft.themeTokens])).digest("hex");
+            completedSteps = [...(Array.isArray(completedSteps) ? completedSteps.filter((step) => typeof step === "string" && !step.startsWith("storefront_review:")) : []), `storefront_review:${publishedFingerprint}`];
+          }
+        }
+        if (onboarding) await transaction.update(tenantOnboarding).set({ status: "completed", currentStep: "completed", ...(completedSteps ? { completedSteps } : {}), updatedAt: new Date() }).where(eq(tenantOnboarding.tenantId, input.tenantId));
+
         return revision;
       });
 
@@ -598,6 +631,8 @@ export function createStorefrontTemplateService(
           error: "invalid_storefront_draft",
         };
       }
+
+      if (published === "review_stale") return { ok: false, error: "launch_not_ready" };
 
       // Drop cached public HTML for this tenant so the new revision is visible promptly.
       await purgeStorefrontTenantCache({ tenantId: published.tenantId });

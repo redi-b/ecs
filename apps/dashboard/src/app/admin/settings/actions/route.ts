@@ -17,6 +17,7 @@ export async function POST(request: Request) {
         ...commonOptions,
         requestHost: context.requestHost,
         settings: {
+          ...(body.shopDetails !== undefined ? { shopDetails: body.shopDetails } : {}),
           name: body.name,
           handle: body.handle,
         },
@@ -89,11 +90,13 @@ async function getSettingsInput(request: Request) {
       handle?: unknown;
       mode?: unknown;
       name?: unknown;
+      shopDetails?: import("@ecs/contracts").ShopDetails;
     };
     const delivery = body.delivery ?? {};
 
     return {
       mode: body.mode === "delivery" || body.mode === "shop" ? body.mode : "all",
+      shopDetails: body.shopDetails,
       name: String(body.name ?? "").trim(),
       handle: String(body.handle ?? "").trim(),
       delivery: {
@@ -114,6 +117,7 @@ async function getSettingsInput(request: Request) {
 
   return {
     mode: "all" as const,
+    shopDetails: undefined,
     name: String(formData.get("name") ?? "").trim(),
     handle: String(formData.get("handle") ?? "").trim(),
     delivery: {

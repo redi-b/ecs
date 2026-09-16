@@ -48,6 +48,7 @@ export type TenantCreateResult =
     };
 
 export type TenantCreateInput = {
+  shopDetails?: import("@ecs/contracts").ShopDetails;
   businessCategory?: string | undefined;
   contactPhone?: string | undefined;
   handle: string;

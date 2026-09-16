@@ -103,7 +103,7 @@ describe("i18n message catalogs", () => {
       "SKU",
       "SKU {sku}",
       "Telegram",
-      "coffee-beans",
+      "product-name",
       "customer@example.com",
       "buyer@example.com",
       "https://example.com/photo.jpg",

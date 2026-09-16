@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { shopDetailsSchema } from "@ecs/contracts";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { getJsonBody, getOptionalBodyString, getRequiredBodyString } from "../shared.js";
 
@@ -28,6 +29,10 @@ export function registerPlatformTenantRoutes(
     const handle = getRequiredBodyString(body, "handle");
     const templateId = getOptionalBodyString(body, "templateId");
     const templateKey = getOptionalBodyString(body, "templateKey");
+    const details = body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
+    if (details && !details.success) {
+      return context.json({ error: "invalid_shop_details", issues: details.error.issues }, 400);
+    }
 
     if (!name) {
       return context.json({ error: "missing_name" }, 400);
@@ -48,6 +53,7 @@ export function registerPlatformTenantRoutes(
       handle,
       name,
       ownerUserId: session.user.id,
+      ...(details?.success ? { shopDetails: details.data } : {}),
       ...(templateId ? { templateId } : {}),
       ...(templateKey ? { templateKey } : {}),
     });

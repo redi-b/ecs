@@ -144,6 +144,7 @@ export function StorefrontEditorActions({
   const [hasMounted, setHasMounted] = useState(false);
   const [pauseConfirmOpen, setPauseConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -199,7 +200,7 @@ export function StorefrontEditorActions({
           <Button
             className="min-w-0"
             disabled={isPending}
-            onClick={onPublish}
+            onClick={() => setPublishConfirmOpen(true)}
             size="sm"
             type="button"
           >
@@ -281,6 +282,7 @@ export function StorefrontEditorActions({
           tone="default"
         />
       ) : null}
+      <ConfirmDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen} tone="default" icon="question" title={t("editor.actions.publishTitle")} description={t("editor.actions.publishDescription")} confirmLabel={t("editor.actions.publish")} confirmDisabled={isPending} onConfirm={() => { setPublishConfirmOpen(false); onPublish(); }} />
       {onUnpublish ? (
         <ConfirmDialog
           cancelDisabled={isPending}

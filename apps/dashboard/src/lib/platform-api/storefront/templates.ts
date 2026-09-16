@@ -203,6 +203,7 @@ export async function updateStorefrontDraft(options: {
 }
 
 export async function publishStorefrontDraft(options: {
+  reviewed?: boolean;
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
@@ -212,6 +213,7 @@ export async function publishStorefrontDraft(options: {
   const response = await fetcher(
     getStorefrontPublishUrl(options.platformApiBaseUrl, options.tenantId),
     {
+      ...(options.reviewed ? { body: JSON.stringify({ reviewed: true }) } : {}),
       cache: "no-store",
       headers: getJsonHeaders(options.cookieHeader),
       method: "POST",

@@ -26,6 +26,8 @@
     "resetConfirm": "Reset",
     "saveDraft": "Save draft",
     "publish": "Publish",
+    "publishTitle": "Ready for customers?",
+    "publishDescription": "Review your shop before making this design live.",
     "pauseShop": "Pause shop",
     "pauseTitle": "Pause the live shop?",
     "pauseDescription": "Customers will see that the store is unavailable. Your draft stays saved so you can publish again anytime.",
@@ -49,6 +51,8 @@
     "publishing": "Publishing storefront…",
     "published": "Storefront published.",
     "publishFailed": "Storefront could not be published.",
+    "launchNotReady": "Finish the required steps in the setup guide, then review and publish your shop.",
+    "launchCheckUnavailable": "We couldn’t check your shop right now. Please try again shortly.",
     "reset": "Editor reset to the last loaded draft.",
     "imageUploaded": "Image uploaded.",
     "imageImported": "Image imported.",
@@ -76,6 +80,8 @@
     "hintPaused": "Shop is paused for customers. Edit freely, then publish when you are ready."
   },
   "settings": {
+    "sharedContactHelp": "Your contact details and shop description are shared across your storefront. Update them once in Shop settings.",
+    "shopSettings": "Open Shop settings",
     "description": "Links, images, colors, and fallback content.",
     "changeTemplate": "Change template",
     "jumpToSection": "Jump to a section",

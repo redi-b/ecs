@@ -25,10 +25,10 @@ const {data,themeTokens,tenantName,deferCartCount=false}=Astro.props; const temp
 </li>}{email&&<li>
 <small>Email</small>
 <a href={`mailto:${email}`}>{email}</a>
-</li>}{phone&&<li>
+</li>}{[phone, ...(template.footer.additionalPhones ?? [])].filter(Boolean).map((number) => <li>
 <small>Phone</small>
-<a href={`tel:${phone}`}>{phone}</a>
-</li>}{socialLinks.map((social)=>
+<a href={`tel:${number}`}>{number}</a>
+</li>)}{socialLinks.map((social)=>
 <li>
 <small>Social</small>
 <a href={social.href} rel="noreferrer" target="_blank">{social.label}</a>

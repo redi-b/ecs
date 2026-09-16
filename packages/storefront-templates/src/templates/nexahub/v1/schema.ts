@@ -14,6 +14,7 @@ const selectableProductsSchema = z.object({
 
 export const nexahubV1DataSchema = z.object({
   header: z.object({
+    useShopName: z.boolean().optional(),
     logoAssetId: z.string().min(1).optional(),
     navigation: z.array(navigationItemSchema),
   }),
@@ -92,6 +93,8 @@ export const nexahubV1DataSchema = z.object({
     body: z.string().min(1),
   }),
   footer: z.object({
+    managedContact: z.boolean().optional(),
+    additionalPhones: z.array(z.string()).optional(),
     blurb: z.string().min(1),
     phone: z.string().optional(),
     email: z.string().optional(),
@@ -105,7 +108,7 @@ export const nexahubV1DataSchema = z.object({
 export type NexahubV1Data = z.infer<typeof nexahubV1DataSchema>;
 
 export const nexahubV1ThemeTokensSchema = z.object({
-  autoPalette: z.literal(true).default(true),
+  autoPalette: z.boolean().default(true),
   colors: z.object({
     background: z.string().min(1),
     foreground: z.string().min(1),

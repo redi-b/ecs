@@ -39,6 +39,8 @@ export type MerchantProductImage = {
 };
 
 export type MerchantProductVariant = {
+  manageInventory?: boolean;
+  allowBackorder?: boolean;
   id: string;
   inventoryItemId?: string | null;
   title: string | null;

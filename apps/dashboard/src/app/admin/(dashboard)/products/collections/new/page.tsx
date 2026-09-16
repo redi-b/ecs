@@ -26,7 +26,7 @@ export default async function MerchantProductCollectionCreatePage({
         entityLabel="collection"
         name="title"
         nameLabel={t("taxonomy.create.titleLabel")}
-        namePlaceholder="Summer essentials"
+        namePlaceholder={t("taxonomy.create.titlePlaceholder")}
         submitLabel={t("collections.create.submitLabel")}
       />
     </PageShell>

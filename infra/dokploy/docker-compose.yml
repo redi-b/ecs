@@ -216,6 +216,7 @@ services:
       MEDIA_S3_SECRET_ACCESS_KEY: ${MEDIA_S3_SECRET_ACCESS_KEY:?set MEDIA_S3_SECRET_ACCESS_KEY}
       # Browser uploads come from the dashboard origin; allow it for preflight.
       MEDIA_S3_CORS_ALLOW_ORIGIN: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-https://app.${BASE_DOMAIN}}
+      MEDIA_S3_MIN_FREE_SPACE: ${MEDIA_S3_MIN_FREE_SPACE:-1GiB}
     volumes:
       - seaweed-data:/data
       - ./seaweedfs/entrypoint.sh:/seaweedfs-entrypoint.sh:ro

@@ -2,6 +2,7 @@ export type CatalogVariant = {
   id: string;
   label: string;
   options: Record<string, string>;
+  optionSwatches: Record<string, string>;
   priceLabel: string | null;
   priceAmount: number | null;
   currencyCode: string;

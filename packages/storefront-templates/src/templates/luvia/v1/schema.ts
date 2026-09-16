@@ -18,6 +18,7 @@ const merchandisingSchema = z.object({
 
 export const luviaV1DataSchema = z.object({
   header: z.object({
+    useShopName: z.boolean().optional(),
     logoAssetId: z.string().min(1).optional(),
     navigation: z.array(navigationItemSchema),
   }),
@@ -33,7 +34,7 @@ export const luviaV1DataSchema = z.object({
       featuredProductIds: z.array(z.string().min(1)).max(6).default([]),
       primaryCtaLabel: z.string().min(1),
       primaryCtaHref: z.string().min(1),
-      trustLabels: z.array(z.string().min(1)).length(3),
+      trustLabels: z.array(z.string().min(1)).max(3),
     }),
     featuredProducts: merchandisingSchema,
     featuredCollection: z.object({
@@ -83,6 +84,8 @@ export const luviaV1DataSchema = z.object({
     }),
   }),
   footer: z.object({
+    managedContact: z.boolean().optional(),
+    additionalPhones: z.array(z.string()).optional(),
     blurb: z.string().optional(),
     credit: z.object({
       enabled: z.boolean().default(true),

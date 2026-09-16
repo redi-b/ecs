@@ -156,16 +156,22 @@ export function ProductOptionConfigurator({
             {axis.values.map((value) => {
               const active = picks[axis.title] === value;
               const available = isValueAvailable(axis.title, value);
+              const swatch = variants.find(
+                (variant) =>
+                  variant.options?.[axis.title] === value &&
+                  variant.optionSwatches?.[axis.title],
+              )?.optionSwatches?.[axis.title];
               return (
                 <button
                   className={cn(
-                    "min-w-10 rounded-full border px-3.5 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity]",
+                    "inline-flex min-h-10 min-w-10 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-[color,background-color,border-color,box-shadow,opacity]",
                     active
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/80 bg-background shadow-sm hover:border-primary/35 hover:bg-primary/[0.04]",
                     !available && !active && "pointer-events-none opacity-30",
                   )}
                   disabled={!available && !active}
+                  aria-pressed={active}
                   key={value}
                   onClick={() => {
                     setJustAdded(false);
@@ -176,6 +182,13 @@ export function ProductOptionConfigurator({
                   }}
                   type="button"
                 >
+                  {swatch ? (
+                    <span
+                      aria-hidden="true"
+                      className="size-4 shrink-0 rounded-full border border-black/15 dark:border-white/20"
+                      style={{ backgroundColor: swatch }}
+                    />
+                  ) : null}
                   {value}
                 </button>
               );

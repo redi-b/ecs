@@ -9,6 +9,7 @@ FILER_PORT="${SEAWEED_FILER_PORT:-8888}"
 BUCKET="${S3_BUCKET:-ecs-media}"
 S3_CONFIG="${SEAWEED_S3_CONFIG:-/etc/seaweedfs/s3.json}"
 ALLOWED_ORIGINS="${S3_ALLOWED_ORIGINS:-*}"
+MIN_FREE_SPACE="${S3_MIN_FREE_SPACE:-512MiB}"
 
 mkdir -p "$DATA_DIR"
 
@@ -25,6 +26,7 @@ weed server \
   -s3.port="$S3_PORT" \
   -s3.config="$S3_CONFIG" \
   -s3.allowedOrigins="$ALLOWED_ORIGINS" \
+  -volume.minFreeSpace="$MIN_FREE_SPACE" \
   -filer.port="$FILER_PORT" \
   -volume.max=100 \
   &

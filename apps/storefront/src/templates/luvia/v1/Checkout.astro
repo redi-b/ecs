@@ -48,7 +48,7 @@ const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
 const pickupEnabled = delivery?.pickupEnabled === true;
 const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
-const phoneRequired = delivery?.phoneConfirmationRequired !== false;
+const phoneRequired = true;
 const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
 const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(
   shippingOptions,
@@ -98,7 +98,7 @@ const defaultAddress =
             </section>
             {delivery?.notesEnabled !== false && <label class="is-wide"><span>Order Notes (optional)</span><textarea name="notes" rows="3" placeholder="Helpful delivery details" /></label>}
             <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>Delivery option*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset>
-            <div data-pickup-option hidden>{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
+<div data-pickup-option hidden>{template.footer.address && <p>Collect from {template.footer.address}. {template.footer.phone && <a href={`tel:${template.footer.phone}`}>{template.footer.phone}</a>}</p>}{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
           </div>
           {customer ? <p class="lv-checkout-account is-signed-in"><strong>Signed in as {customer.email}</strong><span>Changes here apply only to this order unless you choose to save a new address.</span></p> : <p class="lv-checkout-account"><span>Want faster checkout next time?</span><a href="/account?mode=register">Create an account</a></p>}
           <fieldset class="lv-checkout-payment" data-payment-choice><legend>How would you like to pay?*</legend>{payment.cod && <label><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>Pay on delivery</strong><small>Pay when your order arrives.</small></span></label>}{payment.chapa && <label><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>Pay securely online. An email address is required.</small></span></label>}{!payment.cod && !payment.chapa && <p>No payment method is available for this order.</p>}</fieldset>

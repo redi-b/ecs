@@ -1,3 +1,5 @@
+import { shopDetailsSchema, type ShopDetails } from "@ecs/contracts";
+
 export type TenantStatus = "draft" | "active" | "suspended" | "cancelled";
 
 export type DomainStatus = "active" | "pending_verification" | "misconfigured" | "disabled";
@@ -5,6 +7,7 @@ export type DomainStatus = "active" | "pending_verification" | "misconfigured" |
 export type DomainVerificationStatus = "pending" | "verified" | "failed";
 
 export type TenantDomainRecord = {
+  shopDetails?: unknown;
   domainId: string;
   hostname: string;
   domainStatus: DomainStatus | string;
@@ -30,6 +33,7 @@ export type TenantDomainRecord = {
 };
 
 export type TenantContext = {
+  shopDetails?: ShopDetails | null;
   tenantId: string;
   tenantName: string;
   tenantHandle: string;
@@ -115,6 +119,9 @@ export async function resolveTenantFromHost(
     context: {
       tenantId: record.tenantId,
       tenantName: record.tenantName,
+      ...(shopDetailsSchema.safeParse(record.shopDetails).success
+        ? { shopDetails: shopDetailsSchema.parse(record.shopDetails) }
+        : {}),
       tenantHandle: record.tenantHandle,
       hostname,
       primaryHostname:

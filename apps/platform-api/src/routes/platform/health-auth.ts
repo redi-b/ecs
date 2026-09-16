@@ -25,7 +25,24 @@ export function registerPlatformHealthAuthRoutes(
     }),
   );
 
+  app.options("/platform/me", (context) => {
+    const origin = context.req.header("origin");
+    if (origin && options.landingPublicOrigins?.includes(origin)) {
+      context.header("access-control-allow-credentials", "true");
+      context.header("access-control-allow-origin", origin);
+      context.header("vary", "Origin");
+    }
+    return context.body(null, 204);
+  });
+
   app.get("/platform/me", async (context) => {
+    context.header("cache-control", "private, no-store");
+    const origin = context.req.header("origin");
+    if (origin && options.landingPublicOrigins?.includes(origin)) {
+      context.header("access-control-allow-credentials", "true");
+      context.header("access-control-allow-origin", origin);
+      context.header("vary", "Origin");
+    }
     const session = await options.getSession?.(context.req.raw.headers);
 
     if (!session) {

@@ -89,6 +89,7 @@ export const resolvedTenantContext: TenantContext = {
 export function appWithResolution(
   result: TenantResolutionResult,
   options?: {
+    landingPublicOrigins?: string[];
     createStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["createStorefrontInquiry"];
     createReviewedProductImportArtifact?: import("../types/platform-app.js").PlatformAppOptions["createReviewedProductImportArtifact"];
     requestProductImportApply?: import("../types/platform-app.js").PlatformAppOptions["requestProductImportApply"];
@@ -637,6 +638,7 @@ export function appWithResolution(
       updateMerchantProductStock: options?.updateMerchantProductStock,
       updateMerchantProductVariantStock: options?.updateMerchantProductVariantStock,
       serviceName: "platform-api",
+      landingPublicOrigins: options?.landingPublicOrigins,
       medusaInternalUrl: "http://medusa:9000",
       platformPublicBaseUrl: "http://api.lvh.me",
       ...(options?.medusaStoreFetch ? { medusaStoreFetch: options.medusaStoreFetch } : {}),

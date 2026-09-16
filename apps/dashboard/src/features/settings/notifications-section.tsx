@@ -404,7 +404,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                     autoComplete="email"
                     disabled={!canManage || isPending || savingTarget}
                     id={emailFieldId}
-                    placeholder="you@business.com"
+                    placeholder={t("auth.emailPlaceholder")}
                     type="email"
                     value={emailInput}
                     ref={emailInputRef}

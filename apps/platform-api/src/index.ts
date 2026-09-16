@@ -83,6 +83,7 @@ import { createStorefrontInquiryService } from "./modules/storefront/inquiry-ser
 import { createPlatformTemplateAssetService } from "./modules/storefront/platform-template-assets.js";
 import { getTemplateDemoBaseUrl } from "./modules/storefront/template-demo-url.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
+import { createLaunchReadinessService } from "./modules/onboarding/launch-readiness.js";
 import { createSuperadminCommerceReviewService } from "./modules/superadmin/commerce-review-service.js";
 import { createSuperadminConsoleReadService } from "./modules/superadmin/console-read-service.js";
 import {
@@ -426,6 +427,7 @@ const getSuperadminOverview = createSuperadminOverviewService(platformDb.db);
 const getSuperadminDiagnostics = createSuperadminDiagnosticsService(platformDb.db);
 const storefrontTemplateService = createStorefrontTemplateService(platformDb.db, {
   demoBaseUrl: storefrontDemoBaseUrl,
+  getLaunchReadiness: (input) => launchReadinessService.getLaunchReadiness(input),
 });
 const supportService = createSupportService(platformDb.db);
 const supportAccessService = createSupportAccessService(platformDb.db);
@@ -595,6 +597,7 @@ const createCapacityLimitedProduct = createProductCapacityWriter({
   listProducts: productService.listMerchantProducts,
   resolveTenantId: resolveTenantIdByMedusaSalesChannelId,
 });
+const launchReadinessService = createLaunchReadinessService(platformDb.db, { listProducts: productService.listMerchantProducts });
 if (telegramBotToken) {
   telegramToolsBridge.deps = {
     db: platformDb.db,
@@ -774,6 +777,11 @@ const merchantTeamService = createMerchantTeamService({
 });
 
 const app = createPlatformApp({
+  landingPublicOrigins: parseTrustedOrigins(process.env.LANDING_PUBLIC_ORIGINS) ?? [
+    "http://ecs.lvh.me:4322",
+    "http://localhost:4322",
+    "http://127.0.0.1:4322",
+  ],
   dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
   emailDeliveryConfigured,
   merchantTeamService,
@@ -1078,6 +1086,8 @@ const app = createPlatformApp({
   recheckMerchantOrderPayment,
   captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
+  getLaunchReadiness: launchReadinessService.getLaunchReadiness,
+  confirmStorefrontReview: launchReadinessService.confirmStorefrontReview,
   unpublishStorefront: storefrontTemplateService.unpublishStorefront,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   ...(storefrontAnalyticsBridge

@@ -381,13 +381,20 @@ export function registerPlatformStorefrontRoutes(
       return context.json({ error: "dashboard_forbidden" }, 403);
     }
 
+    const body = await getJsonBody(context.req.raw);
+    if (body?.reviewed === true && options.getLaunchReadiness && options.confirmStorefrontReview) {
+      const readiness = await options.getLaunchReadiness({ tenantId });
+      if (!readiness) return context.json({ error: "launch_check_unavailable" }, 503);
+      const confirmed = await options.confirmStorefrontReview({ tenantId, userId: session.user.id, draftFingerprint: readiness.draftFingerprint });
+      if (!confirmed) return context.json({ error: "storefront_review_outdated" }, 409);
+    }
     const result = await options.publishStorefrontDraft({
       tenantId,
       userId: session.user.id,
     });
 
     if (!result.ok) {
-      return context.json({ error: result.error }, 404);
+      return context.json({ error: result.error, ...("readiness" in result ? { readiness: result.readiness } : {}) }, result.error === "launch_check_unavailable" ? 503 : result.error === "launch_not_ready" ? 409 : 404);
     }
 
     return context.json({

@@ -225,6 +225,7 @@ export type TenantCommerceContextResult =
 
 /** Full tenant context for building the merchant dashboard payload by tenant id. */
 export type TenantDashboardContext = {
+  shopDetails?: import("@ecs/contracts").ShopDetails | null;
   domainId: string;
   hostname: string;
   medusaPublishableKeyId: string | null;

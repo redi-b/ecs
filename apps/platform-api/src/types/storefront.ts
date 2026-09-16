@@ -79,7 +79,8 @@ export type StorefrontPublishResult =
     }
   | {
       ok: false;
-      error: "invalid_storefront_draft" | "storefront_draft_not_found";
+      error: "invalid_storefront_draft" | "storefront_draft_not_found" | "launch_not_ready" | "launch_check_unavailable";
+      readiness?: import("@ecs/contracts").LaunchReadiness;
     };
 
 export type StorefrontUnpublishResult =

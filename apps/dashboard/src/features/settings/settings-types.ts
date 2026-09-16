@@ -51,11 +51,6 @@ export const deliveryFieldKeys: Array<{
     descriptionKey: "settings.fulfillment.pickup.description",
   },
   {
-    key: "phoneConfirmationRequired",
-    labelKey: "settings.fulfillment.phoneConfirmation.label",
-    descriptionKey: "settings.fulfillment.phoneConfirmation.description",
-  },
-  {
     key: "landmarkRequired",
     labelKey: "settings.fulfillment.landmark.label",
     descriptionKey: "settings.fulfillment.landmark.description",
@@ -82,11 +77,6 @@ export const deliveryLabels: Array<{
     key: "pickupEnabled",
     label: "Pickup",
     description: "Allow customers to collect orders.",
-  },
-  {
-    key: "phoneConfirmationRequired",
-    label: "Phone confirmation",
-    description: "Require a phone number before checkout.",
   },
   {
     key: "landmarkRequired",

@@ -228,7 +228,16 @@ export function MediaUploadComposer({
     setUploading(true);
     toast.message(t("media.uploadStarted"));
 
-    const result = await uppy.upload();
+    let result: Awaited<ReturnType<typeof uppy.upload>>;
+    try {
+      result = await uppy.upload();
+    } catch {
+      for (const file of stagedFiles) completionRef.current.set(file.id, "failed");
+      setUploading(false);
+      toast.error(t("media.uploadError"));
+      bump();
+      return;
+    }
     if (!result) {
       setUploading(false);
       toast.error(t("media.uploadError"));

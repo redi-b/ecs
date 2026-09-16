@@ -1,4 +1,6 @@
 "use client";
+import { shopDetailsSchema } from "@ecs/contracts";
+import { emptyShopDetails, ShopContactFields } from "@/components/onboarding/shop-contact-fields";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
@@ -82,6 +84,7 @@ export function SettingsWorkspace({
     return canOpenSettingsSection(requested, permissions) ? requested : "preferences";
   });
   const [name, setName] = useState(summary.tenant.name);
+  const [shopDetails, setShopDetails] = useState(() => summary.tenant.shopDetails ?? emptyShopDetails());
   const [handle, setHandle] = useState(summary.tenant.handle);
   const [handleUnlocked, setHandleUnlocked] = useState(false);
   const [handleAvailability, setHandleAvailability] = useState<HandleAvailability>({
@@ -102,10 +105,13 @@ export function SettingsWorkspace({
   const nextHost = `${normalizedHandle || summary.tenant.handle}.${baseDomain}`;
   const handleChanged = normalizedHandle !== summary.tenant.handle;
   const nameChanged = name.trim() !== summary.tenant.name;
-  const shopDirty = nameChanged || handleChanged;
+  const detailsDirty = JSON.stringify(shopDetails) !== JSON.stringify(summary.tenant.shopDetails ?? emptyShopDetails());
+  const parsedDetails = shopDetailsSchema.safeParse(shopDetails);
+  const shopDirty = nameChanged || handleChanged || detailsDirty;
   const canSaveShop =
     name.trim().length >= 2 &&
     normalizedHandle.length >= 3 &&
+    (!detailsDirty || parsedDetails.success) &&
     (!handleChanged || handleAvailability.status === "available");
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
     useUnsavedChangesGuard(shopDirty);
@@ -129,6 +135,13 @@ export function SettingsWorkspace({
   useEffect(() => {
     if (!canOpenSettingsSection(section, permissions)) setSection("preferences");
   }, [permissions, section]);
+
+  useEffect(() => {
+    const requested = parseSettingsSection(initialTab);
+    if (canOpenSettingsSection(requested, permissions)) {
+      setSection(requested);
+    }
+  }, [initialTab, permissions]);
 
   useEffect(() => {
     setShowLaunchAssistant(!isLaunchAssistantHidden(summary.tenant.id));
@@ -208,6 +221,7 @@ export function SettingsWorkspace({
   function resetShopDraft() {
     setName(summary.tenant.name);
     setHandle(summary.tenant.handle);
+    setShopDetails(summary.tenant.shopDetails ?? emptyShopDetails());
     setHandleUnlocked(false);
     setHandleAvailability({ status: "current" });
   }
@@ -282,6 +296,7 @@ export function SettingsWorkspace({
             mode: "shop",
             name,
             handle: normalizedHandle,
+            ...(detailsDirty && parsedDetails.success ? { shopDetails: parsedDetails.data } : {}),
           }),
           headers: {
             accept: "application/json",
@@ -331,8 +346,9 @@ export function SettingsWorkspace({
         <div className="min-w-0 flex-1" key={section}>
           {section === "shop" ? (
             <ShopSection
+              detailsDirty={detailsDirty}
+              contactFields={<ShopContactFields value={shopDetails} onChange={setShopDetails} disabled={isPending || !allows(permissions, merchantPolicies.shopSettingsManage)} />}
               canSaveShop={canSaveShop}
-              currentHost={currentHost}
               handle={handle}
               handleAvailability={handleAvailability}
               handleChanged={handleChanged}
@@ -355,7 +371,6 @@ export function SettingsWorkspace({
                 }
                 setHandleUnlocked(true);
               }}
-              summary={summary}
             />
           ) : null}
 

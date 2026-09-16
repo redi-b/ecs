@@ -10,6 +10,7 @@ BUCKET="${MEDIA_S3_BUCKET:-${S3_BUCKET:-ecs-media}}"
 ACCESS_KEY="${MEDIA_S3_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-ecs}}"
 SECRET_KEY="${MEDIA_S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:?set MEDIA_S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY}}"
 ALLOWED_ORIGINS="${MEDIA_S3_CORS_ALLOW_ORIGIN:-*}"
+MIN_FREE_SPACE="${MEDIA_S3_MIN_FREE_SPACE:-1GiB}"
 CONFIG_PATH="/etc/seaweedfs/s3.json"
 
 mkdir -p "$DATA_DIR" /etc/seaweedfs
@@ -56,6 +57,7 @@ weed server \
   -s3.port="$S3_PORT" \
   -s3.config="$CONFIG_PATH" \
   -s3.allowedOrigins="$ORIGINS_ESC" \
+  -volume.minFreeSpace="$MIN_FREE_SPACE" \
   -filer.port="$FILER_PORT" \
   -volume.max=100 \
   &
