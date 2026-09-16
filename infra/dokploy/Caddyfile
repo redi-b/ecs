@@ -8,7 +8,7 @@
 }
 
 # Hashed Next.js build assets — safe to cache for a year.
-# Do not apply this to /admin HTML or API (cookie-auth; no-store).
+# Do not apply this to dashboard HTML or API routes (cookie-auth; no-store).
 (next_static_cache) {
 	header Cache-Control "public, max-age=31536000, immutable"
 }
@@ -86,13 +86,13 @@
 			reverse_proxy ecs-dashboard:3001
 		}
 
-		@dashboard_assets path /_next/* /__nextjs* /favicon.ico /brand/*
+		@dashboard_assets path /_next/* /__nextjs* /favicon.ico /favicon.svg /brand/*
 		handle @dashboard_assets {
 			reverse_proxy ecs-dashboard:3001
 		}
 
-		@admin path /admin*
-		handle @admin {
+		@merchant_dashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation*
+		handle @merchant_dashboard {
 			reverse_proxy ecs-dashboard:3001
 		}
 
