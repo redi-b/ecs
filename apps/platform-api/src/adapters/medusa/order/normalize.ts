@@ -1,6 +1,7 @@
 import { settlementFromMetadata } from "../../../lib/settlement.js";
 import type { MerchantOrder, MerchantOrderPaymentMethod } from "../../../types/index.js";
 import { getNumber, getString, isRecord } from "./values.js";
+import { getOrderRefundSummary } from "./refunds.js";
 
 export function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[] {
   if (!isRecord(value)) {
@@ -43,6 +44,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
     items.length > 0
       ? items.reduce((sum, item) => sum + (item.quantity ?? 0), 0)
       : (getNumber(value.items_count) ?? null);
+  const refundSummary = getOrderRefundSummary(value);
 
   // Prefer real payment_status; allow explicit dashboard override only when still unpaid-ish.
   const rawPaymentStatus = getString(value.payment_status);
@@ -69,6 +71,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
         : {}),
       currencyCode: getString(value.currency_code),
       total,
+      ...(refundSummary ?? {}),
       subtotal: getNumber(value.subtotal) ?? null,
       shippingTotal: getNumber(value.shipping_total) ?? null,
       discountTotal: getNumber(value.discount_total) ?? null,

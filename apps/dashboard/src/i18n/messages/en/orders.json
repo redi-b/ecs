@@ -235,6 +235,7 @@
     "moreActions": "More order actions",
     "completeAllExcludesPayment": "This moves the order through every remaining delivery or pickup step. Payment is not changed.",
     "markPaid": "Mark as paid",
+    "refundPayment": "Record refund",
     "recheckPayment": "Re-check payment",
     "cancelOrder": "Cancel order",
     "updateFailedTitle": "Couldn't update order",
@@ -256,6 +257,7 @@
     "toastReady": "Order marked ready.",
     "toastCompleted": "Order marked completed.",
     "toastPaid": "Payment recorded.",
+    "toastRefunded": "Refund recorded.",
     "toastFinished": "Remaining steps finished.",
     "toastRecheck": "Payment checked with Chapa.",
     "toastCanceled": "Order canceled.",
@@ -285,7 +287,8 @@
     "errNotCancelable": "This order can no longer be canceled because the customer has already received it.",
     "errRefundRequired": "Refund the captured payment before canceling this order.",
     "errGeneric": "Could not update this order.",
-    "errSettlementRequired": "Choose how you received payment."
+    "errSettlementRequired": "Choose how you received payment.",
+    "errRefundAmount": "Enter an amount that is still available to refund."
   },
   "settlement": {
     "dialogTitle": "Mark as paid",
@@ -322,6 +325,39 @@
     "saveDetails": "Save",
     "sectionTitle": "Payment received",
     "recordedAt": "Recorded"
+  },
+  "refund": {
+    "title": "Record a refund",
+    "description": "Use this after you have returned the money to the customer.",
+    "amount": "Amount returned",
+    "available": "Up to ETB {amount} can be refunded.",
+    "method": "How you returned it",
+    "reason": "Reason",
+    "reference": "Reference · optional",
+    "referencePlaceholder": "Transfer or receipt number",
+    "note": "Note · optional",
+    "notePlaceholder": "Add a useful detail for your team",
+    "confirmation": "This records money already returned. ECS will not send the money for you.",
+    "confirm": "Record refund",
+    "history": "Refunds",
+    "refunded": "Refunded",
+    "remaining": "Still refundable",
+    "methods": {
+      "cash": "Cash",
+      "telebirr": "Telebirr",
+      "cbe_birr": "CBE Birr",
+      "bank_transfer": "Bank transfer",
+      "chapa": "Chapa or another transfer",
+      "other": "Other"
+    },
+    "reasons": {
+      "customer_request": "Customer requested it",
+      "item_unavailable": "Item unavailable",
+      "wrong_item": "Wrong item",
+      "damaged_item": "Damaged item",
+      "duplicate_payment": "Duplicate payment",
+      "other": "Other"
+    }
   },
   "labels": {
     "progressNew": "New",

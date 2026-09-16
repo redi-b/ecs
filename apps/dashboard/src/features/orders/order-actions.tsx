@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantOrder } from "@ecs/contracts";
+import type { MerchantOrder, MerchantOrderSettlementMethod } from "@ecs/contracts";
 import { RiMore2Fill } from "@remixicon/react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ import {
   getNextAction,
   type OrderNextActionType,
 } from "@/features/orders/order-domain";
+import { RefundOrderDialog, type RefundOrderPayload } from "@/features/orders/refund-order-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 
@@ -46,7 +47,13 @@ function mapActionError(message: string, t: Translate) {
   if (message === "order_not_found") return t("orders.actions.errNotFound");
   if (message === "order_not_cancelable") return t("orders.actions.errNotCancelable");
   if (message === "order_refund_required") return t("orders.actions.errRefundRequired");
+  if (message === "order_refund_amount_invalid") return t("orders.actions.errRefundAmount");
   return message || t("orders.actions.errGeneric");
+}
+
+function getDefaultRefundMethod(order: MerchantOrder): MerchantOrderSettlementMethod {
+  if (order.settlement?.method) return order.settlement.method;
+  return order.paymentMethod === "chapa" ? "chapa" : "cash";
 }
 
 function nextActionCopy(type: OrderNextActionType, t: Translate) {
@@ -135,12 +142,14 @@ export function OrderActions({
   const { t } = useI18n();
   const canUpdate = usePermission("orders.update");
   const canCancel = usePermission("orders.cancel");
+  const canRefund = usePermission("orders.refund");
   const router = useRouter();
   const next = useMemo(() => getNextAction(order), [order]);
   const copy = nextActionCopy(next.type, t);
   const [pending, setPending] = useState<PendingKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
   const [accounts, setAccounts] = useState<ReceivingAccountOption[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
 
@@ -206,13 +215,30 @@ export function OrderActions({
       router.refresh();
     },
   });
+  const refundMutation = useMutation({
+    mutationFn: async (payload: RefundOrderPayload) => {
+      await postOrderAction(action, { action: "refund", ...payload });
+      return t("orders.actions.toastRefunded");
+    },
+    onError: (error) =>
+      setActionError(
+        mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
+      ),
+    onSuccess: (message) => {
+      setActionError(null);
+      setRefundOpen(false);
+      toast.success(message);
+      router.refresh();
+    },
+  });
 
   const showMarkPaid = canUpdate && canMarkPaid(order);
   const showRecheck = canUpdate && canRecheckPayment(order);
+  const showRefund = canRefund && (order.refundableTotal ?? 0) > 0;
   const canceled = (order.status ?? "").toLowerCase().includes("cancel");
   const showCancel = canCancel && !canceled && (next.type !== "none" || showMarkPaid);
   const hasNextAction = canUpdate && next.type !== "none";
-  const hasMenu = hasNextAction || showMarkPaid || showRecheck || showCancel;
+  const hasMenu = hasNextAction || showMarkPaid || showRecheck || showRefund || showCancel;
   const menu = hasMenu ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -240,6 +266,11 @@ export function OrderActions({
         {showRecheck ? (
           <DropdownMenuItem onSelect={() => setPending({ kind: "recheck" })}>
             {t("orders.actions.recheckPayment")}
+          </DropdownMenuItem>
+        ) : null}
+        {showRefund ? (
+          <DropdownMenuItem onSelect={() => setRefundOpen(true)}>
+            {t("orders.actions.refundPayment")}
           </DropdownMenuItem>
         ) : null}
         {showCancel ? (
@@ -316,6 +347,15 @@ export function OrderActions({
         accounts={accounts}
         banks={banks}
         onConfirm={(payload) => markPaidMutation.mutate(payload)}
+      />
+      <RefundOrderDialog
+        currencyCode={order.currencyCode}
+        defaultMethod={getDefaultRefundMethod(order)}
+        maximum={order.refundableTotal ?? 0}
+        onConfirm={(payload) => refundMutation.mutate(payload)}
+        onOpenChange={setRefundOpen}
+        open={refundOpen}
+        pending={refundMutation.isPending}
       />
       <ConfirmDialog
         cancelDisabled={mutation.isPending}

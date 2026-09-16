@@ -13,6 +13,8 @@ import {
   getMerchantOrderForAction,
   shipMerchantOrderFulfillment,
 } from "./actions.js";
+import { refundMerchantOrder } from "./refund-action.js";
+import type { MerchantRefundInput } from "./refunds.js";
 import { applyOrderListPostFilters, needsPostFilter } from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { normalizeOrder } from "./normalize.js";
@@ -187,6 +189,7 @@ export function createMedusaOrderService(options: {
       paymentReference?: string | null | undefined;
       source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
       settlement?: import("../../../lib/settlement.js").OrderSettlementInput | null | undefined;
+      refund?: MerchantRefundInput | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -199,6 +202,17 @@ export function createMedusaOrderService(options: {
           source: input.source ?? "dashboard",
           paymentReference: input.paymentReference,
           settlement: input.settlement,
+        });
+      }
+
+      if (input.action === "refund") {
+        if (!input.refund) {
+          return { ok: false, error: "order_refund_amount_invalid", status: 400 };
+        }
+        return refundMerchantOrder(fetcher, options, {
+          orderId: input.orderId,
+          salesChannelId: input.salesChannelId,
+          refund: input.refund,
         });
       }
 
@@ -234,7 +248,11 @@ export function createMedusaOrderService(options: {
         if (status.includes("complete") || fulfillment.includes("deliver")) {
           return { ok: false, error: "order_not_cancelable", status: 409 };
         }
-        if (payment.includes("captur") || payment === "paid") {
+        if (
+          payment.includes("captur") ||
+          payment === "paid" ||
+          payment.includes("partially_refund")
+        ) {
           return { ok: false, error: "order_refund_required", status: 409 };
         }
       }

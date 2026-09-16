@@ -54,6 +54,9 @@ const DETAIL_FIELDS = [
   "*items.product",
   "*payment_collections",
   "*payment_collections.payment_sessions",
+  "*payment_collections.payments",
+  "*payment_collections.payments.captures",
+  "*payment_collections.payments.refunds",
   "created_at",
   "updated_at",
 ].join(",");
@@ -204,6 +207,13 @@ export function getOrderActionUrl(
 ) {
   return new URL(
     `/admin/orders/${encodeURIComponent(input.orderId)}/${input.action}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getPaymentRefundUrl(medusaInternalUrl: string, paymentId: string) {
+  return new URL(
+    `/admin/payments/${encodeURIComponent(paymentId)}/refund`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }

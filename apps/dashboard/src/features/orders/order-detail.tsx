@@ -69,6 +69,30 @@ function settlementMethodLabel(method: string, t: Translate): string {
   }
 }
 
+function refundMethodLabel(method: string | null, t: Translate): string {
+  const keys: Record<string, MessageKey> = {
+    cash: "orders.refund.methods.cash",
+    telebirr: "orders.refund.methods.telebirr",
+    cbe_birr: "orders.refund.methods.cbe_birr",
+    bank_transfer: "orders.refund.methods.bank_transfer",
+    chapa: "orders.refund.methods.chapa",
+    other: "orders.refund.methods.other",
+  };
+  return method && keys[method] ? t(keys[method]) : t("orders.refund.methods.other");
+}
+
+function refundReasonLabel(reason: string | null, t: Translate): string {
+  const keys: Record<string, MessageKey> = {
+    customer_request: "orders.refund.reasons.customer_request",
+    item_unavailable: "orders.refund.reasons.item_unavailable",
+    wrong_item: "orders.refund.reasons.wrong_item",
+    damaged_item: "orders.refund.reasons.damaged_item",
+    duplicate_payment: "orders.refund.reasons.duplicate_payment",
+    other: "orders.refund.reasons.other",
+  };
+  return reason && keys[reason] ? t(keys[reason]) : t("orders.refund.reasons.other");
+}
+
 function buildActivity(order: MerchantOrder, t: Translate) {
   const events: Array<{ at: string | null; label: string }> = [];
   events.push({ at: order.createdAt, label: t("orders.detail.activityReceived") });
@@ -91,6 +115,12 @@ function buildActivity(order: MerchantOrder, t: Translate) {
   if (getPaymentLabel(order) === "paid") {
     events.push({ at: order.updatedAt, label: t("orders.detail.activityPayment") });
   }
+  for (const refund of order.refunds ?? []) {
+    events.push({
+      at: refund.createdAt,
+      label: `${t("orders.refund.refunded")} · ${formatOrderMoney(refund.amount, order.currencyCode)}`,
+    });
+  }
 
   if (getOrderProgress(order) === "completed") {
     events.push({ at: order.updatedAt, label: t("orders.detail.activityCompleted") });
@@ -100,8 +130,8 @@ function buildActivity(order: MerchantOrder, t: Translate) {
   }
 
   return events
-    .filter((event) => event.at)
-    .sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
+    .filter((event): event is typeof event & { at: string } => Boolean(event.at))
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
 export async function OrderDetail({
@@ -114,7 +144,6 @@ export async function OrderDetail({
   const customerName = getOrderCustomerName(order, t);
   const customerPhone = getOrderCustomerPhone(order);
   const items = order.items ?? [];
-  const progress = getOrderProgress(order);
   const workflow = getOrderWorkflowStage(order);
   const delivery = getDeliveryLabel(order);
   const steps =
@@ -130,25 +159,49 @@ export async function OrderDetail({
         ]
       : delivery === "delivery"
         ? [
-          {
-            id: "new",
-            label: t("orders.detail.stepNew"),
-            done: true,
-            current: workflow === "new",
-          },
-          {
-            id: "out_for_delivery",
-            label: t("orders.detail.stepOutForDelivery"),
-            done: workflow === "out_for_delivery" || workflow === "completed",
-            current: workflow === "out_for_delivery",
-          },
-          { id: "completed", label: t("orders.detail.stepDelivered"), done: workflow === "completed", current: workflow === "completed" },
-        ]
+            {
+              id: "new",
+              label: t("orders.detail.stepNew"),
+              done: true,
+              current: workflow === "new",
+            },
+            {
+              id: "out_for_delivery",
+              label: t("orders.detail.stepOutForDelivery"),
+              done: workflow === "out_for_delivery" || workflow === "completed",
+              current: workflow === "out_for_delivery",
+            },
+            {
+              id: "completed",
+              label: t("orders.detail.stepDelivered"),
+              done: workflow === "completed",
+              current: workflow === "completed",
+            },
+          ]
         : [
-          { id: "new", label: t("orders.detail.stepNew"), done: true, current: workflow === "new" },
-          { id: "ready", label: t("orders.detail.stepReadyForPickup"), done: workflow === "ready_for_pickup" || workflow === "ready" || workflow === "completed", current: workflow === "ready_for_pickup" || workflow === "ready" },
-          { id: "completed", label: delivery === "pickup" ? t("orders.detail.stepPickedUp") : t("orders.detail.stepCompleted"), done: workflow === "completed", current: workflow === "completed" },
-        ];
+            {
+              id: "new",
+              label: t("orders.detail.stepNew"),
+              done: true,
+              current: workflow === "new",
+            },
+            {
+              id: "ready",
+              label: t("orders.detail.stepReadyForPickup"),
+              done:
+                workflow === "ready_for_pickup" || workflow === "ready" || workflow === "completed",
+              current: workflow === "ready_for_pickup" || workflow === "ready",
+            },
+            {
+              id: "completed",
+              label:
+                delivery === "pickup"
+                  ? t("orders.detail.stepPickedUp")
+                  : t("orders.detail.stepCompleted"),
+              done: workflow === "completed",
+              current: workflow === "completed",
+            },
+          ];
 
   const activity = buildActivity(order, t);
   const address = order.shippingAddress;
@@ -410,6 +463,53 @@ export async function OrderDetail({
                 </>
               ) : null}
             </DetailFieldGrid>
+            {(order.refundedTotal ?? 0) > 0 ? (
+              <div className="mt-4 space-y-3 border-t border-border/60 pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField
+                    label={t("orders.refund.refunded")}
+                    value={formatOrderMoney(order.refundedTotal ?? 0, order.currencyCode)}
+                  />
+                  <DetailField
+                    label={t("orders.refund.remaining")}
+                    value={formatOrderMoney(order.refundableTotal ?? 0, order.currencyCode)}
+                  />
+                </div>
+                {(order.refunds ?? []).length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {t("orders.refund.history")}
+                    </p>
+                    {(order.refunds ?? []).map((refund) => (
+                      <div
+                        key={refund.id}
+                        className="rounded-lg bg-muted/25 px-3 py-2.5 ring-1 ring-foreground/[0.06]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">
+                              {refundReasonLabel(refund.reason, t)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {refundMethodLabel(refund.method, t)}
+                              {refund.reference ? ` · ${refund.reference}` : ""}
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums">
+                            {formatOrderMoney(refund.amount, order.currencyCode)}
+                          </span>
+                        </div>
+                        {refund.note ? (
+                          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                            {refund.note}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </DetailSection>
 
           <DetailSection title={t("orders.detail.customer")}>
