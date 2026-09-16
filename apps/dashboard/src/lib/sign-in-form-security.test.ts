@@ -8,7 +8,7 @@ test("sign-in form has a secure native POST fallback", async () => {
   const source = await readFile(signInFormPath, "utf8");
   const openingForm = source.match(/<form\b[\s\S]*?>/)?.[0] ?? "";
 
-  assert.match(openingForm, /action="\/admin\/session"/);
+  assert.match(openingForm, /action="\/session"/);
   assert.match(openingForm, /method="post"/);
   assert.doesNotMatch(openingForm, /method="get"/i);
 });

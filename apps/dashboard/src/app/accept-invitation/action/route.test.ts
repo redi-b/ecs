@@ -48,7 +48,7 @@ test("accepts through Better Auth with the current session and trusted origin", 
 
   const response = await POST(request(new URLSearchParams({ invitationId: " invite_123 " })));
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "https://shop.lvh.me/admin/shops");
+  assert.equal(response.headers.get("location"), "https://shop.lvh.me/dashboard/shops");
 });
 
 test("shows an unavailable-link error when the invitation no longer exists", async () => {
@@ -93,7 +93,7 @@ test("redirects to the browser-facing host instead of an internal service URL", 
   });
 
   const response = await POST(invitationRequest);
-  assert.equal(response.headers.get("location"), "http://localhost:3001/admin/shops");
+  assert.equal(response.headers.get("location"), "http://localhost:3001/dashboard/shops");
 });
 
 test("opens the invited shop after validating the accepted membership", async () => {
@@ -121,6 +121,6 @@ test("opens the invited shop after validating the accepted membership", async ()
   const response = await POST(
     request(new URLSearchParams({ invitationId: "invite_123", tenantId: "tenant_2" })),
   );
-  assert.equal(response.headers.get("location"), "https://second-shop.lvh.me/admin");
+  assert.equal(response.headers.get("location"), "https://second-shop.lvh.me/dashboard");
   assert.match(response.headers.get("set-cookie") ?? "", /ecs_last_shop=tenant_2/);
 });

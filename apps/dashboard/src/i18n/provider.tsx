@@ -31,7 +31,7 @@ export function useI18n() {
 
       setIsFetchPending(true);
       try {
-        const response = await fetch("/admin/locale", {
+        const response = await fetch("/dashboard/locale", {
           body: JSON.stringify({ locale: nextLocale }),
           headers: {
             accept: "application/json",

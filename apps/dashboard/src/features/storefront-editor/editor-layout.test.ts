@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 const chromeSource = await readFile(new URL("./editor-chrome.tsx", import.meta.url), "utf8");
 const settingsSource = await readFile(new URL("./editor-settings.tsx", import.meta.url), "utf8");
 const pageSource = await readFile(
-  new URL("../../app/admin/(dashboard)/editor/page.tsx", import.meta.url),
+  new URL("../../app/dashboard/(dashboard)/editor/page.tsx", import.meta.url),
   "utf8",
 );
 

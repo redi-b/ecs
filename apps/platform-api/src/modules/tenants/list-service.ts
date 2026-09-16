@@ -326,7 +326,7 @@ export function createPlatformOnboardingStateService(options: {
           : null,
         primaryTenant: primaryTenant?.primaryDomain.hostname
           ? {
-              dashboardUrl: `http://${primaryTenant.primaryDomain.hostname}/admin`,
+              dashboardUrl: `http://${primaryTenant.primaryDomain.hostname}/dashboard`,
               handle: primaryTenant.handle,
               id: primaryTenant.id,
               primaryDomain: primaryTenant.primaryDomain.hostname,
@@ -514,7 +514,7 @@ export function createTenantShopSettingsService(options: {
     return {
       ok: true,
       tenant: toTenantListItem(updated),
-      redirectTo: handle === membership.currentHandle ? null : `//${hostname}/admin/settings`,
+      redirectTo: handle === membership.currentHandle ? null : `//${hostname}/dashboard/settings`,
     };
   };
 }

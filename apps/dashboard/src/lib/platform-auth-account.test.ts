@@ -49,7 +49,7 @@ test("password reset requests normalize the email and preserve the dashboard cal
     email: "  OWNER@EXAMPLE.COM ",
     origin: "https://app.example.com",
     platformApiBaseUrl: "https://api.example.com",
-    redirectTo: "https://app.example.com/admin/reset-password",
+    redirectTo: "https://app.example.com/reset-password",
   });
 
   assert.equal(result.ok, true);
@@ -57,7 +57,7 @@ test("password reset requests normalize the email and preserve the dashboard cal
   assert.equal(captured?.headers.get("origin"), "https://app.example.com");
   assert.deepEqual(await captured?.json(), {
     email: "owner@example.com",
-    redirectTo: "https://app.example.com/admin/reset-password",
+    redirectTo: "https://app.example.com/reset-password",
   });
 });
 
@@ -87,14 +87,14 @@ test("password reset preflight delegates to Better Auth without consuming the to
     captured = new Request(input, init);
     return new Response(null, {
       headers: {
-        location: "https://app.example.com/admin/reset-password?token=secret-token",
+        location: "https://app.example.com/reset-password?token=secret-token",
       },
       status: 302,
     });
   };
 
   const redirectUrl = await preflightAccountPasswordReset({
-    callbackURL: "https://app.example.com/admin/reset-password",
+    callbackURL: "https://app.example.com/reset-password",
     origin: "https://app.example.com",
     platformApiBaseUrl: "https://api.example.com",
     token: "secret-token",
@@ -102,34 +102,34 @@ test("password reset preflight delegates to Better Auth without consuming the to
 
   assert.equal(
     captured?.url,
-    "https://api.example.com/platform/auth/reset-password/secret-token?callbackURL=https%3A%2F%2Fapp.example.com%2Fadmin%2Freset-password",
+    "https://api.example.com/platform/auth/reset-password/secret-token?callbackURL=https%3A%2F%2Fapp.example.com%2Freset-password",
   );
   assert.equal(captured?.redirect, "manual");
-  assert.equal(redirectUrl, "https://app.example.com/admin/reset-password?token=secret-token");
+  assert.equal(redirectUrl, "https://app.example.com/reset-password?token=secret-token");
 });
 
 test("account return paths remain local to dashboard routes", () => {
   assert.equal(
-    getSafeAccountReturnPath("/admin/settings?tab=account"),
-    "/admin/settings?tab=account",
+    getSafeAccountReturnPath("/dashboard/settings?tab=account"),
+    "/dashboard/settings?tab=account",
   );
-  assert.equal(getSafeAccountReturnPath("https://evil.example/path"), "/admin/sign-in");
-  assert.equal(getSafeAccountReturnPath("//evil.example/path"), "/admin/sign-in");
-  assert.equal(getSafeAccountReturnPath("/storefront"), "/admin/sign-in");
+  assert.equal(getSafeAccountReturnPath("https://evil.example/path"), "/sign-in");
+  assert.equal(getSafeAccountReturnPath("//evil.example/path"), "/sign-in");
+  assert.equal(getSafeAccountReturnPath("/storefront"), "/sign-in");
 });
 
 test("email verification delegates mutation to Better Auth and returns session cookies", async () => {
   globalThis.fetch = async () =>
     new Response(null, {
       headers: {
-        location: "https://app.example.com/admin/verify-email/result?intent=verify-email",
+        location: "https://app.example.com/verify-email/result?intent=verify-email",
         "set-cookie": "ecs.session_token=session_2; Path=/; HttpOnly",
       },
       status: 302,
     });
 
   const result = await verifyAccountEmail({
-    callbackURL: "https://app.example.com/admin/verify-email/result?intent=verify-email",
+    callbackURL: "https://app.example.com/verify-email/result?intent=verify-email",
     origin: "https://app.example.com",
     platformApiBaseUrl: "https://api.example.com",
     token: "verify-token",
@@ -137,7 +137,7 @@ test("email verification delegates mutation to Better Auth and returns session c
 
   assert.equal(
     result?.redirectUrl,
-    "https://app.example.com/admin/verify-email/result?intent=verify-email",
+    "https://app.example.com/verify-email/result?intent=verify-email",
   );
   assert.deepEqual(result?.cookies, ["ecs.session_token=session_2; Path=/; HttpOnly"]);
 });
@@ -150,7 +150,7 @@ test("email changes forward the current session and host-aware callback", async 
   };
 
   await changeAccountEmail({
-    callbackURL: "https://bole.example.com/admin/settings?tab=account",
+    callbackURL: "https://bole.example.com/dashboard/settings?tab=account",
     cookieHeader: "ecs.session_token=session_1",
     newEmail: " NEW@EXAMPLE.COM ",
     origin: "https://bole.example.com",
@@ -159,7 +159,7 @@ test("email changes forward the current session and host-aware callback", async 
 
   assert.equal(captured?.headers.get("cookie"), "ecs.session_token=session_1");
   assert.deepEqual(await captured?.json(), {
-    callbackURL: "https://bole.example.com/admin/settings?tab=account",
+    callbackURL: "https://bole.example.com/dashboard/settings?tab=account",
     newEmail: "new@example.com",
   });
 });

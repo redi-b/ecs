@@ -48,7 +48,7 @@ test("picker forwards page, filters and cancellation and retains total count", a
     publicOnly: "true",
   });
   const result = await fetchMediaPickerPage(params, controller.signal, async (url, init) => {
-    assert.equal(String(url), `/admin/media/assets?${params}`);
+    assert.equal(String(url), `/dashboard/media/assets?${params}`);
     assert.equal(init?.signal, controller.signal);
     return Response.json({ assets: [asset("last")], count: 121, limit: 24, offset: 120 });
   });

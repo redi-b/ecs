@@ -62,7 +62,7 @@ export function MediaEditSheet({
   async function save() {
     if (!asset) return;
     setSaving(true);
-    const response = await fetch(`/admin/media/assets/${encodeURIComponent(asset.id)}`, {
+    const response = await fetch(`/dashboard/media/assets/${encodeURIComponent(asset.id)}`, {
       body: JSON.stringify({ altText: alt, displayName: name }),
       headers: { "content-type": "application/json" },
       method: "POST",

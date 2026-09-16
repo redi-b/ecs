@@ -39,26 +39,30 @@ const accessPayload = {
 };
 
 describe("getSafeDashboardPath", () => {
-  it("keeps safe admin paths with query strings", () => {
-    assert.equal(getSafeDashboardPath("/admin/products?page=2"), "/admin/products?page=2");
+  it("keeps safe dashboard paths with query strings", () => {
+    assert.equal(getSafeDashboardPath("/dashboard/products?page=2"), "/dashboard/products?page=2");
   });
 
-  it("rejects external and non-admin paths", () => {
-    assert.equal(getSafeDashboardPath("https://evil.test/admin"), "/admin");
-    assert.equal(getSafeDashboardPath("//evil.test/admin"), "/admin");
-    assert.equal(getSafeDashboardPath("/admin/../store"), "/admin");
-    assert.equal(getSafeDashboardPath("/admin/%2e%2e/store"), "/admin");
-    assert.equal(getSafeDashboardPath("/store"), "/admin");
-    assert.equal(getSafeDashboardPath(""), "/admin");
+  it("rejects external and non-dashboard paths", () => {
+    assert.equal(getSafeDashboardPath("https://evil.test/dashboard"), "/dashboard");
+    assert.equal(getSafeDashboardPath("//evil.test/dashboard"), "/dashboard");
+    assert.equal(getSafeDashboardPath("/dashboard/../store"), "/dashboard");
+    assert.equal(getSafeDashboardPath("/dashboard/%2e%2e/store"), "/dashboard");
+    assert.equal(getSafeDashboardPath("/store"), "/dashboard");
+    assert.equal(getSafeDashboardPath(""), "/dashboard");
   });
 });
 
 describe("getDashboardAuthRedirectPath", () => {
   it("builds a sign-in path with a safe next value", () => {
     assert.equal(
-      getDashboardAuthRedirectPath("/admin/orders?page=2"),
-      "/admin/sign-in?next=%2Fadmin%2Forders%3Fpage%3D2",
+      getDashboardAuthRedirectPath("/dashboard/orders?page=2"),
+      "/sign-in?next=%2Fdashboard%2Forders%3Fpage%3D2",
     );
+  });
+
+  it("keeps the default sign-in URL clean", () => {
+    assert.equal(getDashboardAuthRedirectPath("/dashboard"), "/sign-in");
   });
 });
 

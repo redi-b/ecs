@@ -16,24 +16,24 @@ describe("dashboard tenant context", () => {
 
   it("adds selected tenant id to dashboard paths", () => {
     assert.equal(
-      getTenantScopedPath("/admin/products", "tenant_1"),
-      "/admin/products?tenantId=tenant_1",
+      getTenantScopedPath("/dashboard/products", "tenant_1"),
+      "/dashboard/products?tenantId=tenant_1",
     );
     assert.equal(
-      getTenantScopedPath("/admin/products?productStatus=product_created", "tenant_1"),
-      "/admin/products?productStatus=product_created&tenantId=tenant_1",
+      getTenantScopedPath("/dashboard/products?productStatus=product_created", "tenant_1"),
+      "/dashboard/products?productStatus=product_created&tenantId=tenant_1",
     );
-    assert.equal(getTenantScopedPath("/admin/products", undefined), "/admin/products");
+    assert.equal(getTenantScopedPath("/dashboard/products", undefined), "/dashboard/products");
   });
 
   it("preserves selected tenant id when redirecting from action requests", () => {
-    const url = new URL("http://dashboard.local/admin/products");
+    const url = new URL("http://dashboard.local/dashboard/products");
 
     appendTenantRedirectParams(
       url,
-      new Request("http://dashboard.local/admin/products/create?tenantId=tenant_1"),
+      new Request("http://dashboard.local/dashboard/products/create?tenantId=tenant_1"),
     );
 
-    assert.equal(url.toString(), "http://dashboard.local/admin/products?tenantId=tenant_1");
+    assert.equal(url.toString(), "http://dashboard.local/dashboard/products?tenantId=tenant_1");
   });
 });

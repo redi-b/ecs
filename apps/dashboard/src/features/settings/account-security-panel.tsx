@@ -152,7 +152,7 @@ export function AccountSecurityPanel({
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
     setSessionsError(null);
-    const response = await fetch("/admin/account/sessions", {
+    const response = await fetch("/dashboard/account/sessions", {
       headers: { accept: "application/json" },
     }).catch(() => null);
     const data = (await response?.json().catch(() => null)) as {
@@ -202,7 +202,7 @@ export function AccountSecurityPanel({
 
   useEffect(() => {
     let active = true;
-    void fetch("/admin/account/email", { headers: { accept: "application/json" } })
+    void fetch("/dashboard/account/email", { headers: { accept: "application/json" } })
       .then(async (response) => {
         const data = (await response.json().catch(() => null)) as {
           email?: string;
@@ -234,7 +234,7 @@ export function AccountSecurityPanel({
       return;
     }
     setSavingEmail(true);
-    const response = await fetch("/admin/account/email", {
+    const response = await fetch("/dashboard/account/email", {
       body: JSON.stringify({ newEmail: value }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -256,7 +256,7 @@ export function AccountSecurityPanel({
 
   async function resendVerification() {
     setResendingVerification(true);
-    const response = await fetch("/admin/account/verification", {
+    const response = await fetch("/dashboard/account/verification", {
       headers: { accept: "application/json" },
       method: "POST",
     }).catch(() => null);
@@ -275,7 +275,7 @@ export function AccountSecurityPanel({
       return;
     }
     setSavingProfile(true);
-    const response = await fetch("/admin/account/profile", {
+    const response = await fetch("/dashboard/account/profile", {
       body: JSON.stringify({ name: trimmed, avatar }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -314,7 +314,7 @@ export function AccountSecurityPanel({
     }
 
     setSavingPassword(true);
-    const response = await fetch("/admin/account/password", {
+    const response = await fetch("/dashboard/account/password", {
       body: JSON.stringify({
         currentPassword,
         newPassword,
@@ -358,7 +358,7 @@ export function AccountSecurityPanel({
     }
 
     setRevokingToken(session.token);
-    const response = await fetch("/admin/account/sessions", {
+    const response = await fetch("/dashboard/account/sessions", {
       body: JSON.stringify({ token: session.token }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -384,7 +384,7 @@ export function AccountSecurityPanel({
 
   async function confirmRevokeOtherSessions() {
     setRevokingOthers(true);
-    const response = await fetch("/admin/account/sessions", {
+    const response = await fetch("/dashboard/account/sessions", {
       body: JSON.stringify({ revokeOthers: true }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",

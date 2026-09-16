@@ -97,7 +97,7 @@ export function PaymentsSection({
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/admin/settings/payments", {
+      const response = await fetch("/dashboard/settings/payments", {
         cache: "no-store",
         headers: { accept: "application/json" },
       });
@@ -138,7 +138,7 @@ export function PaymentsSection({
     startTransition(async () => {
       const toastId = toast.loading(t("settings.payments.toast.working"));
       try {
-        const response = await fetch("/admin/settings/payments", {
+        const response = await fetch("/dashboard/settings/payments", {
           method: "POST",
           headers: {
             accept: "application/json",
@@ -558,11 +558,11 @@ function ReceivingAccountsCard() {
   const load = useCallback(async () => {
     try {
       const [accRes, bankRes] = await Promise.all([
-        fetch("/admin/settings/payments/receiving-accounts", {
+        fetch("/dashboard/settings/payments/receiving-accounts", {
           cache: "no-store",
           headers: { accept: "application/json" },
         }),
-        fetch("/admin/settings/payments/banks", {
+        fetch("/dashboard/settings/payments/banks", {
           cache: "no-store",
           headers: { accept: "application/json" },
         }),
@@ -645,8 +645,8 @@ function ReceivingAccountsCard() {
 
         const response = await fetch(
           isEdit
-            ? `/admin/settings/payments/receiving-accounts/${editingId}`
-            : "/admin/settings/payments/receiving-accounts",
+            ? `/dashboard/settings/payments/receiving-accounts/${editingId}`
+            : "/dashboard/settings/payments/receiving-accounts",
           {
             method: "POST",
             headers: { accept: "application/json", "content-type": "application/json" },
@@ -681,7 +681,7 @@ function ReceivingAccountsCard() {
     startTransition(async () => {
       toast.loading(t("settings.payments.toast.working"), { id: "recv-del" });
       try {
-        const response = await fetch(`/admin/settings/payments/receiving-accounts/${id}`, {
+        const response = await fetch(`/dashboard/settings/payments/receiving-accounts/${id}`, {
           method: "DELETE",
           headers: { accept: "application/json" },
         });

@@ -39,9 +39,9 @@ test("demo insight reports stay inside the public preview route family", () => {
 });
 
 test("demo detail routes round-trip without escaping to the authenticated dashboard", () => {
-  assert.equal(getDashboardPathFromDemo("/demo/products/prod_1"), "/admin/products/prod_1");
-  assert.equal(getDemoPathFromDashboard("/admin/products/prod_1"), "/demo/products/prod_1");
-  assert.equal(getDashboardPathFromDemo("/demo/insights/sales"), "/admin/insights/sales");
-  assert.equal(getDemoPathFromDashboard("/admin/insights/sales"), "/demo/insights/sales");
-  assert.equal(getDemoPathFromDashboard("/admin/customers/cus_1"), "/demo");
+  assert.equal(getDashboardPathFromDemo("/demo/products/prod_1"), "/dashboard/products/prod_1");
+  assert.equal(getDemoPathFromDashboard("/dashboard/products/prod_1"), "/demo/products/prod_1");
+  assert.equal(getDashboardPathFromDemo("/demo/insights/sales"), "/dashboard/insights/sales");
+  assert.equal(getDemoPathFromDashboard("/dashboard/insights/sales"), "/demo/insights/sales");
+  assert.equal(getDemoPathFromDashboard("/dashboard/customers/cus_1"), "/demo");
 });

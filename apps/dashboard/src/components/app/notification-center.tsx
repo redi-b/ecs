@@ -253,7 +253,7 @@ export function NotificationCenter() {
 
   const refreshCount = useCallback(async () => {
     try {
-      const response = await fetch("/admin/notifications/inbox?countOnly=true", {
+      const response = await fetch("/dashboard/notifications/inbox?countOnly=true", {
         headers: { accept: "application/json" },
         cache: "no-store",
       });
@@ -272,7 +272,7 @@ export function NotificationCenter() {
     setLoadingList(true);
     setListError(false);
     try {
-      const response = await fetch("/admin/notifications/inbox?limit=6", {
+      const response = await fetch("/dashboard/notifications/inbox?limit=6", {
         headers: { accept: "application/json" },
         cache: "no-store",
       });
@@ -285,7 +285,7 @@ export function NotificationCenter() {
       setItems(list);
       const unseenIds = list.filter((item) => !item.seenAt).map((item) => item.id);
       if (openRef.current && unseenIds.length) {
-        void fetch("/admin/notifications/inbox", {
+        void fetch("/dashboard/notifications/inbox", {
           body: JSON.stringify({ action: "seen", ids: unseenIds }),
           headers: { "content-type": "application/json" },
           method: "POST",
@@ -375,7 +375,7 @@ export function NotificationCenter() {
 
     setBusy(true);
     try {
-      const response = await fetch("/admin/notifications/inbox", {
+      const response = await fetch("/dashboard/notifications/inbox", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -407,7 +407,7 @@ export function NotificationCenter() {
 
     setBusy(true);
     try {
-      const response = await fetch("/admin/notifications/inbox", {
+      const response = await fetch("/dashboard/notifications/inbox", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -433,7 +433,7 @@ export function NotificationCenter() {
       void markRead(item.id);
     }
     setOpen(false);
-    if (item.href?.startsWith("/admin")) {
+    if (item.href?.startsWith("/dashboard")) {
       router.push(item.href);
     }
   }

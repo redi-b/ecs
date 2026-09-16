@@ -237,7 +237,7 @@ export function ShopOnboardingForm({
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
       const response = await fetch(
-        `/admin/onboarding/handle?handle=${encodeURIComponent(normalized)}`,
+        `/onboarding/handle?handle=${encodeURIComponent(normalized)}`,
         { signal: controller.signal },
       ).catch(() => null);
 
@@ -312,7 +312,7 @@ export function ShopOnboardingForm({
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const response = await fetch("/admin/onboarding/submit", {
+    const response = await fetch("/onboarding/submit", {
       body: JSON.stringify({
         businessCategory,
         contactPhone: shopDetails.primaryPhone.trim(),

@@ -100,18 +100,18 @@ describe("telegram-presentation", () => {
         primaryHostname: "shop.lvh.me",
         fallbackBaseUrl: "http://app.lvh.me",
       }),
-      "http://shop.lvh.me/admin",
+      "http://shop.lvh.me/dashboard",
     );
     assert.equal(
       resolveDashboardAdminBase({ primaryHostname: null, fallbackBaseUrl: "http://app.lvh.me" }),
-      "http://app.lvh.me/admin",
+      "http://app.lvh.me/dashboard",
     );
   });
 
   it("adminUrl and htmlLink", () => {
     assert.equal(
-      adminUrl("http://x/admin", "/settings?tab=telegram"),
-      "http://x/admin/settings?tab=telegram",
+      adminUrl("http://x/dashboard", "/settings?tab=telegram"),
+      "http://x/dashboard/settings?tab=telegram",
     );
     assert.ok(htmlLink("https://example.com", "Go").includes("href="));
   });

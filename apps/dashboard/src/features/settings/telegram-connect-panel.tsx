@@ -69,7 +69,7 @@ export function TelegramConnectPanel({
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(eventsDirty);
 
   const loadDestinations = useCallback(async () => {
-    const response = await fetch(`/admin/settings/notifications/telegram?${qs}`, {
+    const response = await fetch(`/dashboard/settings/notifications/telegram?${qs}`, {
       headers: { accept: "application/json" },
       cache: "no-store",
     });
@@ -108,7 +108,7 @@ export function TelegramConnectPanel({
     const id = window.setInterval(() => {
       void (async () => {
         const response = await fetch(
-          `/admin/settings/notifications/telegram?${qs}&sessionId=${encodeURIComponent(session.id)}`,
+          `/dashboard/settings/notifications/telegram?${qs}&sessionId=${encodeURIComponent(session.id)}`,
           { headers: { accept: "application/json" }, cache: "no-store" },
         );
         const data = await response.json().catch(() => undefined);
@@ -131,7 +131,7 @@ export function TelegramConnectPanel({
   }, [session, qs, loadDestinations]);
 
   function postAction(body: Record<string, unknown>) {
-    return fetch(`/admin/settings/notifications/telegram?${qs}`, {
+    return fetch(`/dashboard/settings/notifications/telegram?${qs}`, {
       method: "POST",
       headers: {
         accept: "application/json",
@@ -180,7 +180,7 @@ export function TelegramConnectPanel({
     }
     startTransition(async () => {
       const response = await fetch(
-        `/admin/settings/notifications/telegram?${qs}&sessionId=${encodeURIComponent(session.id)}`,
+        `/dashboard/settings/notifications/telegram?${qs}&sessionId=${encodeURIComponent(session.id)}`,
         { headers: { accept: "application/json" }, cache: "no-store" },
       );
       const data = await response.json().catch(() => undefined);

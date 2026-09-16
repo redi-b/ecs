@@ -8,10 +8,10 @@ export default async function DashboardHome() {
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
 
   if (isCentralDashboardHost(requestHost)) {
-    redirect("/admin");
+    redirect("/dashboard");
   }
 
-  const dashboardUrl = `https://${requestHost ?? "app.lvh.me"}/admin`;
+  const dashboardUrl = `https://${requestHost ?? "app.lvh.me"}/dashboard`;
 
   return (
     <main className="dashboard-shell">

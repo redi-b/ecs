@@ -74,7 +74,7 @@ export function registerPlatformTenantRoutes(
 
     return context.json(
       {
-        redirectTo: `http://${result.tenant.primaryDomain.hostname}/admin`,
+        redirectTo: `http://${result.tenant.primaryDomain.hostname}/dashboard`,
         tenant: result.tenant,
       },
       201,

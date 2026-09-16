@@ -100,7 +100,7 @@ function roleLabel(role: string) {
 }
 
 async function teamMutation(path: string, method: "DELETE" | "PATCH" | "POST", body?: unknown) {
-  const response = await fetch(`/admin/settings/team/${path}`, {
+  const response = await fetch(`/dashboard/settings/team/${path}`, {
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     headers: { accept: "application/json", "content-type": "application/json" },
     method,
@@ -130,7 +130,7 @@ export function TeamSection({ initialTeam }: { initialTeam: MerchantTeam | null 
   const [isPending, startTransition] = useTransition();
 
   async function refresh() {
-    const response = await fetch("/admin/settings/team", { cache: "no-store" });
+    const response = await fetch("/dashboard/settings/team", { cache: "no-store" });
     const data = (await response.json().catch(() => null)) as MerchantTeam | null;
     if (!response.ok || !data?.ok) throw new Error("team_refresh_failed");
     setTeam(data);

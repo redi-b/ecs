@@ -197,7 +197,7 @@ export function BillingWorkspace({
   ) {
     startTransition(async () => {
       try {
-        const path = getTenantScopedPath("/admin/billing/actions", tenantId);
+        const path = getTenantScopedPath("/dashboard/billing/actions", tenantId);
         const response = await fetch(path, {
           method: "POST",
           headers: {

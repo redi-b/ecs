@@ -186,7 +186,7 @@ function PromotionCreateDialogInner() {
   useEffect(() => {
     if (!open) return;
     setCatalogLoading(true);
-    void fetch("/admin/products/actions/list?limit=100", {
+    void fetch("/dashboard/products/actions/list?limit=100", {
       headers: { accept: "application/json" },
     })
       .then(async (response) => {
@@ -333,7 +333,7 @@ function PromotionCreateDialogInner() {
 
   async function create() {
     setSaving(true);
-    const response = await fetch("/admin/promotions/actions", {
+    const response = await fetch("/dashboard/promotions/actions", {
       body: JSON.stringify({
         allocation:
           derived.targetType === "items" || form.offerKind === "buyget" ? form.allocation : null,

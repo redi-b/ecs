@@ -67,7 +67,7 @@ export async function withMerchantAction(
   const statusParam = result.redirectStatusParam ?? (result.ok ? "ok" : result.message);
   return redirectWithStatus(
     request,
-    result.redirectPath ?? "/admin",
+    result.redirectPath ?? "/dashboard",
     statusParam,
     result.redirectStatusKey,
   );

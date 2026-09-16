@@ -124,5 +124,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL("/admin/shops", publicOrigin), 303);
+  return NextResponse.redirect(new URL("/dashboard/shops", publicOrigin), 303);
 }

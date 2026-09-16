@@ -7,17 +7,17 @@ import { dashboardRoutes } from "./routes.js";
 
 describe("getDashboardBreadcrumbTrail", () => {
   it("exposes taxonomy route constants", () => {
-    assert.equal(dashboardRoutes.productCategories, "/admin/products/categories");
-    assert.equal(dashboardRoutes.productCategoriesNew, "/admin/products/categories/new");
+    assert.equal(dashboardRoutes.productCategories, "/dashboard/products/categories");
+    assert.equal(dashboardRoutes.productCategoriesNew, "/dashboard/products/categories/new");
     assert.equal(
       dashboardRoutes.productCategoryCreateAction,
-      "/admin/product-categories/actions/create",
+      "/dashboard/product-categories/actions/create",
     );
-    assert.equal(dashboardRoutes.productCollections, "/admin/products/collections");
-    assert.equal(dashboardRoutes.productCollectionsNew, "/admin/products/collections/new");
+    assert.equal(dashboardRoutes.productCollections, "/dashboard/products/collections");
+    assert.equal(dashboardRoutes.productCollectionsNew, "/dashboard/products/collections/new");
     assert.equal(
       dashboardRoutes.productCollectionCreateAction,
-      "/admin/product-collections/actions/create",
+      "/dashboard/product-collections/actions/create",
     );
   });
 
@@ -27,10 +27,10 @@ describe("getDashboardBreadcrumbTrail", () => {
     assert.deepEqual(
       productsRoute?.children?.map((route) => [route.title, route.href]),
       [
-        ["All products", "/admin/products"],
-        ["Categories", "/admin/products/categories"],
-        ["Collections", "/admin/products/collections"],
-        ["Product options", "/admin/products/options"],
+        ["All products", "/dashboard/products"],
+        ["Categories", "/dashboard/products/categories"],
+        ["Collections", "/dashboard/products/collections"],
+        ["Product options", "/dashboard/products/options"],
       ],
     );
   });
@@ -47,30 +47,30 @@ describe("getDashboardBreadcrumbTrail", () => {
         .filter((route) => route.id.startsWith("product-"))
         .map((route) => [route.id, route.href]),
       [
-        ["product-categories", "/admin/products/categories"],
-        ["product-collections", "/admin/products/collections"],
-        ["product-options", "/admin/products/options"],
+        ["product-categories", "/dashboard/products/categories"],
+        ["product-collections", "/dashboard/products/collections"],
+        ["product-options", "/dashboard/products/options"],
       ],
     );
   });
 
   it("does not reserve a standalone product creation breadcrumb", () => {
-    assert.notEqual(getDashboardBreadcrumbTrail("/admin/products/new").at(-1)?.id, "products-new");
+    assert.notEqual(getDashboardBreadcrumbTrail("/dashboard/products/new").at(-1)?.id, "products-new");
   });
 
   it("labels product category routes as nested products breadcrumbs", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/categories"), [
-      { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/categories", id: "product-categories", title: "Categories" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/products/categories"), [
+      { href: "/dashboard/products", id: "products", title: "Products" },
+      { href: "/dashboard/products/categories", id: "product-categories", title: "Categories" },
     ]);
   });
 
   it("labels product category creation as a nested taxonomy breadcrumb", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/categories/new"), [
-      { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/categories", id: "product-categories", title: "Categories" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/products/categories/new"), [
+      { href: "/dashboard/products", id: "products", title: "Products" },
+      { href: "/dashboard/products/categories", id: "product-categories", title: "Categories" },
       {
-        href: "/admin/products/categories/new",
+        href: "/dashboard/products/categories/new",
         id: "product-categories-new",
         title: "New category",
       },
@@ -78,10 +78,10 @@ describe("getDashboardBreadcrumbTrail", () => {
   });
 
   it("labels product collection routes as nested products breadcrumbs", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/collections"), [
-      { href: "/admin/products", id: "products", title: "Products" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/products/collections"), [
+      { href: "/dashboard/products", id: "products", title: "Products" },
       {
-        href: "/admin/products/collections",
+        href: "/dashboard/products/collections",
         id: "product-collections",
         title: "Collections",
       },
@@ -89,15 +89,15 @@ describe("getDashboardBreadcrumbTrail", () => {
   });
 
   it("labels product collection creation as a nested taxonomy breadcrumb", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/collections/new"), [
-      { href: "/admin/products", id: "products", title: "Products" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/products/collections/new"), [
+      { href: "/dashboard/products", id: "products", title: "Products" },
       {
-        href: "/admin/products/collections",
+        href: "/dashboard/products/collections",
         id: "product-collections",
         title: "Collections",
       },
       {
-        href: "/admin/products/collections/new",
+        href: "/dashboard/products/collections/new",
         id: "product-collections-new",
         title: "New collection",
       },
@@ -106,60 +106,60 @@ describe("getDashboardBreadcrumbTrail", () => {
 
   it("labels saved options as a nested products breadcrumb", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail(dashboardRoutes.productOptions), [
-      { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/options", id: "product-options", title: "Product options" },
+      { href: "/dashboard/products", id: "products", title: "Products" },
+      { href: "/dashboard/products/options", id: "product-options", title: "Product options" },
     ]);
   });
 
   it("labels product detail pages as product details", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/products/prod_1"), [
-      { href: "/admin/products", id: "products", title: "Products" },
-      { href: "/admin/products/prod_1", id: "product-details", title: "Product details" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/products/prod_1"), [
+      { href: "/dashboard/products", id: "products", title: "Products" },
+      { href: "/dashboard/products/prod_1", id: "product-details", title: "Product details" },
     ]);
   });
 
   it("labels product edit pages as a child of the product detail page", () => {
-    assert.equal(dashboardRoutes.productEdit("prod 1/2"), "/admin/products/prod%201%2F2/edit");
+    assert.equal(dashboardRoutes.productEdit("prod 1/2"), "/dashboard/products/prod%201%2F2/edit");
     assert.deepEqual(
-      getDashboardBreadcrumbTrail("/admin/products/prod_1/edit", {
+      getDashboardBreadcrumbTrail("/dashboard/products/prod_1/edit", {
         "product-details": "Coffee beans",
       }),
       [
-        { href: "/admin/products", id: "products", title: "Products" },
-        { href: "/admin/products/prod_1", id: "product-details", title: "Coffee beans" },
-        { href: "/admin/products/prod_1/edit", id: "product-edit", title: "Edit product" },
+        { href: "/dashboard/products", id: "products", title: "Products" },
+        { href: "/dashboard/products/prod_1", id: "product-details", title: "Coffee beans" },
+        { href: "/dashboard/products/prod_1/edit", id: "product-edit", title: "Edit product" },
       ],
     );
   });
 
   it("uses product detail label overrides when available", () => {
     assert.deepEqual(
-      getDashboardBreadcrumbTrail("/admin/products/prod_1", {
+      getDashboardBreadcrumbTrail("/dashboard/products/prod_1", {
         "product-details": "Coffee beans",
       }),
       [
-        { href: "/admin/products", id: "products", title: "Products" },
-        { href: "/admin/products/prod_1", id: "product-details", title: "Coffee beans" },
+        { href: "/dashboard/products", id: "products", title: "Products" },
+        { href: "/dashboard/products/prod_1", id: "product-details", title: "Coffee beans" },
       ],
     );
   });
 
   it("builds encoded order detail routes", () => {
-    assert.equal(dashboardRoutes.orderDetail("order 1/2"), "/admin/orders/order%201%2F2");
+    assert.equal(dashboardRoutes.orderDetail("order 1/2"), "/dashboard/orders/order%201%2F2");
   });
 
   it("labels order detail pages as a child of orders", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/orders/order_1"), [
-      { href: "/admin/orders", id: "orders", title: "Orders" },
-      { href: "/admin/orders/order_1", id: "order-details", title: "Order details" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/orders/order_1"), [
+      { href: "/dashboard/orders", id: "orders", title: "Orders" },
+      { href: "/dashboard/orders/order_1", id: "order-details", title: "Order details" },
     ]);
   });
 
   it("labels customer detail pages as a child of customers", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/customers/cus_1"), [
-      { href: "/admin/customers", id: "customers", title: "Customers" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/customers/cus_1"), [
+      { href: "/dashboard/customers", id: "customers", title: "Customers" },
       {
-        href: "/admin/customers/cus_1",
+        href: "/dashboard/customers/cus_1",
         id: "customer-details",
         title: "Customer details",
       },
@@ -168,13 +168,13 @@ describe("getDashboardBreadcrumbTrail", () => {
 
   it("uses customer detail label overrides when available", () => {
     assert.deepEqual(
-      getDashboardBreadcrumbTrail("/admin/customers/cus_1", {
+      getDashboardBreadcrumbTrail("/dashboard/customers/cus_1", {
         "customer-details": "Abebe Kebede",
       }),
       [
-        { href: "/admin/customers", id: "customers", title: "Customers" },
+        { href: "/dashboard/customers", id: "customers", title: "Customers" },
         {
-          href: "/admin/customers/cus_1",
+          href: "/dashboard/customers/cus_1",
           id: "customer-details",
           title: "Abebe Kebede",
         },
@@ -184,19 +184,19 @@ describe("getDashboardBreadcrumbTrail", () => {
 
   it("uses order detail label overrides when available", () => {
     assert.deepEqual(
-      getDashboardBreadcrumbTrail("/admin/orders/order_1", {
+      getDashboardBreadcrumbTrail("/dashboard/orders/order_1", {
         "order-details": "#1024",
       }),
       [
-        { href: "/admin/orders", id: "orders", title: "Orders" },
-        { href: "/admin/orders/order_1", id: "order-details", title: "#1024" },
+        { href: "/dashboard/orders", id: "orders", title: "Orders" },
+        { href: "/dashboard/orders/order_1", id: "order-details", title: "#1024" },
       ],
     );
   });
 
   it("keeps static app routes as single-page breadcrumbs", () => {
-    assert.deepEqual(getDashboardBreadcrumbTrail("/admin/orders"), [
-      { href: "/admin/orders", id: "orders", title: "Orders" },
+    assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/orders"), [
+      { href: "/dashboard/orders", id: "orders", title: "Orders" },
     ]);
   });
 });

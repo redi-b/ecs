@@ -32,7 +32,7 @@ export function ProductVariantsPanel({ product, range, tenantId, onClose }: {
     if (tenantId) query.set("tenantId", tenantId);
     setPending(true);
     setFailed(false);
-    fetch(`/admin/insights/actions/variants?${query}`, { signal: controller.signal })
+    fetch(`/dashboard/insights/actions/variants?${query}`, { signal: controller.signal })
       .then(async (response) => response.ok ? response.json() : Promise.reject(new Error("request_failed")))
       .then((value) => {
         const parsed = insightsProductsReportSchema.safeParse(value);

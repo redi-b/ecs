@@ -181,7 +181,7 @@ export function SettingsWorkspace({
     setHandleAvailability({ status: "checking" });
     const timeout = window.setTimeout(async () => {
       const response = await fetch(
-        `/admin/onboarding/handle?handle=${encodeURIComponent(normalizedHandle)}`,
+        `/onboarding/handle?handle=${encodeURIComponent(normalizedHandle)}`,
         { signal: controller.signal },
       ).catch(() => null);
 
@@ -320,7 +320,7 @@ export function SettingsWorkspace({
       if (body.redirectTo || handleChanged) {
         toast.success(t("settings.toast.addressUpdated"), { id: toastId });
         window.location.assign(
-          body.redirectTo ?? `${window.location.protocol}//${nextHost}/admin/settings`,
+          body.redirectTo ?? `${window.location.protocol}//${nextHost}/dashboard/settings`,
         );
         return;
       }

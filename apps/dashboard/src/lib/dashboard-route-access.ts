@@ -12,26 +12,26 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
     requirement: merchantPolicies.overview,
   },
   {
-    matches: (pathname) => /\/admin\/products\/(categories|collections)\/new$/.test(pathname),
+    matches: (pathname) => /\/dashboard\/products\/(categories|collections)\/new$/.test(pathname),
     requirement: { allOf: ["products.read", "products.create"] },
   },
   {
-    matches: (pathname) => /\/admin\/products\/[^/]+\/edit$/.test(pathname),
+    matches: (pathname) => /\/dashboard\/products\/[^/]+\/edit$/.test(pathname),
     requirement: { allOf: ["products.read", "products.update"] },
   },
   {
     matches: (pathname) =>
-      pathname === dashboardRoutes.products || pathname.startsWith("/admin/products/"),
+      pathname === dashboardRoutes.products || pathname.startsWith("/dashboard/products/"),
     requirement: merchantPolicies.products,
   },
   {
     matches: (pathname) =>
-      pathname === dashboardRoutes.orders || pathname.startsWith("/admin/orders/"),
+      pathname === dashboardRoutes.orders || pathname.startsWith("/dashboard/orders/"),
     requirement: merchantPolicies.orders,
   },
   {
     matches: (pathname) =>
-      pathname === dashboardRoutes.customers || pathname.startsWith("/admin/customers/"),
+      pathname === dashboardRoutes.customers || pathname.startsWith("/dashboard/customers/"),
     requirement: merchantPolicies.customers,
   },
   {
@@ -52,7 +52,7 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
   },
   {
     matches: (pathname) =>
-      pathname === dashboardRoutes.insights || pathname.startsWith("/admin/insights/"),
+      pathname === dashboardRoutes.insights || pathname.startsWith("/dashboard/insights/"),
     requirement: merchantPolicies.insights,
   },
   {

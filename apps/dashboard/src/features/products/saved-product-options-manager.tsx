@@ -61,7 +61,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
   const canCreate = usePermission("products.create");
   const canUpdate = usePermission("products.update");
   const canDelete = usePermission("products.delete");
-  const url = getTenantScopedPath("/admin/products/actions/option-sets", tenantId);
+  const url = getTenantScopedPath("/dashboard/products/actions/option-sets", tenantId);
   const [editing, setEditing] = useState<SavedOptionDraft | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const openEditor = useCallback((option: SavedOptionDraft) => {
@@ -81,8 +81,8 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
   const save = useMutation({
     mutationFn: async (option: SavedOptionDraft) => {
       const target = option.isNew
-        ? "/admin/products/actions/option-sets"
-        : `/admin/products/actions/option-sets/${encodeURIComponent(option.id)}`;
+        ? "/dashboard/products/actions/option-sets"
+        : `/dashboard/products/actions/option-sets/${encodeURIComponent(option.id)}`;
       const response = await fetch(getTenantScopedPath(target, tenantId), {
         body: JSON.stringify({ title: option.title, values: option.values }),
         headers: { accept: "application/json", "content-type": "application/json" },
@@ -109,7 +109,7 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
     mutationFn: async (option: SavedOption) => {
       const response = await fetch(
         getTenantScopedPath(
-          `/admin/products/actions/option-sets/${encodeURIComponent(option.id)}`,
+          `/dashboard/products/actions/option-sets/${encodeURIComponent(option.id)}`,
           tenantId,
         ),
         { headers: { accept: "application/json" }, method: "DELETE" },

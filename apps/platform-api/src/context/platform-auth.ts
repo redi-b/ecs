@@ -25,7 +25,7 @@ export function getPasswordResetActionUrl(input: {
   const generatedUrl = new URL(input.generatedUrl);
   const callbackUrl = generatedUrl.searchParams.get("callbackURL");
   const dashboardUrl = new URL(callbackUrl || input.dashboardPublicBaseUrl || generatedUrl.origin);
-  const actionUrl = new URL("/admin/reset-password/verify", dashboardUrl.origin);
+  const actionUrl = new URL("/reset-password/verify", dashboardUrl.origin);
   actionUrl.searchParams.set("token", input.token);
   return actionUrl.toString();
 }
@@ -36,23 +36,20 @@ export function getEmailVerificationActionUrl(input: {
   intent: "approve-email-change" | "verify-email";
   token: string;
 }) {
+  // Normal verification should stay on Better Auth's original one-click URL.
+  // Reconstructing the token through a dashboard form adds another proxy hop and
+  // makes delayed/resend emails much easier to invalidate before completion.
+  if (input.intent === "verify-email") {
+    return input.generatedUrl;
+  }
+
   const generatedUrl = new URL(input.generatedUrl);
   const callbackUrl = new URL(
     generatedUrl.searchParams.get("callbackURL") || "/",
     input.dashboardPublicBaseUrl || generatedUrl.origin,
   );
-  const nestedReturnTo =
-    input.intent === "verify-email" &&
-    callbackUrl.pathname === "/admin/verify-email/result" &&
-    callbackUrl.searchParams.get("intent") === "approve-email-change"
-      ? callbackUrl.searchParams.get("returnTo")
-      : null;
-  const returnTo =
-    (nestedReturnTo === "/admin" || nestedReturnTo?.startsWith("/admin/")) &&
-    !nestedReturnTo.startsWith("//")
-      ? nestedReturnTo
-      : `${callbackUrl.pathname}${callbackUrl.search}`;
-  const actionUrl = new URL("/admin/verify-email", callbackUrl.origin);
+  const returnTo = `${callbackUrl.pathname}${callbackUrl.search}`;
+  const actionUrl = new URL("/verify-email", callbackUrl.origin);
   actionUrl.searchParams.set("token", input.token);
   actionUrl.searchParams.set("intent", input.intent);
   actionUrl.searchParams.set("returnTo", returnTo);
@@ -176,14 +173,10 @@ export function createPlatformAuth(options: {
                 intent: "verify-email",
                 token,
               });
-              if (enqueueAccountEmail) {
-                await enqueueAccountEmail({
-                  idempotencySource: url,
-                  recipient: user.email,
-                  templateKey: "account.email_verification",
-                  variables: { action_url: actionUrl, recipient_name: user.name || "there" },
-                });
-              } else if (emailProvider) {
+              // Account verification is time-sensitive. Send it inline when a
+              // provider is available so signup doesn't claim an email was sent
+              // while it is still waiting behind the general delivery queue.
+              if (emailProvider) {
                 await emailProvider.send({
                   body: `Verify your email address to finish creating your ECS account:\n\n${actionUrl}`,
                   channel: "email",
@@ -192,6 +185,13 @@ export function createPlatformAuth(options: {
                   senderProfile: "accounts",
                   subject: "Verify your ECS email address",
                   tenantId: "platform",
+                });
+              } else if (enqueueAccountEmail) {
+                await enqueueAccountEmail({
+                  idempotencySource: url,
+                  recipient: user.email,
+                  templateKey: "account.email_verification",
+                  variables: { action_url: actionUrl, recipient_name: user.name || "there" },
                 });
               }
             },

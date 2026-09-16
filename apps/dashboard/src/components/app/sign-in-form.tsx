@@ -41,7 +41,7 @@ export function SignInForm({
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const response = await fetch("/admin/session", {
+    const response = await fetch("/session", {
       body: JSON.stringify({ email, next: nextPath, password }),
       headers: {
         accept: "application/json",
@@ -68,7 +68,7 @@ export function SignInForm({
 
   return (
     <form
-      action="/admin/session"
+      action="/session"
       className="flex flex-col gap-5"
       method="post"
       onSubmit={(event) => void onSubmit(event)}
@@ -96,7 +96,7 @@ export function SignInForm({
             <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
             <Link
               className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-              href="/admin/forgot-password"
+              href="/forgot-password"
             >
               {t("auth.recovery.forgotLink")}
             </Link>

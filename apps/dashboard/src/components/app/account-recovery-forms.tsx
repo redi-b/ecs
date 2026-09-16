@@ -33,7 +33,7 @@ export function ForgotPasswordForm() {
     if (pending) return;
     setPending(true);
     setError(null);
-    const response = await fetch("/admin/forgot-password/request", {
+    const response = await fetch("/forgot-password/request", {
       body: JSON.stringify({ email }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
         <p className="mt-4 break-all text-sm font-medium">{email}</p>
         <div className="mt-6 grid gap-2.5">
           <Button asChild className="w-full rounded-full" variant="outline">
-            <Link href="/admin/sign-in">{t("auth.recovery.backToSignIn")}</Link>
+            <Link href="/sign-in">{t("auth.recovery.backToSignIn")}</Link>
           </Button>
           <Button className="w-full rounded-full" onClick={() => setSent(false)} variant="ghost">
             {t("auth.recovery.useAnotherEmail")}
@@ -106,7 +106,7 @@ export function ForgotPasswordForm() {
         {pending ? t("auth.recovery.sending") : t("auth.recovery.sendLink")}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
-        <Link className="font-medium text-primary hover:underline" href="/admin/sign-in">
+        <Link className="font-medium text-primary hover:underline" href="/sign-in">
           {t("auth.recovery.backToSignIn")}
         </Link>
       </p>
@@ -127,7 +127,7 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
     if (pending) return;
     setPending(true);
     setError(null);
-    const response = await fetch("/admin/sign-up/check-email/request", {
+    const response = await fetch("/check-email/request", {
       body: JSON.stringify({ email }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -196,7 +196,7 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
     if (password !== confirm) return setError(t("auth.recovery.passwordMismatch"));
     setPending(true);
     setError(null);
-    const response = await fetch("/admin/reset-password/submit", {
+    const response = await fetch("/reset-password/submit", {
       body: JSON.stringify({ newPassword: password, token }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -211,7 +211,7 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
       );
       return;
     }
-    window.location.assign("/admin/sign-in?reset=1");
+    window.location.assign("/sign-in?reset=1");
   }
 
   if (unusable) {
@@ -222,7 +222,7 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
           {t("auth.recovery.invalidLinkDescription")}
         </p>
         <Button asChild className="mt-6 w-full rounded-full">
-          <Link href="/admin/forgot-password">{t("auth.recovery.requestNewLink")}</Link>
+          <Link href="/forgot-password">{t("auth.recovery.requestNewLink")}</Link>
         </Button>
       </div>
     );

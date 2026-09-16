@@ -29,12 +29,12 @@ describe("shop destination", () => {
       protocol: "https",
       state: state([shop("unfinished", "draft")]),
     });
-    assert.equal(getOnboardingExit(destination), "https://unfinished.lvh.me/admin");
-    assert.equal(getOnboardingExit({ kind: "picker", href: "/admin/shops" }), "/admin/shops");
+    assert.equal(getOnboardingExit(destination), "https://unfinished.lvh.me/dashboard");
+    assert.equal(getOnboardingExit({ kind: "picker", href: "/dashboard/shops" }), "/dashboard/shops");
   });
   it("sends accounts without an available shop to onboarding", () => {
     assert.deepEqual(resolveShopDestination({ protocol: "https", state: state([]) }), {
-      href: "/admin/onboarding",
+      href: "/onboarding",
       kind: "onboarding",
     });
     assert.equal(
@@ -46,7 +46,7 @@ describe("shop destination", () => {
 
   it("opens the only available shop directly", () => {
     assert.deepEqual(resolveShopDestination({ protocol: "https", state: state([shop("one")]) }), {
-      href: "https://one.lvh.me/admin",
+      href: "https://one.lvh.me/dashboard",
       kind: "shop",
       tenantId: "one",
     });
@@ -56,11 +56,11 @@ describe("shop destination", () => {
     const shops = state([shop("one"), shop("two")]);
     assert.equal(
       resolveShopDestination({ lastShopId: "two", protocol: "http", state: shops }).href,
-      "http://two.lvh.me/admin",
+      "http://two.lvh.me/dashboard",
     );
     assert.deepEqual(
       resolveShopDestination({ lastShopId: "missing", protocol: "http", state: shops }),
-      { href: "/admin/shops", kind: "picker" },
+      { href: "/dashboard/shops", kind: "picker" },
     );
   });
 });

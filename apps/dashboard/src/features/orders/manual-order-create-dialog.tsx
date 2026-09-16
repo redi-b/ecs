@@ -110,7 +110,7 @@ function ManualOrderCreateDialogInner() {
 
     try {
       const response = await fetch(
-        `/admin/products/actions/list?limit=${CATALOG_PAGE}&offset=${offset}`,
+        `/dashboard/products/actions/list?limit=${CATALOG_PAGE}&offset=${offset}`,
         { headers: { accept: "application/json" } },
       );
       const data = (await response.json().catch(() => ({}))) as {
@@ -218,7 +218,7 @@ function ManualOrderCreateDialogInner() {
     setCatalogOffset(0);
     void loadProductCatalog(0, false);
 
-    void fetch("/admin/customers/actions/list?limit=100", {
+    void fetch("/dashboard/customers/actions/list?limit=100", {
       headers: { accept: "application/json" },
     })
       .then(async (response) => {
@@ -667,7 +667,7 @@ function ManualOrderCreateDialogInner() {
         : null,
     };
 
-    const response = await fetch("/admin/orders/actions/create", {
+    const response = await fetch("/dashboard/orders/actions/create", {
       body: JSON.stringify(payload),
       headers: {
         accept: "application/json",

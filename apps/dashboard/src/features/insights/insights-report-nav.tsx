@@ -7,12 +7,12 @@ import { getDemoInsightsHref } from "@/features/demo/dashboard-demo-routes";
 import { useI18n } from "@/i18n/provider";
 
 const reports = [
-  ["overview", "/admin/insights"],
-  ["sales", "/admin/insights/sales"],
-  ["products", "/admin/insights/products"],
-  ["journey", "/admin/insights/journey"],
-  ["traffic", "/admin/insights/traffic"],
-  ["storefront", "/admin/insights/storefront"],
+  ["overview", "/dashboard/insights"],
+  ["sales", "/dashboard/insights/sales"],
+  ["products", "/dashboard/insights/products"],
+  ["journey", "/dashboard/insights/journey"],
+  ["traffic", "/dashboard/insights/traffic"],
+  ["storefront", "/dashboard/insights/storefront"],
 ] as const;
 
 export function InsightsReportNav({ demoMode = false }: { demoMode?: boolean }) {
@@ -32,10 +32,10 @@ export function InsightsReportNav({ demoMode = false }: { demoMode?: boolean }) 
       return (
         pathname === resolvedPath ||
         (demoMode && id === "sales" && pathname === "/demo/insights") ||
-        (!demoMode && id === "sales" && pathname === "/admin/insights") ||
+        (!demoMode && id === "sales" && pathname === "/dashboard/insights") ||
         (!demoMode &&
           id === "storefront" &&
-          ["/admin/insights/journey", "/admin/insights/traffic"].includes(pathname))
+          ["/dashboard/insights/journey", "/dashboard/insights/traffic"].includes(pathname))
       );
     })?.[0] ?? "sales";
   const [optimistic, setOptimistic] = useOptimistic(current);

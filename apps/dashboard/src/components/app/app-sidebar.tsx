@@ -310,7 +310,7 @@ export function AppSidebar({
           actor={access.actor}
           currentTenantId={access.tenant.id}
           demoMode={demoMode}
-          {...(centralDashboardUrl ? { shopPickerUrl: `${centralDashboardUrl}/admin/shops` } : {})}
+          {...(centralDashboardUrl ? { shopPickerUrl: `${centralDashboardUrl}/dashboard/shops` } : {})}
         />
       </SidebarFooter>
       <SidebarRail />

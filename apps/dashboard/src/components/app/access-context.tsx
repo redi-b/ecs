@@ -48,7 +48,7 @@ export function AccessProvider({
       if (!force && now - lastCheckedAt.current < 5_000) return;
       lastCheckedAt.current = now;
 
-      const response = await fetch("/admin/access-state", {
+      const response = await fetch("/dashboard/access-state", {
         cache: "no-store",
         credentials: "same-origin",
         headers: { accept: "application/json" },

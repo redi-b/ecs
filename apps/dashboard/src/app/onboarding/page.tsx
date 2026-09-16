@@ -1,0 +1,136 @@
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { AuthShell } from "@/components/onboarding/auth-shell";
+import { OnboardingSignOutButton } from "@/components/onboarding/onboarding-sign-out-button";
+import { ShopOnboardingForm } from "@/components/onboarding/signup-onboarding-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getTranslations } from "@/i18n/server";
+import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
+import { isPlatformOperatorSession } from "@/lib/platform-operator-session";
+import { getOnboardingExit, resolveShopDestination } from "@/lib/shop-selection";
+import { getStorefrontTemplates } from "@/lib/storefront-templates";
+
+type OnboardingPageProps = {
+  searchParams?: Promise<{
+    businessCategory?: string;
+    contactPhone?: string;
+    error?: string;
+    handle?: string;
+    shopName?: string;
+  }>;
+};
+
+export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
+  const t = await getTranslations();
+  const requestHeaders = await headers();
+  const isCentralAccess = isCentralDashboardHost(
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+  );
+
+  if (!isCentralAccess) {
+    redirect("/sign-in");
+  }
+
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+
+  if (!cookieHeader) {
+    redirect("/sign-in?next=%2Fadmin%2Fonboarding");
+  }
+
+  if (
+    await isPlatformOperatorSession({
+      cookieHeader,
+      platformApiBaseUrl,
+    })
+  ) {
+    redirect(process.env.SUPERADMIN_PUBLIC_BASE_URL ?? "http://ops.lvh.me");
+  }
+
+  const [templatesResult, onboardingResult] = await Promise.all([
+    getStorefrontTemplates({
+      platformApiBaseUrl,
+    }),
+    getPlatformOnboardingState({
+      cookieHeader,
+      platformApiBaseUrl,
+    }),
+  ]);
+
+  if (!onboardingResult.ok && onboardingResult.status === 401) {
+    redirect("/sign-in?next=%2Fadmin%2Fonboarding");
+  }
+
+  if (onboardingResult.ok && onboardingResult.state.tenants.length > 0) {
+    const destination = resolveShopDestination({
+      lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,
+      protocol: requestHeaders.get("x-forwarded-proto") ?? "http",
+      state: onboardingResult.state,
+    });
+    // Provisioning/inactive tenants are not destinations. Stay here instead of
+    // redirecting this page back to itself while setup is incomplete.
+    const exit = getOnboardingExit(destination);
+    if (exit) redirect(exit);
+  }
+
+  const templates = templatesResult.ok ? templatesResult.templates : [];
+  const errorMessages: Record<string, string> = {
+    auth_required: t("onboarding.error.authRequired"),
+    handle_taken: t("onboarding.error.handleTaken"),
+    invalid_shop_setup: t("onboarding.error.invalidSetup"),
+    invalid_tenant_creation_response: t("onboarding.error.invalidResponse"),
+    missing_handle: t("onboarding.error.required"),
+    missing_name: t("onboarding.error.required"),
+    missing_required_fields: t("onboarding.error.required"),
+    platform_request_failed: t("onboarding.error.platformUnavailable"),
+    storefront_template_unavailable: t("onboarding.error.storefrontUnavailable"),
+    template_unavailable: t("onboarding.error.templateUnavailable"),
+    tenant_handle_taken: t("onboarding.error.handleTaken"),
+    tenant_provisioning_failed: t("onboarding.error.provisioningFailed"),
+    tenant_provisioning_unavailable: t("onboarding.error.provisioningUnavailable"),
+    shop_owner_limit_reached: t("onboarding.error.ownerLimit"),
+    commerce_backend_unavailable: t("onboarding.error.provisioningFailed"),
+    commerce_credentials_missing: t("onboarding.error.commerceCredentials"),
+    commerce_credentials_invalid: t("onboarding.error.commerceCredentials"),
+  };
+  const errorMessage = resolvedSearchParams.error
+    ? (errorMessages[resolvedSearchParams.error] ?? t("onboarding.error.failed"))
+    : null;
+
+  return (
+    <AuthShell
+      brandDescription={t("onboarding.description")}
+      brandTitle={t("onboarding.title")}
+      layout="setup"
+      toolbar={<OnboardingSignOutButton />}
+    >
+      {!templatesResult.ok ? (
+        <Alert className="mb-6" variant="destructive">
+          <AlertTitle>{t("onboarding.templatesUnavailable")}</AlertTitle>
+          <AlertDescription>
+            {mapPlatformErrorMessage(templatesResult.message, {
+              fallback: t("onboarding.templatesUnavailable"),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <ShopOnboardingForm
+        defaultValues={{
+          businessCategory: resolvedSearchParams.businessCategory,
+          contactPhone: resolvedSearchParams.contactPhone,
+          handle: resolvedSearchParams.handle,
+          shopName: resolvedSearchParams.shopName,
+        }}
+        errorMessage={errorMessage}
+        storefrontBaseDomain={process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me"}
+        templates={templates}
+      />
+    </AuthShell>
+  );
+}

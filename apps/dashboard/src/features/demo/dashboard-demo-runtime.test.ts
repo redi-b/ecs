@@ -44,7 +44,7 @@ describe("dashboard demo runtime boundaries", () => {
     const source = await readFile(new URL("app/demo/not-found.tsx", root), "utf8");
     assert.match(source, /actionHref="\/demo"/);
     assert.match(source, /code="404"/);
-    assert.doesNotMatch(source, /actionHref="\/admin"/);
+    assert.doesNotMatch(source, /actionHref="\/dashboard"/);
   });
 
   it("uses Next Script for the pre-paint theme bootstrap", async () => {

@@ -135,7 +135,7 @@ type OperatorCtx = {
   shippingOptionId: string | null;
   tenantName: string;
   tenantHandle: string | null;
-  /** Full admin base URL `…/admin` or null */
+  /** Full dashboard base URL `…/dashboard` or null */
   adminBase: string | null;
 };
 

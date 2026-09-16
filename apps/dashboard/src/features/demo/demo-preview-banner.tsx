@@ -18,7 +18,7 @@ export function DemoPreviewBanner() {
           {t("overview.demo.scopeNotice")}
         </p>
         <Button asChild className="w-fit shrink-0" size="sm" variant="outline">
-          <Link data-demo-exit="true" href="/admin/sign-up">
+          <Link data-demo-exit="true" href="/sign-up">
             {t("overview.demo.createShop")}
           </Link>
         </Button>

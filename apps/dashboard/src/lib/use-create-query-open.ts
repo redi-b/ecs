@@ -47,7 +47,7 @@ export function useCreateQueryOpen(options: {
     return () => window.removeEventListener(OPEN_CREATE_EVENT, onEvent);
   }, [valuesKey]);
 
-  // Cross-page deep link: /admin/products?create=product
+  // Cross-page deep link: /dashboard/products?create=product
   useEffect(() => {
     const accepted = new Set(
       valuesKey

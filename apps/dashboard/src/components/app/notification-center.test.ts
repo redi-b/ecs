@@ -24,7 +24,7 @@ describe("parseInboxDetails", () => {
       eventType: "order.cancelled",
       title: "Order cancelled 10",
       body: "Order cancelled 10\nTotal: 10880.000000000000\nCustomer: Sara",
-      href: "/admin/orders",
+      href: "/dashboard/orders",
       readAt: null,
       createdAt: new Date().toISOString(),
     });
@@ -48,7 +48,7 @@ describe("parseInboxDetails", () => {
         "Customer: Mahi Kebede",
         "Open the order in the dashboard for full details.",
       ].join("\n"),
-      href: "/admin/orders/13",
+      href: "/dashboard/orders/13",
       readAt: null,
       createdAt: new Date().toISOString(),
     });

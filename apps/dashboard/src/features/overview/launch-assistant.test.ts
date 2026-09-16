@@ -59,7 +59,7 @@ test("points a configured storefront directly to the editor", () => {
   ).find((item) => item.id === "design");
 
   assert.equal(design?.ready, true);
-  assert.equal(design?.href, "/admin/editor");
+  assert.equal(design?.href, "/dashboard/editor");
 });
 
 test("does not complete storefront review from template selection alone", () => {

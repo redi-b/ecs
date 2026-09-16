@@ -14,8 +14,8 @@ export function getLastShopId(cookieHeader?: string | null) {
 }
 
 export type ShopDestination =
-  | { kind: "onboarding"; href: "/admin/onboarding" }
-  | { kind: "picker"; href: "/admin/shops" }
+  | { kind: "onboarding"; href: "/onboarding" }
+  | { kind: "picker"; href: "/dashboard/shops" }
   | { kind: "shop"; href: string; tenantId: string };
 
 /** Onboarding is terminal only when no existing shop can be opened. */
@@ -25,7 +25,7 @@ export function getOnboardingExit(destination: ShopDestination): string | null {
 
 export function getShopDashboardUrl(hostname: string, protocol: string) {
   const normalizedProtocol = protocol.replace(":", "") === "https" ? "https" : "http";
-  return `${normalizedProtocol}://${hostname}/admin`;
+  return `${normalizedProtocol}://${hostname}/dashboard`;
 }
 
 export function resolveShopDestination(input: {
@@ -34,7 +34,7 @@ export function resolveShopDestination(input: {
   state: PlatformOnboardingState;
 }): ShopDestination {
   const available = input.state.tenants.filter(isAvailableShop);
-  if (available.length === 0) return { kind: "onboarding", href: "/admin/onboarding" };
+  if (available.length === 0) return { kind: "onboarding", href: "/onboarding" };
 
   const remembered = input.lastShopId
     ? available.find((tenant) => tenant.id === input.lastShopId)
@@ -42,7 +42,7 @@ export function resolveShopDestination(input: {
   if (remembered) return toShopDestination(remembered, input.protocol);
   const [onlyShop] = available;
   if (onlyShop && available.length === 1) return toShopDestination(onlyShop, input.protocol);
-  return { kind: "picker", href: "/admin/shops" };
+  return { kind: "picker", href: "/dashboard/shops" };
 }
 
 export function isAvailableShop(

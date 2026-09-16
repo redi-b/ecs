@@ -15,20 +15,20 @@ export function resolveDashboardAdminBase(input: {
       host.startsWith("127.") ||
       host.endsWith(".local");
     const scheme = local ? "http" : "https";
-    return `${scheme}://${host}/admin`;
+    return `${scheme}://${host}/dashboard`;
   }
   const base = input.fallbackBaseUrl?.trim();
   if (!base) return null;
   try {
     const url = new URL(base);
-    // Ensure path ends at host root then /admin
-    return `${url.origin}/admin`;
+    // Ensure path ends at host root then /dashboard
+    return `${url.origin}/dashboard`;
   } catch {
     return null;
   }
 }
 
-/** base is `…/admin`. subpath like `/settings?tab=telegram` or `orders`. */
+/** base is `…/dashboard`. subpath like `/settings?tab=telegram` or `orders`. */
 export function adminUrl(base: string | null, subpath = ""): string | null {
   if (!base) return null;
   const root = base.replace(/\/$/, "");

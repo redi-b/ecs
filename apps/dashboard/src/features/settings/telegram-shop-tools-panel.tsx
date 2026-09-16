@@ -81,7 +81,7 @@ export function TelegramShopToolsPanel({
       setLoadError(null);
       return;
     }
-    const response = await fetch(`/admin/settings/notifications/telegram/operators?${qs}`, {
+    const response = await fetch(`/dashboard/settings/notifications/telegram/operators?${qs}`, {
       headers: { accept: "application/json" },
       cache: "no-store",
     });
@@ -107,7 +107,7 @@ export function TelegramShopToolsPanel({
     const id = window.setInterval(() => {
       void (async () => {
         const response = await fetch(
-          `/admin/settings/notifications/telegram/operators?${qs}&sessionId=${encodeURIComponent(linkSession.id)}`,
+          `/dashboard/settings/notifications/telegram/operators?${qs}&sessionId=${encodeURIComponent(linkSession.id)}`,
           { headers: { accept: "application/json" }, cache: "no-store" },
         );
         const data = await response.json().catch(() => undefined);
@@ -132,7 +132,7 @@ export function TelegramShopToolsPanel({
   }, [linkSession, loadBindings, qs, t]);
 
   function postAction(body: Record<string, unknown>) {
-    return fetch(`/admin/settings/notifications/telegram/operators?${qs}`, {
+    return fetch(`/dashboard/settings/notifications/telegram/operators?${qs}`, {
       method: "POST",
       headers: {
         accept: "application/json",

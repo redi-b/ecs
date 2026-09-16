@@ -34,7 +34,7 @@ export function useProductHandleAvailability({
     setSuggestedHandle(null);
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      const endpoint = new URL("/admin/products/actions/handle", window.location.origin);
+      const endpoint = new URL("/dashboard/products/actions/handle", window.location.origin);
       endpoint.searchParams.set("handle", normalized);
       if (productId) endpoint.searchParams.set("excludeId", productId);
       const tenantId = new URL(action, window.location.origin).searchParams.get("tenantId");

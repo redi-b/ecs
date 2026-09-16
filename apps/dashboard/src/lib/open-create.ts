@@ -18,7 +18,7 @@ export function requestOpenCreate(value: string) {
   );
 }
 
-/** Parse create deep-link from an action href like /admin/products?create=product */
+/** Parse create deep-link from an action href like /dashboard/products?create=product */
 export function parseCreateFromHref(href: string): {
   pathname: string;
   create: string | null;

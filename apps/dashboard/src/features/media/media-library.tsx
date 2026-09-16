@@ -221,7 +221,7 @@ export function MediaLibrary({
       let deleted = 0;
       let failed = 0;
       for (const asset of targets) {
-        const response = await fetch(`/admin/media/assets/${encodeURIComponent(asset.id)}`, {
+        const response = await fetch(`/dashboard/media/assets/${encodeURIComponent(asset.id)}`, {
           method: "DELETE",
         });
         if (response.ok) deleted += 1;

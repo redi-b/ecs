@@ -44,5 +44,5 @@ export async function getAuthenticatedDashboardRedirect(options: {
     requestHost: options.requestHost,
   });
 
-  return access.ok ? "/admin" : null;
+  return access.ok ? "/dashboard" : null;
 }

@@ -92,7 +92,7 @@ export function MediaUploadField({
       },
     }).use(AwsS3, {
       async getUploadParameters(file) {
-        const createResponse = await fetch("/admin/media/uploads", {
+        const createResponse = await fetch("/dashboard/media/uploads", {
           body: JSON.stringify({
             byteSize: file.size,
             filename: file.name,
@@ -173,7 +173,7 @@ export function MediaUploadField({
     try {
       const dimensions = await getImageDimensions(sourceFile);
       const completeResponse = await fetch(
-        `/admin/media/uploads/${encodeURIComponent(assetId)}/complete`,
+        `/dashboard/media/uploads/${encodeURIComponent(assetId)}/complete`,
         {
           body: JSON.stringify({
             altText: filenameToAltText(sourceFile.name),

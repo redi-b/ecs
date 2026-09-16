@@ -268,7 +268,7 @@ export function PromotionsManager({
     let deleted = 0;
     let lastFailureMessage: string | null = null;
     for (const item of targets) {
-      const response = await fetch(`/admin/promotions/actions/${encodeURIComponent(item.id)}`, {
+      const response = await fetch(`/dashboard/promotions/actions/${encodeURIComponent(item.id)}`, {
         method: "DELETE",
       }).catch(() => null);
       if (response?.ok) {
