@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getProductWriteBody } from "./write.js";
+import { getProductOptionBatchBody, getProductWriteBody } from "./write.js";
 
 test("sanitizes rich product descriptions at the Medusa write boundary", () => {
   const body = getProductWriteBody({
@@ -69,16 +69,41 @@ test("writes native option labels and namespaced presentation additional data", 
 });
 
 test("an option-only product update never synthesizes or rewrites variants", () => {
-  const body = getProductWriteBody({
+  const input = {
     productId: "prod_1",
     salesChannelId: "sc_1",
     priceAmount: 100,
     currencyCode: "etb",
-    options: [{ title: "Color", values: [{ label: "Black" }] }],
-  });
+    options: [
+      {
+        id: "opt_color",
+        title: "Color",
+        values: [
+          { id: "optval_black", label: "Black" },
+          { label: "Natural" },
+        ],
+      },
+    ],
+  };
+  const body = getProductWriteBody(input);
+  const optionBatch = getProductOptionBatchBody(
+    {
+      options: [
+        {
+          id: "opt_color",
+          title: "Color",
+          values: [{ id: "optval_black", value: "Black" }],
+        },
+      ],
+    },
+    input.options,
+  );
 
-  assert.deepEqual(body.options, [{ title: "Color", values: ["Black"] }]);
+  assert.equal(body.options, undefined);
   assert.equal(body.variants, undefined);
+  assert.deepEqual(optionBatch, {
+    update: [{ product_option_id: "opt_color", add: ["Natural"] }],
+  });
 });
 
 test("preserves existing variant IDs in product updates", () => {

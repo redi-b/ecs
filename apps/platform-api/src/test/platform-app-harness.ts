@@ -171,6 +171,7 @@ export function appWithResolution(
       priceAmount?: number | undefined;
       regionId?: string | null | undefined;
       salesChannelId: string;
+      tenantId?: string;
       status?: string | null | undefined;
       thumbnail?: string | null | undefined;
       title: string;
@@ -464,6 +465,7 @@ export function appWithResolution(
       productId: string;
       regionId?: string | null | undefined;
       salesChannelId: string;
+      tenantId?: string;
       status?: string | null | undefined;
       thumbnail?: string | null | undefined;
       title?: string | null | undefined;

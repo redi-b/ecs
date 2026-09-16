@@ -6,6 +6,7 @@ import type {
 } from "../../../types/index.js";
 import { PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY } from "@ecs/contracts";
 import { getBoolean, getNumber, getString, isRecord } from "./values.js";
+import { getPublicProductHandle } from "./handles.js";
 
 export function normalizeProduct(value: unknown): MerchantProduct[] {
   if (!isRecord(value)) {
@@ -28,7 +29,10 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
       collectionId: getString(value.collection_id),
       description: getString(value.description),
       title: getString(value.title),
-      handle: getString(value.handle),
+      handle: getPublicProductHandle({
+        handle: getString(value.handle),
+        metadata: value.metadata,
+      }),
       status: getString(value.status),
       thumbnail: getString(value.thumbnail),
       ...(images.length === 0 ? {} : { images }),

@@ -318,7 +318,8 @@ describe("createMedusaProductService", () => {
     const service = createMedusaProductService({
       adminApiToken: "medusa_token",
       medusaInternalUrl: "http://medusa:9000",
-      fetcher: async () => Response.json({ message: "Handle already exists" }, { status: 409 }),
+      fetcher: async () =>
+        Response.json({ message: "Product with handle: coffee, already exists." }, { status: 400 }),
     });
 
     const result = await service.createMerchantProduct({
@@ -639,7 +640,7 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
     assert.equal(
       forwardedRequest.url,
-      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cmetadata%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -986,13 +987,19 @@ describe("createMedusaProductService", () => {
     });
 
     assert.equal(result.ok, true);
-    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests.length, 3);
+    assert.equal(
+      forwardedRequests[1]?.url,
+      "http://medusa:9000/admin/products/prod_1/options/batch",
+    );
     assert.deepEqual(await forwardedRequests[1]?.json(), {
+      add: [{ title: "Size", values: ["250g"] }],
+    });
+    assert.deepEqual(await forwardedRequests[2]?.json(), {
       metadata: {
         ecs_import_execution_id: "execution_1",
         ecs_import_product_key: "update:prod_1",
       },
-      options: [{ title: "Size", values: ["250g"] }],
       variants: [
         {
           id: "variant_1",
