@@ -3,10 +3,11 @@ import type { ReactNode } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
+import { VerificationSubmitButton } from "@/components/app/verification-submit-button";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import { Button } from "@/components/ui/button";
 import { getTranslations } from "@/i18n/server";
-import { getSafeAccountReturnPath } from "@/lib/platform-auth-account";
+import { getSafeVerificationReturnPath } from "@/lib/platform-auth-account";
 
 type VerificationIntent = "approve-email-change" | "verify-email";
 
@@ -25,7 +26,7 @@ export default async function VerifyEmailPage({
   const token = params?.token?.trim();
   const intent: VerificationIntent =
     params?.intent === "approve-email-change" ? "approve-email-change" : "verify-email";
-  const returnTo = getSafeAccountReturnPath(params?.returnTo);
+  const returnTo = getSafeVerificationReturnPath(params?.returnTo);
   const exitPath = getVerificationExitPath(returnTo);
 
   if (!token) {
@@ -54,11 +55,13 @@ export default async function VerifyEmailPage({
             <input name="intent" type="hidden" value={intent} />
             <input name="returnTo" type="hidden" value={returnTo} />
             <input name="token" type="hidden" value={token} />
-            <Button className="h-11 w-full rounded-full" type="submit">
-              {approvingChange
+            <VerificationSubmitButton
+              label={
+                approvingChange
                 ? t("auth.verificationFlow.approveAction")
-                : t("auth.verificationFlow.verifyAction")}
-            </Button>
+                : t("auth.verificationFlow.verifyAction")
+              }
+            />
             <Button asChild className="h-11 w-full rounded-full" variant="outline">
               <Link href={exitPath}>{t("auth.verificationFlow.notNow")}</Link>
             </Button>

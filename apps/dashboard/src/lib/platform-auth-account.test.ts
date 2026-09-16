@@ -5,6 +5,7 @@ import {
   changeAccountEmail,
   getAccountIdentity,
   getSafeAccountReturnPath,
+  getSafeVerificationReturnPath,
   preflightAccountPasswordReset,
   requestAccountPasswordReset,
   resetAccountPassword,
@@ -116,6 +117,18 @@ test("account return paths remain local to dashboard routes", () => {
   assert.equal(getSafeAccountReturnPath("https://evil.example/path"), "/sign-in");
   assert.equal(getSafeAccountReturnPath("//evil.example/path"), "/sign-in");
   assert.equal(getSafeAccountReturnPath("/storefront"), "/sign-in");
+});
+
+test("verification return paths preserve safe public auth destinations", () => {
+  assert.equal(
+    getSafeVerificationReturnPath("/sign-in?verified=1"),
+    "/sign-in?verified=1",
+  );
+  assert.equal(
+    getSafeVerificationReturnPath("/accept-invitation?invitationId=invite_1"),
+    "/accept-invitation?invitationId=invite_1",
+  );
+  assert.equal(getSafeVerificationReturnPath("https://evil.example/path"), "/sign-in");
 });
 
 test("email verification delegates mutation to Better Auth and returns session cookies", async () => {
