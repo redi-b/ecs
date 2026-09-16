@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getProductOptionBatchBody, getProductWriteBody } from "./write.js";
+import {
+  getProductOptionBatchBody,
+  getProductWriteBody,
+  splitProductOptionBatchBody,
+} from "./write.js";
 
 test("sanitizes rich product descriptions at the Medusa write boundary", () => {
   const body = getProductWriteBody({
@@ -104,6 +108,32 @@ test("an option-only product update never synthesizes or rewrites variants", () 
   assert.deepEqual(optionBatch, {
     update: [{ product_option_id: "opt_color", add: ["Natural"] }],
   });
+});
+
+test("option changes are ordered around the variant update", () => {
+  assert.deepEqual(
+    splitProductOptionBatchBody({
+      add: [{ title: "Material", values: ["Cotton"] }],
+      remove: ["opt_old"],
+      update: [
+        {
+          product_option_id: "opt_color",
+          add: ["Natural"],
+          remove: ["optval_black"],
+        },
+      ],
+    }),
+    {
+      beforeProductUpdate: {
+        add: [{ title: "Material", values: ["Cotton"] }],
+        update: [{ product_option_id: "opt_color", add: ["Natural"] }],
+      },
+      afterProductUpdate: {
+        remove: ["opt_old"],
+        update: [{ product_option_id: "opt_color", remove: ["optval_black"] }],
+      },
+    },
+  );
 });
 
 test("preserves existing variant IDs in product updates", () => {

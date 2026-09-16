@@ -75,6 +75,7 @@ import {
   parseProductCategoryWriteResponse,
   parseProductCollectionWriteResponse,
   parseProductWriteResponse,
+  splitProductOptionBatchBody,
 } from "./write.js";
 
 export function createMedusaProductService(options: {
@@ -979,13 +980,15 @@ export function createMedusaProductService(options: {
         };
       }
 
-      const optionBatch = getProductOptionBatchBody(retrieveData?.product, input.options);
-      if (optionBatch) {
+      const optionBatch = splitProductOptionBatchBody(
+        getProductOptionBatchBody(retrieveData?.product, input.options),
+      );
+      if (optionBatch.beforeProductUpdate) {
         const optionResponse = await requestMedusa(
           fetcher,
           getProductOptionsBatchUrl(options.medusaInternalUrl, input.productId),
           {
-            body: JSON.stringify(optionBatch),
+            body: JSON.stringify(optionBatch.beforeProductUpdate),
             headers: getAdminHeaders(options.adminApiToken),
             method: "POST",
           },
@@ -1006,7 +1009,26 @@ export function createMedusaProductService(options: {
       );
       const result = await parseProductWriteResponse(updateResponse);
 
-      if (!result.ok || !input.stockLocationId?.trim() || !input.variants?.length) {
+      if (!result.ok) {
+        return result;
+      }
+
+      if (optionBatch.afterProductUpdate) {
+        const optionResponse = await requestMedusa(
+          fetcher,
+          getProductOptionsBatchUrl(options.medusaInternalUrl, input.productId),
+          {
+            body: JSON.stringify(optionBatch.afterProductUpdate),
+            headers: getAdminHeaders(options.adminApiToken),
+            method: "POST",
+          },
+        );
+        if (!optionResponse.ok) {
+          return await getWriteError(optionResponse);
+        }
+      }
+
+      if (!input.stockLocationId?.trim() || !input.variants?.length) {
         return result;
       }
 
