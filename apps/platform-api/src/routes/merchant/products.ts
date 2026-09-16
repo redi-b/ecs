@@ -105,6 +105,7 @@ export function registerMerchantProductRoutes(
         : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      tenantId: result.context.tenantId,
     });
 
     if (!product.ok) {
@@ -687,6 +688,7 @@ export function registerMerchantProductRoutes(
         : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      tenantId: result.context.tenantId,
     });
 
     if (!product.ok) {

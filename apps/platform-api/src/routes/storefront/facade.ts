@@ -3,6 +3,10 @@ import { z } from "zod";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
+  getPublicProductHandle,
+  getTenantProductHandle,
+} from "../../adapters/medusa/product/handles.js";
+import {
   getForwardHeaders,
   getForwardUrl,
   getRequestHost,
@@ -17,6 +21,7 @@ type StoreForwardRequestResult =
   | {
       ok: true;
       request: Request;
+      legacyHandleRequest?: Request;
     }
   | {
       ok: false;
@@ -234,10 +239,22 @@ async function getTenantScopedStoreForwardRequest(options: {
   medusaPublishableKeyId: string;
   medusaRegionId: string | null;
   request: Request;
+  tenantId: string;
 }): Promise<StoreForwardRequestResult> {
   const method = options.request.method;
   const path = getStorePath(options.request);
   const medusaUrl = getForwardUrl(options.request, options.medusaInternalUrl);
+  let legacyHandleUrl: URL | null = null;
+  if (method === "GET" && path === "/store/products") {
+    const publicHandle = medusaUrl.searchParams.get("handle")?.trim();
+    if (publicHandle) {
+      legacyHandleUrl = new URL(medusaUrl);
+      medusaUrl.searchParams.set(
+        "handle",
+        getTenantProductHandle(options.tenantId, publicHandle),
+      );
+    }
+  }
   const headers = getForwardHeaders(options.request, options.medusaPublishableKeyId);
   let body: BodyInit | null | undefined =
     method === "GET" || method === "HEAD" ? undefined : options.request.body;
@@ -291,9 +308,11 @@ async function getTenantScopedStoreForwardRequest(options: {
     (init as RequestInit & { duplex?: string }).duplex = "half";
   }
 
+  const request = new Request(medusaUrl, init);
   return {
     ok: true,
-    request: new Request(medusaUrl, init),
+    request,
+    ...(legacyHandleUrl ? { legacyHandleRequest: new Request(legacyHandleUrl, init) } : {}),
   };
 }
 
@@ -520,6 +539,7 @@ export function registerStoreFacadeRoutes(
       medusaPublishableKeyId: result.context.medusaPublishableKeyId,
       medusaRegionId: result.context.medusaRegionId,
       request: context.req.raw,
+      tenantId: result.context.tenantId,
     });
 
     if (!forwardRequest.ok) {
@@ -527,12 +547,27 @@ export function registerStoreFacadeRoutes(
     }
 
     try {
-      const medusaResponse = await medusaStoreFetch(forwardRequest.request);
+      let medusaResponse = await medusaStoreFetch(forwardRequest.request);
       // Buffer the body so Node's server does not drop streamed undici responses mid-write
       // (seen as content-length mismatches / "Internal Server Error" for store GETs).
-      const responseBody = await medusaResponse.arrayBuffer();
+      let responseBody = await medusaResponse.arrayBuffer();
       const path = getStorePath(context.req.raw);
       const method = context.req.raw.method;
+
+      if (
+        medusaResponse.ok &&
+        method === "GET" &&
+        path === "/store/products" &&
+        forwardRequest.legacyHandleRequest &&
+        hasNoStoreProducts(responseBody)
+      ) {
+        medusaResponse = await medusaStoreFetch(forwardRequest.legacyHandleRequest);
+        responseBody = await medusaResponse.arrayBuffer();
+      }
+
+      if (medusaResponse.ok && method === "GET" && path.startsWith("/store/products")) {
+        responseBody = rewriteStoreProductHandles(responseBody, result.context.tenantId);
+      }
 
       // Medusa Store API returns global collections/categories. Scope to this tenant via metadata.
       if (
@@ -567,6 +602,32 @@ export function registerStoreFacadeRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
   });
+}
+
+function hasNoStoreProducts(body: ArrayBuffer) {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(body)) as { products?: unknown };
+    return Array.isArray(parsed.products) && parsed.products.length === 0;
+  } catch {
+    return false;
+  }
+}
+
+function rewriteStoreProductHandles(body: ArrayBuffer, tenantId: string) {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(body)) as Record<string, unknown>;
+    const rewrite = (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return;
+      const product = value as Record<string, unknown>;
+      if (typeof product.handle !== "string") return;
+      product.handle = getPublicProductHandle({ handle: product.handle, tenantId });
+    };
+    if (Array.isArray(parsed.products)) parsed.products.forEach(rewrite);
+    rewrite(parsed.product);
+    return new TextEncoder().encode(JSON.stringify(parsed)).buffer as ArrayBuffer;
+  } catch {
+    return body;
+  }
 }
 
 function scopeTaxonomyResponseToTenant(input: {

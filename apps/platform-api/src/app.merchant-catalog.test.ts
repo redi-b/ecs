@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { getTenantProductHandle } from "./adapters/medusa/product/handles.js";
 import { buildProductCsv } from "./modules/data-transfer/product-export.js";
 
 import {
@@ -1802,6 +1803,7 @@ describe("platform app merchant and tenant catalog", () => {
       shippingProfileId: "shp_1",
       status: "draft",
       stockLocationId: "sloc_1",
+      tenantId: "tenant_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });
@@ -1922,6 +1924,7 @@ describe("platform app merchant and tenant catalog", () => {
       currencyCode: "etb",
       regionId: "reg_1",
       status: "draft",
+      tenantId: "tenant_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });
@@ -2076,6 +2079,7 @@ describe("platform app merchant and tenant catalog", () => {
       regionId: "reg_1",
       status: "published",
       stockLocationId: "sloc_1",
+      tenantId: "tenant_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });
@@ -2191,6 +2195,7 @@ describe("platform app merchant and tenant catalog", () => {
       imageUrls: ["https://cdn.test/coffee-2.jpg"],
       regionId: "reg_1",
       status: "published",
+      tenantId: "tenant_1",
       thumbnail: null,
       salesChannelId: "channel_1",
     });
@@ -2420,6 +2425,69 @@ describe("platform app merchant and tenant catalog", () => {
     assert.equal(forwardedRequest.url, "http://medusa:9000/store/products?limit=10");
     assert.equal(forwardedRequest.headers.get("x-publishable-api-key"), "pk_1");
     assert.equal(forwardedRequest.headers.get("host"), null);
+  });
+
+  it("maps tenant-namespaced product handles to stable storefront handles", async () => {
+    const forwarded: Request[] = [];
+    const storedHandle = getTenantProductHandle(resolvedTenantContext.tenantId, "test");
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        medusaStoreFetch: async (request) => {
+          forwarded.push(request instanceof Request ? request : new Request(request));
+          return Response.json({
+            products: [{ id: "prod_1", handle: storedHandle, title: "Test" }],
+            count: 1,
+            limit: 1,
+            offset: 0,
+          });
+        },
+      },
+    );
+
+    const response = await app.request("/store/products?handle=test&limit=1", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(new URL(forwarded[0]!.url).searchParams.get("handle"), storedHandle);
+    assert.deepEqual(await response.json(), {
+      products: [{ id: "prod_1", handle: "test", title: "Test" }],
+      count: 1,
+      limit: 1,
+      offset: 0,
+    });
+  });
+
+  it("falls back to legacy unnamespaced product handles", async () => {
+    const forwarded: Request[] = [];
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        medusaStoreFetch: async (request) => {
+          const forwardedRequest = request instanceof Request ? request : new Request(request);
+          forwarded.push(forwardedRequest);
+          const handle = new URL(forwardedRequest.url).searchParams.get("handle");
+          return Response.json({
+            products: handle === "legacy-shirt" ? [{ id: "prod_legacy", handle }] : [],
+            count: handle === "legacy-shirt" ? 1 : 0,
+            limit: 1,
+            offset: 0,
+          });
+        },
+      },
+    );
+
+    const response = await app.request("/store/products?handle=legacy-shirt&limit=1", {
+      headers: { Host: "abebe.lvh.me" },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.length, 2);
+    assert.equal(new URL(forwarded[1]!.url).searchParams.get("handle"), "legacy-shirt");
+    assert.deepEqual((await response.json()).products, [
+      { id: "prod_legacy", handle: "legacy-shirt" },
+    ]);
   });
 
   it("forwards storefront product search to Medusa", async () => {

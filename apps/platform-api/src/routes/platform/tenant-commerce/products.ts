@@ -276,6 +276,7 @@ export function registerPlatformTenantProductsRoutes(
         : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      tenantId: context.req.param("tenantId"),
     });
 
     if (!product.ok) {
@@ -354,6 +355,7 @@ export function registerPlatformTenantProductsRoutes(
         : {}),
       thumbnail: getOptionalBodyString(body, "thumbnail"),
       salesChannelId: commerce.context.medusaSalesChannelId,
+      tenantId: context.req.param("tenantId"),
     });
 
     if (!product.ok) {

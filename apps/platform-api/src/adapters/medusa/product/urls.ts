@@ -18,6 +18,7 @@ export const PRODUCT_LIST_FIELDS = [
   "id",
   "title",
   "handle",
+  "metadata",
   "status",
   "thumbnail",
   "collection_id",
@@ -45,6 +46,7 @@ export const PRODUCT_DETAIL_FIELDS = [
   "title",
   "description",
   "handle",
+  "metadata",
   "status",
   "thumbnail",
   "collection_id",
@@ -219,6 +221,13 @@ export function getProductUrl(medusaInternalUrl: string, productId: string) {
   );
 }
 
+export function getProductOptionsBatchUrl(medusaInternalUrl: string, productId: string) {
+  return new URL(
+    `/admin/products/${encodeURIComponent(productId)}/options/batch`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
 export function getProductInventoryUrl(
   medusaInternalUrl: string,
   productId: string,
@@ -264,10 +273,19 @@ export function getInventoryItemLevelUrl(
   );
 }
 
-export function getProductOwnershipUrl(medusaInternalUrl: string, productId: string) {
+export function getProductOwnershipUrl(
+  medusaInternalUrl: string,
+  productId: string,
+  options: { includeOptions?: boolean } = {},
+) {
   const url = getProductUrl(medusaInternalUrl, productId);
 
-  url.searchParams.set("fields", "id,sales_channels.id");
+  url.searchParams.set(
+    "fields",
+    options.includeOptions
+      ? "id,sales_channels.id,options.id,options.title,options.values.id,options.values.value"
+      : "id,sales_channels.id",
+  );
 
   return url;
 }
