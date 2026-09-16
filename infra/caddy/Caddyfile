@@ -24,13 +24,13 @@ http://ops.lvh.me {
 }
 
 http://*.lvh.me {
-	@dashboardAssets path /_next/* /__nextjs* /favicon.ico /brand/*
+	@dashboardAssets path /_next/* /__nextjs* /favicon.ico /favicon.svg /brand/*
 	handle @dashboardAssets {
 		reverse_proxy host.docker.internal:3001
 	}
 
-	@admin path /admin*
-	handle @admin {
+	@merchantDashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation*
+	handle @merchantDashboard {
 		reverse_proxy host.docker.internal:3001
 	}
 
