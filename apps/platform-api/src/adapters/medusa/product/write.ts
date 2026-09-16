@@ -109,6 +109,38 @@ type ProductOptionBatchBody = {
   update?: Array<{ product_option_id: string; add?: string[]; remove?: string[] }>;
 };
 
+/**
+ * Medusa rejects removing option values while variants still reference them.
+ * Add the new shape first, update the variants, then remove the retired shape.
+ */
+export function splitProductOptionBatchBody(batch: ProductOptionBatchBody | null) {
+  if (!batch) return { beforeProductUpdate: null, afterProductUpdate: null };
+
+  const beforeUpdate = batch.update?.flatMap((item) =>
+    item.add?.length
+      ? [{ product_option_id: item.product_option_id, add: item.add }]
+      : [],
+  );
+  const afterUpdate = batch.update?.flatMap((item) =>
+    item.remove?.length
+      ? [{ product_option_id: item.product_option_id, remove: item.remove }]
+      : [],
+  );
+  const beforeProductUpdate: ProductOptionBatchBody = {
+    ...(batch.add?.length ? { add: batch.add } : {}),
+    ...(beforeUpdate?.length ? { update: beforeUpdate } : {}),
+  };
+  const afterProductUpdate: ProductOptionBatchBody = {
+    ...(batch.remove?.length ? { remove: batch.remove } : {}),
+    ...(afterUpdate?.length ? { update: afterUpdate } : {}),
+  };
+
+  return {
+    beforeProductUpdate: Object.keys(beforeProductUpdate).length ? beforeProductUpdate : null,
+    afterProductUpdate: Object.keys(afterProductUpdate).length ? afterProductUpdate : null,
+  };
+}
+
 /** Build the Medusa 2.16+ product-option batch mutation from the editor's desired state. */
 export function getProductOptionBatchBody(
   product: unknown,
