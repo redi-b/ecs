@@ -26,7 +26,9 @@ import { ShopBrandPicker } from "@/components/onboarding/shop-brand-picker";
 import {
   emptyShopDetails,
   ShopContactFields,
+  SocialPlatformIcon,
   shopContactDraftSchema,
+  socialLabels,
 } from "@/components/onboarding/shop-contact-fields";
 import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,6 +39,59 @@ import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname, normalizeStorefrontBaseDomain } from "@/lib/storefront-hosts";
 import { cn } from "@/lib/utils";
+
+function socialProfileDisplayValue(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+    const path = decodeURIComponent(url.pathname).replace(/^\/+|\/+$/g, "");
+    return path ? `${host}/${path}` : host;
+  } catch {
+    return value;
+  }
+}
+
+function SocialProfilesReview({
+  profiles,
+  label,
+}: {
+  profiles: Array<{ platform: keyof typeof socialLabels; url: string }>;
+  label: string;
+}) {
+  return (
+    <div className="min-w-0 sm:col-span-2">
+      <dt className="text-xs font-medium tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-2 overflow-hidden rounded-xl border bg-muted/15">
+        {profiles.map((profile, index) => (
+          <a
+            className={cn(
+              "group flex min-w-0 items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40",
+              index > 0 && "border-t",
+            )}
+            href={profile.url}
+            key={profile.platform}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-xs">
+              <SocialPlatformIcon className="size-4" platform={profile.platform} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium">{socialLabels[profile.platform]}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {socialProfileDisplayValue(profile.url)}
+              </span>
+            </span>
+            <AppIcons.externalLink
+              aria-hidden
+              className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+            />
+          </a>
+        ))}
+      </dd>
+    </div>
+  );
+}
 
 export function ShopOnboardingForm({
   defaultValues,
@@ -236,10 +291,9 @@ export function ShopOnboardingForm({
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      const response = await fetch(
-        `/onboarding/handle?handle=${encodeURIComponent(normalized)}`,
-        { signal: controller.signal },
-      ).catch(() => null);
+      const response = await fetch(`/onboarding/handle?handle=${encodeURIComponent(normalized)}`, {
+        signal: controller.signal,
+      }).catch(() => null);
 
       if (!response) {
         setHandleState({
@@ -537,7 +591,8 @@ export function ShopOnboardingForm({
                           setHandleTouched(true);
                           setHandle(sanitizeHandleDraft(event.target.value));
                         }}
-                        pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
+                        maxLength={40}
+                        minLength={3}
                         required
                         value={handle}
                       />
@@ -734,12 +789,9 @@ export function ShopOnboardingForm({
                         />
                       ) : null}
                       {shopDetails.socialProfiles.length ? (
-                        <ReviewItem
-                          className="sm:col-span-2"
+                        <SocialProfilesReview
                           label={t("onboarding.contact.social")}
-                          value={shopDetails.socialProfiles
-                            .map((profile) => `${profile.platform}: ${profile.url}`)
-                            .join(" · ")}
+                          profiles={shopDetails.socialProfiles}
                         />
                       ) : null}
                       <ReviewItem
