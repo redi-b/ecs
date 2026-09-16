@@ -56,6 +56,7 @@ import {
   getProductCollectionsBaseUrl,
   getProductDetailUrl,
   getProductOwnershipUrl,
+  getProductOptionsBatchUrl,
   getProductSearchUrl,
   getProductsBaseUrl,
   getProductsUrl,
@@ -66,6 +67,7 @@ import {
 import { getNumber, getString, isMissingCommerceResourceResponse, isRecord } from "./values.js";
 import {
   getDeleteError,
+  getProductOptionBatchBody,
   getProductWriteBody,
   getWriteError,
   parseBatchDeleteResponse,
@@ -568,7 +570,7 @@ export function createMedusaProductService(options: {
       );
 
       if (!response.ok) {
-        return getWriteError(response);
+        return await getWriteError(response);
       }
 
       const data = await response.json().catch(() => undefined);
@@ -947,14 +949,16 @@ export function createMedusaProductService(options: {
 
       const retrieveResponse = await requestMedusa(
         fetcher,
-        getProductOwnershipUrl(options.medusaInternalUrl, input.productId),
+        getProductOwnershipUrl(options.medusaInternalUrl, input.productId, {
+          includeOptions: input.options !== undefined,
+        }),
         {
           headers: getAdminHeaders(options.adminApiToken),
         },
       );
 
       if (!retrieveResponse.ok) {
-        return getWriteError(retrieveResponse);
+        return await getWriteError(retrieveResponse);
       }
 
       const retrieveData = await retrieveResponse.json().catch(() => undefined);
@@ -973,6 +977,22 @@ export function createMedusaProductService(options: {
           error: "product_not_found",
           status: 404,
         };
+      }
+
+      const optionBatch = getProductOptionBatchBody(retrieveData?.product, input.options);
+      if (optionBatch) {
+        const optionResponse = await requestMedusa(
+          fetcher,
+          getProductOptionsBatchUrl(options.medusaInternalUrl, input.productId),
+          {
+            body: JSON.stringify(optionBatch),
+            headers: getAdminHeaders(options.adminApiToken),
+            method: "POST",
+          },
+        );
+        if (!optionResponse.ok) {
+          return await getWriteError(optionResponse);
+        }
       }
 
       const updateResponse = await requestMedusa(

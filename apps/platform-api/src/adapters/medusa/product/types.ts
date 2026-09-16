@@ -13,6 +13,7 @@ export type ProductWriteInput = {
   shippingProfileId?: string | null | undefined;
   status?: string | null | undefined;
   stockLocationId?: string | null | undefined;
+  tenantId?: string | undefined;
   thumbnail?: string | null | undefined;
   title?: string | null | undefined;
   variants?: ProductVariantWriteInput[] | undefined;

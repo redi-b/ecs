@@ -223,6 +223,7 @@ describe("platform app merchant dashboard and orders", () => {
         name: "Abebe Market",
         handle: "abebe",
         status: "active",
+        shopDetails: null,
       },
       domain: {
         id: "domain_1",
