@@ -9,6 +9,7 @@ export type MerchantOrderAction =
   | "fulfill"
   | "ship"
   | "mark-paid"
+  | "refund"
   | "recheck-payment"
   | "finish";
 
@@ -170,6 +171,20 @@ export type OrderSettlementPayload = {
   note?: string | undefined;
 };
 
+export type OrderRefundPayload = {
+  amount: number;
+  method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+  reason:
+    | "customer_request"
+    | "item_unavailable"
+    | "wrong_item"
+    | "damaged_item"
+    | "duplicate_payment"
+    | "other";
+  reference?: string | undefined;
+  note?: string | undefined;
+};
+
 export async function mutateMerchantOrder(options: {
   action: MerchantOrderAction;
   cookieHeader?: string | null | undefined;
@@ -180,6 +195,7 @@ export async function mutateMerchantOrder(options: {
   requestHost?: string | null | undefined;
   tenantId?: string | null | undefined;
   settlement?: OrderSettlementPayload | undefined;
+  refund?: OrderRefundPayload | undefined;
 }): Promise<MerchantOrderActionResult> {
   const fetcher = options.fetcher ?? fetch;
   const body: Record<string, unknown> = {};
@@ -188,6 +204,9 @@ export async function mutateMerchantOrder(options: {
   }
   if (options.action === "mark-paid" && options.settlement) {
     Object.assign(body, options.settlement);
+  }
+  if (options.action === "refund" && options.refund) {
+    Object.assign(body, options.refund);
   }
 
   const response = await fetcher(getOrderActionUrl(options), {

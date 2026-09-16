@@ -29,6 +29,23 @@ export type MerchantOrderSettlement = {
   recordedAt?: string | null;
 };
 
+export type MerchantOrderRefund = {
+  id: string;
+  amount: number;
+  method: MerchantOrderSettlementMethod | null;
+  reason:
+    | "customer_request"
+    | "item_unavailable"
+    | "wrong_item"
+    | "damaged_item"
+    | "duplicate_payment"
+    | "other"
+    | null;
+  reference: string | null;
+  note: string | null;
+  createdAt: string | null;
+};
+
 /** Merchant-facing progress (not Medusa jargon). */
 export type MerchantOrderProgressFilter = "new" | "ready" | "completed" | "canceled" | "open";
 
@@ -73,6 +90,9 @@ export type MerchantOrder = {
   note?: string | null;
   currencyCode: string | null;
   total: number | null;
+  refundedTotal?: number;
+  refundableTotal?: number;
+  refunds?: MerchantOrderRefund[];
   subtotal?: number | null;
   shippingTotal?: number | null;
   discountTotal?: number | null;
@@ -157,7 +177,8 @@ export type MerchantOrderDetailResult =
         | "order_not_found"
         | "order_not_fulfillable"
         | "order_not_cancelable"
-        | "order_refund_required";
+        | "order_refund_required"
+        | "order_refund_amount_invalid";
       status: 400 | 401 | 404 | 409 | 502 | 503;
     };
 
@@ -168,6 +189,7 @@ export type MerchantOrderAction =
   | "fulfill"
   | "ship"
   | "mark-paid"
+  | "refund"
   | "recheck-payment"
   | "finish";
 
@@ -180,4 +202,17 @@ export type MerchantOrderMutateInput = {
   salesChannelId: string;
   shippingOptionId?: string | undefined;
   stockLocationId?: string | undefined;
+  refund?: {
+    amount: number;
+    method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+    reason:
+      | "customer_request"
+      | "item_unavailable"
+      | "wrong_item"
+      | "damaged_item"
+      | "duplicate_payment"
+      | "other";
+    reference?: string | null | undefined;
+    note?: string | null | undefined;
+  };
 };

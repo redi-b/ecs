@@ -264,10 +264,19 @@ class ChapaPaymentProviderService extends AbstractPaymentProvider<ChapaPaymentOp
     return this.cancelPayment(input);
   }
 
-  async refundPayment({ data }: RefundPaymentInput): Promise<RefundPaymentOutput> {
-    throw new Error(
-      `Chapa refunds are not implemented for transaction ${getTxRef(data) ?? "unknown"}.`,
-    );
+  async refundPayment({ amount, data }: RefundPaymentInput): Promise<RefundPaymentOutput> {
+    // Chapa's merchant API does not currently provide the platform with an automated refund
+    // operation. ECS only invokes this after the merchant confirms the payout was completed
+    // outside Chapa, so Medusa can retain the canonical refund and order transaction records.
+    return {
+      data: {
+        ...getRecord(data),
+        last_manual_refund: {
+          amount: getAmountString(amount),
+          recorded_at: new Date().toISOString(),
+        },
+      },
+    };
   }
 
   async retrievePayment({ data }: RetrievePaymentInput): Promise<RetrievePaymentOutput> {

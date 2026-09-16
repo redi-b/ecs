@@ -6,6 +6,7 @@ import type {
   PlatformAppVariables,
 } from "../../../app.js";
 import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
+import { parseOrderRefundInput } from "../../../lib/order-refund-input.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
@@ -136,6 +137,17 @@ export function registerPlatformTenantOrdersRoutes(
       return context.json({ error: "order_not_found" }, 404);
     }
 
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+      permission: {
+        orders: [action === "cancel" ? "cancel" : action === "refund" ? "refund" : "update"],
+      },
+    });
+    if (!authorization?.ok) {
+      return context.json({ error: "dashboard_forbidden" }, 403);
+    }
+
     if ((action === "deliver" || action === "ship") && !fulfillmentId) {
       return context.json({ error: "order_fulfillment_not_found" }, 404);
     }
@@ -158,6 +170,10 @@ export function registerPlatformTenantOrdersRoutes(
     if (action === "mark-paid" && !settlement) {
       return context.json({ error: "settlement_method_required" }, 400);
     }
+    const refund = action === "refund" ? parseOrderRefundInput(body) : undefined;
+    if (action === "refund" && !refund) {
+      return context.json({ error: "order_refund_amount_invalid" }, 400);
+    }
 
     const order = await options.mutateMerchantOrder({
       action,
@@ -171,6 +187,7 @@ export function registerPlatformTenantOrdersRoutes(
           }
         : {}),
       ...(settlement ? { settlement, source: "dashboard" as const } : {}),
+      ...(refund ? { refund } : {}),
     });
 
     if (!order.ok) {
@@ -206,6 +223,10 @@ export function registerPlatformTenantOrdersRoutes(
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/mark-paid", (context) =>
     mutateSelectedTenantOrder(context, "mark-paid"),
+  );
+
+  app.post("/platform/tenants/:tenantId/orders/:orderId/refund", (context) =>
+    mutateSelectedTenantOrder(context, "refund"),
   );
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/finish", async (context) => {

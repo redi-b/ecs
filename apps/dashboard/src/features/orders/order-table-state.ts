@@ -336,8 +336,10 @@ export function getOrderPaymentLabel(order: MerchantOrder) {
   const payment = (order.paymentStatus ?? "").toLowerCase();
 
   if (status.includes("cancel")) return "N/A";
-  if (["captured", "paid"].includes(payment)) return "Paid";
+  if (payment.includes("partially_refund")) return "Partly refunded";
   if (payment.includes("refund")) return "Refunded";
+  if ((order.refundedTotal ?? 0) > 0) return "Partly refunded";
+  if (["captured", "paid"].includes(payment)) return "Paid";
   if (status === "completed") return "Settled";
   if (["not_paid", "awaiting", "pending", ""].includes(payment)) return "Not paid yet";
   return formatOrderStatusLabel(order.paymentStatus, "payment");
