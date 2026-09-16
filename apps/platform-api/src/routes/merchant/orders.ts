@@ -3,6 +3,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { parseOrderSettlementInput } from "../../lib/order-settlement-input.js";
+import { parseOrderRefundInput } from "../../lib/order-refund-input.js";
 import type { OrderSettlementInput } from "../../lib/settlement.js";
 import {
   exportOrdersToCsv,
@@ -212,7 +213,7 @@ export function registerMerchantOrderRoutes(
     }
 
     const merchant = await getAuthorizedMerchantContext(context, {
-      orders: [action === "cancel" ? "cancel" : "update"],
+      orders: [action === "cancel" ? "cancel" : action === "refund" ? "refund" : "update"],
     });
 
     if (!merchant.ok) {
@@ -247,6 +248,10 @@ export function registerMerchantOrderRoutes(
       }
       settlement = parsed;
     }
+    const refund = action === "refund" ? parseOrderRefundInput(body) : undefined;
+    if (action === "refund" && !refund) {
+      return context.json({ error: "order_refund_amount_invalid" }, 400);
+    }
 
     const order = await options.mutateMerchantOrder({
       action,
@@ -260,6 +265,7 @@ export function registerMerchantOrderRoutes(
           }
         : {}),
       ...(settlement ? { settlement, source: "dashboard" as const } : {}),
+      ...(refund ? { refund } : {}),
       ...(typeof body.paymentReference === "string"
         ? { paymentReference: body.paymentReference }
         : {}),
@@ -296,6 +302,10 @@ export function registerMerchantOrderRoutes(
 
   app.post("/platform/merchant/orders/:orderId/mark-paid", (context) =>
     mutateResolvedMerchantOrder(context, "mark-paid"),
+  );
+
+  app.post("/platform/merchant/orders/:orderId/refund", (context) =>
+    mutateResolvedMerchantOrder(context, "refund"),
   );
 
   app.post("/platform/merchant/orders/:orderId/settlement", async (context) => {

@@ -235,6 +235,7 @@
     "moreActions": "ተጨማሪ የትዕዛዝ እርምጃዎች",
     "completeAllExcludesPayment": "ይህ ትዕዛዙን በቀሩት የደሊቨሪ ወይም የመውሰጃ ደረጃዎች ያሳልፋል። ክፍያን አይቀይርም።",
     "markPaid": "እንደተከፈለ ምልክት አድርግ",
+    "refundPayment": "ተመላሽ ገንዘብ መዝግብ",
     "recheckPayment": "ክፍያን እንደገና አረጋግጥ",
     "cancelOrder": "ትዕዛዝ ሰርዝ",
     "updateFailedTitle": "ትዕዛዙን ማዘመን አልተቻለም",
@@ -256,6 +257,7 @@
     "toastReady": "ትዕዛዙ ዝግጁ ተብሏል።",
     "toastCompleted": "ትዕዛዙ ተጠናቅቋል።",
     "toastPaid": "ክፍያ ተመዝግቧል።",
+    "toastRefunded": "ተመላሽ ገንዘብ ተመዝግቧል።",
     "toastFinished": "የቀሩት ደረጃዎች ተጠናቅቀዋል።",
     "toastRecheck": "ክፍያ ከChapa ተረጋግጧል።",
     "toastCanceled": "ትዕዛዙ ተሰርዟል።",
@@ -285,7 +287,8 @@
     "errNotCancelable": "ደንበኛው ትዕዛዙን ስለተቀበለ ከእንግዲህ መሰረዝ አይቻልም።",
     "errRefundRequired": "ይህን ትዕዛዝ ከመሰረዝዎ በፊት የተከፈለውን ገንዘብ ይመልሱ።",
     "errGeneric": "ትዕዛዙን ማዘመን አልተቻለም።",
-    "errSettlementRequired": "ክፍያው እንዴት እንደደረሰ ይምረጡ።"
+    "errSettlementRequired": "ክፍያው እንዴት እንደደረሰ ይምረጡ።",
+    "errRefundAmount": "ለመመለስ ከቀረው ገንዘብ ውስጥ ትክክለኛ መጠን ያስገቡ።"
   },
   "settlement": {
     "dialogTitle": "እንደተከፈለ ምልክት አድርግ",
@@ -322,6 +325,39 @@
     "saveDetails": "አስቀምጥ",
     "sectionTitle": "የተቀበለ ክፍያ",
     "recordedAt": "ተመዝግቧል"
+  },
+  "refund": {
+    "title": "ተመላሽ ገንዘብ መዝግብ",
+    "description": "ገንዘቡን ለደንበኛው ከመለሱ በኋላ ይህን ይጠቀሙ።",
+    "amount": "የተመለሰ መጠን",
+    "available": "እስከ ETB {amount} መመለስ ይቻላል።",
+    "method": "እንዴት እንደመለሱት",
+    "reason": "ምክንያት",
+    "reference": "ማጣቀሻ · አማራጭ",
+    "referencePlaceholder": "የዝውውር ወይም የደረሰኝ ቁጥር",
+    "note": "ማስታወሻ · አማራጭ",
+    "notePlaceholder": "ለቡድንዎ የሚጠቅም ዝርዝር ያክሉ",
+    "confirmation": "ይህ አስቀድሞ የተመለሰ ገንዘብን ይመዘግባል። ECS ገንዘቡን አይልክም።",
+    "confirm": "ተመላሽ ገንዘብ መዝግብ",
+    "history": "ተመላሽ ገንዘብ",
+    "refunded": "የተመለሰ",
+    "remaining": "ለመመለስ የቀረ",
+    "methods": {
+      "cash": "ጥሬ ገንዘብ",
+      "telebirr": "ቴሌብር",
+      "cbe_birr": "ሲቢኢ ብር",
+      "bank_transfer": "የባንክ ዝውውር",
+      "chapa": "ቻፓ ወይም ሌላ ዝውውር",
+      "other": "ሌላ"
+    },
+    "reasons": {
+      "customer_request": "የደንበኛ ጥያቄ",
+      "item_unavailable": "እቃው አልተገኘም",
+      "wrong_item": "የተሳሳተ እቃ",
+      "damaged_item": "የተበላሸ እቃ",
+      "duplicate_payment": "የተደጋገመ ክፍያ",
+      "other": "ሌላ"
+    }
   },
   "labels": {
     "progressNew": "አዲስ",

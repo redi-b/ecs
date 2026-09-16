@@ -751,8 +751,14 @@ export type PlatformAppOptions = {
         templateKey?: string | undefined;
       }) => Promise<TenantShopProvisioningResult>)
     | undefined;
-  getLaunchReadiness?: (input: { tenantId: string }) => Promise<import("@ecs/contracts").LaunchReadiness | null>;
-  confirmStorefrontReview?: (input: { tenantId: string; userId: string; draftFingerprint: string }) => Promise<boolean>;
+  getLaunchReadiness?: (input: {
+    tenantId: string;
+  }) => Promise<import("@ecs/contracts").LaunchReadiness | null>;
+  confirmStorefrontReview?: (input: {
+    tenantId: string;
+    userId: string;
+    draftFingerprint: string;
+  }) => Promise<boolean>;
   retryTenantShopProvisioningAttempt?:
     | ((input: { attemptId: string; userId: string }) => Promise<TenantShopProvisioningResult>)
     | undefined;
@@ -977,6 +983,21 @@ export type PlatformAppOptions = {
               note?: string | null | undefined;
             }
           | null
+          | undefined;
+        refund?:
+          | {
+              amount: number;
+              method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+              reason:
+                | "customer_request"
+                | "item_unavailable"
+                | "wrong_item"
+                | "damaged_item"
+                | "duplicate_payment"
+                | "other";
+              reference?: string | null | undefined;
+              note?: string | null | undefined;
+            }
           | undefined;
       }) => Promise<MerchantOrderActionResult>)
     | undefined;

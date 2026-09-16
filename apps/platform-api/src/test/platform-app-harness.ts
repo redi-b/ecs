@@ -304,6 +304,21 @@ export function appWithResolution(
       orderId: string;
       salesChannelId: string;
       stockLocationId?: string | undefined;
+      refund?:
+        | {
+            amount: number;
+            method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";
+            reason:
+              | "customer_request"
+              | "item_unavailable"
+              | "wrong_item"
+              | "damaged_item"
+              | "duplicate_payment"
+              | "other";
+            reference?: string | null | undefined;
+            note?: string | null | undefined;
+          }
+        | undefined;
     }) => Promise<MerchantOrderActionResult>;
     getMerchantProductStock?: (input: {
       productId: string;
