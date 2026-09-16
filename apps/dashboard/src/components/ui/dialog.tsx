@@ -56,6 +56,7 @@ function DialogContent({
   overlayClassName?: string;
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+  const floatingLayerRoot = portalContainer?.ownerDocument.body ?? null;
 
   return (
     <DialogPortal>
@@ -89,7 +90,7 @@ function DialogContent({
           onPointerDownOutside?.(event);
         }}
       >
-        <FloatingPortalContainerProvider container={portalContainer}>
+        <FloatingPortalContainerProvider container={floatingLayerRoot}>
           {children}
           {showCloseButton && (
             <DialogPrimitive.Close data-slot="dialog-close" asChild>

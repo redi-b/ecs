@@ -34,7 +34,7 @@ export default async function VerifyEmailPage({
       <AuthShell>
         <VerificationPanel
           action={
-            <Button asChild className="w-full rounded-full">
+            <Button asChild className="w-full" size="lg">
               <Link href="/sign-in">{t("auth.verificationFlow.backToSignIn")}</Link>
             </Button>
           }
@@ -58,11 +58,11 @@ export default async function VerifyEmailPage({
             <VerificationSubmitButton
               label={
                 approvingChange
-                ? t("auth.verificationFlow.approveAction")
-                : t("auth.verificationFlow.verifyAction")
+                  ? t("auth.verificationFlow.approveAction")
+                  : t("auth.verificationFlow.verifyAction")
               }
             />
-            <Button asChild className="h-11 w-full rounded-full" variant="outline">
+            <Button asChild className="w-full" size="lg" variant="outline">
               <Link href={exitPath}>{t("auth.verificationFlow.notNow")}</Link>
             </Button>
           </form>

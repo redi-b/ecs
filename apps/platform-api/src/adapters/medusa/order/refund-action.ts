@@ -9,7 +9,12 @@ import {
   isCapturedPayment,
   type MerchantRefundInput,
 } from "./refunds.js";
-import { getOrderUrl, getPaymentRefundUrl } from "./urls.js";
+import {
+  getEnsureOrderPaymentUrl,
+  getOrderUrl,
+  getPaymentCaptureUrl,
+  getPaymentRefundUrl,
+} from "./urls.js";
 import { getNumber, getString, isRecord } from "./values.js";
 
 export async function refundMerchantOrder(
@@ -36,17 +41,57 @@ export async function refundMerchantOrder(
       { ok: false }
     >;
   }
-  const orderData = await orderResponse.json().catch(() => undefined);
-  const normalized = normalizeOrder(orderData?.order, input.salesChannelId)[0];
+  let orderData = await orderResponse.json().catch(() => undefined);
+  let normalized = normalizeOrder(orderData?.order, input.salesChannelId)[0];
   if (!normalized || !isRecord(orderData?.order)) {
     return { ok: false, error: "order_not_found", status: 404 };
   }
 
-  const payment = getPayments(orderData.order).find((candidate) => {
+  let payment = getPayments(orderData.order).find((candidate) => {
     if (!isCapturedPayment(candidate)) return false;
     const remaining = (getNumber(candidate.amount) ?? 0) - getPaymentRefundedAmount(candidate);
     return remaining + Number.EPSILON >= input.refund.amount;
   });
+  if (!payment && normalized.paymentStatus?.toLowerCase().match(/paid|captured|refund/)) {
+    for (const candidate of getPayments(orderData.order)) {
+      const candidateId = getString(candidate.id);
+      if (!candidateId || isCapturedPayment(candidate)) continue;
+      await requestMedusa(fetcher, getPaymentCaptureUrl(options.medusaInternalUrl, candidateId), {
+        body: JSON.stringify({}),
+        headers: getAdminHeaders(options.adminApiToken ?? ""),
+        method: "POST",
+      });
+    }
+    const repaired = await requestMedusa(
+      fetcher,
+      getEnsureOrderPaymentUrl(options.medusaInternalUrl, input.orderId),
+      {
+        body: JSON.stringify({}),
+        headers: getAdminHeaders(options.adminApiToken ?? ""),
+        method: "POST",
+      },
+    );
+    if (!repaired.ok) {
+      return (await mapMedusaFailure(repaired, {
+        invalidError: "order_refund_amount_invalid",
+      })) as Extract<MerchantOrderActionResult, { ok: false }>;
+    }
+    const repairedOrder = await requestMedusa(
+      fetcher,
+      getOrderUrl(options.medusaInternalUrl, input),
+      { headers: getAdminHeaders(options.adminApiToken ?? "") },
+    );
+    orderData = await repairedOrder.json().catch(() => undefined);
+    normalized = normalizeOrder(orderData?.order, input.salesChannelId)[0] ?? normalized;
+    payment = isRecord(orderData?.order)
+      ? getPayments(orderData.order).find((candidate) => {
+          if (!isCapturedPayment(candidate)) return false;
+          const remaining =
+            (getNumber(candidate.amount) ?? 0) - getPaymentRefundedAmount(candidate);
+          return remaining + Number.EPSILON >= input.refund.amount;
+        })
+      : undefined;
+  }
   const paymentId = payment ? getString(payment.id) : null;
   if (!paymentId) {
     return { ok: false, error: "order_refund_amount_invalid", status: 409 };

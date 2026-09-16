@@ -106,7 +106,13 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
 type ProductOptionBatchBody = {
   add?: Array<{ title: string; values: string[] }>;
   remove?: string[];
-  update?: Array<{ product_option_id: string; add?: string[]; remove?: string[] }>;
+  /** Duplicate axes must be unlinked before variants are written because variant options are keyed by title. */
+  removeBeforeUpdate?: string[];
+  update?: Array<{
+    product_option_id: string;
+    add?: Array<{ value: string }>;
+    remove?: string[];
+  }>;
 };
 
 /**
@@ -117,17 +123,14 @@ export function splitProductOptionBatchBody(batch: ProductOptionBatchBody | null
   if (!batch) return { beforeProductUpdate: null, afterProductUpdate: null };
 
   const beforeUpdate = batch.update?.flatMap((item) =>
-    item.add?.length
-      ? [{ product_option_id: item.product_option_id, add: item.add }]
-      : [],
+    item.add?.length ? [{ product_option_id: item.product_option_id, add: item.add }] : [],
   );
   const afterUpdate = batch.update?.flatMap((item) =>
-    item.remove?.length
-      ? [{ product_option_id: item.product_option_id, remove: item.remove }]
-      : [],
+    item.remove?.length ? [{ product_option_id: item.product_option_id, remove: item.remove }] : [],
   );
   const beforeProductUpdate: ProductOptionBatchBody = {
     ...(batch.add?.length ? { add: batch.add } : {}),
+    ...(batch.removeBeforeUpdate?.length ? { remove: batch.removeBeforeUpdate } : {}),
     ...(beforeUpdate?.length ? { update: beforeUpdate } : {}),
   };
   const afterProductUpdate: ProductOptionBatchBody = {
@@ -150,23 +153,33 @@ export function getProductOptionBatchBody(
 
   const existingOptions = getExistingProductOptions(product);
   const existingById = new Map(existingOptions.map((option) => [option.id, option]));
-  const retainedIds = new Set(
-    desiredOptions.flatMap((option) => (option.id?.trim() ? [option.id.trim()] : [])),
-  );
+  const existingByTitle = new Map<string, typeof existingOptions>();
+  for (const option of existingOptions) {
+    const key = normalizeOptionTitle(option.title);
+    existingByTitle.set(key, [...(existingByTitle.get(key) ?? []), option]);
+  }
+  const retainedIds = new Set<string>();
+  const removeBeforeUpdate = new Set<string>();
   const add: Array<{ title: string; values: string[] }> = [];
-  const remove = existingOptions
-    .filter((option) => !retainedIds.has(option.id))
-    .map((option) => option.id);
+  const remove: string[] = [];
   const update: NonNullable<ProductOptionBatchBody["update"]> = [];
 
   for (const desired of desiredOptions) {
     const title = desired.title.trim();
     const values = desired.values.map(getOptionValueLabel).filter(Boolean);
-    const existing = desired.id?.trim() ? existingById.get(desired.id.trim()) : undefined;
+    const sameTitle = existingByTitle.get(normalizeOptionTitle(title)) ?? [];
+    const existing = desired.id?.trim()
+      ? existingById.get(desired.id.trim())
+      : sameTitle.find((option) => !retainedIds.has(option.id));
 
     if (!existing) {
       if (title && values.length) add.push({ title, values: [...new Set(values)] });
       continue;
+    }
+
+    retainedIds.add(existing.id);
+    for (const duplicate of sameTitle) {
+      if (duplicate.id !== existing.id) removeBeforeUpdate.add(duplicate.id);
     }
 
     if (existing.title !== title) {
@@ -211,18 +224,30 @@ export function getProductOptionBatchBody(
     if (uniqueAdd.length || uniqueRemove.length) {
       update.push({
         product_option_id: existing.id,
-        ...(uniqueAdd.length ? { add: uniqueAdd } : {}),
+        ...(uniqueAdd.length ? { add: uniqueAdd.map((value) => ({ value })) } : {}),
         ...(uniqueRemove.length ? { remove: uniqueRemove } : {}),
       });
     }
   }
 
-  if (!add.length && !remove.length && !update.length) return null;
+  remove.push(
+    ...existingOptions
+      .filter((option) => !retainedIds.has(option.id) && !removeBeforeUpdate.has(option.id))
+      .map((option) => option.id),
+  );
+
+  const uniqueRemove = [...new Set(remove)].filter((id) => !removeBeforeUpdate.has(id));
+  if (!add.length && !uniqueRemove.length && !removeBeforeUpdate.size && !update.length) return null;
   return {
     ...(add.length ? { add } : {}),
-    ...(remove.length ? { remove: [...new Set(remove)] } : {}),
+    ...(uniqueRemove.length ? { remove: uniqueRemove } : {}),
+    ...(removeBeforeUpdate.size ? { removeBeforeUpdate: [...removeBeforeUpdate] } : {}),
     ...(update.length ? { update } : {}),
   };
+}
+
+function normalizeOptionTitle(value: string) {
+  return value.trim().toLocaleLowerCase();
 }
 
 function getExistingProductOptions(product: unknown) {
@@ -300,6 +325,59 @@ export function getProductVariantsForWrite(variants: ProductVariantWriteInput[] 
       Object.keys(variant.optionValues).length > 0 &&
       (variant.currencyCode.trim() || variant.prices?.some((price) => price.currencyCode.trim())),
   );
+}
+
+/**
+ * Medusa validates variant assignments against the product's option axes before
+ * it applies the trailing option removals. Keep assignments for axes that still
+ * exist during that intermediate write (notably the legacy Default axis).
+ */
+export function completeVariantOptionsForCurrentProduct(
+  product: unknown,
+  variants: ProductVariantWriteInput[] | undefined,
+) {
+  if (!variants?.length || !isRecord(product) || !Array.isArray(product.variants)) {
+    return variants;
+  }
+
+  const existingById = new Map<string, Record<string, string>>();
+  const singleValueAssignments: Record<string, string> = {};
+  if (Array.isArray(product.options)) {
+    for (const option of product.options) {
+      if (!isRecord(option) || !Array.isArray(option.values) || option.values.length !== 1)
+        continue;
+      const title = getString(option.title);
+      const onlyValue = option.values[0];
+      const value = isRecord(onlyValue) ? getString(onlyValue.value) : undefined;
+      if (title && value) singleValueAssignments[title] = value;
+    }
+  }
+  for (const variant of product.variants) {
+    if (!isRecord(variant)) continue;
+    const id = getString(variant.id);
+    if (!id || !Array.isArray(variant.options)) continue;
+    const assignments: Record<string, string> = {};
+    for (const assignment of variant.options) {
+      if (!isRecord(assignment)) continue;
+      const value = getString(assignment.value);
+      const option = isRecord(assignment.option) ? assignment.option : undefined;
+      const title = option ? getString(option.title) : undefined;
+      if (title && value) assignments[title] = value;
+    }
+    existingById.set(id, assignments);
+  }
+
+  return variants.map((variant) => {
+    const existing = variant.id?.trim() ? existingById.get(variant.id.trim()) : undefined;
+    return {
+      ...variant,
+      optionValues: {
+        ...singleValueAssignments,
+        ...existing,
+        ...variant.optionValues,
+      },
+    };
+  });
 }
 
 export function getProductVariantWriteBody(

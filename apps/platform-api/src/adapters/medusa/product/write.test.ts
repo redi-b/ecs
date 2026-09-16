@@ -2,10 +2,64 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  completeVariantOptionsForCurrentProduct,
   getProductOptionBatchBody,
   getProductWriteBody,
   splitProductOptionBatchBody,
 } from "./write.js";
+
+test("keeps existing option assignments until retired axes are removed", () => {
+  const variants = completeVariantOptionsForCurrentProduct(
+    {
+      options: [
+        {
+          id: "opt_default",
+          title: "Default",
+          values: [{ id: "value_default", value: "Default" }],
+        },
+        {
+          id: "opt_tier",
+          title: "Tier",
+          values: [
+            { id: "value_classic", value: "Classic" },
+            { id: "value_premium", value: "Premium" },
+          ],
+        },
+      ],
+      variants: [
+        {
+          id: "variant_classic",
+          options: [
+            { value: "Default", option: { title: "Default" } },
+            { value: "Classic", option: { title: "Tier" } },
+          ],
+        },
+      ],
+    },
+    [
+      {
+        id: "variant_classic",
+        currencyCode: "etb",
+        optionValues: { Tier: "Classic" },
+        priceAmount: 100,
+      },
+      {
+        currencyCode: "etb",
+        optionValues: { Tier: "Gold" },
+        priceAmount: 120,
+      },
+    ],
+  );
+
+  assert.deepEqual(variants?.[0]?.optionValues, {
+    Default: "Default",
+    Tier: "Classic",
+  });
+  assert.deepEqual(variants?.[1]?.optionValues, {
+    Default: "Default",
+    Tier: "Gold",
+  });
+});
 
 test("sanitizes rich product descriptions at the Medusa write boundary", () => {
   const body = getProductWriteBody({
@@ -82,10 +136,7 @@ test("an option-only product update never synthesizes or rewrites variants", () 
       {
         id: "opt_color",
         title: "Color",
-        values: [
-          { id: "optval_black", label: "Black" },
-          { label: "Natural" },
-        ],
+        values: [{ id: "optval_black", label: "Black" }, { label: "Natural" }],
       },
     ],
   };
@@ -106,7 +157,7 @@ test("an option-only product update never synthesizes or rewrites variants", () 
   assert.equal(body.options, undefined);
   assert.equal(body.variants, undefined);
   assert.deepEqual(optionBatch, {
-    update: [{ product_option_id: "opt_color", add: ["Natural"] }],
+    update: [{ product_option_id: "opt_color", add: [{ value: "Natural" }] }],
   });
 });
 
@@ -118,7 +169,7 @@ test("option changes are ordered around the variant update", () => {
       update: [
         {
           product_option_id: "opt_color",
-          add: ["Natural"],
+          add: [{ value: "Natural" }],
           remove: ["optval_black"],
         },
       ],
@@ -126,7 +177,7 @@ test("option changes are ordered around the variant update", () => {
     {
       beforeProductUpdate: {
         add: [{ title: "Material", values: ["Cotton"] }],
-        update: [{ product_option_id: "opt_color", add: ["Natural"] }],
+        update: [{ product_option_id: "opt_color", add: [{ value: "Natural" }] }],
       },
       afterProductUpdate: {
         remove: ["opt_old"],
@@ -134,6 +185,63 @@ test("option changes are ordered around the variant update", () => {
       },
     },
   );
+});
+
+test("reuses an existing option axis by title when the editor omits its Medusa ID", () => {
+  const batch = getProductOptionBatchBody(
+    {
+      options: [
+        {
+          id: "opt_tier",
+          title: "Tier",
+          values: [
+            { id: "value_classic", value: "Classic" },
+            { id: "value_premium", value: "Premium" },
+          ],
+        },
+      ],
+    },
+    [{ title: "Tier", values: ["Classic", "Premium", "Gold"] }],
+  );
+
+  assert.deepEqual(batch, {
+    update: [{ product_option_id: "opt_tier", add: [{ value: "Gold" }] }],
+  });
+});
+
+test("repairs duplicate option axes before variants are updated", () => {
+  const batch = getProductOptionBatchBody(
+    {
+      options: [
+        {
+          id: "opt_tier_original",
+          title: "Tier",
+          values: [
+            { id: "value_classic", value: "Classic" },
+            { id: "value_premium", value: "Premium" },
+          ],
+        },
+        {
+          id: "opt_tier_duplicate",
+          title: "Tier",
+          values: [
+            { id: "value_classic_2", value: "Classic" },
+            { id: "value_premium_2", value: "Premium" },
+            { id: "value_gold", value: "Gold" },
+          ],
+        },
+      ],
+    },
+    [{ title: "Tier", values: ["Classic", "Premium", "Gold"] }],
+  );
+
+  assert.deepEqual(splitProductOptionBatchBody(batch), {
+    beforeProductUpdate: {
+      remove: ["opt_tier_duplicate"],
+      update: [{ product_option_id: "opt_tier_original", add: [{ value: "Gold" }] }],
+    },
+    afterProductUpdate: null,
+  });
 });
 
 test("preserves existing variant IDs in product updates", () => {

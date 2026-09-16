@@ -221,6 +221,13 @@ export function getProductUrl(medusaInternalUrl: string, productId: string) {
   );
 }
 
+export function getPlatformProductUpdateUrl(medusaInternalUrl: string, productId: string) {
+  return new URL(
+    `/admin/platform-products/${encodeURIComponent(productId)}`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
 export function getProductOptionsBatchUrl(medusaInternalUrl: string, productId: string) {
   return new URL(
     `/admin/products/${encodeURIComponent(productId)}/options/batch`,
@@ -283,7 +290,7 @@ export function getProductOwnershipUrl(
   url.searchParams.set(
     "fields",
     options.includeOptions
-      ? "id,sales_channels.id,options.id,options.title,options.values.id,options.values.value"
+      ? "id,sales_channels.id,options.id,options.title,options.values.id,options.values.value,variants.id,variants.options.value,variants.options.option.title"
       : "id,sales_channels.id",
   );
 

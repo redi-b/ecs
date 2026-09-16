@@ -60,10 +60,10 @@ export function ForgotPasswordForm() {
         </p>
         <p className="mt-4 break-all text-sm font-medium">{email}</p>
         <div className="mt-6 grid gap-2.5">
-          <Button asChild className="w-full rounded-full" variant="outline">
+          <Button asChild className="w-full" size="lg" variant="outline">
             <Link href="/sign-in">{t("auth.recovery.backToSignIn")}</Link>
           </Button>
-          <Button className="w-full rounded-full" onClick={() => setSent(false)} variant="ghost">
+          <Button className="w-full" onClick={() => setSent(false)} size="lg" variant="ghost">
             {t("auth.recovery.useAnotherEmail")}
           </Button>
         </div>
@@ -101,7 +101,7 @@ export function ForgotPasswordForm() {
           {error ? <FieldError>{error}</FieldError> : null}
         </Field>
       </FieldGroup>
-      <Button aria-busy={pending} className="h-11 w-full rounded-full" disabled={pending}>
+      <Button aria-busy={pending} className="w-full" disabled={pending} size="lg">
         {pending ? <AppIcons.loader aria-hidden className="animate-spin" /> : null}
         {pending ? t("auth.recovery.sending") : t("auth.recovery.sendLink")}
       </Button>
@@ -116,8 +116,6 @@ export function ForgotPasswordForm() {
 
 export function VerificationEmailForm({ initialEmail }: { initialEmail: string }) {
   const { t } = useI18n();
-  const id = useId();
-  const [email, setEmail] = useState(initialEmail);
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +126,7 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
     setPending(true);
     setError(null);
     const response = await fetch("/check-email/request", {
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({}),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     }).catch(() => null);
@@ -142,33 +140,17 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
 
   return (
     <form className="mt-6 space-y-3" onSubmit={(event) => void submit(event)}>
-      <Field data-invalid={Boolean(error) || undefined}>
-        <FieldLabel htmlFor={id}>{t("auth.email")}</FieldLabel>
-        <Input
-          autoComplete="email"
-          className={AUTH_INPUT_CLASS}
-          disabled={pending}
-          id={id}
-          onChange={(event) => {
-            setEmail(event.target.value);
-            setError(null);
-            setSent(false);
-          }}
-          required
-          type="email"
-          value={email}
-        />
-        {error ? <FieldError>{error}</FieldError> : null}
-        {sent ? (
-          <FieldDescription aria-live="polite" className="text-success">
-            {t("signup.verification.resent")}
-          </FieldDescription>
-        ) : null}
-      </Field>
+      {error ? <FieldError>{error}</FieldError> : null}
+      {sent ? (
+        <p aria-live="polite" className="text-sm text-success">
+          {t("signup.verification.resent", { email: initialEmail })}
+        </p>
+      ) : null}
       <Button
         aria-busy={pending}
-        className="h-11 w-full rounded-full"
+        className="w-full"
         disabled={pending}
+        size="lg"
         type="submit"
       >
         {pending ? <AppIcons.loader aria-hidden className="animate-spin" /> : null}
@@ -221,7 +203,7 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {t("auth.recovery.invalidLinkDescription")}
         </p>
-        <Button asChild className="mt-6 w-full rounded-full">
+        <Button asChild className="mt-6 w-full" size="lg">
           <Link href="/forgot-password">{t("auth.recovery.requestNewLink")}</Link>
         </Button>
       </div>
@@ -301,7 +283,7 @@ export function ResetPasswordForm({ invalid, token }: { invalid: boolean; token:
           {error ? <FieldError>{error}</FieldError> : null}
         </Field>
       </FieldGroup>
-      <Button aria-busy={pending} className="h-11 w-full rounded-full" disabled={pending}>
+      <Button aria-busy={pending} className="w-full" disabled={pending} size="lg">
         {pending ? <AppIcons.loader aria-hidden className="animate-spin" /> : null}
         {pending ? t("auth.recovery.saving") : t("auth.recovery.savePassword")}
       </Button>

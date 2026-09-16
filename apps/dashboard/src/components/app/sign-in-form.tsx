@@ -131,8 +131,9 @@ export function SignInForm({
       </FieldGroup>
       <Button
         aria-busy={isSubmitting}
-        className="mt-1 h-11 w-full rounded-full text-sm font-semibold"
+        className="mt-1 w-full text-sm font-semibold"
         disabled={isSubmitting}
+        size="lg"
         type="submit"
       >
         {isSubmitting ? (

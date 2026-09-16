@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 import { getAccountAuthRequestContext } from "@/lib/account-request-context";
 import { sendAccountVerificationEmail } from "@/lib/platform-auth-account";
+import {
+  readVerificationEmailCookie,
+  VERIFICATION_EMAIL_COOKIE,
+} from "@/lib/verification-email-cookie";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { email?: unknown } | null;
-  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const cookieStore = await cookies();
+  const email =
+    readVerificationEmailCookie(cookieStore.get(VERIFICATION_EMAIL_COOKIE)?.value) ?? "";
   if (!EMAIL_PATTERN.test(email) || email.length > 320) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }

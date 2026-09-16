@@ -42,7 +42,7 @@ export default async function EmailVerificationResultPage({
         </span>
         <h1 className="mt-5 type-page-title sm:text-[1.35rem]">{title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-        <Button asChild className="mt-6 h-11 w-full rounded-full">
+        <Button asChild className="mt-6 w-full" size="lg">
           <Link href={returnTo}>
             {failed
               ? t("auth.verificationFlow.continue")

@@ -64,7 +64,7 @@ export default async function AcceptInvitationPage({
               <form action="/accept-invitation/action" method="post">
                 <input name="invitationId" type="hidden" value={invitationId} />
                 {tenantId ? <input name="tenantId" type="hidden" value={tenantId} /> : null}
-                <Button className="w-full rounded-full" type="submit">
+                <Button className="w-full" size="lg" type="submit">
                   {t("settings.team.accept")}
                 </Button>
               </form>
@@ -74,7 +74,7 @@ export default async function AcceptInvitationPage({
                   type="hidden"
                   value={`/sign-in?next=${encodeURIComponent(next)}`}
                 />
-                <Button className="w-full rounded-full" type="submit" variant="outline">
+                <Button className="w-full" size="lg" type="submit" variant="outline">
                   {t("settings.team.useAnotherAccount")}
                 </Button>
               </form>
@@ -82,12 +82,12 @@ export default async function AcceptInvitationPage({
           </div>
         ) : invitationId ? (
           <div className="mt-6 grid gap-2">
-            <Button asChild className="w-full rounded-full">
+            <Button asChild className="w-full" size="lg">
               <Link href={`/sign-in?next=${encodeURIComponent(next)}`}>
                 {t("settings.team.signInToAccept")}
               </Link>
             </Button>
-            <Button asChild className="w-full rounded-full" variant="outline">
+            <Button asChild className="w-full" size="lg" variant="outline">
               <Link href={`/sign-up?next=${encodeURIComponent(next)}`}>
                 {t("settings.team.createAccountToAccept")}
               </Link>

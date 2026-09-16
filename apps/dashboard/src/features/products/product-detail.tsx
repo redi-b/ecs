@@ -117,7 +117,7 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
                     <ProductDetailsEditButton
                       action={action}
                       product={product}
-                      triggerVariant="button"
+                      triggerVariant="icon"
                     />
                   )}
                 </div>

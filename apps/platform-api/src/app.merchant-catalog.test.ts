@@ -1041,6 +1041,129 @@ describe("platform app merchant and tenant catalog", () => {
     });
   });
 
+  it("gets tenant product variant stock scoped to the selected tenant", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+          variantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner" },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaStockLocationId: "sloc_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        getMerchantProductVariantStock: async (input) => {
+          stockInput = input;
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: input.variantId,
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: 12,
+              reservedQuantity: 2,
+              incomingQuantity: 0,
+              availableQuantity: 10,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/tenants/tenant_1/products/prod_1/variants/variant_1/stock",
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+      variantId: "variant_1",
+    });
+  });
+
+  it("updates tenant product variant stock scoped to the selected tenant", async () => {
+    let stockInput:
+      | {
+          productId: string;
+          salesChannelId: string;
+          stockLocationId: string;
+          stockedQuantity: number;
+          variantId: string;
+        }
+      | undefined;
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      {
+        getSession: async () => ({
+          user: { id: "user_1", email: "owner@abebe.local", name: "Abebe Owner" },
+        }),
+        getTenantCommerceContext: async () => ({
+          ok: true,
+          context: {
+            tenantId: "tenant_1",
+            medusaStoreId: "store_1",
+            medusaSalesChannelId: "channel_1",
+            medusaStockLocationId: "sloc_1",
+            medusaPublishableKeyId: "pk_1",
+            medusaRegionId: "reg_1",
+          },
+        }),
+        updateMerchantProductVariantStock: async (input) => {
+          stockInput = input;
+          return {
+            ok: true,
+            stock: {
+              productId: input.productId,
+              variantId: input.variantId,
+              inventoryItemId: "iitem_1",
+              locationId: input.stockLocationId,
+              stockedQuantity: input.stockedQuantity,
+              reservedQuantity: 0,
+              incomingQuantity: 0,
+              availableQuantity: input.stockedQuantity,
+            },
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/tenants/tenant_1/products/prod_1/variants/variant_1/stock",
+      {
+        body: JSON.stringify({ stockedQuantity: 18 }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(stockInput, {
+      productId: "prod_1",
+      salesChannelId: "channel_1",
+      stockLocationId: "sloc_1",
+      stockedQuantity: 18,
+      variantId: "variant_1",
+    });
+  });
+
   it("creates merchant product categories scoped to the resolved tenant", async () => {
     let resolvedHost: string | undefined;
     let sessionCookie: string | null = null;

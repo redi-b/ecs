@@ -56,6 +56,7 @@ function SheetContent({
   showCloseButton?: boolean;
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+  const floatingLayerRoot = portalContainer?.ownerDocument.body ?? null;
 
   return (
     <SheetPortal>
@@ -96,7 +97,7 @@ function SheetContent({
           onPointerDownOutside?.(event);
         }}
       >
-        <FloatingPortalContainerProvider container={portalContainer}>
+        <FloatingPortalContainerProvider container={floatingLayerRoot}>
           {children}
           {showCloseButton && (
             <SheetPrimitive.Close data-slot="sheet-close" asChild>

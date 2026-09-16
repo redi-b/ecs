@@ -1,7 +1,7 @@
 import type {
-  MerchantProduct,
   MerchantBatchDeleteResult,
   MerchantDeleteResult,
+  MerchantProduct,
   MerchantProductCategoriesResult,
   MerchantProductCategoryWriteResult,
   MerchantProductCollectionsResult,
@@ -56,7 +56,7 @@ import {
   getProductCollectionsBaseUrl,
   getProductDetailUrl,
   getProductOwnershipUrl,
-  getProductOptionsBatchUrl,
+  getPlatformProductUpdateUrl,
   getProductSearchUrl,
   getProductsBaseUrl,
   getProductsUrl,
@@ -66,6 +66,7 @@ import {
 } from "./urls.js";
 import { getNumber, getString, isMissingCommerceResourceResponse, isRecord } from "./values.js";
 import {
+  completeVariantOptionsForCurrentProduct,
   getDeleteError,
   getProductOptionBatchBody,
   getProductWriteBody,
@@ -440,10 +441,7 @@ export function createMedusaProductService(options: {
         return missingCredentials();
       }
 
-      if (
-        input.q?.trim() &&
-        !input.media
-      ) {
+      if (input.q?.trim() && !input.media) {
         const indexed = await requestMedusa(
           fetcher,
           getProductSearchUrl(options.medusaInternalUrl, {
@@ -983,26 +981,25 @@ export function createMedusaProductService(options: {
       const optionBatch = splitProductOptionBatchBody(
         getProductOptionBatchBody(retrieveData?.product, input.options),
       );
-      if (optionBatch.beforeProductUpdate) {
-        const optionResponse = await requestMedusa(
-          fetcher,
-          getProductOptionsBatchUrl(options.medusaInternalUrl, input.productId),
-          {
-            body: JSON.stringify(optionBatch.beforeProductUpdate),
-            headers: getAdminHeaders(options.adminApiToken),
-            method: "POST",
-          },
-        );
-        if (!optionResponse.ok) {
-          return await getWriteError(optionResponse);
-        }
-      }
-
       const updateResponse = await requestMedusa(
         fetcher,
-        getProductUrl(options.medusaInternalUrl, input.productId),
+        getPlatformProductUpdateUrl(options.medusaInternalUrl, input.productId),
         {
-          body: JSON.stringify(getProductWriteBody(input)),
+          body: JSON.stringify({
+            ...(optionBatch.beforeProductUpdate
+              ? { before_options: optionBatch.beforeProductUpdate }
+              : {}),
+            update: getProductWriteBody({
+              ...input,
+              variants: completeVariantOptionsForCurrentProduct(
+                retrieveData?.product,
+                input.variants,
+              ),
+            }),
+            ...(optionBatch.afterProductUpdate
+              ? { after_options: optionBatch.afterProductUpdate }
+              : {}),
+          }),
           headers: getAdminHeaders(options.adminApiToken),
           method: "POST",
         },
@@ -1011,21 +1008,6 @@ export function createMedusaProductService(options: {
 
       if (!result.ok) {
         return result;
-      }
-
-      if (optionBatch.afterProductUpdate) {
-        const optionResponse = await requestMedusa(
-          fetcher,
-          getProductOptionsBatchUrl(options.medusaInternalUrl, input.productId),
-          {
-            body: JSON.stringify(optionBatch.afterProductUpdate),
-            headers: getAdminHeaders(options.adminApiToken),
-            method: "POST",
-          },
-        );
-        if (!optionResponse.ok) {
-          return await getWriteError(optionResponse);
-        }
       }
 
       if (!input.stockLocationId?.trim() || !input.variants?.length) {

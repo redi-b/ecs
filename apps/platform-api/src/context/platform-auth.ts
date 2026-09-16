@@ -9,6 +9,8 @@ import { organization } from "better-auth/plugins";
 import { and, eq, ne } from "drizzle-orm";
 
 import { merchantAccessControl, merchantRoles } from "../auth/merchant-permissions.js";
+import { getEmailTemplateDefinition } from "../modules/email/template-catalog.js";
+import { renderEmailTemplate } from "../modules/email/template-renderer.js";
 import type { NotificationProvider } from "../modules/notifications/providers/types.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -47,6 +49,68 @@ export function getEmailVerificationActionUrl(input: {
   actionUrl.searchParams.set("intent", input.intent);
   actionUrl.searchParams.set("returnTo", returnTo);
   return actionUrl.toString();
+}
+
+export function renderAccountVerificationEmail(input: {
+  actionUrl: string;
+  recipientName: string;
+}) {
+  const template = getEmailTemplateDefinition("account.email_verification");
+  if (!template) throw new Error("account_email_verification_template_missing");
+  const source = template.locales.en;
+  return renderEmailTemplate({
+    content: source.content,
+    locale: "en",
+    preheader: source.preheader,
+    subject: source.subject,
+    variables: {
+      action_url: input.actionUrl,
+      recipient_name: input.recipientName,
+    },
+  });
+}
+
+export async function deliverAccountVerificationEmail(input: {
+  actionUrl: string;
+  emailProvider?: NotificationProvider | undefined;
+  enqueueAccountEmail?:
+    | ((input: {
+        idempotencySource: string;
+        recipient: string;
+        templateKey: string;
+        tenantId?: string | null | undefined;
+        variables: Record<string, string>;
+      }) => Promise<unknown>)
+    | undefined;
+  generatedUrl: string;
+  recipient: string;
+  recipientName: string;
+}) {
+  if (input.enqueueAccountEmail) {
+    await input.enqueueAccountEmail({
+      idempotencySource: input.generatedUrl,
+      recipient: input.recipient,
+      templateKey: "account.email_verification",
+      variables: { action_url: input.actionUrl, recipient_name: input.recipientName },
+    });
+    return "queued" as const;
+  }
+  if (!input.emailProvider) throw new Error("email_delivery_unavailable");
+  const rendered = renderAccountVerificationEmail({
+    actionUrl: input.actionUrl,
+    recipientName: input.recipientName,
+  });
+  await input.emailProvider.send({
+    body: rendered.text,
+    channel: "email",
+    eventType: "account.email_verification",
+    html: rendered.html,
+    recipient: input.recipient,
+    senderProfile: "accounts",
+    subject: rendered.subject,
+    tenantId: "platform",
+  });
+  return "sent" as const;
 }
 
 export function createPlatformAuth(options: {
@@ -157,8 +221,12 @@ export function createPlatformAuth(options: {
       ? {
           emailVerification: {
             autoSignInAfterVerification: false,
-            sendOnSignIn: true,
-            sendOnSignUp: true,
+            // Signup and explicit resend own delivery. Silently sending another
+            // token on every rejected sign-in creates confusing duplicate mail.
+            sendOnSignIn: false,
+            // Signup explicitly requests delivery after the account exists so
+            // the dashboard can show a truthful sent/retry state.
+            sendOnSignUp: false,
             sendVerificationEmail: async ({ token, url, user }) => {
               const actionUrl = getEmailVerificationActionUrl({
                 dashboardPublicBaseUrl: options.dashboardPublicBaseUrl,
@@ -169,24 +237,14 @@ export function createPlatformAuth(options: {
               // Account verification is time-sensitive. Send it inline when a
               // provider is available so signup doesn't claim an email was sent
               // while it is still waiting behind the general delivery queue.
-              if (emailProvider) {
-                await emailProvider.send({
-                  body: `Verify your email address to finish creating your ECS account:\n\n${actionUrl}`,
-                  channel: "email",
-                  eventType: "account.email_verification",
-                  recipient: user.email,
-                  senderProfile: "accounts",
-                  subject: "Verify your ECS email address",
-                  tenantId: "platform",
-                });
-              } else if (enqueueAccountEmail) {
-                await enqueueAccountEmail({
-                  idempotencySource: url,
-                  recipient: user.email,
-                  templateKey: "account.email_verification",
-                  variables: { action_url: actionUrl, recipient_name: user.name || "there" },
-                });
-              }
+              await deliverAccountVerificationEmail({
+                actionUrl,
+                emailProvider,
+                enqueueAccountEmail,
+                generatedUrl: url,
+                recipient: user.email,
+                recipientName: user.name || "there",
+              });
             },
           },
         }

@@ -376,10 +376,10 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
         }}
         size="sm"
         type="button"
-        variant="outline"
+        variant="ghost"
       >
         <AppIcons.edit data-icon="inline-start" />
-        {t("products.detail.editOptions")}
+        {t("common.edit")}
       </Button>
       <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : requestClose())} open={open}>
         <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
