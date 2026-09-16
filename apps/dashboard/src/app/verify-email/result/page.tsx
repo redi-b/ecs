@@ -3,7 +3,7 @@ import Link from "@/components/app/link";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import { Button } from "@/components/ui/button";
 import { getTranslations } from "@/i18n/server";
-import { getSafeAccountReturnPath } from "@/lib/platform-auth-account";
+import { getSafeVerificationReturnPath } from "@/lib/platform-auth-account";
 
 export default async function EmailVerificationResultPage({
   searchParams,
@@ -57,7 +57,7 @@ export default async function EmailVerificationResultPage({
 }
 
 function getResultReturnPath(value: string | undefined, approvingChange: boolean, failed: boolean) {
-  const path = getSafeAccountReturnPath(value);
+  const path = getSafeVerificationReturnPath(value);
   if (!approvingChange && !failed) return path;
   const url = new URL(path, "https://dashboard.invalid");
   url.searchParams.delete("emailChanged");

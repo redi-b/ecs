@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAccountAuthRequestContext } from "@/lib/account-request-context";
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
-import { getSafeAccountReturnPath, verifyAccountEmail } from "@/lib/platform-auth-account";
+import { getSafeVerificationReturnPath, verifyAccountEmail } from "@/lib/platform-auth-account";
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     getFormValue(formData, "intent") === "approve-email-change"
       ? "approve-email-change"
       : "verify-email";
-  const returnTo = getSafeAccountReturnPath(getFormValue(formData, "returnTo"));
+  const returnTo = getSafeVerificationReturnPath(getFormValue(formData, "returnTo"));
   resultUrl.searchParams.set("intent", intent);
   resultUrl.searchParams.set("returnTo", returnTo);
 

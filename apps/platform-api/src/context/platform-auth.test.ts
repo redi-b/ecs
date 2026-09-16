@@ -83,11 +83,11 @@ test("new-account verification uses Better Auth's one-click link", () => {
       intent: "verify-email",
       token: "verify-token",
     }),
-    generatedUrl,
+    "https://app.example.com/verify-email?token=verify-token&intent=verify-email&returnTo=%2Fsign-in%3Fverified%3D1",
   );
 });
 
-test("the new-address verification link completes through Better Auth", () => {
+test("the new-address verification link uses the app confirmation page", () => {
   const generatedUrl =
     "https://api.example.com/platform/auth/verify-email?token=new-token&callbackURL=https%3A%2F%2Fshop.example.com%2Fverify-email%2Fresult%3Fintent%3Dapprove-email-change%26returnTo%3D%252Fdashboard%252Fsettings%253Ftab%253Daccount%2526emailChanged%253D1";
   assert.equal(
@@ -97,6 +97,6 @@ test("the new-address verification link completes through Better Auth", () => {
       intent: "verify-email",
       token: "new-token",
     }),
-    generatedUrl,
+    "https://shop.example.com/verify-email?token=new-token&intent=verify-email&returnTo=%2Fverify-email%2Fresult%3Fintent%3Dapprove-email-change%26returnTo%3D%252Fdashboard%252Fsettings%253Ftab%253Daccount%2526emailChanged%253D1",
   );
 });

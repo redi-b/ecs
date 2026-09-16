@@ -218,6 +218,22 @@ export function getSafeAccountReturnPath(value: string | null | undefined) {
   return `${url.pathname}${url.search}`;
 }
 
+export function getSafeVerificationReturnPath(value: string | null | undefined) {
+  if (!value?.startsWith("/") || value.startsWith("//")) return "/sign-in";
+  const url = new URL(value, "https://dashboard.invalid");
+  const allowed =
+    url.pathname === "/sign-in" ||
+    url.pathname === "/onboarding" ||
+    url.pathname.startsWith("/onboarding/") ||
+    url.pathname === "/accept-invitation" ||
+    url.pathname.startsWith("/accept-invitation/") ||
+    url.pathname === "/dashboard" ||
+    url.pathname.startsWith("/dashboard/") ||
+    url.pathname === "/verify-email/result";
+  if (url.origin !== "https://dashboard.invalid" || !allowed) return "/sign-in";
+  return `${url.pathname}${url.search}`;
+}
+
 export async function verifyAccountEmail(
   options: AuthRequestContext & { callbackURL: string; token: string },
 ) {

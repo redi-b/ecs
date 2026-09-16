@@ -36,13 +36,6 @@ export function getEmailVerificationActionUrl(input: {
   intent: "approve-email-change" | "verify-email";
   token: string;
 }) {
-  // Normal verification should stay on Better Auth's original one-click URL.
-  // Reconstructing the token through a dashboard form adds another proxy hop and
-  // makes delayed/resend emails much easier to invalidate before completion.
-  if (input.intent === "verify-email") {
-    return input.generatedUrl;
-  }
-
   const generatedUrl = new URL(input.generatedUrl);
   const callbackUrl = new URL(
     generatedUrl.searchParams.get("callbackURL") || "/",
