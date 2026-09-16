@@ -262,7 +262,18 @@ services:
     security_opt:
       - no-new-privileges:true
     environment: *medusa-environment
-    command: ["timeout", "-s", "TERM", "180", "node_modules/.bin/medusa", "db:migrate"]
+    # Deployments have no interactive terminal. Medusa 2.21 prompts before
+    # updating changed module-link tables unless this flag is provided.
+    command:
+      [
+        "timeout",
+        "-s",
+        "TERM",
+        "180",
+        "node_modules/.bin/medusa",
+        "db:migrate",
+        "--execute-all-links",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
