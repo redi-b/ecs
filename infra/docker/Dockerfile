@@ -88,6 +88,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 COPY --chown=node:node --from=dashboard-build /workspace/apps/dashboard/.next/standalone ./
 COPY --chown=node:node --from=dashboard-build /workspace/apps/dashboard/.next/static ./apps/dashboard/.next/static
+COPY --chown=node:node --from=dashboard-build /workspace/apps/dashboard/public ./apps/dashboard/public
 USER node
 EXPOSE 3001
 ENTRYPOINT ["dumb-init", "--"]
