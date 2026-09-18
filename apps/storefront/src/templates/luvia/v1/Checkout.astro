@@ -9,6 +9,8 @@ import type {
   StoreShippingOption,
 } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import DiscountCode from "./components/DiscountCode.astro";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
@@ -44,6 +46,7 @@ const {
   demoMode = false,
 } = Astro.props;
 const template = parseLuviaData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const items = cart?.items ?? [];
 const deliveryEnabled = delivery?.deliveryEnabled === true;
 const pickupEnabled = delivery?.pickupEnabled === true;
@@ -67,63 +70,80 @@ const summary = resolveStoreCartSummary(cart);
 const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
 const defaultAddress =
   customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
+const clientMessages = {
+  applied: m.cart_discount_applied({}, { locale }),
+  applyFailed: m.checkout_code_failed({}, { locale }),
+  applying: m.checkout_code_checking({}, { locale }),
+  appliedSuccess: m.checkout_code_applied({}, { locale }),
+  discountRemoved: m.cart_discount_removed({}, { locale }),
+  free: m.checkout_free({}, { locale }),
+  openingPayment: m.checkout_opening_payment({}, { locale }),
+  optional: m.checkout_optional({}, { locale }),
+  placeOrder: m.checkout_place_order({}, { locale }),
+  placingOrder: m.checkout_placing_order({}, { locale }),
+  remove: m.action_remove({}, { locale }),
+  removeDiscount: m.cart_discount_remove({ code: "__CODE__" }, { locale }),
+  removing: m.cart_discount_removing({}, { locale }),
+  requiredForChapa: m.checkout_email_required_chapa({}, { locale }),
+  securePayment: m.checkout_continue_payment({}, { locale }),
+};
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title="Checkout">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={m.checkout_title({}, { locale })}>
   <main class="lv-checkout">
-    <header class="lv-checkout__hero"><h1>CHECKOUT</h1><p>Complete your order — natural beauty, delivered with care.</p></header>
+    <header class="lv-checkout__hero"><h1>{m.checkout_title({}, { locale })}</h1><p>{m.checkout_intro({}, { locale })}</p></header>
     {error && <p class="lv-checkout__error" role="alert">{error}</p>}
-    {shippingError && <p class="lv-checkout__error" role="alert">Delivery options could not be loaded. Please refresh and try again.</p>}
-    {priceMismatch && <p class="lv-checkout__error" role="alert">Delivery pricing is being updated. Please ask the shop to resave its fulfillment settings, then refresh checkout.</p>}
-    {!items.length ? <section class="lv-checkout__empty"><h2>Your cart is empty</h2><p>Add products before continuing to checkout.</p><a href="/products">Browse products</a></section> : <div class="lv-checkout__layout">
+    {shippingError && <p class="lv-checkout__error" role="alert">{m.checkout_shipping_load_error({}, { locale })}</p>}
+    {priceMismatch && <p class="lv-checkout__error" role="alert">{m.checkout_delivery_price_update({}, { locale })}</p>}
+    {!items.length ? <section class="lv-checkout__empty"><h2>{m.cart_empty({}, { locale })}</h2><p>{m.checkout_empty_help({}, { locale })}</p><a href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="lv-checkout__layout">
       <section class="lv-checkout-form-wrap">
-        <header><h2>Payment Details</h2><p>By proceeding you agree to our Terms of Service and Privacy Policy.</p></header>
+        <header><h2>{m.checkout_payment_details({}, { locale })}</h2><p>{m.checkout_terms_notice({}, { locale })}</p></header>
         <form method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} class="lv-checkout-form" data-checkout-form>
-          {!fulfillmentAvailable && <div class="lv-checkout-blocker" role="status"><strong>Orders are temporarily unavailable.</strong><p>This shop has not enabled delivery or pickup yet.</p></div>}
+          {!fulfillmentAvailable && <div class="lv-checkout-blocker" role="status"><strong>{m.checkout_orders_unavailable({}, { locale })}</strong><p>{m.checkout_fulfillment_unavailable({}, { locale })}</p></div>}
           <div class="lv-checkout-fields">
-            <label><span>First Name*</span><input name="firstName" value={defaultAddress?.firstName || customer?.firstName} required autocomplete="given-name" placeholder="Jane" /></label>
-            <label><span>Last Name*</span><input name="lastName" value={defaultAddress?.lastName || customer?.lastName} required autocomplete="family-name" placeholder="Doe" /></label>
-            <label><span>Phone Number{phoneRequired ? "*" : ""}</span><input name="phone" value={defaultAddress?.phone || customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
-            <label><span>Email <small data-email-requirement>{defaultPayment === "chapa" ? "(required for Chapa)" : "(optional)"}</small></span><input name="email" value={customer?.email} type="email" required={defaultPayment === "chapa"} autocomplete="email" placeholder="name@example.com" /></label>
-            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-choice><legend>How would you like to receive it?*</legend><div>{deliveryEnabled && <label><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} disabled={!fulfillmentAvailable} /><span><strong>Delivery</strong><small>Send the order to your address.</small></span></label>}{pickupEnabled && <label><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} disabled={!fulfillmentAvailable} /><span><strong>Pickup</strong><small>Collect it from the shop.</small></span></label>}</div></fieldset>
+            <label><span>{m.checkout_first_name({}, { locale })}*</span><input name="firstName" value={defaultAddress?.firstName || customer?.firstName} required autocomplete="given-name" /></label>
+            <label><span>{m.checkout_last_name({}, { locale })}*</span><input name="lastName" value={defaultAddress?.lastName || customer?.lastName} required autocomplete="family-name" /></label>
+            <label><span>{m.checkout_phone({}, { locale })}{phoneRequired ? "*" : ""}</span><input name="phone" value={defaultAddress?.phone || customer?.phone} required={phoneRequired} autocomplete="tel" inputmode="tel" placeholder="0912345678" /></label>
+            <label><span>{m.checkout_email({}, { locale })} <small data-email-requirement>({defaultPayment === "chapa" ? m.checkout_required({}, { locale }) : m.checkout_optional({}, { locale })})</small></span><input name="email" value={customer?.email} type="email" required={defaultPayment === "chapa"} autocomplete="email" /></label>
+            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-choice><legend>{m.checkout_receive_question({}, { locale })}*</legend><div>{deliveryEnabled && <label><input type="radio" name="deliveryChoice" value="delivery" checked={defaultChoice === "delivery"} disabled={!fulfillmentAvailable} /><span><strong>{m.checkout_delivery({}, { locale })}</strong><small>{m.checkout_delivery_help({}, { locale })}</small></span></label>}{pickupEnabled && <label><input type="radio" name="deliveryChoice" value="pickup" checked={defaultChoice === "pickup"} disabled={!fulfillmentAvailable} /><span><strong>{m.checkout_pickup({}, { locale })}</strong><small>{m.checkout_pickup_help({}, { locale })}</small></span></label>}</div></fieldset>
             <section class="lv-checkout-delivery-details is-wide" data-delivery-field>
-              <header><div><strong>Delivery address</strong><span>Choose a saved address or enter one for this order.</span></div>{customer && <a href="/account#saved-addresses">Manage addresses</a>}</header>
-              {customerAddresses.length > 0 && <fieldset class="lv-checkout-saved-addresses" data-saved-addresses><legend>Choose an address</legend><div>{customerAddresses.map((address) => <label><input type="radio" name="savedAddressId" value={address.id} checked={address.id === defaultAddress?.id} data-address={JSON.stringify(address)} /><span><strong>{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small>{address.address1}, {address.city}</small></span></label>)}<label><input type="radio" name="savedAddressId" value="" checked={!defaultAddress} /><span><strong>Use a different address</strong><small>Enter delivery details below.</small></span></label></div></fieldset>}
+              <header><div><strong>{m.checkout_delivery_address({}, { locale })}</strong><span>{m.checkout_address_choice_help({}, { locale })}</span></div>{customer && <a href="/account#saved-addresses">{m.checkout_manage_addresses({}, { locale })}</a>}</header>
+              {customerAddresses.length > 0 && <fieldset class="lv-checkout-saved-addresses" data-saved-addresses><legend>{m.checkout_choose_address({}, { locale })}</legend><div>{customerAddresses.map((address) => <label><input type="radio" name="savedAddressId" value={address.id} checked={address.id === defaultAddress?.id} data-address={JSON.stringify(address)} /><span><strong>{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small>{address.address1}, {address.city}</small></span></label>)}<label><input type="radio" name="savedAddressId" value="" checked={!defaultAddress} /><span><strong>{m.checkout_different_address({}, { locale })}</strong><small>{m.checkout_enter_details({}, { locale })}</small></span></label></div></fieldset>}
               <div class="lv-checkout-address-fields">
-                <label><span>City*</span><input name="city" value={defaultAddress?.city || "Addis Ababa"} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
-                <label><span>Street Address*</span><input name="address1" value={defaultAddress?.address1} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder="Bole, Ayat Road" /></label>
-                {delivery?.landmarkRequired || delivery?.notesEnabled !== false ? <label class="is-wide"><span>Landmark{delivery?.landmarkRequired ? "*" : " (optional)"}</span><input name="landmark" required={Boolean(delivery?.landmarkRequired) && defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} data-landmark-required={delivery?.landmarkRequired ? "true" : "false"} placeholder="Nearby landmark" /></label> : null}
+                <label><span>{m.checkout_city({}, { locale })}*</span><input name="city" value={defaultAddress?.city || "Addis Ababa"} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="address-level2" /></label>
+                <label><span>{m.checkout_street_address({}, { locale })}*</span><input name="address1" value={defaultAddress?.address1} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} autocomplete="street-address" placeholder={m.checkout_address_placeholder({}, { locale })} /></label>
+                {delivery?.landmarkRequired || delivery?.notesEnabled !== false ? <label class="is-wide"><span>{m.checkout_landmark({}, { locale })}{delivery?.landmarkRequired ? "*" : ` (${m.checkout_optional({}, { locale })})`}</span><input name="landmark" required={Boolean(delivery?.landmarkRequired) && defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} data-landmark-required={delivery?.landmarkRequired ? "true" : "false"} placeholder={m.checkout_landmark_placeholder({}, { locale })} /></label> : null}
               </div>
-              {customer && <div class="lv-checkout-save-address" data-save-address hidden={Boolean(defaultAddress)}><label data-save-address-toggle><input type="checkbox" name="saveAddress" value="true" /><span><strong>Save this address</strong><small>Keep it ready for your next checkout.</small></span></label><label class="lv-checkout-address-name" hidden><span>Address label</span><input name="addressName" value="Home" placeholder="Home or Work" /></label><p data-address-match hidden>This address is already saved to your account.</p></div>}
+              {customer && <div class="lv-checkout-save-address" data-save-address hidden={Boolean(defaultAddress)}><label data-save-address-toggle><input type="checkbox" name="saveAddress" value="true" /><span><strong>{m.checkout_save_address({}, { locale })}</strong><small>{m.checkout_save_address_help({}, { locale })}</small></span></label><label class="lv-checkout-address-name" hidden><span>{m.checkout_address_label({}, { locale })}</span><input name="addressName" value={m.account_home({}, { locale })} placeholder={m.checkout_address_label_placeholder({}, { locale })} /></label><p data-address-match hidden>{m.checkout_address_already_saved({}, { locale })}</p></div>}
             </section>
-            {delivery?.notesEnabled !== false && <label class="is-wide"><span>Order Notes (optional)</span><textarea name="notes" rows="3" placeholder="Helpful delivery details" /></label>}
-            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>Delivery option*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || "Standard delivery"}</strong><small>{option.amount === 0 ? "Free" : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}</small></span></label>)}</div></fieldset>
-<div data-pickup-option hidden>{template.footer.address && <p>Collect from {template.footer.address}. {template.footer.phone && <a href={`tel:${template.footer.phone}`}>{template.footer.phone}</a>}</p>}{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
+            {delivery?.notesEnabled !== false && <label class="is-wide"><span>{m.checkout_order_notes({}, { locale })} ({m.checkout_optional({}, { locale })})</span><textarea name="notes" rows="3" /></label>}
+            <fieldset class="lv-checkout-choice-group is-wide" data-delivery-option><legend>{m.checkout_delivery_option({}, { locale })}*</legend><div>{deliveryOptions.map((option, index) => <label><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} disabled={defaultChoice !== "delivery"} /><span><strong>{option.name?.trim() || m.checkout_standard_delivery({}, { locale })}</strong><small>{option.amount === 0 ? m.checkout_free({}, { locale }) : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode, locale)}</small></span></label>)}</div></fieldset>
+<div data-pickup-option hidden>{template.footer.address && <p>{m.checkout_collect_from({ address: template.footer.address }, { locale })} {template.footer.phone && <a href={`tel:${template.footer.phone}`}>{template.footer.phone}</a>}</p>}{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
           </div>
-          {customer ? <p class="lv-checkout-account is-signed-in"><strong>Signed in as {customer.email}</strong><span>Changes here apply only to this order unless you choose to save a new address.</span></p> : <p class="lv-checkout-account"><span>Want faster checkout next time?</span><a href="/account?mode=register">Create an account</a></p>}
-          <fieldset class="lv-checkout-payment" data-payment-choice><legend>How would you like to pay?*</legend>{payment.cod && <label><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>Pay on delivery</strong><small>Pay when your order arrives.</small></span></label>}{payment.chapa && <label><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>Pay securely online. An email address is required.</small></span></label>}{!payment.cod && !payment.chapa && <p>No payment method is available for this order.</p>}</fieldset>
-          <div class="lv-checkout-actions"><button type="submit" data-place-order disabled={!canSubmit || !defaultPayment}>{defaultPayment === "chapa" ? "Continue to secure payment" : "Place order"}</button></div>
+          {customer ? <p class="lv-checkout-account is-signed-in"><strong>{m.checkout_signed_in_as({ email: customer.email }, { locale })}</strong><span>{m.checkout_order_only_changes({}, { locale })}</span></p> : <p class="lv-checkout-account"><span>{m.checkout_faster_next_time({}, { locale })}</span><a href="/account?mode=register">{m.account_create({}, { locale })}</a></p>}
+          <fieldset class="lv-checkout-payment" data-payment-choice><legend>{m.checkout_payment({}, { locale })}*</legend>{payment.cod && <label><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>{m.checkout_pay_on_delivery({}, { locale })}</strong><small>{m.checkout_pay_on_delivery_help({}, { locale })}</small></span></label>}{payment.chapa && <label><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>{m.checkout_chapa_help({}, { locale })}</small></span></label>}{!payment.cod && !payment.chapa && <p>{m.checkout_no_payment({}, { locale })}</p>}</fieldset>
+          <div class="lv-checkout-actions"><button type="submit" data-place-order disabled={!canSubmit || !defaultPayment}>{defaultPayment === "chapa" ? m.checkout_continue_payment({}, { locale }) : m.checkout_place_order({}, { locale })}</button></div>
         </form>
       </section>
 
-      <aside class="lv-checkout-summary" aria-label="Order summary" data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal}>
-        <header><h2>Order Summary</h2><span>{summary.itemCount} item{summary.itemCount === 1 ? "" : "s"}</span></header>
-        <ul>{items.map((item) => <li><div>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}</div><p><strong>{item.title ?? "Product"}</strong><span>{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</b></li>)}</ul>
+      <aside class="lv-checkout-summary" aria-label={m.cart_order_summary({}, { locale })} data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal} data-locale={locale === "am" ? "am-ET" : "en-ET"}>
+        <header><h2>{m.cart_order_summary({}, { locale })}</h2><span>{m.cart_item_count({ count: summary.itemCount }, { locale })}</span></header>
+        <ul>{items.map((item) => <li><div>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}</div><p><strong>{item.title ?? m.product_fallback_name({}, { locale })}</strong><span>{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</b></li>)}</ul>
         <DiscountCode appliedCodes={summary.appliedCodes} idPrefix="checkout" />
         <dl>
-          <div><dt>Subtotal</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode)}</dd></div>
-          <div class="is-savings" data-summary-discount hidden={!summary.savingsTotal}><dt>Discount</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode)}</dd></div>
-          <div><dt>Delivery</dt><dd data-summary-delivery>{initialShippingAmount === 0 ? "Free" : formatMoney(initialShippingAmount, cart?.currencyCode)}</dd></div>
-          {summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>Tax</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode)}</dd></div>}
-          <div><dt>Estimated total</dt><dd data-summary-total>{formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode)}</dd></div>
+          <div><dt>{m.cart_subtotal({}, { locale })}</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</dd></div>
+          <div class="is-savings" data-summary-discount hidden={!summary.savingsTotal}><dt>{m.cart_discount({}, { locale })}</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</dd></div>
+          <div><dt>{m.cart_delivery({}, { locale })}</dt><dd data-summary-delivery>{initialShippingAmount === 0 ? m.checkout_free({}, { locale }) : formatMoney(initialShippingAmount, cart?.currencyCode, locale)}</dd></div>
+          {summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>{m.cart_tax({}, { locale })}</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode, locale)}</dd></div>}
+          <div><dt>{m.checkout_estimated_total({}, { locale })}</dt><dd data-summary-total>{formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode, locale)}</dd></div>
         </dl>
-        <small>The final total is confirmed securely when you place the order.</small>
+        <small>{m.checkout_final_total_note({}, { locale })}</small>
       </aside>
     </div>}
   </main>
 </Layout>
 
-<script is:inline>
+<script is:inline define:vars={{ clientMessages }}>
   (() => {
     const fulfillment = document.querySelector("[data-delivery-choice]"); if (!fulfillment) return;
     const form = document.querySelector("[data-checkout-form]");
@@ -167,9 +187,9 @@ const defaultAddress =
     }));
     const sync = () => { const delivery = selectedValue("deliveryChoice") === "delivery"; document.querySelectorAll("[data-delivery-field]").forEach((wrapper) => { wrapper.hidden = !delivery; wrapper.querySelectorAll("input,select,textarea").forEach((field) => { field.disabled = !delivery; }); }); ["address1", "city"].forEach((name) => { const field = form?.elements.namedItem(name); if (field instanceof HTMLInputElement) field.required = delivery; }); const landmark = form?.elements.namedItem("landmark"); if (landmark instanceof HTMLInputElement) landmark.required = delivery && landmark.dataset.landmarkRequired === "true"; const deliveryOption = document.querySelector("[data-delivery-option]"); const pickupOption = document.querySelector("[data-pickup-option]"); if (deliveryOption) { deliveryOption.hidden = !delivery; deliveryOption.querySelectorAll('input[name="shippingOptionId"]').forEach((field) => { field.disabled = !delivery; field.required = delivery; }); } if (pickupOption) { pickupOption.hidden = delivery; pickupOption.querySelectorAll("input").forEach((field) => field.disabled = delivery); } syncSaveAddress(); };
     const summary = document.querySelector("[data-base-total]");
-    const money = (amount) => new Intl.NumberFormat("en-ET", { style: "currency", currency: summary?.dataset.currency || "ETB", maximumFractionDigits: 2 }).format(amount);
-    const syncSummary = () => { if (!(summary instanceof HTMLElement)) return; const selected = document.querySelector('input[name="shippingOptionId"]:checked'); const amount = selectedValue("deliveryChoice") === "pickup" ? 0 : Number(selected?.dataset.amount || 0); const deliveryNode = document.querySelector("[data-summary-delivery]"); const totalNode = document.querySelector("[data-summary-total]"); if (deliveryNode) deliveryNode.textContent = amount === 0 ? "Free" : money(amount); if (totalNode) totalNode.textContent = money(Number(summary.dataset.baseTotal || 0) + amount); };
-    const renderPromotions = (cart) => { const target = summary?.querySelector("[data-applied-promotions]"); if (!target) return; target.replaceChildren(); (cart.promotions || []).filter((promotion) => !promotion.isAutomatic && promotion.code).forEach((promotion) => { const removeForm = document.createElement("form"); removeForm.method = "post"; removeForm.action = "/actions/cart/promotion"; removeForm.dataset.cartPromotionForm = ""; const intent = document.createElement("input"); intent.type = "hidden"; intent.name = "intent"; intent.value = "remove"; const code = document.createElement("input"); code.type = "hidden"; code.name = "code"; code.value = promotion.code; const label = document.createElement("span"); const strong = document.createElement("b"); strong.textContent = promotion.code; const small = document.createElement("small"); small.textContent = "Applied"; label.append(strong, small); const button = document.createElement("button"); button.type = "submit"; button.textContent = "Remove"; button.setAttribute("aria-label", `Remove discount ${promotion.code}`); removeForm.append(intent, code, label, button); target.append(removeForm); }); };
+    const money = (amount) => new Intl.NumberFormat(summary?.dataset.locale || "en-ET", { style: "currency", currency: summary?.dataset.currency || "ETB", maximumFractionDigits: 2 }).format(amount);
+    const syncSummary = () => { if (!(summary instanceof HTMLElement)) return; const selected = document.querySelector('input[name="shippingOptionId"]:checked'); const amount = selectedValue("deliveryChoice") === "pickup" ? 0 : Number(selected?.dataset.amount || 0); const deliveryNode = document.querySelector("[data-summary-delivery]"); const totalNode = document.querySelector("[data-summary-total]"); if (deliveryNode) deliveryNode.textContent = amount === 0 ? clientMessages.free : money(amount); if (totalNode) totalNode.textContent = money(Number(summary.dataset.baseTotal || 0) + amount); };
+    const renderPromotions = (cart) => { const target = summary?.querySelector("[data-applied-promotions]"); if (!target) return; target.replaceChildren(); (cart.promotions || []).filter((promotion) => !promotion.isAutomatic && promotion.code).forEach((promotion) => { const removeForm = document.createElement("form"); removeForm.method = "post"; removeForm.action = "/actions/cart/promotion"; removeForm.dataset.cartPromotionForm = ""; const intent = document.createElement("input"); intent.type = "hidden"; intent.name = "intent"; intent.value = "remove"; const code = document.createElement("input"); code.type = "hidden"; code.name = "code"; code.value = promotion.code; const label = document.createElement("span"); const strong = document.createElement("b"); strong.textContent = promotion.code; const small = document.createElement("small"); small.textContent = clientMessages.applied; label.append(strong, small); const button = document.createElement("button"); button.type = "submit"; button.textContent = clientMessages.remove; button.setAttribute("aria-label", clientMessages.removeDiscount.replace("__CODE__", promotion.code)); removeForm.append(intent, code, label, button); target.append(removeForm); }); };
     summary?.addEventListener("submit", async (event) => {
       const promotionForm = event.target;
       if (!(promotionForm instanceof HTMLFormElement) || !promotionForm.matches("[data-cart-promotion-form]")) return;
@@ -178,11 +198,11 @@ const defaultAddress =
       const button = event.submitter instanceof HTMLButtonElement ? event.submitter : promotionForm.querySelector("button");
       const intent = new FormData(promotionForm).get("intent") === "remove" ? "remove" : "apply";
       if (button instanceof HTMLButtonElement) button.disabled = true;
-      if (status) { status.textContent = intent === "remove" ? "Removing code…" : "Checking code…"; status.classList.remove("is-error"); }
+      if (status) { status.textContent = intent === "remove" ? clientMessages.removing : clientMessages.applying; status.classList.remove("is-error"); }
       try {
         const response = await fetch(promotionForm.action, { method: "POST", body: new FormData(promotionForm), credentials: "same-origin", headers: { Accept: "application/json" } });
         const result = await response.json();
-        if (!response.ok || !result.ok) throw new Error(result.message || "Could not update this discount.");
+        if (!response.ok || !result.ok) throw new Error(clientMessages.applyFailed);
         const updatedCart = result.cart;
         const shippingTotal = Number(updatedCart.shippingTotal || 0);
         const updatedBaseTotal = Number(updatedCart.total ?? updatedCart.itemTotal ?? 0) - shippingTotal;
@@ -194,16 +214,16 @@ const defaultAddress =
         if (discountValue) discountValue.textContent = `−${money(savings)}`;
         renderPromotions(updatedCart); syncSummary();
         if (intent === "apply") promotionForm.reset();
-        if (status) status.textContent = intent === "remove" ? "Discount removed." : "Discount applied.";
+        if (status) status.textContent = intent === "remove" ? clientMessages.discountRemoved : clientMessages.appliedSuccess;
         window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: false } }));
       } catch (cause) {
-        if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update this discount."; status.classList.add("is-error"); }
+        if (status) { status.textContent = cause instanceof Error ? cause.message : clientMessages.applyFailed; status.classList.add("is-error"); }
       } finally {
         if (button instanceof HTMLButtonElement) button.disabled = false;
       }
     });
     fulfillment.addEventListener("change", () => { sync(); syncSummary(); }); document.querySelector("[data-delivery-option]")?.addEventListener("change", syncSummary); sync(); syncSummary();
-    const email = form?.querySelector('input[name="email"]'); const submit = form?.querySelector("[data-place-order]"); const emailRequirement = form?.querySelector("[data-email-requirement]"); const syncPayment = () => { const chapa = selectedValue("paymentMethod") === "chapa"; if (form instanceof HTMLFormElement) form.action = chapa ? "/actions/checkout/chapa" : "/actions/checkout/cod"; if (email instanceof HTMLInputElement) email.required = chapa; if (emailRequirement) emailRequirement.textContent = chapa ? "(required for Chapa)" : "(optional)"; if (submit) submit.textContent = chapa ? "Continue to secure payment" : "Place order"; }; form?.querySelector("[data-payment-choice]")?.addEventListener("change", syncPayment); syncPayment(); form?.addEventListener("submit", (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.loading = "true"; button.textContent = selectedValue("paymentMethod") === "chapa" ? "Opening secure payment…" : "Placing your order…"; } });
+    const email = form?.querySelector('input[name="email"]'); const submit = form?.querySelector("[data-place-order]"); const emailRequirement = form?.querySelector("[data-email-requirement]"); const syncPayment = () => { const chapa = selectedValue("paymentMethod") === "chapa"; if (form instanceof HTMLFormElement) form.action = chapa ? "/actions/checkout/chapa" : "/actions/checkout/cod"; if (email instanceof HTMLInputElement) email.required = chapa; if (emailRequirement) emailRequirement.textContent = `(${chapa ? clientMessages.requiredForChapa : clientMessages.optional})`; if (submit) submit.textContent = chapa ? clientMessages.securePayment : clientMessages.placeOrder; }; form?.querySelector("[data-payment-choice]")?.addEventListener("change", syncPayment); syncPayment(); form?.addEventListener("submit", (event) => { const button = event.submitter; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.loading = "true"; button.textContent = selectedValue("paymentMethod") === "chapa" ? clientMessages.openingPayment : clientMessages.placingOrder; } });
   })();
 </script>
 <style is:global lang="scss">@use "./styles/checkout.scss"; @use "./styles/discount-code.scss";</style>

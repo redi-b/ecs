@@ -19,6 +19,7 @@ export type ProductFormProps = {
   collections: MerchantProductCollection[];
   initialStep?: ComposerStep["id"] | undefined;
   notice?: ReactNode;
+  offerTranslationAfterCreate?: boolean | undefined;
   onClose?: (() => void) | undefined;
   open?: boolean | undefined;
   product?: MerchantProduct | undefined;

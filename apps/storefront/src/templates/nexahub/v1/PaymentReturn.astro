@@ -1,5 +1,7 @@
 ---
 import Button from "./Button.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
 import "./styles/pages/commerce.scss";
@@ -17,10 +19,12 @@ const {
   tenantName,
   cartCount,
   error,
-  redirectLabel = "Verifying payment…",
+  redirectLabel,
 } = Astro.props;
 const template = parseNexahubData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const progressLabel = redirectLabel ?? m.payment_verify_progress({}, { locale });
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount}>
-  <main class="nexa-commerce" id="main-content"><div class="container nexa-commerce__frame"><nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/checkout">Checkout</a><span>/</span><span aria-current="page">Payment status</span></nav><header class="nexa-commerce__heading"><span class="nexa-kicker">Secure checkout</span><div><h1>{error ? "Payment needs attention" : "Confirming payment"}</h1><p>{error ? "Your cart is safe and ready when you are." : redirectLabel}</p></div></header>{error ? <section class="nexa-empty" role="alert"><span class="nexa-empty__index">!</span><h2>We could not confirm your payment</h2><p>{error}</p><div class="nexa-receipt__actions"><Button text="Back to checkout" href="/checkout" /><Button text="Return to cart" href="/cart" variant="dark" /></div></section> : <div class="nexa-notice nexa-notice--processing" role="status" aria-live="polite"><span class="nexa-status-spinner" aria-hidden="true"></span><div><strong>{redirectLabel}</strong><p>Please keep this page open for a moment.</p></div></div>}</div></main>
+  <main class="nexa-commerce" id="main-content"><div class="container nexa-commerce__frame"><nav class="nexa-breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/checkout">{m.checkout_title({}, { locale })}</a><span>/</span><span aria-current="page">{m.payment_status({}, { locale })}</span></nav><header class="nexa-commerce__heading"><span class="nexa-kicker">{m.payment_secure_checkout({}, { locale })}</span><div><h1>{error ? m.payment_needs_attention({}, { locale }) : m.payment_confirming({}, { locale })}</h1><p>{error ? m.payment_cart_safe({}, { locale }) : progressLabel}</p></div></header>{error ? <section class="nexa-empty" role="alert"><span class="nexa-empty__index">!</span><h2>{m.payment_confirm_failed({}, { locale })}</h2><p>{error}</p><div class="nexa-receipt__actions"><Button text={m.payment_back_checkout({}, { locale })} href="/checkout" /><Button text={m.payment_return_cart({}, { locale })} href="/cart" variant="dark" /></div></section> : <div class="nexa-notice nexa-notice--processing" role="status" aria-live="polite"><span class="nexa-status-spinner" aria-hidden="true"></span><div><strong>{progressLabel}</strong><p>{m.payment_keep_open({}, { locale })}</p></div></div>}</div></main>
 </Layout>

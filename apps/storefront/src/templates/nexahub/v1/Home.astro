@@ -9,18 +9,20 @@ import type {
 } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import contactFallback from "./assets/contact-store-interior.webp";
 import featuredFallback from "./assets/featured-item-promo.webp";
 import qualityFallback from "./assets/product-quality-phone-promo.webp";
 import heroFallback from "./assets/tech-workspace-hero.webp";
 import Button from "./Button.astro";
 import CollectionCard from "./CollectionCard.astro";
+import HomeProductFilterBar from "./HomeProductFilterBar.astro";
 import arrowRightIcon from "./icons/arrow-right-icon.svg?raw";
 import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
 import Layout from "./Layout.astro";
 import { nexahubAsset, parseNexahubData } from "./lib";
 import ProductCard from "./ProductCard.astro";
-import HomeProductFilterBar from "./HomeProductFilterBar.astro";
 import "./styles/pages/index.scss";
 import "./styles/responsive.scss";
 
@@ -53,6 +55,7 @@ const {
   structuredData,
 } = Astro.props;
 const template = parseNexahubData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const products = "products" in productsResult ? productsResult.products : [];
 const productById = new Map(products.map((product) => [product.id, product]));
 const configuredFeatured = template.home.featuredItem.productIds.length
@@ -85,6 +88,9 @@ const selectedCollections = (
         .filter((item): item is StoreCollection => Boolean(item))
     : collections
 ).slice(0, 6);
+const selectedTaxonomy = selectedCollections.length
+  ? selectedCollections.map((item) => ({ item, kind: "collection" as const }))
+  : categories.slice(0, 6).map((item) => ({ item, kind: "category" as const }));
 const collectionProductImage = new Map<string, string>();
 for (const product of products) {
   if (
@@ -98,15 +104,11 @@ for (const product of products) {
 const collectionImage = (collection: StoreCollection) =>
   nexahubAsset(collection.mediaUrl ?? collectionProductImage.get(collection.id), "") || null;
 const hasCatalogError = "message" in productsResult;
-if (/catalog product|publish this feature/i.test(template.home.featuredItem.body)) {
-  template.home.featuredItem.body =
-    "A focused look at one of the latest products available from this store.";
-}
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} navigationCollections={collections} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} editorMode={editorMode} seo={seo} structuredData={structuredData} renderPath={editorMode || demoMode ? "/" : undefined}>
   <main id="main-content">
     {(editorMode || template.home.hero.enabled) && <section class="hero-section" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" hidden={!template.home.hero.enabled}>
-      <img class="hero-section__background" src={nexahubAsset(template.home.hero.imageAssetId, heroFallback.src)} alt="" data-editor-image-path="home.hero.imageAssetId" />
+      <img class="hero-section__background" src={nexahubAsset(template.home.hero.imageAssetId, heroFallback.src)} alt="" data-editor-image-path="home.hero.imageAssetId" data-editor-empty-src={heroFallback.src} />
       <div class="container hero-section__wrapper">
 <div class="hero-section__content">
 <div class="hero-section__top">
@@ -123,11 +125,11 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 <p class="hero-section__desc type-body-s-400" data-editor-path="home.hero.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.hero.body}</p>
 <div class="hero-section__actions">
 <Button text={template.home.hero.primaryCtaLabel} href={template.home.hero.primaryCtaHref} editorPath="home.hero.primaryCtaLabel" editorRelatedPaths={["home.hero.primaryCtaHref"]} editorMode={editorMode} />
-<Button text="Contact Us" href="#contact" variant="dark" />
+<Button text={m.nav_contact({}, { locale })} href="#contact" variant="dark" />
 </div>
 </div>
 </div>
-        {template.home.featuredItem.enabled && featuredProducts.length > 0 && <aside class="hero-section__featured-card" aria-label="Featured Products" data-editor-section="home.featuredItem" data-editor-visible-path="home.featuredItem.enabled" data-featured-carousel>
+        {template.home.featuredItem.enabled && featuredProducts.length > 0 && <aside class="hero-section__featured-card" aria-label={m.home_featured_products({}, { locale })} data-editor-section="home.featuredItem" data-editor-visible-path="home.featuredItem.enabled" data-featured-carousel>
           <div class="hero-section__featured-viewport" data-featured-viewport>
 <div class="hero-section__featured-track">{featuredProducts.map((product, index) => {
             const variant = product?.variants.find((item) => item.inStock) ?? product?.variants[0];
@@ -136,22 +138,22 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
             return <article class="hero-section__featured-slide">
 <div class="hero-section__featured-image-box">
 <div class="hero-section__featured-image img-wrapper">
-<img src={nexahubAsset(index === 0 ? template.home.featuredItem.imageAssetId : undefined, product?.thumbnail ?? featuredFallback.src)} alt={product?.title ?? "Featured product"} class="cover" data-editor-image-path={index === 0 ? "home.featuredItem.imageAssetId" : undefined} />
+<img src={nexahubAsset(index === 0 ? template.home.featuredItem.imageAssetId : undefined, product?.thumbnail ?? featuredFallback.src)} alt={product?.title ?? m.home_featured_product({}, { locale })} class="cover" data-editor-image-path={index === 0 ? "home.featuredItem.imageAssetId" : undefined} data-editor-empty-src={index === 0 ? (product?.thumbnail ?? featuredFallback.src) : undefined} />
 </div>
 <div class="hero-section__featured-badge">
 <span class="hero-section__featured-bar hero-section__featured-bar--sm">
 </span>
 <span class="hero-section__featured-bar hero-section__featured-bar--md">
 </span>
-<span class="hero-section__featured-tag type-body-xs-500" data-editor-path={index === 0 ? "home.featuredItem.eyebrow" : undefined} contenteditable={editorMode && index === 0 ? "plaintext-only" : undefined}>{index === 0 ? template.home.featuredItem.eyebrow : "FEATURED PRODUCTS"}</span>
+<span class="hero-section__featured-tag type-body-xs-500" data-editor-path={index === 0 ? "home.featuredItem.eyebrow" : undefined} data-editor-mirror-path={index > 0 ? "home.featuredItem.eyebrow" : undefined} contenteditable={editorMode && index === 0 ? "plaintext-only" : undefined}>{template.home.featuredItem.eyebrow}</span>
 </div>
 </div>
 <div class="hero-section__featured-meta">
-<span class="hero-section__featured-price type-body">{formatMoney(product?.priceAmount ?? null, product?.currencyCode ?? null)}</span>{badge && <span class="hero-section__featured-discount type-body-xs-500">{badge.label}</span>}</div>
+<span class="hero-section__featured-price type-body">{formatMoney(product?.priceAmount ?? null, product?.currencyCode ?? null, locale)}</span>{badge && <span class="hero-section__featured-discount type-body-xs-500">{badge.label}</span>}</div>
 <h2 class="hero-section__featured-title type-heading-5">{product?.title ?? template.home.featuredItem.title}</h2>
 <div class="hero-section__featured-footer">
 <a href={href} class="hero-section__featured-link type-body-s-500">
-<span>VIEW DETAILS</span>
+<span>{m.action_view_product({}, { locale })}</span>
 <span class="hero-section__featured-link-icon" aria-hidden="true" set:html={arrowUpRightIcon}>
 </span>
 </a>
@@ -159,13 +161,13 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </article>;
           })}</div>
 </div>
-          <div class="hero-section__featured-dots">{featuredProducts.map((product, index) => <button type="button" class:list={["hero-section__dot", index === 0 && "hero-section__dot--active"]} aria-label={`Show ${product.title ?? `featured product ${index + 1}`}`} aria-current={index === 0 ? "true" : undefined} data-featured-dot={index}>
+          <div class="hero-section__featured-dots">{featuredProducts.map((product, index) => <button type="button" class:list={["hero-section__dot", index === 0 && "hero-section__dot--active"]} aria-label={m.home_show_featured({ product: product.title ?? String(index + 1) }, { locale })} aria-current={index === 0 ? "true" : undefined} data-featured-dot={index}>
 </button>)}</div>
         </aside>}
       </div>
     </section>}
 
-    {(editorMode || template.home.categories.enabled) && selectedCollections.length > 0 && <section class="catalogue-section" id="catalogue" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}>
+    {(editorMode || template.home.categories.enabled) && selectedTaxonomy.length > 0 && <section class="catalogue-section" id="catalogue" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}>
       <div class="container catalogue-section__wrapper">
         <header class="catalogue-section__header">
 <div class="catalogue-section__eyebrow">
@@ -177,18 +179,18 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </div>
 <h2 class="catalogue-section__title type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2>
 </header>
-        <div class="catalogue-section__grid" data-editor-collections-path="home.categories.collectionIds">{selectedCollections.map((collection, index) => {
-          const image = collectionImage(collection);
-          return <CollectionCard collection={collection} image={image} variant={index === 0 ? "featured" : "standard"} />;
+        <div class="catalogue-section__grid" data-editor-collections-path="home.categories.collectionIds">{selectedTaxonomy.map(({ item, kind }, index) => {
+          const image = kind === "collection" ? collectionImage(item) : item.mediaUrl;
+          return <CollectionCard item={item} kind={kind} image={image} variant={index === 0 ? "featured" : "standard"} />;
         })}</div>
         <footer class="catalogue-section__footer">
-<Button text="All Products" href="/products" />
+<Button text={m.catalog_all_products({}, { locale })} href="/products" />
 <div class="catalogue-section__arrows">
-<button type="button" class="catalogue-section__arrow" aria-label="Previous category" data-cat-prev disabled>
+<button type="button" class="catalogue-section__arrow" aria-label={m.home_previous_category({}, { locale })} data-cat-prev disabled>
 <span class="catalogue-section__arrow-icon catalogue-section__arrow-icon--previous" set:html={arrowRightIcon}>
 </span>
 </button>
-<button type="button" class="catalogue-section__arrow" aria-label="Next category" data-cat-next disabled={selectedCollections.length <= 3}>
+<button type="button" class="catalogue-section__arrow" aria-label={m.home_next_category({}, { locale })} data-cat-next disabled={selectedTaxonomy.length <= 3}>
 <span class="catalogue-section__arrow-icon" set:html={arrowRightIcon}>
 </span>
 </button>
@@ -206,18 +208,18 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </span>
 <span class="products-section__bar products-section__bar--md">
 </span>
-<span class="products-section__badge type-body-xs-500">PRODUCTS CATALOGUE</span>
+<span class="products-section__badge type-body-xs-500">{m.home_product_catalog({}, { locale })}</span>
 </div>
 <h2 class="products-section__title type-heading-2" data-editor-path="home.bestSellers.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.bestSellers.title}</h2>
 </div>
 <div class="products-section__header-right">
-<span class="products-section__count type-body-s-500">{selectedProducts.length} PRODUCTS LISTED</span>
-<Button text="All Products" href="/products" />
+<span class="products-section__count type-body-s-500">{m.home_products_listed({ count: selectedProducts.length }, { locale })}</span>
+<Button text={m.catalog_all_products({}, { locale })} href="/products" />
 </div>
 </header>
-<HomeProductFilterBar collections={collections} categories={categories} />{hasCatalogError ? <p class="nexa-state">Products could not be loaded. Please try again.</p> : selectedProducts.length ? <div class="products-section__grid" data-editor-products-path="home.bestSellers.productIds">{selectedProducts.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : null}<footer class="products-section__footer">
-<span class="products-section__pagination-info type-body-xs-500">SHOWING {selectedProducts.length} PRODUCTS</span>
-<Button text="Browse Full Catalog" href="/products" />
+<HomeProductFilterBar collections={collections} categories={categories} />{hasCatalogError ? <p class="nexa-state">{m.catalog_load_error({}, { locale })}</p> : selectedProducts.length ? <div class="products-section__grid" data-editor-products-path="home.bestSellers.productIds">{selectedProducts.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : null}<footer class="products-section__footer">
+<span class="products-section__pagination-info type-body-xs-500">{m.home_showing_products({ count: selectedProducts.length }, { locale })}</span>
+<Button text={m.home_browse_full_catalog({}, { locale })} href="/products" />
 </footer>
 </div>
 </section>}
@@ -254,7 +256,7 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 <p class="type-body-s-400" data-editor-path="home.quality.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.body}</p>
 </div>
 <div class="benefits-section__header-col">
-<p class="type-body-s-400">CLEAR PRODUCT INFORMATION AND PRACTICAL SUPPORT HELP YOU CHOOSE THE RIGHT TECHNOLOGY WITH CONFIDENCE.</p>
+<p class="type-body-s-400">{m.home_clear_information({}, { locale })}</p>
 </div>
 </div>
 </div>
@@ -266,8 +268,8 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 <img src={qualityFallback.src} alt="" class="cover" loading="lazy" />
 </div>
 <div class="benefits-section__cta-content">
-<p class="benefits-section__cta-text">We provide the highest quality technology products for your daily convinience.</p>
-<Button text="Contact Us" href="#contact" variant="secondary" />
+<p class="benefits-section__cta-text">{m.home_quality_cta({}, { locale })}</p>
+<Button text={m.nav_contact({}, { locale })} href="#contact" variant="secondary" />
 </div>
 </div>
 <div class="benefits-section__main-card">
@@ -322,7 +324,7 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </div>
         </div>
 <div class="benefits-section__promo-image img-wrapper">
-<img src={nexahubAsset(template.home.quality.imageAssetId, qualityFallback.src)} alt="Technology products selected for quality" class="cover" loading="lazy" data-editor-image-path="home.quality.imageAssetId" />
+<img src={nexahubAsset(template.home.quality.imageAssetId, qualityFallback.src)} alt={m.home_quality_image_alt({}, { locale })} class="cover" loading="lazy" data-editor-image-path="home.quality.imageAssetId" data-editor-empty-src={qualityFallback.src} />
 </div>
 </div>
 </div>
@@ -346,11 +348,11 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 <input type="hidden" name="type" value="contact" />
 <input type="hidden" name="subject" value="Storefront contact request" />
 <div class="contact-section__row">
-<input type="text" name="name" required placeholder="Full Name*" class="contact-section__input type-body-s-400" />
-<input type="tel" name="phone" placeholder="Phone Number" class="contact-section__input type-body-s-400" />
+<input type="text" name="name" required placeholder={m.contact_name_required({}, { locale })} class="contact-section__input type-body-s-400" />
+<input type="tel" name="phone" placeholder={m.contact_phone({}, { locale })} class="contact-section__input type-body-s-400" />
 </div>
-<input type="email" name="email" required placeholder="Email Address*" class="contact-section__input type-body-s-400" />
-<textarea name="message" rows="4" required placeholder="Message*" class="contact-section__textarea type-body-s-400">
+<input type="email" name="email" required placeholder={m.contact_email_required({}, { locale })} class="contact-section__input type-body-s-400" />
+<textarea name="message" rows="4" required placeholder={m.contact_message_required({}, { locale })} class="contact-section__textarea type-body-s-400">
 </textarea>
 <Button text={template.home.contact.ctaLabel} editorPath="home.contact.ctaLabel" editorRelatedPaths={["home.contact.ctaHref"]} editorMode={editorMode} />
 </form>
@@ -358,7 +360,7 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </p>
 </div>
 <div class="contact-section__image img-wrapper">
-<img src={nexahubAsset(template.home.contact.imageAssetId, contactFallback.src)} alt="Store interior" class="cover" loading="lazy" data-editor-image-path="home.contact.imageAssetId" />
+<img src={nexahubAsset(template.home.contact.imageAssetId, contactFallback.src)} alt={m.home_store_interior_alt({}, { locale })} class="cover" loading="lazy" data-editor-image-path="home.contact.imageAssetId" data-editor-empty-src={contactFallback.src} />
 </div>
 </div>
 </div>
@@ -368,10 +370,18 @@ if (/catalog product|publish this feature/i.test(template.home.featuredItem.body
 </template>)}
     {editorMode && collections.map((collection) => <>
 <template data-editor-collection-option-featured={collection.id}>
-<CollectionCard collection={collection} image={collectionImage(collection)} variant="featured" />
+<CollectionCard item={collection} kind="collection" image={collectionImage(collection)} variant="featured" />
 </template>
 <template data-editor-collection-option-standard={collection.id}>
-<CollectionCard collection={collection} image={collectionImage(collection)} variant="standard" />
+<CollectionCard item={collection} kind="collection" image={collectionImage(collection)} variant="standard" />
+</template>
+</>)}
+    {editorMode && collections.length === 0 && categories.map((category) => <>
+<template data-editor-collection-option-featured={category.id}>
+<CollectionCard item={category} kind="category" image={category.mediaUrl} variant="featured" />
+</template>
+<template data-editor-collection-option-standard={category.id}>
+<CollectionCard item={category} kind="category" image={category.mediaUrl} variant="standard" />
 </template>
 </>)}
   </main>

@@ -3,6 +3,7 @@ import { QueryContext } from "@medusajs/framework/utils";
 
 import {
   PRODUCT_SEARCH_FIELDS,
+  PRODUCT_SEARCH_LOCALES,
   type ProductSearchSource,
   toProductSearchDocument,
 } from "./product-search-document";
@@ -15,7 +16,7 @@ type QueryGraph = {
     fields: string[];
     pagination: { skip: number; take: number };
     context?: Record<string, unknown>;
-  }): Promise<{ data: ProductSearchSource[] }>;
+  }, options?: { locale?: string }): Promise<{ data: ProductSearchSource[] }>;
 };
 
 export async function reindexProductSearch(container: MedusaContainer) {
@@ -28,16 +29,22 @@ export async function reindexProductSearch(container: MedusaContainer) {
 
   await search.configureProductIndex();
   for (let offset = 0; ; offset += batchSize) {
-    const { data } = await query.graph({
-      entity: "product",
-      fields: [...PRODUCT_SEARCH_FIELDS],
-      pagination: { skip: offset, take: batchSize },
-      context: {
-        variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
-      },
-    });
+    const pages = await Promise.all(PRODUCT_SEARCH_LOCALES.map(async (locale) => {
+      const { data } = await query.graph({
+        entity: "product",
+        fields: [...PRODUCT_SEARCH_FIELDS],
+        pagination: { skip: offset, take: batchSize },
+        context: {
+          variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
+        },
+      }, { locale });
+      return { data, locale };
+    }));
+    const data = pages[0]?.data ?? [];
     if (!data.length) break;
-    const documents = data.map(toProductSearchDocument);
+    const documents = pages.flatMap(({ data: localizedProducts, locale }) =>
+      localizedProducts.map((product) => toProductSearchDocument(product, locale))
+    );
     await search.upsertProducts(documents);
     indexedIds.push(...documents.map(({ id }) => id));
     if (data.length < batchSize) break;

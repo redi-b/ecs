@@ -55,6 +55,19 @@ describe("tenant SEO routes", () => {
     assert.doesNotMatch(sitemap, /pcol_|pcat_/);
   });
 
+  it("publishes canonical English and Amharic URLs with alternates", () => {
+    const sitemap = buildTenantSitemap(
+      "https://shop-a.example",
+      ["coffee"],
+      {},
+      { sourceLocale: "en", defaultLocale: "en", enabledLocales: ["en", "am"] },
+    );
+    assert.match(sitemap, /<loc>https:\/\/shop-a\.example\/products\/coffee<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/shop-a\.example\/am\/products\/coffee<\/loc>/);
+    assert.match(sitemap, /hreflang="am" href="https:\/\/shop-a\.example\/am\/products\/coffee"/);
+    assert.match(sitemap, /hreflang="x-default" href="https:\/\/shop-a\.example\/products\/coffee"/);
+  });
+
   it("fails without returning partial handles when a later source page fails", async () => {
     const result = await loadSitemapProductHandles(async ({ limit, offset }) =>
       offset === 0

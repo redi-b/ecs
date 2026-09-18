@@ -6,8 +6,15 @@ import { loadPageContext } from "../lib/page-context";
 import { buildStorefrontSeo } from "../lib/seo";
 import { buildStorefrontStructuredData } from "../lib/structured-data";
 import { getStorefrontRenderer } from "../templates/registry";
+import { STOREFRONT_LOCALE_HEADER } from "../lib/storefront-locale";
+import * as m from "../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
+const locale = ctx.ok
+  ? ctx.locale
+  : Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am"
+    ? "am"
+    : "en";
 
 const homeModel = ctx.ok ? await loadHomePageModel(ctx) : null;
 
@@ -23,7 +30,7 @@ const seo = ctx.ok
     })
   : null;
 const structuredData =
-  ctx.ok && seo ? buildStorefrontStructuredData({ seo, tenantName: ctx.config.tenant.name }) : null;
+  ctx.ok && seo ? buildStorefrontStructuredData({ locale, seo, tenantName: ctx.config.tenant.name }) : null;
 
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
@@ -32,6 +39,8 @@ if (!ctx.ok) {
 } else {
   // Public catalog HTML — cart badge deferred (Layout deferCartCount).
   applyCatalogCache(Astro.cache, {
+    locale,
+    path: Astro.url.pathname,
     tenantId: ctx.config.tenant.id,
     publishedRevisionId: ctx.config.storefront.publishedRevisionId,
     templateKey: ctx.config.storefront.templateKey,
@@ -41,16 +50,16 @@ if (!ctx.ok) {
 }
 ---
 
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{ctx.ok ? (ctx.config.storefront.seo.title ?? ctx.config.tenant.name) : "Shop unavailable"}</title>
+    <title>{ctx.ok ? (ctx.config.storefront.seo.title ?? ctx.config.tenant.name) : m.status_shop_unavailable_page_title({}, { locale })}</title>
   </head>
   <body>
     {
       !ctx.ok ? (
-        <StorefrontFailure actionHref="/" actionLabel="Try again" description={ctx.message} eyebrow="Shop paused" title="This shop is temporarily unavailable" />
+        <StorefrontFailure actionHref="/" actionLabel={m.action_retry({}, { locale })} description={m.status_generic_error({}, { locale })} eyebrow={m.status_shop_paused({}, { locale })} title={m.status_shop_unavailable_title({}, { locale })} />
       ) : Home ? (
         <Home
           data={ctx.config.storefront.data}
@@ -67,7 +76,7 @@ if (!ctx.ok) {
           structuredData={structuredData}
         />
       ) : (
-        <StorefrontFailure actionHref="/" actionLabel="Try again" description="The shop could not finish loading. Please try again shortly." eyebrow="Shop paused" title="This shop is temporarily unavailable" />
+        <StorefrontFailure actionHref="/" actionLabel={m.action_retry({}, { locale })} description={m.status_shop_load_failed({}, { locale })} eyebrow={m.status_shop_paused({}, { locale })} title={m.status_shop_unavailable_title({}, { locale })} />
       )
     }
   </body>

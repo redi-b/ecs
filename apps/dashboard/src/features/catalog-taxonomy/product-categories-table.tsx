@@ -1,10 +1,19 @@
 "use client";
 
 import type { MerchantProductCategory } from "@ecs/contracts";
+import { RiTranslate2 } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -14,8 +23,8 @@ import {
   DataTableFilters,
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
+import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import {
   ListToolbarSearch,
@@ -47,6 +56,7 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
 import { TaxonomyLoadNotice } from "./taxonomy-load-notice";
+import { TaxonomyTranslationSheet } from "./taxonomy-translation-sheet";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number>) => string;
 
@@ -71,6 +81,7 @@ function getCategoryRowActions(
   canDelete: boolean,
   onDelete: (categoryId: string) => void,
   onEdit: (category: MerchantProductCategory) => void,
+  onTranslate: (category: MerchantProductCategory) => void,
   t: Translate,
 ): ResourceRowActions {
   return {
@@ -83,6 +94,14 @@ function getCategoryRowActions(
                 entity: t("taxonomy.entity.category.label"),
               }),
               onSelect: () => onEdit(category),
+              type: "button" as const,
+            },
+            {
+              icon: RiTranslate2,
+              label: t("taxonomy.actions.translate", {
+                entity: t("taxonomy.entity.category.label"),
+              }),
+              onSelect: () => onTranslate(category),
               type: "button" as const,
             },
           ]
@@ -134,6 +153,7 @@ function getCategoryColumns(
   canDelete: boolean,
   onDelete: (categoryId: string) => void,
   onEdit: (category: MerchantProductCategory) => void,
+  onTranslate: (category: MerchantProductCategory) => void,
   t: Translate,
 ): ColumnDef<MerchantProductCategory>[] {
   return [
@@ -235,7 +255,15 @@ function getCategoryColumns(
 
         return (
           <RowActionsMenu
-            {...getCategoryRowActions(category, canUpdate, canDelete, onDelete, onEdit, t)}
+            {...getCategoryRowActions(
+              category,
+              canUpdate,
+              canDelete,
+              onDelete,
+              onEdit,
+              onTranslate,
+              t,
+            )}
           />
         );
       },
@@ -254,6 +282,10 @@ type ProductCategoriesTableProps = {
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
+  translationId?: string | undefined;
+  translationQueueNavigation?:
+    | { next?: string | undefined; previous?: string | undefined }
+    | undefined;
 };
 
 function getDeletionErrorMessage(
@@ -290,6 +322,8 @@ export function ProductCategoriesTable({
   pageSize,
   totalCount,
   tenantId,
+  translationId,
+  translationQueueNavigation,
 }: ProductCategoriesTableProps) {
   const { t } = useI18n();
   const router = useRouter();
@@ -325,6 +359,10 @@ export function ProductCategoriesTable({
 
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<MerchantProductCategory | null>(null);
+  const [translatingCategory, setTranslatingCategory] = useState<MerchantProductCategory | null>(
+    null,
+  );
+  const openedTranslationId = useRef<string | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "tree">("table");
   const [selectedCategoryIdsForDelete, setSelectedCategoryIdsForDelete] = useState<string[]>([]);
@@ -335,6 +373,16 @@ export function ProductCategoriesTable({
       new Map([...taxonomy.categories, ...categories].map((category) => [category.id, category])),
     [categories, taxonomy.categories],
   );
+
+  useEffect(() => {
+    if (!translationId || translatingCategory || openedTranslationId.current === translationId)
+      return;
+    const target = categories.find((category) => category.id === translationId);
+    if (target) {
+      openedTranslationId.current = translationId;
+      setTranslatingCategory(target);
+    }
+  }, [categories, translatingCategory, translationId]);
   const categoryRowActions = useCallback(
     (category: MerchantProductCategory) =>
       getCategoryRowActions(
@@ -343,6 +391,7 @@ export function ProductCategoriesTable({
         canDelete,
         setDeleteCategoryId,
         setEditingCategory,
+        setTranslatingCategory,
         t,
       ),
     [canDelete, canUpdate, t],
@@ -356,6 +405,7 @@ export function ProductCategoriesTable({
         canDelete,
         (id) => setDeleteCategoryId(id),
         (category) => setEditingCategory(category),
+        (category) => setTranslatingCategory(category),
         t,
       ),
     [canDelete, canUpdate, categoriesById, t],
@@ -521,6 +571,24 @@ export function ProductCategoriesTable({
 
   return (
     <>
+      {canUpdate ? (
+        <TaxonomyTranslationSheet
+          onOpenChange={(next) => {
+            if (!next) {
+              setTranslatingCategory(null);
+              const params = new URLSearchParams(window.location.search);
+              params.delete("translate");
+              params.delete("translationFrom");
+              router.replace(`${window.location.pathname}${params.size ? `?${params}` : ""}`, {
+                scroll: false,
+              });
+            }
+          }}
+          target={translatingCategory ? { kind: "category", resource: translatingCategory } : null}
+          tenantId={tenantId}
+          queueNavigation={translationQueueNavigation}
+        />
+      ) : null}
       {canUpdate ? (
         <CategoryEditSheet
           categories={taxonomy.categories}

@@ -2,6 +2,7 @@
 
 import type {
   MerchantDashboardAccess,
+  StorefrontLanguageSettings,
   StorefrontSeoSettings,
   StorefrontTemplateCatalogItem,
 } from "@ecs/contracts";
@@ -26,6 +27,7 @@ import {
   ShopLiveStatusBadge,
   StorefrontTemplateOption,
 } from "@/features/settings/settings-sections";
+import { StorefrontLanguageSettingsPanel } from "@/features/settings/storefront-language-settings";
 import { StorefrontSeoSettingsForm } from "@/features/settings/storefront-seo-settings-form";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -35,8 +37,12 @@ export function StorefrontSection({
   storefrontTemplates,
   summary,
   seo,
+  languageSettings,
+  onLanguageDirtyChange,
 }: {
   seo: StorefrontSeoSettings;
+  languageSettings: StorefrontLanguageSettings;
+  onLanguageDirtyChange?: ((dirty: boolean) => void) | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   summary: MerchantDashboardAccess;
 }) {
@@ -311,6 +317,11 @@ export function StorefrontSection({
         )}
       </SettingsPanel>
 
+      <StorefrontLanguageSettingsPanel
+        initialSettings={languageSettings}
+        onDirtyChange={onLanguageDirtyChange}
+        tenantId={summary.tenant.id}
+      />
       <StorefrontSeoSettingsForm
         initialSeo={seo}
         tenantId={summary.tenant.id}

@@ -2,6 +2,8 @@ import type { SearchParams } from "meilisearch";
 
 export type ProductSearchDocument = {
   id: string;
+  product_id: string;
+  locale: string;
   title: string;
   subtitle: string | null;
   description: string | null;
@@ -30,6 +32,7 @@ export type ProductSearchQuery = Pick<
   "attributesToHighlight" | "facets" | "limit" | "offset" | "sort"
 > & {
   q: string;
+  locale: string;
   salesChannelIds: string[];
   categoryIds?: string[];
   collectionId?: string;

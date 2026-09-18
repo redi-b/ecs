@@ -24,6 +24,7 @@ import {
   type ProductMediaFilter,
   type ProductStatusFilter,
 } from "@/features/products/product-table-state";
+import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -42,6 +43,7 @@ type ProductsTableProps = {
   readOnly?: boolean | undefined;
   tenantId?: string | undefined;
   totalCount: number;
+  translationsEnabled?: boolean | undefined;
 };
 
 import {
@@ -87,6 +89,7 @@ export function ProductsTable({
   readOnly = false,
   tenantId,
   totalCount,
+  translationsEnabled = false,
 }: ProductsTableProps) {
   const { t } = useI18n();
   const canUpdate = usePermission("products.update") && !readOnly;
@@ -114,6 +117,7 @@ export function ProductsTable({
   >([]);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [showBulkInventoryDialog, setShowBulkInventoryDialog] = useState(false);
+  const [translatingProduct, setTranslatingProduct] = useState<MerchantProduct | null>(null);
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -253,8 +257,9 @@ export function ProductsTable({
               setShowBulkInventoryDialog(true);
             }
           : undefined,
+        translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
       ),
-    [canDelete, canUpdate, handleStatusChange, t, tenantId],
+    [canDelete, canUpdate, handleStatusChange, t, tenantId, translationsEnabled],
   );
 
   const pushServerFilters = useCallback(
@@ -435,6 +440,18 @@ export function ProductsTable({
 
   return (
     <>
+      {translatingProduct ? (
+        <ProductTranslationSheet
+          onOpenChange={(open) => {
+            if (!open) setTranslatingProduct(null);
+          }}
+          open
+          product={translatingProduct}
+          readOnly={!canUpdate}
+          showTrigger={false}
+          tenantId={tenantId}
+        />
+      ) : null}
       <DataTable
         bulkActions={(selectedProducts) => (
           <>

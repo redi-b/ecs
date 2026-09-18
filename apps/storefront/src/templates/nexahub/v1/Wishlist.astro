@@ -1,49 +1,70 @@
 ---
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import "./styles/pages/secondary.scss";
 
 interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
 const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseNexahubData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const wishlistMessages = {
+  item: m.wishlist_item_singular({}, { locale }),
+  items: m.wishlist_item_plural({}, { locale }),
+  emptyTitle: m.wishlist_empty_title({}, { locale }),
+  emptyHelp: m.wishlist_empty_help({}, { locale }),
+  browse: m.action_browse_products({}, { locale }),
+  view: m.action_view_product({}, { locale }),
+  remove: m.action_remove({}, { locale }),
+  viewProduct: m.wishlist_view_product({ product: "__PRODUCT__" }, { locale }),
+  removeProduct: m.wishlist_remove_product({ product: "__PRODUCT__" }, { locale }),
+};
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
-  <main class="nexa-secondary nexa-wishlist-page" id="main-content" data-wishlist-page>
+  <main class="nexa-secondary nexa-wishlist-page" id="main-content" data-wishlist-page data-wishlist-messages={JSON.stringify(wishlistMessages)}>
     <div class="container nexa-secondary__frame">
       <header class="nexa-wishlist-hero">
         <div>
-          <span>Saved items</span>
-          <h1>Your wishlist</h1>
-          <p>Keep the products you love close while you decide.</p>
+          <span>{m.wishlist_saved_items({}, { locale })}</span>
+          <h1>{m.wishlist_title({}, { locale })}</h1>
+          <p>{m.wishlist_intro({}, { locale })}</p>
         </div>
-        <strong data-wishlist-count aria-live="polite">— ITEMS</strong>
+        <strong data-wishlist-count aria-live="polite">— {m.wishlist_item_plural({}, { locale })}</strong>
       </header>
       <section class="nexa-wishlist" data-wishlist-content aria-live="polite" aria-busy="true">
-        <div class="nexa-wishlist__loading" role="status"><span aria-hidden="true"></span><strong>Loading your wishlist</strong></div>
+        <div class="nexa-wishlist__loading" role="status"><span aria-hidden="true"></span><strong>{m.wishlist_loading({}, { locale })}</strong></div>
       </section>
     </div>
   </main>
 </Layout>
 <script>
   import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../lib/browser/wishlist";
+  import { localizeBrowserPath } from "../../../lib/browser/localized-path";
 
   (() => {
+    const root = document.querySelector<HTMLElement>("[data-wishlist-page]");
     const content = document.querySelector<HTMLElement>("[data-wishlist-content]");
     const count = document.querySelector<HTMLElement>("[data-wishlist-count]");
     if (!content) return;
+    const messages = JSON.parse(root?.dataset.wishlistMessages || "{}") as Record<string, string>;
     let items: WishlistEntry[] = [];
     const money = (amount: number | null, currency: string | null) => {
       if (typeof amount !== "number") return "";
-      try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
+      try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
       catch { return String(amount); }
     };
     const render = () => {
       content.replaceChildren();
-      if (count) count.textContent = `${String(items.length).padStart(2, "0")} ${items.length === 1 ? "ITEM" : "ITEMS"}`;
+      if (count) count.textContent = `${String(items.length).padStart(2, "0")} ${items.length === 1 ? messages.item : messages.items}`;
       if (!items.length) {
         const empty = document.createElement("div");
         empty.className = "nexa-wishlist-empty";
-        empty.innerHTML = '<span aria-hidden="true">◇</span><h2>Your wishlist is empty</h2><p>Save a product and it will be waiting for you here.</p><a class="nexa-primary-action" href="/products">Browse products ↗</a>';
+        const icon = document.createElement("span"); icon.setAttribute("aria-hidden", "true"); icon.textContent = "◇";
+        const title = document.createElement("h2"); title.textContent = messages.emptyTitle || "";
+        const help = document.createElement("p"); help.textContent = messages.emptyHelp || "";
+        const browse = document.createElement("a"); browse.className = "nexa-primary-action"; browse.href = localizeBrowserPath("/products"); browse.textContent = `${messages.browse || ""} ↗`;
+        empty.append(icon, title, help, browse);
         content.append(empty);
         return;
       }
@@ -54,8 +75,9 @@ const template = parseNexahubData(data);
         card.className = "nexa-wishlist-card";
         const media = document.createElement("a");
         media.className = "nexa-wishlist-card__media";
-        media.href = item.path;
-        media.setAttribute("aria-label", `View ${item.title}`);
+        const itemPath = localizeBrowserPath(item.path);
+        media.href = itemPath;
+        media.setAttribute("aria-label", (messages.viewProduct || "").replace("__PRODUCT__", item.title));
         if (item.thumbnail) {
           const image = document.createElement("img");
           image.src = item.thumbnail;
@@ -65,7 +87,7 @@ const template = parseNexahubData(data);
         const body = document.createElement("div");
         body.className = "nexa-wishlist-card__body";
         const title = document.createElement("a");
-        title.href = item.path;
+        title.href = itemPath;
         title.textContent = item.title;
         const price = document.createElement("span");
         price.textContent = money(item.priceAmount, item.currencyCode);
@@ -74,12 +96,12 @@ const template = parseNexahubData(data);
         const actions = document.createElement("div");
         actions.className = "nexa-wishlist-card__actions";
         const view = document.createElement("a");
-        view.href = item.path;
-        view.textContent = "View product ↗";
+        view.href = itemPath;
+        view.textContent = `${messages.view || ""} ↗`;
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.textContent = "Remove";
-        remove.setAttribute("aria-label", `Remove ${item.title} from wishlist`);
+        remove.textContent = messages.remove || "";
+        remove.setAttribute("aria-label", (messages.removeProduct || "").replace("__PRODUCT__", item.title));
         remove.addEventListener("click", () => window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items: items.filter(saved => saved.path !== item.path), origin: "page" } })));
         actions.append(view, remove);
         card.append(media, body, actions);

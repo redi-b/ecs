@@ -4,8 +4,10 @@ import { applyPrivateNoStore } from "../lib/http-cache";
 import { loadPageContext } from "../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../lib/theme";
 import { resolveRendererSlot } from "../templates/registry";
+import * as m from "../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request);
+const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
@@ -17,7 +19,7 @@ const Cart = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, "Ca
 
 {
   !ctx.ok || !Cart ? (
-    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+    <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} />
   ) : (
     <Cart
       data={ctx.config.storefront.data}

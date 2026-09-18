@@ -1,5 +1,7 @@
 ---
 import OfflineStateEnhancer from "./OfflineStateEnhancer.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   actionHref?: string;
@@ -10,17 +12,21 @@ interface Props {
   code?: string;
   recoveryLabel?: string;
   statusLabel?: string;
+  offlineTitle?: string;
+  offlineDescription?: string;
+  offlineActionLabel?: string;
 }
 
-const { actionHref, actionLabel, description, title, code } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const { actionHref, actionLabel, description, title, code, offlineTitle = m.status_offline_title({}, { locale }), offlineDescription = m.status_offline_help({}, { locale }), offlineActionLabel = m.action_retry({}, { locale }) } = Astro.props;
 ---
 
 <main class="failure-stage" data-storefront-state>
   <section class="failure-content">
     {code ? <p class="failure-code">{code}</p> : null}
-    <h1 data-state-copy data-offline-copy="You are offline">{title}</h1>
-    <p class="failure-description" data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</p>
-    {actionHref && actionLabel ? <a href={actionHref} data-state-copy data-offline-copy="Try again">{actionLabel}</a> : null}
+    <h1 data-state-copy data-offline-copy={offlineTitle}>{title}</h1>
+    <p class="failure-description" data-state-copy data-offline-copy={offlineDescription}>{description}</p>
+    {actionHref && actionLabel ? <a href={actionHref} data-state-copy data-offline-copy={offlineActionLabel}>{actionLabel}</a> : null}
   </section>
 </main>
 <OfflineStateEnhancer />

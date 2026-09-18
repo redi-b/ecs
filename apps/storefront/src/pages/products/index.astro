@@ -11,8 +11,10 @@ import { loadPageContext } from "../../lib/page-context";
 import { buildStorefrontSeo } from "../../lib/seo";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
+import * as m from "../../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
+const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
@@ -29,10 +31,12 @@ const [collectionsResult, categoriesResult] = ctx.ok
   ? await Promise.all([listStoreCollections({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       limit: 50,
     }), listStoreCategories({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       limit: 100,
     })])
   : [null, null];
@@ -67,6 +71,7 @@ const productsResult = ctx.ok && !invalidTaxonomy
   ? await listStoreProducts({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       regionId: ctx.config.commerce.regionId,
       limit,
       offset,
@@ -85,7 +90,7 @@ const count =
   productsResult && !isStoreError(productsResult) ? (productsResult.count ?? products.length) : 0;
 const facets = productsResult && !isStoreError(productsResult) ? productsResult.facets : undefined;
 const errorMessage = invalidTaxonomy
-  ? "This collection or category does not exist."
+  ? m.catalog_taxonomy_not_found({}, { locale })
   : productsResult && isStoreError(productsResult) ? productsResult.message : null;
 
 const hasPrev = offset > 0;
@@ -101,6 +106,8 @@ const ProductList = ctx.ok
 
 if (ctx.ok && ProductList && !errorMessage) {
   applyCatalogCache(Astro.cache, {
+    locale,
+    path: Astro.url.pathname,
     tenantId: ctx.config.tenant.id,
     publishedRevisionId: ctx.config.storefront.publishedRevisionId,
     templateKey: ctx.config.storefront.templateKey,
@@ -112,7 +119,7 @@ if (ctx.ok && ProductList && !errorMessage) {
 
 {
   !ctx.ok || !ProductList ? (
-    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+    <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} />
   ) : (
     <ProductList
       data={ctx.config.storefront.data}

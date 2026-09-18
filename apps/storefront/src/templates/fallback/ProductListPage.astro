@@ -4,6 +4,8 @@ import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../lib/commerce/types";
 import type { StorefrontSeo } from "../../lib/seo";
 import type { ShellTheme } from "../../lib/theme";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   /** Template-owned storefront data; unused by the fallback shell. */
@@ -50,30 +52,31 @@ const {
   nextHref,
   seo,
 } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <StoreShell
   tenantName={tenantName}
   cartCount={cartCount}
-  title="Products"
+  title={m.catalog_products({}, { locale })}
   primaryColor={primaryColor}
   theme={theme}
   currentPath={currentPath}
   seo={seo}
 >
-  <p class="sf-eyebrow">Catalog</p>
-  <h1 class="sf-title">Products</h1>
-  <p class="sf-lede">Browse everything available in this shop.</p>
+  <p class="sf-eyebrow">{m.catalog_eyebrow({}, { locale })}</p>
+  <h1 class="sf-title">{m.catalog_products({}, { locale })}</h1>
+  <p class="sf-lede">{m.catalog_intro({}, { locale })}</p>
 
   {
     errorMessage ? (
       <div class="sf-notice sf-notice-error" role="alert">
-        Products could not be loaded. Please try again.
+        {m.catalog_load_error({}, { locale })}
       </div>
     ) : products.length === 0 ? (
       <div class="sf-notice" role="status">
-        <p><strong>No products yet.</strong></p>
-        <p class="sf-muted">Check back soon for new arrivals.</p>
+        <p><strong>{m.catalog_empty_title({}, { locale })}</strong></p>
+        <p class="sf-muted">{m.catalog_empty_help({}, { locale })}</p>
       </div>
     ) : (
       <ul class="sf-grid">
@@ -89,12 +92,12 @@ const {
       <div class="sf-actions">
         {hasPrev && prevHref && (
           <a class="sf-btn sf-btn-secondary" href={prevHref}>
-            Previous
+            {m.catalog_previous({}, { locale })}
           </a>
         )}
         {hasNext && nextHref && (
           <a class="sf-btn sf-btn-secondary" href={nextHref}>
-            Next
+            {m.catalog_next({}, { locale })}
           </a>
         )}
       </div>

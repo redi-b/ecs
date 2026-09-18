@@ -12,6 +12,8 @@ import type {
 const PRODUCT_INDEX_SETTINGS = {
   displayedAttributes: [
     "id",
+    "product_id",
+    "locale",
     "title",
     "subtitle",
     "description",
@@ -48,6 +50,8 @@ const PRODUCT_INDEX_SETTINGS = {
     "barcodes",
   ],
   filterableAttributes: [
+    "product_id",
+    "locale",
     "sales_channel_ids",
     "status",
     "category_ids",
@@ -136,7 +140,11 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
 
   async deleteProducts(ids: string[]) {
     if (!ids.length) return;
-    await this.client.index(this.indexName).deleteDocuments(ids).waitTask();
+    const documentIds = ids.flatMap((id) => [
+      `en-ET:${id}`,
+      `am-ET:${id}`,
+    ]);
+    await this.client.index(this.indexName).deleteDocuments(documentIds).waitTask();
     this.documentCountCache = undefined;
   }
 
@@ -193,6 +201,7 @@ export default class MeilisearchModuleService implements ProductSearchProvider {
       .map((id) => `sales_channel_ids = ${filterValue(id)}`)
       .join(" OR ");
     const filters = [`(${channelFilter})`];
+    filters.push(`locale = ${filterValue(query.locale)}`);
     if (!query.includeDrafts) filters.push(`status = "published"`);
     if (query.statuses?.length) {
       filters.push(

@@ -7,8 +7,10 @@ import { initializeChapaCheckout } from "../../../lib/commerce/checkout.js";
 import { saveCheckoutAddressIfRequested } from "../../../lib/commerce/checkout-address.js";
 import { getStoreDeliveryOptions } from "../../../lib/commerce/delivery.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
+import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
 import { setStoreCartShippingMethod } from "../../../lib/commerce/shipping.js";
 import { loadPageContext } from "../../../lib/page-context.js";
+import * as m from "../../../paraglide/messages.js";
 
 /**
  * Prepares the cart, then asks Platform to start Chapa with **merchant** credentials.
@@ -17,18 +19,22 @@ import { loadPageContext } from "../../../lib/page-context.js";
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
   const ctx = await loadPageContext(request);
+  const locale = ctx.ok ? ctx.locale : getStorefrontActionLocale(request);
 
   if (!ctx.ok || !ctx.cartId) {
-    return redirect("/checkout?error=" + encodeURIComponent("Cart not found."));
+    return redirect("/checkout?error=" + encodeURIComponent(m.cart_not_found({}, { locale })));
   }
 
   const association = await associateRequestCartWithCustomer(request, {
     cartId: ctx.cartId,
     platformApiBaseUrl: ctx.platformApiBaseUrl,
+    locale: ctx.commerceLocale,
     requestHost: ctx.requestHost,
   });
   if (!association.ok) {
-    return redirect("/checkout?error=" + encodeURIComponent(association.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const deliveryResult = await getStoreDeliveryOptions({
@@ -50,40 +56,52 @@ export const POST: APIRoute = async ({ request }) => {
   const shippingOptionId = String(form.get("shippingOptionId") ?? "").trim();
 
   if (!name || !shippingOptionId || (deliveryChoice !== "delivery" && deliveryChoice !== "pickup")) {
-    return redirect("/checkout?error=" + encodeURIComponent("Please fill all required fields."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_missing_required({}, { locale })),
+    );
   }
 
   if (!email) {
     return redirect(
       "/checkout?error=" +
-        encodeURIComponent("Enter a valid email address to pay securely with Chapa."),
+        encodeURIComponent(m.checkout_email_valid_required({}, { locale })),
     );
   }
 
   if (delivery && !delivery.deliveryEnabled && !delivery.pickupEnabled) {
     return redirect(
-      "/checkout?error=" + encodeURIComponent("This shop is not accepting delivery or pickup right now."),
+      "/checkout?error=" + encodeURIComponent(m.checkout_fulfillment_unavailable({}, { locale })),
     );
   }
 
   if (deliveryChoice === "delivery" && delivery && !delivery.deliveryEnabled) {
-    return redirect("/checkout?error=" + encodeURIComponent("Delivery is not available for this shop."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_delivery_unavailable({}, { locale })),
+    );
   }
 
   if (deliveryChoice === "pickup" && delivery && !delivery.pickupEnabled) {
-    return redirect("/checkout?error=" + encodeURIComponent("Pickup is not available for this shop."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_pickup_unavailable({}, { locale })),
+    );
   }
 
   if (!phone) {
-    return redirect("/checkout?error=" + encodeURIComponent("Enter a valid Ethiopian phone number, such as 0912345678."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_phone_valid_required({}, { locale })),
+    );
   }
 
   if (deliveryChoice === "delivery") {
     if (!address1 || !city) {
-      return redirect("/checkout?error=" + encodeURIComponent("Address and city are required for delivery."));
+      return redirect(
+        "/checkout?error=" + encodeURIComponent(m.checkout_address_required({}, { locale })),
+      );
     }
     if (delivery?.landmarkRequired && !landmark) {
-      return redirect("/checkout?error=" + encodeURIComponent("Landmark is required for delivery."));
+      return redirect(
+        "/checkout?error=" + encodeURIComponent(m.checkout_landmark_required({}, { locale })),
+      );
     }
   }
 
@@ -92,7 +110,9 @@ export const POST: APIRoute = async ({ request }) => {
     requestHost: ctx.requestHost,
   });
   if (!addressSave.ok) {
-    return redirect("/checkout?error=" + encodeURIComponent(addressSave.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const resolvedAddress1 = deliveryChoice === "pickup" ? address1 || "Pickup" : address1;
@@ -123,7 +143,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(updateResult)) {
-    return redirect("/checkout?error=" + encodeURIComponent(updateResult.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const shippingResult = await setStoreCartShippingMethod({
@@ -139,7 +161,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(shippingResult)) {
-    return redirect("/checkout?error=" + encodeURIComponent(shippingResult.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const origin = new URL(request.url).origin;
@@ -155,8 +179,8 @@ export const POST: APIRoute = async ({ request }) => {
   if (isStoreError(chapaResult)) {
     const message =
       chapaResult.message === "merchant_chapa_not_configured"
-        ? "This shop has not configured online payments yet. Use cash on delivery or contact the shop."
-        : chapaResult.message;
+        ? m.checkout_online_payment_unavailable({}, { locale })
+        : m.checkout_could_not_continue({}, { locale });
     return redirect("/checkout?error=" + encodeURIComponent(message));
   }
 

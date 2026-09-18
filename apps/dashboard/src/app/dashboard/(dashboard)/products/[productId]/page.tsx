@@ -14,8 +14,11 @@ import {
   getTenantScopedPath,
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
+import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { dashboardRoutes } from "@/lib/routes";
+import { getAllStorefrontTranslationReadiness } from "@/lib/storefront-translation-readiness";
 
 type MerchantProductDetailPageProps = {
   params: Promise<{ productId: string }>;
@@ -40,7 +43,7 @@ export default async function MerchantProductDetailPage({
   };
   // Product + stock only. Categories/collections resolve client-side for org labels
   // and the organization edit dialog (shared react-query cache with list page).
-  const [productResult, stockResult] = await Promise.all([
+  const [productResult, stockResult, access] = await Promise.all([
     getMerchantProduct({
       ...requestOptions,
       productId,
@@ -49,7 +52,22 @@ export default async function MerchantProductDetailPage({
       ...requestOptions,
       productId,
     }),
+    getMerchantDashboardAccessShell(requestOptions),
   ]);
+  const storefrontDraft = access.ok
+    ? await getStorefrontDraft({
+        cookieHeader: requestOptions.cookieHeader,
+        platformApiBaseUrl,
+        tenantId: access.access.tenant.id,
+      })
+    : null;
+  const translationQueue =
+    resolvedSearchParams?.translationFrom === "workspace"
+      ? await getAllStorefrontTranslationReadiness({
+          ...requestOptions,
+          resourceType: "product",
+        })
+      : null;
   const productErrorState = productResult.ok
     ? null
     : getListErrorState("products", productResult.message);
@@ -95,6 +113,15 @@ export default async function MerchantProductDetailPage({
             )}
             product={productResult.product}
             tenantId={tenantId}
+            translationsEnabled={
+              storefrontDraft?.ok === true &&
+              storefrontDraft.draft.languageSettings.enabledLocales.includes("am")
+            }
+            translationOpen={resolvedSearchParams?.translate === "am"}
+            translationQueueNavigation={translationQueueNavigation(
+              translationQueue?.ok ? translationQueue.queue.items : [],
+              productId,
+            )}
           />
           <ProductStockPanel
             action={getTenantScopedPath(
@@ -113,6 +140,22 @@ export default async function MerchantProductDetailPage({
       )}
     </PageShell>
   );
+}
+
+function translationQueueNavigation(
+  items: Array<{ resourceId: string; status: "needs_review" | "ready" | "using_english" }>,
+  productId: string,
+) {
+  const unfinished = items.filter((item) => item.status !== "ready");
+  const index = unfinished.findIndex((item) => item.resourceId === productId);
+  if (index < 0) return undefined;
+  const href = (id: string) =>
+    `/dashboard/products/${encodeURIComponent(id)}?translate=am&translationFrom=workspace`;
+  const previousItem = unfinished[index - 1];
+  const nextItem = unfinished[index + 1];
+  const previous = previousItem ? href(previousItem.resourceId) : undefined;
+  const next = nextItem ? href(nextItem.resourceId) : undefined;
+  return previous || next ? { next, previous } : undefined;
 }
 
 async function ProductLoadAlert({ state }: { state: ListErrorState | null }) {

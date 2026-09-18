@@ -4,6 +4,8 @@ import { completeChapaStoreCheckout } from "../../lib/commerce/checkout";
 import { isStoreError } from "../../lib/commerce/result";
 import { loadPageContext } from "../../lib/page-context";
 import { getStorefrontRenderer } from "../../templates/registry";
+import * as m from "../../paraglide/messages.js";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
 import {
   appendSetCookies,
   cartIdClearCookie,
@@ -15,6 +17,11 @@ import {
  * Does not trust client "success" alone.
  */
 const ctx = await loadPageContext(Astro.request);
+const locale = ctx.ok
+  ? ctx.locale
+  : Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am"
+    ? "am"
+    : "en";
 const url = Astro.url;
 const txRef =
   url.searchParams.get("trx_ref") ??
@@ -23,25 +30,21 @@ const txRef =
   null;
 
 let error: string | null = null;
-let orderId: string | null = null;
 
 const friendlyMessages: Record<string, string> = {
-  chapa_payment_not_paid:
-    "Payment is not complete yet. Finish payment in Chapa, then return here.",
-  chapa_payment_not_found:
-    "We could not find this payment. Contact the shop if you were charged.",
-  chapa_verification_failed:
-    "We could not verify payment with Chapa. Try again in a moment.",
-  chapa_tx_ref_missing: "Payment reference missing. Start checkout again from your cart.",
-  chapa_tx_ref_mismatch: "Payment reference did not match this cart.",
-  merchant_chapa_not_configured: "Online payment is not available for this shop right now.",
+  chapa_payment_not_paid: m.payment_chapa_not_paid({}, { locale }),
+  chapa_payment_not_found: m.payment_chapa_not_found({}, { locale }),
+  chapa_verification_failed: m.payment_chapa_verification_failed({}, { locale }),
+  chapa_tx_ref_missing: m.payment_reference_missing({}, { locale }),
+  chapa_tx_ref_mismatch: m.payment_reference_mismatch({}, { locale }),
+  merchant_chapa_not_configured: m.payment_online_unavailable_shop({}, { locale }),
 };
 
 if (!ctx.ok) {
   error = ctx.message;
   Astro.response.status = ctx.status;
 } else if (!ctx.cartId) {
-  error = "No cart found for this payment return. Open your cart and try checkout again.";
+  error = m.payment_cart_not_found({}, { locale });
 } else {
   const result = await completeChapaStoreCheckout({
     cartId: ctx.cartId,
@@ -51,9 +54,8 @@ if (!ctx.ok) {
   });
 
   if (isStoreError(result)) {
-    error = friendlyMessages[result.message] ?? result.message;
+    error = friendlyMessages[result.message] ?? m.payment_chapa_verification_failed({}, { locale });
   } else {
-    orderId = result.order.id;
     const headers = new Headers({
       Location: `/order/${encodeURIComponent(result.order.id)}`,
     });
@@ -73,7 +75,7 @@ const storeAvailable = ctx.ok;
 const tenantName = ctx.ok ? ctx.config.tenant.name : "Store";
 const cartCount = ctx.ok ? ctx.cartCount : 0;
 const showError = Boolean(error);
-const redirectLabel = orderId ? `Redirecting... ${orderId}` : "Redirecting...";
+const redirectLabel = m.payment_redirecting({}, { locale });
 const PaymentReturn = ctx.ok
   ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.PaymentReturn
   : null;
@@ -84,14 +86,14 @@ const PaymentReturn = ctx.ok
 )}
 
 {storeAvailable && !PaymentReturn && (
-  <StoreShell tenantName={tenantName} cartCount={cartCount} title="Payment">
-    <h1 class="sf-title">Payment return</h1>
+  <StoreShell tenantName={tenantName} cartCount={cartCount} title={m.checkout_payment({}, { locale })}>
+    <h1 class="sf-title">{m.payment_return_title({}, { locale })}</h1>
     {showError && (
       <div class="sf-notice sf-notice-error" role="alert">
         <p>{error}</p>
         <div class="sf-actions">
-          <a class="sf-btn" href="/checkout">Back to checkout</a>
-          <a class="sf-btn sf-btn-secondary" href="/cart">Cart</a>
+          <a class="sf-btn" href="/checkout">{m.payment_back_checkout({}, { locale })}</a>
+          <a class="sf-btn sf-btn-secondary" href="/cart">{m.payment_return_cart({}, { locale })}</a>
         </div>
       </div>
     )}
@@ -100,17 +102,17 @@ const PaymentReturn = ctx.ok
 )}
 
 {!storeAvailable && (
-  <html lang="en">
+  <html lang={locale}>
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Payment</title>
+      <title>{m.checkout_payment({}, { locale })}</title>
       <link rel="stylesheet" href="/styles/commerce.css" />
     </head>
     <body>
       <main class="sf-main">
         <div class="sf-notice sf-notice-error">
-          <p>{error ?? "Store unavailable"}</p>
+          <p>{error ?? m.status_shop_unavailable_title({}, { locale })}</p>
         </div>
       </main>
     </body>

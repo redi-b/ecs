@@ -1,24 +1,43 @@
 ---
-import { loadPageContext } from "../lib/page-context";
-import {
-  loadStorefrontPreviewPage,
-} from "../lib/storefront-preview-pages";
-import { parseStorefrontPreviewPageId } from "../lib/storefront-preview-page-contract";
+import { storefrontLocaleSchema } from "@ecs/contracts";
 import { getStorefrontEditorManifest } from "@ecs/storefront-templates";
+import { loadPageContext } from "../lib/page-context";
+import { parseStorefrontPreviewPageId } from "../lib/storefront-preview-page-contract";
+import { loadStorefrontPreviewPage } from "../lib/storefront-preview-pages";
+import * as m from "../paraglide/messages.js";
 
 const token = Astro.url.searchParams.get("token")?.trim() ?? "";
 const pageId = parseStorefrontPreviewPageId(Astro.url.searchParams.get("page"));
+const requestedLocale = storefrontLocaleSchema.safeParse(Astro.url.searchParams.get("locale"));
+const fallbackLocale = requestedLocale.success ? requestedLocale.data : "en";
 const configuredEditorOrigin = resolveConfiguredEditorOrigin();
 const editorOrigins = [Astro.url.origin, configuredEditorOrigin].filter(
-  (origin, index, origins): origin is string => Boolean(origin) && origins.indexOf(origin) === index,
+  (origin, index, origins): origin is string =>
+    Boolean(origin) && origins.indexOf(origin) === index,
 );
 const ctx = token
-  ? await loadPageContext(Astro.request, { previewToken: token, skipCart: true })
-  : { ok: false as const, status: 400, message: "Preview token is required." };
-const editorManifest = ctx.ok ? getStorefrontEditorManifest(ctx.config.storefront.templateKey) : undefined;
-const previewBindings = Object.fromEntries((editorManifest?.sections ?? []).flatMap((section) => section.fields).filter((field) => field.preview).map((field) => [field.path, field.preview]));
+  ? await loadPageContext(Astro.request, {
+      previewToken: token,
+      skipCart: true,
+      ...(requestedLocale.success ? { locale: requestedLocale.data } : {}),
+    })
+  : {
+      ok: false as const,
+      status: 400,
+      message: m.preview_token_required({}, { locale: fallbackLocale }),
+    };
+const editorManifest = ctx.ok
+  ? getStorefrontEditorManifest(ctx.config.storefront.templateKey)
+  : undefined;
+const previewBindings = Object.fromEntries(
+  (editorManifest?.sections ?? [])
+    .flatMap((section) => section.fields)
+    .filter((field) => field.preview)
+    .map((field) => [field.path, field.preview]),
+);
 const previewPage = ctx.ok && pageId ? await loadStorefrontPreviewPage(ctx, pageId) : null;
 const PreviewComponent = previewPage?.component;
+const previewLocale = ctx.ok ? ctx.locale : "en";
 
 Astro.response.headers.set("cache-control", "private, no-store");
 Astro.response.headers.set("referrer-policy", "no-referrer");
@@ -38,14 +57,14 @@ function resolveConfiguredEditorOrigin() {
 }
 ---
 <!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>Storefront preview</title></head>
+<html lang={ctx.ok ? ctx.locale : fallbackLocale}>
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>{m.preview_title({}, { locale: previewLocale })}</title></head>
   <body>
-    {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>This page is not editable.</h1></main> : !PreviewComponent ? <main><h1>Preview is unavailable.</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
-    {ctx.ok && PreviewComponent ? <script is:inline define:vars={{ editorOrigins, previewBindings }}>
+    {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>{m.preview_page_not_editable({}, { locale: previewLocale })}</h1></main> : !PreviewComponent ? <main><h1>{m.preview_unavailable({}, { locale: previewLocale })}</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}
+    {ctx.ok && PreviewComponent ? <script is:inline define:vars={{ editorOrigins, previewBindings, previewLocale }}>
       const allowedParentOrigins = new Set(editorOrigins);
       let activeParentOrigin = null;
-      const fieldNodes = () => document.querySelectorAll('[data-editor-path]');
+      const fieldNodes = () => document.querySelectorAll('[data-editor-path],[data-editor-mirror-path]');
       const postToParent = (message) => {
         if (activeParentOrigin) {
           window.parent.postMessage(message, activeParentOrigin);
@@ -94,6 +113,7 @@ function resolveConfiguredEditorOrigin() {
       });
       document.querySelectorAll('form[action]').forEach((form) => form.removeAttribute('action'));
       document.querySelectorAll('a,button,input,select,textarea').forEach((control) => control.setAttribute('tabindex', '-1'));
+      if (previewLocale !== 'en') document.querySelectorAll('[contenteditable]').forEach((node) => node.removeAttribute('contenteditable'));
       document.querySelectorAll('[data-editor-image-path]').forEach((node) => {
         if (node instanceof HTMLImageElement) node.dataset.editorOriginalSrc = node.getAttribute('src') || '';
       });
@@ -168,7 +188,7 @@ function resolveConfiguredEditorOrigin() {
         if (event.data?.type !== 'ecs:editor:update') return;
         const fields = event.data.fields || {};
         fieldNodes().forEach((node) => {
-          const path = node.getAttribute('data-editor-path');
+          const path = node.getAttribute('data-editor-path') || node.getAttribute('data-editor-mirror-path');
           const ownsFocus = document.activeElement === node || node.contains(document.activeElement);
           const textTarget = node.querySelector('[data-editor-text-target]') || node;
           if (!ownsFocus && path && typeof fields[path] === 'string' && textTarget.textContent !== fields[path]) textTarget.textContent = fields[path];
@@ -181,7 +201,10 @@ function resolveConfiguredEditorOrigin() {
           const path = node.getAttribute('data-editor-image-path');
           if (!(node instanceof HTMLImageElement) || !path) return;
           const value = typeof fields[path] === 'string' ? fields[path].trim() : '';
-          const nextSource = value || node.dataset.editorEmptySrc || '';
+          // Empty image fields mean "use the template default", not "hide the
+          // image". Prefer an explicit empty-state source, then preserve the
+          // source rendered by the template for older adapters.
+          const nextSource = value || node.dataset.editorEmptySrc || node.dataset.editorOriginalSrc || '';
           if (nextSource) node.src = nextSource;
           else node.removeAttribute('src');
           node.hidden = !nextSource;

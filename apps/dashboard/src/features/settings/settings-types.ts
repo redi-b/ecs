@@ -2,6 +2,7 @@ import type {
   DeliverySettings,
   MerchantDashboardAccess,
   StorefrontSeoSettings,
+  StorefrontLanguageSettings,
   StorefrontTemplateCatalogItem,
   TenantDomainContract,
 } from "@ecs/contracts";
@@ -22,6 +23,7 @@ export type SettingsWorkspaceProps = {
   settingsStatus?: string | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   storefrontSeo: StorefrontSeoSettings;
+  storefrontLanguageSettings: StorefrontLanguageSettings;
   team: MerchantTeam | null;
   /** Access shell only — settings never needs ops/metrics/billing. */
   summary: MerchantDashboardAccess;

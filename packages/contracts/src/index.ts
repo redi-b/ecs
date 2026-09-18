@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+import {
+  defaultStorefrontLanguageSettings,
+  emptyStorefrontLocalizedContent,
+  storefrontLanguageSettingsSchema,
+  storefrontLocalizedContentSchema,
+} from "./storefront-localization";
+
+export * from "./storefront-localization";
+
 /** Accept familiar Ethiopian notation; store one international representation. */
 export function normalizeEthiopianPhone(value: string): string {
   const compact = value.trim().replace(/[\s().-]/g, "");
@@ -2011,6 +2020,12 @@ export const storefrontTemplateSelectionSchema = z.object({
 
 export type StorefrontTemplateSelection = z.infer<typeof storefrontTemplateSelectionSchema>;
 
+export const storefrontSeoSettingsSchema = z.object({
+  title: z.string().trim().max(70).nullable(),
+  description: z.string().trim().max(160).nullable(),
+  socialImageUrl: z.string().trim().url().max(2_000).nullable(),
+});
+
 export const storefrontDraftSchema = z.object({
   draft: z.object({
     tenantId: z.string().min(1),
@@ -2019,6 +2034,9 @@ export const storefrontDraftSchema = z.object({
     templateKey: z.string().min(1),
     data: z.unknown(),
     themeTokens: z.unknown(),
+    seo: storefrontSeoSettingsSchema.optional(),
+    languageSettings: storefrontLanguageSettingsSchema.default(defaultStorefrontLanguageSettings),
+    localizedContent: storefrontLocalizedContentSchema.default(emptyStorefrontLocalizedContent),
     updatedAt: z.string().min(1),
     published: z
       .object({
@@ -2027,6 +2045,9 @@ export const storefrontDraftSchema = z.object({
         templateKey: z.string().min(1),
         data: z.unknown(),
         themeTokens: z.unknown(),
+        seo: storefrontSeoSettingsSchema.optional(),
+        languageSettings: storefrontLanguageSettingsSchema.default(defaultStorefrontLanguageSettings),
+        localizedContent: storefrontLocalizedContentSchema.default(emptyStorefrontLocalizedContent),
       })
       .nullable()
       .optional(),
@@ -2057,12 +2078,6 @@ export const storefrontUnpublishSchema = z.object({
 });
 
 export type StorefrontUnpublish = z.infer<typeof storefrontUnpublishSchema>;
-
-export const storefrontSeoSettingsSchema = z.object({
-  title: z.string().trim().max(70).nullable(),
-  description: z.string().trim().max(160).nullable(),
-  socialImageUrl: z.string().trim().url().max(2_000).nullable(),
-});
 
 export const storefrontSeoSettingsResponseSchema = z.object({
   seo: storefrontSeoSettingsSchema,
@@ -2115,6 +2130,8 @@ export const publishedStorefrontConfigSchema = z.object({
     templateKey: z.string().min(1),
     data: z.unknown(),
     themeTokens: z.unknown(),
+    languageSettings: storefrontLanguageSettingsSchema.default(defaultStorefrontLanguageSettings),
+    localizedContent: storefrontLocalizedContentSchema.default(emptyStorefrontLocalizedContent),
     publishedAt: z.string().min(1).nullable(),
     seo: storefrontSeoSettingsSchema,
   }),

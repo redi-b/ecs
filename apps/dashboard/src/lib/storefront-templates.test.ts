@@ -146,6 +146,12 @@ describe("storefront template helpers", () => {
       templateKey: "luvia@1",
       data: { home: { hero: { title: "Published" } } },
       themeTokens: { colors: { primary: "#111111" } },
+      languageSettings: {
+        sourceLocale: "en",
+        defaultLocale: "en",
+        enabledLocales: ["en"],
+      },
+      localizedContent: { version: 1, locales: {} },
     });
     assert.equal(
       forwardedRequest?.url,

@@ -72,6 +72,7 @@ export async function storeFetch(
     options.requestHost,
     {
       ...(options.body === undefined ? {} : { "content-type": "application/json" }),
+      ...(options.locale ? { "x-medusa-locale": options.locale } : {}),
       ...options.headers,
     },
   );

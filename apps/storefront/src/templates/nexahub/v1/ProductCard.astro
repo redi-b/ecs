@@ -3,32 +3,41 @@ import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import addToCartIcon from "./icons/add-to-cart-icon.svg?raw";
 import SaveIcon from "./SaveIcon.astro";
 import "./styles/components/_product-card.scss";
 
 interface Props { product: StoreProduct; eager?: boolean; }
 const { product, eager = false } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const title = product.title ?? m.catalog_product_fallback({}, { locale });
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, variant);
-const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Product", thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const badgeLabel = badge?.kind === "out-of-stock"
+  ? m.catalog_out_of_stock({}, { locale })
+  : badge?.kind === "promotion"
+    ? m.catalog_discount_off({ percentage: badge.percentage }, { locale })
+    : null;
 ---
 <article class="product-card">
-  <h3 class="product-card__name type-heading-5"><a href={href}>{product.title ?? "Product"}</a></h3>
+  <h3 class="product-card__name type-heading-5"><a href={href}>{title}</a></h3>
   <div class="product-card__image-box">
-    <a href={href} class="product-card__image img-wrapper" aria-label={`View ${product.title ?? "product"}`}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}
+    <a href={href} class="product-card__image img-wrapper" aria-label={m.wishlist_view_product({ product: title }, { locale })}>
+      {product.thumbnail ? <img src={product.thumbnail} alt={title} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
-    <button class="product-card__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"}`}><SaveIcon /></button>
+    <button class="product-card__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><SaveIcon /></button>
     {variant ? <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>
       <input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" />
-      <button class="product-card__add-btn" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? `Add ${product.title ?? "product"} to cart` : `${product.title ?? "Product"} is out of stock`}><span data-card-add-label>{variant.inStock ? "Add to Cart" : "Out of stock"}</span></button>
-      <button class="product-card__cart" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? `Add ${product.title ?? "product"} to cart` : `${product.title ?? "Product"} is out of stock`}><Fragment set:html={addToCartIcon} /></button>
+      <button class="product-card__add-btn" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? m.product_add_named({ product: title }, { locale }) : m.product_out_of_stock_named({ product: title }, { locale })}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></button>
+      <button class="product-card__cart" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? m.product_add_named({ product: title }, { locale }) : m.product_out_of_stock_named({ product: title }, { locale })}><Fragment set:html={addToCartIcon} /></button>
     </form> : null}
   </div>
   <div class="product-card__footer">
-    <div class="product-card__price-group"><span class="product-card__label type-body-xs-500">Starting at</span><strong class="product-card__price type-heading-6">{formatMoney(product.priceAmount, product.currencyCode)}</strong></div>
-    {badge ? <span class="product-card__discount type-body-xs-500">{badge.label}</span> : null}
+    <div class="product-card__price-group"><span class="product-card__label type-body-xs-500">{m.catalog_starting_at({}, { locale })}</span><strong class="product-card__price type-heading-6">{formatMoney(product.priceAmount, product.currencyCode, locale)}</strong></div>
+    {badgeLabel ? <span class="product-card__discount type-body-xs-500">{badgeLabel}</span> : null}
   </div>
 </article>

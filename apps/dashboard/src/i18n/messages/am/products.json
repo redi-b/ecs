@@ -130,6 +130,32 @@
     "statusDraft": "በዝግጅት ላይ",
     "statusUnknown": "ያልታወቀ"
   },
+  "translation": {
+    "action": "ቋንቋዎች",
+    "title": "የምርት ትርጉም",
+    "language": "አማርኛ",
+    "loading": "የትርጉም መስኮች በመጫን ላይ…",
+    "progress": "ከ{total} መስኮች {translated} ተተርጉመዋል",
+    "english": "እንግሊዝኛ",
+    "placeholder": "የአማርኛ ጽሑፉን ያስገቡ",
+    "save": "ትርጉሙን አስቀምጥ",
+    "saving": "በማስቀመጥ ላይ…",
+    "saved": "የአማርኛ ትርጉሙ ተቀምጧል።",
+    "loadFailed": "ትርጉሙን መጫን አልተቻለም። እንደገና ይሞክሩ።",
+    "saveFailed": "ትርጉሙን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "status": {
+      "using_english": "እንግሊዝኛን ይጠቀማል",
+      "needs_review": "ማስተካከል ያስፈልጋል",
+      "ready": "ዝግጁ"
+    },
+    "field": {
+      "title": "ስም",
+      "subtitle": "አጭር መግለጫ",
+      "description": "መግለጫ",
+      "material": "ንጥረ ነገር",
+      "value": "መለያ"
+    }
+  },
   "create": {
     "optionsLoadErrorDesc": "{labels} መጫን አልተቻለም። አሁንም መደበኛ ምርት መፍጠር እና በኋላ ላይ አማራጮችን ማከል ይችላሉ።"
   },
@@ -426,6 +452,7 @@
     "dialogDesc": "ከማስቀመጥ በፊት ዝርዝር፣ ድርጅት፣ አማራጮች እና ማረጋገጫን ያጠናቁ።",
     "mediaSyncWarn": "ምርቱ ተቀይሯል፣ ነገር ግን ሚዲያን ማስተካከል አልተቻለም።",
     "toastCreated": "ምርቱ ተጨምሯል።",
+    "addAmharic": "አማርኛ ያክሉ",
     "toastUpdated": "ለውጦቹ ተቀይረዋል።",
     "basicsTitle": "መሰረታዊ",
     "basicsDesc": "ደንበኞች መጀመሪያ የሚያዩትን መረጃ ይጀምሩ።",

@@ -9,8 +9,10 @@ import { buildStorefrontSeo } from "../../lib/seo";
 import { buildProductStructuredData } from "../../lib/structured-data";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
+import * as m from "../../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
+const locale = ctx.ok ? ctx.locale : "en";
 const handle = Astro.params.handle ?? "";
 
 if (!ctx.ok) {
@@ -23,6 +25,7 @@ const productResult =
         handle,
         platformApiBaseUrl: ctx.platformApiBaseUrl,
         requestHost: ctx.requestHost,
+        locale: ctx.commerceLocale,
         regionId: ctx.config.commerce.regionId,
       })
     : null;
@@ -49,16 +52,17 @@ const seo = ctx.ok
       path: `/products/${encodeURIComponent(handle)}`,
       publicOrigin: ctx.publicOrigin,
       tenantName: ctx.config.tenant.name,
-      title: product?.title ?? "Product not found",
+      title: product?.title ?? m.product_not_found({}, { locale }),
     })
   : null;
-const structuredData = seo ? buildProductStructuredData({ product, seo }) : null;
+const structuredData = seo ? buildProductStructuredData({ locale, product, seo }) : null;
 
 let relatedProducts: StoreProduct[] = [];
 if (ctx.ok && product?.collectionId) {
   const relatedResult = await listStoreProducts({
     platformApiBaseUrl: ctx.platformApiBaseUrl,
     requestHost: ctx.requestHost,
+    locale: ctx.commerceLocale,
     regionId: ctx.config.commerce.regionId,
     collectionId: product.collectionId,
     limit: 8,
@@ -70,6 +74,7 @@ if (ctx.ok && product?.collectionId) {
   const relatedResult = await listStoreProducts({
     platformApiBaseUrl: ctx.platformApiBaseUrl,
     requestHost: ctx.requestHost,
+    locale: ctx.commerceLocale,
     regionId: ctx.config.commerce.regionId,
     limit: 8,
   });
@@ -82,6 +87,8 @@ const Product = ctx.ok ? resolveRendererSlot(ctx.config.storefront.templateKey, 
 
 if (ctx.ok && Product && product) {
   applyCatalogCache(Astro.cache, {
+    locale,
+    path: Astro.url.pathname,
     tenantId: ctx.config.tenant.id,
     publishedRevisionId: ctx.config.storefront.publishedRevisionId,
     templateKey: ctx.config.storefront.templateKey,
@@ -93,7 +100,7 @@ if (ctx.ok && Product && product) {
 
 {
   !ctx.ok || !Product ? (
-    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+    <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} />
   ) : (
     <Product
       data={ctx.config.storefront.data}

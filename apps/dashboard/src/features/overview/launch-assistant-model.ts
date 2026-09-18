@@ -89,10 +89,25 @@ export function getLaunchChecklistItems(
       required: true,
     });
     const next = required.findIndex((item) => !item.ready);
-    return required.map((item, index) => ({
-      ...item,
-      current: index === next && !item.unavailable,
-    }));
+    const localizedStorefront: Omit<LaunchChecklistItem, "current">[] = isPublished
+      ? [
+          {
+            id: "storefront-language",
+            label: t("overview.launch.checks.translation"),
+            description: t("overview.launch.checks.translationHelp"),
+            ready: false,
+            href: "/dashboard/storefront/translations",
+            required: false,
+          },
+        ]
+      : [];
+    return [
+      ...required.map((item, index) => ({
+        ...item,
+        current: index === next && !item.unavailable,
+      })),
+      ...localizedStorefront.map((item) => ({ ...item, current: false })),
+    ];
   }
   const hasShopProfile = Boolean(
     summary.tenant.name.trim() && summary.tenant.handle.trim() && summary.domain.hostname.trim(),

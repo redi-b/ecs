@@ -2,6 +2,7 @@
 export function formatMoney(
   amount: number | null | undefined,
   currencyCode: string | null | undefined = "ETB",
+  locale: "en" | "am" = "en",
 ) {
   if (amount == null || !Number.isFinite(amount)) {
     return "-";
@@ -10,7 +11,7 @@ export function formatMoney(
   const code = (currencyCode ?? "ETB").toUpperCase();
 
   try {
-    return new Intl.NumberFormat("en-ET", {
+    return new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET", {
       currency: code,
       maximumFractionDigits: 2,
       minimumFractionDigits: 0,

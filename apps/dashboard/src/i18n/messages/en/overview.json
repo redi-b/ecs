@@ -220,7 +220,9 @@
       "test": "Try the shopping flow",
       "testHelp": "Recommended. Check product selection, cart, and checkout before sharing your shop. Placed orders are real orders.",
       "policies": "Explain delivery & returns",
-      "policiesHelp": "Recommended. Add the delivery and return terms your shop actually offers."
+      "policiesHelp": "Recommended. Add the delivery and return terms your shop actually offers.",
+      "translation": "Offer your shop in Amharic",
+      "translationHelp": "Optional. Translate your shop pages and products when you are ready."
     },
     "title": "Shop setup",
     "titleReady": "Setup complete",

@@ -47,7 +47,8 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
     requirement: merchantPolicies.media,
   },
   {
-    matches: (pathname) => pathname === dashboardRoutes.editor,
+    matches: (pathname) =>
+      pathname === dashboardRoutes.editor || pathname.startsWith("/dashboard/storefront/"),
     requirement: merchantPolicies.storefront,
   },
   {

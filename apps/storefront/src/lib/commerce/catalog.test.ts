@@ -6,7 +6,10 @@ import { listStoreCategories, listStoreCollections } from "./catalog.js";
 const requestOptions = {
   platformApiBaseUrl: "https://platform.example.test",
   fetcher: async (request: Request) => {
-    const path = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
+    assert.match(url.searchParams.get("fields") ?? "", /(?:^|,)\+metadata(?:,|$)/);
+    assert.doesNotMatch(url.searchParams.get("fields") ?? "", /\*metadata/);
     if (path.endsWith("/store/collections")) {
       return Response.json({
         collections: [

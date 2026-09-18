@@ -1,13 +1,11 @@
 "use client";
 import { shopDetailsSchema } from "@ecs/contracts";
-import { emptyShopDetails, ShopContactFields } from "@/components/onboarding/shop-contact-fields";
-
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
-
 import { useAccess } from "@/components/app/access-context";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
+import { emptyShopDetails, ShopContactFields } from "@/components/onboarding/shop-contact-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -72,6 +70,7 @@ export function SettingsWorkspace({
   settingsStatus,
   storefrontTemplates,
   storefrontSeo,
+  storefrontLanguageSettings,
   summary,
   team,
   templateStatus,
@@ -84,7 +83,9 @@ export function SettingsWorkspace({
     return canOpenSettingsSection(requested, permissions) ? requested : "preferences";
   });
   const [name, setName] = useState(summary.tenant.name);
-  const [shopDetails, setShopDetails] = useState(() => summary.tenant.shopDetails ?? emptyShopDetails());
+  const [shopDetails, setShopDetails] = useState(
+    () => summary.tenant.shopDetails ?? emptyShopDetails(),
+  );
   const [handle, setHandle] = useState(summary.tenant.handle);
   const [handleUnlocked, setHandleUnlocked] = useState(false);
   const [handleAvailability, setHandleAvailability] = useState<HandleAvailability>({
@@ -95,6 +96,7 @@ export function SettingsWorkspace({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [savingFee, setSavingFee] = useState(false);
+  const [storefrontLanguageDirty, setStorefrontLanguageDirty] = useState(false);
   const nameId = useId();
   const handleId = useId();
   const deliveryFeeId = useId();
@@ -105,7 +107,9 @@ export function SettingsWorkspace({
   const nextHost = `${normalizedHandle || summary.tenant.handle}.${baseDomain}`;
   const handleChanged = normalizedHandle !== summary.tenant.handle;
   const nameChanged = name.trim() !== summary.tenant.name;
-  const detailsDirty = JSON.stringify(shopDetails) !== JSON.stringify(summary.tenant.shopDetails ?? emptyShopDetails());
+  const detailsDirty =
+    JSON.stringify(shopDetails) !==
+    JSON.stringify(summary.tenant.shopDetails ?? emptyShopDetails());
   const parsedDetails = shopDetailsSchema.safeParse(shopDetails);
   const shopDirty = nameChanged || handleChanged || detailsDirty;
   const canSaveShop =
@@ -113,8 +117,9 @@ export function SettingsWorkspace({
     normalizedHandle.length >= 3 &&
     (!detailsDirty || parsedDetails.success) &&
     (!handleChanged || handleAvailability.status === "available");
-  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
-    useUnsavedChangesGuard(shopDirty);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    shopDirty || storefrontLanguageDirty,
+  );
   const visibleSections = (
     [
       "shop",
@@ -347,7 +352,13 @@ export function SettingsWorkspace({
           {section === "shop" ? (
             <ShopSection
               detailsDirty={detailsDirty}
-              contactFields={<ShopContactFields value={shopDetails} onChange={setShopDetails} disabled={isPending || !allows(permissions, merchantPolicies.shopSettingsManage)} />}
+              contactFields={
+                <ShopContactFields
+                  value={shopDetails}
+                  onChange={setShopDetails}
+                  disabled={isPending || !allows(permissions, merchantPolicies.shopSettingsManage)}
+                />
+              }
               canSaveShop={canSaveShop}
               handle={handle}
               handleAvailability={handleAvailability}
@@ -414,6 +425,7 @@ export function SettingsWorkspace({
               deliveryState={deliveryState}
               isPending={isPending}
               savingFee={savingFee}
+              translationsEnabled={storefrontLanguageSettings.enabledLocales.includes("am")}
               onDeliveryChange={setDeliveryState}
               onSaveDelivery={(next, label) => {
                 void saveDelivery(next, label);
@@ -435,6 +447,8 @@ export function SettingsWorkspace({
           {section === "storefront" ? (
             <StorefrontSection
               seo={storefrontSeo}
+              languageSettings={storefrontLanguageSettings}
+              onLanguageDirtyChange={setStorefrontLanguageDirty}
               storefrontTemplates={storefrontTemplates}
               summary={summary}
             />

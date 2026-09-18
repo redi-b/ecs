@@ -2,8 +2,13 @@
 import { contrastingInk, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
+import StorefrontFonts from "../../../components/shell/StorefrontFonts.astro";
+import StorefrontLanguageSwitcher from "../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../components/shell/StructuredData.astro";
 import type { StorefrontSeo } from "../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import { resolveTemplateVoiceMessage } from "../../../lib/template-voice";
+import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
 import logo from "./assets/luvia-logo.svg";
 import cartIcon from "./icons/cart-icon.svg";
@@ -43,6 +48,40 @@ const {
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
 const theme = parseLuviaThemeTokens(themeTokens);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const addToCartLabel = resolveTemplateVoiceMessage({
+  fallback: m.action_add_to_cart({}, { locale }),
+  locale,
+  messageId: "action_add_to_cart",
+  templateKey: "luvia.v1",
+});
+const continueShoppingLabel = resolveTemplateVoiceMessage({
+  fallback: m.action_continue_shopping({}, { locale }),
+  locale,
+  messageId: "action_continue_shopping",
+  templateKey: "luvia.v1",
+});
+const clientMessages = {
+  addFailed: m.product_add_failed({}, { locale }),
+  added: m.product_added({}, { locale }),
+  adding: m.product_adding({}, { locale }),
+  addToCart: addToCartLabel,
+  cartEmpty: m.cart_empty({}, { locale }),
+  cartEmptyHelp: m.cart_empty_help({}, { locale }),
+  cartLoadFailed: m.cart_load_failed({}, { locale }),
+  cartLoading: m.cart_loading({}, { locale }),
+  cartItemCount: m.cart_item_count({ count: "__COUNT__" }, { locale }),
+  cartUpdateFailed: m.cart_update_failed({}, { locale }),
+  cartUpdating: m.cart_updating({}, { locale }),
+  continueShopping: continueShoppingLabel,
+  decreaseQuantity: m.action_decrease_quantity({}, { locale }),
+  increaseQuantity: m.action_increase_quantity({}, { locale }),
+  outOfStock: m.catalog_out_of_stock({}, { locale }),
+  product: m.cart_item_fallback({}, { locale }),
+  remove: m.action_remove({}, { locale }),
+  removingItem: m.cart_item_removing({}, { locale }),
+  retry: m.action_retry({}, { locale }),
+};
 const themeStyle = [
   `--lv-bg:${theme.colors.background}`,
   `--lv-ink:${theme.colors.foreground}`,
@@ -58,7 +97,7 @@ const isActiveLink = (href: string) =>
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -67,6 +106,7 @@ const isActiveLink = (href: string) =>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title ? `${title} · ${tenantName}` : tenantName}</title>
     <SeoHead seo={seo} />
+    <StorefrontFonts />
     <StructuredData value={structuredData} />
     <link rel="preload" href="/fonts/Right-Grotesk-Medium.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/GC-Molecule-Demo-Medium.woff2" as="font" type="font/woff2" crossorigin />
@@ -76,6 +116,7 @@ const isActiveLink = (href: string) =>
     class="lv-body"
     data-demo-mode={demoMode ? "true" : undefined}
     data-editor-mode={editorMode ? "true" : undefined}
+    data-lv-client-messages={JSON.stringify(clientMessages)}
     data-editor-theme-vars={editorMode ? JSON.stringify({
       background: "--lv-bg",
       foreground: "--lv-ink",
@@ -88,43 +129,44 @@ const isActiveLink = (href: string) =>
   >
     {demoMode ? <div class="lv-demo-banner" role="status"><strong>Template preview</strong><nav aria-label="Preview pages"><a href="/demo/storefront/luvia">Home</a><a href="/demo/storefront/luvia/products">Shop</a><a href="/demo/storefront/luvia/products/radiance-serum">Product</a><a href="/demo/storefront/luvia/cart">Cart</a><a href="/demo/storefront/luvia/checkout">Checkout</a><a href="/demo/storefront/luvia/order-confirmation">Receipt</a></nav><span>Shopping actions are disabled</span></div> : null}
     <header class="lv-header">
-      <a class="lv-logo" href="/" aria-label={`${tenantName} home`} data-editor-image-scope><img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="lv-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></a>
-      <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
-      <nav class="lv-nav" id="lv-navigation" data-lenis-prevent aria-label="Store" data-editor-links-path="header.navigation">
+      <a class="lv-logo" href="/" aria-label={m.a11y_shop_home({ shop: tenantName }, { locale })} data-editor-image-scope><img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="lv-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></a>
+      <button class="lv-menu" type="button" aria-expanded="false" aria-controls="lv-navigation"><span></span><span></span><span></span><span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span></button>
+      <nav class="lv-nav" id="lv-navigation" data-lenis-prevent aria-label={m.a11y_store_navigation({}, { locale })} data-editor-links-path="header.navigation">
         {header.navigation.map((item, index) => <a class:list={{ "is-active": isActiveLink(item.href) }} href={item.href} aria-current={isActiveLink(item.href) ? "page" : undefined} data-editor-path={`header.navigation.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}
-        <span class="lv-nav__customer" aria-label="Customer links">
-          <a href="/wishlist">Wishlist</a>
-          <a href="/account">Account</a>
+        <span class="lv-nav__customer" aria-label={m.a11y_customer_links({}, { locale })}>
+          <a href="/wishlist">{m.nav_wishlist({}, { locale })}</a>
+          <a href="/account">{m.nav_account({}, { locale })}</a>
         </span>
       </nav>
       <div class="lv-actions">
-        <form class="lv-search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor>
-          <label class="sr-only" for="lv-search-input">Search products</label>
-          <input id="lv-search-input" name="q" type="search" placeholder="Search any product..." />
-          <button type="submit" aria-label="Search" aria-controls="lv-search-input" aria-expanded="false"><img src={searchIcon.src} alt="" /></button>
+        <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
+        <form class="lv-search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
+          <label class="sr-only" for="lv-search-input">{m.search_products_label({}, { locale })}</label>
+          <input id="lv-search-input" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} />
+          <button type="submit" aria-label={m.action_search({}, { locale })} aria-controls="lv-search-input" aria-expanded="false"><img src={searchIcon.src} alt="" /></button>
         </form>
-        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label="Wishlist" data-wishlist-indicator><img src={wishlistIcon.src} alt="" /></a>
-        <a class="lv-action" href="/cart" aria-label="Shopping cart" data-cart-trigger><img src={cartIcon.src} alt="" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
-        <a class="lv-action lv-action--account" href="/account" aria-label="Account"><img src={userIcon.src} alt="" /></a>
+        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><img src={wishlistIcon.src} alt="" /></a>
+        <a class="lv-action" href="/cart" aria-label={m.nav_cart({}, { locale })} data-cart-trigger><img src={cartIcon.src} alt="" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
+        <a class="lv-action lv-action--account" href="/account" aria-label={m.nav_account({}, { locale })}><img src={userIcon.src} alt="" /></a>
       </div>
     </header>
-    <button class="lv-header-backdrop" type="button" data-header-backdrop aria-label="Close navigation" hidden></button>
+    <button class="lv-header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>
     <slot />
     <footer class="lv-footer">
-<div class="lv-footer__intro" data-editor-image-scope><p data-editor-path={!footer.managedContact ? "footer.blurb" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.blurb}</p>{(editorMode || footer.credit.enabled) && <a href="https://eclipticcreative.com" rel="noreferrer" target="_blank" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled}>Web Design by <u>Eclipticcreative</u></a>}<img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="lv-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></div>
-      <div><strong>QUICK LINKS</strong><span class="lv-footer__links" data-editor-links-path="footer.quickLinks" data-editor-empty-label="Add quick links">{footer.quickLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.quickLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
-      <div><strong>SHOP</strong><span class="lv-footer__links" data-editor-links-path="footer.shopLinks" data-editor-empty-label="Add shop links">{footer.shopLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.shopLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
-      {(footer.socialLinks.length > 0 || (editorMode && !footer.managedContact)) && <div><strong>SOCIALS</strong><span class="lv-footer__links" data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined} data-editor-empty-label={!footer.managedContact ? "Add social links" : undefined}>{footer.socialLinks.map((item, index) => <a href={item.href} target="_blank" rel="noopener noreferrer" data-editor-path={!footer.managedContact ? `footer.socialLinks.${index}.label` : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>}
-      <div><strong>CONTACT INFO</strong>{[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <a href={`tel:${phone}`} data-editor-path={!footer.managedContact ? "footer.phone" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{phone}</a>)}{(footer.email || (editorMode && !footer.managedContact)) && <a href={`mailto:${footer.email ?? ""}`} data-editor-path={!footer.managedContact ? "footer.email" : undefined} data-editor-empty-label={!footer.managedContact ? "Add email" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.email}</a>}{(footer.address || (editorMode && !footer.managedContact)) && <p data-editor-path={!footer.managedContact ? "footer.address" : undefined} data-editor-empty-label={!footer.managedContact ? "Add address" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.address}</p>}</div>
-      <small>© {new Date().getFullYear()} {tenantName}. All rights reserved.</small>
+<div class="lv-footer__intro" data-editor-image-scope><p data-editor-path={!footer.managedContact ? "footer.blurb" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.blurb}</p>{(editorMode || footer.credit.enabled) && <a href="https://eclipticcreative.com" rel="noreferrer" target="_blank" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled}>{m.footer_web_design_by({ studio: "Eclipticcreative" }, { locale })}</a>}<img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="lv-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></div>
+      <div><strong>{m.footer_quick_links({}, { locale })}</strong><span class="lv-footer__links" data-editor-links-path="footer.quickLinks" data-editor-empty-label="Add quick links">{footer.quickLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.quickLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
+      <div><strong>{m.nav_shop({}, { locale })}</strong><span class="lv-footer__links" data-editor-links-path="footer.shopLinks" data-editor-empty-label="Add shop links">{footer.shopLinks.map((item, index) => <a href={item.href} data-editor-path={`footer.shopLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
+      {(footer.socialLinks.length > 0 || (editorMode && !footer.managedContact)) && <div><strong>{m.contact_socials({}, { locale })}</strong><span class="lv-footer__links" data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined} data-editor-empty-label={!footer.managedContact ? "Add social links" : undefined}>{footer.socialLinks.map((item, index) => <a href={item.href} target="_blank" rel="noopener noreferrer" data-editor-path={!footer.managedContact ? `footer.socialLinks.${index}.label` : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>}
+      <div><strong>{m.contact_information({}, { locale })}</strong>{[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <a href={`tel:${phone}`} data-editor-path={!footer.managedContact ? "footer.phone" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{phone}</a>)}{(footer.email || (editorMode && !footer.managedContact)) && <a href={`mailto:${footer.email ?? ""}`} data-editor-path={!footer.managedContact ? "footer.email" : undefined} data-editor-empty-label={!footer.managedContact ? "Add email" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.email}</a>}{(footer.address || (editorMode && !footer.managedContact)) && <p data-editor-path={!footer.managedContact ? "footer.address" : undefined} data-editor-empty-label={!footer.managedContact ? "Add address" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.address}</p>}</div>
+      <small>© {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}</small>
     </footer>
     <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} iconSrc={chatIcon.src} tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
-    <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label="Close cart" hidden></button>
+    <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label={m.cart_close({}, { locale })} hidden></button>
     <aside class="lv-cart-drawer" data-cart-drawer data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
-      <header><div><h2 id="lv-cart-title">Your Cart</h2><span data-cart-drawer-count>0 items</span></div><button type="button" data-cart-close aria-label="Close cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>
+      <header><div><h2 id="lv-cart-title">{m.cart_title({}, { locale })}</h2><span data-cart-drawer-count>{m.cart_item_count({ count: 0 }, { locale })}</span></div><button type="button" data-cart-close aria-label={m.cart_close({}, { locale })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>
       <div class="lv-cart-drawer__status" data-cart-status aria-live="polite"></div>
       <div class="lv-cart-drawer__items" data-cart-items data-lenis-prevent></div>
-      <footer data-cart-footer hidden><dl><div><dt>Subtotal</dt><dd data-cart-subtotal></dd></div><div><dt>Delivery</dt><dd>Calculated at checkout</dd></div><div><dt>Total</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">Checkout</a><a class="lv-cart-view" href="/cart">View cart and discounts</a><button type="button" data-cart-continue>Continue shopping</button></footer>
+      <footer data-cart-footer hidden><dl><div><dt>{m.cart_subtotal({}, { locale })}</dt><dd data-cart-subtotal></dd></div><div><dt>{m.cart_delivery({}, { locale })}</dt><dd>{m.cart_delivery_at_checkout({}, { locale })}</dd></div><div><dt>{m.cart_total({}, { locale })}</dt><dd data-cart-total></dd></div></dl><a class="lv-cart-checkout" href="/checkout">{m.action_checkout({}, { locale })}</a><a class="lv-cart-view" href="/cart">{m.cart_view({}, { locale })}</a><button type="button" data-cart-continue>{continueShoppingLabel}</button></footer>
     </aside>
     <StorefrontAnalytics disabled={demoMode || editorMode} />
     <script>
@@ -135,6 +177,9 @@ const isActiveLink = (href: string) =>
       const editorPreview = document.body.dataset.editorMode === "true";
       const demoPreview = document.body.dataset.demoMode === "true";
       const readOnlyPreview = editorPreview || demoPreview;
+      const messages: Record<string, string> = JSON.parse(
+        document.body.dataset.lvClientMessages || "{}",
+      );
       const menu = document.querySelector<HTMLButtonElement>(".lv-menu");
       const nav = document.querySelector<HTMLElement>(".lv-nav");
       const headerBackdrop = document.querySelector<HTMLButtonElement>("[data-header-backdrop]");
@@ -213,12 +258,12 @@ const isActiveLink = (href: string) =>
       let lastFocused: HTMLElement | null = null;
       const formatCartMoney = (amount: number | null, currency: string | null) => {
         if (amount == null) return "—";
-        try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
+        try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
         catch { return String(amount); }
       };
       const setCartCount = (count: number) => {
         syncCartCount(count);
-        if (drawerCount) drawerCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
+        if (drawerCount) drawerCount.textContent = messages.cartItemCount.replace("__COUNT__", String(count));
       };
       const node = <K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string) => {
         const element = document.createElement(tag); if (className) element.className = className; if (text != null) element.textContent = text; return element;
@@ -230,21 +275,21 @@ const isActiveLink = (href: string) =>
         setCartCount(cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0));
         if (!cartItems.length) {
           const empty = node("div", "lv-cart-empty");
-          empty.append(node("h3", "", "Your cart is empty"), node("p", "", "Explore the collection and add something you love."));
-          const shop = node("a", "", "Continue shopping"); shop.href = "/products"; empty.append(shop); itemsRoot.append(empty); footer.hidden = true; return;
+          empty.append(node("h3", "", messages.cartEmpty), node("p", "", messages.cartEmptyHelp));
+          const shop = node("a", "", messages.continueShopping); shop.href = "/products"; empty.append(shop); itemsRoot.append(empty); footer.hidden = true; return;
         }
         for (const item of cartItems) {
           const article = node("article", "lv-cart-item"); article.dataset.lineItemId = item.id;
           const media = node("a", "lv-cart-item__media") as HTMLAnchorElement; media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
           if (item.thumbnail) { const image = node("img") as HTMLImageElement; image.src = item.thumbnail; image.alt = ""; media.append(image); }
-          const copy = node("div", "lv-cart-item__copy"); copy.append(node("strong", "", item.title || "Product")); if (item.variantTitle) copy.append(node("span", "", item.variantTitle)); copy.append(node("b", "", formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode)));
+          const copy = node("div", "lv-cart-item__copy"); copy.append(node("strong", "", item.title || messages.product)); if (item.variantTitle) copy.append(node("span", "", item.variantTitle)); copy.append(node("b", "", formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode)));
           const controls = node("div", "lv-cart-item__actions");
           const quantity = node("div", "lv-cart-quantity");
-          const minus = node("button", "", "−") as HTMLButtonElement; minus.type = "button"; minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1)); minus.setAttribute("aria-label", `Decrease ${item.title || "product"} quantity`); minus.disabled = Number(item.quantity) <= 1;
+          const minus = node("button", "", "−") as HTMLButtonElement; minus.type = "button"; minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1)); minus.setAttribute("aria-label", `${messages.decreaseQuantity}: ${item.title || messages.product}`); minus.disabled = Number(item.quantity) <= 1;
           const amount = node("span", "", String(item.quantity));
-          const plus = node("button", "", "+") as HTMLButtonElement; plus.type = "button"; plus.dataset.cartQuantity = String(Number(item.quantity) + 1); plus.setAttribute("aria-label", `Increase ${item.title || "product"} quantity`);
+          const plus = node("button", "", "+") as HTMLButtonElement; plus.type = "button"; plus.dataset.cartQuantity = String(Number(item.quantity) + 1); plus.setAttribute("aria-label", `${messages.increaseQuantity}: ${item.title || messages.product}`);
           quantity.append(minus, amount, plus);
-          const remove = node("button", "lv-cart-remove", "Remove") as HTMLButtonElement; remove.type = "button"; remove.dataset.cartRemove = ""; remove.setAttribute("aria-label", `Remove ${item.title || "product"} from cart`);
+          const remove = node("button", "lv-cart-remove", messages.remove) as HTMLButtonElement; remove.type = "button"; remove.dataset.cartRemove = ""; remove.setAttribute("aria-label", `${messages.remove}: ${item.title || messages.product}`);
           controls.append(quantity, remove); article.append(media, copy, controls); itemsRoot.append(article);
         }
         footer.hidden = false;
@@ -252,9 +297,9 @@ const isActiveLink = (href: string) =>
         if (subtotal) subtotal.textContent = formatCartMoney(cart.itemTotal, cart.currencyCode); if (total) total.textContent = formatCartMoney(cart.total, cart.currencyCode);
       };
       const loadCart = async () => {
-        if (status) { status.textContent = "Loading your cart…"; status.classList.remove("is-error"); }
-        try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not load your cart."); renderCart(result.cart); if (status) status.textContent = ""; }
-        catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not load your cart."; status.classList.add("is-error"); } }
+        if (status) { status.textContent = messages.cartLoading; status.classList.remove("is-error"); }
+        try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(messages.cartLoadFailed); renderCart(result.cart); if (status) status.textContent = ""; }
+        catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : messages.cartLoadFailed; status.classList.add("is-error"); } }
       };
       const openCart = async (cart?: any) => {
         if (!drawer || !backdrop) return; setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; syncPageScrollLock(); if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
@@ -267,9 +312,9 @@ const isActiveLink = (href: string) =>
         const target = event.target instanceof Element ? event.target : null; const item = target?.closest<HTMLElement>("[data-line-item-id]"); if (!item) return;
         const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantityButton && !removeButton) return;
         const body = new FormData(); body.set("lineItemId", item.dataset.lineItemId || ""); if (quantityButton) body.set("quantity", quantityButton.dataset.cartQuantity || "1");
-        item.dataset.updating = ""; if (status) { status.textContent = quantityButton ? "Updating cart…" : "Removing item…"; status.classList.remove("is-error"); }
-        try { const response = await fetch(quantityButton ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not update your cart."); renderCart(result.cart); if (status) status.textContent = ""; window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); }
-        catch (cause) { delete item.dataset.updating; if (status) { status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; status.classList.add("is-error"); } }
+        item.dataset.updating = ""; if (status) { status.textContent = quantityButton ? messages.cartUpdating : messages.removingItem; status.classList.remove("is-error"); }
+        try { const response = await fetch(quantityButton ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(messages.cartUpdateFailed); renderCart(result.cart); if (status) status.textContent = ""; window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); }
+        catch (cause) { delete item.dataset.updating; if (status) { status.textContent = cause instanceof Error ? cause.message : messages.cartUpdateFailed; status.classList.add("is-error"); } }
       });
       drawer?.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); closeCart(); return; } if (event.key !== "Tab") return; const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]; if (!focusable.length) return; const first = focusable[0]; const last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } });
       window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (readOnlyPreview) return; const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
@@ -314,9 +359,9 @@ const isActiveLink = (href: string) =>
         const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
         const label = form.querySelector<HTMLElement>("[data-card-add-label]");
         if (!button || button.disabled) return;
-        const originalLabel = label?.textContent ?? "Add to Cart";
+        const originalLabel = label?.textContent ?? messages.addToCart;
         button.disabled = true;
-        if (label) label.textContent = "Adding…";
+        if (label) label.textContent = messages.adding;
         try {
           const response = await fetch(form.action, {
             method: "POST",
@@ -325,11 +370,11 @@ const isActiveLink = (href: string) =>
             headers: { Accept: "application/json" },
           });
           const result = await response.json();
-          if (!response.ok || !result.ok) throw new Error(result.message || "Could not add this item to your cart.");
-          if (label) label.textContent = "Added";
+          if (!response.ok || !result.ok) throw new Error(messages.addFailed);
+          if (label) label.textContent = messages.added;
           window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
         } catch {
-          if (label) label.textContent = "Try again";
+          if (label) label.textContent = messages.retry;
         } finally {
           window.setTimeout(() => {
             button.disabled = false;

@@ -22,7 +22,7 @@ test("admin product search includes drafts but remains sales-channel scoped", as
           searchProducts: async (input: unknown) => {
             query = input;
             return {
-              hits: [{ id: "p1", title: "Shirt", handle: "shirt", status: "draft" }],
+              hits: [{ product_id: "p1", title: "Shirt", handle: "shirt", status: "draft" }],
               estimatedTotalHits: 1,
               processingTimeMs: 1,
               query: "shirt",
@@ -42,6 +42,7 @@ test("admin product search includes drafts but remains sales-channel scoped", as
     offset: 0,
     salesChannelIds: ["sc_merchant"],
     includeDrafts: true,
+    locale: "en-ET",
     statuses: ["draft"],
   });
   assert.equal(body.hits[0].id, "p1");

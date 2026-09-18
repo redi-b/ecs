@@ -19,6 +19,7 @@ import {
 } from "../lib/product-option-value-presentation-contract";
 import { tenantPromotionQuerySchema } from "../lib/tenant-promotion-query";
 import { tenantTaxonomyQuerySchema } from "../lib/tenant-taxonomy-query";
+import { catalogTranslationReadinessQuerySchema } from "../lib/catalog-translation-readiness";
 
 const additionalDataValidator = {
   [PRODUCT_OPTION_VALUE_PRESENTATIONS_ADDITIONAL_DATA_KEY]:
@@ -41,6 +42,20 @@ export default defineMiddlewares({
       method: "GET",
       matcher: "/admin/product-search",
       middlewares: [validateAndTransformQuery(adminProductSearchQuerySchema, {})],
+    },
+    {
+      method: "GET",
+      matcher: "/admin/platform-translation-readiness",
+      middlewares: [
+        validateAndTransformQuery(catalogTranslationReadinessQuerySchema, {}),
+      ],
+    },
+    {
+      method: "POST",
+      matcher: "/admin/product-search",
+      middlewares: [
+        validateAndTransformBody(z.object({ ids: z.array(z.string().trim().min(1)).min(1).max(100) })),
+      ],
     },
     {
       method: "GET",

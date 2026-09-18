@@ -6,25 +6,29 @@ import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlace
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import wishlistIcon from "./icons/wishlist-icon.svg";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 
 interface Props { product: StoreProduct; active?: boolean; }
 const { product, active = false } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const title = product.title ?? m.catalog_product_fallback({}, { locale });
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, variant);
-const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Product", thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
 ---
 <section class="lv-promo__slide" data-promo-slide aria-hidden={active ? "false" : "true"}>
   <div class="lv-promo__media">
-    {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Featured product"} /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}
+    {product.thumbnail ? <img src={product.thumbnail} alt={title} /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     {badge ? <small>{badge.label}</small> : null}
-    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"} to wishlist`}><img src={wishlistIcon.src} alt="" /></button>
+    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><img src={wishlistIcon.src} alt="" /></button>
   </div>
   <div class="lv-promo__copy">
-    <strong title={product.title ?? "Product"}>{product.title ?? "Product"}</strong>
-    <b>{formatMoney(variant?.priceAmount ?? product.priceAmount, variant?.currencyCode ?? product.currencyCode)}</b>
+    <strong title={title}>{title}</strong>
+    <b>{formatMoney(variant?.priceAmount ?? product.priceAmount, variant?.currencyCode ?? product.currencyCode, locale)}</b>
     <div class="lv-promo__actions">
-      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? "Add to Cart" : "Out of stock"}</span></ActionButton></form> : <ActionButton href={href} iconSrc={bagIcon.src} tone="secondary" size="small">View product</ActionButton>}
+      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} iconSrc={bagIcon.src} tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
     </div>
   </div>
 </section>

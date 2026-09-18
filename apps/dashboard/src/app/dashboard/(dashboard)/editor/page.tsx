@@ -17,6 +17,10 @@ import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
+  getStorefrontTranslationFields,
+  getStorefrontTranslationStatus,
+} from "@/lib/storefront-localization-fields";
+import {
   buildStorefrontPreviewUrl,
   resolvePublicStorefrontProtocol,
 } from "@/lib/storefront-preview-url";
@@ -103,14 +107,32 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
             </EmptyDescription>
           </EmptyHeader>
           <Button asChild size="sm">
-            <Link href="/dashboard/settings?tab=storefront">{t("editor.actions.openSettings")}</Link>
+            <Link href="/dashboard/settings?tab=storefront">
+              {t("editor.actions.openSettings")}
+            </Link>
           </Button>
         </Empty>
       ) : (
         <StorefrontVisualEditor
           canEdit={allows(access.access.permissions ?? [], merchantPolicies.storefrontEdit)}
           canPublish={allows(access.access.permissions ?? [], merchantPolicies.storefrontPublish)}
-          draft={draft.draft}
+          draft={{
+            ...draft.draft,
+            localizedStatuses: Object.fromEntries(
+              getStorefrontTranslationFields({
+                data: draft.draft.data,
+                seo: draft.draft.seo,
+                templateKey: draft.draft.templateKey,
+              }).map((field) => [
+                field.path,
+                getStorefrontTranslationStatus({
+                  field,
+                  locale: "am",
+                  localizedContent: draft.draft.localizedContent,
+                }),
+              ]),
+            ),
+          }}
           editorMeta={{
             initiallyPublished: access.access.storefront.isPublished,
             liveStorefrontUrl: getLiveStorefrontUrl(

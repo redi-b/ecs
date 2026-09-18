@@ -12,6 +12,7 @@
   "promotions": "Promotions",
   "media": "Media",
   "editor": "Editor",
+  "translations": "Translations",
   "insights": "Insights",
   "billing": "Billing",
   "settings": "Settings",
@@ -27,6 +28,7 @@
     "productDetails": "Product details",
     "editProduct": "Edit product",
     "orderDetails": "Order details",
-    "customerDetails": "Customer details"
+    "customerDetails": "Customer details",
+    "translations": "Translations"
   }
 }

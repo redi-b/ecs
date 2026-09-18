@@ -55,7 +55,10 @@ describe("getDashboardBreadcrumbTrail", () => {
   });
 
   it("does not reserve a standalone product creation breadcrumb", () => {
-    assert.notEqual(getDashboardBreadcrumbTrail("/dashboard/products/new").at(-1)?.id, "products-new");
+    assert.notEqual(
+      getDashboardBreadcrumbTrail("/dashboard/products/new").at(-1)?.id,
+      "products-new",
+    );
   });
 
   it("labels product category routes as nested products breadcrumbs", () => {
@@ -108,6 +111,33 @@ describe("getDashboardBreadcrumbTrail", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail(dashboardRoutes.productOptions), [
       { href: "/dashboard/products", id: "products", title: "Products" },
       { href: "/dashboard/products/options", id: "product-options", title: "Product options" },
+    ]);
+  });
+
+  it("labels the editor and translations as storefront destinations", () => {
+    assert.deepEqual(getDashboardBreadcrumbTrail(dashboardRoutes.editor), [
+      {
+        href: null,
+        id: "storefront-section",
+        title: "Storefront",
+      },
+      {
+        href: "/dashboard/editor",
+        id: "editor",
+        title: "Editor",
+      },
+    ]);
+    assert.deepEqual(getDashboardBreadcrumbTrail(dashboardRoutes.storefrontTranslations), [
+      {
+        href: null,
+        id: "storefront-section",
+        title: "Storefront",
+      },
+      {
+        href: "/dashboard/storefront/translations",
+        id: "storefront-translations",
+        title: "Translations",
+      },
     ]);
   });
 

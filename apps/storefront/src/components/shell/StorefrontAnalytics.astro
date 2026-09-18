@@ -3,11 +3,19 @@ interface Props {
   disabled?: boolean;
 }
 
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+
 const { disabled = false } = Astro.props;
 const product = Astro.locals.analyticsProduct;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
-<span data-storefront-analytics={disabled ? "disabled" : "enabled"} data-analytics-product={product ? JSON.stringify(product) : undefined} hidden></span>
+<span
+  data-storefront-analytics={disabled ? "disabled" : "enabled"}
+  data-analytics-product={product ? JSON.stringify(product) : undefined}
+  data-analytics-locale={locale}
+  hidden
+></span>
 
 <script>
   import { resolveStorefrontAnalyticsSession } from "../../lib/analytics-session";
@@ -47,7 +55,7 @@ const product = Astro.locals.analyticsProduct;
         eventType,
         hostname: location.hostname,
         idempotencyKey: `${sessionId}:${eventType}:${location.pathname}:${Date.now()}`,
-        language: navigator.language,
+        language: analyticsMarker.dataset.analyticsLocale || document.documentElement.lang || "en",
         occurredAt: new Date().toISOString(),
         properties: { path: location.pathname, ...properties },
         referrer: document.referrer,

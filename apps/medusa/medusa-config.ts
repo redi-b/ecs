@@ -22,6 +22,9 @@ const paymentProviders = [
 ];
 
 module.exports = defineConfig({
+  featureFlags: {
+    translation: true,
+  },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
   },
@@ -57,6 +60,9 @@ module.exports = defineConfig({
     },
   },
   modules: [
+    {
+      resolve: "@medusajs/medusa/translation",
+    },
     {
       resolve: "./src/modules/meilisearch",
       options: {

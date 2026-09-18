@@ -5,19 +5,22 @@ import { saveCheckoutAddressIfRequested } from "../../../lib/commerce/checkout-a
 import { associateRequestCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
 import { getStoreDeliveryOptions } from "../../../lib/commerce/delivery.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
+import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
 import { loadPageContext } from "../../../lib/page-context.js";
 import {
   appendSetCookies,
   cartIdClearCookie,
   lastOrderSetCookie,
 } from "../../../lib/session/cart-cookie.js";
+import * as m from "../../../paraglide/messages.js";
 
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
   const ctx = await loadPageContext(request);
+  const locale = ctx.ok ? ctx.locale : getStorefrontActionLocale(request);
 
   if (!ctx.ok || !ctx.cartId) {
-    return redirect("/checkout?error=" + encodeURIComponent("Cart not found."));
+    return redirect("/checkout?error=" + encodeURIComponent(m.cart_not_found({}, { locale })));
   }
 
   const association = await associateRequestCartWithCustomer(request, {
@@ -26,7 +29,9 @@ export const POST: APIRoute = async ({ request }) => {
     requestHost: ctx.requestHost,
   });
   if (!association.ok) {
-    return redirect("/checkout?error=" + encodeURIComponent(association.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const deliveryResult = await getStoreDeliveryOptions({
@@ -47,33 +52,45 @@ export const POST: APIRoute = async ({ request }) => {
   const shippingOptionId = String(form.get("shippingOptionId") ?? "").trim();
 
   if (!name || !shippingOptionId || (deliveryChoice !== "delivery" && deliveryChoice !== "pickup")) {
-    return redirect("/checkout?error=" + encodeURIComponent("Please fill all required fields."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_missing_required({}, { locale })),
+    );
   }
 
   if (delivery && !delivery.deliveryEnabled && !delivery.pickupEnabled) {
     return redirect(
-      "/checkout?error=" + encodeURIComponent("This shop is not accepting delivery or pickup right now."),
+      "/checkout?error=" + encodeURIComponent(m.checkout_fulfillment_unavailable({}, { locale })),
     );
   }
 
   if (deliveryChoice === "delivery" && delivery && !delivery.deliveryEnabled) {
-    return redirect("/checkout?error=" + encodeURIComponent("Delivery is not available for this shop."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_delivery_unavailable({}, { locale })),
+    );
   }
 
   if (deliveryChoice === "pickup" && delivery && !delivery.pickupEnabled) {
-    return redirect("/checkout?error=" + encodeURIComponent("Pickup is not available for this shop."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_pickup_unavailable({}, { locale })),
+    );
   }
 
   if (delivery?.phoneConfirmationRequired !== false && !phone) {
-    return redirect("/checkout?error=" + encodeURIComponent("Phone number is required."));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_phone_required({}, { locale })),
+    );
   }
 
   if (deliveryChoice === "delivery") {
     if (!address1 || !city) {
-      return redirect("/checkout?error=" + encodeURIComponent("Address and city are required for delivery."));
+      return redirect(
+        "/checkout?error=" + encodeURIComponent(m.checkout_address_required({}, { locale })),
+      );
     }
     if (delivery?.landmarkRequired && !landmark) {
-      return redirect("/checkout?error=" + encodeURIComponent("Landmark is required for delivery."));
+      return redirect(
+        "/checkout?error=" + encodeURIComponent(m.checkout_landmark_required({}, { locale })),
+      );
     }
   }
 
@@ -82,7 +99,9 @@ export const POST: APIRoute = async ({ request }) => {
     requestHost: ctx.requestHost,
   });
   if (!addressSave.ok) {
-    return redirect("/checkout?error=" + encodeURIComponent(addressSave.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const result = await completeCodCheckout({
@@ -103,7 +122,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(result)) {
-    return redirect("/checkout?error=" + encodeURIComponent(result.message));
+    return redirect(
+      "/checkout?error=" + encodeURIComponent(m.checkout_could_not_continue({}, { locale })),
+    );
   }
 
   const headers = new Headers({

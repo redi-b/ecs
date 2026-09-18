@@ -1,0 +1,415 @@
+"use client";
+
+import { productDescriptionToText } from "@ecs/content";
+import {
+  type CatalogTranslationResource,
+  catalogTranslationResourceSchema,
+  type MerchantProduct,
+} from "@ecs/contracts";
+import { RiArrowLeftLine, RiArrowRightLine, RiLoader4Line } from "@remixicon/react";
+import { LanguagesIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TranslationSourceReference } from "@/features/storefront-editor/translation-source-reference";
+import { useI18n } from "@/i18n/provider";
+
+type EditableResource = {
+  key: string;
+  label: string;
+  productId?: string;
+  resourceId: string;
+  resourceType: "product" | "product_option" | "product_option_value";
+};
+
+function productResources(product: MerchantProduct): EditableResource[] {
+  const resources: EditableResource[] = [
+    {
+      key: `product:${product.id}`,
+      label: product.title ?? "Product",
+      resourceId: product.id,
+      resourceType: "product",
+    },
+  ];
+  const options = product.options ?? [];
+  const hasSyntheticDefault =
+    options.length === 1 &&
+    (product.variants ?? []).length === 1 &&
+    isDefaultName(options[0]?.title) &&
+    options[0]?.values.every((value) => isDefaultName(value.label));
+  for (const option of hasSyntheticDefault ? [] : options) {
+    if (!option.id) continue;
+    resources.push({
+      key: `option:${option.id}`,
+      label: option.title,
+      productId: product.id,
+      resourceId: option.id,
+      resourceType: "product_option",
+    });
+    for (const value of option.values) {
+      if (!value.id) continue;
+      resources.push({
+        key: `value:${value.id}`,
+        label: `${option.title}: ${value.label}`,
+        productId: product.id,
+        resourceId: value.id,
+        resourceType: "product_option_value",
+      });
+    }
+  }
+  return resources;
+}
+
+function isDefaultName(value: string | null | undefined) {
+  return value?.trim().toLocaleLowerCase().startsWith("default") ?? false;
+}
+
+export function ProductTranslationSheet({
+  defaultOpen = false,
+  onOpenChange,
+  onSaved,
+  open: controlledOpen,
+  product,
+  readOnly,
+  tenantId,
+  queueNavigation,
+  showTrigger = true,
+}: {
+  defaultOpen?: boolean;
+  onOpenChange?: ((open: boolean) => void) | undefined;
+  onSaved?: (() => void) | undefined;
+  open?: boolean | undefined;
+  product: MerchantProduct;
+  readOnly: boolean;
+  tenantId?: string | undefined;
+  queueNavigation?:
+    | {
+        next?: string | undefined;
+        loading?: boolean | undefined;
+        onNext?: (() => void) | undefined;
+        onPrevious?: (() => void) | undefined;
+        previous?: string | undefined;
+      }
+    | undefined;
+  showTrigger?: boolean;
+}) {
+  const { t } = useI18n();
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [resources, setResources] = useState<CatalogTranslationResource[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
+  const definitions = useMemo(() => productResources(product), [product]);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setLoading(true);
+    Promise.all(
+      definitions.map(async (definition) => {
+        const query = new URLSearchParams({
+          locale: "am",
+          resourceId: definition.resourceId,
+          resourceType: definition.resourceType,
+        });
+        if (definition.productId) query.set("productId", definition.productId);
+        if (tenantId) query.set("tenantId", tenantId);
+        const response = await fetch(`/dashboard/storefront/translations/catalog?${query}`, {
+          cache: "no-store",
+        });
+        const data = await response.json().catch(() => null);
+        const parsed = catalogTranslationResourceSchema.safeParse(data?.resource);
+        if (!response.ok || !parsed.success) throw new Error("load_failed");
+        return parsed.data;
+      }),
+    )
+      .then((loaded) => {
+        if (!active) return;
+        setResources(loaded);
+        setDrafts(
+          Object.fromEntries(
+            loaded.map((resource) => [resource.resourceId, resource.translations]),
+          ),
+        );
+      })
+      .catch(() => active && toast.error(t("products.translation.loadFailed")))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [definitions, open, t, tenantId]);
+
+  const translated = resources.reduce((total, resource) => total + resource.translatedFields, 0);
+  const total = resources.reduce((sum, resource) => sum + resource.totalFields, 0);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await Promise.all(
+        resources.map(async (resource) => {
+          const response = await fetch("/dashboard/storefront/translations/catalog", {
+            body: JSON.stringify({
+              locale: "am",
+              productId: resource.productId ?? undefined,
+              resourceId: resource.resourceId,
+              resourceType: resource.resourceType,
+              translations: drafts[resource.resourceId] ?? {},
+            }),
+            headers: { "content-type": "application/json" },
+            method: "PUT",
+          });
+          const data = await response.json().catch(() => null);
+          const parsed = catalogTranslationResourceSchema.safeParse(data?.resource);
+          if (!response.ok || !parsed.success) throw new Error("save_failed");
+          return parsed.data;
+        }),
+      );
+      setResources(updated);
+      setDrafts(
+        Object.fromEntries(updated.map((resource) => [resource.resourceId, resource.translations])),
+      );
+      toast.success(t("products.translation.saved"));
+      onSaved?.();
+    } catch {
+      toast.error(t("products.translation.saveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Sheet onOpenChange={(next) => !saving && setOpen(next)} open={open}>
+      {showTrigger ? (
+        <SheetTrigger asChild>
+          <Button size="sm" variant="outline">
+            <LanguagesIcon />
+            {t("products.translation.action")}
+          </Button>
+        </SheetTrigger>
+      ) : null}
+      <SheetContent
+        className="w-full sm:max-w-xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true }));
+        }}
+      >
+        <SheetHeader>
+          <div className="flex items-center gap-2">
+            <SheetTitle className="outline-none" ref={titleRef} tabIndex={-1}>
+              {t("products.translation.title")}
+            </SheetTitle>
+            <Badge variant="secondary">{t("products.translation.language")}</Badge>
+          </div>
+          <SheetDescription>
+            {loading
+              ? t("products.translation.loading")
+              : t("products.translation.progress", { translated, total })}
+          </SheetDescription>
+        </SheetHeader>
+        <SheetBody className="relative space-y-5">
+          {queueNavigation?.loading && !loading ? (
+            <output className="sticky top-0 z-10 flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 text-xs font-medium shadow-sm backdrop-blur">
+              <RiLoader4Line className="size-4 animate-spin text-primary" aria-hidden />
+              {t("products.translation.loading")}
+            </output>
+          ) : null}
+          {loading ? (
+            <output className="block space-y-3" aria-label={t("products.translation.loading")}>
+              {[0, 1, 2].map((item) => (
+                <div className="h-28 animate-pulse rounded-xl bg-muted/60" key={item} />
+              ))}
+            </output>
+          ) : (
+            resources.map((resource, resourceIndex) => {
+              const definition = definitions[resourceIndex];
+              return (
+                <section className="space-y-3" key={resource.resourceId}>
+                  <div className="flex items-center justify-between gap-3 border-b pb-2">
+                    <h3 className="text-sm font-medium">{definition?.label ?? resource.title}</h3>
+                    <TranslationStatus status={resource.status} />
+                  </div>
+                  {resource.status === "needs_review" ? (
+                    <p className="rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+                      {t("editor.translations.catalogIncomplete")}
+                    </p>
+                  ) : null}
+                  {Object.entries(resource.source).map(([field, source]) => {
+                    const id = `translation-${resource.resourceId}-${field}`;
+                    const setFieldValue = (value: string) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [resource.resourceId]: {
+                          ...current[resource.resourceId],
+                          [field]: value,
+                        },
+                      }));
+                    return (
+                      <div className="space-y-2" key={field}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <Label htmlFor={id}>{fieldLabel(field, t)}</Label>
+                          {readOnly ? null : (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                onClick={() => setFieldValue(source)}
+                                size="xs"
+                                type="button"
+                                variant="ghost"
+                              >
+                                {t("editor.translations.useEnglish")}
+                              </Button>
+                              <Button
+                                disabled={!drafts[resource.resourceId]?.[field]}
+                                onClick={() => setFieldValue("")}
+                                size="xs"
+                                type="button"
+                                variant="ghost"
+                              >
+                                {t("editor.translations.clearTranslation")}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <TranslationSourceReference label={t("products.translation.english")}>
+                          {field === "description" ? productDescriptionToText(source) : source}
+                        </TranslationSourceReference>
+                        {field === "description" && readOnly ? (
+                          <div className="min-h-20 rounded-[var(--radius)] border bg-muted/20 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+                            {productDescriptionToText(
+                              drafts[resource.resourceId]?.[field] || source,
+                            )}
+                          </div>
+                        ) : field === "description" ? (
+                          <RichTextEditor
+                            aria-label={t("products.translation.field.description")}
+                            id={id}
+                            onChange={setFieldValue}
+                            placeholder={t("products.translation.placeholder")}
+                            value={drafts[resource.resourceId]?.[field] ?? ""}
+                          />
+                        ) : (
+                          <Textarea
+                            className="min-h-20"
+                            disabled={readOnly || saving}
+                            id={id}
+                            onChange={(event) => setFieldValue(event.target.value)}
+                            placeholder={t("products.translation.placeholder")}
+                            value={drafts[resource.resourceId]?.[field] ?? ""}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </section>
+              );
+            })
+          )}
+        </SheetBody>
+        <SheetFooter className="flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {queueNavigation?.previous || queueNavigation?.onPrevious ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {queueNavigation.onPrevious ? (
+                    <Button
+                      aria-label={t("editor.translations.previous")}
+                      disabled={loading || queueNavigation.loading}
+                      onClick={queueNavigation.onPrevious}
+                      size="icon-sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <RiArrowLeftLine />
+                    </Button>
+                  ) : (
+                    <Button asChild size="icon-sm" variant="outline">
+                      <a
+                        aria-label={t("editor.translations.previous")}
+                        href={queueNavigation.previous}
+                      >
+                        <RiArrowLeftLine />
+                      </a>
+                    </Button>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>{t("editor.translations.previous")}</TooltipContent>
+              </Tooltip>
+            ) : null}
+            {queueNavigation?.next || queueNavigation?.onNext ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {queueNavigation.onNext ? (
+                    <Button
+                      aria-label={t("editor.translations.next")}
+                      disabled={loading || queueNavigation.loading}
+                      onClick={queueNavigation.onNext}
+                      size="icon-sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <RiArrowRightLine />
+                    </Button>
+                  ) : (
+                    <Button asChild size="icon-sm" variant="outline">
+                      <a aria-label={t("editor.translations.next")} href={queueNavigation.next}>
+                        <RiArrowRightLine />
+                      </a>
+                    </Button>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>{t("editor.translations.next")}</TooltipContent>
+              </Tooltip>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button disabled={saving} onClick={() => setOpen(false)} variant="outline">
+              {t("common.cancel")}
+            </Button>
+            {readOnly ? null : (
+              <Button disabled={loading || saving || resources.length === 0} onClick={save}>
+                {saving ? t("products.translation.saving") : t("products.translation.save")}
+              </Button>
+            )}
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function TranslationStatus({ status }: { status: CatalogTranslationResource["status"] }) {
+  const { t } = useI18n();
+  return (
+    <Badge variant={status === "ready" ? "default" : "outline"}>
+      {t(`products.translation.status.${status}`)}
+    </Badge>
+  );
+}
+
+function fieldLabel(field: string, t: ReturnType<typeof useI18n>["t"]) {
+  const known = ["title", "subtitle", "description", "material", "value"] as const;
+  return known.includes(field as (typeof known)[number])
+    ? t(`products.translation.field.${field as (typeof known)[number]}`)
+    : field;
+}

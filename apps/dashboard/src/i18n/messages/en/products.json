@@ -130,6 +130,32 @@
     "statusDraft": "Draft",
     "statusUnknown": "Unknown"
   },
+  "translation": {
+    "action": "Languages",
+    "title": "Product translation",
+    "language": "አማርኛ",
+    "loading": "Loading translation fields…",
+    "progress": "{translated} of {total} fields translated",
+    "english": "English",
+    "placeholder": "Enter the Amharic text",
+    "save": "Save translation",
+    "saving": "Saving…",
+    "saved": "Amharic translation saved.",
+    "loadFailed": "The translation could not be loaded. Try again.",
+    "saveFailed": "The translation could not be saved. Try again.",
+    "status": {
+      "using_english": "Using English",
+      "needs_review": "Needs attention",
+      "ready": "Ready"
+    },
+    "field": {
+      "title": "Name",
+      "subtitle": "Short description",
+      "description": "Description",
+      "material": "Material",
+      "value": "Label"
+    }
+  },
   "create": {
     "optionsLoadErrorDesc": "Could not load {labels}. You can still create a basic product and add options later."
   },
@@ -426,6 +452,7 @@
     "dialogDesc": "Complete product details, organization, variants, and review before saving.",
     "mediaSyncWarn": "Product saved, but media usage could not be synchronized.",
     "toastCreated": "Product created.",
+    "addAmharic": "Add Amharic",
     "toastUpdated": "Product updated.",
     "basicsTitle": "Basics",
     "basicsDesc": "Start with the information shoppers will recognize first.",

@@ -43,6 +43,8 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   "product-edit": "nav.breadcrumbs.editProduct",
   "order-details": "nav.breadcrumbs.orderDetails",
   "customer-details": "nav.breadcrumbs.customerDetails",
+  "storefront-section": "nav.section.storefront",
+  "storefront-translations": "nav.breadcrumbs.translations",
 };
 
 function localizeBreadcrumbTitle(
@@ -66,7 +68,7 @@ export function AppBreadcrumbs() {
   const labels = useBreadcrumbLabels();
   const trail = getDashboardBreadcrumbTrail(demoPathname ?? pathname, labels).map((crumb) => ({
     ...crumb,
-    href: demoPathname ? getDemoPathFromDashboard(crumb.href) : crumb.href,
+    href: demoPathname && crumb.href ? getDemoPathFromDashboard(crumb.href) : crumb.href,
     title: localizeBreadcrumbTitle(crumb, labels, t),
   }));
   const currentRoute = trail.at(-1);
@@ -89,9 +91,13 @@ export function AppBreadcrumbs() {
         {trail.slice(0, -1).map((route) => (
           <Fragment key={route.id}>
             <BreadcrumbItem className="hidden sm:inline-flex">
-              <BreadcrumbLink asChild>
-                <Link href={route.href}>{route.title}</Link>
-              </BreadcrumbLink>
+              {route.href ? (
+                <BreadcrumbLink asChild>
+                  <Link href={route.href}>{route.title}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <span className="text-muted-foreground">{route.title}</span>
+              )}
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden sm:inline-flex" />
           </Fragment>

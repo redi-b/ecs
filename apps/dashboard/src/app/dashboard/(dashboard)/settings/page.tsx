@@ -12,6 +12,7 @@ import { getMerchantDomains } from "@/lib/platform-api/domains";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { getMerchantPaymentsStatus } from "@/lib/platform-api/payments/client";
 import { getStorefrontSeoSettings } from "@/lib/platform-api/storefront/seo";
+import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { getMerchantTeam } from "@/lib/platform-api/team";
 import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
@@ -37,7 +38,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     requestHost: requestHeaders.get("host"),
     tenantId: selectedTenantId,
   });
-  const [delivery, templates, payments, storefrontSeo, domains, team] =
+  const [delivery, templates, payments, storefrontSeo, storefrontDraft, domains, team] =
     result.ok && result.access.tenant.id
       ? await Promise.all([
           allows(result.access.permissions ?? [], merchantPolicies.shopSettings)
@@ -64,6 +65,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 tenantId: result.access.tenant.id,
               })
             : null,
+          allows(result.access.permissions ?? [], merchantPolicies.storefront)
+            ? getStorefrontDraft({
+                cookieHeader: requestHeaders.get("cookie"),
+                platformApiBaseUrl,
+                tenantId: result.access.tenant.id,
+              })
+            : null,
           allows(result.access.permissions ?? [], merchantPolicies.domainsManage)
             ? getMerchantDomains({
                 cookieHeader: requestHeaders.get("cookie"),
@@ -79,7 +87,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               })
             : null,
         ])
-      : [null, null, null, null, null, null];
+      : [null, null, null, null, null, null, null];
 
   return (
     <PageShell
@@ -113,6 +121,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     null,
                 }
               : { title: null, description: null, socialImageUrl: null }
+          }
+          storefrontLanguageSettings={
+            storefrontDraft?.ok
+              ? storefrontDraft.draft.languageSettings
+              : { sourceLocale: "en", defaultLocale: "en", enabledLocales: ["en"] }
           }
           templateStatus={resolvedSearchParams.templateStatus}
           team={team?.ok ? team.value : null}

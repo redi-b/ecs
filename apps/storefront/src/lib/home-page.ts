@@ -47,6 +47,7 @@ export async function loadHomePageModel(
       ? await listStoreProducts({
           platformApiBaseUrl: ctx.platformApiBaseUrl,
           requestHost: ctx.requestHost,
+          locale: ctx.commerceLocale,
           regionId: ctx.config.commerce.regionId,
           limit: 48,
         })
@@ -54,6 +55,7 @@ export async function loadHomePageModel(
         ? await getStoreProductsByIds({
           platformApiBaseUrl: ctx.platformApiBaseUrl,
           requestHost: ctx.requestHost,
+          locale: ctx.commerceLocale,
           regionId: ctx.config.commerce.regionId,
           productIds: productIds.slice(0, limit),
           })
@@ -61,6 +63,7 @@ export async function loadHomePageModel(
           ? await listStoreProducts({
               platformApiBaseUrl: ctx.platformApiBaseUrl,
               requestHost: ctx.requestHost,
+              locale: ctx.commerceLocale,
               regionId: ctx.config.commerce.regionId,
               limit,
             })
@@ -74,6 +77,7 @@ export async function loadHomePageModel(
     const result = await listStoreProducts({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       regionId: ctx.config.commerce.regionId,
       collectionId: collection.collectionId.trim(),
       limit: collection.limit ?? 8,
@@ -85,12 +89,14 @@ export async function loadHomePageModel(
     const result = await listStoreCollections({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       limit: 100,
     });
     if (!isStoreError(result)) collections = result.collections;
     const categoriesResult = await listStoreCategories({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
       limit: 100,
     });
     if (!isStoreError(categoriesResult)) categories = categoriesResult.categories;

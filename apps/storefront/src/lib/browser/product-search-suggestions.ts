@@ -10,6 +10,8 @@ type SearchSuggestionsResponse = {
   suggestions?: SearchSuggestion[];
 };
 
+import { localizeBrowserPath } from "./localized-path";
+
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 220;
 
@@ -36,6 +38,8 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
   let activeIndex = -1;
   let renderedQuery = "";
   const cache = new Map<string, SearchSuggestion[]>();
+  const locale = document.documentElement.lang || "en";
+  const cacheKey = (query: string) => `${locale}:${query.toLocaleLowerCase(locale)}`;
 
   const options = () => Array.from(list.querySelectorAll<HTMLAnchorElement>('[role="option"]'));
   const close = () => {
@@ -66,7 +70,7 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
     for (const [index, suggestion] of suggestions.entries()) {
       const link = document.createElement("a");
       link.className = "product-search-suggestions__item";
-      link.href = `/products/${encodeURIComponent(suggestion.handle)}`;
+      link.href = localizeBrowserPath(`/products/${encodeURIComponent(suggestion.handle)}`);
       link.id = `${list.id}-${index}`;
       link.setAttribute("role", "option");
       link.setAttribute("aria-selected", "false");
@@ -117,8 +121,10 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
     for (const [key, value] of [...allParams]) {
       if (!value.trim()) allParams.delete(key);
     }
-    all.href = `/products?${allParams.toString()}`;
-    all.textContent = suggestions.length ? `View all results for “${query}”` : `Search for “${query}”`;
+    all.href = localizeBrowserPath(`/products?${allParams.toString()}`);
+    const viewAll = form.dataset.searchViewAll ?? "View all results for {query}";
+    const searchFor = form.dataset.searchFor ?? "Search for {query}";
+    all.textContent = (suggestions.length ? viewAll : searchFor).replace("{query}", `“${query}”`);
     list.append(all);
     list.hidden = false;
     input.setAttribute("aria-expanded", "true");
@@ -131,7 +137,7 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       return;
     }
     controller?.abort();
-    const cached = cache.get(query.toLocaleLowerCase());
+    const cached = cache.get(cacheKey(query));
     if (cached) {
       render(query, cached);
       return;
@@ -147,7 +153,7 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       if (!response.ok || input.value.trim() !== query) return;
       const payload = (await response.json()) as SearchSuggestionsResponse;
       const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
-      cache.set(query.toLocaleLowerCase(), suggestions);
+      cache.set(cacheKey(query), suggestions);
       if (cache.size > 20) cache.delete(cache.keys().next().value ?? "");
       render(query, suggestions);
     } catch (error) {

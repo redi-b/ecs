@@ -5,10 +5,13 @@ import {
   type StoreCustomerWishlistEntry,
   saveStoreCustomerWishlist,
 } from "../../../lib/commerce/account.js";
+import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
+import * as m from "../../../paraglide/messages.js";
 
 export const GET: APIRoute = async ({ request }) => {
+  const locale = getStorefrontActionLocale(request);
   const token = getCustomerTokenFromRequest(request);
   if (!token) return Response.json({ authenticated: false, items: [] });
   const state = await getStoreCustomerCommerceState({
@@ -17,16 +20,19 @@ export const GET: APIRoute = async ({ request }) => {
     token,
   });
   return "ok" in state
-    ? Response.json({ message: state.message }, { status: state.status })
+    ? Response.json({ message: m.wishlist_invalid({}, { locale }) }, { status: state.status })
     : Response.json({ authenticated: true, items: state.wishlist });
 };
 
 export const PUT: APIRoute = async ({ request }) => {
+  const locale = getStorefrontActionLocale(request);
   const token = getCustomerTokenFromRequest(request);
   if (!token) return Response.json({ authenticated: false, items: [] }, { status: 401 });
   const body = await request.json().catch(() => null);
   const items = normalizeItems(body);
-  if (!items) return Response.json({ message: "Invalid wishlist." }, { status: 422 });
+  if (!items) {
+    return Response.json({ message: m.wishlist_invalid({}, { locale }) }, { status: 422 });
+  }
   const state = await saveStoreCustomerWishlist({
     items,
     platformApiBaseUrl: getPlatformApiBaseUrl(),
@@ -34,7 +40,7 @@ export const PUT: APIRoute = async ({ request }) => {
     token,
   });
   return "ok" in state
-    ? Response.json({ message: state.message }, { status: state.status })
+    ? Response.json({ message: m.wishlist_invalid({}, { locale }) }, { status: state.status })
     : Response.json({ authenticated: true, items: state.wishlist });
 };
 

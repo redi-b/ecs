@@ -2,6 +2,7 @@ import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { registerMerchantCatalogRoutes } from "./catalog.js";
+import { registerMerchantCatalogTranslationRoutes } from "./catalog-translations.js";
 import { createMerchantRouteHelpers } from "./context.js";
 import { registerMerchantCustomerRoutes } from "./customers.js";
 import { registerMerchantDashboardRoutes } from "./dashboard.js";
@@ -31,6 +32,7 @@ export function registerMerchantRoutes(
   registerMerchantOrderRoutes(app, options, helpers);
   registerMerchantManualOrderRoutes(app, options, helpers);
   registerMerchantCatalogRoutes(app, options, helpers);
+  registerMerchantCatalogTranslationRoutes(app, options, helpers);
   registerMerchantMediaRoutes(app, options, helpers);
   registerMerchantCustomerRoutes(app, options, helpers);
   registerMerchantPromotionRoutes(app, options, helpers);

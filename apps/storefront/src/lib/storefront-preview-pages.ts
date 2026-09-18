@@ -41,6 +41,7 @@ const previewPages: Record<StorefrontPreviewPageId, PreviewPageDescriptor> = {
         listStoreProducts({
           platformApiBaseUrl: context.platformApiBaseUrl,
           requestHost: context.requestHost,
+          locale: context.commerceLocale,
           regionId: context.config.commerce.regionId,
           limit: 24,
           offset: 0,
@@ -52,11 +53,13 @@ const previewPages: Record<StorefrontPreviewPageId, PreviewPageDescriptor> = {
         listStoreCollections({
           platformApiBaseUrl: context.platformApiBaseUrl,
           requestHost: context.requestHost,
+          locale: context.commerceLocale,
           limit: 50,
         }),
         listStoreCategories({
           platformApiBaseUrl: context.platformApiBaseUrl,
           requestHost: context.requestHost,
+          locale: context.commerceLocale,
           limit: 100,
         }),
       ]);

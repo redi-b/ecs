@@ -12,9 +12,15 @@ import {
 } from "@/features/storefront-editor/editor-config";
 import { isMixedContentPreviewUrl } from "@/lib/storefront-preview-url";
 import { cn } from "@/lib/utils";
-
+import { getEffectiveLocalizedTranslations } from "./editor-localization";
 import { EditorImageSourceActions } from "./editor-settings";
-import { isPreviewImageUrl, type StorefrontPageProps, updateEditorLinkValue } from "./editor-state";
+import {
+  getLocalizedTranslations,
+  isPreviewImageUrl,
+  type StorefrontPageProps,
+  updateEditorLinkValue,
+  updateLocalizedTranslation,
+} from "./editor-state";
 import { updateStorefrontProp } from "./editor-utils";
 
 export function TemplatePreview({
@@ -22,6 +28,7 @@ export function TemplatePreview({
   templateKey,
   previewUrl,
   previewPage = "home",
+  previewLocale = "en",
   viewport = "desktop",
   onSelectPath,
   onSelectionInteractionChange,
@@ -33,6 +40,7 @@ export function TemplatePreview({
   templateKey: string;
   previewUrl?: string | undefined;
   previewPage?: string;
+  previewLocale?: "en" | "am";
   viewport?: "desktop" | "mobile";
   onSelectPath?: (path: string) => void;
   onSelectionInteractionChange?: (active: boolean) => void;
@@ -46,7 +54,8 @@ export function TemplatePreview({
       <StorefrontIframePreview
         onSelectPath={onSelectPath}
         onSelectionInteractionChange={onSelectionInteractionChange}
-        previewUrl={withPreviewPage(previewUrl, previewPage)}
+        previewUrl={withPreviewPage(previewUrl, previewPage, previewLocale)}
+        previewLocale={previewLocale}
         props={props}
         selectedPath={selectedPath}
         showEditHints={showEditHints}
@@ -63,9 +72,10 @@ export function TemplatePreview({
   return <UnsupportedTemplatePreview templateKey={templateKey} />;
 }
 
-function withPreviewPage(previewUrl: string, previewPage: string) {
+function withPreviewPage(previewUrl: string, previewPage: string, previewLocale: "en" | "am") {
   const url = new URL(previewUrl);
   url.searchParams.set("page", previewPage);
+  url.searchParams.set("locale", previewLocale);
   return url.toString();
 }
 
@@ -86,6 +96,7 @@ function UnavailableIframePreview({ templateKey }: { templateKey: string }) {
 
 function StorefrontIframePreview({
   previewUrl,
+  previewLocale,
   props,
   templateKey,
   onSelectPath,
@@ -95,6 +106,7 @@ function StorefrontIframePreview({
   viewport,
 }: {
   previewUrl: string;
+  previewLocale: "en" | "am";
   props: StorefrontPageProps;
   templateKey: string;
   onSelectPath?: ((path: string) => void) | undefined;
@@ -118,12 +130,22 @@ function StorefrontIframePreview({
     const values: Record<string, unknown> = {};
     for (const section of manifest?.sections ?? []) {
       for (const field of section.fields)
-        values[field.path] = props[field.prop as keyof StorefrontPageProps];
+        values[field.path] = structuredClone(props[field.prop as keyof StorefrontPageProps]);
+    }
+    if (previewLocale === "am") {
+      const translations = getEffectiveLocalizedTranslations(
+        templateKey,
+        props,
+        getLocalizedTranslations(data),
+      );
+      for (const [path, value] of Object.entries(translations)) {
+        applyLocalizedPreviewValue(values, path, value);
+      }
     }
     // Firefox cannot structured-clone URL instances. The manifest payload is a
     // JSON contract, so normalize it before it crosses the iframe boundary.
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
-  }, [manifest, props]);
+  }, [data, manifest, previewLocale, props, templateKey]);
   const resolvedTheme = useMemo(
     () => ({
       accent: props.accentColor,
@@ -253,6 +275,18 @@ function StorefrontIframePreview({
         .flatMap((section) => section.fields)
         .find((item) => item.path === path || path.startsWith(`${item.path}.`));
       if (!field) return;
+      if (previewLocale === "am") {
+        if (field.kind !== "text" && field.kind !== "textarea" && field.kind !== "links") return;
+        dispatch({
+          type: "setData",
+          data: updateLocalizedTranslation(
+            data,
+            path,
+            typeof event.data.value === "string" ? event.data.value : "",
+          ),
+        });
+        return;
+      }
       if (field.kind === "links" && path !== field.path) {
         const current = props[field.prop as keyof StorefrontPageProps];
         const next = updateEditorLinkValue(
@@ -283,6 +317,7 @@ function StorefrontIframePreview({
     onSelectPath,
     postConnected,
     props,
+    previewLocale,
     resolvedTheme,
     selectedPath,
     showEditHints,
@@ -390,6 +425,32 @@ function StorefrontIframePreview({
       </div>
     </div>
   );
+}
+
+function applyLocalizedPreviewValue(fields: Record<string, unknown>, path: string, value: string) {
+  const linkMatch = path.match(/^(.*)\.(\d+)\.label$/);
+  if (linkMatch) {
+    const [, basePath, rawIndex] = linkMatch;
+    const current = fields[basePath ?? ""];
+    const index = Number(rawIndex);
+    if (
+      basePath &&
+      Array.isArray(current) &&
+      current[index] &&
+      typeof current[index] === "object"
+    ) {
+      fields[basePath] = current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...(item as Record<string, unknown>),
+              label: value || (item as { label?: unknown }).label,
+            }
+          : item,
+      );
+    }
+    return;
+  }
+  if (value.trim()) fields[path] = value;
 }
 
 export function UnsupportedTemplatePreview({ templateKey }: { templateKey: string }) {

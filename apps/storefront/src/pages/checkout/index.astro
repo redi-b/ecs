@@ -10,9 +10,11 @@ import { applyPrivateNoStore } from "../../lib/http-cache";
 import { loadPageContext } from "../../lib/page-context";
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { resolveRendererSlot } from "../../templates/registry";
+import * as m from "../../paraglide/messages.js";
 import { getCustomerTokenFromRequest, customerSessionClearCookie } from "../../lib/session/customer-cookie";
 
 const ctx = await loadPageContext(Astro.request);
+const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) {
   Astro.response.status = ctx.status;
 }
@@ -80,7 +82,7 @@ const Checkout = ctx.ok
 
 {
   !ctx.ok || !Checkout ? (
-    <StoreUnavailable message={ctx.ok ? "Template unavailable" : ctx.message} />
+    <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} />
   ) : (
     <Checkout
       data={ctx.config.storefront.data}

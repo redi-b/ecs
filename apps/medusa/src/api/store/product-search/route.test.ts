@@ -17,13 +17,14 @@ test("store product search is scoped to publishable-key sales channels", async (
         order: "created_at",
       },
       publishable_key_context: { sales_channel_ids: ["sc_1", "sc_2"] },
+      locale: "am-ET",
       scope: {
         resolve: () => ({
           searchProducts: async (input: unknown) => {
             queries.push(input);
             return {
               facetDistribution: { category_ids: { pcat_1: 1 }, collection_id: { pcol_1: 1 } },
-              hits: [{ id: "prod_1" }],
+              hits: [{ id: "am-ET:prod_1", product_id: "prod_1" }],
               indexDocumentCount: 24,
               estimatedTotalHits: 1,
               processingTimeMs: 2,
@@ -38,6 +39,7 @@ test("store product search is scoped to publishable-key sales channels", async (
 
   assert.deepEqual(queries[0], {
     q: "cofee",
+    locale: "am-ET",
     categoryIds: ["pcat_1"],
     collectionId: "pcol_1",
     limit: 12,

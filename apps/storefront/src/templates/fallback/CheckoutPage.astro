@@ -7,7 +7,9 @@ import type {
   StoreShippingOption,
 } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
 import type { ShellTheme } from "../../lib/theme";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   /** Template-owned storefront data; unused by the fallback shell. */
@@ -60,18 +62,19 @@ const canPlaceOrder =
   (deliveryChoiceDefault === "pickup"
     ? Boolean(freePickupOption) || shippingOptions.length > 0
     : deliveryFeeOptions.length > 0);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <StoreShell
   tenantName={tenantName}
   cartCount={cartCount}
-  title="Checkout"
+  title={m.checkout_title({}, { locale })}
   primaryColor={primaryColor}
   theme={theme}
   currentPath={currentPath}
 >
-  <p class="sf-eyebrow">Almost there</p>
-  <h1 class="sf-title">Checkout</h1>
+  <p class="sf-eyebrow">{m.checkout_almost_there({}, { locale })}</p>
+  <h1 class="sf-title">{m.checkout_title({}, { locale })}</h1>
 
   {
     error && (
@@ -84,7 +87,7 @@ const canPlaceOrder =
   {
     shippingError && (
       <div class="sf-notice sf-notice-error" role="alert">
-        Delivery options could not be loaded. Please refresh and try again.
+        {m.checkout_shipping_load_error({}, { locale })}
       </div>
     )
   }
@@ -93,10 +96,10 @@ const canPlaceOrder =
     items.length === 0 ? (
       <div class="sf-notice" role="status">
         <p>
-          <strong>Your cart is empty.</strong>
+          <strong>{m.cart_empty({}, { locale })}</strong>
         </p>
         <a class="sf-btn" href="/products">
-          Browse products
+          {m.action_browse_products({}, { locale })}
         </a>
       </div>
     ) : (
@@ -105,30 +108,30 @@ const canPlaceOrder =
           {shippingOptions.length === 0 && (
             <div class="sf-notice" role="status">
               <p>
-                <strong>Delivery options are not available yet.</strong>
+                <strong>{m.checkout_options_unavailable({}, { locale })}</strong>
               </p>
               <p class="sf-muted">
-                Please go back to your cart and try checkout again in a moment.
+                {m.checkout_options_retry({}, { locale })}
               </p>
               <div class="sf-actions">
                 <a class="sf-btn sf-btn-secondary" href="/cart">
-                  Back to cart
+                  {m.action_back_to_cart({}, { locale })}
                 </a>
                 <a class="sf-btn sf-btn-secondary" href="/products">
-                  Keep shopping
+                  {m.action_continue_shopping({}, { locale })}
                 </a>
               </div>
             </div>
           )}
 
           <form method="post" action="/actions/checkout/cod" class="sf-panel sf-stack">
-            <h2>Contact & delivery</h2>
+            <h2>{m.checkout_contact_delivery({}, { locale })}</h2>
             <div class="sf-field">
-              <label for="name">Full name</label>
+              <label for="name">{m.checkout_full_name({}, { locale })}</label>
               <input id="name" name="name" required autocomplete="name" />
             </div>
             <div class="sf-field">
-              <label for="phone">Phone{phoneRequired ? "" : " (optional)"}</label>
+              <label for="phone">{m.checkout_phone({}, { locale })}{phoneRequired ? "" : ` (${m.checkout_optional({}, { locale })})`}</label>
               <input
                 id="phone"
                 name="phone"
@@ -137,7 +140,7 @@ const canPlaceOrder =
               />
             </div>
             <div class="sf-field">
-              <label for="email">Email (optional)</label>
+              <label for="email">{m.checkout_email({}, { locale })} ({m.checkout_optional({}, { locale })})</label>
               <input id="email" name="email" type="email" autocomplete="email" />
             </div>
 
@@ -145,15 +148,15 @@ const canPlaceOrder =
               !fulfillmentAvailable ? (
                 <div class="sf-notice" role="status">
                   <p>
-                    <strong>Delivery and pickup are unavailable.</strong>
+                    <strong>{m.checkout_fulfillment_unavailable({}, { locale })}</strong>
                   </p>
-                  <p class="sf-muted">This shop is not accepting orders for delivery or pickup right now.</p>
+                  <p class="sf-muted">{m.checkout_orders_unavailable({}, { locale })}</p>
                 </div>
               ) : null
             }
 
             <div class="sf-field">
-              <label for="deliveryChoice">Method</label>
+              <label for="deliveryChoice">{m.checkout_method({}, { locale })}</label>
               <select
                 id="deliveryChoice"
                 name="deliveryChoice"
@@ -162,12 +165,12 @@ const canPlaceOrder =
               >
                 {deliveryEnabled && (
                   <option value="delivery" selected={deliveryChoiceDefault === "delivery"}>
-                    Delivery
+                    {m.checkout_delivery({}, { locale })}
                   </option>
                 )}
                 {pickupEnabled && (
                   <option value="pickup" selected={deliveryChoiceDefault === "pickup"}>
-                    Pickup
+                    {m.checkout_pickup({}, { locale })}
                   </option>
                 )}
               </select>
@@ -179,7 +182,7 @@ const canPlaceOrder =
               hidden={deliveryChoiceDefault !== "delivery"}
               style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
             >
-              <label for="address1">Address</label>
+              <label for="address1">{m.checkout_address({}, { locale })}</label>
               <input
                 id="address1"
                 name="address1"
@@ -194,7 +197,7 @@ const canPlaceOrder =
               hidden={deliveryChoiceDefault !== "delivery"}
               style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
             >
-              <label for="city">City</label>
+              <label for="city">{m.checkout_city({}, { locale })}</label>
               <input
                 id="city"
                 name="city"
@@ -211,7 +214,7 @@ const canPlaceOrder =
               style={deliveryChoiceDefault !== "delivery" ? "display:none" : undefined}
             >
               <label for="landmark">
-                Landmark{delivery?.landmarkRequired ? " (required)" : " (optional)"}
+                {m.checkout_landmark({}, { locale })}{delivery?.landmarkRequired ? ` (${m.checkout_required({}, { locale })})` : ` (${m.checkout_optional({}, { locale })})`}
               </label>
               <input
                 id="landmark"
@@ -224,7 +227,7 @@ const canPlaceOrder =
 
             {delivery?.notesEnabled !== false && (
               <div class="sf-field">
-                <label for="notes">Notes (optional)</label>
+                <label for="notes">{m.checkout_order_notes({}, { locale })} ({m.checkout_optional({}, { locale })})</label>
                 <textarea id="notes" name="notes" />
               </div>
             )}
@@ -235,7 +238,7 @@ const canPlaceOrder =
               hidden={deliveryChoiceDefault === "pickup"}
               style={deliveryChoiceDefault === "pickup" ? "display:none" : undefined}
             >
-              <label for="shippingOptionId">Delivery fee</label>
+              <label for="shippingOptionId">{m.checkout_delivery_fee({}, { locale })}</label>
               {deliveryFeeOptions.length > 0 ? (
                 <select
                   id="shippingOptionId"
@@ -244,20 +247,20 @@ const canPlaceOrder =
                   disabled={deliveryChoiceDefault === "pickup"}
                 >
                   {deliveryFeeOptions.map((option) => {
-                    const rawName = option.name?.trim() || "Standard";
-                    const name = /shipping/i.test(rawName) ? "Standard" : rawName;
+                    const rawName = option.name?.trim() || m.checkout_standard({}, { locale });
+                    const name = /shipping/i.test(rawName) ? m.checkout_standard({}, { locale }) : rawName;
                     return (
                       <option value={option.id}>
                         {name +
                           (option.amount != null
-                            ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode)}`
+                            ? ` · ${formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode, locale)}`
                             : "")}
                       </option>
                     );
                   })}
                 </select>
               ) : (
-                <p class="sf-muted">No delivery fee option is available yet.</p>
+                <p class="sf-muted">{m.checkout_no_delivery_fee({}, { locale })}</p>
               )}
             </div>
             <div
@@ -266,8 +269,8 @@ const canPlaceOrder =
               hidden={deliveryChoiceDefault !== "pickup"}
               style={deliveryChoiceDefault !== "pickup" ? "display:none" : undefined}
             >
-              <label>Pickup fee</label>
-              <p class="sf-muted">Free · collect at the shop</p>
+              <label>{m.checkout_pickup_fee({}, { locale })}</label>
+              <p class="sf-muted">{m.checkout_pickup_free({}, { locale })}</p>
               {freePickupOption ? (
                 <input type="hidden" name="shippingOptionId" value={freePickupOption.id} data-pickup-option />
               ) : deliveryFeeOptions[0] ? (
@@ -278,7 +281,7 @@ const canPlaceOrder =
             <div class="sf-actions">
               {payment.cod && canPlaceOrder && (
                 <button class="sf-btn sf-btn-accent" type="submit">
-                  Place order · Pay on delivery
+                  {m.checkout_place_cod({}, { locale })}
                 </button>
               )}
               {payment.chapa && canPlaceOrder && (
@@ -287,37 +290,36 @@ const canPlaceOrder =
                   type="submit"
                   formaction="/actions/checkout/chapa"
                 >
-                  Pay with Chapa
+                  {m.checkout_pay_chapa({}, { locale })}
                 </button>
               )}
               {!payment.chapa && (
                 <p class="sf-muted">
-                  Online payment is not available for this order. You can still pay on delivery when
-                  that option is offered.
+                  {m.checkout_online_payment_unavailable({}, { locale })}
                 </p>
               )}
               <a class="sf-btn sf-btn-secondary" href="/cart">
-                Back to cart
+                {m.action_back_to_cart({}, { locale })}
               </a>
             </div>
           </form>
         </div>
 
-        <aside class="sf-panel" aria-label="Order summary">
-          <h2>Order summary</h2>
+        <aside class="sf-panel" aria-label={m.checkout_order_summary({}, { locale })}>
+          <h2>{m.checkout_order_summary({}, { locale })}</h2>
           {
             items.map((item) => (
               <div class="sf-summary-line">
                 <span>
                   {item.quantity}× {item.title ?? "Item"}
                 </span>
-                <span>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</span>
+                <span>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</span>
               </div>
             ))
           }
           <div class="sf-summary-line total">
-            <span>Total</span>
-            <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode)}</span>
+            <span>{m.cart_total({}, { locale })}</span>
+            <span>{formatMoney(cart?.total ?? cart?.itemTotal, cart?.currencyCode, locale)}</span>
           </div>
         </aside>
       </div>

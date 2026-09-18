@@ -1,51 +1,50 @@
+import type { StorefrontLocale } from "@ecs/contracts";
+import * as m from "../../paraglide/messages.js";
+
 /**
  * Map platform/store error codes and raw API text to customer-facing copy.
  * Never surface raw codes like shop_unpublished on the storefront.
  */
-export function customerFacingStoreError(message: string | null | undefined): string {
+export function customerFacingStoreError(
+  message: string | null | undefined,
+  locale: StorefrontLocale = "en",
+): string {
   const raw = (message ?? "").trim();
   const key = raw.toLowerCase().replace(/\s+/g, "_");
 
-  const map: Record<string, string> = {
-    shop_unpublished: "This shop is temporarily closed.",
-    shop_not_found: "We could not find this shop.",
-    shop_suspended: "This shop is not accepting orders right now.",
-    shop_context_required: "This shop is not available from this address.",
-    domain_misconfigured: "This shop is not ready yet. Please check back soon.",
-    commerce_region_unavailable: "Checkout is not available yet.",
-    commerce_backend_unavailable: "Something went wrong. Please try again.",
-    product_not_found: "This product is unavailable.",
-    cart_not_found: "Your cart could not be found. Add items again to continue.",
-    cart_items_unavailable: "Your cart has changed. Review its items before checking out again.",
-    store_route_not_allowed: "That page is not available.",
-    invalid_storefront_config_response: "Please try again later.",
-    config_request_failed: "Please try again later.",
-    invalid_customer_credentials: "That email or password is not correct.",
-    invalid_customer_registration:
-      "Check your details and use a password with at least 8 characters.",
-    customer_account_exists: "An account already exists for this email. Try signing in instead.",
-    customer_registration_failed: "We could not create your account. Please try again.",
-    customer_login_failed: "We could not sign you in. Please try again.",
-    customer_auth_required: "Sign in to view your account.",
-    customer_session_invalid: "Your session has expired. Please sign in again.",
-    customer_orders_unavailable: "Your order history is temporarily unavailable.",
-    invalid_customer_profile: "Check your name and phone number, then try again.",
-    customer_profile_update_failed: "We could not update your profile. Please try again.",
-    customer_order_not_found: "We could not find that order in this account.",
+  const map: Record<string, () => string> = {
+    shop_unpublished: () => m.status_shop_closed_help({}, { locale }),
+    shop_not_found: () => m.status_shop_not_found({}, { locale }),
+    shop_suspended: () => m.status_shop_closed_help({}, { locale }),
+    shop_context_required: () => m.status_shop_unavailable({}, { locale }),
+    domain_misconfigured: () => m.status_shop_unavailable({}, { locale }),
+    commerce_region_unavailable: () => m.checkout_options_unavailable({}, { locale }),
+    commerce_backend_unavailable: () => m.status_generic_error({}, { locale }),
+    product_not_found: () => m.product_unavailable({}, { locale }),
+    cart_not_found: () => m.cart_not_found({}, { locale }),
+    cart_items_unavailable: () => m.cart_items_changed({}, { locale }),
+    store_route_not_allowed: () => m.status_not_found_help({}, { locale }),
+    invalid_storefront_config_response: () => m.status_try_again_later({}, { locale }),
+    config_request_failed: () => m.status_try_again_later({}, { locale }),
+    invalid_customer_credentials: () => m.account_sign_in_failed({}, { locale }),
+    invalid_customer_registration: () => m.account_register_failed({}, { locale }),
+    customer_account_exists: () => m.account_register_failed({}, { locale }),
+    customer_registration_failed: () => m.account_register_failed({}, { locale }),
+    customer_login_failed: () => m.account_sign_in_failed({}, { locale }),
+    customer_auth_required: () => m.status_access_help({}, { locale }),
+    customer_session_invalid: () => m.status_access_help({}, { locale }),
+    customer_orders_unavailable: () => m.checkout_orders_unavailable({}, { locale }),
+    invalid_customer_profile: () => m.account_save_failed({}, { locale }),
+    customer_profile_update_failed: () => m.account_save_failed({}, { locale }),
+    customer_order_not_found: () => m.account_order_not_found({}, { locale }),
   };
 
   if (key && map[key]) {
-    return map[key];
+    return map[key]();
   }
 
-  // Already human-readable sentences (from our own redirects)
-  if (raw && !/^[a-z0-9_]+$/i.test(raw) && raw.includes(" ")) {
-    return raw;
+  if (/inventory|stock|available quantity/i.test(raw)) {
+    return m.cart_items_changed({}, { locale });
   }
-
-  if (raw && map[raw]) {
-    return map[raw];
-  }
-
-  return "Something went wrong. Please try again.";
+  return m.status_generic_error({}, { locale });
 }

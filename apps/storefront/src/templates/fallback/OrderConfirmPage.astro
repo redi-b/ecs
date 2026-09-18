@@ -3,6 +3,8 @@ import StoreShell from "../../components/shell/StoreShell.astro";
 import { formatMoney } from "../../lib/money";
 import type { LastOrderCookie } from "../../lib/session/cart-cookie";
 import type { ShellTheme } from "../../lib/theme";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   /** Template-owned storefront data; unused by the fallback shell. */
@@ -17,33 +19,34 @@ interface Props {
 
 const { tenantName, cartCount, primaryColor, theme, orderId, lastOrder } = Astro.props;
 const matches = Boolean(lastOrder && lastOrder.id === orderId);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <StoreShell
   tenantName={tenantName}
   cartCount={cartCount}
-  title="Order"
+  title={m.order_confirmed({}, { locale })}
   primaryColor={primaryColor}
   theme={theme}
 >
-  <p class="sf-eyebrow">Success</p>
-  <h1 class="sf-title">Order confirmed</h1>
+  <p class="sf-eyebrow">{m.order_success({}, { locale })}</p>
+  <h1 class="sf-title">{m.order_confirmed({}, { locale })}</h1>
   {
     matches ? (
       <div class="sf-notice sf-notice-ok" role="status">
         <p>
-          <strong>Thanks, we received your order.</strong>
+          <strong>{m.order_thanks({}, { locale })}</strong>
         </p>
         <p>
-          <strong>Order ID:</strong> {orderId}
+          <strong>{m.order_reference({}, { locale })}:</strong> {orderId}
         </p>
         {lastOrder?.total != null && (
           <p>
-            <strong>Total:</strong> {formatMoney(lastOrder.total, lastOrder.currencyCode)}
+            <strong>{m.order_total({}, { locale })}:</strong> {formatMoney(lastOrder.total, lastOrder.currencyCode, locale)}
           </p>
         )}
         <p class="sf-muted">
-          Keep this page or your phone number handy if the shop contacts you about delivery.
+          {m.order_keep_reference({}, { locale })}
         </p>
       </div>
     ) : (
@@ -52,15 +55,14 @@ const matches = Boolean(lastOrder && lastOrder.id === orderId);
           Order <strong>{orderId}</strong>
         </p>
         <p class="sf-muted">
-          If you just finished checkout, your order was placed. Full confirmation details are shown
-          right after purchase on this device.
+          {m.order_unverified_help({}, { locale })}
         </p>
       </div>
     )
   }
   <div class="sf-actions">
     <a class="sf-btn sf-btn-accent" href="/products">
-      Continue shopping
+      {m.action_continue_shopping({}, { locale })}
     </a>
   </div>
 </StoreShell>

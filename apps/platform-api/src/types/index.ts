@@ -4,6 +4,7 @@ export type {
   TenantInsightsSummaryResult,
 } from "./analytics.js";
 export type * from "./billing.js";
+export type * from "./catalog-translation.js";
 export type * from "./customer.js";
 export type * from "./delivery.js";
 export type * from "./media.js";

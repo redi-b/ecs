@@ -25,6 +25,14 @@ import type {
   BillingStatusResult,
 } from "./billing.js";
 import type {
+  CatalogTranslationQueueInput,
+  CatalogTranslationQueueResult,
+  CatalogTranslationReadResult,
+  CatalogTranslationResourceInput,
+  CatalogTranslationUpdateInput,
+  CatalogTranslationWriteResult,
+} from "./catalog-translation.js";
+import type {
   MerchantCustomerAddressInput,
   MerchantCustomerAddressResult,
   MerchantCustomerGroupsResult,
@@ -352,7 +360,9 @@ export type PlatformAppOptions = {
     | undefined;
   updateStorefrontDraft?:
     | ((input: {
-        data: unknown;
+      data: unknown;
+        languageSettings?: import("@ecs/contracts").StorefrontLanguageSettings;
+        localizedContent?: import("@ecs/contracts").StorefrontLocalizedContent;
         tenantId: string;
         themeTokens: unknown;
         userId: string;
@@ -841,6 +851,15 @@ export type PlatformAppOptions = {
         salesChannelId: string;
         stockLocationId?: string | null | undefined;
       }) => Promise<MerchantProductDetailResult>)
+    | undefined;
+  getMerchantCatalogTranslation?:
+    | ((input: CatalogTranslationResourceInput) => Promise<CatalogTranslationReadResult>)
+    | undefined;
+  listMerchantCatalogTranslationReadiness?:
+    | ((input: CatalogTranslationQueueInput) => Promise<CatalogTranslationQueueResult>)
+    | undefined;
+  updateMerchantCatalogTranslation?:
+    | ((input: CatalogTranslationUpdateInput) => Promise<CatalogTranslationWriteResult>)
     | undefined;
   listMerchantProductCategories?:
     | ((input: {

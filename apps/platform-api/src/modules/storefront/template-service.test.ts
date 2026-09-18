@@ -14,7 +14,36 @@ import {
   normalizeStorefrontDraftPayload,
   normalizeStorefrontSeoSettings,
   resolveTemplateDraft,
+  validateStorefrontLocalizedContent,
 } from "./template-service.js";
+
+test("localized storefront sidecars reject shared and unknown fields", () => {
+  const translation = { value: "ትርጉም", sourceHash: "a".repeat(64) };
+  assert.equal(
+    validateStorefrontLocalizedContent({
+      data: luviaV1Defaults,
+      localizedContent: { version: 1, locales: { am: { "home.hero.title": translation } } },
+      templateKey: "luvia@1",
+    }),
+    true,
+  );
+  assert.equal(
+    validateStorefrontLocalizedContent({
+      data: luviaV1Defaults,
+      localizedContent: { version: 1, locales: { am: { "themeTokens.colors.primary": translation } } },
+      templateKey: "luvia@1",
+    }),
+    false,
+  );
+  assert.equal(
+    validateStorefrontLocalizedContent({
+      data: luviaV1Defaults,
+      localizedContent: { version: 1, locales: { am: { "home.missing.copy": translation } } },
+      templateKey: "luvia@1",
+    }),
+    false,
+  );
+});
 
 test("normalizes storefront SEO without carrying invalid or oversized values", () => {
   assert.deepEqual(

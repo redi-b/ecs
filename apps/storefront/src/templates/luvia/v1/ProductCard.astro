@@ -2,7 +2,9 @@
 import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
+import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import starIcon from "./icons/star-icon.svg";
@@ -10,23 +12,25 @@ import wishlistIcon from "./icons/wishlist-icon.svg";
 
 interface Props { product: StoreProduct; eager?: boolean; }
 const { product, eager = false } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const brand = product.collectionTitle?.toUpperCase() || "LUVIA";
-const wishlistItem = JSON.stringify({ path: href, title: product.title ?? "Product", thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const title = product.title ?? m.catalog_product_fallback({}, { locale });
+const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
 const purchasableVariant = product.variants.find((variant) => variant.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, purchasableVariant);
 const originalPrice = purchasableVariant?.originalPriceAmount ?? product.originalPriceAmount ?? null;
 ---
 <article class="lv-product-card">
   <div class="lv-product-card__media">
-    <a class="lv-product-card__media-link" href={href} aria-label={product.title ?? "View product"}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={product.title ?? "Product"} width="900" height="900" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={`No image available for ${product.title ?? "this product"}`} />}
+    <a class="lv-product-card__media-link" href={href} aria-label={`${m.action_view_product({}, { locale })}: ${title}`}>
+      {product.thumbnail ? <img src={product.thumbnail} alt={title} width="900" height="900" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
     {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={starIcon.src} alt="" /> : null}{badge.label}</span> : null}
-    <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={`Save ${product.title ?? "product"} to wishlist`}><img src={wishlistIcon.src} alt="" /></button>
-    {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? "Add to Cart" : "Out of stock"}</span></ActionButton></form> : null}
+    <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><img src={wishlistIcon.src} alt="" /></button>
+    {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : null}
   </div>
   <p class="lv-product-card__brand">{brand}</p>
-  <a class="lv-product-card__title" href={href}>{product.title ?? "Product"}</a>
-  <p class="lv-product-card__price"><strong>{formatMoney(product.priceAmount, product.currencyCode)}</strong>{originalPrice ? <del>{formatMoney(originalPrice, product.currencyCode)}</del> : null}</p>
+  <a class="lv-product-card__title" href={href}>{title}</a>
+  <p class="lv-product-card__price"><strong>{formatMoney(product.priceAmount, product.currencyCode, locale)}</strong>{originalPrice ? <del>{formatMoney(originalPrice, product.currencyCode, locale)}</del> : null}</p>
 </article>

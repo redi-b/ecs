@@ -3,6 +3,11 @@ import { initWishlistController } from "../../../lib/browser/wishlist";
 import EmblaCarousel from "embla-carousel";
 
 export function initNexahubStorefront() {
+  const messages = (window as Window & {
+    __ECS_NEXAHUB_MESSAGES__?: Record<string, string>;
+  }).__ECS_NEXAHUB_MESSAGES__ ?? {};
+  const clientMessage = (key: string, fallback = "") => messages[key] || fallback;
+  const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
   const readOnly = document.body.dataset.editorMode === "true" || document.body.dataset.demoMode === "true";
   const header = document.querySelector<HTMLElement>(".site-header");
   const menu = header?.querySelector<HTMLButtonElement>(".site-header__toggle");
@@ -118,7 +123,7 @@ export function initNexahubStorefront() {
     if (open && !wasOpen) navigationLastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : menu ?? null;
     window.clearTimeout(navigationCloseTimer);
     menu?.setAttribute("aria-expanded", String(open));
-    menu?.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    menu?.setAttribute("aria-label", open ? clientMessage("closeNavigation") : clientMessage("openNavigation"));
     if (open) {
       header?.classList.remove("is-closing");
       nav?.classList.remove("is-closing");
@@ -206,19 +211,19 @@ export function initNexahubStorefront() {
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       const message = form.querySelector<HTMLElement>("[data-inquiry-status]") ?? form.parentElement?.querySelector<HTMLElement>("[data-inquiry-status]");
       const isRequest = form.querySelector<HTMLInputElement>('input[name="type"]')?.value === "product_request";
-      setBusy(button, true, isRequest ? "Sending request" : "Sending");
+      setBusy(button, true, isRequest ? clientMessage("requestSending") : clientMessage("contactSending"));
       form.setAttribute("aria-busy", "true");
-      if (message) message.textContent = "Sending…";
+      if (message) message.textContent = isRequest ? clientMessage("requestSending") : clientMessage("contactSending");
       try {
         const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || "Could not send your message.");
+        await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(isRequest ? clientMessage("requestFailed") : clientMessage("contactFailed"));
         form.reset();
-        if (message) message.textContent = isRequest ? "Request received. The shop can now review it." : "Message received. The shop can now follow up.";
-        announce(isRequest ? "Product request sent successfully" : "Message sent successfully");
+        if (message) message.textContent = isRequest ? clientMessage("requestReceived") : clientMessage("contactReceived");
+        announce(isRequest ? clientMessage("requestReceived") : clientMessage("contactReceived"));
       } catch (cause) {
-        if (message) message.textContent = cause instanceof Error ? cause.message : "Could not send your message.";
-        announce("Message could not be sent");
+        if (message) message.textContent = cause instanceof Error ? cause.message : isRequest ? clientMessage("requestFailed") : clientMessage("contactFailed");
+        announce(isRequest ? clientMessage("requestFailed") : clientMessage("contactFailed"));
       } finally {
         setBusy(button, false);
         form.removeAttribute("aria-busy");
@@ -228,7 +233,7 @@ export function initNexahubStorefront() {
 
   const money = (amount: number | null, currency: string | null) => {
     if (amount == null) return "—";
-    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
+    try { return new Intl.NumberFormat(locale, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
     catch { return String(amount); }
   };
   const element = <K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") => {
@@ -240,11 +245,11 @@ export function initNexahubStorefront() {
     const items = Array.isArray(cart?.items) ? cart.items : [];
     const count = items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
     syncCartCount(count);
-    if (drawerCount) drawerCount.textContent = `${String(count).padStart(2, "0")} ITEM${count === 1 ? "" : "S"}`;
+    if (drawerCount) drawerCount.textContent = clientMessage("itemCount").replace("__COUNT__", String(count));
     if (!items.length) {
       const empty = element("div", "cart-drawer__empty");
-      empty.append(element("h3", "type-heading-5", "Your cart is empty"), element("p", "type-body-s-400", "Explore the catalog and add something you need."));
-      const shop = element("a", "btn btn--primary btn--large", "Continue Shopping"); shop.href = "/products"; empty.append(shop);
+      empty.append(element("h3", "type-heading-5", clientMessage("cartEmpty")), element("p", "type-body-s-400", clientMessage("cartEmptyHelp")));
+      const shop = element("a", "btn btn--primary btn--large", clientMessage("continueShopping")); shop.href = "/products"; empty.append(shop);
       itemsRoot.append(empty); footer.hidden = true; return;
     }
     for (const item of items) {
@@ -252,7 +257,7 @@ export function initNexahubStorefront() {
       const media = element("a", "cart-drawer__image img-wrapper") as HTMLAnchorElement; media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
       if (item.thumbnail) { const image = element("img") as HTMLImageElement; image.src = item.thumbnail; image.alt = ""; media.append(image); }
       const details = element("div", "cart-drawer__details"); const info = element("div", "cart-drawer__info");
-      info.append(element("h3", "type-heading-5", item.title || "Product"));
+      info.append(element("h3", "type-heading-5", item.title || clientMessage("product")));
       if (item.variantTitle) info.append(element("span", "cart-drawer__variant type-body-xs-400", item.variantTitle));
       info.append(element("p", "type-body-s-500", money(item.total ?? item.unitPrice, cart.currencyCode)));
       const actions = element("div", "cart-drawer__actions"); const quantity = element("div", "cart-drawer__quantity");
@@ -260,7 +265,7 @@ export function initNexahubStorefront() {
       const amount = element("span", "", String(item.quantity));
       const plus = element("button", "", "+") as HTMLButtonElement; plus.type = "button"; plus.dataset.cartQuantity = String(Number(item.quantity) + 1); plus.setAttribute("aria-label", `Increase ${item.title || "product"} quantity`);
       quantity.append(minus, amount, plus);
-      const remove = element("button", "cart-drawer__remove type-body-s-400", "REMOVE") as HTMLButtonElement; remove.type = "button"; remove.dataset.cartRemove = "";
+      const remove = element("button", "cart-drawer__remove type-body-s-400", clientMessage("remove")) as HTMLButtonElement; remove.type = "button"; remove.dataset.cartRemove = "";
       actions.append(quantity, remove); details.append(info, actions); row.append(media, details); itemsRoot.append(row);
     }
     footer.hidden = false;
@@ -277,9 +282,9 @@ export function initNexahubStorefront() {
       });
       itemsRoot.replaceChildren(...skeletons);
     }
-    if (status) status.textContent = "Loading your cart…";
-    try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not load your cart."); renderCart(result.cart); if (status) status.textContent = ""; }
-    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : "Could not load your cart."; announce("Cart could not be loaded"); }
+    if (status) status.textContent = clientMessage("cartLoading");
+    try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(clientMessage("cartLoadFailed")); renderCart(result.cart); if (status) status.textContent = ""; }
+    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : clientMessage("cartLoadFailed"); announce(clientMessage("cartLoadFailed")); }
     finally { itemsRoot?.removeAttribute("aria-busy"); }
   };
   const openCart = async (cart?: any) => { if (!overlay) return; setNavigation(false); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null; overlay.classList.add("is-visible"); overlay.setAttribute("aria-hidden", "false"); syncScrollLock(); window.requestAnimationFrame(() => window.requestAnimationFrame(() => { drawer?.classList.add("is-open"); drawer?.querySelector<HTMLButtonElement>("[data-cart-close]")?.focus(); })); if (cart) renderCart(cart); else await loadCart(); };
@@ -292,15 +297,15 @@ export function initNexahubStorefront() {
     const quantity = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const remove = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantity && !remove) return;
     const action = quantity ?? remove; setBusy(action, true); row.setAttribute("aria-busy", "true");
     const body = new FormData(); body.set("lineItemId", row.dataset.lineItemId || ""); if (quantity) body.set("quantity", quantity.dataset.cartQuantity || "1");
-    try { const response = await fetch(quantity ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not update your cart."); renderCart(result.cart); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); announce(remove ? "Item removed from cart" : "Cart quantity updated"); }
-    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : "Could not update your cart."; announce("Cart could not be updated"); }
+    try { const response = await fetch(quantity ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || clientMessage("cartUpdated")); renderCart(result.cart); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); announce(clientMessage("cartUpdated")); }
+    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : clientMessage("cartUpdated"); announce(clientMessage("cartUpdated")); }
     finally { setBusy(action, false); row.removeAttribute("aria-busy"); }
   });
   document.addEventListener("submit", async (event) => {
     const form = event.target instanceof HTMLFormElement ? event.target : null; if (!form?.matches("[data-card-add-form], [data-add-form]") || readOnly) return;
-    event.preventDefault(); const buttons = [...form.querySelectorAll<HTMLButtonElement>("button[type=submit]")]; const disabledState = new Map(buttons.map((button) => [button, button.disabled])); const cardLabelButton = form.matches("[data-card-add-form]") ? form.querySelector<HTMLButtonElement>(".product-card__add-btn") : null; if (cardLabelButton) setBusy(cardLabelButton, true, "Adding"); else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], true, "Adding"); buttons.forEach((button) => { button.disabled = true; }); form.setAttribute("aria-busy", "true"); announce("Adding item to cart");
-    try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || "Could not add this item."); announce("Item added to cart"); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } })); }
-    catch (cause) { const message = cause instanceof Error ? cause.message : "Could not add this item."; announce(message); showToast(message); const localStatus = form.closest("[data-product-detail]")?.querySelector<HTMLElement>(".nexa-product-notice"); if (localStatus) { localStatus.textContent = message; localStatus.hidden = false; } }
+    event.preventDefault(); const buttons = [...form.querySelectorAll<HTMLButtonElement>("button[type=submit]")]; const disabledState = new Map(buttons.map((button) => [button, button.disabled])); const cardLabelButton = form.matches("[data-card-add-form]") ? form.querySelector<HTMLButtonElement>(".product-card__add-btn") : null; if (cardLabelButton) setBusy(cardLabelButton, true, clientMessage("adding")); else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], true, clientMessage("adding")); buttons.forEach((button) => { button.disabled = true; }); form.setAttribute("aria-busy", "true"); announce(clientMessage("adding"));
+    try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || clientMessage("addFailed")); announce(clientMessage("added")); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } })); }
+    catch (cause) { const failureMessage = cause instanceof Error ? cause.message : clientMessage("addFailed"); announce(failureMessage); showToast(failureMessage); const localStatus = form.closest("[data-product-detail]")?.querySelector<HTMLElement>(".nexa-product-notice"); if (localStatus) { localStatus.textContent = failureMessage; localStatus.hidden = false; } }
     finally { if (cardLabelButton) setBusy(cardLabelButton, false); else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], false); buttons.forEach((button) => { button.disabled = disabledState.get(button) ?? false; }); form.removeAttribute("aria-busy"); }
   });
   window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (readOnly) return; const detail = event.detail; if (detail?.count != null) syncCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer) void openCart(detail.cart); } }) as EventListener);
@@ -309,9 +314,9 @@ export function initNexahubStorefront() {
     const form = event.target instanceof HTMLFormElement ? event.target : null;
     const button = event.submitter instanceof HTMLButtonElement ? event.submitter : null;
     if (!form || !button) return;
-    const idle = button.textContent?.trim().replace(/↗$/, "").trim() || "Working";
+    const idle = button.textContent?.trim().replace(/↗$/, "").trim() || clientMessage("checkoutPlacingOrder");
     const busyLabel = form.matches("[data-checkout-form]")
-      ? (form.action.includes("/chapa") ? "Opening secure payment" : "Placing order")
+      ? (form.action.includes("/chapa") ? clientMessage("checkoutOpeningPayment") : clientMessage("checkoutPlacingOrder"))
       : `${idle.replace(/\.{3}|…$/u, "")}…`;
     form.setAttribute("aria-busy", "true");
     setBusy(button, true, busyLabel);

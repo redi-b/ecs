@@ -55,10 +55,17 @@ function etbPrices(product: ProductSearchSource) {
   });
 }
 
-export function toProductSearchDocument(product: ProductSearchSource): ProductSearchDocument {
+export const PRODUCT_SEARCH_LOCALES = ["en-ET", "am-ET"] as const;
+
+export function toProductSearchDocument(
+  product: ProductSearchSource,
+  locale: (typeof PRODUCT_SEARCH_LOCALES)[number] = "en-ET",
+): ProductSearchDocument {
   const prices = etbPrices(product);
   return {
-    id: product.id,
+    id: `${locale}:${product.id}`,
+    product_id: product.id,
+    locale,
     title: product.title?.trim() || product.id,
     subtitle: product.subtitle?.trim() || null,
     description: product.description?.trim() || null,

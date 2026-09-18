@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,16 +24,30 @@ export function ProductCreateDialog(props: ProductCreateDialogProps) {
   );
 }
 
-function ProductCreateDialogInner({
-  action,
-  disabledReason,
-  tenantId,
-}: ProductCreateDialogProps) {
+function ProductCreateDialogInner({ action, disabledReason, tenantId }: ProductCreateDialogProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
+  const [offerTranslationAfterCreate, setOfferTranslationAfterCreate] = useState(false);
   // Load taxonomy only when the composer opens — not on every products page paint.
   const taxonomy = useProductTaxonomy({ enabled: open, tenantId });
+
+  useEffect(() => {
+    if (!open) return;
+    const url = new URL("/dashboard/storefront/languages", window.location.origin);
+    if (tenantId) url.searchParams.set("tenantId", tenantId);
+    void fetch(url, { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as { enabledLocales?: unknown };
+      })
+      .then((payload) => {
+        setOfferTranslationAfterCreate(
+          Array.isArray(payload?.enabledLocales) && payload.enabledLocales.includes("am"),
+        );
+      })
+      .catch(() => setOfferTranslationAfterCreate(false));
+  }, [open, tenantId]);
 
   function openCreateDialog() {
     setSessionKey((current) => current + 1);
@@ -60,6 +74,7 @@ function ProductCreateDialogInner({
             <ReferenceDataLoadingAlert />
           ) : null
         }
+        offerTranslationAfterCreate={offerTranslationAfterCreate}
         onClose={() => setOpen(false)}
         open={open}
         submitLabel={t("products.detail.createProduct")}

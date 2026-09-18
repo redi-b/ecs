@@ -498,7 +498,7 @@ export function RichTextEditor({
       attributes: {
         "aria-label": ariaLabel ?? "Rich text editor",
         class:
-          "tiptap min-h-44 max-h-80 overflow-y-auto overscroll-contain px-4 py-3 text-sm leading-6 outline-none [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_hr]:my-5 [&_hr]:cursor-pointer [&_hr.ProseMirror-selectednode]:ring-2 [&_hr.ProseMirror-selectednode]:ring-primary/50 [&_img]:my-4 [&_img]:max-h-96 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:object-contain [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-2 [&_ul]:list-disc",
+          "tiptap min-h-44 max-h-80 overflow-y-auto px-4 py-3 text-sm leading-6 outline-none [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_hr]:my-5 [&_hr]:cursor-pointer [&_hr.ProseMirror-selectednode]:ring-2 [&_hr.ProseMirror-selectednode]:ring-primary/50 [&_img]:my-4 [&_img]:max-h-96 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:object-contain [&_li]:ml-5 [&_ol]:list-decimal [&_p+p]:mt-2 [&_ul]:list-disc",
         ...(id ? { id } : {}),
       },
       handleDOMEvents: {

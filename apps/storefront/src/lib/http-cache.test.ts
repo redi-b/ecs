@@ -10,11 +10,13 @@ import {
 test("tenantCacheTags includes tenant and revision", () => {
   assert.deepEqual(
     tenantCacheTags({
+      locale: "am",
+      path: "/am/products",
       tenantId: "tenant_1",
       publishedRevisionId: "rev_1",
       templateKey: "luvia@1",
     }),
-    ["tenant:tenant_1", "revision:rev_1", "template:luvia@1"],
+    ["tenant:tenant_1", "revision:rev_1", "locale:am", "path:/am/products", "template:luvia@1"],
   );
 });
 
@@ -27,6 +29,8 @@ test("applyCatalogCache sets maxAge tags and swr", () => {
       },
     },
     {
+      locale: "en",
+      path: "/",
       tenantId: "t1",
       publishedRevisionId: "r1",
       templateKey: "luvia@1",
@@ -39,7 +43,7 @@ test("applyCatalogCache sets maxAge tags and swr", () => {
     {
       maxAge: 60,
       swr: 120,
-      tags: ["tenant:t1", "revision:r1", "template:luvia@1"],
+      tags: ["tenant:t1", "revision:r1", "locale:en", "path:/", "template:luvia@1"],
     },
   ]);
 });

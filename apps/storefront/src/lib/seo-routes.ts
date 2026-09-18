@@ -1,3 +1,8 @@
+import {
+  defaultStorefrontLanguageSettings,
+  type StorefrontLanguageSettings,
+  type StorefrontLocale,
+} from "@ecs/contracts";
 import type { StorefrontError, StoreProduct, StoreProductsResponse } from "./commerce/types.js";
 
 export const SITEMAP_PAGE_SIZE = 100;
@@ -85,6 +90,7 @@ export function buildTenantSitemap(
   publicOrigin: string,
   productHandles: string[],
   taxonomy: { collectionHandles?: string[]; categoryHandles?: string[] } = {},
+  languageSettings: StorefrontLanguageSettings = defaultStorefrontLanguageSettings,
 ) {
   const paths = [
     ...publicRoutes,
@@ -96,17 +102,42 @@ export function buildTenantSitemap(
       (handle) => `/products?category=${encodeURIComponent(handle)}`,
     ),
   ];
-  const urls = [...new Set(paths)].map((path) => {
-    const location = new URL(path, `${publicOrigin}/`).toString();
-    return `  <url><loc>${escapeXml(location)}</loc></url>`;
-  });
+  const urls = [...new Set(paths)].flatMap((path) =>
+    languageSettings.enabledLocales.map((locale) => {
+      const location = storefrontLocaleUrl(publicOrigin, path, locale, languageSettings);
+      const alternates = languageSettings.enabledLocales.map((alternate) => {
+        const href = storefrontLocaleUrl(publicOrigin, path, alternate, languageSettings);
+        return `<xhtml:link rel="alternate" hreflang="${alternate}" href="${escapeXml(href)}" />`;
+      });
+      const defaultHref = storefrontLocaleUrl(
+        publicOrigin,
+        path,
+        languageSettings.defaultLocale,
+        languageSettings,
+      );
+      return `  <url><loc>${escapeXml(location)}</loc>${alternates.join("")}<xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(defaultHref)}" /></url>`;
+    }),
+  );
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
     ...urls,
     "</urlset>",
     "",
   ].join("\n");
+}
+
+function storefrontLocaleUrl(
+  publicOrigin: string,
+  path: string,
+  locale: StorefrontLocale,
+  settings: StorefrontLanguageSettings,
+) {
+  const url = new URL(path, `${publicOrigin}/`);
+  if (locale !== settings.defaultLocale) {
+    url.pathname = url.pathname === "/" ? `/${locale}` : `/${locale}${url.pathname}`;
+  }
+  return url.toString();
 }
 
 function escapeXml(value: string) {

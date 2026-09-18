@@ -10,4 +10,15 @@ describe("customerFacingStoreError", () => {
       "Your cart has changed. Review its items before checking out again.",
     );
   });
+
+  it("uses the active storefront language and never exposes unknown upstream text", () => {
+    assert.equal(
+      customerFacingStoreError("cart_items_unavailable", "am"),
+      "ዘንቢልዎ ተቀይሯል። እንደገና ከመክፈልዎ በፊት ዕቃዎቹን ይፈትሹ።",
+    );
+    assert.equal(
+      customerFacingStoreError("database_connection_refused", "en"),
+      "Something went wrong. Please try again.",
+    );
+  });
 });

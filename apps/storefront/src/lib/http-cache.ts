@@ -12,6 +12,8 @@ export const CATALOG_CACHE_TTL = {
 } as const;
 
 export function tenantCacheTags(input: {
+  locale: string;
+  path: string;
   tenantId: string;
   publishedRevisionId: string;
   templateKey?: string;
@@ -19,6 +21,8 @@ export function tenantCacheTags(input: {
   const tags = [
     `tenant:${input.tenantId}`,
     `revision:${input.publishedRevisionId}`,
+    `locale:${input.locale}`,
+    `path:${input.path}`,
   ];
   if (input.templateKey) {
     tags.push(`template:${input.templateKey}`);
@@ -35,6 +39,8 @@ type CacheApi = {
 export function applyCatalogCache(
   cache: CacheApi | undefined | null,
   input: {
+    locale: string;
+    path: string;
     tenantId: string;
     publishedRevisionId: string;
     templateKey?: string;

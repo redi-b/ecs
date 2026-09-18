@@ -1,6 +1,8 @@
 import {
   platformErrorSchema,
   type StorefrontDraft,
+  type StorefrontLanguageSettings,
+  type StorefrontLocalizedContent,
   type StorefrontPublish,
   type StorefrontTemplateCatalogItem,
   type StorefrontTemplateSelection,
@@ -162,6 +164,8 @@ export async function createStorefrontPreviewSession(options: {
 export async function updateStorefrontDraft(options: {
   cookieHeader?: string | null | undefined;
   data: unknown;
+  languageSettings?: StorefrontLanguageSettings;
+  localizedContent?: StorefrontLocalizedContent;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
   tenantId: string;
@@ -173,6 +177,8 @@ export async function updateStorefrontDraft(options: {
     {
       body: JSON.stringify({
         data: options.data,
+        ...(options.languageSettings ? { languageSettings: options.languageSettings } : {}),
+        ...(options.localizedContent ? { localizedContent: options.localizedContent } : {}),
         themeTokens: options.themeTokens,
       }),
       cache: "no-store",

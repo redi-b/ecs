@@ -562,11 +562,13 @@ describe("createMedusaProductService", () => {
       "http://medusa:9000/admin/products/prod_1?fields=id%2Csales_channels.id",
     );
     assert.equal(forwardedRequests[1]?.method, "POST");
-    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/products/prod_1");
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/platform-products/prod_1");
     assert.deepEqual(await forwardedRequests[1]?.json(), {
-      title: "Updated coffee",
-      status: "published",
-      thumbnail: "https://cdn.test/coffee.jpg",
+      update: {
+        title: "Updated coffee",
+        status: "published",
+        thumbnail: "https://cdn.test/coffee.jpg",
+      },
     });
     assert.deepEqual(result, {
       ok: true,
@@ -987,32 +989,32 @@ describe("createMedusaProductService", () => {
     });
 
     assert.equal(result.ok, true);
-    assert.equal(forwardedRequests.length, 3);
+    assert.equal(forwardedRequests.length, 2);
     assert.equal(
       forwardedRequests[1]?.url,
-      "http://medusa:9000/admin/products/prod_1/options/batch",
+      "http://medusa:9000/admin/platform-products/prod_1",
     );
     assert.deepEqual(await forwardedRequests[1]?.json(), {
-      add: [{ title: "Size", values: ["250g"] }],
-    });
-    assert.deepEqual(await forwardedRequests[2]?.json(), {
-      metadata: {
-        ecs_import_execution_id: "execution_1",
-        ecs_import_product_key: "update:prod_1",
-      },
-      variants: [
-        {
-          id: "variant_1",
-          title: "250g",
-          sku: "COFFEE-250",
-          manage_inventory: true,
-          options: { Size: "250g" },
-          prices: [
-            { amount: 250, currency_code: "etb" },
-            { amount: 2, currency_code: "usd" },
-          ],
+      before_options: { add: [{ title: "Size", values: ["250g"] }] },
+      update: {
+        metadata: {
+          ecs_import_execution_id: "execution_1",
+          ecs_import_product_key: "update:prod_1",
         },
-      ],
+        variants: [
+          {
+            id: "variant_1",
+            title: "250g",
+            sku: "COFFEE-250",
+            manage_inventory: true,
+            options: { Size: "250g" },
+            prices: [
+              { amount: 250, currency_code: "etb" },
+              { amount: 2, currency_code: "usd" },
+            ],
+          },
+        ],
+      },
     });
   });
 

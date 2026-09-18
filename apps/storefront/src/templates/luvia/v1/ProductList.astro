@@ -3,6 +3,8 @@ import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/
 import { catalogHref, parseOptionPair, type CatalogFilters } from "../../../lib/commerce/catalog-filters";
 import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import heroBackground from "./assets/products-hero-background-image.webp";
 import chevronIcon from "./icons/chevron-icon.svg";
 import Layout from "./Layout.astro";
@@ -55,6 +57,7 @@ const {
   seo,
   demoMode = false,
 } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 
 const template = parseLuviaData(data);
 const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
@@ -63,19 +66,19 @@ const hasActiveFilters = Boolean(
   filters.q || filters.collectionId || filters.categoryId || filters.optionPairs.length ||
   filters.priceMin !== undefined || filters.priceMax !== undefined || filters.order,
 );
-const categoryLabel = activeCategory?.name ?? "All categories";
+const categoryLabel = activeCategory?.name ?? m.catalog_all_categories({}, { locale });
 const sortLabel =
   filters.order === "created_at"
-    ? "Newest"
+    ? m.catalog_newest({}, { locale })
     : filters.order === "title"
-      ? "Title A–Z"
+      ? m.catalog_title_az({}, { locale })
       : filters.order === "-title"
-        ? "Title Z–A"
+        ? m.catalog_title_za({}, { locale })
         : filters.order === "price"
-          ? "Price: low to high"
+          ? m.catalog_price_low_high({}, { locale })
           : filters.order === "-price"
-            ? "Price: high to low"
-        : "Featured";
+            ? m.catalog_price_high_low({}, { locale })
+        : m.catalog_featured({}, { locale });
 const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);
 
@@ -96,62 +99,62 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 );
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title="Products Listing" seo={seo}>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={m.catalog_listing_title({}, { locale })} seo={seo}>
   <main class="lv-shop">
     <section class="lv-shop-hero">
       <TemplateImage class="lv-shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
       <div class="lv-shop-hero__content">
-        <nav aria-label="Breadcrumb"><a href="/">Home</a><img src={chevronIcon.src} alt="" /><span>Shop</span></nav>
-        <h1>Our Products Listing</h1>
+        <nav aria-label={m.breadcrumb_label({}, { locale })}><a href="/">{m.nav_home({}, { locale })}</a><img src={chevronIcon.src} alt="" /><span>{m.nav_shop({}, { locale })}</span></nav>
+        <h1>{m.catalog_listing_title({}, { locale })}</h1>
       </div>
     </section>
 
     <section class="lv-shop-products" aria-labelledby="products-listing-title">
-      <form class="lv-catalog-filter" method="get" action="/products" data-product-search-suggestions>
-        <header><h2 id="products-listing-title">Products Listing</h2><button class="lv-filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-controls"><span>Filters</span><svg class="lv-filter-toggle__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg></button></header>
-        <button class="lv-filter-backdrop" type="button" aria-label="Close filters" data-filter-close></button>
+      <form class="lv-catalog-filter" method="get" action="/products" data-product-search-suggestions data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
+        <header><h2 id="products-listing-title">{m.catalog_listing_title({}, { locale })}</h2><button class="lv-filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filter-controls"><span>{m.catalog_filters({}, { locale })}</span><svg class="lv-filter-toggle__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg></button></header>
+        <button class="lv-filter-backdrop" type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close></button>
         <div class="lv-catalog-filter__body" id="catalog-filter-controls">
-          <div class="lv-filter-sheet-head"><strong>Filter products</strong><button type="button" aria-label="Close filters" data-filter-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div>
+          <div class="lv-filter-sheet-head"><strong>{m.catalog_filter_products({}, { locale })}</strong><button type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div>
           <div class="lv-catalog-filter__scroll" data-lenis-prevent>
           <div class="lv-catalog-filter__controls">
             {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
-            <div class="lv-catalog-filter__search" data-search-suggestions-anchor><label class="sr-only" for="lv-catalog-search">Search products</label><input id="lv-catalog-search" name="q" type="search" value={filters.q ?? ""} placeholder="Search products" /></div>
+            <div class="lv-catalog-filter__search" data-search-suggestions-anchor><label class="sr-only" for="lv-catalog-search">{m.catalog_search_label({}, { locale })}</label><input id="lv-catalog-search" name="q" type="search" value={filters.q ?? ""} placeholder={m.search_products_placeholder({}, { locale })} /></div>
             {collections.length > 0 && <details class="lv-filter-menu" open>
-              <summary><span>Collection</span><strong data-filter-value>{activeCollection?.title ?? "All collections"}</strong></summary>
-              <div role="radiogroup" aria-label="Product collection">
-                <label><input type="radio" name="collection" value="" checked={!filters.collectionId} /><span>All collections</span></label>
-                {collections.flatMap((collection) => { const handle = taxonomyHandle(collection); return handle ? [<label><input type="radio" name="collection" value={handle} checked={filters.collectionId === handle} /><span>{collection.title ?? "Collection"}</span>{facets?.collections[collection.id] !== undefined && <small>{facets.collections[collection.id]}</small>}</label>] : []; })}
+              <summary><span>{m.catalog_collection({}, { locale })}</span><strong data-filter-value>{activeCollection?.title ?? m.catalog_all_collections({}, { locale })}</strong></summary>
+              <div role="radiogroup" aria-label={m.catalog_collection({}, { locale })}>
+                <label><input type="radio" name="collection" value="" checked={!filters.collectionId} /><span>{m.catalog_all_collections({}, { locale })}</span></label>
+                {collections.flatMap((collection) => { const handle = taxonomyHandle(collection); return handle ? [<label><input type="radio" name="collection" value={handle} checked={filters.collectionId === handle} /><span>{collection.title ?? m.catalog_collection_fallback({}, { locale })}</span>{facets?.collections[collection.id] !== undefined && <small>{facets.collections[collection.id]}</small>}</label>] : []; })}
               </div>
             </details>}
             {categories.length > 0 && <details class="lv-filter-menu">
-              <summary><span>Category</span><strong data-filter-value>{categoryLabel}</strong></summary>
-              <div role="radiogroup" aria-label="Product category">
-                <label><input type="radio" name="category" value="" checked={!filters.categoryId} /><span>All categories</span></label>
-                {categories.flatMap((category) => { const handle = taxonomyHandle(category); return handle ? [<label><input type="radio" name="category" value={handle} checked={filters.categoryId === handle} /><span>{category.name ?? "Category"}</span>{facets?.categories[category.id] !== undefined && <small>{facets.categories[category.id]}</small>}</label>] : []; })}
+              <summary><span>{m.catalog_category({}, { locale })}</span><strong data-filter-value>{categoryLabel}</strong></summary>
+              <div role="radiogroup" aria-label={m.catalog_category({}, { locale })}>
+                <label><input type="radio" name="category" value="" checked={!filters.categoryId} /><span>{m.catalog_all_categories({}, { locale })}</span></label>
+                {categories.flatMap((category) => { const handle = taxonomyHandle(category); return handle ? [<label><input type="radio" name="category" value={handle} checked={filters.categoryId === handle} /><span>{category.name ?? m.catalog_category_fallback({}, { locale })}</span>{facets?.categories[category.id] !== undefined && <small>{facets.categories[category.id]}</small>}</label>] : []; })}
               </div>
             </details>}
             {facets?.price && <details class="lv-filter-menu lv-filter-menu--price">
-              <summary><span>Price</span><strong data-filter-value>{filters.priceMin !== undefined || filters.priceMax !== undefined ? "Custom" : "Any price"}</strong></summary>
-              <div class="lv-price-filter" role="group" aria-label="Price in Ethiopian birr">
-                <label><span>From</span><input name="price_min" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMin} placeholder={String(Math.floor(facets.price.min))} /></label>
-                <label><span>To</span><input name="price_max" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label>
+              <summary><span>{m.catalog_price_range({}, { locale })}</span><strong data-filter-value>{filters.priceMin !== undefined || filters.priceMax !== undefined ? m.catalog_custom_price({}, { locale }) : m.catalog_any_price({}, { locale })}</strong></summary>
+              <div class="lv-price-filter" role="group" aria-label={m.catalog_price_range({}, { locale })}>
+                <label><span>{m.catalog_from({}, { locale })}</span><input name="price_min" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMin} placeholder={String(Math.floor(facets.price.min))} /></label>
+                <label><span>{m.catalog_to({}, { locale })}</span><input name="price_max" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label>
               </div>
             </details>}
             {facets?.options.map((option) => <details class="lv-filter-menu">
-              <summary><span>{option.name}</span><strong data-filter-value>{filters.optionPairs.some((token) => parseOptionPair(token)?.name === option.name) ? "Selected" : `All ${option.name.toLowerCase()}`}</strong></summary>
+              <summary><span>{option.name}</span><strong data-filter-value>{filters.optionPairs.some((token) => parseOptionPair(token)?.name === option.name) ? m.catalog_selected({}, { locale }) : option.name}</strong></summary>
               <div role="group" aria-label={`Filter by ${option.name}`}>
                 {option.values.map((item) => <label><input type="checkbox" name="option" value={item.token} checked={filters.optionPairs.includes(item.token)} /><span>{item.value}</span><small>{item.count}</small></label>)}
               </div>
             </details>)}
             <details class="lv-filter-menu lv-filter-menu--sort">
-              <summary><span>Sort by</span><strong data-filter-value>{sortLabel}</strong></summary>
-              <div role="radiogroup" aria-label="Sort products">
-                <label><input type="radio" name="order" value="" checked={!filters.order} /><span>Featured</span></label>
-                <label><input type="radio" name="order" value="created_at" checked={filters.order === "created_at"} /><span>Newest</span></label>
-                <label><input type="radio" name="order" value="title" checked={filters.order === "title"} /><span>Title A–Z</span></label>
-                <label><input type="radio" name="order" value="-title" checked={filters.order === "-title"} /><span>Title Z–A</span></label>
-                <label><input type="radio" name="order" value="price" checked={filters.order === "price"} /><span>Price: low to high</span></label>
-                <label><input type="radio" name="order" value="-price" checked={filters.order === "-price"} /><span>Price: high to low</span></label>
+              <summary><span>{m.catalog_sort_by({}, { locale })}</span><strong data-filter-value>{sortLabel}</strong></summary>
+              <div role="radiogroup" aria-label={m.catalog_sort_by({}, { locale })}>
+                <label><input type="radio" name="order" value="" checked={!filters.order} /><span>{m.catalog_featured({}, { locale })}</span></label>
+                <label><input type="radio" name="order" value="created_at" checked={filters.order === "created_at"} /><span>{m.catalog_newest({}, { locale })}</span></label>
+                <label><input type="radio" name="order" value="title" checked={filters.order === "title"} /><span>{m.catalog_title_az({}, { locale })}</span></label>
+                <label><input type="radio" name="order" value="-title" checked={filters.order === "-title"} /><span>{m.catalog_title_za({}, { locale })}</span></label>
+                <label><input type="radio" name="order" value="price" checked={filters.order === "price"} /><span>{m.catalog_price_low_high({}, { locale })}</span></label>
+                <label><input type="radio" name="order" value="-price" checked={filters.order === "-price"} /><span>{m.catalog_price_high_low({}, { locale })}</span></label>
               </div>
             </details>
           </div>
@@ -159,30 +162,30 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
           <div class="lv-filter-footer">
           <div class="lv-catalog-filter__active">
             <div>
-              {filters.q && <a href={clearFilterHref("q")}><strong>Search:</strong> {filters.q}<span aria-hidden="true">×</span></a>}
-              {activeCollection && <a href={clearFilterHref("collectionId")}><strong>Collection:</strong> {activeCollection.title}<span aria-hidden="true">×</span></a>}
-              {activeCategory && <a href={clearFilterHref("categoryId")}><strong>Category:</strong> {activeCategory.name}<span aria-hidden="true">×</span></a>}
+              {filters.q && <a href={clearFilterHref("q")}><strong>{m.action_search({}, { locale })}:</strong> {filters.q}<span aria-hidden="true">×</span></a>}
+              {activeCollection && <a href={clearFilterHref("collectionId")}><strong>{m.catalog_collection({}, { locale })}:</strong> {activeCollection.title}<span aria-hidden="true">×</span></a>}
+              {activeCategory && <a href={clearFilterHref("categoryId")}><strong>{m.catalog_category({}, { locale })}:</strong> {activeCategory.name}<span aria-hidden="true">×</span></a>}
               {filters.optionPairs.map((token) => { const pair = parseOptionPair(token); return pair ? <a href={clearOptionHref(token)}><strong>{pair.name}:</strong> {pair.value}<span aria-hidden="true">×</span></a> : null; })}
-              {filters.priceMin !== undefined && <a href={clearFilterHref("priceMin")}><strong>From:</strong> ETB {filters.priceMin.toLocaleString()}<span aria-hidden="true">×</span></a>}
-              {filters.priceMax !== undefined && <a href={clearFilterHref("priceMax")}><strong>To:</strong> ETB {filters.priceMax.toLocaleString()}<span aria-hidden="true">×</span></a>}
-              {filters.order && <a href={clearFilterHref("order")}><strong>Sort:</strong> {sortLabel}<span aria-hidden="true">×</span></a>}
+              {filters.priceMin !== undefined && <a href={clearFilterHref("priceMin")}><strong>{m.catalog_from({}, { locale })}:</strong> ETB {new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET").format(filters.priceMin)}<span aria-hidden="true">×</span></a>}
+              {filters.priceMax !== undefined && <a href={clearFilterHref("priceMax")}><strong>{m.catalog_to({}, { locale })}:</strong> ETB {new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET").format(filters.priceMax)}<span aria-hidden="true">×</span></a>}
+              {filters.order && <a href={clearFilterHref("order")}><strong>{m.catalog_sort_by({}, { locale })}:</strong> {sortLabel}<span aria-hidden="true">×</span></a>}
             </div>
-            <span>{totalCount} Results</span>
+            <span>{m.catalog_result_count({ count: totalCount }, { locale })}</span>
           </div>
-          <div class="lv-filter-footer__actions">{hasActiveFilters && <a class="lv-filter-clear" href="/products">Clear filters</a>}<button class="lv-filter-apply" type="submit">Apply filters</button></div>
+          <div class="lv-filter-footer__actions">{hasActiveFilters && <a class="lv-filter-clear" href="/products">{m.catalog_clear_filters({}, { locale })}</a>}<button class="lv-filter-apply" type="submit" data-default-label={m.catalog_apply_filters({}, { locale })} data-applying-label={m.catalog_applying_filters({}, { locale })}>{m.catalog_apply_filters({}, { locale })}</button></div>
           </div>
         </div>
       </form>
 
       <div class="lv-catalog-loading" data-catalog-loading hidden role="status" aria-live="polite">
         <div>{Array.from({ length: 8 }, () => <span></span>)}</div>
-        <p>Refreshing the collection…</p>
+        <p>{m.catalog_refreshing({}, { locale })}</p>
       </div>
 
       <div data-catalog-results>
-        {errorMessage ? <div class="lv-catalog-state" role="alert"><h2>We couldn’t load the collection.</h2><p>Please refresh the page or try again in a moment.</p></div> : products.length === 0 && hasActiveFilters ? <div class="lv-catalog-state" role="status"><h2>No products match your selection.</h2><p>Try a broader search or remove one of the active filters.</p><a href="/products">Clear all filters</a></div> : products.length === 0 ? <div class="lv-catalog-state" role="status"><h2>The collection is getting ready.</h2><p>There are no products available yet. Please check back soon.</p><a href="/">Return home</a></div> : <div class="lv-catalog-grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div>}
+        {errorMessage ? <div class="lv-catalog-state" role="alert"><h2>{m.catalog_load_failed({}, { locale })}</h2><p>{m.status_generic_error({}, { locale })}</p></div> : products.length === 0 && hasActiveFilters ? <div class="lv-catalog-state" role="status"><h2>{m.catalog_no_match({}, { locale })}</h2><p>{m.catalog_adjust_filters({}, { locale })}</p><a href="/products">{m.catalog_clear_filters({}, { locale })}</a></div> : products.length === 0 ? <div class="lv-catalog-state" role="status"><h2>{m.catalog_getting_ready({}, { locale })}</h2><p>{m.catalog_check_back({}, { locale })}</p><a href="/">{m.action_return_home({}, { locale })}</a></div> : <div class="lv-catalog-grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div>}
 
-        {!errorMessage && products.length > 0 && <div class="lv-catalog-pagination"><p>Showing {Math.min(offset + products.length, totalCount)} out of <strong>{totalCount}</strong> results</p>{totalPages > 1 && <nav aria-label="Product pages">{hasPrev && prevHref ? <a href={prevHref} rel="prev" aria-label="Previous page">‹</a> : <span aria-disabled="true">‹</span>}{pageWindow.map((page, index) => <>{index > 0 && pageWindow[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}<a class:list={{ "is-current": page === currentPage }} href={productsHref((page - 1) * limit)} aria-current={page === currentPage ? "page" : undefined}>{page}</a></>)}{hasNext && nextHref ? <a href={nextHref} rel="next" aria-label="Next page">›</a> : <span aria-disabled="true">›</span>}</nav>}</div>}
+        {!errorMessage && products.length > 0 && <div class="lv-catalog-pagination"><p>{m.catalog_showing({ shown: Math.min(offset + products.length, totalCount), total: totalCount }, { locale })}</p>{totalPages > 1 && <nav aria-label={m.catalog_pagination({}, { locale })}>{hasPrev && prevHref ? <a href={prevHref} rel="prev" aria-label={m.catalog_previous({}, { locale })}>‹</a> : <span aria-disabled="true">‹</span>}{pageWindow.map((page, index) => <>{index > 0 && pageWindow[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}<a class:list={{ "is-current": page === currentPage }} href={productsHref((page - 1) * limit)} aria-current={page === currentPage ? "page" : undefined}>{page}</a></>)}{hasNext && nextHref ? <a href={nextHref} rel="next" aria-label={m.catalog_next({}, { locale })}>›</a> : <span aria-disabled="true">›</span>}</nav>}</div>}
       </div>
     </section>
   </main>
@@ -220,7 +223,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
     loading.hidden = false;
     results.hidden = true;
     section.setAttribute("aria-busy", "true");
-    if (apply) { apply.disabled = true; apply.textContent = "Applying…"; }
+    if (apply) { apply.disabled = true; apply.textContent = apply.dataset.applyingLabel || apply.textContent; }
   };
   form?.addEventListener("submit", showLoading);
   document.querySelectorAll<HTMLDetailsElement>(".lv-filter-menu").forEach((menu) => {
@@ -255,7 +258,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
     if (loading) loading.hidden = true;
     if (results) results.hidden = false;
     section?.removeAttribute("aria-busy");
-    if (apply) { apply.disabled = false; apply.textContent = "Apply filters"; }
+    if (apply) { apply.disabled = false; apply.textContent = apply.dataset.defaultLabel || apply.textContent; }
   });
 </script>
 

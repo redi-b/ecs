@@ -59,7 +59,21 @@
     "searchParent": "የወላጅ ምድቦችን ፈልግ…"
   },
   "actions": {
-    "reorder": "ቅደም ተከተል አስተካክል"
+    "reorder": "ቅደም ተከተል አስተካክል",
+    "translate": "{entity}ን ተርጉም"
+  },
+  "translation": {
+    "title": "የ{entity} ትርጉም",
+    "categoryTitle": "የምድብ ትርጉም",
+    "collectionTitle": "የስብስብ ትርጉም",
+    "deliveryTitle": "የመላኪያ ትርጉም",
+    "saved": "የአማርኛ ትርጉሙ ተቀምጧል።",
+    "loadFailed": "ትርጉሙን መጫን አልተቻለም። እንደገና ይሞክሩ።",
+    "saveFailed": "ትርጉሙን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "field": {
+      "name": "ስም",
+      "description": "መግለጫ"
+    }
   },
   "table": {
     "category": "ምድብ",

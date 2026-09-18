@@ -15,7 +15,10 @@ export async function listStoreCollections(
     searchParams: {
       limit: options.limit ?? 50,
       offset: options.offset ?? 0,
-      fields: "id,title,handle,*metadata",
+      // Metadata is an additive Store API field in Medusa 2.21. Using
+      // `*metadata` can be rejected or stripped before the tenant facade gets
+      // the ownership marker, which makes every collection disappear.
+      fields: "id,title,handle,+metadata",
     },
   });
   const data = await response.json().catch(() => undefined);
@@ -56,7 +59,7 @@ export async function listStoreCategories(
       limit: options.limit ?? 100,
       offset: options.offset ?? 0,
       include_descendants_tree: "true",
-      fields: "id,name,handle,parent_category_id,*metadata",
+      fields: "id,name,handle,parent_category_id,+metadata",
     },
   });
   const data = await response.json().catch(() => undefined);
