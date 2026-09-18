@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  hexToHsl,
+  hexToRgb,
+  hslToHex,
+  normalizeHex,
+  rgbToHex,
+  type StorefrontEditorColorRole,
+} from "@ecs/storefront-templates";
+import {
   RiArrowDownSLine,
   RiInformationLine,
   RiMore2Line,
@@ -9,11 +17,9 @@ import {
 } from "@remixicon/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
-
 import { SearchableCombobox } from "@/components/app/searchable-combobox";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,18 +29,10 @@ import {
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
-import {
-  hexToHsl,
-  hexToRgb,
-  hslToHex,
-  normalizeHex,
-  rgbToHex,
-  type StorefrontEditorColorRole,
-} from "@ecs/storefront-templates";
 
 import { ensureStorefrontFontOptionsLoaded, FONT_OPTIONS } from "./editor-config";
 import type { EditorAction, EditorData, StorefrontPageProps } from "./editor-state";
@@ -118,16 +116,16 @@ export function ThemeBrandSection({
 }) {
   const { t } = useI18n();
   const mode: "light" | "dark" =
-    props.surfaceMode === "light" || props.surfaceMode === "dark"
-      ? props.surfaceMode
-      : "dark";
+    props.surfaceMode === "light" || props.surfaceMode === "dark" ? props.surfaceMode : "dark";
   const autoPalette = props.autoPalette !== false;
-  const primary = isHexColor(props.primaryColor ?? "")
-    ? (props.primaryColor as string)
-    : "#9bc4a0";
+  const primary = isHexColor(props.primaryColor ?? "") ? (props.primaryColor as string) : "#9bc4a0";
 
   function regenerate(nextPrimary = primary, nextMode = mode) {
-    updateStorefrontProps(data, dispatch, themePalettePageProps(nextPrimary, nextMode, templateKey));
+    updateStorefrontProps(
+      data,
+      dispatch,
+      themePalettePageProps(nextPrimary, nextMode, templateKey),
+    );
   }
 
   function resetToDefaults() {
@@ -150,14 +148,6 @@ export function ThemeBrandSection({
     updateStorefrontProp(data, dispatch, "surfaceMode", nextMode);
   }
 
-  function onBrandChange(nextPrimary: string) {
-    if (autoPalette) {
-      regenerate(nextPrimary, mode);
-      return;
-    }
-    updateStorefrontProp(data, dispatch, "primaryColor", nextPrimary);
-  }
-
   function onPaletteColorChange(prop: keyof StorefrontPageProps, next: string) {
     if (prop === "primaryColor" && autoPalette) {
       regenerate(next, mode);
@@ -171,153 +161,152 @@ export function ThemeBrandSection({
 
   return (
     <Collapsible {...(onOpenChange ? { onOpenChange } : {})} open={open}>
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
-      <div className="flex items-center justify-between gap-2 border-b border-border/80 bg-muted/10 px-4 py-3">
-        <div className="text-sm font-medium tracking-tight">{t("editor.theme.appearance")}</div>
-        <div className="flex items-center gap-0.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="flex items-center justify-between gap-2 border-b border-border/80 bg-muted/10 px-4 py-3">
+          <div className="text-sm font-medium tracking-tight">{t("editor.theme.appearance")}</div>
+          <div className="flex items-center gap-0.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label={t("editor.theme.paletteActions")}
+                  className="size-7 text-muted-foreground"
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <RiMore2Line className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                <DropdownMenuItem
+                  className="gap-2"
+                  onSelect={() => {
+                    regenerate();
+                  }}
+                >
+                  <RiRefreshLine className="size-4 opacity-70" aria-hidden />
+                  {t("editor.theme.rebuildFromBrand")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onSelect={() => {
+                    resetToDefaults();
+                  }}
+                >
+                  <RiResetLeftLine className="size-4 opacity-70" aria-hidden />
+                  {t("editor.theme.resetDefaults")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <SectionInfoTip
+              body={t("editor.theme.appearanceHelp")}
+              title={t("editor.theme.appearance")}
+            />
+            <CollapsibleTrigger asChild>
               <Button
-                aria-label={t("editor.theme.paletteActions")}
+                aria-label={`${open ? "Collapse" : "Expand"} ${t("editor.theme.appearance")}`}
                 className="size-7 text-muted-foreground"
                 size="icon"
                 type="button"
                 variant="ghost"
               >
-                <RiMore2Line className="size-4" />
+                <RiArrowDownSLine
+                  aria-hidden
+                  className={cn("size-4 transition-transform", open && "rotate-180")}
+                />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
-              <DropdownMenuItem
-                className="gap-2"
-                onSelect={() => {
-                  regenerate();
-                }}
-              >
-                <RiRefreshLine className="size-4 opacity-70" aria-hidden />
-                {t("editor.theme.rebuildFromBrand")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-2"
-                onSelect={() => {
-                  resetToDefaults();
-                }}
-              >
-                <RiResetLeftLine className="size-4 opacity-70" aria-hidden />
-                {t("editor.theme.resetDefaults")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <SectionInfoTip
-            body={t("editor.theme.appearanceHelp")}
-            title={t("editor.theme.appearance")}
-          />
-          <CollapsibleTrigger asChild>
-            <Button
-              aria-label={`${open ? "Collapse" : "Expand"} ${t("editor.theme.appearance")}`}
-              className="size-7 text-muted-foreground"
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <RiArrowDownSLine
-                aria-hidden
-                className={cn("size-4 transition-transform", open && "rotate-180")}
-              />
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-      </div>
-
-      <CollapsibleContent>
-      <div className="flex min-w-0 flex-col gap-5 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-sm font-medium">{t("editor.theme.autoPalette")}</div>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-              {autoPalette
-                ? t("editor.theme.autoPaletteOn")
-                : t("editor.theme.autoPaletteOff")}
-            </p>
+            </CollapsibleTrigger>
           </div>
-          <Switch
-            aria-label={t("editor.theme.autoPalette")}
-            checked={autoPalette}
-            onCheckedChange={setAutoPalette}
-          />
         </div>
 
-        {allowDarkMode ? <div className="flex flex-col gap-2">
-          <FieldLabel className="text-sm font-medium">{t("editor.theme.surface")}</FieldLabel>
-          <SegmentedControl
-            ariaLabel={t("editor.theme.surface")}
-            onChange={onSurfaceChange}
-            options={[
-              { id: "light", label: t("editor.theme.surfaceLight") },
-              { id: "dark", label: t("editor.theme.surfaceDark") },
-            ]}
-            value={mode}
-          />
-        </div> : null}
+        <CollapsibleContent>
+          <div className="flex min-w-0 flex-col gap-5 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{t("editor.theme.autoPalette")}</div>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  {autoPalette ? t("editor.theme.autoPaletteOn") : t("editor.theme.autoPaletteOff")}
+                </p>
+              </div>
+              <Switch
+                aria-label={t("editor.theme.autoPalette")}
+                checked={autoPalette}
+                onCheckedChange={setAutoPalette}
+              />
+            </div>
 
-        <div className="flex flex-col gap-3">
-          <FieldLabel className="text-sm font-medium">{t("editor.theme.colors")}</FieldLabel>
-          <div
-            className="grid gap-2.5"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(editableColors?.length ?? PALETTE_FIELDS.length, 5)}, minmax(0, 1fr))`,
-            }}
-          >
-            {PALETTE_FIELDS.filter((field) =>
-              (editableColors ?? PALETTE_FIELDS.map((item) => item.key)).includes(field.key),
-            ).map((field) => {
-              const value = props[field.prop];
-              const hex =
-                typeof value === "string" && isHexColor(value) ? value : "#888888";
-              const label = t(field.labelKey);
-              return (
-                <div className="flex min-w-0 flex-col items-center gap-1.5" key={field.key}>
-                  <ColorPickerField
-                    label={label}
-                    onChange={(next) => onPaletteColorChange(field.prop, next)}
-                    swatchOnly
-                    value={hex}
+            {allowDarkMode ? (
+              <div className="flex flex-col gap-2">
+                <FieldLabel className="text-sm font-medium">{t("editor.theme.surface")}</FieldLabel>
+                <SegmentedControl
+                  ariaLabel={t("editor.theme.surface")}
+                  onChange={onSurfaceChange}
+                  options={[
+                    { id: "light", label: t("editor.theme.surfaceLight") },
+                    { id: "dark", label: t("editor.theme.surfaceDark") },
+                  ]}
+                  value={mode}
+                />
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-3">
+              <FieldLabel className="text-sm font-medium">{t("editor.theme.colors")}</FieldLabel>
+              <div
+                className="grid gap-2.5"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(editableColors?.length ?? PALETTE_FIELDS.length, 5)}, minmax(0, 1fr))`,
+                }}
+              >
+                {PALETTE_FIELDS.filter((field) =>
+                  (editableColors ?? PALETTE_FIELDS.map((item) => item.key)).includes(field.key),
+                ).map((field) => {
+                  const value = props[field.prop];
+                  const hex = typeof value === "string" && isHexColor(value) ? value : "#888888";
+                  const label = t(field.labelKey);
+                  return (
+                    <div className="flex min-w-0 flex-col items-center gap-1.5" key={field.key}>
+                      <ColorPickerField
+                        label={label}
+                        onChange={(next) => onPaletteColorChange(field.prop, next)}
+                        swatchOnly
+                        value={hex}
+                      />
+                      <span className="truncate text-[10px] font-medium text-muted-foreground">
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t border-border/80 pt-4">
+              <div className="text-sm font-medium">{t("editor.theme.typography")}</div>
+              <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col gap-2">
+                  <FieldLabel className="text-xs font-medium text-muted-foreground">
+                    {t("editor.theme.heading")}
+                  </FieldLabel>
+                  <FontSelect
+                    onChange={(next) => updateStorefrontProp(data, dispatch, "headingFont", next)}
+                    value={props.headingFont || "Syne"}
                   />
-                  <span className="truncate text-[10px] font-medium text-muted-foreground">
-                    {label}
-                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-3 border-t border-border/80 pt-4">
-          <div className="text-sm font-medium">{t("editor.theme.typography")}</div>
-          <div className="flex flex-col gap-3.5">
-            <div className="flex flex-col gap-2">
-              <FieldLabel className="text-xs font-medium text-muted-foreground">
-                {t("editor.theme.heading")}
-              </FieldLabel>
-              <FontSelect
-                onChange={(next) => updateStorefrontProp(data, dispatch, "headingFont", next)}
-                value={props.headingFont || "Syne"}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <FieldLabel className="text-xs font-medium text-muted-foreground">
-                {t("editor.theme.body")}
-              </FieldLabel>
-              <FontSelect
-                onChange={(next) => updateStorefrontProp(data, dispatch, "bodyFont", next)}
-                value={props.bodyFont || "Outfit"}
-              />
+                <div className="flex flex-col gap-2">
+                  <FieldLabel className="text-xs font-medium text-muted-foreground">
+                    {t("editor.theme.body")}
+                  </FieldLabel>
+                  <FontSelect
+                    onChange={(next) => updateStorefrontProp(data, dispatch, "bodyFont", next)}
+                    value={props.bodyFont || "Outfit"}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      </CollapsibleContent>
-    </section>
+        </CollapsibleContent>
+      </section>
     </Collapsible>
   );
 }
@@ -416,7 +405,6 @@ export function ColorPickerField({
   /** Compact trigger for palette grids */
   swatchOnly?: boolean;
 }) {
-  const portalContainer = useFloatingPortalContainer();
   const normalizedValue = isHexColor(value) ? normalizeHex(value) : "#000000";
   const [color, setColor] = useState(normalizedValue);
   const [format, setFormat] = useState<ColorFormat>("hex");
@@ -445,11 +433,7 @@ export function ColorPickerField({
 
   function applyRgb(next: Partial<{ r: number; g: number; b: number }>) {
     updateColor(
-      rgbToHex(
-        clampByte(next.r ?? rgb.r),
-        clampByte(next.g ?? rgb.g),
-        clampByte(next.b ?? rgb.b),
-      ),
+      rgbToHex(clampByte(next.r ?? rgb.r), clampByte(next.g ?? rgb.g), clampByte(next.b ?? rgb.b)),
       true,
     );
   }
@@ -513,7 +497,6 @@ export function ColorPickerField({
         align="start"
         avoidCollisions
         className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-3.5"
-        {...(portalContainer ? { collisionBoundary: portalContainer } : {})}
         collisionPadding={20}
         side="bottom"
         sideOffset={8}
@@ -547,7 +530,7 @@ export function ColorPickerField({
             }}
           />
 
-          <div className="grid grid-cols-10 gap-1.5" role="group" aria-label="Common colors">
+          <fieldset aria-label="Common colors" className="grid grid-cols-10 gap-1.5">
             {COMMON_COLOR_PRESETS.map((preset) => (
               <button
                 aria-label={preset.label}
@@ -559,7 +542,7 @@ export function ColorPickerField({
                 type="button"
               />
             ))}
-          </div>
+          </fieldset>
 
           {format === "hex" ? (
             <div className="flex flex-col gap-1">

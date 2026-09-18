@@ -57,6 +57,9 @@ function SheetContent({
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
 
+  // Nested popovers portal into this root for modal focus and scroll handling.
+  // Keep clipping/scrolling on an inner wrapper so floating controls can escape.
+
   return (
     <SheetPortal>
       <SheetOverlay />

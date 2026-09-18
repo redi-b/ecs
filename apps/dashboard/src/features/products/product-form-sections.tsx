@@ -2,13 +2,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
@@ -29,7 +36,6 @@ import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
-import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -76,13 +82,21 @@ export function ProductColorPopover({
   onSave: (label: string, value: string) => void;
   value?: string;
 }) {
-  const portalContainer = useFloatingPortalContainer();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"browse" | "custom">("browse");
   const [query, setQuery] = useState("");
   const [customLabel, setCustomLabel] = useState(label ?? "");
   const [customValue, setCustomValue] = useState(value ?? "#808080");
+  const listRef = useRef<HTMLDivElement>(null);
   const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
+
+  useEffect(() => {
+    if (!open || step !== "browse") return;
+    const frame = requestAnimationFrame(() => {
+      listRef.current?.scrollTo({ top: 0 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, step]);
 
   function close() {
     setOpen(false);
@@ -124,70 +138,74 @@ export function ProductColorPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        {...(portalContainer ? { collisionBoundary: portalContainer } : {})}
         className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain p-0"
+        collisionPadding={16}
         onKeyDown={(event) => event.stopPropagation()}
+        sideOffset={6}
       >
         {step === "browse" ? (
-          <div className="flex flex-col">
+          <Command className="h-auto min-h-0 rounded-xl! p-0" shouldFilter={false}>
             <div className="border-b p-3">
               <div className="text-sm font-medium">Choose a color</div>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Select a common color or create an exact custom swatch.
               </p>
             </div>
-            <div className="p-2">
-              <Input
-                autoFocus
-                onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder="Search colors…"
-                value={query}
-              />
-            </div>
-            <div className="max-h-64 overflow-y-auto overscroll-contain p-2 pt-0">
-              <button
-                className="mb-1 flex w-full items-center gap-3 rounded-lg border border-dashed px-3 py-2 text-left hover:bg-accent"
-                onClick={() => setStep("custom")}
-                type="button"
-              >
-                <span className="grid size-7 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
-                <span>
-                  <strong className="block text-sm">Custom color</strong>
-                  <small className="text-xs text-muted-foreground">
-                    Choose a precise color and label
-                  </small>
-                </span>
-              </button>
-              {filtered.length ? (
-                filtered.map((item) => (
-                  <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-accent"
-                    key={item.value}
-                    onClick={() => {
-                      onSave(item.label, item.value);
-                      close();
-                    }}
-                    type="button"
-                  >
-                    <span
-                      className="size-6 rounded-full border shadow-xs"
-                      style={{ backgroundColor: item.value }}
-                    />
-                    <span className="flex-1 text-sm">{item.label}</span>
-                    <span className="font-mono text-xs text-muted-foreground uppercase">
-                      {item.value}
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <p className="px-3 py-4 text-sm text-muted-foreground">
-                  No preset matches. Choose Custom color above.
-                </p>
-              )}
-            </div>
-          </div>
+            <CommandInput
+              autoFocus
+              onValueChange={setQuery}
+              placeholder="Search colors…"
+              size="panel"
+              value={query}
+            />
+            <CommandList
+              className="min-h-0 max-h-[min(20rem,calc(var(--radix-popover-content-available-height)-8.5rem))] overscroll-contain p-1"
+              ref={listRef}
+            >
+              <CommandGroup>
+                <CommandItem
+                  className="mb-1 border border-dashed"
+                  onSelect={() => setStep("custom")}
+                  value="custom color"
+                >
+                  <span className="grid size-7 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm font-medium">Custom color</strong>
+                    <small className="block truncate text-xs text-muted-foreground">
+                      Choose a precise color and label
+                    </small>
+                  </span>
+                </CommandItem>
+                {filtered.length ? (
+                  filtered.map((item) => (
+                    <CommandItem
+                      key={item.value}
+                      onSelect={() => {
+                        onSave(item.label, item.value);
+                        close();
+                      }}
+                      value={`${item.label} ${item.value}`}
+                    >
+                      <span
+                        className="size-6 rounded-full border shadow-xs"
+                        style={{ backgroundColor: item.value }}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                      <span className="font-mono text-xs text-muted-foreground uppercase">
+                        {item.value}
+                      </span>
+                    </CommandItem>
+                  ))
+                ) : (
+                  <p className="px-2.5 py-5 text-center text-sm text-muted-foreground">
+                    No preset matches this search.
+                  </p>
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         ) : (
-          <div className="flex flex-col gap-3 p-3">
+          <div className="flex max-h-[var(--radix-popover-content-available-height)] flex-col gap-3 overflow-y-auto overscroll-contain p-3">
             <div className="relative flex h-8 items-center border-b border-border/60 px-1">
               <button
                 aria-label="Back to common colors"
@@ -209,7 +227,7 @@ export function ProductColorPopover({
               />
             </Field>
             <ColorPickerField label="Swatch" onChange={setCustomValue} value={customValue} />
-            <div className="flex justify-end gap-2">
+            <div className="mt-3 flex justify-end gap-2 border-t border-border/60 pt-3">
               <Button onClick={close} size="sm" type="button" variant="ghost">
                 Cancel
               </Button>

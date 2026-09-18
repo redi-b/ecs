@@ -374,7 +374,7 @@ export function ProductForm({
         open={open}
       >
         <DialogContent
-          className="top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 duration-200 ease-out data-open:slide-in-from-bottom-2 sm:top-3 sm:left-3 sm:h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-1.5rem)] sm:w-[calc(100vw-1.5rem)] sm:max-w-none sm:rounded-2xl sm:data-open:slide-in-from-bottom-0"
+          className="top-0 left-0 flex h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-visible rounded-none p-0 duration-200 ease-out data-open:slide-in-from-bottom-2 sm:top-3 sm:left-3 sm:h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-1.5rem)] sm:w-[calc(100vw-1.5rem)] sm:max-w-none sm:rounded-2xl sm:data-open:slide-in-from-bottom-0"
           onEscapeKeyDown={(event) => {
             event.preventDefault();
             closeComposer();
@@ -388,7 +388,7 @@ export function ProductForm({
           <DialogDescription className="sr-only">
             {t("products.composer.dialogDesc")}
           </DialogDescription>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[inherit] bg-background">
             <div className="flex shrink-0 flex-col border-b bg-background lg:grid lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)_minmax(0,12rem)]">
               <div className="flex items-center gap-2 border-b p-3 lg:border-r lg:border-b-0">
                 <Button
@@ -584,7 +584,9 @@ export function ProductForm({
                                 ) : null}
                                 <FieldDescription>
                                   {adjustedHandle
-                                    ? t("products.validation.handleAdjusted", { handle: adjustedHandle })
+                                    ? t("products.validation.handleAdjusted", {
+                                        handle: adjustedHandle,
+                                      })
                                     : isHandleLocked
                                       ? t("products.composer.autoHandle")
                                       : t("products.composer.customHandle")}
