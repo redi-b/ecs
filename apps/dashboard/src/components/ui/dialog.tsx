@@ -6,7 +6,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
-import { isNestedOverlayActive, isNestedOverlayOpen } from "@/lib/nested-overlay";
+import { isNestedOverlayOpen } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -56,7 +56,6 @@ function DialogContent({
   overlayClassName?: string;
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
-  const floatingLayerRoot = portalContainer?.ownerDocument.body ?? null;
 
   return (
     <DialogPortal>
@@ -90,7 +89,7 @@ function DialogContent({
           onPointerDownOutside?.(event);
         }}
       >
-        <FloatingPortalContainerProvider container={floatingLayerRoot}>
+        <FloatingPortalContainerProvider container={portalContainer}>
           {children}
           {showCloseButton && (
             <DialogPrimitive.Close data-slot="dialog-close" asChild>
