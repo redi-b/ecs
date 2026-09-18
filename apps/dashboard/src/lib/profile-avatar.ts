@@ -27,7 +27,7 @@ export const profileAvatarEyes = [
   "variant08",
 ] as const;
 
-const profileAvatarAngles = { left: -8, straight: 0, right: 8 } as const;
+const profileAvatarAngles = { left: -12, straight: 0, right: 12 } as const;
 
 export function profileInitial(name: string | null | undefined) {
   return (
