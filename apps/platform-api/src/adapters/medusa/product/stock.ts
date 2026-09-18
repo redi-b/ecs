@@ -21,6 +21,7 @@ import type {
 import {
   getInventoryItemLevelsUrl,
   getInventoryItemLevelUrl,
+  getInventoryItemsUrl,
   getInventoryItemUrl,
   getProductInventoryUrl,
 } from "./urls.js";
@@ -299,31 +300,31 @@ export async function hydrateProductsWithStock(
     stockLocationId: string;
   },
 ) {
-  // Request-scoped memo: many variants can share inventory items; list hydration
-  // used to N+1 Medusa inventory-item reads for the same id.
-  const inventoryStockByKey = new Map<string, Promise<MerchantProductStockResult>>();
-
-  function loadInventoryStock(inputStock: {
-    inventoryItemId: string;
-    productId: string;
-    variantId: string;
-  }) {
-    const key = `${inputStock.inventoryItemId}:${input.stockLocationId}`;
-    const existing = inventoryStockByKey.get(key);
-
-    if (existing) {
-      return existing;
+  const inventoryItemIds = [
+    ...new Set(
+      input.products.flatMap((product) =>
+        (product.variants ?? []).flatMap((variant) =>
+          variant.inventoryItemId ? [variant.inventoryItemId] : [],
+        ),
+      ),
+    ),
+  ];
+  const inventoryItemsById = new Map<string, Record<string, unknown>>();
+  for (let index = 0; index < inventoryItemIds.length; index += 100) {
+    const ids = inventoryItemIds.slice(index, index + 100);
+    const response = await requestMedusa(
+      fetcher,
+      getInventoryItemsUrl(options.medusaInternalUrl, ids),
+      { headers: getAdminHeaders(options.adminApiToken ?? "") },
+    ).catch(() => undefined);
+    if (!response?.ok) continue;
+    const data = await response.json().catch(() => undefined);
+    if (!Array.isArray(data?.inventory_items)) continue;
+    for (const inventoryItem of data.inventory_items) {
+      if (!isRecord(inventoryItem)) continue;
+      const id = getString(inventoryItem.id);
+      if (id) inventoryItemsById.set(id, inventoryItem);
     }
-
-    const pending = getInventoryItemStock(fetcher, options, {
-      inventoryItemId: inputStock.inventoryItemId,
-      productId: inputStock.productId,
-      stockLocationId: input.stockLocationId,
-      variantId: inputStock.variantId,
-    });
-    inventoryStockByKey.set(key, pending);
-
-    return pending;
   }
 
   return Promise.all(
@@ -338,15 +339,19 @@ export async function hydrateProductsWithStock(
             };
           }
 
-          const result = await loadInventoryStock({
-            inventoryItemId: variant.inventoryItemId,
-            productId: product.id,
-            variantId: variant.id,
-          });
-
+          const inventoryItem = inventoryItemsById.get(variant.inventoryItemId);
+          const stock = inventoryItem
+            ? normalizeProductStock({
+                inventoryItemId: variant.inventoryItemId,
+                productId: product.id,
+                stockLocationId: input.stockLocationId,
+                variantId: variant.id,
+                value: inventoryItem,
+              })
+            : null;
           return {
             ...variant,
-            stock: result.ok ? getVariantStockSummary(result.stock) : null,
+            stock: stock ? getVariantStockSummary(stock) : null,
           };
         }),
       ),

@@ -263,6 +263,16 @@ export function getInventoryItemUrl(medusaInternalUrl: string, inventoryItemId: 
   return url;
 }
 
+export function getInventoryItemsUrl(medusaInternalUrl: string, inventoryItemIds: string[]) {
+  const url = new URL("/admin/inventory-items", normalizeBaseUrl(medusaInternalUrl));
+  url.searchParams.set("fields", "id,*location_levels");
+  url.searchParams.set("limit", String(Math.max(1, inventoryItemIds.length)));
+  for (const inventoryItemId of inventoryItemIds) {
+    url.searchParams.append("id[]", inventoryItemId);
+  }
+  return url;
+}
+
 export function getInventoryItemLevelsUrl(medusaInternalUrl: string, inventoryItemId: string) {
   return new URL(
     `/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`,

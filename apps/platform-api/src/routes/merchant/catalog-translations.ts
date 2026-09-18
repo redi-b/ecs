@@ -1,4 +1,6 @@
 import {
+  catalogTranslationBatchReadSchema,
+  catalogTranslationBatchUpdateSchema,
   catalogTranslationQueueQuerySchema,
   catalogTranslationResourceQuerySchema,
   catalogTranslationUpdateSchema,
@@ -52,20 +54,49 @@ export function registerMerchantCatalogTranslationRoutes(
     if (!options.getMerchantCatalogTranslation) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
-    if (parsed.data.resourceType === "shipping_option" && !merchant.result.context.medusaShippingOptionId) {
+    if (
+      parsed.data.resourceType === "shipping_option" &&
+      !merchant.result.context.medusaShippingOptionId
+    ) {
       return context.json({ error: "commerce_shipping_option_missing" }, 503);
     }
     const result = await options.getMerchantCatalogTranslation({
       ...parsed.data,
-      resourceId: parsed.data.resourceType === "shipping_option"
-        ? merchant.result.context.medusaShippingOptionId!
-        : parsed.data.resourceId,
+      resourceId:
+        parsed.data.resourceType === "shipping_option"
+          ? merchant.result.context.medusaShippingOptionId!
+          : parsed.data.resourceId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       shippingOptionId: merchant.result.context.medusaShippingOptionId,
       tenantId: merchant.result.context.tenantId,
     });
     return result.ok
       ? context.json({ resource: result.resource })
+      : context.json({ error: result.error }, result.status);
+  });
+
+  app.post("/platform/merchant/storefront/translations/catalog/batch", async (context) => {
+    const parsed = catalogTranslationBatchReadSchema.safeParse(await getJsonBody(context.req.raw));
+    if (!parsed.success) return context.json({ error: "invalid_catalog_translation" }, 400);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      products: ["read"],
+    });
+    if (!merchant.ok) return merchant.response;
+    const commerce = helpers.getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.getMerchantCatalogTranslations) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const result = await options.getMerchantCatalogTranslations(
+      parsed.data.items.map((item) => ({
+        ...item,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        shippingOptionId: merchant.result.context.medusaShippingOptionId,
+        tenantId: merchant.result.context.tenantId,
+      })),
+    );
+    return result.ok
+      ? context.json({ resources: result.resources })
       : context.json({ error: result.error }, result.status);
   });
 
@@ -84,14 +115,18 @@ export function registerMerchantCatalogTranslationRoutes(
     if (!options.updateMerchantCatalogTranslation) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
-    if (parsed.data.resourceType === "shipping_option" && !merchant.result.context.medusaShippingOptionId) {
+    if (
+      parsed.data.resourceType === "shipping_option" &&
+      !merchant.result.context.medusaShippingOptionId
+    ) {
       return context.json({ error: "commerce_shipping_option_missing" }, 503);
     }
     const result = await options.updateMerchantCatalogTranslation({
       ...parsed.data,
-      resourceId: parsed.data.resourceType === "shipping_option"
-        ? merchant.result.context.medusaShippingOptionId!
-        : parsed.data.resourceId,
+      resourceId:
+        parsed.data.resourceType === "shipping_option"
+          ? merchant.result.context.medusaShippingOptionId!
+          : parsed.data.resourceId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       shippingOptionId: merchant.result.context.medusaShippingOptionId,
       tenantId: merchant.result.context.tenantId,
@@ -100,10 +135,44 @@ export function registerMerchantCatalogTranslationRoutes(
       ? context.json({ resource: result.resource })
       : context.json({ error: result.error }, result.status);
   });
+
+  app.post("/platform/merchant/storefront/translations/catalog/batch/update", async (context) => {
+    const parsed = catalogTranslationBatchUpdateSchema.safeParse(
+      await getJsonBody(context.req.raw),
+    );
+    if (!parsed.success) return context.json({ error: "invalid_catalog_translation" }, 400);
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      products: ["update"],
+    });
+    if (!merchant.ok) return merchant.response;
+    const commerce = helpers.getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.updateMerchantCatalogTranslations) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const result = await options.updateMerchantCatalogTranslations(
+      parsed.data.items.map((item) => ({
+        ...item,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        shippingOptionId: merchant.result.context.medusaShippingOptionId,
+        tenantId: merchant.result.context.tenantId,
+      })),
+    );
+    return result.ok
+      ? context.json({ resources: result.resources })
+      : context.json({ error: result.error }, result.status);
+  });
 }
 
 export function translationPermission(
-  resourceType: "product" | "product_variant" | "product_option" | "product_option_value" | "product_category" | "product_collection" | "shipping_option",
+  resourceType:
+    | "product"
+    | "product_variant"
+    | "product_option"
+    | "product_option_value"
+    | "product_category"
+    | "product_collection"
+    | "shipping_option",
   access: "read" | "update",
 ) {
   return resourceType === "shipping_option"

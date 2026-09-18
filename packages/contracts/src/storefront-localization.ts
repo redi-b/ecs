@@ -102,9 +102,7 @@ export const catalogTranslationResourceTypes = [
 ] as const;
 
 export const catalogTranslationResourceTypeSchema = z.enum(catalogTranslationResourceTypes);
-export type CatalogTranslationResourceType = z.infer<
-  typeof catalogTranslationResourceTypeSchema
->;
+export type CatalogTranslationResourceType = z.infer<typeof catalogTranslationResourceTypeSchema>;
 
 export const catalogTranslationFields = {
   product: ["title", "subtitle", "description", "material"],
@@ -116,11 +114,7 @@ export const catalogTranslationFields = {
   shipping_option: ["name"],
 } as const satisfies Record<CatalogTranslationResourceType, readonly string[]>;
 
-export const catalogTranslationStatusSchema = z.enum([
-  "using_english",
-  "needs_review",
-  "ready",
-]);
+export const catalogTranslationStatusSchema = z.enum(["using_english", "needs_review", "ready"]);
 export type CatalogTranslationStatus = z.infer<typeof catalogTranslationStatusSchema>;
 
 export const catalogTranslationResourceQuerySchema = z
@@ -134,9 +128,7 @@ export const catalogTranslationResourceQuerySchema = z
   .strict()
   .superRefine((value, context) => {
     if (
-      ["product_variant", "product_option", "product_option_value"].includes(
-        value.resourceType,
-      ) &&
+      ["product_variant", "product_option", "product_option_value"].includes(value.resourceType) &&
       !value.productId
     ) {
       context.addIssue({
@@ -150,6 +142,18 @@ export const catalogTranslationResourceQuerySchema = z
 export const catalogTranslationUpdateSchema = catalogTranslationResourceQuerySchema.extend({
   translations: z.record(z.string().trim().min(1).max(80), z.string().trim().max(20_000)),
 });
+
+export const catalogTranslationBatchReadSchema = z
+  .object({
+    items: z.array(catalogTranslationResourceQuerySchema).min(1).max(100),
+  })
+  .strict();
+
+export const catalogTranslationBatchUpdateSchema = z
+  .object({
+    items: z.array(catalogTranslationUpdateSchema).min(1).max(100),
+  })
+  .strict();
 
 export const catalogTranslationResourceSchema = z
   .object({
@@ -170,7 +174,9 @@ export type CatalogTranslationResource = z.infer<typeof catalogTranslationResour
 
 export const catalogTranslationQueueQuerySchema = z.object({
   locale: storefrontLocaleSchema.exclude(["en"]),
-  resourceType: z.enum(["product", "product_category", "product_collection", "shipping_option"]).default("product"),
+  resourceType: z
+    .enum(["product", "product_category", "product_collection", "shipping_option"])
+    .default("product"),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
   status: catalogTranslationStatusSchema.optional(),
@@ -207,8 +213,6 @@ export function storefrontCommerceLocale(locale: StorefrontLocale): StorefrontCo
   return storefrontLocaleDetails[locale].commerceLocale;
 }
 
-export function storefrontRouteLocale(
-  locale: StorefrontCommerceLocale,
-): StorefrontLocale {
+export function storefrontRouteLocale(locale: StorefrontCommerceLocale): StorefrontLocale {
   return locale === "am-ET" ? "am" : "en";
 }

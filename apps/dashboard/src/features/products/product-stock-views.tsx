@@ -25,15 +25,6 @@ import { dashboardRoutes } from "@/lib/routes";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number | Date>) => string;
 
-type ProductStockPanelProps = {
-  action: string;
-  initialStock?: MerchantProductStock | undefined;
-  product: MerchantProduct;
-  productId: string;
-  stockError?: string | undefined;
-  tenantId?: string | undefined;
-};
-
 type VariantInventoryRow = {
   error: string | undefined;
   isLoading: boolean;
@@ -218,14 +209,35 @@ export function VariantStockPanel({
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [stockByVariantId, setStockByVariantId] = useState<Record<string, MerchantProductStock>>(
-    {},
+  const initialStockByVariantId = useMemo(
+    () =>
+      Object.fromEntries(
+        variants.flatMap((variant) => {
+          if (!variant.stock) return [];
+          return [
+            [
+              variant.id,
+              {
+                ...variant.stock,
+                productId,
+                variantId: variant.id,
+                inventoryItemId: variant.inventoryItemId ?? null,
+              },
+            ],
+          ];
+        }),
+      ) as Record<string, MerchantProductStock>,
+    [productId, variants],
   );
+  const [stockByVariantId, setStockByVariantId] =
+    useState<Record<string, MerchantProductStock>>(initialStockByVariantId);
   const [stockedQuantityByVariantId, setStockedQuantityByVariantId] = useState<
     Record<string, string>
   >({});
   const [errorByVariantId, setErrorByVariantId] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(
+    variants.some((variant) => !initialStockByVariantId[variant.id]),
+  );
   const stocks = Object.values(stockByVariantId);
   const totalAvailable = stocks.reduce(
     (total, stock) => total + (stock.availableQuantity ?? stock.stockedQuantity ?? 0),
@@ -266,9 +278,28 @@ export function VariantStockPanel({
     let cancelled = false;
 
     async function loadVariantStock() {
+      const variantsMissingStock = variants.filter(
+        (variant) => !initialStockByVariantId[variant.id],
+      );
+      if (variantsMissingStock.length === 0) {
+        setStockByVariantId(initialStockByVariantId);
+        setStockedQuantityByVariantId(
+          Object.fromEntries(
+            Object.entries(initialStockByVariantId).flatMap(([variantId, stock]) =>
+              stock.stockedQuantity === null || stock.stockedQuantity === undefined
+                ? []
+                : [[variantId, String(stock.stockedQuantity)]],
+            ),
+          ),
+        );
+        setErrorByVariantId({});
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       const results = await Promise.all(
-        variants.map(async (variant) => {
+        variantsMissingStock.map(async (variant) => {
           const response = await fetch(getVariantStockAction(productId, variant.id, tenantId), {
             headers: {
               accept: "application/json",
@@ -292,16 +323,24 @@ export function VariantStockPanel({
       }
 
       setStockByVariantId(
-        Object.fromEntries(
-          results.flatMap((result) => (result.stock ? [[result.variantId, result.stock]] : [])),
-        ),
+        Object.fromEntries([
+          ...Object.entries(initialStockByVariantId),
+          ...results.flatMap((result) =>
+            result.stock ? ([[result.variantId, result.stock]] as const) : [],
+          ),
+        ]),
       );
       setStockedQuantityByVariantId(
         Object.fromEntries(
-          results.flatMap((result) =>
-            result.stock?.stockedQuantity === null || result.stock?.stockedQuantity === undefined
+          [
+            ...Object.entries(initialStockByVariantId),
+            ...results.flatMap((result) =>
+              result.stock ? ([[result.variantId, result.stock]] as const) : [],
+            ),
+          ].flatMap(([variantId, stock]) =>
+            stock.stockedQuantity === null || stock.stockedQuantity === undefined
               ? []
-              : [[result.variantId, String(result.stock.stockedQuantity)]],
+              : [[variantId, String(stock.stockedQuantity)]],
           ),
         ),
       );
@@ -318,7 +357,7 @@ export function VariantStockPanel({
     return () => {
       cancelled = true;
     };
-  }, [productId, t, tenantId, variants]);
+  }, [initialStockByVariantId, productId, t, tenantId, variants]);
 
   const mutation = useMutation({
     mutationFn: async (variantId: string) => {
