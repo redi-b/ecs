@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-
-import { AppIcons } from "@/components/app/icons";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 
-export function OnboardingSignOutButton() {
+export function OnboardingSignOutButton({ confirm = true }: { confirm?: boolean }) {
   const { t } = useI18n();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -22,6 +21,23 @@ export function OnboardingSignOutButton() {
     window.location.assign(data?.redirectTo ?? "/sign-in");
   }
 
+  const trigger = (
+    <Button
+      aria-busy={isSigningOut}
+      aria-label={isSigningOut ? t("account.signingOut") : t("account.signOut")}
+      className="min-w-9 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+      disabled={isSigningOut}
+      onClick={confirm ? undefined : () => void signOut()}
+      size="icon-lg"
+      type="button"
+      variant="ghost"
+    >
+      {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
+    </Button>
+  );
+
+  if (!confirm) return trigger;
+
   return (
     <ConfirmDialog
       cancelDisabled={isSigningOut}
@@ -31,19 +47,7 @@ export function OnboardingSignOutButton() {
       icon="logout"
       onConfirm={() => void signOut()}
       title={t("onboarding.signOutTitle")}
-      trigger={
-        <Button
-          aria-busy={isSigningOut}
-          aria-label={isSigningOut ? t("account.signingOut") : t("account.signOut")}
-          className="min-w-9 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          disabled={isSigningOut}
-          size="icon-lg"
-          type="button"
-          variant="ghost"
-        >
-          {isSigningOut ? <AppIcons.loader className="animate-spin" /> : <AppIcons.logout />}
-        </Button>
-      }
+      trigger={trigger}
     />
   );
 }

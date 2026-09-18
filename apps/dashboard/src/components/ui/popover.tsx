@@ -6,8 +6,8 @@ import * as React from "react";
 import { useFloatingPortalContainer } from "@/lib/floating-portal-container";
 import {
   applyNestedOverlaySession,
-  releaseNestedOverlayIfOpen,
   type NestedOverlaySession,
+  releaseNestedOverlayIfOpen,
 } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
@@ -55,8 +55,8 @@ function PopoverContent({
   collisionPadding = 12,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  // Dialogs and sheets provide their document body as the floating root. This
-  // keeps nested surfaces above the modal without clipping them to its scroll area.
+  // Dialogs and sheets provide their content root so modal focus, wheel, touch,
+  // and keyboard handling continue to treat this floating surface as nested UI.
   const portalContainer = useFloatingPortalContainer();
   const nested = Boolean(portalContainer);
 

@@ -6,7 +6,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { preventDialogDismissForPortals } from "@/lib/dialog-outside";
 import { FloatingPortalContainerProvider } from "@/lib/floating-portal-container";
-import { isNestedOverlayActive, isNestedOverlayOpen } from "@/lib/nested-overlay";
+import { isNestedOverlayOpen } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -56,7 +56,6 @@ function SheetContent({
   showCloseButton?: boolean;
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
-  const floatingLayerRoot = portalContainer?.ownerDocument.body ?? null;
 
   return (
     <SheetPortal>
@@ -65,7 +64,7 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "fixed z-50 flex max-h-dvh flex-col gap-0 overflow-x-hidden overflow-y-visible bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out",
+          "fixed z-50 flex max-h-dvh flex-col gap-0 overflow-visible bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out",
           "data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:border-t",
           "data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r",
           "data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l",
@@ -97,7 +96,7 @@ function SheetContent({
           onPointerDownOutside?.(event);
         }}
       >
-        <FloatingPortalContainerProvider container={floatingLayerRoot}>
+        <FloatingPortalContainerProvider container={portalContainer}>
           {children}
           {showCloseButton && (
             <SheetPrimitive.Close data-slot="sheet-close" asChild>

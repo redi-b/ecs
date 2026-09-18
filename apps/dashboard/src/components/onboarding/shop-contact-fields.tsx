@@ -2,8 +2,8 @@
 
 import {
   ethiopianPhoneSchema,
-  normalizeShopSocialProfileUrl,
   normalizeEthiopianPhone,
+  normalizeShopSocialProfileUrl,
   type ShopDetails,
   shopDetailsSchema,
   shopSocialPlatforms,
@@ -141,9 +141,7 @@ export function ShopContactFields({
     if (!ethiopianPhoneSchema.safeParse(phone).success) return t("onboarding.contact.invalidPhone");
     const normalized = normalizeEthiopianPhone(phone);
     const phones = [value.primaryPhone, ...value.additionalPhones].map(normalizeEthiopianPhone);
-    return phones.findIndex((candidate) => candidate === normalized) !== index
-      ? t("onboarding.contact.duplicatePhone")
-      : null;
+    return phones.indexOf(normalized) !== index ? t("onboarding.contact.duplicatePhone") : null;
   };
   function updatePhone(index: number, phone: string) {
     onChange(
@@ -199,6 +197,7 @@ export function ShopContactFields({
         </>
       ) : null}
       {[value.primaryPhone, ...value.additionalPhones].map((phone, position) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: Phone drafts have no stable IDs; their position identifies the edited field.
         <Field data-invalid={phoneError(phone, position) ? true : undefined} key={position}>
           <FieldLabel htmlFor={`${id}-phone-${position}`}>
             {position === 0
@@ -307,7 +306,7 @@ export function ShopContactFields({
         <FieldLabel>{t("onboarding.contact.social")}</FieldLabel>
         {value.socialProfiles.map((profile, index) => (
           <div
-            key={index}
+            key={profile.platform}
             className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[9rem_minmax(0,1fr)_auto]"
           >
             <Select
@@ -333,10 +332,6 @@ export function ShopContactFields({
                 className="w-full"
                 aria-label={t("onboarding.contact.platform", { number: index + 1 })}
               >
-                <SocialPlatformIcon
-                  className="size-4 text-muted-foreground"
-                  platform={profile.platform}
-                />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="start">

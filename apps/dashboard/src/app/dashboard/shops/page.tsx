@@ -53,7 +53,7 @@ export default async function ShopPickerPage({ searchParams }: ShopPickerPagePro
       brandDescription={t("onboarding.shopPicker.description")}
       brandTitle={t("onboarding.shopPicker.title")}
       layout="setup"
-      toolbar={<OnboardingSignOutButton />}
+      toolbar={<OnboardingSignOutButton confirm={false} />}
     >
       {!result.ok || params.error ? (
         <Alert className="mb-5" variant="destructive">
