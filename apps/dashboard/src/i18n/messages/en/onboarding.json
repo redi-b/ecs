@@ -87,6 +87,7 @@
   "phoneRequired": "Phone required",
   "phoneOptional": "Phone optional",
   "deliveryPrefsWarning": "Shop created, but checkout preferences could not be saved. Set them in Settings → Fulfillment.",
+  "languagePrefsWarning": "Shop created, but the storefront languages could not be saved. Set them in Settings → Storefront.",
   "checklist": {
     "products": "Add products and pricing",
     "media": "Upload product photos",
@@ -119,6 +120,16 @@
   "secureDashboard": "Secure dashboard",
   "launchAssistant": "Shop setup",
   "selectedStorefront": "Selected storefront",
+  "languages": {
+    "title": "Offer your shop in Amharic",
+    "description": "Customers can switch between English and Amharic. You can add translations after setup.",
+    "default": "Language shown first",
+    "english": "English",
+    "review": "Storefront languages",
+    "englishOnly": "English",
+    "englishAmharic": "English and Amharic · English first",
+    "englishAmharicDefault": "English and Amharic · Amharic first"
+  },
   "chooseTemplate": "Choose a template",
   "afterSetup": "What you will do next",
   "afterSetupDescription": "After creation you land in the dashboard. These are the highest-impact next steps.",
