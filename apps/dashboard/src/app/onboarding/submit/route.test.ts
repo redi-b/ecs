@@ -28,7 +28,8 @@ test("POST /onboarding/submit provisions a shop for the signed-in account", asyn
 
   globalThis.fetch = async (input, init) => {
     const request = new Request(input, init);
-    if (new URL(request.url).pathname === "/platform/tenants/tenant_1/delivery") {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/platform/tenants/tenant_1/delivery") {
       return Response.json({
         delivery: {
           currency: "ETB",
@@ -41,6 +42,29 @@ test("POST /onboarding/submit provisions a shop for the signed-in account", asyn
           tenantId: "tenant_1",
           updatedAt: "2026-07-06T08:00:01.000Z",
           zones: [],
+        },
+      });
+    }
+    if (pathname === "/platform/tenants/tenant_1/storefront/draft") {
+      const languageSettings =
+        request.method === "POST"
+          ? ((await request.clone().json()) as { languageSettings: unknown }).languageSettings
+          : { defaultLocale: "en", enabledLocales: ["en"], sourceLocale: "en" };
+      return Response.json({
+        draft: {
+          data: { home: {} },
+          hasUnpublishedChanges: true,
+          languageSettings,
+          localizedContent: { locales: {}, version: 1 },
+          published: null,
+          seo: { description: null, socialImageUrl: null, title: null },
+          source: "clean",
+          templateId: "template_1",
+          templateKey: "luvia@1",
+          templateVersion: 1,
+          tenantId: "tenant_1",
+          themeTokens: { colors: {} },
+          updatedAt: "2026-07-06T08:00:00.000Z",
         },
       });
     }

@@ -87,6 +87,7 @@
   "phoneRequired": "ስልክ ያስፈልጋል",
   "phoneOptional": "ስልክ አማራጭ",
   "deliveryPrefsWarning": "ሱቁ ተፈጥሯል፣ ነገር ግን የትዕዛዝ ምርጫዎች አልተቀመጡም። በማስተካከያዎች → መላኪያ ያዘጋጁ።",
+  "languagePrefsWarning": "ሱቁ ተፈጥሯል፣ ነገር ግን የመደብሩ ቋንቋዎች አልተቀመጡም። በማስተካከያዎች → መደብር ያዘጋጁ።",
   "checklist": {
     "products": "ምርቶችን እና ዋጋን ያክሉ",
     "media": "የምርት ፎቶዎችን ይጫኑ",
@@ -119,6 +120,16 @@
   "secureDashboard": "ደህንነቱ የተጠበቀ መቆጣጠሪያ",
   "launchAssistant": "የሱቅ ማዋቀር",
   "selectedStorefront": "የተመረጠ የመደብር ገጽ",
+  "languages": {
+    "title": "መደብርዎን በአማርኛ ያቅርቡ",
+    "description": "ደንበኞች በእንግሊዝኛና በአማርኛ መቀያየር ይችላሉ። ትርጉሞችን ከማዋቀር በኋላ ማከል ይችላሉ።",
+    "default": "መጀመሪያ የሚታይ ቋንቋ",
+    "english": "እንግሊዝኛ",
+    "review": "የመደብር ቋንቋዎች",
+    "englishOnly": "እንግሊዝኛ",
+    "englishAmharic": "እንግሊዝኛ እና አማርኛ · እንግሊዝኛ መጀመሪያ",
+    "englishAmharicDefault": "እንግሊዝኛ እና አማርኛ · አማርኛ መጀመሪያ"
+  },
   "chooseTemplate": "አብነት ይምረጡ",
   "afterSetup": "ቀጥሎ የሚያደርጉት",
   "afterSetupDescription": "ከተፈጠረ በኋላ ወደ መቆጣጠሪያው ይገባሉ። ቀጥሎ የሚሰሩ ወሳኝ ተግባራት እነዚህ ናቸው።",

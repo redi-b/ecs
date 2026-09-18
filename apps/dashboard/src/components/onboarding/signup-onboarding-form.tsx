@@ -35,6 +35,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/provider";
 import { getStorefrontHostname, normalizeStorefrontBaseDomain } from "@/lib/storefront-hosts";
@@ -151,6 +154,8 @@ export function ShopOnboardingForm({
   const [handleTouched, setHandleTouched] = useState(Boolean(defaultValues.handle));
   const [templateKey, setTemplateKey] = useState(templates[0]?.version.templateKey ?? "");
   const [templateTouched, setTemplateTouched] = useState(false);
+  const [amharicEnabled, setAmharicEnabled] = useState(false);
+  const [defaultStorefrontLocale, setDefaultStorefrontLocale] = useState<"en" | "am">("en");
   const [businessCategories, setBusinessCategories] = useState<string[]>(() =>
     parseCategories(defaultValues.businessCategory),
   );
@@ -204,6 +209,8 @@ export function ShopOnboardingForm({
           deliveryEnabled: z.boolean().optional(),
           pickupEnabled: z.boolean().optional(),
           templateKey: z.string().max(100).optional(),
+          amharicEnabled: z.boolean().optional(),
+          defaultStorefrontLocale: z.enum(["en", "am"]).optional(),
           step: z.number().int().min(0).max(3).optional(),
         })
         .parse(JSON.parse(draft));
@@ -219,6 +226,10 @@ export function ShopOnboardingForm({
       );
       if (typeof value.deliveryEnabled === "boolean") setDeliveryEnabled(value.deliveryEnabled);
       if (typeof value.pickupEnabled === "boolean") setPickupEnabled(value.pickupEnabled);
+      if (typeof value.amharicEnabled === "boolean") setAmharicEnabled(value.amharicEnabled);
+      if (value.defaultStorefrontLocale) {
+        setDefaultStorefrontLocale(value.defaultStorefrontLocale);
+      }
       if (
         value.templateKey &&
         templates.some((item) => item.version.templateKey === value.templateKey)
@@ -245,6 +256,8 @@ export function ShopOnboardingForm({
           handle,
           shopName,
           templateKey,
+          amharicEnabled,
+          defaultStorefrontLocale,
           step,
         }),
       );
@@ -256,6 +269,8 @@ export function ShopOnboardingForm({
     handle,
     shopName,
     templateKey,
+    amharicEnabled,
+    defaultStorefrontLocale,
     shopDetails,
     deliveryEnabled,
     pickupEnabled,
@@ -377,6 +392,11 @@ export function ShopOnboardingForm({
         pickupEnabled,
         shopName,
         templateKey,
+        languageSettings: {
+          defaultLocale: amharicEnabled ? defaultStorefrontLocale : "en",
+          enabledLocales: amharicEnabled ? ["en", "am"] : ["en"],
+          sourceLocale: "en",
+        },
       }),
       headers: {
         accept: "application/json",
@@ -390,6 +410,7 @@ export function ShopOnboardingForm({
       ok?: boolean;
       redirectTo?: string;
       deliveryPrefsApplied?: boolean;
+      languagePrefsApplied?: boolean;
       warning?: string;
     } | null;
 
@@ -403,6 +424,15 @@ export function ShopOnboardingForm({
       // Shop exists; surface that fulfillment prefs still need Settings → Fulfillment.
       try {
         window.sessionStorage.setItem("ecs:onboarding-warning", "delivery_prefs_not_applied");
+      } catch {
+        // ignore storage failures
+      }
+    } else if (
+      data.languagePrefsApplied === false ||
+      data.warning === "language_prefs_not_applied"
+    ) {
+      try {
+        window.sessionStorage.setItem("ecs:onboarding-warning", "language_prefs_not_applied");
       } catch {
         // ignore storage failures
       }
@@ -713,6 +743,45 @@ export function ShopOnboardingForm({
                     onChange={(brand) => setShopDetails((current) => ({ ...current, brand }))}
                   />
                 ) : null}
+                <div className="rounded-xl border border-border/80 bg-muted/15 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <Label className="text-sm font-medium" htmlFor={`${fieldId}-amharic`}>
+                        {t("onboarding.languages.title")}
+                      </Label>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {t("onboarding.languages.description")}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={amharicEnabled}
+                      disabled={isSubmitting}
+                      id={`${fieldId}-amharic`}
+                      onCheckedChange={(checked) => {
+                        setAmharicEnabled(checked);
+                        if (!checked) setDefaultStorefrontLocale("en");
+                      }}
+                    />
+                  </div>
+                  {amharicEnabled ? (
+                    <div className="mt-4 border-t pt-4">
+                      <p className="mb-2 text-xs font-medium text-muted-foreground">
+                        {t("onboarding.languages.default")}
+                      </p>
+                      <SegmentedControl
+                        active="muted"
+                        ariaLabel={t("onboarding.languages.default")}
+                        onChange={setDefaultStorefrontLocale}
+                        options={[
+                          { id: "en", label: t("onboarding.languages.english") },
+                          { id: "am", label: "አማርኛ" },
+                        ]}
+                        size="sm"
+                        value={defaultStorefrontLocale}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               <div className={cn(step === 3 ? "grid gap-4" : "hidden")}>
@@ -827,6 +896,16 @@ export function ShopOnboardingForm({
                         <ReviewItem
                           label={t("onboarding.selectedStorefront")}
                           value={selectedTemplate?.name ?? templateKey}
+                        />
+                        <ReviewItem
+                          label={t("onboarding.languages.review")}
+                          value={
+                            amharicEnabled
+                              ? defaultStorefrontLocale === "am"
+                                ? t("onboarding.languages.englishAmharicDefault")
+                                : t("onboarding.languages.englishAmharic")
+                              : t("onboarding.languages.englishOnly")
+                          }
                         />
                         <div>
                           <p className="text-xs text-muted-foreground">

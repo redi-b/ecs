@@ -30,6 +30,8 @@ export function OnboardingWarningToast() {
 
     if (warning === "delivery_prefs_not_applied") {
       toast.warning(t("onboarding.deliveryPrefsWarning"), { duration: 8000 });
+    } else if (warning === "language_prefs_not_applied") {
+      toast.warning(t("onboarding.languagePrefsWarning"), { duration: 8000 });
     }
 
     try {

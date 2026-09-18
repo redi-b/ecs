@@ -1,7 +1,8 @@
+import { shopDetailsSchema, storefrontLanguageSettingsSchema } from "@ecs/contracts";
 import { NextResponse } from "next/server";
-import { shopDetailsSchema } from "@ecs/contracts";
 
 import { updateMerchantDeliverySettings } from "@/lib/merchant-settings";
+import { getStorefrontDraft, updateStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { createTenantShop } from "@/lib/platform-onboarding";
 import { requestWantsJson } from "@/lib/request-wants-json";
 
@@ -14,8 +15,10 @@ export async function POST(request: Request) {
   const businessCategory = payload.businessCategory;
   const contactPhone = payload.contactPhone;
   const cookieHeader = request.headers.get("cookie") ?? "";
-  const details = payload.shopDetails === undefined ? null : shopDetailsSchema.safeParse(payload.shopDetails);
-  if (details && !details.success) {
+  const details =
+    payload.shopDetails === undefined ? null : shopDetailsSchema.safeParse(payload.shopDetails);
+  const languageSettings = storefrontLanguageSettingsSchema.safeParse(payload.languageSettings);
+  if ((details && !details.success) || !languageSettings.success) {
     return failOnboarding(request, "invalid_shop_setup", payload, wantsJson);
   }
 
@@ -82,6 +85,23 @@ export async function POST(request: Request) {
     deliveryPrefsApplied = false;
   }
 
+  let languagePrefsApplied = false;
+  if (tenantId) {
+    const draft = await getStorefrontDraft({ cookieHeader, platformApiBaseUrl, tenantId });
+    if (draft.ok) {
+      const updated = await updateStorefrontDraft({
+        cookieHeader,
+        data: draft.draft.data,
+        languageSettings: languageSettings.data,
+        localizedContent: draft.draft.localizedContent,
+        platformApiBaseUrl,
+        tenantId,
+        themeTokens: draft.draft.themeTokens,
+      });
+      languagePrefsApplied = updated.ok;
+    }
+  }
+
   const redirectTo =
     createResult.mutation.redirectTo ??
     `http://${createResult.mutation.tenant.primaryDomain.hostname}/dashboard`;
@@ -91,13 +111,20 @@ export async function POST(request: Request) {
       ok: true as const,
       redirectTo,
       deliveryPrefsApplied,
-      ...(deliveryPrefsApplied ? {} : { warning: "delivery_prefs_not_applied" as const }),
+      languagePrefsApplied,
+      ...(!deliveryPrefsApplied
+        ? { warning: "delivery_prefs_not_applied" as const }
+        : !languagePrefsApplied
+          ? { warning: "language_prefs_not_applied" as const }
+          : {}),
     });
   }
 
   const redirectUrl = new URL(redirectTo);
   if (!deliveryPrefsApplied) {
     redirectUrl.searchParams.set("onboardingWarning", "delivery_prefs_not_applied");
+  } else if (!languagePrefsApplied) {
+    redirectUrl.searchParams.set("onboardingWarning", "language_prefs_not_applied");
   }
   return NextResponse.redirect(redirectUrl.toString(), { status: 303 });
 }
@@ -113,6 +140,7 @@ async function readOnboardingPayload(request: Request) {
       handle?: unknown;
       phoneConfirmationRequired?: unknown;
       pickupEnabled?: unknown;
+      languageSettings?: unknown;
       shopName?: unknown;
       templateKey?: unknown;
     } | null;
@@ -124,6 +152,11 @@ async function readOnboardingPayload(request: Request) {
       handle: requiredString(body?.handle),
       phoneConfirmationRequired: optionalBoolean(body?.phoneConfirmationRequired, true),
       pickupEnabled: optionalBoolean(body?.pickupEnabled, true),
+      languageSettings: body?.languageSettings ?? {
+        defaultLocale: "en",
+        enabledLocales: ["en"],
+        sourceLocale: "en",
+      },
       shopName: requiredString(body?.shopName),
       templateKey: requiredString(body?.templateKey),
     };
@@ -138,6 +171,11 @@ async function readOnboardingPayload(request: Request) {
     handle: getRequiredString(formData, "handle"),
     phoneConfirmationRequired: formData.get("phoneConfirmationRequired") !== "false",
     pickupEnabled: formData.get("pickupEnabled") !== "false",
+    languageSettings: {
+      defaultLocale: "en",
+      enabledLocales: ["en"],
+      sourceLocale: "en",
+    },
     shopName: getRequiredString(formData, "shopName"),
     templateKey: getRequiredString(formData, "templateKey"),
   };
