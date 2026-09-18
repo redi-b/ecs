@@ -6,10 +6,11 @@ import {
   catalogTranslationResourceSchema,
   type MerchantProduct,
 } from "@ecs/contracts";
-import { RiArrowLeftLine, RiArrowRightLine, RiLoader4Line } from "@remixicon/react";
+import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
 import { LanguagesIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,12 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  TranslationSheetLoadingFields,
+  TranslationSheetLoadingNotice,
+} from "@/features/storefront-editor/translation-sheet-loading";
 import { TranslationSourceReference } from "@/features/storefront-editor/translation-source-reference";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 
 type EditableResource = {
@@ -120,6 +126,15 @@ export function ProductTranslationSheet({
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const definitions = useMemo(() => productResources(product), [product]);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const dirty = resources.some((resource) =>
+    Object.keys(resource.source).some(
+      (field) =>
+        (drafts[resource.resourceId]?.[field] ?? "") !== (resource.translations[field] ?? ""),
+    ),
+  );
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    dirty && open,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -197,7 +212,13 @@ export function ProductTranslationSheet({
   }
 
   return (
-    <Sheet onOpenChange={(next) => !saving && setOpen(next)} open={open}>
+    <Sheet
+      onOpenChange={(next) => {
+        if (saving || next) return;
+        requestLeave(() => setOpen(false));
+      }}
+      open={open}
+    >
       {showTrigger ? (
         <SheetTrigger asChild>
           <Button size="sm" variant="outline">
@@ -228,17 +249,10 @@ export function ProductTranslationSheet({
         </SheetHeader>
         <SheetBody className="relative space-y-5">
           {queueNavigation?.loading && !loading ? (
-            <output className="sticky top-0 z-10 flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 text-xs font-medium shadow-sm backdrop-blur">
-              <RiLoader4Line className="size-4 animate-spin text-primary" aria-hidden />
-              {t("products.translation.loading")}
-            </output>
+            <TranslationSheetLoadingNotice label={t("products.translation.loading")} />
           ) : null}
           {loading ? (
-            <output className="block space-y-3" aria-label={t("products.translation.loading")}>
-              {[0, 1, 2].map((item) => (
-                <div className="h-28 animate-pulse rounded-xl bg-muted/60" key={item} />
-              ))}
-            </output>
+            <TranslationSheetLoadingFields count={2} label={t("products.translation.loading")} />
           ) : (
             resources.map((resource, resourceIndex) => {
               const definition = definitions[resourceIndex];
@@ -289,7 +303,10 @@ export function ProductTranslationSheet({
                             </div>
                           )}
                         </div>
-                        <TranslationSourceReference label={t("products.translation.english")}>
+                        <TranslationSourceReference
+                          label={t("products.translation.english")}
+                          variant="panel"
+                        >
                           {field === "description" ? productDescriptionToText(source) : source}
                         </TranslationSourceReference>
                         {field === "description" && readOnly ? (
@@ -324,7 +341,7 @@ export function ProductTranslationSheet({
             })
           )}
         </SheetBody>
-        <SheetFooter className="flex-row items-center justify-between gap-3">
+        <SheetFooter className="flex-row items-center justify-between gap-3 sm:justify-between">
           <div className="flex items-center gap-2">
             {queueNavigation?.previous || queueNavigation?.onPrevious ? (
               <Tooltip>
@@ -333,7 +350,7 @@ export function ProductTranslationSheet({
                     <Button
                       aria-label={t("editor.translations.previous")}
                       disabled={loading || queueNavigation.loading}
-                      onClick={queueNavigation.onPrevious}
+                      onClick={() => requestLeave(() => queueNavigation.onPrevious?.())}
                       size="icon-sm"
                       type="button"
                       variant="outline"
@@ -361,7 +378,7 @@ export function ProductTranslationSheet({
                     <Button
                       aria-label={t("editor.translations.next")}
                       disabled={loading || queueNavigation.loading}
-                      onClick={queueNavigation.onNext}
+                      onClick={() => requestLeave(() => queueNavigation.onNext?.())}
                       size="icon-sm"
                       type="button"
                       variant="outline"
@@ -381,7 +398,11 @@ export function ProductTranslationSheet({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button disabled={saving} onClick={() => setOpen(false)} variant="outline">
+            <Button
+              disabled={saving}
+              onClick={() => requestLeave(() => setOpen(false))}
+              variant="outline"
+            >
               {t("common.cancel")}
             </Button>
             {readOnly ? null : (
@@ -391,6 +412,7 @@ export function ProductTranslationSheet({
             )}
           </div>
         </SheetFooter>
+        <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
       </SheetContent>
     </Sheet>
   );

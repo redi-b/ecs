@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -32,6 +33,7 @@ import {
   type TaxonomyTranslationTarget,
 } from "@/features/catalog-taxonomy/taxonomy-translation-sheet";
 import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import type { StorefrontTranslationField } from "@/lib/storefront-localization-fields";
 import { cn } from "@/lib/utils";
@@ -119,6 +121,8 @@ export function StorefrontTranslationWorkspace({
   const dirty =
     reviewedPaths.size > 0 ||
     fields.some((field) => values[field.path] !== savedValues[field.path]);
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
+    useUnsavedChangesGuard(dirty);
   const allSectionsExpanded = groups.every((group) => !collapsedSections.has(group.id));
   const pageMetric = fields.reduce(
     (metric, field) => {
@@ -343,7 +347,7 @@ export function StorefrontTranslationWorkspace({
                 <Button
                   aria-label={t("common.refresh")}
                   disabled={refreshing}
-                  onClick={() => startRefresh(() => router.refresh())}
+                  onClick={() => requestLeave(() => startRefresh(() => router.refresh()))}
                   size="icon-sm"
                   type="button"
                   variant="outline"
@@ -638,6 +642,7 @@ export function StorefrontTranslationWorkspace({
         target={taxonomyTarget}
         tenantId={tenantId}
       />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>
   );
 }
