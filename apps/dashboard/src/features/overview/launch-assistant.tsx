@@ -311,17 +311,14 @@ function ChecklistRow({
   pending?: boolean;
 }) {
   const { t } = useI18n();
-  return (
-    <Link
-      className={cn(
-        "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
-        item.current && !item.ready
-          ? "border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/15 hover:bg-primary/10"
-          : "bg-background hover:bg-muted/50",
-      )}
-      href={item.href}
-      prefetch={false}
-    >
+  const className = cn(
+    "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+    item.current && !item.ready
+      ? "border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/15 hover:bg-primary/10"
+      : "bg-background hover:bg-muted/50",
+  );
+  const content = (
+    <>
       <span
         className={cn(
           "flex size-6 items-center justify-center rounded-full border text-[10px] font-semibold",
@@ -356,11 +353,7 @@ function ChecklistRow({
           size="sm"
           type="button"
           variant="outline"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onConfirm();
-          }}
+          onClick={onConfirm}
         >
           <AppIcons.check className="size-4" aria-hidden />
           {t("overview.launch.checks.confirmReview")}
@@ -381,6 +374,16 @@ function ChecklistRow({
                 : t("overview.launch.optional")}
         </Badge>
       )}
+    </>
+  );
+
+  if (onConfirm) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <Link className={className} href={item.href} prefetch={false}>
+      {content}
     </Link>
   );
 }

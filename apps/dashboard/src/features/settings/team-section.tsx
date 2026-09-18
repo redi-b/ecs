@@ -1005,7 +1005,7 @@ function RoleSheet({
             ))}
           </div>
         </SheetBody>
-        <SheetFooter className="flex-row justify-end">
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? t("settings.team.close") : t("common.cancel")}
           </Button>

@@ -702,11 +702,17 @@ export function createStorefrontTemplateService(
         const [onboarding] = await transaction.select().from(tenantOnboarding).where(eq(tenantOnboarding.tenantId, input.tenantId)).for("update").limit(1);
         let completedSteps = onboarding?.completedSteps;
         if (reviewedFingerprint) {
-          const [tenant] = await transaction.select({ name: tenants.name, shopDetails: tenants.shopDetails }).from(tenants).where(eq(tenants.id, input.tenantId)).limit(1);
-          if (tenant) {
-            const publishedFingerprint = createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, draft.templateId, normalizedDraft.data, normalizedDraft.themeTokens, draft.languageSettings, draft.localizedContent, draft.seoSettings])).digest("hex");
-            completedSteps = [...(Array.isArray(completedSteps) ? completedSteps.filter((step) => typeof step === "string" && !step.startsWith("storefront_review:")) : []), `storefront_review:${publishedFingerprint}`];
-          }
+          completedSteps = [
+            ...(Array.isArray(completedSteps)
+              ? completedSteps.filter(
+                  (step) =>
+                    typeof step === "string" &&
+                    step !== "storefront_reviewed" &&
+                    !step.startsWith("storefront_review:"),
+                )
+              : []),
+            "storefront_reviewed",
+          ];
         }
         if (onboarding) await transaction.update(tenantOnboarding).set({ status: "completed", currentStep: "completed", ...(completedSteps ? { completedSteps } : {}), updatedAt: new Date() }).where(eq(tenantOnboarding.tenantId, input.tenantId));
 

@@ -73,9 +73,13 @@ export function buildLaunchReadiness(input: {
   const fulfillmentReady = Boolean(
     input.delivery && (input.delivery.deliveryEnabled || input.delivery.pickupEnabled),
   );
+  // Storefront review is a one-time launch milestone, not a per-revision approval gate.
+  // Keep accepting fingerprinted legacy records so existing shops do not lose progress.
   const reviewReady =
     Array.isArray(input.completedSteps) &&
-    input.completedSteps.includes(`storefront_review:${draftFingerprint}`);
+    input.completedSteps.some(
+      (step) => step === "storefront_reviewed" || String(step).startsWith("storefront_review:"),
+    );
   const checks: LaunchReadiness["checks"] = [
     { id: "profile", status: profileReady ? "ready" : "action_required" },
     { id: "catalog", status: input.catalogStatus },
@@ -234,21 +238,23 @@ export function createLaunchReadinessService(
       const steps = Array.isArray(onboarding?.completedSteps)
         ? onboarding.completedSteps.filter(
             (step): step is string =>
-              typeof step === "string" && !step.startsWith("storefront_review:"),
+              typeof step === "string" &&
+              step !== "storefront_reviewed" &&
+              !step.startsWith("storefront_review:"),
           )
         : [];
       await transaction
         .insert(tenantOnboarding)
         .values({
           tenantId: input.tenantId,
-          completedSteps: [...steps, `storefront_review:${fingerprint}`],
+          completedSteps: [...steps, "storefront_reviewed"],
           currentStep: "publish",
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: tenantOnboarding.tenantId,
           set: {
-            completedSteps: [...steps, `storefront_review:${fingerprint}`],
+            completedSteps: [...steps, "storefront_reviewed"],
             currentStep: "publish",
             updatedAt: new Date(),
           },

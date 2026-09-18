@@ -14,6 +14,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "@/components/app/link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getSelectedTemplateName,
@@ -269,7 +270,7 @@ export function StorefrontSection({
               />
             ) : null}
             <Button asChild className="w-full rounded-full" size="sm" variant="outline">
-              <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
+              <Link href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</Link>
             </Button>
             <Button asChild className="w-full rounded-full" size="sm" variant="ghost">
               <a href={`//${summary.domain.hostname}`} rel="noreferrer" target="_blank">

@@ -49,12 +49,50 @@ const shopSocialHosts: Record<(typeof shopSocialPlatforms)[number], readonly str
   x: ["x.com", "twitter.com"],
 };
 
+const shopSocialBaseUrls: Record<(typeof shopSocialPlatforms)[number], string> = {
+  facebook: "https://facebook.com/",
+  instagram: "https://instagram.com/",
+  tiktok: "https://tiktok.com/@",
+  telegram: "https://t.me/",
+  whatsapp: "https://wa.me/",
+  youtube: "https://youtube.com/@",
+  linkedin: "https://linkedin.com/company/",
+  x: "https://x.com/",
+};
+
+/** Turn a pasted profile URL, @handle, username, or WhatsApp number into a canonical link. */
+export function normalizeShopSocialProfileUrl(
+  platform: (typeof shopSocialPlatforms)[number],
+  value: string,
+): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const possibleUrl = /^(?:https?:\/\/|www\.)/i.test(trimmed)
+    ? trimmed.replace(/^http:\/\//i, "https://").replace(/^www\./i, "https://www.")
+    : null;
+  if (possibleUrl) return possibleUrl;
+
+  let handle = trimmed.replace(/^@/, "").replace(/^\/+|\/+$/g, "");
+  if (platform === "whatsapp") {
+    handle = normalizeEthiopianPhone(handle).replace(/^\+/, "");
+    if (!/^251[1-9]\d{8}$/.test(handle)) return trimmed;
+  } else if (!/^[a-zA-Z0-9._-]+$/.test(handle)) {
+    return trimmed;
+  }
+  return `${shopSocialBaseUrls[platform]}${handle}`;
+}
+
 export const shopSocialProfileSchema = z
   .object({
     platform: z.enum(shopSocialPlatforms),
-    url: z.string().trim().max(500).url(),
+    url: z.string().trim().max(500),
   })
   .strict()
+  .transform((profile) => ({
+    ...profile,
+    url: normalizeShopSocialProfileUrl(profile.platform, profile.url),
+  }))
   .superRefine(({ platform, url }, context) => {
     let parsed: URL;
     try {

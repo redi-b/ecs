@@ -28,12 +28,12 @@ const snapshot = {
   delivery: { deliveryEnabled: true, pickupEnabled: true },
 };
 
-test("review applies to the exact shop and design snapshot", () => {
+test("review is a durable launch milestone across later storefront changes", () => {
   const pending = buildLaunchReadiness(snapshot);
   assert.equal(pending.canPublish, false);
   const confirmed = {
     ...snapshot,
-    completedSteps: [`storefront_review:${pending.draftFingerprint}`],
+    completedSteps: ["storefront_reviewed"],
   };
   assert.equal(buildLaunchReadiness(confirmed).canPublish, true);
   for (const change of [
@@ -42,8 +42,19 @@ test("review applies to the exact shop and design snapshot", () => {
     { name: "Renamed" },
     { shopDetails: { ...details, primaryPhone: "+251911111111" } },
   ]) {
-    assert.equal(buildLaunchReadiness({ ...confirmed, ...change }).canPublish, false);
+    assert.equal(buildLaunchReadiness({ ...confirmed, ...change }).canPublish, true);
   }
+});
+
+test("keeps legacy fingerprinted review records complete", () => {
+  const pending = buildLaunchReadiness(snapshot);
+  assert.equal(
+    buildLaunchReadiness({
+      ...snapshot,
+      completedSteps: [`storefront_review:${pending.draftFingerprint}`],
+    }).canPublish,
+    true,
+  );
 });
 
 test("outages stay unknown and either supported fulfillment method is launch-ready", () => {

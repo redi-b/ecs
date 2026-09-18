@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import { Button } from "@/components/ui/button";
+import Link from "@/components/app/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -249,7 +250,7 @@ export function StorefrontTemplateOption({
       <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
         {selected ? (
           <Button asChild className="rounded-full" size="sm" type="button">
-            <a href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</a>
+            <Link href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</Link>
           </Button>
         ) : (
           <Button

@@ -2,6 +2,7 @@
 
 import {
   ethiopianPhoneSchema,
+  normalizeShopSocialProfileUrl,
   normalizeEthiopianPhone,
   type ShopDetails,
   shopDetailsSchema,
@@ -36,14 +37,14 @@ export const socialLabels = {
   x: "X",
 };
 const socialExamples = {
-  facebook: "https://facebook.com/yourshop",
-  instagram: "https://instagram.com/yourshop",
-  tiktok: "https://tiktok.com/@yourshop",
-  telegram: "https://t.me/yourshop",
-  whatsapp: "https://wa.me/251912345678",
-  youtube: "https://youtube.com/@yourshop",
-  linkedin: "https://linkedin.com/company/yourshop",
-  x: "https://x.com/yourshop",
+  facebook: "yourshop or paste a link",
+  instagram: "@yourshop or paste a link",
+  tiktok: "@yourshop or paste a link",
+  telegram: "yourshop or paste a link",
+  whatsapp: "0912345678 or paste a link",
+  youtube: "@yourshop or paste a link",
+  linkedin: "yourshop or paste a link",
+  x: "@yourshop or paste a link",
 };
 const socialIcons = {
   facebook: AppIcons.facebook,
@@ -362,7 +363,7 @@ export function ShopContactFields({
               aria-invalid={socialError(index) ? true : undefined}
               disabled={disabled}
               className="col-span-2 row-start-2 min-w-0 sm:col-span-1 sm:row-start-auto"
-              type="url"
+              type="text"
               autoCapitalize="none"
               autoCorrect="off"
               aria-label={t("onboarding.contact.profileLink", {
@@ -371,7 +372,18 @@ export function ShopContactFields({
               placeholder={socialExamples[profile.platform]}
               maxLength={500}
               value={profile.url}
-              onBlur={() => markTouched(`social-${index}`)}
+              onBlur={() => {
+                markTouched(`social-${index}`);
+                const normalized = normalizeShopSocialProfileUrl(profile.platform, profile.url);
+                if (normalized !== profile.url) {
+                  onChange({
+                    ...value,
+                    socialProfiles: value.socialProfiles.map((current, i) =>
+                      i === index ? { ...current, url: normalized } : current,
+                    ),
+                  });
+                }
+              }}
               onChange={(event) =>
                 onChange({
                   ...value,
