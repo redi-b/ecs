@@ -180,10 +180,13 @@ export function TaxonomyTranslationSheet({
                 })}
           </SheetDescription>
         </SheetHeader>
-        <SheetBody className="relative space-y-5">
-          {queueNavigation?.loading && !loading ? (
-            <TranslationSheetLoadingNotice label={t("products.translation.loading")} />
-          ) : null}
+        {queueNavigation?.loading && !loading ? (
+          <TranslationSheetLoadingNotice
+            className="top-[4.75rem]"
+            label={t("products.translation.loading")}
+          />
+        ) : null}
+        <SheetBody className="space-y-5">
           {loading ? (
             <TranslationSheetLoadingFields label={t("products.translation.loading")} />
           ) : resource ? (

@@ -14,7 +14,7 @@ export function TranslationSheetLoadingNotice({
     <output
       aria-live="polite"
       className={cn(
-        "sticky top-2 z-20 mx-auto flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur",
+        "pointer-events-none absolute top-2 left-1/2 z-20 flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-2 rounded-full border border-border/70 bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur",
         className,
       )}
     >

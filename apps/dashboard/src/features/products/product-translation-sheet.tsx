@@ -214,7 +214,11 @@ export function ProductTranslationSheet({
   return (
     <Sheet
       onOpenChange={(next) => {
-        if (saving || next) return;
+        if (saving) return;
+        if (next) {
+          setOpen(true);
+          return;
+        }
         requestLeave(() => setOpen(false));
       }}
       open={open}
@@ -247,10 +251,13 @@ export function ProductTranslationSheet({
               : t("products.translation.progress", { translated, total })}
           </SheetDescription>
         </SheetHeader>
-        <SheetBody className="relative space-y-5">
-          {queueNavigation?.loading && !loading ? (
-            <TranslationSheetLoadingNotice label={t("products.translation.loading")} />
-          ) : null}
+        {queueNavigation?.loading && !loading ? (
+          <TranslationSheetLoadingNotice
+            className="top-[4.75rem]"
+            label={t("products.translation.loading")}
+          />
+        ) : null}
+        <SheetBody className="space-y-5">
           {loading ? (
             <TranslationSheetLoadingFields count={2} label={t("products.translation.loading")} />
           ) : (

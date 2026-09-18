@@ -1,3 +1,5 @@
+import React from "react";
+
 export type ResourceIllustrationKind =
   | "empty"
   | "customers"
@@ -72,14 +74,36 @@ export function ResourceIllustrationScene({ kind }: { kind: ResourceIllustration
         </>
       ) : (
         <>
-          <path d="M27 44h50l7 31H20z" fill="currentColor" fillOpacity="0.06" />
-          <path d="m33 44 5-14h28l5 14" opacity="0.5" />
-          <path d="M23 59h16l4 7h11l4-7h22" />
-          <path d="M43 37h18" opacity="0.45" />
-          <circle cx="52" cy="23" r="3" fill="currentColor" fillOpacity="0.12" />
+          <ellipse
+            cx="52"
+            cy="80"
+            rx="30"
+            ry="4.5"
+            fill="currentColor"
+            fillOpacity="0.07"
+            stroke="none"
+          />
+          {/* Back open flaps */}
+          <path d="m26 39-9-10 26-13 9 10z" fill="currentColor" fillOpacity="0.04" />
+          <path d="m52 26 9-10 26 13-9 10z" fill="currentColor" fillOpacity="0.04" />
+          {/* Interior cavity & floor */}
+          <path d="M26 39 52 26v26L38 59z" fill="currentColor" fillOpacity="0.08" />
+          <path d="M78 39 52 26v26L66 59z" fill="currentColor" fillOpacity="0.05" />
+          <path d="m52 52 14 7-14 7-14-7z" fill="currentColor" fillOpacity="0.13" />
+          <path d="M52 26v26" opacity="0.35" />
+          {/* Front walls */}
+          <path d="M26 39v26l26 13V52z" fill="currentColor" fillOpacity="0.05" />
+          <path d="M52 52v26l26-13V39z" fill="currentColor" fillOpacity="0.09" />
+          <path d="M52 52v26" />
+          {/* Front-left parcel shipping label */}
+          <path d="m31 53 13 6.5v11l-13-6.5z" fill="oklch(0.97 0.012 265)" />
+          <path d="m34 58 7 3.5M34 63 39 65.5" opacity="0.45" strokeWidth="1.5" />
+          {/* Front folded flaps */}
+          <path d="m26 39-11 8 26 13 11-8z" fill="oklch(0.97 0.012 265)" />
+          <path d="m52 52 11 8 26-13-11-8z" fill="oklch(0.97 0.012 265)" />
         </>
       )}
-      <path d="M83 20v7m-3.5-3.5h7" opacity="0.7" />
+      {kind !== "empty" && <path d="M83 20v7m-3.5-3.5h7" opacity="0.7" />}
     </g>
   );
 }

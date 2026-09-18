@@ -61,8 +61,6 @@ export function AccountMenu({
     if (demoMode) return;
     if (isSigningOut) return;
     setIsSigningOut(true);
-    setMenuOpen(false);
-    closeMobileSidebar();
     const response = await fetch("/sign-out", {
       headers: { accept: "application/json" },
       method: "POST",
