@@ -9,7 +9,6 @@ import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { ProfileAvatar } from "@/components/app/profile-avatar";
-import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ import {
 } from "@/features/settings/account-security-parts";
 import { ProfileAvatarEditor } from "@/features/settings/profile-avatar-editor";
 import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -56,9 +54,11 @@ type AccountSession = {
 export function AccountSecurityPanel({
   email,
   initialName,
+  onDirtyChange,
 }: {
   email: string;
   initialName: string | null;
+  onDirtyChange?: (changes: readonly string[]) => void;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -132,7 +132,35 @@ export function AccountSecurityPanel({
     newPassword,
   ]);
 
-  const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(accountDirty);
+  const accountChanges = useMemo(() => {
+    const changes: string[] = [];
+    if (name.trim() !== (initialName ?? "").trim()) {
+      changes.push(t("settings.accountSecurity.displayName"));
+    }
+    if (avatarDirty) changes.push(t("settings.accountSecurity.avatar.title"));
+    if (editingEmail && newEmail.trim().length > 0) {
+      changes.push(t("settings.accountSecurity.emailTitle"));
+    }
+    if (currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0) {
+      changes.push(t("settings.accountSecurity.password"));
+    }
+    return changes;
+  }, [
+    avatarDirty,
+    confirmPassword,
+    currentPassword,
+    editingEmail,
+    initialName,
+    name,
+    newEmail,
+    newPassword,
+    t,
+  ]);
+
+  useEffect(() => {
+    onDirtyChange?.(accountDirty ? accountChanges : []);
+    return () => onDirtyChange?.([]);
+  }, [accountChanges, accountDirty, onDirtyChange]);
 
   const [sessions, setSessions] = useState<AccountSession[]>([]);
   const [sessionsVisible, setSessionsVisible] = useState(SESSIONS_PAGE_SIZE);
@@ -446,8 +474,11 @@ export function AccountSecurityPanel({
                 </span>
               </button>
             </DialogTrigger>
-            <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl p-0 sm:max-w-3xl">
-              <DialogHeader className="px-4 pt-4">
+            <DialogContent
+              className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl p-0 sm:max-w-3xl"
+              onOpenAutoFocus={(event) => event.preventDefault()}
+            >
+              <DialogHeader className="px-4 pt-4 pr-10">
                 <DialogTitle>{t("settings.accountSecurity.avatar.title")}</DialogTitle>
                 <DialogDescription>{t("settings.accountSecurity.avatar.hint")}</DialogDescription>
               </DialogHeader>
@@ -460,7 +491,7 @@ export function AccountSecurityPanel({
                   disabled={savingProfile}
                 />
               </div>
-              <DialogFooter className="mx-0 mb-0 rounded-none">
+              <DialogFooter className="mx-0 mb-0 rounded-none [&_button]:min-h-11 sm:[&_button]:min-h-0">
                 <DialogClose asChild>
                   <Button variant="outline" type="button">
                     {t("common.cancel")}
@@ -921,8 +952,6 @@ export function AccountSecurityPanel({
         title={t("settings.accountSecurity.signOutOthersTitle")}
         tone="destructive"
       />
-
-      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </SettingsSectionBody>
   );
 }

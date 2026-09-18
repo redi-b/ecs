@@ -1,7 +1,7 @@
 "use client";
 import { shopDetailsSchema } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAccess } from "@/components/app/access-context";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
@@ -97,6 +97,7 @@ export function SettingsWorkspace({
   const [isPending, startTransition] = useTransition();
   const [savingFee, setSavingFee] = useState(false);
   const [storefrontLanguageDirty, setStorefrontLanguageDirty] = useState(false);
+  const [accountChanges, setAccountChanges] = useState<readonly string[]>([]);
   const nameId = useId();
   const handleId = useId();
   const deliveryFeeId = useId();
@@ -120,13 +121,28 @@ export function SettingsWorkspace({
     );
   const parsedDetails = currentShopDetails;
   const shopDirty = nameChanged || handleChanged || detailsDirty;
+  const shopChanges = useMemo(() => {
+    const changes: string[] = [];
+    if (nameChanged) changes.push(t("settings.shop.name"));
+    if (handleChanged) changes.push(t("settings.shop.handle"));
+    if (detailsDirty) changes.push(t("settings.shop.contactDetails"));
+    return changes;
+  }, [detailsDirty, handleChanged, nameChanged, t]);
+  const pendingChanges =
+    section === "shop"
+      ? shopChanges
+      : section === "storefront" && storefrontLanguageDirty
+        ? [t("settings.storefront.languagesTitle")]
+        : section === "account"
+          ? accountChanges
+          : [];
   const canSaveShop =
     name.trim().length >= 2 &&
     normalizedHandle.length >= 3 &&
     (!detailsDirty || parsedDetails.success) &&
     (!handleChanged || handleAvailability.status === "available");
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
-    shopDirty || storefrontLanguageDirty,
+    shopDirty || storefrontLanguageDirty || accountChanges.length > 0,
   );
   const visibleSections = (
     [
@@ -465,7 +481,11 @@ export function SettingsWorkspace({
           {section === "domains" ? <DomainsSection initialDomains={domains} /> : null}
 
           {section === "account" ? (
-            <AccountSecurityPanel email={summary.actor.email} initialName={summary.actor.name} />
+            <AccountSecurityPanel
+              email={summary.actor.email}
+              initialName={summary.actor.name}
+              onDirtyChange={setAccountChanges}
+            />
           ) : null}
         </div>
       </div>
@@ -499,7 +519,12 @@ export function SettingsWorkspace({
         </DialogContent>
       </Dialog>
 
-      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
+      <UnsavedChangesDialog
+        changes={pendingChanges}
+        onLeave={confirmLeave}
+        onStay={cancelLeave}
+        open={leaveDialogOpen}
+      />
     </div>
   );
 }

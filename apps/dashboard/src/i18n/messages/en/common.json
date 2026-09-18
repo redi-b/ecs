@@ -109,6 +109,7 @@
     "eyebrow": "Unsaved",
     "title": "Leave without saving?",
     "description": "You have unsaved changes. If you leave now, those changes will be lost.",
+    "summary": "Changes to save",
     "stay": "Stay",
     "leave": "Leave anyway"
   },
