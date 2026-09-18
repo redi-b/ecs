@@ -164,7 +164,7 @@ export function MediaLibraryDialog({
       ) : null}
       <Dialog onOpenChange={setDialogOpen} open={open}>
         <DialogContent
-          className="z-[80] flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
+          className="z-[80] flex max-h-[min(90vh,48rem)] w-full flex-col gap-0 overflow-visible p-0 sm:max-w-4xl"
           overlayClassName="z-[75]"
         >
           <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 text-left sm:px-5">
@@ -414,7 +414,7 @@ export function MediaLibraryDialog({
 
           <div
             className={cn(
-              "flex shrink-0 flex-col-reverse gap-2 border-t bg-muted/50 p-4",
+              "flex shrink-0 flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4",
               "sm:flex-row sm:items-center sm:justify-between",
             )}
             data-slot="dialog-footer"

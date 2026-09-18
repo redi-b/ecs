@@ -409,7 +409,7 @@ function PromotionCreateDialogInner() {
             {t("promotions.create.trigger")}
           </Button>
         </DialogTrigger>
-        <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogContent className="flex max-h-[min(92dvh,44rem)] flex-col gap-0 overflow-visible p-0 sm:max-w-2xl">
           <DialogHeader className="shrink-0 gap-1.5 border-b border-border/80 px-4 py-4 text-left sm:px-5">
             <DialogTitle className="font-medium tracking-tight">
               {t("promotions.create.trigger")}

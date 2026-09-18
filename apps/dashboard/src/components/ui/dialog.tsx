@@ -57,6 +57,9 @@ function DialogContent({
 }) {
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
 
+  // This root also hosts nested popovers. Keep it overflow-visible; put scrolling
+  // or rounded-corner clipping on an inner content wrapper, never on this root.
+
   return (
     <DialogPortal>
       <DialogOverlay className={overlayClassName} />

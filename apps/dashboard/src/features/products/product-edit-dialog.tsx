@@ -47,9 +47,7 @@ import {
   CollectionPicker,
   NO_COLLECTION_VALUE,
 } from "@/features/products/product-form-fields";
-import {
-  ProductOptionsWorkspace,
-} from "@/features/products/product-form-sections";
+import { ProductOptionsWorkspace } from "@/features/products/product-form-sections";
 import {
   getProductDefaultValues,
   getProductPayload,
@@ -108,7 +106,10 @@ export function ProductDetailsEditButton({
   });
   useEffect(() => {
     if (handleAvailability.status !== "taken" || !handleAvailability.suggestedHandle) return;
-    setValues((current) => ({ ...current, handle: handleAvailability.suggestedHandle ?? current.handle }));
+    setValues((current) => ({
+      ...current,
+      handle: handleAvailability.suggestedHandle ?? current.handle,
+    }));
     setAdjustedHandle(handleAvailability.suggestedHandle);
   }, [handleAvailability.status, handleAvailability.suggestedHandle]);
 
@@ -382,73 +383,75 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
         {t("common.edit")}
       </Button>
       <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : requestClose())} open={open}>
-        <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
-          <DialogHeader className="border-b px-4 py-4 pr-12 sm:px-5">
-            <DialogTitle>{t("products.detail.editOptions")}</DialogTitle>
-            <DialogDescription>{t("products.edit.optionsDesc")}</DialogDescription>
-          </DialogHeader>
-          <form
-            className="flex min-h-0 flex-1 flex-col"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submitEdit();
-            }}
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
-              <div className="grid gap-4">
-                {error ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                ) : null}
-                <ProductOptionsWorkspace
-                  onApplyDefaults={() => {
-                    update({
-                      variantOverrides: Object.fromEntries(
-                        getVariantRows(values).map((row) => [
-                          row.key,
-                          {
-                            ...values.variantOverrides[row.key],
-                            priceAmount: values.priceAmount,
-                            stockedQuantity: values.initialStock,
-                          },
-                        ]),
-                      ),
-                    });
-                  }}
-                  onOptionsChange={(options) => update({ options })}
-                  onOverrideChange={(key, override) =>
-                    update({
-                      variantOverrides: {
-                        ...values.variantOverrides,
-                        [key]: { ...values.variantOverrides[key], ...override },
-                      },
-                    })
-                  }
-                  options={values.options}
-                  rows={getVariantRows(values)}
-                  values={values.variantOverrides}
-                />
-                {removedVariants.length ? (
-                  <Alert>
-                    <AlertTitle>{t("products.edit.variantRemovalTitle")}</AlertTitle>
-                    <AlertDescription>
-                      {t("products.edit.variantRemovalDesc", { count: removedVariants.length })}
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
+        <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-visible p-0 sm:max-w-5xl">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[inherit]">
+            <DialogHeader className="border-b px-4 py-4 pr-12 sm:px-5">
+              <DialogTitle>{t("products.detail.editOptions")}</DialogTitle>
+              <DialogDescription>{t("products.edit.optionsDesc")}</DialogDescription>
+            </DialogHeader>
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitEdit();
+              }}
+            >
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+                <div className="grid gap-4">
+                  {error ? (
+                    <Alert variant="destructive">
+                      <AlertTitle>{t("products.edit.toastError")}</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  ) : null}
+                  <ProductOptionsWorkspace
+                    onApplyDefaults={() => {
+                      update({
+                        variantOverrides: Object.fromEntries(
+                          getVariantRows(values).map((row) => [
+                            row.key,
+                            {
+                              ...values.variantOverrides[row.key],
+                              priceAmount: values.priceAmount,
+                              stockedQuantity: values.initialStock,
+                            },
+                          ]),
+                        ),
+                      });
+                    }}
+                    onOptionsChange={(options) => update({ options })}
+                    onOverrideChange={(key, override) =>
+                      update({
+                        variantOverrides: {
+                          ...values.variantOverrides,
+                          [key]: { ...values.variantOverrides[key], ...override },
+                        },
+                      })
+                    }
+                    options={values.options}
+                    rows={getVariantRows(values)}
+                    values={values.variantOverrides}
+                  />
+                  {removedVariants.length ? (
+                    <Alert>
+                      <AlertTitle>{t("products.edit.variantRemovalTitle")}</AlertTitle>
+                      <AlertDescription>
+                        {t("products.edit.variantRemovalDesc", { count: removedVariants.length })}
+                      </AlertDescription>
+                    </Alert>
+                  ) : null}
+                </div>
               </div>
-            </div>
-            <DialogFooter className="m-0 rounded-none px-4 py-3 sm:px-5">
-              <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={isSaving} type="submit">
-                {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter className="m-0 rounded-none px-4 py-3 sm:px-5">
+                <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+                <Button disabled={isSaving} type="submit">
+                  {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
+                </Button>
+              </DialogFooter>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />

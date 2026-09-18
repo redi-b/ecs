@@ -78,7 +78,7 @@ function CommandInput({
   if (isPanel) {
     const panelInputClassName = cn(
       inputClassName,
-      "px-3 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0",
+      "px-2 border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0",
     );
     return (
       <div data-slot="command-input-wrapper" className="px-1.5 pt-1.5 pb-1.5">
@@ -91,6 +91,9 @@ function CommandInput({
             "has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50",
           )}
         >
+          <InputGroupAddon align="inline-start" className="pl-2.5!">
+            <SearchIcon className="size-3.5 text-muted-foreground" aria-hidden />
+          </InputGroupAddon>
           {typeof value === "string" && onValueChange ? (
             <CommandPrimitive.Input
               data-slot="input-group-control"
@@ -132,10 +135,7 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className={cn(
-        "border-b border-border/60",
-        isLg ? "px-3 py-2" : "px-1.5 py-1",
-      )}
+      className={cn("border-b border-border/60", isLg ? "px-3 py-2" : "px-1.5 py-1")}
     >
       <InputGroup
         className={cn(
@@ -148,10 +148,7 @@ function CommandInput({
       >
         <InputGroupAddon align="inline-start" className="gap-1 pl-0.5!">
           <SearchIcon
-            className={cn(
-              "shrink-0 text-muted-foreground",
-              isLg ? "size-4" : "size-3.5",
-            )}
+            className={cn("shrink-0 text-muted-foreground", isLg ? "size-4" : "size-3.5")}
           />
         </InputGroupAddon>
         {typeof value === "string" && onValueChange ? (

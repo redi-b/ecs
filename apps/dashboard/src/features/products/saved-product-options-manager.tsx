@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { DataTable } from "@/components/app/data-table";
-import { EcsArtwork } from "@/components/app/ecs-brand";
 import { DataTableHeader } from "@/components/app/data-table-header";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { ListSummary } from "@/components/app/list-page-controls";
@@ -41,6 +41,7 @@ import { ProductOptionValuesField } from "@/features/products/product-option-val
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
+import { cn } from "@/lib/utils";
 
 type SavedValue = { label: string; swatch?: { kind: "color"; value: string } | null };
 type SavedOption = { id: string; title: string; values: SavedValue[] };
@@ -369,7 +370,7 @@ function SavedOptionEditDialog({
       <Content
         className={
           option.isNew
-            ? "flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
+            ? "flex max-h-[85dvh] flex-col gap-0 overflow-visible p-0 sm:max-w-lg"
             : "gap-0 sm:max-w-lg"
         }
       >
@@ -475,7 +476,12 @@ function SavedOptionEditDialog({
             </Field>
           </fieldset>
         </div>
-        <Footer className="m-0 shrink-0 flex-row justify-end gap-2 rounded-none border-t p-4">
+        <Footer
+          className={cn(
+            "m-0 shrink-0 flex-row justify-end gap-2 border-t p-4",
+            option.isNew ? "rounded-b-xl" : "rounded-none",
+          )}
+        >
           <Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">
             {t("common.cancel")}
           </Button>
