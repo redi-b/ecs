@@ -1,8 +1,4 @@
 import type { SuperadminTenant } from "@ecs/contracts";
-import type { createInsightsSalesService } from "../modules/analytics/insights-sales.js";
-import type { createInsightsProductsService } from "../modules/analytics/insights-products.js";
-import type { createInsightsDemandService } from "../modules/analytics/insights-demand.js";
-import type { createInsightsStorefrontService } from "../modules/analytics/insights-storefront.js";
 import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
 import type {
   PlatformAuthorizationResult,
@@ -14,6 +10,10 @@ import type {
   AnalyticsEventRecordResult,
   TenantInsightsSummaryResult,
 } from "../modules/analytics/analytics-service.js";
+import type { createInsightsDemandService } from "../modules/analytics/insights-demand.js";
+import type { createInsightsProductsService } from "../modules/analytics/insights-products.js";
+import type { createInsightsSalesService } from "../modules/analytics/insights-sales.js";
+import type { createInsightsStorefrontService } from "../modules/analytics/insights-storefront.js";
 import type { StorefrontBehaviorEvent } from "../modules/analytics/storefront-analytics-bridge.js";
 import type { StorefrontInsightsSnapshot } from "../modules/analytics/storefront-insights-service.js";
 import type {
@@ -360,7 +360,7 @@ export type PlatformAppOptions = {
     | undefined;
   updateStorefrontDraft?:
     | ((input: {
-      data: unknown;
+        data: unknown;
         languageSettings?: import("@ecs/contracts").StorefrontLanguageSettings;
         localizedContent?: import("@ecs/contracts").StorefrontLocalizedContent;
         tenantId: string;
@@ -855,12 +855,18 @@ export type PlatformAppOptions = {
   getMerchantCatalogTranslation?:
     | ((input: CatalogTranslationResourceInput) => Promise<CatalogTranslationReadResult>)
     | undefined;
+  getMerchantCatalogTranslations?: ReturnType<
+    typeof import("../adapters/medusa/catalog-translation-service.js").createMedusaCatalogTranslationService
+  >["readMany"];
   listMerchantCatalogTranslationReadiness?:
     | ((input: CatalogTranslationQueueInput) => Promise<CatalogTranslationQueueResult>)
     | undefined;
   updateMerchantCatalogTranslation?:
     | ((input: CatalogTranslationUpdateInput) => Promise<CatalogTranslationWriteResult>)
     | undefined;
+  updateMerchantCatalogTranslations?: ReturnType<
+    typeof import("../adapters/medusa/catalog-translation-service.js").createMedusaCatalogTranslationService
+  >["writeMany"];
   listMerchantProductCategories?:
     | ((input: {
         visibility?: string | undefined;

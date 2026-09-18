@@ -78,6 +78,80 @@ test("reads and writes a tenant-owned product option translation", async () => {
   assert.deepEqual(synchronizedProductIds, ["prod_1"]);
 });
 
+test("reads and writes a product translation bundle with bounded Medusa requests", async () => {
+  const requests: string[] = [];
+  const service = createMedusaCatalogTranslationService({
+    adminApiToken: "token",
+    medusaInternalUrl: "http://medusa.test",
+    fetcher: async (input, init) => {
+      const url = requestUrl(input);
+      requests.push(`${init?.method ?? "GET"} ${url.pathname}`);
+      if (url.pathname === "/admin/products/prod_1") {
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Shirt",
+            description: "Soft cotton",
+            sales_channels: [{ id: "sc_1" }],
+            options: [
+              {
+                id: "opt_color",
+                title: "Color",
+                values: [{ id: "optval_blue", value: "Blue" }],
+              },
+            ],
+            variants: [],
+          },
+        });
+      }
+      if (url.pathname === "/admin/translations") {
+        return Response.json({ translations: [], count: 0 });
+      }
+      if (url.pathname === "/admin/translations/batch") {
+        return Response.json({ created: [], updated: [], deleted: { ids: [] } });
+      }
+      if (url.pathname === "/admin/product-search") {
+        return Response.json({ accepted: 1 }, { status: 202 });
+      }
+      return Response.json({}, { status: 404 });
+    },
+  });
+  const items = [
+    { resourceId: "prod_1", resourceType: "product" as const },
+    { productId: "prod_1", resourceId: "opt_color", resourceType: "product_option" as const },
+    {
+      productId: "prod_1",
+      resourceId: "optval_blue",
+      resourceType: "product_option_value" as const,
+    },
+  ].map((item) => ({
+    ...item,
+    locale: "am" as const,
+    salesChannelId: "sc_1",
+    tenantId: "tenant_1",
+  }));
+
+  const loaded = await service.readMany(items);
+  assert.equal(loaded.ok && loaded.resources.length, 3);
+  assert.deepEqual(requests, ["GET /admin/products/prod_1", "GET /admin/translations"]);
+
+  requests.length = 0;
+  const saved = await service.writeMany(
+    items.map((item) => ({
+      ...item,
+      translations:
+        item.resourceType === "product_option_value" ? { value: "ሰማያዊ" } : { title: "ትርጉም" },
+    })),
+  );
+  assert.equal(saved.ok && saved.resources.length, 3);
+  assert.deepEqual(requests, [
+    "GET /admin/products/prod_1",
+    "GET /admin/translations",
+    "POST /admin/translations/batch",
+    "POST /admin/product-search",
+  ]);
+});
+
 test("does not expose a product from another sales channel", async () => {
   let translationRequested = false;
   const service = createMedusaCatalogTranslationService({

@@ -26,12 +26,9 @@ import {
   categoryBelongsToTenantById,
   collectionBelongsToTenantById,
   filterProductIdsBySalesChannel,
-  productBelongsToSalesChannel,
-  productExistsInSalesChannel,
   productIsInSalesChannel,
 } from "./ownership.js";
 import {
-  getEmptyProductStock,
   getInventoryItemStock,
   getProductInventoryContext,
   getProductVariantInventoryContext,
@@ -51,16 +48,14 @@ import type {
   ProductWriteInput,
 } from "./types.js";
 import {
-  getInventoryItemLevelsUrl,
+  getPlatformProductUpdateUrl,
   getProductCategoriesBaseUrl,
   getProductCollectionsBaseUrl,
   getProductDetailUrl,
   getProductOwnershipUrl,
-  getPlatformProductUpdateUrl,
   getProductSearchUrl,
   getProductsBaseUrl,
   getProductsUrl,
-  getProductUrl,
   getTenantTaxonomyUrl,
   normalizeBaseUrl,
 } from "./urls.js";
@@ -383,18 +378,19 @@ export function createMedusaProductService(options: {
       const remove = (input.remove ?? []).filter(Boolean);
       if (!add.length && !remove.length) return { ok: true };
 
-      // Ensure products are on this merchant sales channel before linking.
-      for (const productId of [...add, ...remove]) {
-        const inChannel = await productExistsInSalesChannel(fetcher, options, {
-          productId,
-          salesChannelId: input.salesChannelId,
-        });
-        if (typeof inChannel === "object") {
-          return inChannel;
-        }
-        if (!inChannel) {
-          return { error: "product_not_found", ok: false, status: 404 };
-        }
+      // Verify the whole selection in one request instead of one ownership read per product.
+      const productIds = [...new Set([...add, ...remove])];
+      const ownedProductIds = await filterProductIdsBySalesChannel(
+        fetcher,
+        options,
+        productIds,
+        input.salesChannelId,
+      );
+      if (!Array.isArray(ownedProductIds)) {
+        return ownedProductIds;
+      }
+      if (ownedProductIds.length !== productIds.length) {
+        return { error: "product_not_found", ok: false, status: 404 };
       }
 
       const url = new URL(
@@ -487,7 +483,9 @@ export function createMedusaProductService(options: {
               limit: ids.length,
               offset: 0,
             });
-            ids.forEach((id: string) => url.searchParams.append("id[]", id));
+            ids.forEach((id: string) => {
+              url.searchParams.append("id[]", id);
+            });
             const hydration = await requestMedusa(fetcher, url, {
               headers: getAdminHeaders(options.adminApiToken),
             }).catch(() => undefined);

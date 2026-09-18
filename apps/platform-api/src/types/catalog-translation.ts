@@ -44,6 +44,12 @@ export type CatalogTranslationReadResult =
 
 export type CatalogTranslationWriteResult = CatalogTranslationReadResult;
 
+export type CatalogTranslationBatchReadResult =
+  | { ok: true; resources: CatalogTranslationResource[] }
+  | Exclude<CatalogTranslationReadResult, { ok: true }>;
+
+export type CatalogTranslationBatchWriteResult = CatalogTranslationBatchReadResult;
+
 export type CatalogTranslationQueueResult =
   | { ok: true; queue: CatalogTranslationQueue }
   | Exclude<CatalogTranslationReadResult, { ok: true }>;

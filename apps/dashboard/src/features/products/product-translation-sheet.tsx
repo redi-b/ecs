@@ -86,7 +86,6 @@ export function ProductTranslationSheet({
   open: controlledOpen,
   product,
   readOnly,
-  tenantId,
   queueNavigation,
   showTrigger = true,
 }: {
@@ -126,24 +125,25 @@ export function ProductTranslationSheet({
     if (!open) return;
     let active = true;
     setLoading(true);
-    Promise.all(
-      definitions.map(async (definition) => {
-        const query = new URLSearchParams({
+    fetch("/dashboard/storefront/translations/catalog", {
+      body: JSON.stringify({
+        items: definitions.map((definition) => ({
           locale: "am",
+          productId: definition.productId,
           resourceId: definition.resourceId,
           resourceType: definition.resourceType,
-        });
-        if (definition.productId) query.set("productId", definition.productId);
-        if (tenantId) query.set("tenantId", tenantId);
-        const response = await fetch(`/dashboard/storefront/translations/catalog?${query}`, {
-          cache: "no-store",
-        });
+        })),
+      }),
+      cache: "no-store",
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    })
+      .then(async (response) => {
         const data = await response.json().catch(() => null);
-        const parsed = catalogTranslationResourceSchema.safeParse(data?.resource);
+        const parsed = catalogTranslationResourceSchema.array().safeParse(data?.resources);
         if (!response.ok || !parsed.success) throw new Error("load_failed");
         return parsed.data;
-      }),
-    )
+      })
       .then((loaded) => {
         if (!active) return;
         setResources(loaded);
@@ -158,7 +158,7 @@ export function ProductTranslationSheet({
     return () => {
       active = false;
     };
-  }, [definitions, open, t, tenantId]);
+  }, [definitions, open, t]);
 
   const translated = resources.reduce((total, resource) => total + resource.translatedFields, 0);
   const total = resources.reduce((sum, resource) => sum + resource.totalFields, 0);
@@ -166,25 +166,23 @@ export function ProductTranslationSheet({
   async function save() {
     setSaving(true);
     try {
-      const updated = await Promise.all(
-        resources.map(async (resource) => {
-          const response = await fetch("/dashboard/storefront/translations/catalog", {
-            body: JSON.stringify({
-              locale: "am",
-              productId: resource.productId ?? undefined,
-              resourceId: resource.resourceId,
-              resourceType: resource.resourceType,
-              translations: drafts[resource.resourceId] ?? {},
-            }),
-            headers: { "content-type": "application/json" },
-            method: "PUT",
-          });
-          const data = await response.json().catch(() => null);
-          const parsed = catalogTranslationResourceSchema.safeParse(data?.resource);
-          if (!response.ok || !parsed.success) throw new Error("save_failed");
-          return parsed.data;
+      const response = await fetch("/dashboard/storefront/translations/catalog?operation=update", {
+        body: JSON.stringify({
+          items: resources.map((resource) => ({
+            locale: "am",
+            productId: resource.productId ?? undefined,
+            resourceId: resource.resourceId,
+            resourceType: resource.resourceType,
+            translations: drafts[resource.resourceId] ?? {},
+          })),
         }),
-      );
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      const data = await response.json().catch(() => null);
+      const parsed = catalogTranslationResourceSchema.array().safeParse(data?.resources);
+      if (!response.ok || !parsed.success) throw new Error("save_failed");
+      const updated = parsed.data;
       setResources(updated);
       setDrafts(
         Object.fromEntries(updated.map((resource) => [resource.resourceId, resource.translations])),

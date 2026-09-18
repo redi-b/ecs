@@ -6,6 +6,8 @@ import {
   storefrontCommerceLocale,
 } from "@ecs/contracts";
 import type {
+  CatalogTranslationBatchReadResult,
+  CatalogTranslationBatchWriteResult,
   CatalogTranslationQueueInput,
   CatalogTranslationQueueResult,
   CatalogTranslationReadResult,
@@ -27,6 +29,8 @@ const SOURCE_HASH_FIELD = "__ecs_source_hash";
 
 type TranslationRecord = {
   id: string;
+  reference?: string;
+  referenceId?: string;
   translations: Record<string, string>;
 };
 
@@ -89,8 +93,12 @@ function parseTranslation(value: unknown): TranslationRecord | null {
   if (!isRecord(value)) return null;
   const id = getString(value.id);
   if (!id || !isRecord(value.translations)) return null;
+  const reference = getString(value.reference);
+  const referenceId = getString(value.reference_id);
   return {
     id,
+    ...(reference ? { reference } : {}),
+    ...(referenceId ? { referenceId } : {}),
     translations: Object.fromEntries(
       Object.entries(value.translations).filter(
         (entry): entry is [string, string] => typeof entry[1] === "string",
@@ -243,13 +251,158 @@ export function createMedusaCatalogTranslationService(options: {
     return { translation } as const;
   }
 
+  async function getProductSources(inputs: CatalogTranslationResourceInput[]) {
+    if (!options.adminApiToken?.trim()) return missingCredentials();
+    const first = inputs[0];
+    if (!first) return { ok: false, error: "catalog_translation_invalid", status: 400 } as const;
+    const productId = first.resourceType === "product" ? first.resourceId : first.productId;
+    if (
+      !productId ||
+      inputs.some(
+        (input) =>
+          (input.resourceType === "product" ? input.resourceId : input.productId) !== productId ||
+          input.salesChannelId !== first.salesChannelId ||
+          input.locale !== first.locale,
+      )
+    ) {
+      return { ok: false, error: "catalog_translation_invalid", status: 400 } as const;
+    }
+    const response = await requestMedusa(
+      fetcher,
+      getProductDetailUrl(options.medusaInternalUrl, productId),
+      { headers: getAdminHeaders(options.adminApiToken) },
+    );
+    if (response.status === 404) {
+      return { ok: false, error: "catalog_translation_not_found", status: 404 } as const;
+    }
+    if (!response.ok) return mapFailure(response);
+    const data = await response.json().catch(() => undefined);
+    const product = isRecord(data?.product) ? data.product : null;
+    if (!product) {
+      return { ok: false, error: "catalog_translation_not_found", status: 404 } as const;
+    }
+    const owned = await productIsInSalesChannel(fetcher, options, {
+      product,
+      productId,
+      salesChannelId: first.salesChannelId,
+    });
+    if (typeof owned === "object") return owned;
+    if (!owned) {
+      return { ok: false, error: "catalog_translation_not_found", status: 404 } as const;
+    }
+    const sources: SourceResource[] = [];
+    for (const input of inputs) {
+      const resource = nestedProductResource(product, input);
+      if (!isRecord(resource)) {
+        return { ok: false, error: "catalog_translation_not_found", status: 404 } as const;
+      }
+      sources.push({
+        productId,
+        source: cleanSource(input.resourceType, resource),
+        title:
+          getString(resource.title) ??
+          getString(resource.value) ??
+          getString(product.title) ??
+          "Catalog item",
+      });
+    }
+    return { productId, sources } as const;
+  }
+
+  async function findTranslationsMany(inputs: CatalogTranslationResourceInput[]) {
+    const first = inputs[0];
+    if (!first) {
+      return { invalid: true } as const;
+    }
+    const url = new URL("/admin/translations", normalizeBaseUrl(options.medusaInternalUrl));
+    for (const input of inputs) url.searchParams.append("reference_id[]", input.resourceId);
+    url.searchParams.set("locale_code", storefrontCommerceLocale(first.locale));
+    url.searchParams.set("limit", String(inputs.length));
+    const response = await requestMedusa(fetcher, url, {
+      headers: getAdminHeaders(options.adminApiToken ?? ""),
+    });
+    if (!response.ok) return { response } as const;
+    const data = await response.json().catch(() => undefined);
+    const translations: TranslationRecord[] = Array.isArray(data?.translations)
+      ? data.translations.flatMap((value: unknown) => {
+          const parsed = parseTranslation(value);
+          return parsed?.reference && parsed.referenceId ? [parsed] : [];
+        })
+      : [];
+    return {
+      translations: new Map(
+        translations.map((translation: TranslationRecord) => [
+          `${translation.reference}:${translation.referenceId}`,
+          translation,
+        ]),
+      ),
+    } as const;
+  }
+
+  function makeResource(
+    input: CatalogTranslationResourceInput,
+    sourceResult: SourceResource,
+    stored: Record<string, string>,
+  ): CatalogTranslationResource {
+    const translations = Object.fromEntries(
+      Object.entries(stored).filter(([field]) => field !== SOURCE_HASH_FIELD),
+    );
+    const fields = Object.keys(sourceResult.source);
+    return {
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      productId: sourceResult.productId,
+      locale: input.locale,
+      title: sourceResult.title,
+      source: sourceResult.source,
+      translations,
+      status: translationStatus(sourceResult.source, stored),
+      translatedFields: fields.filter((field) => translations[field]?.trim()).length,
+      totalFields: fields.length,
+    };
+  }
+
+  async function readMany(
+    inputs: CatalogTranslationResourceInput[],
+  ): Promise<CatalogTranslationBatchReadResult> {
+    const sourceResults = await getProductSources(inputs);
+    if ("ok" in sourceResults) return sourceResults;
+    const found = await findTranslationsMany(inputs);
+    if ("invalid" in found) {
+      return { ok: false, error: "catalog_translation_invalid", status: 400 };
+    }
+    if ("response" in found) {
+      const failure = mapFailure(found.response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
+    const resources: CatalogTranslationResource[] = [];
+    for (const [index, input] of inputs.entries()) {
+      const source = sourceResults.sources[index];
+      if (!source) return { ok: false, error: "catalog_translation_invalid", status: 400 };
+      resources.push(
+        makeResource(
+          input,
+          source,
+          found.translations.get(`${input.resourceType}:${input.resourceId}`)?.translations ?? {},
+        ),
+      );
+    }
+    return {
+      ok: true,
+      resources,
+    };
+  }
+
   async function read(
     input: CatalogTranslationResourceInput,
   ): Promise<CatalogTranslationReadResult> {
     const sourceResult = await getSource(input);
     if ("ok" in sourceResult) return sourceResult;
     const found = await findTranslation(input);
-    if ("response" in found) return mapFailure(found.response);
+    if ("response" in found) {
+      const failure = mapFailure(found.response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
     const stored = found.translation?.translations ?? {};
     const translations = Object.fromEntries(
       Object.entries(stored).filter(([field]) => field !== SOURCE_HASH_FIELD),
@@ -286,7 +439,10 @@ export function createMedusaCatalogTranslationService(options: {
         .filter(([, value]) => value.length > 0),
     );
     const found = await findTranslation(input);
-    if ("response" in found) return mapFailure(found.response);
+    if ("response" in found) {
+      const failure = mapFailure(found.response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
     const payloadTranslations = translations;
     const body = found.translation
       ? { update: [{ id: found.translation.id, translations: payloadTranslations }] }
@@ -309,7 +465,10 @@ export function createMedusaCatalogTranslationService(options: {
         method: "POST",
       },
     );
-    if (!response.ok) return mapFailure(response);
+    if (!response.ok) {
+      const failure = mapFailure(response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
     if (sourceResult.productId) {
       // Translation storage is authoritative. Search is an eventually-consistent
       // projection, so a temporary indexing failure must not discard a valid save.
@@ -324,6 +483,87 @@ export function createMedusaCatalogTranslationService(options: {
       ).catch(() => undefined);
     }
     return read(input);
+  }
+
+  async function writeMany(
+    inputs: CatalogTranslationUpdateInput[],
+  ): Promise<CatalogTranslationBatchWriteResult> {
+    const sourceResults = await getProductSources(inputs);
+    if ("ok" in sourceResults) return sourceResults;
+    const normalized: Array<Record<string, string>> = [];
+    for (const [index, input] of inputs.entries()) {
+      const source = sourceResults.sources[index];
+      if (!source) return { ok: false, error: "catalog_translation_invalid", status: 400 };
+      const allowed = new Set(Object.keys(source.source));
+      if (Object.keys(input.translations).some((field) => !allowed.has(field))) {
+        return { ok: false, error: "catalog_translation_invalid", status: 422 };
+      }
+      normalized.push(
+        Object.fromEntries(
+          Object.entries(input.translations)
+            .map(([field, value]) => [field, value.trim()] as const)
+            .filter(([, value]) => value.length > 0),
+        ),
+      );
+    }
+    const found = await findTranslationsMany(inputs);
+    if ("invalid" in found) {
+      return { ok: false, error: "catalog_translation_invalid", status: 400 };
+    }
+    if ("response" in found) {
+      const failure = mapFailure(found.response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
+    const create: Array<Record<string, unknown>> = [];
+    const update: Array<Record<string, unknown>> = [];
+    inputs.forEach((input, index) => {
+      const translations = normalized[index] ?? {};
+      const current = found.translations.get(`${input.resourceType}:${input.resourceId}`);
+      if (current) update.push({ id: current.id, translations });
+      else {
+        create.push({
+          reference: input.resourceType,
+          reference_id: input.resourceId,
+          locale_code: storefrontCommerceLocale(input.locale),
+          translations,
+        });
+      }
+    });
+    const response = await requestMedusa(
+      fetcher,
+      new URL("/admin/translations/batch", normalizeBaseUrl(options.medusaInternalUrl)),
+      {
+        body: JSON.stringify({
+          ...(create.length ? { create } : {}),
+          ...(update.length ? { update } : {}),
+        }),
+        headers: getAdminHeaders(options.adminApiToken ?? ""),
+        method: "POST",
+      },
+    );
+    if (!response.ok) {
+      const failure = mapFailure(response);
+      return failure.ok ? { ok: false, error: "commerce_backend_error", status: 502 } : failure;
+    }
+    await requestMedusa(
+      fetcher,
+      new URL("/admin/product-search", normalizeBaseUrl(options.medusaInternalUrl)),
+      {
+        body: JSON.stringify({ ids: [sourceResults.productId] }),
+        headers: getAdminHeaders(options.adminApiToken ?? ""),
+        method: "POST",
+      },
+    ).catch(() => undefined);
+    const resources: CatalogTranslationResource[] = [];
+    for (const [index, input] of inputs.entries()) {
+      const source = sourceResults.sources[index];
+      const translations = normalized[index];
+      if (!source || !translations) {
+        return { ok: false, error: "catalog_translation_invalid", status: 400 };
+      }
+      resources.push(makeResource(input, source, translations));
+    }
+    return { ok: true, resources };
   }
 
   async function readiness(
@@ -406,5 +646,5 @@ export function createMedusaCatalogTranslationService(options: {
       : { ok: false, error: "commerce_backend_error", status: 502 };
   }
 
-  return { read, readiness, write };
+  return { read, readMany, readiness, write, writeMany };
 }
