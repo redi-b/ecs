@@ -134,12 +134,12 @@ function DialogFooter({
       )}
       {...props}
     >
-      {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
           <Button variant="outline">Close</Button>
         </DialogPrimitive.Close>
       )}
+      {children}
     </div>
   );
 }

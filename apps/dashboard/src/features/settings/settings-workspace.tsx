@@ -107,10 +107,18 @@ export function SettingsWorkspace({
   const nextHost = `${normalizedHandle || summary.tenant.handle}.${baseDomain}`;
   const handleChanged = normalizedHandle !== summary.tenant.handle;
   const nameChanged = name.trim() !== summary.tenant.name;
+  const savedShopDetails = shopDetailsSchema.safeParse(
+    summary.tenant.shopDetails ?? emptyShopDetails(),
+  );
+  const currentShopDetails = shopDetailsSchema.safeParse(shopDetails);
   const detailsDirty =
-    JSON.stringify(shopDetails) !==
-    JSON.stringify(summary.tenant.shopDetails ?? emptyShopDetails());
-  const parsedDetails = shopDetailsSchema.safeParse(shopDetails);
+    JSON.stringify(currentShopDetails.success ? currentShopDetails.data : shopDetails) !==
+    JSON.stringify(
+      savedShopDetails.success
+        ? savedShopDetails.data
+        : (summary.tenant.shopDetails ?? emptyShopDetails()),
+    );
+  const parsedDetails = currentShopDetails;
   const shopDirty = nameChanged || handleChanged || detailsDirty;
   const canSaveShop =
     name.trim().length >= 2 &&

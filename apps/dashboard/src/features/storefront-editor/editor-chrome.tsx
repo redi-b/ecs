@@ -23,6 +23,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,6 +126,7 @@ export function StorefrontEditorActions({
   showEditHints,
   settingsOpen,
   publishFallbackCount = 0,
+  publicationStatus,
 }: {
   canEdit: boolean;
   canPublish: boolean;
@@ -146,6 +148,7 @@ export function StorefrontEditorActions({
   showEditHints: boolean;
   settingsOpen: boolean;
   publishFallbackCount?: number;
+  publicationStatus: PublicationStatus;
 }) {
   const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
@@ -206,8 +209,14 @@ export function StorefrontEditorActions({
         {canPublish ? (
           <Button
             className="min-w-0"
-            disabled={isPending}
-            onClick={() => setPublishConfirmOpen(true)}
+            disabled={isPending || publicationStatus === "published"}
+            onClick={() => {
+              if (!isLive || publishFallbackCount > 0) {
+                setPublishConfirmOpen(true);
+                return;
+              }
+              onPublish();
+            }}
             size="sm"
             type="button"
           >
@@ -249,10 +258,10 @@ export function StorefrontEditorActions({
               </DropdownMenuItem>
               {canEdit ? (
                 <DropdownMenuItem asChild>
-                  <a href={editorMeta.settingsUrl}>
+                  <Link href={editorMeta.settingsUrl}>
                     <RiEditLine />
                     {t("editor.settings.changeTemplate")}
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
               ) : null}
             </DropdownMenuGroup>
@@ -504,6 +513,7 @@ export function StorefrontEditorShell({
           showEditHints={showEditHints}
           settingsOpen={settingsOpen}
           publishFallbackCount={publishFallbackCount}
+          publicationStatus={publicationStatus}
         />
       </div>
 

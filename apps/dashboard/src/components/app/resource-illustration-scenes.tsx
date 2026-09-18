@@ -74,9 +74,12 @@ export function ResourceIllustrationScene({ kind }: { kind: ResourceIllustration
         </>
       ) : (
         <>
-          <path d="m23 43 29-15 29 15v34H23z" fill="currentColor" fillOpacity="0.06" />
-          <path d="m23 43 29 15 29-15M52 58v19" opacity="0.5" />
-          <path d="m23 43-8 10 28 15 9-10 9 10 28-15-8-10" fill="oklch(0.97 0.012 265)" />
+          <rect x="20" y="25" width="64" height="55" rx="8" fill="currentColor" fillOpacity="0.05" />
+          <path d="M20 39h64" opacity="0.45" />
+          <circle cx="29" cy="32" r="2" fill="currentColor" stroke="none" opacity="0.55" />
+          <circle cx="36" cy="32" r="2" fill="currentColor" stroke="none" opacity="0.32" />
+          <path d="M31 50h19v18H31zM56 50h17M56 58h13M56 66h9" opacity="0.65" />
+          <path d="m34 63 5-6 4 4 3-3 4 5" fill="currentColor" fillOpacity="0.08" opacity="0.7" />
         </>
       )}
       <path d="M83 20v7m-3.5-3.5h7" opacity="0.7" />

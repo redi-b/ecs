@@ -317,7 +317,7 @@ export function CategoryEditSheet({
               </div>
             </SheetBody>
 
-            <SheetFooter className="flex-row justify-end gap-2 px-5 py-4">
+            <SheetFooter className="gap-2 px-5 py-4 sm:flex-row sm:justify-end">
               <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
                 {t("common.cancel")}
               </Button>
