@@ -4,7 +4,9 @@ import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreProduct, StoreProductVariant } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
 import type { StorefrontSeo } from "../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
 import type { ShellTheme } from "../../lib/theme";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   /** Template-owned storefront data; unused by the fallback shell. */
@@ -43,6 +45,7 @@ const defaultVariant: StoreProductVariant | null =
   product?.variants[0] ??
   null;
 const descriptionHtml = sanitizeProductDescription(product?.description);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 {
@@ -50,7 +53,7 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
     <StoreShell
       tenantName={tenantName}
       cartCount={cartCount}
-      title="Not found"
+      title={m.product_not_found({}, { locale })}
       primaryColor={primaryColor}
       theme={theme}
       currentPath={currentPath}
@@ -58,11 +61,11 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
       structuredData={structuredData}
     >
       <div class="sf-notice" role="status">
-        <p class="sf-eyebrow">Unavailable</p>
-        <h1 class="sf-title">Product not found</h1>
-        <p class="sf-lede">This product is unavailable or does not exist.</p>
+        <p class="sf-eyebrow">{m.product_unavailable({}, { locale })}</p>
+        <h1 class="sf-title">{m.product_not_found({}, { locale })}</h1>
+        <p class="sf-lede">{m.product_unavailable({}, { locale })}</p>
         <a class="sf-btn sf-btn-secondary" href="/products">
-          Back to products
+          {m.action_back_to_products({}, { locale })}
         </a>
       </div>
     </StoreShell>
@@ -70,7 +73,7 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
     <StoreShell
       tenantName={tenantName}
       cartCount={cartCount}
-      title={product.title ?? "Product"}
+      title={product.title ?? m.catalog_product_fallback({}, { locale })}
       primaryColor={primaryColor}
       theme={theme}
       currentPath={currentPath}
@@ -79,9 +82,9 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
     >
       {notice === "added" && (
         <div class="sf-notice sf-notice-ok" role="status">
-          Added to cart.{" "}
+          {m.product_added_to_cart({}, { locale })}{" "}
           <a href="/cart">
-            <strong>View cart</strong>
+            <strong>{m.cart_view({}, { locale })}</strong>
           </a>
         </div>
       )}
@@ -102,13 +105,14 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
         <div class="sf-stack">
           <div>
             <p class="sf-muted">
-              <a href="/products">Products</a>
+              <a href="/products">{m.catalog_products({}, { locale })}</a>
             </p>
-            <h1 class="sf-title">{product.title ?? "Product"}</h1>
+            <h1 class="sf-title">{product.title ?? m.catalog_product_fallback({}, { locale })}</h1>
             <p class="sf-card-price" style="font-size:1.25rem;margin-top:0.35rem">
               {formatMoney(
                 defaultVariant?.priceAmount ?? product.priceAmount,
                 defaultVariant?.currencyCode ?? product.currencyCode,
+                locale,
               )}
             </p>
           </div>
@@ -117,7 +121,7 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
           <form method="post" action="/actions/cart/add" class="sf-stack" style="margin-top:0.5rem">
             {product.variants.length > 1 ? (
               <div class="sf-field">
-                <label for="variantId">Option</label>
+                <label for="variantId">{m.product_select_option({ option: m.product_option({}, { locale }) }, { locale })}</label>
                 <select id="variantId" name="variantId" required>
                   {product.variants.map((variant: StoreProductVariant) => (
                     <option
@@ -127,10 +131,10 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
                     >
                       {(variant.title ||
                         variant.optionValues.map((v) => v.value).join(" / ") ||
-                        "Variant") +
-                        (variant.inStock ? "" : " (out of stock)") +
+                        m.product_select_option({ option: m.product_option({}, { locale }) }, { locale })) +
+                        (variant.inStock ? "" : ` (${m.catalog_out_of_stock({}, { locale })})`) +
                         (variant.priceAmount != null
-                          ? ` · ${formatMoney(variant.priceAmount, variant.currencyCode)}`
+                          ? ` · ${formatMoney(variant.priceAmount, variant.currencyCode, locale)}`
                           : "")}
                     </option>
                   ))}
@@ -141,7 +145,7 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
             )}
 
             <div class="sf-field">
-              <label for="quantity">Quantity</label>
+              <label for="quantity">{m.cart_quantity({}, { locale })}</label>
               <input id="quantity" name="quantity" type="number" min="1" value="1" required />
             </div>
 
@@ -156,7 +160,7 @@ const descriptionHtml = sanitizeProductDescription(product?.description);
                   product.variants.every((v: StoreProductVariant) => !v.inStock))
               }
             >
-              Add to cart
+              {m.action_add_to_cart({}, { locale })}
             </button>
           </form>
         </div>

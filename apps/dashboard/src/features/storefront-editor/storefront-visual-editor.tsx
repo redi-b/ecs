@@ -22,6 +22,8 @@ import {
   buildDraftPayload,
   buildEditorData,
   type EditorData,
+  getLocalizedStatusOverrides,
+  getLocalizedTranslations,
   getPublicationStatus,
   serializeEditorData,
 } from "./editor-state";
@@ -44,6 +46,9 @@ export function StorefrontVisualEditor({
         buildEditorData({
           ...draft,
           data: draft.published.data,
+          ...(draft.published.localizedContent
+            ? { localizedContent: draft.published.localizedContent }
+            : {}),
           themeTokens: draft.published.themeTokens,
         }),
       );
@@ -66,6 +71,7 @@ export function StorefrontVisualEditor({
   const pendingHistoryDataRef = useRef<EditorData | null>(null);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipHistoryRef = useRef(false);
+  const savedTranslationsRef = useRef(getLocalizedTranslations(initialData));
 
   useEffect(() => {
     if (canEdit) markStorefrontEditorVisited(draft.tenantId);
@@ -118,6 +124,31 @@ export function StorefrontVisualEditor({
       throw new Error(result.message);
     }
 
+    const translations = getLocalizedTranslations(data);
+    const reviewRequests = getLocalizedStatusOverrides(data);
+    const changedTranslations = Object.fromEntries(
+      Object.entries(translations).filter(
+        ([path, value]) =>
+          savedTranslationsRef.current[path] !== value || reviewRequests[path] === "ready",
+      ),
+    );
+    if (Object.keys(changedTranslations).length) {
+      const response = await fetch("/dashboard/storefront/translations/content", {
+        body: JSON.stringify({
+          locale: "am",
+          tenantId: draft.tenantId,
+          translations: changedTranslations,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(body?.message ?? "translation_save_failed");
+      }
+      savedTranslationsRef.current = { ...translations };
+    }
+
     setSavedSnapshot(serializeEditorData(data));
   }
 
@@ -134,13 +165,8 @@ export function StorefrontVisualEditor({
   }
 
   function handlePublishDraft(data: EditorData) {
-    const payload = buildPayload(data);
     const promise = (async () => {
-      const saved = await onSave(payload);
-
-      if (!saved.ok) {
-        throw new Error(saved.message);
-      }
+      await saveCurrentDraft(data);
 
       const published = await onPublish(draft.tenantId);
 
@@ -156,7 +182,12 @@ export function StorefrontVisualEditor({
 
     setIsPending(true);
     toast.promise(promise, {
-      error: (error) => error instanceof Error && error.message === "launch_not_ready" ? t("editor.toast.launchNotReady") : error instanceof Error && error.message === "launch_check_unavailable" ? t("editor.toast.launchCheckUnavailable") : getErrorMessage(error, t("editor.toast.publishFailed")),
+      error: (error) =>
+        error instanceof Error && error.message === "launch_not_ready"
+          ? t("editor.toast.launchNotReady")
+          : error instanceof Error && error.message === "launch_check_unavailable"
+            ? t("editor.toast.launchCheckUnavailable")
+            : getErrorMessage(error, t("editor.toast.publishFailed")),
       finally: () => setIsPending(false),
       loading: t("editor.toast.publishing"),
       success: t("editor.toast.published"),
@@ -292,6 +323,7 @@ export function StorefrontVisualEditor({
     setHistory([initialData]);
     setHistoryIndex(0);
     setSavedSnapshot(initialSnapshot);
+    savedTranslationsRef.current = getLocalizedTranslations(initialData);
     setPublishedSnapshot(initialPublishedSnapshot);
     toast(t("editor.toast.reset"));
   }
@@ -335,6 +367,7 @@ export function StorefrontVisualEditor({
           onToggleEditHints={() => setShowEditHints((current) => !current)}
           onUndo={handleUndo}
           showEditHints={showEditHints}
+          enabledStorefrontLocales={draft.languageSettings?.enabledLocales ?? ["en"]}
         />
       </StorefrontEditorProvider>
 

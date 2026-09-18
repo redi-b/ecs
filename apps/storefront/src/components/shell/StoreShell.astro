@@ -5,6 +5,9 @@ import { shellStyle } from "../../lib/theme";
 import SeoHead from "./SeoHead.astro";
 import StorefrontAnalytics from "./StorefrontAnalytics.astro";
 import StructuredData from "./StructuredData.astro";
+import StorefrontLanguageSwitcher from "./StorefrontLanguageSwitcher.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface NavItem {
   label: string;
@@ -47,20 +50,21 @@ const {
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${tenantName}` : tenantName;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const style = shellStyle(theme, primaryColor);
 const links: NavItem[] =
   nav && nav.length > 0
     ? nav
     : [
-        { label: "Shop", href: "/products" },
-        { label: "Cart", href: "/cart" },
+        { label: m.nav_shop({}, { locale }), href: "/products" },
+        { label: m.nav_cart({}, { locale }), href: "/cart" },
       ];
 // Cart is always visible as a dedicated control; avoid duplicating in nav list.
 const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -84,7 +88,7 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
             {logoUrl ? <img class="sf-brand-mark" src={logoUrl} alt="" /> : null}
             <span>{tenantName}</span>
           </a>
-          <nav class="sf-nav" aria-label="Store">
+          <nav class="sf-nav" aria-label={m.a11y_store_navigation({}, { locale })}>
             {
               mainLinks.map((item) => (
                 <a
@@ -102,7 +106,7 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
               ))
             }
             <a class="sf-cart-link" href="/cart">
-              Cart
+              {m.nav_cart({}, { locale })}
               {
                 cartCount > 0 ? (
                   <span class="sf-badge" aria-live="polite">
@@ -111,6 +115,7 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
                 ) : null
               }
             </a>
+            <StorefrontLanguageSwitcher />
           </nav>
         </header>
       </div>
@@ -124,21 +129,21 @@ const mainLinks = links.filter((item) => !item.href.startsWith("/cart"));
           {footerPhone ? <p style="margin:0.25rem 0 0">{footerPhone}</p> : null}
           {
             !footerAddress && !footerPhone ? (
-              <p style="margin:0.25rem 0 0">Thanks for shopping with us.</p>
+              <p style="margin:0.25rem 0 0">{m.footer_thanks({}, { locale })}</p>
             ) : null
           }
         </div>
         {
           footerLinks.length > 0 ? (
-            <nav class="sf-footer-nav" aria-label="Footer">
+            <nav class="sf-footer-nav" aria-label={m.a11y_footer_navigation({}, { locale })}>
               {footerLinks.map((item) => (
                 <a href={item.href}>{item.label}</a>
               ))}
             </nav>
           ) : (
-            <nav class="sf-footer-nav" aria-label="Footer">
-              <a href="/products">Shop</a>
-              <a href="/cart">Cart</a>
+            <nav class="sf-footer-nav" aria-label={m.a11y_footer_navigation({}, { locale })}>
+              <a href="/products">{m.nav_shop({}, { locale })}</a>
+              <a href="/cart">{m.nav_cart({}, { locale })}</a>
             </nav>
           )
         }

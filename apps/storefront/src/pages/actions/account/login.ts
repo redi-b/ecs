@@ -2,11 +2,14 @@ import type { APIRoute } from "astro";
 
 import { authenticateStoreCustomer, getRememberedStoreCustomerCart } from "../../../lib/commerce/account.js";
 import { associateCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
+import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { customerSessionSetCookie } from "../../../lib/session/customer-cookie.js";
 import { appendSetCookies, cartIdSetCookie, getCartIdFromRequest } from "../../../lib/session/cart-cookie.js";
+import * as m from "../../../paraglide/messages.js";
 
 export const POST: APIRoute = async ({ request }) => {
+  const locale = getStorefrontActionLocale(request);
   const json = request.headers.get("accept")?.includes("application/json") ?? false;
   const form = await request.formData();
   const result = await authenticateStoreCustomer({
@@ -16,9 +19,12 @@ export const POST: APIRoute = async ({ request }) => {
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     requestHost: getRequestHost(request),
   });
-  if (!("token" in result)) return json
-    ? Response.json({ ok: false, message: result.message }, { status: result.status })
-    : redirect(`/account?error=${encodeURIComponent(result.message)}`);
+  if (!("token" in result)) {
+    const message = m.account_sign_in_failed({}, { locale });
+    return json
+      ? Response.json({ ok: false, message }, { status: result.status })
+      : redirect(`/account?error=${encodeURIComponent(message)}`);
+  }
   const cartId = getCartIdFromRequest(request);
   if (cartId) {
     const association = await associateCartWithCustomer({
@@ -28,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
       requestHost: getRequestHost(request),
     });
     if (!association.ok) {
-      const message = "We could not safely connect this cart to your account. Your cart is unchanged; please try signing in again.";
+      const message = m.account_cart_link_failed({}, { locale });
       return json
         ? Response.json({ ok: false, message }, { status: 409 })
         : redirect(`/account?error=${encodeURIComponent(message)}`);
@@ -40,9 +46,10 @@ export const POST: APIRoute = async ({ request }) => {
     requestHost: getRequestHost(request),
   });
   if (restoredCartId && typeof restoredCartId === "object") {
+    const message = m.account_cart_link_failed({}, { locale });
     return json
-      ? Response.json({ ok: false, message: restoredCartId.message }, { status: restoredCartId.status })
-      : redirect(`/account?error=${encodeURIComponent(restoredCartId.message)}`);
+      ? Response.json({ ok: false, message }, { status: restoredCartId.status })
+      : redirect(`/account?error=${encodeURIComponent(message)}`);
   }
   const headers = new Headers(json ? undefined : { Location: "/account" });
   appendSetCookies(headers, [

@@ -47,7 +47,8 @@ export const dashboardRoutes = {
   orders: "/dashboard/orders",
   ordersExportAction: "/dashboard/orders/actions/export",
   inquiries: "/dashboard/inquiries",
-  inquiryAction: (inquiryId: string) => `/dashboard/inquiries/actions/${encodeURIComponent(inquiryId)}`,
+  inquiryAction: (inquiryId: string) =>
+    `/dashboard/inquiries/actions/${encodeURIComponent(inquiryId)}`,
   orderCreateAction: "/dashboard/orders/actions/create",
   media: "/dashboard/media",
   customers: "/dashboard/customers",
@@ -64,6 +65,10 @@ export const dashboardRoutes = {
   storefrontTemplate: "/dashboard/storefront/template",
   storefrontUnpublish: "/dashboard/storefront/unpublish",
   storefrontPublish: "/dashboard/storefront/publish",
+  storefrontLanguages: "/dashboard/storefront/languages",
+  storefrontAmharic: "/dashboard/storefront/languages/am",
+  storefrontTranslations: "/dashboard/storefront/translations",
+  storefrontLanguagesAction: "/dashboard/storefront/languages",
 } as const;
 
 export type DashboardRouteHref = Extract<

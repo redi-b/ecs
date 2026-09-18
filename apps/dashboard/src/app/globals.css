@@ -369,21 +369,18 @@
     text-rendering: optimizeLegibility;
   }
 
-  /*
-   * Amharic: layout also applies next/font className (Noto Sans Ethiopic) on <html>.
-   * Keep stacks for any subtree that resets font-family.
-   */
+  /* Keep the Latin face first and Ethiopic as a glyph fallback in every locale. */
   html[lang="am"] {
-    --font-sans: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-sans: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
     --font-heading:
-      var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+      var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
     /* Match Google Fonts preview weight a bit better than super-thin system defaults */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   html[lang="am"] body {
-    font-family: var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif;
     font-weight: 400;
     letter-spacing: 0; /* tracking-tight on Latin hurts Ethiopic shapes */
   }
@@ -797,7 +794,7 @@ html[lang="am"] .storefront-editor-runtime,
 html[lang="am"] .storefront-editor-runtime--am,
 .storefront-editor-runtime--am {
   font-family:
-    var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+    var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Editor chrome (title, badges, toolbar labels). */
@@ -806,7 +803,7 @@ html[lang="am"] .storefront-editor-chrome,
 html[lang="am"] .storefront-editor-chrome *,
 .storefront-editor-runtime--am .storefront-editor-chrome * {
   font-family:
-    var(--font-ethiopic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+    var(--font-geist-sans), var(--font-ethiopic), ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Sonner: unlayered so we beat runtime-injected library CSS. */

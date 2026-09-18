@@ -5,6 +5,7 @@ import { deleteProductsWorkflow } from "@medusajs/medusa/core-flows";
 
 import {
   PRODUCT_SEARCH_FIELDS,
+  PRODUCT_SEARCH_LOCALES,
   type ProductSearchSource,
   toProductSearchDocument,
 } from "../../lib/product-search-document";
@@ -18,7 +19,7 @@ type ProductQuery = {
     fields: string[];
     filters: { id: string[] };
     context?: Record<string, unknown>;
-  }): Promise<{ data: ProductSearchSource[] }>;
+  }, options?: { locale?: string }): Promise<{ data: ProductSearchSource[] }>;
 };
 
 async function retrySearchWrite(operation: () => Promise<void>) {
@@ -41,15 +42,18 @@ export async function indexProducts(ids: string[], container: WorkflowContainer)
   try {
     const query = container.resolve<ProductQuery>("query");
     const search = container.resolve<ProductSearchProvider>(MEILISEARCH_MODULE);
-    const { data } = await query.graph({
-      entity: "product",
-      fields: [...PRODUCT_SEARCH_FIELDS],
-      filters: { id: ids },
-      context: {
-        variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
-      },
-    });
-    await retrySearchWrite(() => search.upsertProducts(data.map(toProductSearchDocument)));
+    const localized = await Promise.all(PRODUCT_SEARCH_LOCALES.map(async (locale) => {
+      const { data } = await query.graph({
+        entity: "product",
+        fields: [...PRODUCT_SEARCH_FIELDS],
+        filters: { id: ids },
+        context: {
+          variants: { calculated_price: QueryContext({ currency_code: "etb" }) },
+        },
+      }, { locale });
+      return data.map((product) => toProductSearchDocument(product, locale));
+    }));
+    await retrySearchWrite(() => search.upsertProducts(localized.flat()));
   } catch (error) {
     // Search is an eventually-consistent projection. A temporary outage must
     // never roll back a product mutation; reconciliation repairs missed writes.

@@ -2,7 +2,9 @@
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreCart } from "../../lib/commerce/types";
 import { formatMoney } from "../../lib/money";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
 import type { ShellTheme } from "../../lib/theme";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   /** Template-owned storefront data; unused by the fallback shell. */
@@ -19,18 +21,19 @@ interface Props {
 const { tenantName, cartCount, primaryColor, theme, currentPath = "/cart", cart, error } =
   Astro.props;
 const items = cart?.items ?? [];
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <StoreShell
   tenantName={tenantName}
   cartCount={cartCount}
-  title="Cart"
+  title={m.cart_title({}, { locale })}
   primaryColor={primaryColor}
   theme={theme}
   currentPath={currentPath}
 >
-  <p class="sf-eyebrow">Your bag</p>
-  <h1 class="sf-title">Cart</h1>
+  <p class="sf-eyebrow">{m.cart_bag({}, { locale })}</p>
+  <h1 class="sf-title">{m.cart_title({}, { locale })}</h1>
   {
     error && (
       <div class="sf-notice sf-notice-error" role="alert">
@@ -43,12 +46,12 @@ const items = cart?.items ?? [];
     items.length === 0 ? (
       <div class="sf-notice" role="status">
         <p>
-          <strong>Your cart is empty.</strong>
+          <strong>{m.cart_empty({}, { locale })}</strong>
         </p>
-        <p class="sf-muted">Browse the shop and add something you like.</p>
+        <p class="sf-muted">{m.cart_empty_help({}, { locale })}</p>
         <div class="sf-actions">
           <a class="sf-btn" href="/products">
-            Browse products
+            {m.action_browse_products({}, { locale })}
           </a>
         </div>
       </div>
@@ -57,9 +60,9 @@ const items = cart?.items ?? [];
         <table class="sf-table">
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th>Total</th>
+              <th>{m.cart_item({}, { locale })}</th>
+              <th>{m.cart_quantity_short({}, { locale })}</th>
+              <th>{m.cart_line_total({}, { locale })}</th>
               <th />
             </tr>
           </thead>
@@ -67,11 +70,11 @@ const items = cart?.items ?? [];
             {items.map((item) => (
               <tr>
                 <td>
-                  <strong>{item.title ?? "Item"}</strong>
+                  <strong>{item.title ?? m.cart_item_fallback({}, { locale })}</strong>
                   {item.variantTitle && <div class="sf-muted">{item.variantTitle}</div>}
                   {item.productHandle && (
                     <div>
-                      <a href={`/products/${encodeURIComponent(item.productHandle)}`}>View</a>
+                      <a href={`/products/${encodeURIComponent(item.productHandle)}`}>{m.action_view({}, { locale })}</a>
                     </div>
                   )}
                 </td>
@@ -84,19 +87,19 @@ const items = cart?.items ?? [];
                       min="1"
                       value={String(item.quantity)}
                       style="width: 4.5rem"
-                      aria-label={`Quantity for ${item.title ?? "item"}`}
+                      aria-label={m.cart_quantity_for({ item: item.title ?? m.cart_item_fallback({}, { locale }) }, { locale })}
                     />
                     <button class="sf-btn sf-btn-secondary" type="submit">
-                      Update
+                      {m.action_update({}, { locale })}
                     </button>
                   </form>
                 </td>
-                <td>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode)}</td>
+                <td>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</td>
                 <td>
                   <form method="post" action="/actions/cart/remove">
                     <input type="hidden" name="lineItemId" value={item.id} />
                     <button class="sf-btn sf-btn-secondary" type="submit">
-                      Remove
+                      {m.action_remove({}, { locale })}
                     </button>
                   </form>
                 </td>
@@ -107,15 +110,15 @@ const items = cart?.items ?? [];
 
         <div class="sf-panel" style="margin-top:1.25rem;max-width:24rem;margin-left:auto">
           <div class="sf-summary-line total">
-            <span>Subtotal</span>
-            <span>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode)}</span>
+            <span>{m.cart_subtotal({}, { locale })}</span>
+            <span>{formatMoney(cart?.itemTotal ?? cart?.total, cart?.currencyCode, locale)}</span>
           </div>
           <div class="sf-actions">
             <a class="sf-btn sf-btn-accent" href="/checkout">
-              Checkout
+              {m.action_checkout({}, { locale })}
             </a>
             <a class="sf-btn sf-btn-secondary" href="/products">
-              Keep shopping
+              {m.action_continue_shopping({}, { locale })}
             </a>
           </div>
         </div>

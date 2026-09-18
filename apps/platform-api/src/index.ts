@@ -13,6 +13,7 @@ import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
+import { createMedusaCatalogTranslationService } from "./adapters/medusa/catalog-translation-service.js";
 import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
 import {
   createMedusaEnsurePickupOptionClient,
@@ -600,6 +601,10 @@ const createCapacityLimitedProduct = createProductCapacityWriter({
   resolveTenantId: resolveTenantIdByMedusaSalesChannelId,
 });
 const launchReadinessService = createLaunchReadinessService(platformDb.db, { listProducts: productService.listMerchantProducts });
+const catalogTranslationService = createMedusaCatalogTranslationService({
+  adminApiToken: medusaAdminApiToken,
+  medusaInternalUrl,
+});
 if (telegramBotToken) {
   telegramToolsBridge.deps = {
     db: platformDb.db,
@@ -1062,6 +1067,9 @@ const app = createPlatformApp({
   deleteMerchantProductOptionSet: productOptionSetService.remove,
   listMerchantProductCategories: productService.listMerchantProductCategories,
   listMerchantProductCollections: productService.listMerchantProductCollections,
+  getMerchantCatalogTranslation: catalogTranslationService.read,
+  listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,
+  updateMerchantCatalogTranslation: catalogTranslationService.write,
   listMediaAssets: mediaService.listMedia,
   syncProductMedia: mediaService.syncProductMedia,
   listNotificationPreferences: notificationService.listNotificationPreferences,

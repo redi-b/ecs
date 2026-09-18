@@ -10,7 +10,10 @@ export async function createStoreCart(
     ...options,
     path: "/store/carts",
     method: "POST",
-    body: options.regionId ? { region_id: options.regionId } : {},
+    body: {
+      ...(options.regionId ? { region_id: options.regionId } : {}),
+      ...(options.locale ? { locale: options.locale } : {}),
+    },
   });
   const data = await response.json().catch(() => undefined);
 
@@ -182,6 +185,13 @@ export async function ensureStoreCart(
   if (options.cartId) {
     const existing = await getStoreCart({ ...options, cartId: options.cartId });
     if (!isStoreError(existing) && existing.cart.id) {
+      if (options.locale && existing.cart.locale !== options.locale) {
+        return updateStoreCart({
+          ...options,
+          cartId: existing.cart.id,
+          body: { locale: options.locale },
+        });
+      }
       return existing;
     }
   }

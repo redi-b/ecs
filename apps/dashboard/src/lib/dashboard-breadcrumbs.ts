@@ -2,7 +2,7 @@ import { appRoutes } from "@/lib/navigation";
 import { dashboardRoutes } from "@/lib/routes";
 
 export type DashboardBreadcrumb = {
-  href: string;
+  href: string | null;
   id: string;
   title: string;
 };
@@ -24,6 +24,40 @@ export function getDashboardBreadcrumbTrail(
   const productOptionsRoute = productsRoute?.children?.find(
     (route) => route.href === dashboardRoutes.productOptions,
   );
+
+  if (pathname === dashboardRoutes.editor) {
+    return [
+      {
+        href: null,
+        id: "storefront-section",
+        title: "Storefront",
+      },
+      {
+        href: dashboardRoutes.editor,
+        id: "editor",
+        title: "Editor",
+      },
+    ];
+  }
+
+  if (
+    pathname === dashboardRoutes.storefrontTranslations ||
+    pathname === dashboardRoutes.storefrontLanguages ||
+    pathname === dashboardRoutes.storefrontAmharic
+  ) {
+    return [
+      {
+        href: null,
+        id: "storefront-section",
+        title: "Storefront",
+      },
+      {
+        href: dashboardRoutes.storefrontTranslations,
+        id: "storefront-translations",
+        title: "Translations",
+      },
+    ];
+  }
 
   if (productsRoute && productCategoriesRoute) {
     if (pathname === dashboardRoutes.productCategories) {

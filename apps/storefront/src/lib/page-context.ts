@@ -1,4 +1,10 @@
-import type { PublishedStorefrontConfig } from "@ecs/contracts";
+import {
+  storefrontCommerceLocale,
+  type PublishedStorefrontConfig,
+  type StorefrontCommerceLocale,
+  type StorefrontLocale,
+} from "@ecs/contracts";
+import { getStorefrontTemplateTranslationDefaults } from "@ecs/storefront-templates";
 import { getStoreCart } from "./commerce/cart.js";
 import type { StoreCart, StorefrontError } from "./commerce/types.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "./env.js";
@@ -6,6 +12,8 @@ import { getStorefrontPublicOrigin } from "./seo-origin.js";
 import { getCartIdFromRequest } from "./session/cart-cookie.js";
 import { getCustomerTokenFromRequest } from "./session/customer-cookie.js";
 import { getPublishedStorefrontConfig } from "./storefront-config.js";
+import { applyLocalizedContent } from "./localized-content.js";
+import { getStorefrontLocaleFromRequest } from "./storefront-locale.js";
 
 export type PageContext =
   | {
@@ -17,6 +25,8 @@ export type PageContext =
       cartId: string | null;
       cart: StoreCart | null;
       cartCount: number;
+      locale: StorefrontLocale;
+      commerceLocale: StorefrontCommerceLocale;
     }
   | {
       ok: false;
@@ -31,6 +41,8 @@ export async function loadPageContext(
     skipCart?: boolean;
     /** Short-lived capability used only by the editor preview route. */
     previewToken?: string;
+    /** Explicit preview language. Public requests always resolve language from the URL. */
+    locale?: StorefrontLocale;
   },
 ): Promise<PageContext> {
   const platformApiBaseUrl = getPlatformApiBaseUrl();
@@ -49,16 +61,50 @@ export async function loadPageContext(
     };
   }
 
+  const locale = options?.locale && configResult.config.storefront.languageSettings.enabledLocales.includes(options.locale)
+    ? options.locale
+    : getStorefrontLocaleFromRequest(request, configResult.config.storefront.languageSettings);
+  const commerceLocale = storefrontCommerceLocale(locale);
+  const templateDefaults =
+    locale === "am"
+      ? getStorefrontTemplateTranslationDefaults(
+          configResult.config.storefront.templateKey,
+          locale,
+        )
+      : undefined;
+  const localizedData = applyLocalizedContent({
+    source: configResult.config.storefront.data,
+    content: configResult.config.storefront.localizedContent,
+    locale,
+    defaults: templateDefaults,
+  });
+  const localizedSeo = applyLocalizedContent({
+    source: configResult.config.storefront.seo,
+    content: configResult.config.storefront.localizedContent,
+    locale,
+    prefix: "seo",
+  });
+  const config = {
+    ...configResult.config,
+    storefront: {
+      ...configResult.config.storefront,
+      data: localizedData,
+      seo: localizedSeo,
+    },
+  };
+
   if (options?.skipCart) {
     return {
       ok: true,
-      config: configResult.config,
+      config,
       platformApiBaseUrl,
       requestHost,
-      publicOrigin: getStorefrontPublicOrigin(configResult.config),
+      publicOrigin: getStorefrontPublicOrigin(config),
       cartId: null,
       cart: null,
       cartCount: 0,
+      locale,
+      commerceLocale,
     };
   }
 
@@ -71,6 +117,7 @@ export async function loadPageContext(
       cartId,
       platformApiBaseUrl,
       requestHost,
+      locale: commerceLocale,
       ...(customerToken ? { headers: { authorization: `Bearer ${customerToken}` } } : {}),
     });
     if (!isError(cartResult) && cartResult.cart.id) {
@@ -82,13 +129,15 @@ export async function loadPageContext(
 
   return {
     ok: true,
-    config: configResult.config,
+      config,
     platformApiBaseUrl,
     requestHost,
-    publicOrigin: getStorefrontPublicOrigin(configResult.config),
+    publicOrigin: getStorefrontPublicOrigin(config),
     cartId: cart?.id ?? null,
     cart,
     cartCount,
+    locale,
+    commerceLocale,
   };
 }
 

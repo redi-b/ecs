@@ -1,10 +1,12 @@
 import { productDescriptionToText } from "@ecs/content";
 import type { StoreProduct } from "./commerce/types.js";
 import type { StorefrontSeo } from "./seo.js";
+import type { StorefrontLocale } from "@ecs/contracts";
 
 type JsonLd = Record<string, unknown>;
 
 export function buildProductStructuredData(input: {
+  locale: StorefrontLocale;
   product: StoreProduct | null;
   seo: StorefrontSeo;
 }): JsonLd | null {
@@ -24,6 +26,7 @@ export function buildProductStructuredData(input: {
   return compact({
     "@context": "https://schema.org",
     "@type": "Product",
+    inLanguage: input.locale === "am" ? "am-ET" : "en-ET",
     name: product.title.trim(),
     description: productDescriptionToText(product.description) || undefined,
     image: seo.imageUrl ? [seo.imageUrl] : undefined,
@@ -43,6 +46,7 @@ export function buildProductStructuredData(input: {
 }
 
 export function buildStorefrontStructuredData(input: {
+  locale: StorefrontLocale;
   seo: StorefrontSeo;
   tenantName: string;
 }): JsonLd[] {
@@ -50,12 +54,14 @@ export function buildStorefrontStructuredData(input: {
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      inLanguage: input.locale === "am" ? "am-ET" : "en-ET",
       name: input.tenantName,
       url: input.seo.canonicalUrl,
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
+      inLanguage: input.locale === "am" ? "am-ET" : "en-ET",
       name: input.tenantName,
       url: input.seo.canonicalUrl,
     },

@@ -47,10 +47,15 @@ import type { StorefrontVisualEditorProps } from "@/features/storefront-editor/e
 import { useStorefrontEditor } from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-
+import { getEditableTranslationFields, StorefrontLocalizationPanel } from "./editor-localization";
 import { TemplatePreview } from "./editor-preview";
 import { StorefrontSettingsPanel } from "./editor-settings";
-import { type EditorData, getStorefrontPageProps, type PublicationStatus } from "./editor-state";
+import {
+  type EditorData,
+  getLocalizedTranslations,
+  getStorefrontPageProps,
+  type PublicationStatus,
+} from "./editor-state";
 
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
@@ -119,6 +124,7 @@ export function StorefrontEditorActions({
   onUndo,
   showEditHints,
   settingsOpen,
+  publishFallbackCount = 0,
 }: {
   canEdit: boolean;
   canPublish: boolean;
@@ -139,6 +145,7 @@ export function StorefrontEditorActions({
   onUndo: () => void;
   showEditHints: boolean;
   settingsOpen: boolean;
+  publishFallbackCount?: number;
 }) {
   const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
@@ -282,7 +289,24 @@ export function StorefrontEditorActions({
           tone="default"
         />
       ) : null}
-      <ConfirmDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen} tone="default" icon="question" title={t("editor.actions.publishTitle")} description={t("editor.actions.publishDescription")} confirmLabel={t("editor.actions.publish")} confirmDisabled={isPending} onConfirm={() => { setPublishConfirmOpen(false); onPublish(); }} />
+      <ConfirmDialog
+        open={publishConfirmOpen}
+        onOpenChange={setPublishConfirmOpen}
+        tone="default"
+        icon="question"
+        title={t("editor.actions.publishTitle")}
+        description={
+          publishFallbackCount > 0
+            ? t("editor.actions.publishWithFallbacks", { count: publishFallbackCount })
+            : t("editor.actions.publishDescription")
+        }
+        confirmLabel={t("editor.actions.publish")}
+        confirmDisabled={isPending}
+        onConfirm={() => {
+          setPublishConfirmOpen(false);
+          onPublish();
+        }}
+      />
       {onUnpublish ? (
         <ConfirmDialog
           cancelDisabled={isPending}
@@ -362,6 +386,7 @@ export function StorefrontEditorShell({
   onUndo,
   publicationStatus,
   showEditHints,
+  enabledStorefrontLocales,
 }: {
   canEdit: boolean;
   canPublish: boolean;
@@ -381,12 +406,20 @@ export function StorefrontEditorShell({
   onUndo: () => void;
   publicationStatus: PublicationStatus;
   showEditHints: boolean;
+  enabledStorefrontLocales: Array<"en" | "am">;
 }) {
   const { t } = useI18n();
   const data = useStorefrontEditor((api) => api.appState.data);
   const props = getStorefrontPageProps(data);
+  const publishFallbackCount = enabledStorefrontLocales.includes("am")
+    ? getEditableTranslationFields(editorMeta.templateKey, props).filter(
+        (field) => !getLocalizedTranslations(data)[field.path]?.trim(),
+      ).length
+    : 0;
   const [mobilePanel, setMobilePanel] = useState<EditorMobilePanel>("preview");
   const [previewViewport, setPreviewViewport] = useState<EditorPreviewViewport>("desktop");
+  const [previewLocale, setPreviewLocale] = useState<"en" | "am">("en");
+  const [amharicPanel, setAmharicPanel] = useState<"translation" | "design">("translation");
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const manifest = getStorefrontEditorManifest(editorMeta.templateKey);
@@ -470,6 +503,7 @@ export function StorefrontEditorShell({
           onUndo={onUndo}
           showEditHints={showEditHints}
           settingsOpen={settingsOpen}
+          publishFallbackCount={publishFallbackCount}
         />
       </div>
 
@@ -520,26 +554,41 @@ export function StorefrontEditorShell({
                   pages={previewPages}
                   value={previewPage}
                 />
-                <SegmentedControl
-                  ariaLabel={t("editor.preview.viewport")}
-                  className="shrink-0 [&_svg]:size-4"
-                  fullWidth={false}
-                  onChange={setPreviewViewport}
-                  options={[
-                    {
-                      ariaLabel: t("editor.preview.desktop"),
-                      id: "desktop",
-                      label: <RiComputerLine className="size-4" aria-hidden />,
-                    },
-                    {
-                      ariaLabel: t("editor.preview.mobile"),
-                      id: "mobile",
-                      label: <RiSmartphoneLine className="size-4" aria-hidden />,
-                    },
-                  ]}
-                  size="sm"
-                  value={previewViewport}
-                />
+                <div className="flex shrink-0 items-center gap-2">
+                  {enabledStorefrontLocales.includes("am") ? (
+                    <SegmentedControl
+                      ariaLabel={t("editor.preview.language")}
+                      fullWidth={false}
+                      onChange={setPreviewLocale}
+                      options={[
+                        { id: "en", label: "EN" },
+                        { id: "am", label: "አማ" },
+                      ]}
+                      size="sm"
+                      value={previewLocale}
+                    />
+                  ) : null}
+                  <SegmentedControl
+                    ariaLabel={t("editor.preview.viewport")}
+                    className="shrink-0 [&_svg]:size-4"
+                    fullWidth={false}
+                    onChange={setPreviewViewport}
+                    options={[
+                      {
+                        ariaLabel: t("editor.preview.desktop"),
+                        id: "desktop",
+                        label: <RiComputerLine className="size-4" aria-hidden />,
+                      },
+                      {
+                        ariaLabel: t("editor.preview.mobile"),
+                        id: "mobile",
+                        label: <RiSmartphoneLine className="size-4" aria-hidden />,
+                      },
+                    ]}
+                    size="sm"
+                    value={previewViewport}
+                  />
+                </div>
               </div>
               <div className="min-h-0 flex-1">
                 <TemplatePreview
@@ -565,6 +614,7 @@ export function StorefrontEditorShell({
                   templateKey={editorMeta.templateKey}
                   previewUrl={editorMeta.previewUrl}
                   previewPage={previewPage}
+                  previewLocale={previewLocale}
                   viewport={previewViewport}
                 />
               </div>
@@ -580,20 +630,63 @@ export function StorefrontEditorShell({
               mobilePanel !== "settings" && "max-lg:hidden",
             )}
           >
-            <StorefrontSettingsPanel
-              onSelectPath={(path) => {
-                setSelectedPath(path);
-                if (!path) return;
-                const sectionPage = manifest?.sections.find((section) =>
-                  section.fields.some(
-                    (field) => path === field.path || path.startsWith(`${field.path}.`),
-                  ),
-                )?.previewPage;
-                if (sectionPage) setPreviewPage(sectionPage);
-              }}
-              selectedPath={selectedPath}
-              templateKey={editorMeta.templateKey}
-            />
+            {previewLocale === "am" ? (
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="shrink-0 border-b border-border/80 bg-background p-2">
+                  <SegmentedControl
+                    active="muted"
+                    ariaLabel={t("editor.translations.panelLabel")}
+                    onChange={setAmharicPanel}
+                    options={[
+                      { id: "translation", label: t("editor.translations.amharicText") },
+                      { id: "design", label: t("editor.translations.sharedDesign") },
+                    ]}
+                    size="sm"
+                    value={amharicPanel}
+                  />
+                </div>
+                <div className="min-h-0 flex-1">
+                  {amharicPanel === "translation" ? (
+                    <StorefrontLocalizationPanel
+                      enabled={enabledStorefrontLocales.includes("am")}
+                      onSelectPath={(path) => {
+                        setSelectedPath(path);
+                        if (!path) return;
+                        const sectionPage = manifest?.sections.find((section) =>
+                          section.fields.some(
+                            (field) => path === field.path || path.startsWith(`${field.path}.`),
+                          ),
+                        )?.previewPage;
+                        if (sectionPage) setPreviewPage(sectionPage);
+                      }}
+                      selectedPath={selectedPath}
+                      templateKey={editorMeta.templateKey}
+                    />
+                  ) : (
+                    <StorefrontSettingsPanel
+                      onSelectPath={(path) => setSelectedPath(path)}
+                      selectedPath={selectedPath}
+                      templateKey={editorMeta.templateKey}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <StorefrontSettingsPanel
+                onSelectPath={(path) => {
+                  setSelectedPath(path);
+                  if (!path) return;
+                  const sectionPage = manifest?.sections.find((section) =>
+                    section.fields.some(
+                      (field) => path === field.path || path.startsWith(`${field.path}.`),
+                    ),
+                  )?.previewPage;
+                  if (sectionPage) setPreviewPage(sectionPage);
+                }}
+                selectedPath={selectedPath}
+                templateKey={editorMeta.templateKey}
+              />
+            )}
           </aside>
         ) : null}
       </div>

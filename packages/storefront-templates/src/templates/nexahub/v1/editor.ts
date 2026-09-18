@@ -78,18 +78,6 @@ export const nexahubV1EditorSchema = {
           kind: "text",
         },
         {
-          path: "home.featuredItem.title",
-          prop: "nexahubFeaturedTitle",
-          label: "Title",
-          kind: "text",
-        },
-        {
-          path: "home.featuredItem.body",
-          prop: "nexahubFeaturedBody",
-          label: "Description",
-          kind: "textarea",
-        },
-        {
           path: "home.featuredItem.productIds",
           prop: "nexahubFeaturedProducts",
           label: "Products",

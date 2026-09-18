@@ -1,7 +1,11 @@
 ---
 import type { CustomerAccountView } from "../../../lib/commerce/account";
+import { formatStorefrontDate } from "../../../lib/date";
 import { formatMoney } from "../../../lib/money";
 import { formatOrderReference } from "../../../lib/order-reference";
+import { orderStatusLabel } from "../../../lib/order-status-label";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
 import "./styles/pages/secondary.scss";
@@ -26,63 +30,61 @@ const {
   initialMode = "login",
 } = Astro.props;
 const template = parseNexahubData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const date = (value: string | null) => {
-  if (!value) return "Date unavailable";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime())
-    ? "Date unavailable"
-    : new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(parsed);
+  if (!value) return m.account_date_unavailable({}, { locale });
+  return formatStorefrontDate(value, locale) ?? m.account_date_unavailable({}, { locale });
 };
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
 <main class="nexa-secondary nexa-account" id="main-content">
 <div class="container nexa-secondary__frame">{account?<>
 <header class="nexa-secondary__hero">
-<span>My account</span>
+<span>{m.account_title({}, { locale })}</span>
 <div>
-<h1>Welcome back, {account.customer.firstName||"friend"}</h1>
+<h1>{m.account_welcome({ name: account.customer.firstName || m.account_friend({}, { locale }) }, { locale })}</h1>
 <p>{account.customer.email}</p>
 </div>
 </header>
 <div class="nexa-account__toolbar">
-<nav aria-label="Account sections" role="tablist">
-<a href="#order-history" role="tab" aria-selected="true" data-account-view="orders">Orders / {account.orderCount}</a>
-<a href="#saved-addresses" role="tab" aria-selected="false" data-account-view="addresses">Addresses / {account.addresses.length}</a>
-<a href="#profile-details" role="tab" aria-selected="false" data-account-view="profile">Profile</a>
+<nav aria-label={m.account_title({}, { locale })} role="tablist">
+<a href="#order-history" role="tab" aria-selected="true" data-account-view="orders">{m.account_orders({}, { locale })} / {account.orderCount}</a>
+<a href="#saved-addresses" role="tab" aria-selected="false" data-account-view="addresses">{m.account_addresses({}, { locale })} / {account.addresses.length}</a>
+<a href="#profile-details" role="tab" aria-selected="false" data-account-view="profile">{m.account_profile({}, { locale })}</a>
 </nav>
 <form action="/actions/account/logout" method="post">
-<button type="submit">Sign out</button>
+<button type="submit">{m.account_sign_out({}, { locale })}</button>
 </form>
 </div>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}{success&&<div class="nexa-notice" role="status">{success}</div>}
 <section class="nexa-data-panel" id="order-history" data-account-panel="orders">
 <header class="nexa-panel-head">
-<h2>Order history</h2>
-<span>{account.orderCount} {account.orderCount===1?"order":"orders"}</span>
+<h2>{m.account_order_history({}, { locale })}</h2>
+<span>{account.orderCount===1?m.account_item_count({ count: account.orderCount }, { locale }):m.account_item_count_plural({ count: account.orderCount }, { locale })}</span>
 </header>{account.orders.length ? (<>
 <ol class="nexa-account__orders">{account.orders.map((order,index)=>
 <li>
 <a href={`/account/orders/${encodeURIComponent(order.id)}`}>
 <span>{String(account.orderOffset+index+1).padStart(2,"0")}</span>
 <div>
-<strong>Order {formatOrderReference(order.id,order.customDisplayId)}</strong>
+<strong>{m.account_order_reference({ reference: formatOrderReference(order.id,order.customDisplayId) }, { locale })}</strong>
 <small>{date(order.createdAt)}</small>
 </div>
 <div>
-<strong>{order.total==null?"Total unavailable":formatMoney(order.total,order.currencyCode)}</strong>
-<small>{order.itemCount} items / {order.status.replaceAll("_"," ")}</small>
+<strong>{order.total==null?m.account_total_unavailable({}, { locale }):formatMoney(order.total,order.currencyCode,locale)}</strong>
+<small>{order.itemCount===1?m.account_item_count({ count: order.itemCount }, { locale }):m.account_item_count_plural({ count: order.itemCount }, { locale })} / {orderStatusLabel(order.status, locale)}</small>
 </div>
 <b aria-hidden="true">↗</b>
 </a>
-</li>)}</ol>{account.orderCount > account.orderLimit ? <nav class="nexa-pagination" aria-label="Order history pages">{account.orderOffset > 0 ? <a href={`/account?page=${Math.max(1,account.orderOffset/account.orderLimit)}`}>Previous</a> : null}<span>Page {Math.floor(account.orderOffset/account.orderLimit)+1} of {Math.ceil(account.orderCount/account.orderLimit)}</span>{account.orderOffset + account.orderLimit < account.orderCount ? <a href={`/account?page=${account.orderOffset/account.orderLimit+2}`}>Next</a> : null}</nav> : null}</>) : <div class="nexa-empty">
+</li>)}</ol>{account.orderCount > account.orderLimit ? <nav class="nexa-pagination" aria-label={m.account_order_pages({}, { locale })}>{account.orderOffset > 0 ? <a href={`/account?page=${Math.max(1,account.orderOffset/account.orderLimit)}`}>{m.account_previous({}, { locale })}</a> : null}<span>{m.account_page_count({ page: Math.floor(account.orderOffset/account.orderLimit)+1, total: Math.ceil(account.orderCount/account.orderLimit) }, { locale })}</span>{account.orderOffset + account.orderLimit < account.orderCount ? <a href={`/account?page=${account.orderOffset/account.orderLimit+2}`}>{m.account_next({}, { locale })}</a> : null}</nav> : null}</>) : <div class="nexa-empty">
 <span class="nexa-empty__index">00</span>
-<h2>No orders yet</h2>
-<p>When you place an order, you will be able to follow its progress here.</p>
-<a class="nexa-primary-action" href="/products">Explore products <span class="nexa-primary-action__icon" aria-hidden="true">↗</span></a>
+<h2>{m.account_no_orders({}, { locale })}</h2>
+<p>{m.account_no_orders_help({}, { locale })}</p>
+<a class="nexa-primary-action" href="/products">{m.action_browse_products({}, { locale })} <span class="nexa-primary-action__icon" aria-hidden="true">↗</span></a>
 </div>}</section>
 <section class="nexa-data-panel" id="saved-addresses" data-account-panel="addresses" hidden>
 <header class="nexa-panel-head">
-<h2>Saved addresses</h2>
-<span>{account.addresses.length} {account.addresses.length===1?"address":"addresses"}</span>
+<h2>{m.account_saved_addresses({}, { locale })}</h2>
+<span>{account.addresses.length===1?m.account_address_count({ count: account.addresses.length }, { locale }):m.account_address_count_plural({ count: account.addresses.length }, { locale })}</span>
 </header>
 <div class="nexa-account__addresses">{account.addresses.map((address,index)=>
 <article>
@@ -92,136 +94,136 @@ const date = (value: string | null) => {
 <strong>{address.addressName||`${address.firstName} ${address.lastName}`}</strong>
 <small>{address.address1}, {address.city}</small>
 </div>
-<b>{address.isDefaultShipping?"Default · Edit":"Edit"}</b>
+<b>{address.isDefaultShipping?`${m.account_default({}, { locale })} · ${m.account_edit({}, { locale })}`:m.account_edit({}, { locale })}</b>
 </button>
 <form class="nexa-account-form" action="/actions/account/address" method="post" hidden>
 <input type="hidden" name="addressId" value={address.id}/>
-<label>Label<input name="addressName" value={address.addressName}/>
+<label>{m.account_label({}, { locale })}<input name="addressName" value={address.addressName}/>
 </label>
-<label>Phone<input name="phone" value={address.phone}/>
+<label>{m.account_phone({}, { locale })}<input name="phone" value={address.phone}/>
 </label>
-<label>First name<input name="firstName" value={address.firstName} required/>
+<label>{m.account_first_name({}, { locale })}<input name="firstName" value={address.firstName} required/>
 </label>
-<label>Last name<input name="lastName" value={address.lastName} required/>
+<label>{m.account_last_name({}, { locale })}<input name="lastName" value={address.lastName} required/>
 </label>
-<label class="is-wide">Street address<input name="address1" value={address.address1} required/>
+<label class="is-wide">{m.account_street_address({}, { locale })}<input name="address1" value={address.address1} required/>
 </label>
-<label>City<input name="city" value={address.city} required/>
+<label>{m.account_city({}, { locale })}<input name="city" value={address.city} required/>
 </label>
-<label>Area / region<input name="province" value={address.province}/>
+<label>{m.account_region({}, { locale })}<input name="province" value={address.province}/>
 </label>
 <label class="is-wide">
 <span>
-<input type="checkbox" name="isDefaultShipping" checked={address.isDefaultShipping}/> Use first at checkout</span>
+<input type="checkbox" name="isDefaultShipping" checked={address.isDefaultShipping}/> {m.account_use_at_checkout({}, { locale })}</span>
 </label>
-<button type="submit" name="intent" value="save">Save changes</button>
-<button class="is-danger" type="submit" name="intent" value="delete">Remove address</button>
+<button type="submit" name="intent" value="save">{m.account_save_changes({}, { locale })}</button>
+<button class="is-danger" type="submit" name="intent" value="delete">{m.account_remove_address({}, { locale })}</button>
 </form>
 </article>)}<article>
 <button type="button" data-address-toggle aria-expanded="false">
 <span>+</span>
 <div>
-<strong>Add an address</strong>
-<small>Make your next checkout faster.</small>
+<strong>{m.account_add_address({}, { locale })}</strong>
+<small>{m.account_save_address_help({}, { locale })}</small>
 </div>
-<b>Open</b>
+<b>{m.account_open({}, { locale })}</b>
 </button>
 <form class="nexa-account-form" action="/actions/account/address" method="post" hidden>
-<label>Label<input name="addressName" placeholder="Home"/>
+<label>{m.account_label({}, { locale })}<input name="addressName" placeholder={m.account_home({}, { locale })}/>
 </label>
-<label>Phone<input name="phone" value={account.customer.phone}/>
+<label>{m.account_phone({}, { locale })}<input name="phone" value={account.customer.phone}/>
 </label>
-<label>First name<input name="firstName" value={account.customer.firstName} required/>
+<label>{m.account_first_name({}, { locale })}<input name="firstName" value={account.customer.firstName} required/>
 </label>
-<label>Last name<input name="lastName" value={account.customer.lastName} required/>
+<label>{m.account_last_name({}, { locale })}<input name="lastName" value={account.customer.lastName} required/>
 </label>
-<label class="is-wide">Street address<input name="address1" required/>
+<label class="is-wide">{m.account_street_address({}, { locale })}<input name="address1" required/>
 </label>
-<label>City<input name="city" value="Addis Ababa" required/>
+<label>{m.account_city({}, { locale })}<input name="city" value="Addis Ababa" required/>
 </label>
-<label>Area / region<input name="province"/>
+<label>{m.account_region({}, { locale })}<input name="province"/>
 </label>
 <label class="is-wide">
 <span>
-<input type="checkbox" name="isDefaultShipping" checked={account.addresses.length===0}/> Use first at checkout</span>
+<input type="checkbox" name="isDefaultShipping" checked={account.addresses.length===0}/> {m.account_use_at_checkout({}, { locale })}</span>
 </label>
-<button type="submit" name="intent" value="save">Save address</button>
+<button type="submit" name="intent" value="save">{m.account_save_address({}, { locale })}</button>
 </form>
 </article>
 </div>
 </section>
 <section class="nexa-data-panel" id="profile-details" data-account-panel="profile" hidden>
 <header class="nexa-panel-head">
-<h2>Profile details</h2>
-<span>Contact details</span>
+<h2>{m.account_profile_details({}, { locale })}</h2>
+<span>{m.account_contact_details({}, { locale })}</span>
 </header>
 <form class="nexa-account-form" action="/actions/account/profile" method="post">
-<label>First name<input name="firstName" value={account.customer.firstName} required autocomplete="given-name"/>
+<label>{m.account_first_name({}, { locale })}<input name="firstName" value={account.customer.firstName} required autocomplete="given-name"/>
 </label>
-<label>Last name<input name="lastName" value={account.customer.lastName} required autocomplete="family-name"/>
+<label>{m.account_last_name({}, { locale })}<input name="lastName" value={account.customer.lastName} required autocomplete="family-name"/>
 </label>
-<label class="is-wide">Email<input value={account.customer.email} readonly autocomplete="email"/>
+<label class="is-wide">{m.account_email({}, { locale })}<input value={account.customer.email} readonly autocomplete="email"/>
 </label>
-<label class="is-wide">Phone<input name="phone" value={account.customer.phone} autocomplete="tel"/>
+<label class="is-wide">{m.account_phone({}, { locale })}<input name="phone" value={account.customer.phone} autocomplete="tel"/>
 </label>
-<button type="submit">Save profile</button>
+<button type="submit">{m.account_save_profile({}, { locale })}</button>
 </form>
 </section>
 </>:<>
 <header class="nexa-secondary__hero">
-<span>Your orders, addresses, and details</span>
+<span>{m.account_title({}, { locale })}</span>
 <div>
-<h1>Welcome back</h1>
-<p>Sign in to follow your orders, reuse saved addresses, and move through checkout faster.</p>
+<h1>{m.account_guest_heading({}, { locale })}</h1>
+<p>{m.account_guest_intro({}, { locale })}</p>
 </div>
 </header>
 <div class="nexa-secondary__split">
 <aside class="nexa-info-panel">
 <header class="nexa-panel-head">
-<h2>Shop your way</h2>
-<span>Shop with or without an account</span>
+<h2>{m.account_shop_your_way({}, { locale })}</h2>
+<span>{m.account_guest_choice({}, { locale })}</span>
 </header>
 <ul class="nexa-info-list">
 <li>
-<small>Browse</small>
-<a href="/products">Continue shopping ↗</a>
+<small>{m.account_browse({}, { locale })}</small>
+<a href="/products">{m.action_continue_shopping({}, { locale })} ↗</a>
 </li>
 <li>
-<small>Need help?</small>
-<a href="/contact">Contact the shop ↗</a>
+<small>{m.account_need_help({}, { locale })}</small>
+<a href="/contact">{m.account_contact_shop({}, { locale })} ↗</a>
 </li>
 <li>
-<small>New here?</small>
-<span>Save addresses, follow every order, and spend less time at checkout.</span>
+<small>{m.account_new_here({}, { locale })}</small>
+<span>{m.account_benefit({}, { locale })}</span>
 </li>
 </ul>
 </aside>
 <section class="nexa-form-panel" data-account-auth>
 <header class="nexa-panel-head">
-<h2>{initialMode==="register"?"Create account":"Sign in"}</h2>
+<h2>{initialMode==="register"?m.account_create({}, { locale }):m.action_sign_in({}, { locale })}</h2>
 <nav role="tablist">
-<a href="/account" role="tab" aria-selected={initialMode==="login"} data-account-mode="login">Sign in</a> / <a href="/account?mode=register" role="tab" aria-selected={initialMode==="register"} data-account-mode="register">Register</a>
+<a href="/account" role="tab" aria-selected={initialMode==="login"} data-account-mode="login">{m.action_sign_in({}, { locale })}</a> / <a href="/account?mode=register" role="tab" aria-selected={initialMode==="register"} data-account-mode="register">{m.account_register({}, { locale })}</a>
 </nav>
 </header>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}<section data-auth-panel="login" hidden={initialMode!=="login"}>
 <form class="nexa-account-form" action="/actions/account/login" method="post">
-<label class="is-wide">Email<input name="email" type="email" required autocomplete="email"/>
+<label class="is-wide">{m.account_email({}, { locale })}<input name="email" type="email" required autocomplete="email"/>
 </label>
-<label class="is-wide">Password<input name="password" type="password" minlength="8" required autocomplete="current-password"/>
+<label class="is-wide">{m.account_password({}, { locale })}<input name="password" type="password" minlength="8" required autocomplete="current-password"/>
 </label>
-<button type="submit">Sign in</button>
+<button type="submit">{m.action_sign_in({}, { locale })}</button>
 </form>
 </section>
 <section data-auth-panel="register" hidden={initialMode!=="register"}>
 <form class="nexa-account-form" action="/actions/account/register" method="post">
-<label>First name<input name="firstName" required autocomplete="given-name"/>
+<label>{m.account_first_name({}, { locale })}<input name="firstName" required autocomplete="given-name"/>
 </label>
-<label>Last name<input name="lastName" required autocomplete="family-name"/>
+<label>{m.account_last_name({}, { locale })}<input name="lastName" required autocomplete="family-name"/>
 </label>
-<label class="is-wide">Email<input name="email" type="email" required autocomplete="email"/>
+<label class="is-wide">{m.account_email({}, { locale })}<input name="email" type="email" required autocomplete="email"/>
 </label>
-<label class="is-wide">Password<input name="password" type="password" minlength="8" required autocomplete="new-password"/>
+<label class="is-wide">{m.account_password({}, { locale })}<input name="password" type="password" minlength="8" required autocomplete="new-password"/>
 </label>
-<button type="submit">Create account</button>
+<button type="submit">{m.account_create({}, { locale })}</button>
 </form>
 </section>
 </section>

@@ -3,10 +3,13 @@ import StorefrontFailure from "../components/shell/StorefrontFailure.astro";
 import { loadPageContext } from "../lib/page-context";
 import { storefrontState } from "../lib/storefront-state";
 import { getStorefrontRenderer } from "../templates/registry";
+import { STOREFRONT_LOCALE_HEADER } from "../lib/storefront-locale";
+import * as m from "../paraglide/messages.js";
 
 Astro.response.status = 404;
 const ctx = await loadPageContext(Astro.request);
 const SystemState = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.SystemState : null;
-const state = storefrontState({ status: 404 });
+const locale = ctx.ok ? ctx.locale : Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const state = storefrontState({ status: 404, locale });
 ---
-{ctx.ok && SystemState ? <SystemState data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} cartCount={ctx.cartCount} {...state} /> : <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>Page not found</title></head><body><StorefrontFailure {...state} /></body></html>}
+{ctx.ok && SystemState ? <SystemState data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} cartCount={ctx.cartCount} {...state} /> : <html lang={locale}><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>{m.status_not_found_title({}, { locale })}</title></head><body><StorefrontFailure {...state} offlineTitle={m.status_offline_title({}, { locale })} offlineDescription={m.status_offline_help({}, { locale })} offlineActionLabel={m.action_retry({}, { locale })} /></body></html>}

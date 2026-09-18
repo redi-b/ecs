@@ -1,10 +1,13 @@
 import type { APIRoute } from "astro";
 
 import { isStoreError } from "../../lib/commerce/result.js";
+import { getStorefrontActionLocale } from "../../lib/action-locale.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../lib/env.js";
 import { submitStorefrontInquiry } from "../../lib/inquiries.js";
+import * as m from "../../paraglide/messages.js";
 
 export const POST: APIRoute = async ({ request }) => {
+  const locale = getStorefrontActionLocale(request);
   const wantsJson = request.headers.get("accept")?.includes("application/json") ?? false;
   const form = await request.formData();
   const type = String(form.get("type") ?? "");
@@ -15,14 +18,22 @@ export const POST: APIRoute = async ({ request }) => {
     : type === "contact"
       ? contactPayload(form)
       : null;
-  if (!inquiry) return failure(returnTo, "This inquiry type is not supported.", wantsJson, 400);
+  if (!inquiry) {
+    return failure(returnTo, m.inquiry_type_unsupported({}, { locale }), wantsJson, 400);
+  }
 
   const result = await submitStorefrontInquiry({
     platformApiBaseUrl: getPlatformApiBaseUrl(),
     requestHost: getRequestHost(request),
     inquiry,
   });
-  if (isStoreError(result)) return failure(returnTo, result.message, wantsJson, result.status);
+  if (isStoreError(result)) {
+    const message =
+      type === "product_request"
+        ? m.request_failed({}, { locale })
+        : m.contact_failed({}, { locale });
+    return failure(returnTo, message, wantsJson, result.status);
+  }
 
   if (wantsJson) {
     return Response.json({ inquiry: { id: result.id, createdAt: result.createdAt } }, { status: 201 });

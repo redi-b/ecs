@@ -3,19 +3,22 @@ import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types
 import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import chevronIcon from "./icons/chevron-down-icon.svg?raw";
 import "./styles/components/_home-product-filter-bar.scss";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 
 interface Props { collections?: StoreCollection[]; categories?: StoreCategory[]; }
 const { collections = [], categories = [] } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const groups = [
-  { label: "Collection", items: collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.title ?? "Collection", href: `/products?collection=${encodeURIComponent(value)}` }] : []; }) },
-  { label: "Product category", items: categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.name ?? "Category", href: `/products?category=${encodeURIComponent(value)}` }] : []; }) },
+  { label: m.catalog_collection({}, { locale }), items: collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.title ?? m.catalog_collection_fallback({}, { locale }), href: `/products?collection=${encodeURIComponent(value)}` }] : []; }) },
+  { label: m.catalog_category({}, { locale }), items: categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [{ label: item.name ?? m.catalog_category_fallback({}, { locale }), href: `/products?category=${encodeURIComponent(value)}` }] : []; }) },
 ].filter((group) => group.items.length);
 ---
-{groups.length > 0 && <nav class="home-product-filters" aria-label="Browse products">
-  <span>Browse by</span>
+{groups.length > 0 && <nav class="home-product-filters" aria-label={m.catalog_browse_products({}, { locale })}>
+  <span>{m.catalog_browse_by({}, { locale })}</span>
   {groups.map((group) => <details>
     <summary>{group.label}<Fragment set:html={chevronIcon} /></summary>
-    <div>{group.items.slice(0, 8).map((item) => <a href={item.href}>{item.label}</a>)}<a class="home-product-filters__all" href="/products">View all products</a></div>
+    <div>{group.items.slice(0, 8).map((item) => <a href={item.href}>{item.label}</a>)}<a class="home-product-filters__all" href="/products">{m.catalog_view_all_products({}, { locale })}</a></div>
   </details>)}
 </nav>}
 

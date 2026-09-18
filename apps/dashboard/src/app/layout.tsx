@@ -65,7 +65,6 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = (await getLocale()) as AppLocale;
   const messages = (await getMessages()) as Messages;
-  const isAmharic = locale === "am";
   const cookieStore = await cookies();
   const themePreference: SharedTheme =
     parseSharedThemeCookieValue(cookieStore.get(SHARED_THEME_COOKIE)?.value) ?? "system";
@@ -102,12 +101,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {getThemeBootstrapScript()}
         </Script>
       </head>
-      <body
-        className={cn(
-          "min-h-dvh font-sans antialiased",
-          isAmharic ? notoEthiopic.className : geistSans.className,
-        )}
-      >
+      <body className="min-h-dvh font-sans antialiased">
         <AppProviders locale={locale} messages={messages} theme={themePreference}>
           {children}
         </AppProviders>

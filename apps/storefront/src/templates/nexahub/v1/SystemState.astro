@@ -3,6 +3,8 @@ import OfflineStateEnhancer from "../../../components/shell/OfflineStateEnhancer
 import Button from "./Button.astro";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import "./styles/pages/commerce.scss";
 interface Props {
   data: unknown;
@@ -30,6 +32,7 @@ const {
   code,
 } = Astro.props;
 const template = parseNexahubData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}><main class="nexa-commerce" id="main-content" data-storefront-state><div class="container nexa-commerce__frame nexa-system-state">{code ? <p class="nexa-system-state__code">{code}</p> : null}<h1 data-state-copy data-offline-copy="You are offline">{title}</h1><p data-state-copy data-offline-copy="Reconnect to the internet, then try loading this shop again.">{description}</p>{actionHref&&actionLabel&&<div><Button text={actionLabel} href={actionHref}/></div>}</div></main><OfflineStateEnhancer /></Layout>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}><main class="nexa-commerce" id="main-content" data-storefront-state><div class="container nexa-commerce__frame nexa-system-state">{code ? <p class="nexa-system-state__code">{code}</p> : null}<h1 data-state-copy data-offline-copy={m.status_offline_title({}, { locale })}>{title}</h1><p data-state-copy data-offline-copy={m.status_offline_help({}, { locale })}>{description}</p>{actionHref&&actionLabel&&<div><Button text={actionLabel} href={actionHref}/></div>}</div></main><OfflineStateEnhancer /></Layout>
 <style>.nexa-system-state{display:grid;align-content:center;justify-items:start;min-height:clamp(28rem,68svh,46rem);gap:1.25rem}.nexa-system-state__code{margin:0;opacity:.58;font-size:.875rem}.nexa-system-state h1{max-width:13ch;margin:0;font-size:clamp(3rem,8vw,7rem);line-height:.95;letter-spacing:-.05em}.nexa-system-state>p:not(.nexa-system-state__code){max-width:54ch;margin:0;line-height:1.7;opacity:.7}</style>

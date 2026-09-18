@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import {
   DialogStepPanel,
@@ -83,6 +84,7 @@ export function ProductForm({
   collections,
   initialStep = "details",
   notice,
+  offerTranslationAfterCreate = false,
   onClose,
   open = true,
   product,
@@ -91,6 +93,7 @@ export function ProductForm({
 }: ProductFormProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const canTranslateProduct = usePermission("products.update");
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = useState<ComposerStep["id"]>(initialStep);
   const [completedSteps, setCompletedSteps] = useState<ComposerStep["id"][]>([]);
@@ -198,9 +201,21 @@ export function ProductForm({
     onSuccess: async (savedProduct) => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
       await queryClient.invalidateQueries({ queryKey: ["product", savedProduct.id] });
-      toast.success(
-        product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"),
-      );
+      if (!product && offerTranslationAfterCreate && canTranslateProduct) {
+        toast.success(t("products.composer.toastCreated"), {
+          action: {
+            label: t("products.composer.addAmharic"),
+            onClick: () =>
+              router.push(
+                `/dashboard/products/${encodeURIComponent(savedProduct.id)}?translate=am`,
+              ),
+          },
+        });
+      } else {
+        toast.success(
+          product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"),
+        );
+      }
       if (onClose) {
         onClose();
       } else {

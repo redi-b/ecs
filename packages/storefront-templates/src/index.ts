@@ -1,4 +1,5 @@
 export * from "./editor/registry";
+export * from "./editor/localization";
 export * from "./editor/schema";
 export * from "./registry";
 export * from "./templates/luvia/v1/defaults";

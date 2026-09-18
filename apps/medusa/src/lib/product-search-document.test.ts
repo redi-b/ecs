@@ -23,6 +23,9 @@ test("normalizes a tenant-filterable product search document", () => {
   });
 
   assert.equal(document.title, "Cotton Wrap");
+  assert.equal(document.id, "en-ET:prod_1");
+  assert.equal(document.product_id, "prod_1");
+  assert.equal(document.locale, "en-ET");
   assert.deepEqual(document.sales_channel_ids, ["sc_1"]);
   assert.deepEqual(document.option_values, ["Small", "Large"]);
   assert.deepEqual(document.option_pairs, ['["Size","Small"]', '["Size","Large"]']);

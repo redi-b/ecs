@@ -1,4 +1,5 @@
 import node from "@astrojs/node";
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "astro/config";
 
 import { ecsRedisCache } from "./src/cache/ecs-redis-cache.ts";
@@ -23,6 +24,10 @@ export default defineConfig({
     mode: "standalone",
   }),
   output: "server",
+  prefetch: {
+    defaultStrategy: "tap",
+    prefetchAll: false,
+  },
   cache: {
     provider: ecsRedisCache({
       redisUrl: process.env.REDIS_URL,
@@ -44,6 +49,14 @@ export default defineConfig({
     ],
   },
   vite: {
+    plugins: [
+      paraglideVitePlugin({
+        project: "./project.inlang",
+        outdir: "./src/paraglide",
+        emitTsDeclarations: true,
+        strategy: ["baseLocale"],
+      }),
+    ],
     css: {
       preprocessorOptions: {
         scss: {

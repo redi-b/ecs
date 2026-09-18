@@ -421,6 +421,13 @@
       "when": 1789502718510,
       "tag": "0059_shop_details",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1789597797582,
+      "tag": "0060_windy_vivisector",
+      "breakpoints": true
     }
   ]
 }

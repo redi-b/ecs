@@ -29,6 +29,7 @@ export async function GET(
               : undefined;
   const baseQuery: ProductSearchQuery = {
     q: input.q,
+    locale: req.locale ?? "en-ET",
     salesChannelIds,
   };
   const selected = {
@@ -68,7 +69,7 @@ export async function GET(
   return res.json({
     facet_distribution: facetDistribution,
     facet_stats: priceFacets.facetStats ?? {},
-    product_ids: result.hits.map((hit) => hit.id),
+    product_ids: result.hits.map((hit) => hit.product_id),
     count: result.estimatedTotalHits,
     index_document_count: result.indexDocumentCount,
     limit: input.limit,

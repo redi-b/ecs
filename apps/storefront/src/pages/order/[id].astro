@@ -9,8 +9,10 @@ import {
 import { getPrimaryColor, themeFromTokens } from "../../lib/theme";
 import { getCustomerTokenFromRequest } from "../../lib/session/customer-cookie";
 import { resolveRendererSlot } from "../../templates/registry";
+import * as m from "../../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request);
+const locale = ctx.ok ? ctx.locale : "en";
 const orderId = Astro.params.id ?? "";
 const lastOrder = getLastOrderFromRequest(Astro.request);
 const receiptAuthorized = isLastOrderReceiptAuthorized(orderId, lastOrder);
@@ -36,8 +38,8 @@ const OrderConfirm = ctx.ok
         !ctx.ok
           ? ctx.message
           : !receiptAuthorized
-            ? "This order confirmation is only available on the device that placed the order."
-            : "Template unavailable"
+            ? m.order_device_only({}, { locale })
+            : m.status_template_unavailable({}, { locale })
       }
     />
   ) : (

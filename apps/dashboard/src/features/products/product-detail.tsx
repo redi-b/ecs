@@ -31,6 +31,7 @@ import {
   ProductOptionsEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
+import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -42,10 +43,24 @@ type ProductDetailProps = {
   product: MerchantProduct;
   readOnly?: boolean;
   tenantId?: string | undefined;
+  translationsEnabled?: boolean;
+  translationOpen?: boolean;
+  translationQueueNavigation?:
+    | { next?: string | undefined; previous?: string | undefined }
+    | undefined;
 };
 
-export function ProductDetail({ action, product, readOnly = false, tenantId }: ProductDetailProps) {
+export function ProductDetail({
+  action,
+  product,
+  readOnly = false,
+  tenantId,
+  translationsEnabled = false,
+  translationOpen = false,
+  translationQueueNavigation,
+}: ProductDetailProps) {
   const { t } = useI18n();
+  const router = useRouter();
   const canUpdate = usePermission("products.update");
   const effectiveReadOnly = readOnly || !canUpdate;
   const taxonomy = useProductTaxonomy({ enabled: !effectiveReadOnly, tenantId });
@@ -113,6 +128,22 @@ export function ProductDetail({ action, product, readOnly = false, tenantId }: P
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <ProductStatusBadge status={product.status} />
+                  {translationsEnabled ? (
+                    <ProductTranslationSheet
+                      defaultOpen={translationOpen}
+                      onOpenChange={(open) => {
+                        if (open || typeof window === "undefined") return;
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("translate");
+                        url.searchParams.delete("translationFrom");
+                        router.replace(`${url.pathname}${url.search}`, { scroll: false });
+                      }}
+                      product={product}
+                      queueNavigation={translationQueueNavigation}
+                      readOnly={effectiveReadOnly}
+                      tenantId={tenantId}
+                    />
+                  ) : null}
                   {effectiveReadOnly ? null : (
                     <ProductDetailsEditButton
                       action={action}

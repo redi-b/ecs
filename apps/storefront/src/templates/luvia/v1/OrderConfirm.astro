@@ -2,6 +2,8 @@
 import { formatMoney } from "../../../lib/money";
 import { formatOrderReference } from "../../../lib/order-reference";
 import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
 import sparkleIcon from "./icons/sparkle-icon.svg";
@@ -31,25 +33,26 @@ const {
 const template = parseLuviaData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
 const reference = formatOrderReference(orderId);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title="Order Confirmed">
-  <main class="lv-confirmation">
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={m.order_confirmed({}, { locale })}>
+  <main class="lv-confirmation" data-copy-label={m.action_copy({}, { locale })} data-copied-label={m.action_copied({}, { locale })} data-copy-success={m.confirmation_copy_success({}, { locale })} data-copy-fallback={m.confirmation_copy_fallback({ reference: "__REFERENCE__" }, { locale })}>
     <div class="lv-confirmation__glow" aria-hidden="true"></div>
     <section class="lv-confirmation__card" aria-labelledby="confirmation-title">
       <div class="lv-confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><img src={sparkleIcon.src} alt="" /></div>
-      <p class="lv-confirmation__eyebrow">ORDER RECEIVED</p>
-      <h1 id="confirmation-title">Your ritual is<br />on its way.</h1>
-      <p class="lv-confirmation__intro">Thank you for choosing {tenantName}. We’ve received your order and the shop will prepare it with care.</p>
+      <p class="lv-confirmation__eyebrow">{m.order_received({}, { locale })}</p>
+      <h1 id="confirmation-title">{m.confirmation_luvia_heading({}, { locale })}</h1>
+      <p class="lv-confirmation__intro">{m.confirmation_luvia_intro({ shop: tenantName }, { locale })}</p>
       <div class="lv-confirmation__receipt">
-        <div><span>Order reference</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>Copy</button></div>
-        {verified && lastOrder?.total != null && <div><span>Order total</span><strong>{formatMoney(lastOrder.total, lastOrder.currencyCode)}</strong></div>}
-        <div><span>Status</span><strong>{verified ? "Confirmed" : "Order placed"}</strong></div>
+        <div><span>{m.order_reference({}, { locale })}</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>{m.action_copy({}, { locale })}</button></div>
+        {verified && lastOrder?.total != null && <div><span>{m.order_total({}, { locale })}</span><strong>{formatMoney(lastOrder.total, lastOrder.currencyCode, locale)}</strong></div>}
+        <div><span>{m.confirmation_status({}, { locale })}</span><strong>{verified ? m.order_confirmed({}, { locale }) : m.confirmation_order_placed({}, { locale })}</strong></div>
       </div>
-      <p class="lv-confirmation__notice" data-copy-status aria-live="polite">Keep this reference somewhere safe. You may need it when contacting the shop about your order.{hasCustomerSession ? " Orders placed while signed in also appear in your account." : " Create an account before your next checkout to keep future orders together."}</p>
-      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>Continue Shopping</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">View order history</ActionButton>}<ActionButton href="/" tone="secondary">Return Home</ActionButton></div>
+      <p class="lv-confirmation__notice" data-copy-status aria-live="polite">{m.confirmation_reference_help({}, { locale })} {hasCustomerSession ? m.confirmation_account_help({}, { locale }) : m.confirmation_guest_help({}, { locale })}</p>
+      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>{m.action_continue_shopping({}, { locale })}</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">{m.action_view_order_history({}, { locale })}</ActionButton>}<ActionButton href="/" tone="secondary">{m.action_return_home({}, { locale })}</ActionButton></div>
     </section>
-    <aside class="lv-confirmation__steps" aria-label="What happens next"><p>WHAT HAPPENS NEXT</p><ol><li><span>01</span><div><strong>Order review</strong><small>The shop confirms availability and fulfillment details.</small></div></li><li><span>02</span><div><strong>Careful preparation</strong><small>Your items are packed and prepared for delivery or pickup.</small></div></li><li><span>03</span><div><strong>Stay reachable</strong><small>The shop may contact you using the details provided at checkout.</small></div></li></ol></aside>
+    <aside class="lv-confirmation__steps" aria-label={m.confirmation_next({}, { locale })}><p>{m.confirmation_next({}, { locale })}</p><ol><li><span>01</span><div><strong>{m.confirmation_review({}, { locale })}</strong><small>{m.confirmation_review_help({}, { locale })}</small></div></li><li><span>02</span><div><strong>{m.confirmation_preparation({}, { locale })}</strong><small>{m.confirmation_preparation_help({}, { locale })}</small></div></li><li><span>03</span><div><strong>{m.confirmation_updates({}, { locale })}</strong><small>{m.confirmation_updates_help({}, { locale })}</small></div></li></ol></aside>
   </main>
 </Layout>
 
@@ -78,11 +81,13 @@ const reference = formatOrderReference(orderId);
       input.remove();
     }
     if (copied) {
-      button.textContent = "Copied";
-      if (status) status.textContent = "Order reference copied. Keep it somewhere safe for order support.";
-      setTimeout(() => button.textContent = "Copy", 1600);
+      const root = button.closest("[data-copy-label]");
+      button.textContent = root?.getAttribute("data-copied-label") || "";
+      if (status) status.textContent = root?.getAttribute("data-copy-success") || "";
+      setTimeout(() => button.textContent = root?.getAttribute("data-copy-label") || "", 1600);
     } else if (status) {
-      status.textContent = `Copy this order reference and keep it safe: ${value}`;
+      const root = button.closest("[data-copy-fallback]");
+      status.textContent = (root?.getAttribute("data-copy-fallback") || "").replace("__REFERENCE__", value);
     }
   });
 </script>

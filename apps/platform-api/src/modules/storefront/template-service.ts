@@ -12,7 +12,18 @@ import {
   tenants,
   tenantOnboarding,
 } from "@ecs/db";
-import { storefrontTemplates as templateRegistry } from "@ecs/storefront-templates";
+import {
+  getStorefrontLocalizationManifest,
+  storefrontTemplates as templateRegistry,
+} from "@ecs/storefront-templates";
+import {
+  defaultStorefrontLanguageSettings,
+  emptyStorefrontLocalizedContent,
+  storefrontLanguageSettingsSchema,
+  storefrontLocalizedContentSchema,
+  type StorefrontLanguageSettings,
+  type StorefrontLocalizedContent,
+} from "@ecs/contracts";
 import { and, asc, eq } from "drizzle-orm";
 import type {
   PublishedStorefrontConfigResult,
@@ -84,6 +95,46 @@ export function isTrustedStorefrontSocialImage(
 
 function getTemplate(templateKey: string): StorefrontTemplateDefinition | undefined {
   return templateRegistry.find((item) => item.templateKey === templateKey);
+}
+
+function normalizeLanguageSettings(value: unknown): StorefrontLanguageSettings {
+  const parsed = storefrontLanguageSettingsSchema.safeParse(value);
+  return parsed.success
+    ? parsed.data
+    : { ...defaultStorefrontLanguageSettings, enabledLocales: ["en"] };
+}
+
+function normalizeLocalizedContent(value: unknown): StorefrontLocalizedContent {
+  const parsed = storefrontLocalizedContentSchema.safeParse(value);
+  return parsed.success
+    ? parsed.data
+    : { ...emptyStorefrontLocalizedContent, locales: {} };
+}
+
+export function validateStorefrontLocalizedContent(input: {
+  data: unknown;
+  localizedContent: StorefrontLocalizedContent;
+  templateKey: string;
+}) {
+  const manifest = getStorefrontLocalizationManifest(input.templateKey);
+  if (!manifest) return false;
+  const allowed = new Set(["seo.title", "seo.description"]);
+
+  for (const field of manifest.fields) {
+    if (field.localization !== "localized") continue;
+    if (field.kind === "links") {
+      const links = getValueAtPath(input.data, field.path);
+      if (Array.isArray(links)) {
+        links.forEach((_, index) => allowed.add(`${field.path}.${index}.label`));
+      }
+      continue;
+    }
+    allowed.add(field.path);
+  }
+
+  return Object.values(input.localizedContent.locales).every((entries) =>
+    Object.keys(entries ?? {}).every((path) => allowed.has(path)),
+  );
 }
 
 type StorefrontDraftPayloadInput = {
@@ -177,17 +228,19 @@ export function resolveTemplateDraft(input: {
   defaultData: unknown;
   defaultThemeTokens: unknown;
   mode: "clean" | "resume";
-  saved?: { data: unknown; themeTokens: unknown } | null | undefined;
+  saved?: { data: unknown; localizedContent?: unknown; themeTokens: unknown } | null | undefined;
 }) {
   if (input.mode === "resume" && input.saved) {
     return {
       data: input.saved.data,
+      localizedContent: normalizeLocalizedContent(input.saved.localizedContent),
       source: "saved" as const,
       themeTokens: input.saved.themeTokens,
     };
   }
   return {
     data: input.defaultData,
+    localizedContent: normalizeLocalizedContent(undefined),
     source: "clean" as const,
     themeTokens: input.defaultThemeTokens,
   };
@@ -207,12 +260,18 @@ export function createStorefrontTemplateService(
         templateKey: storefrontTemplateVersions.templateKey,
         data: storefrontConfigs.draftData,
         themeTokens: storefrontConfigs.draftThemeTokens,
+        seoSettings: storefrontConfigs.seoSettings,
+        languageSettings: storefrontConfigs.languageSettings,
+        localizedContent: storefrontConfigs.localizedContent,
         updatedAt: storefrontConfigs.updatedAt,
         publishedRevisionId: storefrontConfigs.publishedRevisionId,
         publishedAt: storefrontConfigs.publishedAt,
         publishedTemplateKey: storefrontRevisions.templateKey,
         publishedData: storefrontRevisions.data,
         publishedThemeTokens: storefrontRevisions.themeTokens,
+        publishedSeoSettings: storefrontRevisions.seoSettings,
+        publishedLanguageSettings: storefrontRevisions.languageSettings,
+        publishedLocalizedContent: storefrontRevisions.localizedContent,
       })
       .from(storefrontConfigs)
       .innerJoin(tenants, eq(tenants.id, storefrontConfigs.tenantId))
@@ -246,6 +305,9 @@ export function createStorefrontTemplateService(
         templateKey: draft.templateKey,
         data: applyShopDetails(draft.data, draft.shopDetails),
         themeTokens: draft.themeTokens,
+        seo: normalizeStorefrontSeoSettings(draft.seoSettings),
+        languageSettings: normalizeLanguageSettings(draft.languageSettings),
+        localizedContent: normalizeLocalizedContent(draft.localizedContent),
         updatedAt: draft.updatedAt.toISOString(),
         published:
           draft.publishedRevisionId && draft.publishedAt
@@ -255,6 +317,9 @@ export function createStorefrontTemplateService(
                 templateKey: draft.publishedTemplateKey,
                 data: applyShopDetails(draft.publishedData, draft.shopDetails),
                 themeTokens: draft.publishedThemeTokens,
+                seo: normalizeStorefrontSeoSettings(draft.publishedSeoSettings),
+                languageSettings: normalizeLanguageSettings(draft.publishedLanguageSettings),
+                localizedContent: normalizeLocalizedContent(draft.publishedLocalizedContent),
               }
             : null,
       },
@@ -275,8 +340,10 @@ export function createStorefrontTemplateService(
           templateKey: storefrontRevisions.templateKey,
           data: storefrontRevisions.data,
           themeTokens: storefrontRevisions.themeTokens,
+          languageSettings: storefrontRevisions.languageSettings,
+          localizedContent: storefrontRevisions.localizedContent,
           publishedAt: storefrontRevisions.publishedAt,
-          seoSettings: storefrontConfigs.seoSettings,
+          seoSettings: storefrontRevisions.seoSettings,
         })
         .from(storefrontRevisions)
         .innerJoin(tenants, eq(tenants.id, storefrontRevisions.tenantId))
@@ -302,6 +369,8 @@ export function createStorefrontTemplateService(
           templateKey: revision.templateKey,
           data: applyShopDetails(revision.data, revision.shopDetails),
           themeTokens: revision.themeTokens,
+          languageSettings: normalizeLanguageSettings(revision.languageSettings),
+          localizedContent: normalizeLocalizedContent(revision.localizedContent),
           publishedAt: revision.publishedAt.toISOString(),
           seo: normalizeStorefrontSeoSettings(revision.seoSettings),
         },
@@ -414,6 +483,8 @@ export function createStorefrontTemplateService(
     getStorefrontDraft,
     updateStorefrontDraft: async (input: {
       data: unknown;
+      languageSettings?: StorefrontLanguageSettings;
+      localizedContent?: StorefrontLocalizedContent;
       tenantId: string;
       themeTokens: unknown;
       userId: string;
@@ -437,12 +508,28 @@ export function createStorefrontTemplateService(
         };
       }
 
+      const languageSettings = normalizeLanguageSettings(
+        input.languageSettings ?? currentDraft.draft.languageSettings,
+      );
+      const localizedContent = normalizeLocalizedContent(
+        input.localizedContent ?? currentDraft.draft.localizedContent,
+      );
+      if (!validateStorefrontLocalizedContent({
+        data: normalizedDraft.data,
+        localizedContent,
+        templateKey: currentDraft.draft.templateKey,
+      })) {
+        return { ok: false, error: "invalid_storefront_draft" };
+      }
+
       const updated = await db.transaction(async (transaction) => {
         const [row] = await transaction
           .update(storefrontConfigs)
           .set({
             draftData: normalizedDraft.data,
             draftThemeTokens: normalizedDraft.themeTokens,
+            languageSettings,
+            localizedContent,
             updatedAt: new Date(),
           })
           .where(eq(storefrontConfigs.tenantId, input.tenantId))
@@ -464,6 +551,7 @@ export function createStorefrontTemplateService(
               templateVersionId: version.id,
               data: normalizedDraft.data,
               themeTokens: normalizedDraft.themeTokens,
+              localizedContent,
               updatedAt: new Date(),
             })
             .onConflictDoUpdate({
@@ -474,6 +562,7 @@ export function createStorefrontTemplateService(
               set: {
                 data: normalizedDraft.data,
                 themeTokens: normalizedDraft.themeTokens,
+                localizedContent,
                 updatedAt: new Date(),
               },
             });
@@ -522,7 +611,7 @@ export function createStorefrontTemplateService(
         if (reviewedFingerprint) {
           const [config] = await transaction.select().from(storefrontConfigs).where(eq(storefrontConfigs.tenantId, input.tenantId)).for("update").limit(1);
           const [tenant] = await transaction.select().from(tenants).where(eq(tenants.id, input.tenantId)).for("update").limit(1);
-          if (!config || !tenant || createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, config.draftTemplateId, config.draftData, config.draftThemeTokens])).digest("hex") !== reviewedFingerprint) return "review_stale";
+          if (!config || !tenant || createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, config.draftTemplateId, config.draftData, config.draftThemeTokens, config.languageSettings, config.localizedContent, config.seoSettings])).digest("hex") !== reviewedFingerprint) return "review_stale";
         }
         const [draft] = await transaction
           .select({
@@ -532,6 +621,9 @@ export function createStorefrontTemplateService(
             templateKey: storefrontTemplateVersions.templateKey,
             data: storefrontConfigs.draftData,
             themeTokens: storefrontConfigs.draftThemeTokens,
+            languageSettings: storefrontConfigs.languageSettings,
+            localizedContent: storefrontConfigs.localizedContent,
+            seoSettings: storefrontConfigs.seoSettings,
           })
           .from(storefrontConfigs)
           .innerJoin(
@@ -567,6 +659,9 @@ export function createStorefrontTemplateService(
             templateKey: draft.templateKey,
             data: normalizedDraft.data,
             themeTokens: normalizedDraft.themeTokens,
+            languageSettings: normalizeLanguageSettings(draft.languageSettings),
+            localizedContent: normalizeLocalizedContent(draft.localizedContent),
+            seoSettings: normalizeStorefrontSeoSettings(draft.seoSettings),
             publishedByUserId: input.userId,
           })
           .returning({
@@ -609,7 +704,7 @@ export function createStorefrontTemplateService(
         if (reviewedFingerprint) {
           const [tenant] = await transaction.select({ name: tenants.name, shopDetails: tenants.shopDetails }).from(tenants).where(eq(tenants.id, input.tenantId)).limit(1);
           if (tenant) {
-            const publishedFingerprint = createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, draft.templateId, normalizedDraft.data, normalizedDraft.themeTokens])).digest("hex");
+            const publishedFingerprint = createHash("sha256").update(JSON.stringify([tenant.name, tenant.shopDetails, draft.templateId, normalizedDraft.data, normalizedDraft.themeTokens, draft.languageSettings, draft.localizedContent, draft.seoSettings])).digest("hex");
             completedSteps = [...(Array.isArray(completedSteps) ? completedSteps.filter((step) => typeof step === "string" && !step.startsWith("storefront_review:")) : []), `storefront_review:${publishedFingerprint}`];
           }
         }
@@ -775,6 +870,7 @@ export function createStorefrontTemplateService(
             templateId: storefrontConfigs.draftTemplateId,
             templateVersion: storefrontConfigs.draftTemplateVersion,
             themeTokens: storefrontConfigs.draftThemeTokens,
+            localizedContent: storefrontConfigs.localizedContent,
           })
           .from(storefrontConfigs)
           .where(eq(storefrontConfigs.tenantId, tenant.id))
@@ -799,6 +895,7 @@ export function createStorefrontTemplateService(
                 templateVersionId: currentVersion.id,
                 data: current.data,
                 themeTokens: current.themeTokens,
+                localizedContent: normalizeLocalizedContent(current.localizedContent),
                 updatedAt: new Date(),
               })
               .onConflictDoUpdate({
@@ -809,6 +906,7 @@ export function createStorefrontTemplateService(
                 set: {
                   data: current.data,
                   themeTokens: current.themeTokens,
+                  localizedContent: normalizeLocalizedContent(current.localizedContent),
                   updatedAt: new Date(),
                 },
               });
@@ -819,6 +917,7 @@ export function createStorefrontTemplateService(
           .select({
             data: storefrontTemplateDrafts.data,
             themeTokens: storefrontTemplateDrafts.themeTokens,
+            localizedContent: storefrontTemplateDrafts.localizedContent,
           })
           .from(storefrontTemplateDrafts)
           .where(
@@ -840,6 +939,7 @@ export function createStorefrontTemplateService(
                 data: storefrontRevisions.data,
                 templateKey: storefrontRevisions.templateKey,
                 themeTokens: storefrontRevisions.themeTokens,
+                localizedContent: storefrontRevisions.localizedContent,
               })
               .from(storefrontRevisions)
               .where(eq(storefrontRevisions.id, current.publishedRevisionId))
@@ -849,7 +949,11 @@ export function createStorefrontTemplateService(
           published &&
             (published.templateKey !== template.templateKey ||
               !isDeepStrictEqual(published.data, next.data) ||
-              !isDeepStrictEqual(published.themeTokens, next.themeTokens)),
+              !isDeepStrictEqual(published.themeTokens, next.themeTokens) ||
+              !isDeepStrictEqual(
+                normalizeLocalizedContent(published.localizedContent),
+                next.localizedContent,
+              )),
         );
 
         const [draft] = await transaction
@@ -860,6 +964,7 @@ export function createStorefrontTemplateService(
             draftTemplateVersion: template.version,
             draftData: next.data,
             draftThemeTokens: next.themeTokens,
+            localizedContent: next.localizedContent,
             updatedAt: new Date(),
           })
           .onConflictDoUpdate({
@@ -869,6 +974,7 @@ export function createStorefrontTemplateService(
               draftTemplateVersion: template.version,
               draftData: next.data,
               draftThemeTokens: next.themeTokens,
+              localizedContent: next.localizedContent,
               updatedAt: new Date(),
             },
           })
@@ -903,6 +1009,14 @@ export function createStorefrontTemplateService(
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getValueAtPath(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, segment) => {
+    if (Array.isArray(current)) return current[Number(segment)];
+    if (!current || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, value);
 }
 
 function cloneJson(value: unknown) {

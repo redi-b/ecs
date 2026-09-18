@@ -4,12 +4,17 @@ import {
   deleteStoreCustomerAddress,
   saveStoreCustomerAddress,
 } from "../../../lib/commerce/account.js";
+import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { getCustomerTokenFromRequest } from "../../../lib/session/customer-cookie.js";
+import * as m from "../../../paraglide/messages.js";
 
 export const POST: APIRoute = async ({ request }) => {
+  const locale = getStorefrontActionLocale(request);
   const token = getCustomerTokenFromRequest(request);
-  if (!token) return redirect("/account?error=Sign%20in%20to%20manage%20saved%20addresses.");
+  if (!token) {
+    return redirect(`/account?error=${encodeURIComponent(m.status_access_help({}, { locale }))}`);
+  }
 
   const form = await request.formData();
   const addressId = String(form.get("addressId") ?? "").trim();
@@ -21,11 +26,17 @@ export const POST: APIRoute = async ({ request }) => {
   };
 
   if (intent === "delete") {
-    if (!addressId) return redirect("/account?error=Saved%20address%20not%20found.");
+    if (!addressId) {
+      return redirect(
+        `/account?error=${encodeURIComponent(m.account_save_failed({}, { locale }))}`,
+      );
+    }
     const result = await deleteStoreCustomerAddress({ ...common, addressId });
     return result === true
       ? redirect("/account?saved=address-removed#saved-addresses")
-      : redirect(`/account?error=${encodeURIComponent(result.message)}#saved-addresses`);
+      : redirect(
+          `/account?error=${encodeURIComponent(m.account_save_failed({}, { locale }))}#saved-addresses`,
+        );
   }
 
   const result = await saveStoreCustomerAddress({
@@ -47,7 +58,9 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   return "ok" in result
-    ? redirect(`/account?error=${encodeURIComponent(result.message)}#saved-addresses`)
+    ? redirect(
+        `/account?error=${encodeURIComponent(m.account_save_failed({}, { locale }))}#saved-addresses`,
+      )
     : redirect("/account?saved=address#saved-addresses");
 };
 

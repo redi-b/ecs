@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ request }) => {
   return new Response(buildTenantSitemap(context.publicOrigin, result.handles, {
     collectionHandles: collectionsResult.collections.flatMap((item) => item.handle?.trim() ? [item.handle.trim()] : []),
     categoryHandles: categoriesResult.categories.flatMap((item) => item.handle?.trim() ? [item.handle.trim()] : []),
-  }), {
+  }, context.config.storefront.languageSettings), {
     headers: {
       "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
       "Content-Type": "application/xml; charset=utf-8",

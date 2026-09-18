@@ -12,6 +12,7 @@
   "promotions": "ቅናሾች",
   "media": "ሚዲያ",
   "editor": "ማስተካከያ",
+  "translations": "ትርጉሞች",
   "insights": "የንግድ መረጃዎች",
   "billing": "ሂሳብ እና ክፍያ",
   "settings": "ማስተካከያዎች",
@@ -27,6 +28,7 @@
     "productDetails": "የምርት ዝርዝር",
     "editProduct": "ምርት አስተካክል",
     "orderDetails": "የትዕዛዝ ዝርዝር",
-    "customerDetails": "የደንበኛ ዝርዝር"
+    "customerDetails": "የደንበኛ ዝርዝር",
+    "translations": "ትርጉሞች"
   }
 }

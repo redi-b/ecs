@@ -1,3 +1,4 @@
+import type { StorefrontLanguageSettings, StorefrontLocalizedContent } from "@ecs/contracts";
 import {
   generateThemeFromPrimary,
   getStorefrontEditorManifest,
@@ -6,12 +7,20 @@ import {
   type ThemePaletteSeed,
   type ThemeSurfaceMode,
 } from "@ecs/storefront-templates";
+import { isShopManagedStorefrontPath } from "../../lib/storefront-managed-fields";
 export type EditorData = {
   content: Array<{
     props: Record<string, unknown> & { id: string };
     type: string;
   }>;
-  root: { props?: Record<string, unknown> };
+  root: {
+    props?: Record<string, unknown> & {
+      localizedInitialTranslations?: Record<string, string>;
+      localizedStatusOverrides?: Record<string, "ready">;
+      localizedStatuses?: Record<string, "needs_review" | "ready" | "using_english">;
+      localizedTranslations?: Record<string, string>;
+    };
+  };
 };
 
 export type EditorAction = { data: EditorData; type: "setData" };
@@ -22,6 +31,9 @@ export type StorefrontDraft = {
   templateVersion: number;
   tenantId: string;
   themeTokens: unknown;
+  languageSettings?: StorefrontLanguageSettings;
+  localizedContent?: StorefrontLocalizedContent;
+  localizedStatuses?: Record<string, "needs_review" | "ready" | "using_english">;
   updatedAt: string;
   published?:
     | {
@@ -30,6 +42,7 @@ export type StorefrontDraft = {
         templateKey: string;
         data: unknown;
         themeTokens: unknown;
+        localizedContent?: StorefrontLocalizedContent;
       }
     | null
     | undefined;
@@ -51,7 +64,6 @@ export type StorefrontPageProps = {
   featuredProductsEnabled?: boolean;
   footerAddress?: string;
   footerPhone?: string;
-  managedShopContact?: boolean;
   foregroundColor?: string;
   headingFont?: string;
   heroEnabled?: boolean;
@@ -91,7 +103,24 @@ export function buildEditorData(draft: StorefrontDraft): EditorData {
         type: STOREFRONT_PAGE_COMPONENT,
       },
     ],
-    root: {},
+    root: {
+      props: {
+        localizedInitialTranslations: Object.fromEntries(
+          Object.entries(draft.localizedContent?.locales.am ?? {}).map(([path, field]) => [
+            path,
+            field.value,
+          ]),
+        ),
+        localizedStatuses: draft.localizedStatuses ?? {},
+        localizedStatusOverrides: {},
+        localizedTranslations: Object.fromEntries(
+          Object.entries(draft.localizedContent?.locales.am ?? {}).map(([path, field]) => [
+            path,
+            field.value,
+          ]),
+        ),
+      },
+    },
   };
 }
 
@@ -109,7 +138,7 @@ export function buildDraftPayload(input: {
   const manifest = requireEditorManifest(input.templateKey);
   for (const section of manifest.sections) {
     for (const field of section.fields) {
-      if (props.managedShopContact && ["footer.phone", "footer.email", "footer.address", "footer.socialLinks", "footer.blurb"].includes(field.path)) continue;
+      if (isShopManagedStorefrontPath(field.path)) continue;
       const value = (props as Record<string, unknown>)[field.prop];
       const draftValue = coerceFieldValue(field.kind, value);
 
@@ -117,7 +146,9 @@ export function buildDraftPayload(input: {
         setPathValue(themeTokens, field.path.replace(/^themeTokens\./, ""), draftValue);
       } else {
         setPathValue(data, field.path, draftValue);
-        field.deprecatedPaths?.forEach((path) => deletePathValue(data, path));
+        field.deprecatedPaths?.forEach((path) => {
+          deletePathValue(data, path);
+        });
       }
     }
   }
@@ -153,7 +184,63 @@ export function getStorefrontPageProps(editorData: EditorData): StorefrontPagePr
 }
 
 export function serializeEditorData(data: EditorData) {
-  return JSON.stringify(getStorefrontPageProps(data));
+  return JSON.stringify({
+    page: getStorefrontPageProps(data),
+    statusOverrides: getLocalizedStatusOverrides(data),
+    translations: getLocalizedTranslations(data),
+  });
+}
+
+export function getLocalizedTranslations(data: EditorData) {
+  return data.root.props?.localizedTranslations ?? {};
+}
+
+export function getLocalizedInitialTranslations(data: EditorData) {
+  return data.root.props?.localizedInitialTranslations ?? {};
+}
+
+export function getLocalizedStatuses(data: EditorData) {
+  return data.root.props?.localizedStatuses ?? {};
+}
+
+export function getLocalizedStatusOverrides(data: EditorData) {
+  return data.root.props?.localizedStatusOverrides ?? {};
+}
+
+export function markLocalizedTranslationReviewed(data: EditorData, path: string): EditorData {
+  return {
+    ...data,
+    root: {
+      ...data.root,
+      props: {
+        ...data.root.props,
+        localizedStatusOverrides: {
+          ...getLocalizedStatusOverrides(data),
+          [path]: "ready",
+        },
+      },
+    },
+  };
+}
+
+export function updateLocalizedTranslation(
+  data: EditorData,
+  path: string,
+  value: string,
+): EditorData {
+  return {
+    ...data,
+    root: {
+      ...data.root,
+      props: {
+        ...data.root.props,
+        localizedTranslations: {
+          ...getLocalizedTranslations(data),
+          [path]: value,
+        },
+      },
+    },
+  };
 }
 
 export function getPublicationStatus({
@@ -232,7 +319,7 @@ function coerceFieldValue(kind: string, value: unknown): unknown {
     if (!Array.isArray(value)) return [];
     return value
       .map((item) => {
-        const candidate = item && typeof item === "object" ? item as Record<string, unknown> : {};
+        const candidate = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
         return {
           label: typeof candidate.label === "string" ? candidate.label.trim() : "",
           href: typeof candidate.href === "string" ? candidate.href.trim() : "",
@@ -267,7 +354,7 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   if (kind === "links") {
     if (!Array.isArray(value)) return [];
     return value.map((item) => {
-      const candidate = item && typeof item === "object" ? item as Record<string, unknown> : {};
+      const candidate = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
       return {
         label: typeof candidate.label === "string" ? candidate.label : "",
         href: typeof candidate.href === "string" ? candidate.href : "",
@@ -280,7 +367,11 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   return typeof value === "string" ? value : value == null ? undefined : String(value);
 }
 
-function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "luvia@1"): StorefrontPageProps {
+function flattenDraft(
+  data: unknown,
+  themeTokens: unknown,
+  templateKey = "luvia@1",
+): StorefrontPageProps {
   const props: Record<string, unknown> = {};
 
   const manifest = requireEditorManifest(templateKey);
@@ -295,7 +386,6 @@ function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "luvia@
   }
 
   // Always expose generated palette fields for preview (even if not in editor manifest).
-  props.managedShopContact = getPathValue(data, "footer.managedContact") === true;
   const tokens =
     themeTokens && typeof themeTokens === "object"
       ? (themeTokens as {
@@ -308,8 +398,7 @@ function flattenDraft(data: unknown, themeTokens: unknown, templateKey = "luvia@
     typeof colors.background === "string" ? colors.background : props.backgroundColor;
   props.foregroundColor =
     typeof colors.foreground === "string" ? colors.foreground : props.foregroundColor;
-  props.primaryColor =
-    typeof colors.primary === "string" ? colors.primary : props.primaryColor;
+  props.primaryColor = typeof colors.primary === "string" ? colors.primary : props.primaryColor;
   props.mutedColor = typeof colors.muted === "string" ? colors.muted : props.mutedColor;
   props.accentColor = typeof colors.accent === "string" ? colors.accent : props.accentColor;
   props.surfaceMode =
@@ -340,26 +429,27 @@ export function themePalettePageProps(
 ): Partial<StorefrontPageProps> {
   const definition = templateKey ? getStorefrontTemplateDefinition(templateKey) : undefined;
   const manifest = templateKey ? getStorefrontEditorManifest(templateKey) : undefined;
-  const defaults = definition?.defaultThemeTokens as {
-    colors?: Partial<ThemePaletteSeed["colors"]>;
-  } | undefined;
+  const defaults = definition?.defaultThemeTokens as
+    | {
+        colors?: Partial<ThemePaletteSeed["colors"]>;
+      }
+    | undefined;
   const colors = defaults?.colors;
-  const seed = colors?.primary && colors.background && colors.foreground && colors.muted && colors.accent
-      ? {
-        id: `${templateKey ?? "template"}-${mode}`,
-        surfaceMode: mode,
-        ...(manifest?.theme?.paletteStrategy
-          ? { strategy: manifest.theme.paletteStrategy }
-          : {}),
-        colors: {
-          primary: colors.primary,
-          background: colors.background,
-          foreground: colors.foreground,
-          muted: colors.muted,
-          accent: colors.accent,
-        },
-      } satisfies ThemePaletteSeed
-    : undefined;
+  const seed =
+    colors?.primary && colors.background && colors.foreground && colors.muted && colors.accent
+      ? ({
+          id: `${templateKey ?? "template"}-${mode}`,
+          surfaceMode: mode,
+          ...(manifest?.theme?.paletteStrategy ? { strategy: manifest.theme.paletteStrategy } : {}),
+          colors: {
+            primary: colors.primary,
+            background: colors.background,
+            foreground: colors.foreground,
+            muted: colors.muted,
+            accent: colors.accent,
+          },
+        } satisfies ThemePaletteSeed)
+      : undefined;
   const generated = generateThemeFromPrimary(primary, mode, seed);
   return {
     surfaceMode: mode,
@@ -375,13 +465,15 @@ export function themePalettePageProps(
 /** Restore designed defaults for the current surface (seed colors, auto on). */
 export function themeResetPageProps(templateKey: string): Partial<StorefrontPageProps> {
   const definition = getStorefrontTemplateDefinition(templateKey);
-  const tokens = definition?.defaultThemeTokens as {
-    autoPalette?: boolean;
-    colors?: Record<string, string | undefined>;
-    surfaceMode?: string;
-    colorMode?: string;
-    typography?: Record<string, string | undefined>;
-  } | undefined;
+  const tokens = definition?.defaultThemeTokens as
+    | {
+        autoPalette?: boolean;
+        colors?: Record<string, string | undefined>;
+        surfaceMode?: string;
+        colorMode?: string;
+        typography?: Record<string, string | undefined>;
+      }
+    | undefined;
   const colors = tokens?.colors ?? {};
   const typography = tokens?.typography ?? {};
   const backgroundColor = colors.background;

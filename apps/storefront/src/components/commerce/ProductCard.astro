@@ -1,14 +1,17 @@
 ---
 import { formatMoney } from "../../lib/money";
 import type { StoreProduct } from "../../lib/commerce/types";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   product: StoreProduct;
 }
 
 const { product } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "#";
-const title = product.title ?? "Product";
+const title = product.title ?? m.catalog_product_fallback({}, { locale });
 ---
 
 <li>
@@ -22,7 +25,7 @@ const title = product.title ?? "Product";
     }
     <div class="sf-card-body">
       <h3 class="sf-card-title">{title}</h3>
-      <p class="sf-card-price">{formatMoney(product.priceAmount, product.currencyCode)}</p>
+      <p class="sf-card-price">{formatMoney(product.priceAmount, product.currencyCode, locale)}</p>
     </div>
   </a>
 </li>

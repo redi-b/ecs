@@ -1,5 +1,7 @@
 ---
 import type { StoreCartPromotion } from "../../../../lib/commerce/types";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 
 interface Props {
   appliedCodes: StoreCartPromotion[];
@@ -11,11 +13,12 @@ interface Props {
 const { appliedCodes, idPrefix, helper, error } = Astro.props;
 const labelId = `${idPrefix}-discount-label`;
 const inputId = `${idPrefix}-discount-code`;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <section class="lv-discount-code" aria-labelledby={labelId} data-discount-code>
   <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
-    <label id={labelId} for={inputId}>Have a discount code?</label>
+    <label id={labelId} for={inputId}>{m.cart_discount_question({}, { locale })}</label>
     <div class="lv-discount-code__field">
       <input
         id={inputId}
@@ -23,9 +26,9 @@ const inputId = `${idPrefix}-discount-code`;
         autocomplete="off"
         autocapitalize="characters"
         spellcheck="false"
-        placeholder="Enter your code"
+        placeholder={m.cart_discount_placeholder({}, { locale })}
       />
-      <button type="submit">Apply</button>
+      <button type="submit">{m.action_apply({}, { locale })}</button>
     </div>
     {helper && <small>{helper}</small>}
   </form>
@@ -34,8 +37,8 @@ const inputId = `${idPrefix}-discount-code`;
       <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
         <input type="hidden" name="intent" value="remove" />
         <input type="hidden" name="code" value={promotion.code ?? ""} />
-        <span><b>{promotion.code}</b><small>Applied</small></span>
-        <button type="submit" aria-label={`Remove discount ${promotion.code}`}>Remove</button>
+        <span><b>{promotion.code}</b><small>{m.cart_discount_applied({}, { locale })}</small></span>
+        <button type="submit" aria-label={m.cart_discount_remove({ code: promotion.code ?? "" }, { locale })}>{m.action_remove({}, { locale })}</button>
       </form>
     ))}
   </div>

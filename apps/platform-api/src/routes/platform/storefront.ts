@@ -1,4 +1,8 @@
-import { storefrontSeoSettingsSchema } from "@ecs/contracts";
+import {
+  storefrontLanguageSettingsSchema,
+  storefrontLocalizedContentSchema,
+  storefrontSeoSettingsSchema,
+} from "@ecs/contracts";
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
@@ -335,13 +339,31 @@ export function registerPlatformStorefrontRoutes(
         : "draftThemeTokens" in body
           ? body.draftThemeTokens
           : undefined;
+    const languageSettings = "languageSettings" in body ? body.languageSettings : undefined;
+    const localizedContent = "localizedContent" in body ? body.localizedContent : undefined;
 
     if (data === undefined || themeTokens === undefined) {
       return context.json({ error: "missing_draft_payload" }, 400);
     }
 
+    const parsedLanguageSettings = languageSettings === undefined
+      ? undefined
+      : storefrontLanguageSettingsSchema.safeParse(languageSettings);
+    const parsedLocalizedContent = localizedContent === undefined
+      ? undefined
+      : storefrontLocalizedContentSchema.safeParse(localizedContent);
+
+    if (parsedLanguageSettings && !parsedLanguageSettings.success) {
+      return context.json({ error: "invalid_language_settings" }, 400);
+    }
+    if (parsedLocalizedContent && !parsedLocalizedContent.success) {
+      return context.json({ error: "invalid_localized_content" }, 400);
+    }
+
     const result = await options.updateStorefrontDraft({
       data,
+      ...(parsedLanguageSettings ? { languageSettings: parsedLanguageSettings.data } : {}),
+      ...(parsedLocalizedContent ? { localizedContent: parsedLocalizedContent.data } : {}),
       tenantId,
       themeTokens,
       userId: session.user.id,

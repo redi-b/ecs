@@ -21,7 +21,9 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
 import { listExportPath } from "@/lib/list-export-path";
+import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getMerchantProducts } from "@/lib/merchant-products";
+import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
@@ -46,19 +48,27 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const mediaFilter = parseProductMediaFilter(resolvedSearchParams.media);
   // Taxonomy (categories/collections) loads client-side after paint — keeps list TTFB
   // on the product page only.
-  const result = await getMerchantProducts({
-    cookieHeader,
-    limit: listParams.pageSize,
-    offset,
-    platformApiBaseUrl,
-    requestHost,
-    tenantId,
-    ...(listParams.q ? { q: listParams.q } : {}),
-    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
-    ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
-    ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
-    ...(mediaFilter !== "all" ? { media: mediaFilter } : {}),
-  });
+  const requestOptions = { cookieHeader, platformApiBaseUrl, requestHost, tenantId };
+  const [result, access] = await Promise.all([
+    getMerchantProducts({
+      ...requestOptions,
+      limit: listParams.pageSize,
+      offset,
+      ...(listParams.q ? { q: listParams.q } : {}),
+      ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+      ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
+      ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
+      ...(mediaFilter !== "all" ? { media: mediaFilter } : {}),
+    }),
+    getMerchantDashboardAccessShell(requestOptions),
+  ]);
+  const storefrontDraft = access.ok
+    ? await getStorefrontDraft({
+        cookieHeader,
+        platformApiBaseUrl,
+        tenantId: access.access.tenant.id,
+      })
+    : null;
   const errorState = result.ok ? null : getListErrorState("products", result.message);
   const listFiltered =
     mediaFilter !== "all" ||
@@ -133,6 +143,10 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             products={result.products.products}
             tenantId={tenantId}
             totalCount={result.products.count}
+            translationsEnabled={
+              storefrontDraft?.ok === true &&
+              storefrontDraft.draft.languageSettings.enabledLocales.includes("am")
+            }
           />
         </>
       ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (

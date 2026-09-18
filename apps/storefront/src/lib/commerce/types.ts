@@ -11,6 +11,7 @@ export type HostedStoreRequest = {
   headers?: Record<string, string>;
   platformApiBaseUrl: string;
   requestHost?: string | null;
+  locale?: string;
 };
 
 export type StoreProductVariant = {
@@ -129,6 +130,7 @@ export type StoreCartPromotion = {
 
 export type StoreCart = {
   id: string;
+  locale?: string | null;
   regionId: string | null;
   email: string | null;
   currencyCode: string | null;

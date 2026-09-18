@@ -1,10 +1,19 @@
 "use client";
 
 import type { MerchantProductCollection } from "@ecs/contracts";
+import { RiTranslate2 } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -14,8 +23,8 @@ import {
   DataTableFilters,
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
+import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -38,6 +47,7 @@ import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
+import { TaxonomyTranslationSheet } from "./taxonomy-translation-sheet";
 
 type Translate = (key: MessageKey, values?: Record<string, string | number>) => string;
 
@@ -49,6 +59,10 @@ type ProductCollectionsTableProps = {
   pageSize: number;
   totalCount: number;
   tenantId?: string | undefined;
+  translationId?: string | undefined;
+  translationQueueNavigation?:
+    | { next?: string | undefined; previous?: string | undefined }
+    | undefined;
 };
 
 async function copyToClipboard(value: string, label: string, t: Translate) {
@@ -72,6 +86,7 @@ function getCollectionRowActions(
   canDelete: boolean,
   onDelete: (collectionId: string) => void,
   onEdit: (collection: MerchantProductCollection) => void,
+  onTranslate: (collection: MerchantProductCollection) => void,
   t: Translate,
 ): ResourceRowActions {
   return {
@@ -84,6 +99,14 @@ function getCollectionRowActions(
                 entity: t("taxonomy.entity.collection.label"),
               }),
               onSelect: () => onEdit(collection),
+              type: "button" as const,
+            },
+            {
+              icon: RiTranslate2,
+              label: t("taxonomy.actions.translate", {
+                entity: t("taxonomy.entity.collection.label"),
+              }),
+              onSelect: () => onTranslate(collection),
               type: "button" as const,
             },
           ]
@@ -134,6 +157,7 @@ function getCollectionColumns(
   canDelete: boolean,
   onDelete: (collectionId: string) => void,
   onEdit: (collection: MerchantProductCollection) => void,
+  onTranslate: (collection: MerchantProductCollection) => void,
   t: Translate,
 ): ColumnDef<MerchantProductCollection>[] {
   return [
@@ -210,7 +234,15 @@ function getCollectionColumns(
 
         return (
           <RowActionsMenu
-            {...getCollectionRowActions(collection, canUpdate, canDelete, onDelete, onEdit, t)}
+            {...getCollectionRowActions(
+              collection,
+              canUpdate,
+              canDelete,
+              onDelete,
+              onEdit,
+              onTranslate,
+              t,
+            )}
           />
         );
       },
@@ -253,6 +285,8 @@ export function ProductCollectionsTable({
   pageSize,
   totalCount,
   tenantId,
+  translationId,
+  translationQueueNavigation,
 }: ProductCollectionsTableProps) {
   const { t } = useI18n();
   const router = useRouter();
@@ -287,6 +321,18 @@ export function ProductCollectionsTable({
   const [editingCollection, setEditingCollection] = useState<MerchantProductCollection | null>(
     null,
   );
+  const [translatingCollection, setTranslatingCollection] =
+    useState<MerchantProductCollection | null>(null);
+  const openedTranslationId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!translationId || translatingCollection || openedTranslationId.current === translationId)
+      return;
+    const target = collections.find((collection) => collection.id === translationId);
+    if (target) {
+      openedTranslationId.current = translationId;
+      setTranslatingCollection(target);
+    }
+  }, [collections, translatingCollection, translationId]);
   const [selectedCollectionIdsForDelete, setSelectedCollectionIdsForDelete] = useState<string[]>(
     [],
   );
@@ -299,6 +345,7 @@ export function ProductCollectionsTable({
         canDelete,
         setDeleteCollectionId,
         setEditingCollection,
+        setTranslatingCollection,
         t,
       ),
     [canDelete, canUpdate, t],
@@ -311,6 +358,7 @@ export function ProductCollectionsTable({
         canDelete,
         (id) => setDeleteCollectionId(id),
         (collection) => setEditingCollection(collection),
+        (collection) => setTranslatingCollection(collection),
         t,
       ),
     [canDelete, canUpdate, t],
@@ -436,6 +484,26 @@ export function ProductCollectionsTable({
 
   return (
     <>
+      {canUpdate ? (
+        <TaxonomyTranslationSheet
+          onOpenChange={(next) => {
+            if (!next) {
+              setTranslatingCollection(null);
+              const params = new URLSearchParams(window.location.search);
+              params.delete("translate");
+              params.delete("translationFrom");
+              router.replace(`${window.location.pathname}${params.size ? `?${params}` : ""}`, {
+                scroll: false,
+              });
+            }
+          }}
+          target={
+            translatingCollection ? { kind: "collection", resource: translatingCollection } : null
+          }
+          tenantId={tenantId}
+          queueNavigation={translationQueueNavigation}
+        />
+      ) : null}
       {canUpdate ? (
         <CollectionEditSheet
           collection={editingCollection}

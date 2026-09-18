@@ -48,6 +48,9 @@ export type StorefrontDraftResult =
         templateKey: string;
         data: unknown;
         themeTokens: unknown;
+        seo?: import("@ecs/contracts").StorefrontSeoSettings;
+        languageSettings?: import("@ecs/contracts").StorefrontLanguageSettings;
+        localizedContent?: import("@ecs/contracts").StorefrontLocalizedContent;
         updatedAt: string;
         published?: {
           revisionId: string;
@@ -55,6 +58,9 @@ export type StorefrontDraftResult =
           templateKey?: string | null;
           data: unknown;
           themeTokens: unknown;
+          seo?: import("@ecs/contracts").StorefrontSeoSettings;
+          languageSettings?: import("@ecs/contracts").StorefrontLanguageSettings;
+          localizedContent?: import("@ecs/contracts").StorefrontLocalizedContent;
         } | null;
       };
     }
@@ -116,6 +122,8 @@ export type PublishedStorefrontConfigResult =
         templateKey: string;
         data: unknown;
         themeTokens: unknown;
+        languageSettings?: import("@ecs/contracts").StorefrontLanguageSettings;
+        localizedContent?: import("@ecs/contracts").StorefrontLocalizedContent;
         publishedAt: string | null;
         seo?: StorefrontSeoSettings;
       };

@@ -5,6 +5,7 @@ import type {
   MerchantProductCategory,
   MerchantProductCollection,
 } from "@ecs/contracts";
+import { RiTranslate2 } from "@remixicon/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ export function getProductRowActions(
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
   t: Translate,
   onSetInventory?: (product: MerchantProduct) => void,
+  onTranslate?: (product: MerchantProduct) => void,
 ): ResourceRowActions {
   const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
   const normalizedStatus = normalizeProductStatus(product.status);
@@ -74,6 +76,16 @@ export function getProductRowActions(
   return {
     actions: [
       { href, icon: AppIcons.eye, label: t("products.table.viewDetails"), type: "link" },
+      ...(onTranslate
+        ? [
+            {
+              icon: RiTranslate2,
+              label: t("products.translation.action"),
+              onSelect: () => onTranslate(product),
+              type: "button" as const,
+            },
+          ]
+        : []),
       ...(onSetInventory
         ? [
             {

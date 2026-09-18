@@ -2,6 +2,8 @@
 import { formatMoney } from "../../../lib/money";
 import { formatOrderReference } from "../../../lib/order-reference";
 import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
+import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
+import * as m from "../../../paraglide/messages.js";
 import Button from "./Button.astro";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
@@ -30,29 +32,30 @@ const {
 const template = parseNexahubData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
 const reference = formatOrderReference(orderId);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
-  <main class="nexa-commerce nexa-confirm" id="main-content">
+  <main class="nexa-commerce nexa-confirm" id="main-content" data-copy-label={m.action_copy_reference({}, { locale })} data-copied-label={m.action_copied({}, { locale })} data-copy-success={m.confirmation_copy_success({}, { locale })} data-copy-fallback={m.confirmation_copy_fallback({ reference: "__REFERENCE__" }, { locale })}>
     <div class="container nexa-commerce__frame">
-      <nav class="nexa-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span aria-current="page">Order received</span></nav>
-      <header class="nexa-commerce__heading"><span class="nexa-kicker">Order confirmed</span><div><h1>Thank you</h1><p>We have received your order. Keep the reference below for updates or support.</p></div></header>
+      <nav class="nexa-breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/">{m.nav_home({}, { locale })}</a><span>/</span><span aria-current="page">{m.order_received({}, { locale })}</span></nav>
+      <header class="nexa-commerce__heading"><span class="nexa-kicker">{m.order_confirmed({}, { locale })}</span><div><h1>{m.confirmation_thank_you({}, { locale })}</h1><p>{m.confirmation_intro({}, { locale })}</p></div></header>
       <div class="nexa-receipt">
         <section class="nexa-receipt__main">
-          <div class="nexa-receipt__status"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg></span><div><strong>{verified ? "Order confirmed" : "Order placed"}</strong><small>We will keep you updated as your order moves forward.</small></div></div>
-          <div class="nexa-receipt__reference"><span>Order reference</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>Copy reference</button></div>
-          {verified && lastOrder?.total != null && <dl class="nexa-receipt__facts"><div><dt>Total</dt><dd>{formatMoney(lastOrder.total, lastOrder.currencyCode)}</dd></div><div><dt>Status</dt><dd>Received</dd></div><div><dt>Shop</dt><dd>{tenantName}</dd></div></dl>}
-          <p class="nexa-live" data-copy-status aria-live="polite">We may contact you using the details provided at checkout.{hasCustomerSession ? " You can also follow this order from your account." : " Keep this reference somewhere safe."}</p>
-          <div class="nexa-receipt__actions"><Button text="Continue shopping" href="/products" />{hasCustomerSession && <Button text="View order history" href="/account" variant="dark" />}<Button text="Return home" href="/" variant="neutral" /></div>
+          <div class="nexa-receipt__status"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg></span><div><strong>{verified ? m.order_confirmed({}, { locale }) : m.confirmation_order_placed({}, { locale })}</strong><small>{m.confirmation_update_help({}, { locale })}</small></div></div>
+          <div class="nexa-receipt__reference"><span>{m.order_reference({}, { locale })}</span><strong>{reference}</strong><button type="button" data-copy-order data-order-id={reference}>{m.action_copy_reference({}, { locale })}</button></div>
+          {verified && lastOrder?.total != null && <dl class="nexa-receipt__facts"><div><dt>{m.cart_total({}, { locale })}</dt><dd>{formatMoney(lastOrder.total, lastOrder.currencyCode, locale)}</dd></div><div><dt>{m.confirmation_status({}, { locale })}</dt><dd>{m.confirmation_received({}, { locale })}</dd></div><div><dt>{m.confirmation_shop({}, { locale })}</dt><dd>{tenantName}</dd></div></dl>}
+          <p class="nexa-live" data-copy-status aria-live="polite">{m.confirmation_contact_help({}, { locale })} {hasCustomerSession ? m.confirmation_account_help({}, { locale }) : m.confirmation_reference_help({}, { locale })}</p>
+          <div class="nexa-receipt__actions"><Button text={m.action_continue_shopping({}, { locale })} href="/products" />{hasCustomerSession && <Button text={m.action_view_order_history({}, { locale })} href="/account" variant="dark" />}<Button text={m.action_return_home({}, { locale })} href="/" variant="neutral" /></div>
         </section>
-        <aside class="nexa-receipt__timeline"><header class="nexa-panel-head"><h2>What happens next</h2><span>03 steps</span></header><ol><li><span>01</span><div><strong>Order review</strong><small>We confirm availability and your selected delivery or pickup details.</small></div></li><li><span>02</span><div><strong>Preparation</strong><small>Your items are carefully prepared for delivery or collection.</small></div></li><li><span>03</span><div><strong>Updates</strong><small>We will contact you when there is news about your order.</small></div></li></ol></aside>
+        <aside class="nexa-receipt__timeline"><header class="nexa-panel-head"><h2>{m.confirmation_next({}, { locale })}</h2><span>{m.confirmation_steps({}, { locale })}</span></header><ol><li><span>01</span><div><strong>{m.confirmation_review({}, { locale })}</strong><small>{m.confirmation_review_help({}, { locale })}</small></div></li><li><span>02</span><div><strong>{m.confirmation_preparation({}, { locale })}</strong><small>{m.confirmation_preparation_help({}, { locale })}</small></div></li><li><span>03</span><div><strong>{m.confirmation_updates({}, { locale })}</strong><small>{m.confirmation_updates_help({}, { locale })}</small></div></li></ol></aside>
       </div>
     </div>
   </main>
 </Layout>
 
 <script is:inline>
-  document.querySelector('[data-copy-order]')?.addEventListener('click', async (event) => { const button = event.currentTarget; if (!(button instanceof HTMLButtonElement)) return; const value = button.dataset.orderId || ''; const status = document.querySelector('[data-copy-status]'); try { await navigator.clipboard.writeText(value); button.textContent = 'Copied'; if (status) status.textContent = 'Order reference copied.'; window.setTimeout(() => button.textContent = 'Copy reference', 1600); } catch { if (status) status.textContent = `Copy and keep this reference: ${value}`; } });
+  document.querySelector('[data-copy-order]')?.addEventListener('click', async (event) => { const button = event.currentTarget; if (!(button instanceof HTMLButtonElement)) return; const value = button.dataset.orderId || ''; const root = button.closest('[data-copy-label]'); const status = document.querySelector('[data-copy-status]'); const copyLabel = root?.getAttribute('data-copy-label') || ''; try { await navigator.clipboard.writeText(value); button.textContent = root?.getAttribute('data-copied-label') || ''; if (status) status.textContent = root?.getAttribute('data-copy-success') || ''; window.setTimeout(() => button.textContent = copyLabel, 1600); } catch { if (status) status.textContent = (root?.getAttribute('data-copy-fallback') || '').replace('__REFERENCE__', value); } });
 </script>
 
 <style>

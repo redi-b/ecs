@@ -1,28 +1,36 @@
 ---
 import { customerFacingStoreError } from "../../lib/commerce/errors";
 import StorefrontFailure from "./StorefrontFailure.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
 
 interface Props {
   message: string;
   title?: string;
 }
 
-const { message, title = "This shop is temporarily unavailable" } = Astro.props;
-const friendly = customerFacingStoreError(message);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const { message, title = m.status_shop_unavailable_title({}, { locale }) } = Astro.props;
+const friendly = locale === "am"
+  ? m.status_generic_error({}, { locale })
+  : customerFacingStoreError(message);
 ---
 
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shop unavailable</title>
+    <title>{m.status_shop_unavailable_page_title({}, { locale })}</title>
   </head>
   <body>
     <StorefrontFailure
       actionHref="/"
-      actionLabel="Try again"
+      actionLabel={m.action_retry({}, { locale })}
       description={friendly}
-      eyebrow="Shop paused"
+      eyebrow={m.status_shop_paused({}, { locale })}
+      offlineTitle={m.status_offline_title({}, { locale })}
+      offlineDescription={m.status_offline_help({}, { locale })}
+      offlineActionLabel={m.action_retry({}, { locale })}
       title={title}
     />
   </body>

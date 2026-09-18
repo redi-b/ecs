@@ -18,6 +18,7 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getMerchantProductCollections } from "@/lib/merchant-products";
 import { dashboardRoutes } from "@/lib/routes";
+import { getAllStorefrontTranslationReadiness } from "@/lib/storefront-translation-readiness";
 import { parseListSearchParams } from "@/lib/url-state";
 
 type MerchantProductCollectionsPageProps = {
@@ -54,6 +55,15 @@ export default async function MerchantProductCollectionsPage({
     tenantId,
     ...(listParams.q ? { q: listParams.q } : {}),
   });
+  const translationQueue =
+    resolvedSearchParams.translationFrom === "workspace"
+      ? await getAllStorefrontTranslationReadiness({
+          cookieHeader: requestHeaders.get("cookie"),
+          platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+          requestHost: requestHeaders.get("host"),
+          resourceType: "product_collection",
+        })
+      : null;
   const errorState = result.ok ? null : getTaxonomyListErrorState("collections", result.message, t);
 
   return (
@@ -110,6 +120,18 @@ export default async function MerchantProductCollectionsPage({
             pageSize={result.limit}
             totalCount={result.count}
             tenantId={tenantId}
+            translationId={
+              typeof resolvedSearchParams.translate === "string"
+                ? resolvedSearchParams.translate
+                : undefined
+            }
+            translationQueueNavigation={translationQueueNavigation(
+              translationQueue?.ok ? translationQueue.queue.items : [],
+              typeof resolvedSearchParams.translate === "string"
+                ? resolvedSearchParams.translate
+                : undefined,
+              "/dashboard/products/collections",
+            )}
           />
         </>
       ) : errorState?.kind === "setup" || errorState?.kind === "service" ? (
@@ -122,6 +144,31 @@ export default async function MerchantProductCollectionsPage({
       )}
     </PageShell>
   );
+}
+
+function translationQueueNavigation(
+  items: Array<{
+    resourceId: string;
+    status: "needs_review" | "ready" | "using_english";
+    title: string;
+  }>,
+  resourceId: string | undefined,
+  basePath: string,
+) {
+  const unfinished = items.filter((item) => item.status !== "ready");
+  const index = unfinished.findIndex((item) => item.resourceId === resourceId);
+  if (index < 0) return undefined;
+  const href = (item: (typeof unfinished)[number]) =>
+    `${basePath}?${new URLSearchParams({
+      q: item.title,
+      translate: item.resourceId,
+      translationFrom: "workspace",
+    })}`;
+  const previousItem = unfinished[index - 1];
+  const nextItem = unfinished[index + 1];
+  const previous = previousItem ? href(previousItem) : undefined;
+  const next = nextItem ? href(nextItem) : undefined;
+  return previous || next ? { next, previous } : undefined;
 }
 
 function getCollectionNotice(

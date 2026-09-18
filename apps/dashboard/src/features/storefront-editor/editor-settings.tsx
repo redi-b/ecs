@@ -1,11 +1,11 @@
 "use client";
 
 import { getStorefrontEditorManifest, type StorefrontEditorField } from "@ecs/storefront-templates";
-import { RiArrowDownSLine, RiExpandUpDownLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiExpandUpDownLine, RiSettings4Line } from "@remixicon/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import Link from "@/components/app/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -31,6 +31,7 @@ import {
   useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
 import { useI18n } from "@/i18n/provider";
+import { isShopManagedStorefrontPath } from "@/lib/storefront-managed-fields";
 import { cn } from "@/lib/utils";
 import { StorefrontLinksEditor } from "./editor-links";
 import {
@@ -103,9 +104,10 @@ export function StorefrontSettingsPanel({
   }, [activeSection]);
 
   useEffect(() => {
-    if (!selectedPath) return;
-    scrollSettingsPathIntoView(selectedPath);
-  }, [scrollSettingsPathIntoView, selectedPath]);
+    if (!selectedPath || !activeSection || !openSections.has(activeSection.id)) return;
+    const frame = requestAnimationFrame(() => scrollSettingsPathIntoView(selectedPath));
+    return () => cancelAnimationFrame(frame);
+  }, [activeSection, openSections, scrollSettingsPathIntoView, selectedPath]);
 
   if (!manifest) {
     return null;
@@ -202,6 +204,17 @@ export function StorefrontSettingsPanel({
               : t("editor.settings.expandAll")}
           </TooltipContent>
         </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild size="icon-sm" variant="ghost">
+              <Link href="/dashboard/settings?tab=storefront">
+                <RiSettings4Line />
+                <span className="sr-only">{t("editor.translations.openSettings")}</span>
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("editor.translations.openSettings")}</TooltipContent>
+        </Tooltip>
       </div>
       <div className="flex flex-col gap-2.5 p-3 pb-10 sm:p-4">
         {manifest.sections.map((section) => {
@@ -211,7 +224,7 @@ export function StorefrontSettingsPanel({
                 className={cn(
                   "rounded-xl transition-shadow",
                   selectedPath === sectionSettingsPath(section) &&
-                    "bg-primary/[0.06] ring-1 ring-primary/30",
+                    "bg-primary/[0.07] ring-2 ring-primary/30 shadow-sm",
                 )}
                 data-editor-settings-path={sectionSettingsPath(section)}
                 key={section.id}
@@ -242,6 +255,12 @@ export function StorefrontSettingsPanel({
             (field) => field.kind === "boolean" && field.path.endsWith(".enabled"),
           );
           const bodyFields = section.fields.filter((field) => field !== enabledField);
+          const hasShopManagedFields = bodyFields.some((field) =>
+            isShopManagedStorefrontPath(field.path),
+          );
+          const editableBodyFields = bodyFields.filter(
+            (field) => !isShopManagedStorefrontPath(field.path),
+          );
           const enabledValue = enabledField
             ? (props as Record<string, unknown>)[enabledField.prop]
             : undefined;
@@ -276,7 +295,8 @@ export function StorefrontSettingsPanel({
                 className={cn(
                   "min-w-0 overflow-hidden rounded-xl border border-border/80 bg-card transition-opacity",
                   !sectionVisible && "opacity-70",
-                  selectedPath === sectionPath && "bg-primary/[0.06] ring-1 ring-primary/30",
+                  selectedPath === sectionPath &&
+                    "border-primary/35 bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",
                 )}
                 data-editor-settings-path={sectionPath}
               >
@@ -350,10 +370,19 @@ export function StorefrontSettingsPanel({
                         enabledField && !sectionVisible && "pointer-events-none opacity-50",
                       )}
                     >
-                      {bodyFields.map((field) => {
-                        if (props.managedShopContact && ["footer.phone", "footer.email", "footer.address", "footer.socialLinks", "footer.blurb"].includes(field.path)) {
-                          return field.path === "footer.phone" ? <div key={field.path} className="rounded-xl border p-3 text-sm"><p className="text-muted-foreground">{t("editor.settings.sharedContactHelp")}</p><Button asChild className="mt-2" size="sm" variant="outline"><Link href="/dashboard/settings?tab=shop">{t("editor.settings.shopSettings")}</Link></Button></div> : null;
-                        }
+                      {hasShopManagedFields ? (
+                        <div className="rounded-xl border bg-muted/20 p-3 text-sm">
+                          <p className="text-muted-foreground">
+                            {t("editor.settings.sharedContactHelp")}
+                          </p>
+                          <Button asChild className="mt-2" size="sm" variant="outline">
+                            <Link href="/dashboard/settings?tab=shop">
+                              {t("editor.settings.shopSettings")}
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : null}
+                      {editableBodyFields.map((field) => {
                         const value = (props as Record<string, unknown>)[field.prop];
                         const helpText = "helpText" in field ? field.helpText : undefined;
 
@@ -365,7 +394,7 @@ export function StorefrontSettingsPanel({
                               "min-w-0 gap-2.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150",
                               (selectedPath === field.path ||
                                 selectedPath?.startsWith(`${field.path}.`)) &&
-                                "bg-primary/[0.055] ring-1 ring-primary/25",
+                                "bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",
                             )}
                             data-editor-settings-path={field.path}
                             key={field.path}

@@ -1,0 +1,78 @@
+import { getStorefrontEditorManifest } from "./registry";
+import type { StorefrontEditorField, StorefrontEditorFieldKind } from "./schema";
+
+export type StorefrontTemplateTranslationDefault = {
+  source: string;
+  value: string;
+};
+
+const amharicDefaults: Record<string, Record<string, StorefrontTemplateTranslationDefault>> = {
+  "luvia@1": {
+    "header.navigation.0.label": { source: "Home", value: "መነሻ" },
+    "header.navigation.1.label": { source: "Shop", value: "ምርቶች" },
+    "header.navigation.2.label": { source: "Request Item", value: "ምርት ይጠይቁ" },
+    "header.navigation.3.label": { source: "About Us", value: "ስለ እኛ" },
+    "header.navigation.4.label": { source: "Contact", value: "ያግኙን" },
+    "footer.quickLinks.0.label": { source: "Home", value: "መነሻ" },
+    "footer.quickLinks.1.label": { source: "About", value: "ስለ እኛ" },
+    "footer.quickLinks.2.label": { source: "Shop", value: "ምርቶች" },
+    "footer.quickLinks.3.label": { source: "Contact", value: "ያግኙን" },
+    "footer.quickLinks.4.label": { source: "Wishlist", value: "የተመኙ ምርቶች" },
+    "footer.shopLinks.0.label": { source: "All products", value: "ሁሉም ምርቶች" },
+    "footer.shopLinks.1.label": { source: "Request an item", value: "ምርት ይጠይቁ" },
+    "footer.shopLinks.2.label": { source: "Wishlist", value: "የተመኙ ምርቶች" },
+  },
+  "nexahub@1": {
+    "header.navigation.0.label": { source: "Home", value: "መነሻ" },
+    "header.navigation.1.label": { source: "Products", value: "ምርቶች" },
+    "header.navigation.2.label": { source: "About", value: "ስለ እኛ" },
+    "header.navigation.3.label": { source: "Contact", value: "ያግኙን" },
+    "footer.quickLinks.0.label": { source: "Home", value: "መነሻ" },
+    "footer.quickLinks.1.label": { source: "Products", value: "ምርቶች" },
+    "footer.quickLinks.2.label": { source: "About", value: "ስለ እኛ" },
+    "footer.quickLinks.3.label": { source: "Contact", value: "ያግኙን" },
+  },
+};
+
+export function getStorefrontTemplateTranslationDefaults(templateKey: string, locale: "am") {
+  return locale === "am" ? (amharicDefaults[templateKey] ?? {}) : {};
+}
+
+export type StorefrontEditorLocalization = "localized" | "shared";
+
+export type StorefrontLocalizationField = StorefrontEditorField & {
+  aliases: string[];
+  id: string;
+  localization: StorefrontEditorLocalization;
+  sectionId: string;
+  sectionLabel: string;
+};
+
+const localizedKinds = new Set<StorefrontEditorFieldKind>(["text", "textarea", "links"]);
+
+export function getStorefrontLocalizationManifest(templateKey: string) {
+  const manifest = getStorefrontEditorManifest(templateKey);
+  if (!manifest) return undefined;
+
+  return {
+    templateKey: manifest.templateKey,
+    templateVersion: manifest.templateVersion,
+    fields: manifest.sections.flatMap((section) =>
+      section.fields.map<StorefrontLocalizationField>((field) => ({
+        ...field,
+        aliases: (field.deprecatedPaths ?? []).map((path) => stableFieldId(section.id, path)),
+        id: stableFieldId(section.id, field.path),
+        localization:
+          localizedKinds.has(field.kind) && !field.path.startsWith("themeTokens.")
+            ? "localized"
+            : "shared",
+        sectionId: section.id,
+        sectionLabel: section.label,
+      })),
+    ),
+  };
+}
+
+export function stableFieldId(sectionId: string, path: string) {
+  return `${sectionId}:${path}`;
+}

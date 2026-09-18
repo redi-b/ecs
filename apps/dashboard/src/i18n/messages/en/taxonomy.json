@@ -59,7 +59,21 @@
     "searchParent": "Search parent categories…"
   },
   "actions": {
-    "reorder": "Reorder"
+    "reorder": "Reorder",
+    "translate": "Translate {entity}"
+  },
+  "translation": {
+    "title": "{entity} translation",
+    "categoryTitle": "Category translation",
+    "collectionTitle": "Collection translation",
+    "deliveryTitle": "Delivery translation",
+    "saved": "Amharic translation saved.",
+    "loadFailed": "The translation could not be loaded. Try again.",
+    "saveFailed": "The translation could not be saved. Try again.",
+    "field": {
+      "name": "Name",
+      "description": "Description"
+    }
   },
   "table": {
     "category": "Category",

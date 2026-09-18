@@ -131,6 +131,14 @@ export const appRoutes: AppRoute[] = [
     keywords: ["storefront", "theme", "pages", "templates"],
   },
   {
+    id: "translations",
+    title: "Translations",
+    href: dashboardRoutes.storefrontTranslations,
+    icon: AppIcons.translate,
+    section: "storefront",
+    keywords: ["storefront", "language", "amharic", "localization", "translate"],
+  },
+  {
     id: "insights",
     title: "Insights",
     href: dashboardRoutes.insights,

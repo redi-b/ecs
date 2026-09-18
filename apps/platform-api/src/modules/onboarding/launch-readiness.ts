@@ -44,6 +44,9 @@ export function buildLaunchReadiness(input: {
   isPublished: boolean;
   data: unknown;
   themeTokens: unknown;
+  languageSettings?: unknown;
+  localizedContent?: unknown;
+  seoSettings?: unknown;
   templateId: string | null;
   completedSteps: unknown;
   catalogStatus: CheckStatus;
@@ -57,6 +60,9 @@ export function buildLaunchReadiness(input: {
         input.templateId,
         input.data,
         input.themeTokens,
+        input.languageSettings,
+        input.localizedContent,
+        input.seoSettings,
       ]),
     )
     .digest("hex");
@@ -175,6 +181,9 @@ export function createLaunchReadinessService(
       isPublished: Boolean(row.config?.publishedRevisionId),
       data: row.config?.draftData,
       themeTokens: row.config?.draftThemeTokens,
+      languageSettings: row.config?.languageSettings,
+      localizedContent: row.config?.localizedContent,
+      seoSettings: row.config?.seoSettings,
       templateId: row.config?.draftTemplateId ?? null,
       completedSteps: row.onboarding?.completedSteps,
       catalogStatus,
@@ -209,6 +218,9 @@ export function createLaunchReadinessService(
             config.draftTemplateId,
             config.draftData,
             config.draftThemeTokens,
+            config.languageSettings,
+            config.localizedContent,
+            config.seoSettings,
           ]),
         )
         .digest("hex");

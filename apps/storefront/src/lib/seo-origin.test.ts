@@ -51,6 +51,12 @@ function config(primaryHostname = "Shop.Example.com."): PublishedStorefrontConfi
       templateKey: "luvia@1",
       data: {},
       themeTokens: {},
+      languageSettings: {
+        sourceLocale: "en",
+        defaultLocale: "en",
+        enabledLocales: ["en"],
+      },
+      localizedContent: { version: 1, locales: {} },
       publishedAt: "2026-08-25T00:00:00.000Z",
     },
   };

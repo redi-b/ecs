@@ -49,6 +49,10 @@ export const storefrontConfigs = pgTable(
     draftTemplateVersion: integer("draft_template_version"),
     draftData: jsonb("draft_data").notNull().default({}),
     draftThemeTokens: jsonb("draft_theme_tokens").notNull().default({}),
+    languageSettings: jsonb("language_settings")
+      .notNull()
+      .default({ sourceLocale: "en", defaultLocale: "en", enabledLocales: ["en"] }),
+    localizedContent: jsonb("localized_content").notNull().default({ version: 1, locales: {} }),
     seoSettings: jsonb("seo_settings").notNull().default({}),
     publishedRevisionId: uuid("published_revision_id"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
@@ -69,6 +73,7 @@ export const storefrontTemplateDrafts = pgTable(
       .references(() => storefrontTemplateVersions.id),
     data: jsonb("data").notNull().default({}),
     themeTokens: jsonb("theme_tokens").notNull().default({}),
+    localizedContent: jsonb("localized_content").notNull().default({ version: 1, locales: {} }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -89,6 +94,11 @@ export const storefrontRevisions = pgTable("storefront_revisions", {
   templateKey: text("template_key").notNull(),
   data: jsonb("data").notNull(),
   themeTokens: jsonb("theme_tokens").notNull(),
+  languageSettings: jsonb("language_settings")
+    .notNull()
+    .default({ sourceLocale: "en", defaultLocale: "en", enabledLocales: ["en"] }),
+  localizedContent: jsonb("localized_content").notNull().default({ version: 1, locales: {} }),
+  seoSettings: jsonb("seo_settings").notNull().default({}),
   publishedByUserId: text("published_by_user_id"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

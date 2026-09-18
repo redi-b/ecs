@@ -8,13 +8,15 @@ import {
   getCustomerTokenFromRequest,
 } from "../../../lib/session/customer-cookie";
 import { getStorefrontRenderer } from "../../../templates/registry";
+import * as m from "../../../paraglide/messages.js";
 
 const ctx = await loadPageContext(Astro.request);
+const locale = ctx.ok ? ctx.locale : "en";
 const orderId = Astro.params.id ?? "";
 const token = getCustomerTokenFromRequest(Astro.request);
 
 if (!token) {
-  return Astro.redirect(`/account?error=${encodeURIComponent("Sign in to view that order.")}`);
+  return Astro.redirect(`/account?error=${encodeURIComponent(m.account_sign_in_for_order({}, { locale }))}`);
 }
 
 const result = ctx.ok && orderId
@@ -50,8 +52,8 @@ const Page = ctx.ok
         !ctx.ok
           ? ctx.message
           : !Page
-            ? "Order details are not available for this template yet."
-            : error?.message ?? "We could not find that order in this account."
+            ? m.status_template_unavailable({}, { locale })
+            : error?.message ?? m.account_order_not_found({}, { locale })
       }
     />
   ) : (

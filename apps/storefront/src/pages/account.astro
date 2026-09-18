@@ -5,7 +5,9 @@ import { getCustomerAccount } from "../lib/commerce/account";
 import { getCustomerTokenFromRequest } from "../lib/session/customer-cookie";
 import { customerSessionClearCookie } from "../lib/session/customer-cookie";
 import { getStorefrontRenderer } from "../templates/registry";
+import * as m from "../paraglide/messages.js";
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
+const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) Astro.response.status = ctx.status;
 const Page = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Account : null;
 const token = getCustomerTokenFromRequest(Astro.request);
@@ -24,15 +26,15 @@ const account = accountResult && !("ok" in accountResult) ? accountResult : null
 const error = Astro.url.searchParams.get("error") ?? (accountResult && "ok" in accountResult ? accountResult.message : null);
 const saved = Astro.url.searchParams.get("saved");
 const success = saved === "profile"
-  ? "Your profile details are saved."
+  ? m.account_profile_saved({}, { locale })
   : saved === "address"
-    ? "Your saved address is ready for checkout."
+    ? m.account_address_saved({}, { locale })
     : saved === "address-removed"
-      ? "The saved address was removed."
+      ? m.account_address_removed({}, { locale })
       : null;
 Astro.response.headers.set("Cache-Control", "private, no-store");
 if (accountResult && "ok" in accountResult && accountResult.status === 401) {
   Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
 }
 ---
-{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? "Customer accounts are not available for this template yet." : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} success={success} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}
+{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} success={success} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}

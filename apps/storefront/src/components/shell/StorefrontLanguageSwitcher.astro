@@ -1,0 +1,94 @@
+---
+import {
+  getStorefrontLanguageSettingsFromRequest,
+  getStorefrontLocaleFromRequest,
+  localizeStorefrontPath,
+} from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
+
+interface Props {
+  class?: string;
+  hidden?: boolean;
+}
+
+const { class: className, hidden = false } = Astro.props;
+const settings = getStorefrontLanguageSettingsFromRequest(Astro.request);
+const locale = getStorefrontLocaleFromRequest(Astro.request, settings);
+const visible = !hidden && settings.enabledLocales.length > 1;
+const canonicalPath = Astro.url.pathname;
+const choices = settings.enabledLocales.map((choice) => ({
+  locale: choice,
+  label: choice === "am" ? m.language_amharic({}, { locale }) : m.language_english({}, { locale }),
+  href: `${localizeStorefrontPath({ locale: choice, pathname: canonicalPath, settings })}${Astro.url.search}`,
+}));
+---
+
+{visible ? (
+  <nav class:list={["ecs-language-switcher", className]} aria-label={m.language_label({}, { locale })} data-language-switcher data-active-locale={locale} data-default-locale={settings.defaultLocale}>
+    {choices.map((choice) => (
+      <a
+        href={choice.href}
+        lang={choice.locale}
+        aria-current={choice.locale === locale ? "true" : undefined}
+        data-astro-prefetch="tap"
+        data-storefront-locale={choice.locale}
+      >
+        {choice.locale === "am" ? "አማ" : "EN"}
+        <span class="ecs-language-switcher__label">{choice.label}</span>
+      </a>
+    ))}
+  </nav>
+) : null}
+
+<script is:inline>
+  (() => {
+    const switcher = document.querySelector("[data-language-switcher]");
+    const locale = switcher?.getAttribute("data-active-locale") || "en";
+    const defaultLocale = switcher?.getAttribute("data-default-locale") || "en";
+    const localize = (value) => {
+      if (!value || !value.startsWith("/") || value.startsWith("//")) return value;
+      if (/^\/(?:am|en)(?:\/|$)/.test(value)) value = value.replace(/^\/(?:am|en)(?=\/|$)/, "") || "/";
+      if (locale === defaultLocale) return value;
+      if (/^\/(?:actions|api|_astro|demo)(?:\/|$)/.test(value)) return value;
+      return value === "/" ? `/${locale}` : `/${locale}${value}`;
+    };
+    const syncLinks = () => {
+      document.querySelectorAll('a[href^="/"]:not([data-storefront-locale])').forEach((node) => {
+        if (!(node instanceof HTMLAnchorElement)) return;
+        const url = new URL(node.href, window.location.origin);
+        node.setAttribute("href", `${localize(url.pathname)}${url.search}${url.hash}`);
+      });
+      document.querySelectorAll('form[action^="/"]').forEach((node) => {
+        if (!(node instanceof HTMLFormElement)) return;
+        const url = new URL(node.action, window.location.origin);
+        node.setAttribute("action", `${localize(url.pathname)}${url.search}`);
+      });
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncLinks, { once: true });
+    else syncLinks();
+    document.querySelectorAll("[data-storefront-locale]").forEach((node) => {
+      node.addEventListener("click", (event) => {
+        if (!(event.currentTarget instanceof HTMLAnchorElement)) return;
+        const nextLocale = event.currentTarget.dataset.storefrontLocale;
+        if (nextLocale) document.cookie = `ecs_storefront_locale=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+        if (window.location.hash) event.currentTarget.hash = window.location.hash;
+        if (nextLocale && nextLocale !== locale) {
+          switcher?.setAttribute("aria-busy", "true");
+          switcher?.setAttribute("data-switching", "true");
+          event.currentTarget.setAttribute("aria-disabled", "true");
+        }
+      });
+    });
+  })();
+</script>
+
+<style>
+  .ecs-language-switcher { display: inline-flex; align-items: center; gap: .15rem; padding: .18rem; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 999px; font: 600 .72rem/1 system-ui, sans-serif; }
+  .ecs-language-switcher a { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; min-height: 2rem; padding: 0 .55rem; border-radius: 999px; color: inherit; text-decoration: none; opacity: .62; transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease; }
+  .ecs-language-switcher a:hover { opacity: 1; }
+  .ecs-language-switcher a[aria-current="true"] { background: color-mix(in srgb, currentColor 12%, transparent); opacity: 1; }
+  .ecs-language-switcher[data-switching="true"] a { pointer-events: none; opacity: .4; }
+  .ecs-language-switcher[data-switching="true"] a[aria-disabled="true"] { opacity: 1; }
+  .ecs-language-switcher__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .ecs-language-switcher a { transition: none; } }
+</style>

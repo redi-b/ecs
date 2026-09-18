@@ -1,6 +1,27 @@
-import { updateMerchantProduct } from "@/lib/merchant-products";
+import { getMerchantProduct, updateMerchantProduct } from "@/lib/merchant-products";
 import { withMerchantAction } from "@/lib/platform-api/action-route";
 import { getProductFormInput } from "@/lib/product-form-data";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ productId: string }> },
+) {
+  const { productId } = await params;
+
+  return withMerchantAction(request, async (context) => {
+    const result = await getMerchantProduct({
+      cookieHeader: context.cookieHeader,
+      platformApiBaseUrl: context.platformApiBaseUrl,
+      productId,
+      requestHost: context.requestHost,
+      tenantId: context.tenantId,
+    });
+
+    return result.ok
+      ? { ok: true, data: { product: result.product } }
+      : { ok: false, message: result.message, status: result.status };
+  });
+}
 
 export async function POST(
   request: Request,

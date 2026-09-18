@@ -284,6 +284,7 @@ export function normalizeCart(value: unknown): StoreCart {
 
   return {
     id: getString(value.id) ?? "",
+    locale: getString(value.locale),
     regionId: getString(value.region_id) ?? getString(value.regionId),
     email: getString(value.email),
     currencyCode: getString(value.currency_code) ?? getString(value.currencyCode),
@@ -306,6 +307,7 @@ export function normalizeCart(value: unknown): StoreCart {
 export function createEmptyStoreCart(): StoreCart {
   return {
     id: "",
+    locale: null,
     regionId: null,
     email: null,
     currencyCode: null,

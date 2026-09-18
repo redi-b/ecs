@@ -28,6 +28,7 @@ import type { Delivery } from "@/features/settings/settings-types";
 import { deliveryFieldKeys } from "@/features/settings/settings-types";
 import { useI18n } from "@/i18n/provider";
 import { merchantPolicies } from "@/lib/access-policy";
+import { ShippingTranslationField } from "@/features/settings/shipping-translation-field";
 
 export function FulfillmentSection({
   currencyId,
@@ -38,6 +39,7 @@ export function FulfillmentSection({
   onSaveDelivery,
   onSaveFee,
   savingFee,
+  translationsEnabled,
 }: {
   currencyId: string;
   deliveryFeeId: string;
@@ -47,6 +49,7 @@ export function FulfillmentSection({
   onSaveDelivery: (value: Delivery, label?: string) => void;
   onSaveFee: () => void;
   savingFee: boolean;
+  translationsEnabled: boolean;
 }) {
   const { t } = useI18n();
   const canManage = usePolicy(merchantPolicies.shopSettingsManage);
@@ -165,6 +168,7 @@ export function FulfillmentSection({
                 <Input disabled id={currencyId} readOnly value="ETB" />
                 <FieldDescription>{t("settings.fulfillment.currencyHint")}</FieldDescription>
               </Field>
+              <ShippingTranslationField enabled={translationsEnabled && deliveryState.deliveryEnabled} />
             </div>
           </>
         ) : (

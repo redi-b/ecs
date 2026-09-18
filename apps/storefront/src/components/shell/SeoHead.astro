@@ -1,20 +1,55 @@
 ---
 import type { StorefrontSeo } from "../../lib/seo";
+import {
+  getStorefrontLanguageSettingsFromRequest,
+  getStorefrontLocaleFromRequest,
+  localizeStorefrontPath,
+} from "../../lib/storefront-locale";
 
 interface Props {
   seo?: StorefrontSeo;
 }
 
 const { seo } = Astro.props;
+const languageSettings = getStorefrontLanguageSettingsFromRequest(Astro.request);
+const locale = getStorefrontLocaleFromRequest(Astro.request, languageSettings);
+const canonicalSource = seo ? new URL(seo.canonicalUrl) : null;
+const canonicalPath = canonicalSource?.pathname ?? Astro.url.pathname;
+const canonicalSearch = canonicalSource?.search ?? Astro.url.search;
+const localizedCanonical = canonicalSource
+  ? new URL(
+      `${localizeStorefrontPath({ locale, pathname: canonicalPath, settings: languageSettings })}${canonicalSearch}`,
+      canonicalSource.origin,
+    ).toString()
+  : null;
+const alternates = canonicalSource
+  ? languageSettings.enabledLocales.map((alternateLocale) => ({
+      locale: alternateLocale,
+      href: new URL(
+        `${localizeStorefrontPath({ locale: alternateLocale, pathname: canonicalPath, settings: languageSettings })}${canonicalSearch}`,
+        canonicalSource.origin,
+      ).toString(),
+    }))
+  : [];
 ---
 
-{seo && <link rel="canonical" href={seo.canonicalUrl} />}
+{localizedCanonical && <link rel="canonical" href={localizedCanonical} />}
+{alternates.map((alternate) => (
+  <link rel="alternate" hreflang={alternate.locale === "am" ? "am-ET" : "en-ET"} href={alternate.href} />
+))}
+{alternates.length > 1 && (
+  <link
+    rel="alternate"
+    hreflang="x-default"
+    href={alternates.find((alternate) => alternate.locale === languageSettings.defaultLocale)?.href}
+  />
+)}
 {seo && <meta name="description" content={seo.description} />}
 {seo?.noindex && <meta name="robots" content="noindex, nofollow" />}
 {seo && <meta property="og:type" content="website" />}
 {seo && <meta property="og:title" content={seo.title} />}
 {seo && <meta property="og:description" content={seo.description} />}
-{seo && <meta property="og:url" content={seo.canonicalUrl} />}
+{seo && <meta property="og:url" content={localizedCanonical ?? seo.canonicalUrl} />}
 {seo?.imageUrl && <meta property="og:image" content={seo.imageUrl} />}
 {seo && <meta name="twitter:card" content={seo.imageUrl ? "summary_large_image" : "summary"} />}
 {seo && <meta name="twitter:title" content={seo.title} />}

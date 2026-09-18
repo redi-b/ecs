@@ -29,8 +29,8 @@ test("NexaHub listing preserves URL filters, pagination, and truthful states", (
     'name="order"',
     'rel="prev"',
     'rel="next"',
-    "No products available yet",
-    "No results for",
+    "m.catalog_empty(",
+    "m.catalog_no_results(",
   ]) assert.ok(source.includes(marker), `listing is missing ${marker}`);
   assert.ok(source.includes("products.map((product"), "listing must use route products");
   assert.equal(/iphone|lenovo|logitech|dell/i.test(source), false, "listing must not contain mock products");
@@ -63,8 +63,8 @@ test("NexaHub cart owns the shared mutation contract and truthful states", () =>
     'action="/actions/cart/remove"',
     'action="/actions/cart/promotion"',
     "data-cart-page-status",
-    "Your cart is empty",
-    "Proceed to checkout",
+    "m.cart_empty(",
+    "m.action_checkout(",
   ]) assert.ok(source.includes(marker), `cart is missing ${marker}`);
   assert.ok(updateAction.includes("customerFacingStoreError(result.message)"), "inventory failures must not be replaced by a generic cart error");
   assert.doesNotMatch(source, /Updated\./, "visible cart state must not be followed by redundant success copy");
@@ -172,7 +172,7 @@ test("NexaHub exposes cart mutation failures visibly and keeps mobile product de
   const responsive = read("templates/nexahub/v1/styles/responsive.scss");
 
   assert.ok(layout.includes("data-nexa-toast"), "shell needs a visible mutation feedback surface");
-  assert.ok(client.includes("showToast(message"), "add-to-cart failures must reach the visible feedback surface");
+  assert.ok(client.includes("showToast(failureMessage"), "add-to-cart failures must reach the visible feedback surface");
   assert.match(responsive, /\.product-info\s*\{[^}]*height:\s*auto[^}]*\}/, "mobile PDP must override its desktop fixed height");
   assert.doesNotMatch(read("templates/nexahub/v1/styles/pages/product-details.scss"), /height:\s*588px/, "merchant product content must not be trapped in a fixed-height desktop card");
   assert.match(read("templates/nexahub/v1/Product.astro"), /data-description-toggle/, "long product descriptions should expose one accessible disclosure behavior across breakpoints");
@@ -276,7 +276,7 @@ test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel stat
   assert.match(home, /data-cat-prev disabled/);
   assert.match(client, /track\.scrollBy/);
   assert.match(client, /previous\.disabled/);
-  assert.match(contact, /<Button text="Send Message"/);
+  assert.match(contact, /<Button text=\{m\.contact_send/);
   assert.match(home, /data-editor-collection-option-featured/);
   assert.match(home, /data-editor-collection-option-standard/);
   assert.match(preview, /previewBindings/);
@@ -337,7 +337,7 @@ test("NexaHub keeps its commerce shell and reference PDP structure consistent ac
   assert.match(layout, /await listStoreCollections/);
   assert.match(layout, /productLinks\.map\(\(item\) => <li>/);
   assert.match(product, /similar-products__eyebrow/);
-  assert.match(product, /You Might Also Like These Products/);
+  assert.match(product, /m\.product_related/);
   assert.match(product, /object-fit: cover/);
   assert.match(productCard, /product-card__add-btn/);
   assert.match(productCard, /product-card__cart/);

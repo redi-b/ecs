@@ -1,23 +1,80 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import {
-  buildDraftPayload,
-  buildEditorData,
-  getPublicationStatus,
-  isPreviewImageUrl,
-  serializeEditorData,
-  updateEditorLinkValue,
-} from "./editor-state.js";
-import type { EditorData } from "./editor-state.js";
 import {
   nexahubV1DataSchema,
   nexahubV1Defaults,
   nexahubV1ThemeTokens,
   nexahubV1ThemeTokensSchema,
 } from "@ecs/storefront-templates";
+import type { EditorData } from "./editor-state.js";
+import {
+  buildDraftPayload,
+  buildEditorData,
+  getLocalizedTranslations,
+  getPublicationStatus,
+  isPreviewImageUrl,
+  markLocalizedTranslationReviewed,
+  serializeEditorData,
+  updateEditorLinkValue,
+  updateLocalizedTranslation,
+} from "./editor-state.js";
 
 describe("storefront editor state", () => {
+  it("keeps localized page text in editor history snapshots", () => {
+    const draft = {
+      data: structuredClone(nexahubV1Defaults),
+      localizedContent: {
+        version: 1 as const,
+        locales: {
+          am: {
+            "home.hero.title": {
+              sourceHash: "a".repeat(64),
+              value: "የመጀመሪያ ርዕስ",
+            },
+          },
+        },
+      },
+      templateKey: "nexahub@1",
+      templateVersion: 1,
+      tenantId: "tenant_localized",
+      themeTokens: structuredClone(nexahubV1ThemeTokens),
+      updatedAt: "2026-09-17T00:00:00.000Z",
+    };
+    const initial = buildEditorData(draft);
+    const edited = updateLocalizedTranslation(initial, "home.hero.title", "አዲስ ርዕስ");
+
+    assert.equal(getLocalizedTranslations(initial)["home.hero.title"], "የመጀመሪያ ርዕስ");
+    assert.equal(getLocalizedTranslations(edited)["home.hero.title"], "አዲስ ርዕስ");
+    assert.notEqual(serializeEditorData(initial), serializeEditorData(edited));
+  });
+
+  it("keeps an explicit stale-translation review in editor history", () => {
+    const initial = buildEditorData({
+      data: structuredClone(nexahubV1Defaults),
+      localizedContent: {
+        version: 1,
+        locales: {
+          am: {
+            "home.hero.title": {
+              sourceHash: "a".repeat(64),
+              value: "የተተረጎመ ርዕስ",
+            },
+          },
+        },
+      },
+      localizedStatuses: { "home.hero.title": "needs_review" },
+      templateKey: "nexahub@1",
+      templateVersion: 1,
+      tenantId: "tenant_review",
+      themeTokens: structuredClone(nexahubV1ThemeTokens),
+      updatedAt: "2026-09-17T00:00:00.000Z",
+    });
+    const reviewed = markLocalizedTranslationReviewed(initial, "home.hero.title");
+
+    assert.notEqual(serializeEditorData(initial), serializeEditorData(reviewed));
+    assert.equal(reviewed.root.props?.localizedStatusOverrides?.["home.hero.title"], "ready");
+  });
+
   it("round-trips NexaHub through the generic manifest without Luvia field assumptions", () => {
     const draft = {
       data: structuredClone(nexahubV1Defaults),
@@ -201,11 +258,9 @@ describe("storefront editor state", () => {
     assert.equal(data.home.hero.title, "Edited Luvia hero");
     assert.deepEqual(data.home.hero.featuredProductIds, ["prod_one", "prod_two"]);
     assert.equal(data.home.hero.featuredProductId, undefined);
-    assert.equal(data.footer.blurb, "Edited footer");
+    assert.equal(data.footer.blurb, "Original footer");
     assert.deepEqual(data.header.navigation, [{ label: "Shop", href: "/products" }]);
-    assert.deepEqual(data.footer.socialLinks, [
-      { label: "Instagram", href: "https://instagram.com/example" },
-    ]);
+    assert.deepEqual(data.footer.socialLinks, []);
   });
 
   it("classifies published, saved draft, and unsaved editor states", () => {
@@ -267,11 +322,20 @@ describe("storefront editor state", () => {
   });
 
   it("updates an exact navigation row edited from the iframe", () => {
-    const links = [{ label: "Home", href: "/" }, { label: "Shop", href: "/products" }];
+    const links = [
+      { label: "Home", href: "/" },
+      { label: "Shop", href: "/products" },
+    ];
     assert.deepEqual(
       updateEditorLinkValue(links, "header.navigation", "header.navigation.1.label", "Catalog"),
-      [{ label: "Home", href: "/" }, { label: "Catalog", href: "/products" }],
+      [
+        { label: "Home", href: "/" },
+        { label: "Catalog", href: "/products" },
+      ],
     );
-    assert.equal(updateEditorLinkValue(links, "header.navigation", "footer.socialLinks.0.label", "No"), null);
+    assert.equal(
+      updateEditorLinkValue(links, "header.navigation", "footer.socialLinks.0.label", "No"),
+      null,
+    );
   });
 });

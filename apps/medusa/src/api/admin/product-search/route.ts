@@ -1,6 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 
 import type { AdminProductSearchQueryInput } from "../../../lib/product-search-query";
+import { indexProducts } from "../../../workflows/hooks/product-search-sync";
 import { MEILISEARCH_MODULE } from "../../../modules/meilisearch";
 import type { ProductSearchProvider } from "../../../modules/meilisearch/types";
 
@@ -9,6 +10,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const search = req.scope.resolve<ProductSearchProvider>(MEILISEARCH_MODULE);
   const result = await search.searchProducts({
     q: input.q,
+    locale: "en-ET",
     ...(input.category_id ? { categoryIds: [input.category_id] } : {}),
     ...(input.collection_id ? { collectionId: input.collection_id } : {}),
     limit: input.limit,
@@ -20,7 +22,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
   return res.json({
     hits: result.hits.map((hit) => ({
-      id: hit.id,
+      id: hit.product_id,
       title: hit.title,
       handle: hit.handle,
       status: hit.status,
@@ -32,4 +34,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     processing_time_ms: result.processingTimeMs,
     query: result.query,
   });
+}
+
+export async function POST(
+  req: MedusaRequest<{ ids: string[] }>,
+  res: MedusaResponse,
+) {
+  await indexProducts(req.validatedBody.ids, req.scope);
+  return res.status(202).json({ accepted: req.validatedBody.ids.length });
 }
