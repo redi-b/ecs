@@ -1,5 +1,6 @@
 import { RiSettings4Line, RiTranslate2 } from "@remixicon/react";
 import { headers } from "next/headers";
+import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,6 +19,10 @@ import { getStorefrontDraft } from "@/lib/storefront-templates";
 import { getStorefrontTranslationReadiness } from "@/lib/storefront-translation-readiness";
 
 const translationLocale = "am" as const;
+
+function TranslationPageHelp({ summary, title }: { summary: string; title: string }) {
+  return <HelpTip label={title} summary={summary} title={title} />;
+}
 
 export default async function StorefrontTranslationsPage({
   searchParams,
@@ -51,7 +56,12 @@ export default async function StorefrontTranslationsPage({
     return (
       <PageShell
         title={t("editor.translations.title")}
-        description={t("editor.translations.description")}
+        titleAccessory={
+          <TranslationPageHelp
+            summary={t("editor.translations.description")}
+            title={t("editor.translations.title")}
+          />
+        }
       >
         <Alert variant="destructive">
           <AlertTitle>{t("editor.translations.loadError")}</AlertTitle>
@@ -64,7 +74,12 @@ export default async function StorefrontTranslationsPage({
     return (
       <PageShell
         title={t("editor.translations.title")}
-        description={t("editor.translations.description")}
+        titleAccessory={
+          <TranslationPageHelp
+            summary={t("editor.translations.description")}
+            title={t("editor.translations.title")}
+          />
+        }
       >
         <Empty className="min-h-72 rounded-2xl border border-dashed">
           <EmptyHeader>
@@ -143,7 +158,12 @@ export default async function StorefrontTranslationsPage({
         </Button>
       }
       title={t("editor.translations.title")}
-      description={t("editor.translations.description")}
+      titleAccessory={
+        <TranslationPageHelp
+          summary={t("editor.translations.description")}
+          title={t("editor.translations.title")}
+        />
+      }
     >
       <StorefrontTranslationWorkspace
         categoryReadiness={categoryReadiness.ok ? categoryReadiness.queue : null}

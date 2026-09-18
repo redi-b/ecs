@@ -1,9 +1,10 @@
 "use client";
 
 import { type CatalogTranslationResource, catalogTranslationResourceSchema } from "@ecs/contracts";
-import { RiArrowLeftLine, RiArrowRightLine, RiLoader4Line } from "@remixicon/react";
+import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,12 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  TranslationSheetLoadingFields,
+  TranslationSheetLoadingNotice,
+} from "@/features/storefront-editor/translation-sheet-loading";
 import { TranslationSourceReference } from "@/features/storefront-editor/translation-source-reference";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +66,15 @@ export function TaxonomyTranslationSheet({
   const [resource, setResource] = useState<CatalogTranslationResource | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const dirty = Boolean(
+    resource &&
+      Object.keys(resource.source).some(
+        (field) => (drafts[field] ?? "") !== (resource.translations[field] ?? ""),
+      ),
+  );
+  const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
+    dirty && Boolean(target),
+  );
 
   useEffect(() => {
     if (!target) {
@@ -135,7 +150,13 @@ export function TaxonomyTranslationSheet({
         : t("taxonomy.translation.deliveryTitle");
 
   return (
-    <Sheet onOpenChange={(open) => !saving && onOpenChange(open)} open={Boolean(target)}>
+    <Sheet
+      onOpenChange={(open) => {
+        if (saving || open) return;
+        requestLeave(() => onOpenChange(false));
+      }}
+      open={Boolean(target)}
+    >
       <SheetContent
         className="w-full sm:max-w-xl"
         onOpenAutoFocus={(event) => {
@@ -161,17 +182,10 @@ export function TaxonomyTranslationSheet({
         </SheetHeader>
         <SheetBody className="relative space-y-5">
           {queueNavigation?.loading && !loading ? (
-            <output className="sticky top-0 z-10 flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 text-xs font-medium shadow-sm backdrop-blur">
-              <RiLoader4Line className="size-4 animate-spin text-primary" aria-hidden />
-              {t("products.translation.loading")}
-            </output>
+            <TranslationSheetLoadingNotice label={t("products.translation.loading")} />
           ) : null}
           {loading ? (
-            <output className="block space-y-3" aria-label={t("products.translation.loading")}>
-              {[0, 1].map((item) => (
-                <div className="h-28 animate-pulse rounded-xl bg-muted/60" key={item} />
-              ))}
-            </output>
+            <TranslationSheetLoadingFields label={t("products.translation.loading")} />
           ) : resource ? (
             <section className="space-y-4">
               {resource.status === "needs_review" ? (
@@ -205,7 +219,10 @@ export function TaxonomyTranslationSheet({
                         </Button>
                       </div>
                     </div>
-                    <TranslationSourceReference label={t("products.translation.english")}>
+                    <TranslationSourceReference
+                      label={t("products.translation.english")}
+                      variant="panel"
+                    >
                       {source}
                     </TranslationSourceReference>
                     <Textarea
@@ -224,7 +241,7 @@ export function TaxonomyTranslationSheet({
             </section>
           ) : null}
         </SheetBody>
-        <SheetFooter className="flex-row items-center justify-between gap-3">
+        <SheetFooter className="flex-row items-center justify-between gap-3 sm:justify-between">
           <div className="flex items-center gap-2">
             {queueNavigation?.previous || queueNavigation?.onPrevious ? (
               <Tooltip>
@@ -233,7 +250,7 @@ export function TaxonomyTranslationSheet({
                     <Button
                       aria-label={t("editor.translations.previous")}
                       disabled={loading || queueNavigation.loading}
-                      onClick={queueNavigation.onPrevious}
+                      onClick={() => requestLeave(() => queueNavigation.onPrevious?.())}
                       size="icon-sm"
                       type="button"
                       variant="outline"
@@ -261,7 +278,7 @@ export function TaxonomyTranslationSheet({
                     <Button
                       aria-label={t("editor.translations.next")}
                       disabled={loading || queueNavigation.loading}
-                      onClick={queueNavigation.onNext}
+                      onClick={() => requestLeave(() => queueNavigation.onNext?.())}
                       size="icon-sm"
                       type="button"
                       variant="outline"
@@ -281,7 +298,11 @@ export function TaxonomyTranslationSheet({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">
+            <Button
+              disabled={saving}
+              onClick={() => requestLeave(() => onOpenChange(false))}
+              variant="outline"
+            >
               {t("common.cancel")}
             </Button>
             <Button disabled={loading || saving || !resource} onClick={save}>
@@ -289,6 +310,7 @@ export function TaxonomyTranslationSheet({
             </Button>
           </div>
         </SheetFooter>
+        <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
       </SheetContent>
     </Sheet>
   );
