@@ -18,6 +18,8 @@ export async function POST(request: Request) {
       action?: string;
       planId?: string;
       invoiceId?: string;
+      provider?: string;
+      reference?: string;
       returnUrl?: string;
     };
 
@@ -166,6 +168,33 @@ export async function POST(request: Request) {
         };
       }
       return { ok: true, data };
+    }
+
+    if (action === "submit_payment") {
+      const invoiceId = body.invoiceId?.trim();
+      const provider = body.provider?.trim();
+      const reference = body.reference?.trim();
+      if (!invoiceId || !provider || !reference) {
+        return { ok: false, message: "billing_payment_evidence_invalid", status: 400 };
+      }
+      const response = await fetch(
+        platformUrl(
+          `platform/tenants/${encodeURIComponent(context.tenantId)}/billing/invoices/${encodeURIComponent(invoiceId)}/payment-evidence`,
+        ),
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ provider, reference }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      return response.ok
+        ? { ok: true, data }
+        : {
+            ok: false,
+            message: extractErrorText(data) ?? "billing_payment_evidence_failed",
+            status: response.status,
+          };
     }
 
     return { ok: false, message: "invalid_action", status: 400 };

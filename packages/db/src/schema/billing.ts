@@ -214,6 +214,47 @@ export const invoices = pgTable("invoices", {
 });
 
 /**
+ * Merchant-supplied evidence for an external platform-billing payment.
+ * Verification is deliberately separate from invoice settlement so providers
+ * can be added or replaced without changing subscription lifecycle logic.
+ */
+export const billingPaymentEvidence = pgTable(
+  "billing_payment_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    provider: text("provider").notNull(),
+    submittedReference: text("submitted_reference").notNull(),
+    normalizedReference: text("normalized_reference").notNull(),
+    status: text("status").notNull().default("needs_review"),
+    verificationSource: text("verification_source").notNull().default("manual_review"),
+    verificationResult: jsonb("verification_result").notNull().default({}),
+    reviewedByUserId: text("reviewed_by_user_id"),
+    reviewReason: text("review_reason"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("billing_payment_evidence_provider_reference_unique").on(
+      table.provider,
+      table.normalizedReference,
+    ),
+    index("billing_payment_evidence_invoice_idx").on(table.invoiceId, table.createdAt),
+    index("billing_payment_evidence_review_idx").on(table.status, table.createdAt),
+    check(
+      "billing_payment_evidence_status_valid",
+      sql`${table.status} in ('submitted', 'verifying', 'needs_review', 'verified', 'rejected', 'superseded')`,
+    ),
+  ],
+);
+
+/**
  * Durable inbox for payment-provider facts that have already been verified.
  * Provider delivery and ECS state changes are deliberately separated so a
  * transient application failure can be retried without trusting the callback.

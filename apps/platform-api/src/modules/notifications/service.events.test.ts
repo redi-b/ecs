@@ -30,5 +30,6 @@ describe("isAllowedNotificationEventType", () => {
     assert.equal(isAllowedNotificationEventType("inventory.low"), true);
     assert.equal(isAllowedNotificationEventType("billing.past_due"), true);
     assert.equal(isAllowedNotificationEventType("billing.invoice_ready"), true);
+    assert.equal(isAllowedNotificationEventType("billing.payment_rejected"), true);
   });
 });

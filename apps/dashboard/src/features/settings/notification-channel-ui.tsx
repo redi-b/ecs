@@ -44,6 +44,10 @@ export const NOTIFICATION_EVENT_OPTIONS = [
     labelKey: "settings.notifications.events.billingInvoiceReady" as MessageKey,
   },
   {
+    id: "billing.payment_rejected",
+    labelKey: "settings.notifications.events.billingPaymentRejected" as MessageKey,
+  },
+  {
     id: "billing.trial_started",
     labelKey: "settings.notifications.events.trialStarted" as MessageKey,
   },
@@ -79,6 +83,7 @@ export const NOTIFICATION_EVENT_GROUPS = [
     eventIds: [
       "billing.past_due",
       "billing.invoice_ready",
+      "billing.payment_rejected",
       "billing.trial_started",
       "billing.trial_ending",
       "billing.trial_expired",
@@ -90,6 +95,14 @@ export const NOTIFICATION_EVENT_GROUPS = [
 export const LEGACY_COD_ORDER_EVENT = "cod_order.created";
 
 export const ALWAYS_ON_NOTIFICATION_EVENTS = ["notification.test"] as const;
+export const ALWAYS_ON_EMAIL_EVENTS = [
+  "billing.invoice_ready",
+  "billing.past_due",
+  "billing.payment_rejected",
+  "billing.trial_started",
+  "billing.trial_ending",
+  "billing.trial_expired",
+] as const;
 
 export function defaultNotificationEvents(): string[] {
   return NOTIFICATION_EVENT_OPTIONS.map((event) => event.id);
@@ -257,6 +270,7 @@ export function NotificationEventPicker({
   dirty,
   onChange,
   onSave,
+  lockedEvents = [],
 }: {
   events: string[];
   disabled?: boolean;
@@ -265,6 +279,7 @@ export function NotificationEventPicker({
   dirty: boolean;
   onChange: (events: string[]) => void;
   onSave: () => void;
+  lockedEvents?: readonly string[];
 }) {
   const { t } = useI18n();
   const pickerId = useId();
@@ -292,6 +307,7 @@ export function NotificationEventPicker({
                 const event = eventById.get(eventId);
                 if (!event) return null;
                 const checked = events.includes(event.id);
+                const locked = lockedEvents.includes(event.id);
                 const checkboxId = `${pickerId}-${event.id.replaceAll(".", "-")}`;
                 return (
                   <label
@@ -308,7 +324,7 @@ export function NotificationEventPicker({
                     <Checkbox
                       id={checkboxId}
                       checked={checked}
-                      disabled={disabled}
+                      disabled={disabled || locked}
                       onCheckedChange={(value) => {
                         onChange(
                           value === true

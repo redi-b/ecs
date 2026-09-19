@@ -464,6 +464,41 @@ export function registerPlatformTenantOpsRoutes(
     });
   });
 
+  app.post(
+    "/platform/tenants/:tenantId/billing/invoices/:invoiceId/payment-evidence",
+    async (context) => {
+      if (!options.submitBillingPaymentEvidence) {
+        return context.json({ error: "billing_unavailable" }, 503);
+      }
+      const session = await options.getSession?.(context.req.raw.headers);
+      if (!session) return context.json({ error: "auth_required" }, 401);
+
+      const tenantId = context.req.param("tenantId");
+      const authorization = await options.authorizeDashboardForTenant?.({
+        tenantId,
+        userId: session.user.id,
+        permission: { billing: ["manage"] },
+      });
+      if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+
+      const body = await getJsonBody(context.req.raw);
+      const provider = getRequiredBodyString(body, "provider");
+      const reference = getRequiredBodyString(body, "reference");
+      if (!provider || !reference) {
+        return context.json({ error: "billing_payment_evidence_invalid" }, 400);
+      }
+      const result = await options.submitBillingPaymentEvidence({
+        invoiceId: context.req.param("invoiceId"),
+        provider,
+        reference,
+        tenantId,
+      });
+      return result.ok
+        ? context.json({ evidence: result.evidence })
+        : context.json({ error: result.error }, result.status);
+    },
+  );
+
   app.get("/platform/tenants/:tenantId/domains", async (context) => {
     if (!options.listTenantDomains) {
       return context.json({ error: "domains_unavailable" }, 503);

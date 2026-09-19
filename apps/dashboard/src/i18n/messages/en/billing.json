@@ -83,11 +83,54 @@
     "requiredDescription": "Pay to activate or extend your plan.",
     "due": "Due {date}",
     "payWithChapa": "Pay with Chapa",
+    "payInvoice": "Pay invoice",
+    "reviewPending": "Waiting for review",
+    "rejectedTitle": "Payment details need correction",
+    "rejectedDescription": "Check the amount, recipient, and receipt, then submit again.",
+    "detailsUnavailable": "Payment details unavailable",
+    "detailsUnavailableDescription": "Payment details are being prepared. Contact ECS support before making a transfer.",
     "payAmount": "Pay {amount}",
     "historyTitle": "Payment history",
     "historyDescription": "Past charges for this shop.",
     "paidOn": "Paid {date}",
     "createdOn": "Created {date}"
+  },
+  "transfer": {
+    "title": "Pay your invoice",
+    "description": "Pay with Telebirr or CBE, then enter your receipt details.",
+    "provider": "Paid with",
+    "other": "Another bank or wallet",
+    "sendTo": "Send the payment to",
+    "amount": "Exact amount",
+    "copyAmount": "Copy amount",
+    "copyAccount": "Copy account",
+    "reference": "Transaction reference or receipt link",
+    "referencePlaceholder": "Paste the reference or receipt link",
+    "referenceHelp": "Enter the transaction number shown on the successful Telebirr payment.",
+    "cbeReferenceHelp": "Paste the receipt link from CBE. A transaction number alone cannot be checked automatically yet.",
+    "findReference": "Where do I find this?",
+    "telebirrHelp": "Open the payment in your transaction history and copy the Transaction Number.",
+    "cbeHelp": "Open the payment in your transaction history, tap Share or Receipt, and paste the receipt link here.",
+    "reviewTitle": "After you submit",
+    "reviewDescription": "We will check the payment and let you know when it is approved.",
+    "copied": "Copied.",
+    "copyFailed": "Could not copy. Select and copy it manually.",
+    "steps": {
+      "openApp": {
+        "title": "Open {provider}",
+        "description": "Choose Send money or Transfer money."
+      },
+      "sendExact": {
+        "title": "Send the exact amount",
+        "description": "Send {amount} to the account shown above."
+      },
+      "copyReference": {
+        "title": "Copy the receipt details",
+        "description": "After the payment succeeds, copy the transaction number or receipt link."
+      }
+    },
+    "submit": "Submit payment",
+    "submitting": "Submitting…"
   },
   "invoice": {
     "planPayment": "Plan payment",
@@ -128,6 +171,8 @@
     "trialStarted": "Your {days}-day trial has started.",
     "paymentConfirmed": "Payment confirmed.",
     "openingCheckout": "Opening secure checkout…",
+    "paymentSubmitted": "Payment submitted for review.",
+    "paymentRejected": "The receipt does not match this payment. Check the amount, recipient, and reference.",
     "switchesOn": "Switches to free plan on {date}.",
     "planChangeScheduled": "Plan change scheduled.",
     "nowOnFree": "You are now on the free plan.",

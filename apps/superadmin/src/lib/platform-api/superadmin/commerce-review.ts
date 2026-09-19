@@ -26,7 +26,7 @@ export async function updateSuperadminInvoice(
     provider?: string;
     providerReference?: string;
     reason: string;
-    status: "paid" | "void";
+    status: "evidence_rejected" | "paid" | "void";
   },
 ) {
   return mutate(

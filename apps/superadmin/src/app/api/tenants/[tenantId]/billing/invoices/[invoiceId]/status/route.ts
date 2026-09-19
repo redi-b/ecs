@@ -8,7 +8,10 @@ export async function POST(
 ) {
   const { invoiceId, tenantId } = await context.params;
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const status = body.status === "paid" || body.status === "void" ? body.status : null;
+  const status =
+    body.status === "paid" || body.status === "void" || body.status === "evidence_rejected"
+      ? body.status
+      : null;
   if (!status || typeof body.reason !== "string") {
     return Response.json({ error: "invoice_review_invalid" }, { status: 400 });
   }

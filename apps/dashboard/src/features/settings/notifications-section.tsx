@@ -18,9 +18,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   buildNotificationEventsPayload,
+  ALWAYS_ON_EMAIL_EVENTS,
   defaultNotificationEvents,
   isValidNotificationEmail,
-  NotificationAlertsSwitch,
   NotificationChannelHeader,
   NotificationChannelUnavailable,
   NotificationEventPicker,
@@ -35,7 +35,6 @@ import { useI18n } from "@/i18n/provider";
 import { merchantPolicies } from "@/lib/access-policy";
 import type { NotificationPreference } from "@/lib/merchant-notifications";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
-import { cn } from "@/lib/utils";
 
 type EmailState = {
   target: string;
@@ -58,8 +57,10 @@ function emailStateFromPreferences(preferences: NotificationPreference[]): Email
   }
   return {
     target: match.target,
-    enabled: match.enabled,
-    events: normalizeNotificationEvents(match.events),
+    enabled: true,
+    events: [
+      ...new Set([...normalizeNotificationEvents(match.events), ...ALWAYS_ON_EMAIL_EVENTS]),
+    ],
   };
 }
 
@@ -205,7 +206,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       try {
         await upsertEmail({
           target,
-          enabled: hasEmail ? saved.enabled : true,
+          enabled: true,
           events: hasEmail ? saved.events : defaultNotificationEvents(),
           successMessage: hasEmail
             ? t("settings.notifications.toast.emailUpdated")
@@ -234,38 +235,14 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
       try {
         await upsertEmail({
           target: saved.target,
-          enabled: saved.enabled,
-          events: eventsDraft,
+          enabled: true,
+          events: [...new Set([...eventsDraft, ...ALWAYS_ON_EMAIL_EVENTS])],
           successMessage: t("settings.notifications.toast.eventsSaved"),
         });
       } catch {
         toast.error(mapPlatformErrorMessage("platform_request_failed"));
       } finally {
         setSavingEvents(false);
-      }
-    });
-  }
-
-  function toggleEnabled(enabled: boolean) {
-    if (!hasEmail) return;
-    // Optimistic UI; reload reconciles.
-    setSaved((current) => ({ ...current, enabled }));
-    startTransition(async () => {
-      try {
-        const ok = await upsertEmail({
-          target: saved.target,
-          enabled,
-          events: saved.events,
-          successMessage: enabled
-            ? t("settings.notifications.toast.alertsResumed")
-            : t("settings.notifications.toast.alertsPaused"),
-        });
-        if (!ok) {
-          setSaved((current) => ({ ...current, enabled: !enabled }));
-        }
-      } catch {
-        setSaved((current) => ({ ...current, enabled: !enabled }));
-        toast.error(mapPlatformErrorMessage("platform_request_failed"));
       }
     });
   }
@@ -479,26 +456,16 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
               </Field>
 
               {hasEmail ? (
-                <div
-                  className={cn(
-                    "flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:p-3.5",
-                    !saved.enabled && "bg-muted/15",
-                  )}
-                >
+                <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:p-3.5">
                   <div className="min-w-0 space-y-0.5">
                     <p className="text-sm font-medium tracking-tight">
                       {t("settings.notifications.delivery")}
                     </p>
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      {t("settings.notifications.pauseWithoutRemoving")}
+                      {t("settings.notifications.billingEmailAlwaysOn")}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                    <NotificationAlertsSwitch
-                      checked={saved.enabled}
-                      disabled={!canManage || isPending}
-                      onCheckedChange={toggleEnabled}
-                    />
                     {canManage ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -531,6 +498,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                   dirty={eventsDirty}
                   disabled={!canManage || isPending}
                   events={eventsDraft}
+                  lockedEvents={ALWAYS_ON_EMAIL_EVENTS}
                   saving={savingEvents}
                   onChange={setEventsDraft}
                   onSave={saveEvents}

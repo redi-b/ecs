@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 
 import { PageShell } from "@/components/app/page-shell";
+import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BillingWorkspace } from "@/features/billing/billing-workspace";
 import { getTranslations } from "@/i18n/server";
@@ -103,7 +104,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   });
 
   return (
-    <PageShell title={t("billing.title")}>
+    <PageShell actions={<RefreshButton />} title={t("billing.title")}>
       {!result.ok ? (
         <Alert variant="destructive">
           <AlertTitle>{t("billing.error.loadTitle")}</AlertTitle>

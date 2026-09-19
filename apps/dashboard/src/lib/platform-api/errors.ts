@@ -115,6 +115,9 @@ const PLATFORM_ERROR_MESSAGES: Record<string, string> = {
   billing_invoice_not_found: "Invoice not found.",
   billing_invoice_not_payable: "This invoice cannot be paid.",
   billing_invoice_is_free: "Free invoices cannot be paid with Chapa.",
+  billing_payment_evidence_invalid: "Enter a valid transaction reference or receipt link.",
+  billing_payment_reference_duplicate: "This payment reference has already been submitted.",
+  billing_payment_evidence_failed: "Your payment details could not be submitted. Try again.",
   billing_chapa_unavailable: "Card payments are not configured yet.",
   billing_chapa_init_failed: "Could not start Chapa checkout. Try again.",
   billing_payer_email_required:

@@ -458,6 +458,7 @@
     "oneInbox": "ለዚህ ሱቅ አንድ ኢሜይል። ማሳወቂያ ለመቀበል ያስቀምጡ።",
     "delivery": "መላክ",
     "pauseWithoutRemoving": "ኢሜይሉን ሳያስወግዱ ማሳወቂያን ያቁሙ።",
+    "billingEmailAlwaysOn": "አስፈላጊ የክፍያ ኢሜይሎች ሁልጊዜ ይላካሉ። ሌሎች የሱቅ ማሳወቂያዎችን ከታች መምረጥ ይችላሉ።",
     "sendTest": "ሙከራ ላክ",
     "sendTestAria": "የሙከራ ኢሜይል ላክ",
     "saveBeforeTest": "ሙከራ ከመላክ በፊት ኢሜይሉን ያስቀምጡ",
@@ -503,6 +504,7 @@
       "storefrontInquiry": "አዲስ የመደብር ጥያቄዎች",
       "billingPastDue": "የደንበኝነት ክፍያ አልፏል",
       "billingInvoiceReady": "የክፍያ ደረሰኝ ዝግጁ ነው",
+      "billingPaymentRejected": "የዕቅድ ክፍያ ማስተካከል ያስፈልገዋል",
       "trialStarted": "ነፃ ሙከራ ተጀምሯል",
       "trialEnding": "ነፃ ሙከራ ሊያበቃ ነው",
       "trialEnded": "ነፃ ሙከራ አብቅቷል"

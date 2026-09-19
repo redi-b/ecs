@@ -787,6 +787,21 @@ export function registerPlatformOperatorRoutes(
     },
   );
 
+  app.get("/platform/operator/billing/payment-reviews", async (context) => {
+    if (!options.listBillingPaymentReviews) {
+      return context.json({ error: "billing_unavailable" }, 503);
+    }
+    const access = await getPlatformAccess(
+      options,
+      context.req.raw.headers,
+      "billing.invoices.read",
+    );
+    if (!access.ok) return context.json({ error: access.error }, access.status);
+    const limit = Math.min(Math.max(Number(context.req.query("limit")) || 20, 1), 100);
+    const offset = Math.max(Number(context.req.query("offset")) || 0, 0);
+    return context.json(await options.listBillingPaymentReviews({ limit, offset }));
+  });
+
   app.post(
     "/platform/operator/tenants/:tenantId/billing/invoices/:invoiceId/status",
     async (context) => {

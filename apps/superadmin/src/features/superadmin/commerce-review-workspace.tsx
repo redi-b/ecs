@@ -80,10 +80,29 @@ export function CommerceReviewWorkspace({
                         {invoice.providerReference}
                       </p>
                     ) : null}
+                    {invoice.paymentEvidence ? (
+                      <div className="mt-3 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium">
+                            {formatProvider(invoice.paymentEvidence.provider)} transfer
+                          </span>
+                          <Badge variant="outline">
+                            {formatStatus(invoice.paymentEvidence.status)}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 break-all font-mono text-muted-foreground">
+                          {invoice.paymentEvidence.reference}
+                        </p>
+                      </div>
+                    ) : null}
                     {canUpdateInvoices && invoice.status === "pending" ? (
                       <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
                         <InvoiceAction invoice={invoice} mode="paid" tenantId={tenantId} />
-                        <InvoiceAction invoice={invoice} mode="void" tenantId={tenantId} />
+                        {invoice.paymentEvidence?.status === "needs_review" ? (
+                          <InvoiceAction invoice={invoice} mode="evidence_rejected" tenantId={tenantId} />
+                        ) : (
+                          <InvoiceAction invoice={invoice} mode="void" tenantId={tenantId} />
+                        )}
                       </div>
                     ) : null}
                   </div>
@@ -167,7 +186,7 @@ function InvoiceAction({
   tenantId,
 }: {
   invoice: NonNullable<SuperadminCommerceReview["billing"]>["invoices"][number];
-  mode: "paid" | "void";
+  mode: "evidence_rejected" | "paid" | "void";
   tenantId: string;
 }) {
   const router = useRouter();
@@ -175,9 +194,10 @@ function InvoiceAction({
   const referenceId = useId();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [reference, setReference] = useState("");
+  const [reference, setReference] = useState(invoice.paymentEvidence?.reference ?? "");
   const [busy, setBusy] = useState(false);
   const paid = mode === "paid";
+  const rejectingEvidence = mode === "evidence_rejected";
 
   async function submit() {
     setBusy(true);
@@ -187,7 +207,12 @@ function InvoiceAction({
         {
           status: mode,
           reason: reason.trim(),
-          ...(paid ? { provider: "manual", providerReference: reference.trim() } : {}),
+          ...(paid
+            ? {
+                provider: invoice.paymentEvidence?.provider ?? "manual",
+                providerReference: reference.trim(),
+              }
+            : {}),
         },
       );
       if (!response.ok) {
@@ -199,7 +224,13 @@ function InvoiceAction({
       setOpen(false);
       setReason("");
       setReference("");
-      toast.success(paid ? "Invoice payment confirmed." : "Invoice voided.");
+      toast.success(
+        paid
+          ? "Invoice payment confirmed."
+          : rejectingEvidence
+            ? "Payment evidence rejected. The invoice remains open."
+            : "Invoice voided.",
+      );
       router.refresh();
     } finally {
       setBusy(false);
@@ -211,7 +242,9 @@ function InvoiceAction({
       description={
         paid
           ? "Marks the invoice paid and updates the subscription period. Confirm the external payment first."
-          : "Closes the pending invoice without activating its plan period."
+          : rejectingEvidence
+            ? "Keeps the invoice open so the merchant can correct the payment details and try again."
+            : "Closes the pending invoice without activating its plan period."
       }
       footer={
         <>
@@ -225,17 +258,23 @@ function InvoiceAction({
             onClick={() => void submit()}
             variant={paid ? "default" : "destructive-solid"}
           >
-            {busy ? "Saving decision…" : paid ? "Confirm payment" : "Void invoice"}
+            {busy
+              ? "Saving decision…"
+              : paid
+                ? "Confirm payment"
+                : rejectingEvidence
+                  ? "Reject evidence"
+                  : "Void invoice"}
           </Button>
         </>
       }
       onOpenChange={setOpen}
       open={open}
-      title={paid ? "Confirm this payment?" : "Void this invoice?"}
+      title={paid ? "Confirm this payment?" : rejectingEvidence ? "Reject this evidence?" : "Void this invoice?"}
       trigger={
         <Button size="sm" variant={paid ? "default" : "destructive-outline"}>
           {paid ? <Banknote aria-hidden /> : null}
-          {paid ? "Confirm payment" : "Void invoice"}
+          {paid ? "Confirm payment" : rejectingEvidence ? "Reject evidence" : "Void invoice"}
         </Button>
       }
     >

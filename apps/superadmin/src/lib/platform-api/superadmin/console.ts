@@ -1,5 +1,6 @@
 import {
   operatorAuditListSchema,
+  operatorBillingPaymentReviewListSchema,
   operatorHealthSchema,
   operatorJobOperationsSchema,
   operatorWorkListSchema,
@@ -27,6 +28,14 @@ type Options = {
 
 export function getOperatorWork(options: Options) {
   return request(options, "/platform/operator/work", operatorWorkListSchema);
+}
+
+export function getBillingPaymentReviews(options: Options) {
+  return request(
+    options,
+    "/platform/operator/billing/payment-reviews",
+    operatorBillingPaymentReviewListSchema,
+  );
 }
 
 export function getOperatorAudit(options: Options) {

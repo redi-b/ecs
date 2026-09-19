@@ -30,6 +30,7 @@ export interface NotificationRenderer {
 
 export const CODE_NOTIFICATION_TEMPLATE_EVENTS = new Set([
   "billing.invoice_ready",
+  "billing.payment_rejected",
   "billing.past_due",
   "billing.trial_started",
   "billing.trial_ending",
@@ -715,6 +716,27 @@ export function createCodeNotificationRenderer(): NotificationRenderer {
                 amount ? { label: "Amount", value: amount } : { label: "", value: "" },
               ]),
               "Open Billing in your dashboard to pay before the period ends.",
+            ),
+          );
+        }
+
+        case "billing.payment_rejected": {
+          const data = asRecord(input.payload);
+          const amount =
+            formatMoneyAmount(
+              pickScalar(data, "amount"),
+              pickScalar(data, "currencyCode", "currency"),
+            ) ?? pickScalar(data, "amount");
+          const reason = pickScalar(data, "reason");
+          return finish(
+            "Payment needs attention",
+            composeMessage(
+              "We could not confirm your plan payment.",
+              cleanDetails([
+                amount ? { label: "Amount", value: amount } : { label: "", value: "" },
+                reason ? { label: "Reason", value: reason } : { label: "", value: "" },
+              ]),
+              "Open Billing, check the payment details, and submit the correct receipt.",
             ),
           );
         }

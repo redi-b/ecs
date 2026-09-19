@@ -215,7 +215,7 @@ const definitions = [
     category: "inventory",
     retentionDays: 30,
   }),
-  ...(["billing.invoice_ready", "billing.past_due"] as const).map((eventType) =>
+  ...(["billing.invoice_ready", "billing.past_due", "billing.payment_rejected"] as const).map((eventType) =>
     defineEvent({
       eventType,
       version: 1,
@@ -223,13 +223,13 @@ const definitions = [
       status: "production",
       emitter: "Billing lifecycle outbox",
       fixture:
-        eventType === "billing.invoice_ready"
+        eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected"
           ? { amount: "1000", currencyCode: "ETB", invoiceId: "invoice_fixture" }
           : { amount: "1000", currencyCode: "ETB", subscriptionId: "subscription_fixture" },
       audience: billingAudience,
       channels: ["email", "in_app", "telegram"],
       configurable: true,
-      payloadSchema: eventType === "billing.invoice_ready" ? invoicePayload : subscriptionPayload,
+      payloadSchema: eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected" ? invoicePayload : subscriptionPayload,
       prohibitedPayloadFields: prohibited,
       dedupe: eventType === "billing.past_due" ? "entity_daily" : "entity",
       templateIds: {
@@ -238,9 +238,9 @@ const definitions = [
         telegram: `merchant.${eventType}.v1`,
       },
       deepLink: "billing",
-      priority: eventType === "billing.past_due" ? "high" : "normal",
+      priority: eventType === "billing.past_due" || eventType === "billing.payment_rejected" ? "high" : "normal",
       category: "billing",
-      retentionDays: eventType === "billing.past_due" ? 180 : 90,
+      retentionDays: eventType === "billing.past_due" || eventType === "billing.payment_rejected" ? 180 : 90,
     }),
   ),
   ...(["billing.trial_started", "billing.trial_ending", "billing.trial_expired"] as const).map(

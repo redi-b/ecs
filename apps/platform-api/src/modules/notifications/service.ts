@@ -93,7 +93,7 @@ function extractDedupeEntityId(eventType: string, payload: unknown): string | nu
   if (eventType === "billing.past_due") {
     return pick("subscriptionId", "tenantId") ?? "subscription";
   }
-  if (eventType === "billing.invoice_ready") {
+  if (eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected") {
     return pick("invoiceId", "invoice_id", "subscriptionId");
   }
   if (eventType.startsWith("billing.trial_")) {
@@ -265,15 +265,14 @@ export function createNotificationService(
       const preferences = await db
         .select()
         .from(notificationPreferences)
-        .where(
-          and(
-            eq(notificationPreferences.tenantId, input.tenantId),
-            eq(notificationPreferences.enabled, true),
-          ),
-        );
+        .where(eq(notificationPreferences.tenantId, input.tenantId));
 
-      const matchingPreferences = getMatchingPreferences(preferences, eventType).filter(
-        (preference) => preference.channel !== "telegram",
+      const mandatoryBillingEmail = eventType.startsWith("billing.");
+      const matchingPreferences = preferences.filter(
+        (preference) =>
+          preference.channel !== "telegram" &&
+          ((mandatoryBillingEmail && preference.channel === "email") ||
+            (preference.enabled && eventMatchesPreference(preference.events, eventType))),
       );
 
       const destinations = await db
@@ -514,7 +513,19 @@ export function createNotificationService(
       userId: string;
     }): Promise<NotificationPreferenceUpsertResult> => {
       const channel = normalizeChannel(input.channel);
-      const events = normalizeEvents(input.events);
+      const mandatoryBillingEmailEvents = [
+        "billing.invoice_ready",
+        "billing.past_due",
+        "billing.payment_rejected",
+        "billing.trial_started",
+        "billing.trial_ending",
+        "billing.trial_expired",
+      ];
+      const events = normalizeEvents(
+        channel === "email"
+          ? [...input.events, ...mandatoryBillingEmailEvents]
+          : input.events,
+      );
       const target = input.target.trim();
 
       if (!allowedChannels.has(channel as NotificationChannel)) {
@@ -569,7 +580,7 @@ export function createNotificationService(
           ? await transaction
               .update(notificationPreferences)
               .set({
-                enabled: input.enabled,
+                enabled: channel === "email" ? true : input.enabled,
                 events,
                 target,
                 updatedAt: new Date(),
@@ -581,7 +592,7 @@ export function createNotificationService(
               .values({
                 tenantId: input.tenantId,
                 channel,
-                enabled: input.enabled,
+                enabled: channel === "email" ? true : input.enabled,
                 events,
                 target,
               })
