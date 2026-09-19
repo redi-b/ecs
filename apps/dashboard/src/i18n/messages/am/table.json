@@ -1,33 +1,33 @@
 {
   "actions": {
-    "copyIdSuccess": "የ{entity} መለያ ኮድ ወደ ቅንጥብ ሰሌዳ ተገልብጧል።",
-    "copyIdsSuccess": "{count} መለያዎች ወደ ቅንጥብ ሰሌዳ ተገልብጠዋል።",
-    "copyFailed": "መቅዳት አልተቻለም። እንደገና ይሞክሩ።",
-    "copyIds": "መለያዎችን ቅዳ",
+    "copyIdSuccess": "የ{entity} መለያ ኮድ ኮፒ ተደርጓል።",
+    "copyIdsSuccess": "{count} መለያዎች ኮፒ ተደርገዋል።",
+    "copyFailed": "ኮፒ ማድረግ አልተቻለም። እንደገና ይሞክሩ።",
+    "copyIds": "መለያዎችን ኮፒ አድርግ",
     "publish": "በመደብር አሳይ",
     "moveToDraft": "ከመደብር አውጣ",
     "deleteSelected": "አጥፋ",
-    "viewDetails": "ዝርዝሮችን እይ",
-    "copyEmail": "የደንበኛ ኢሜይል ቅዳ",
-    "copyEmailSuccess": "የደንበኛ ኢሜይል ወደ ቅንጥብ ሰሌዳ ተገልብጧል።",
+    "viewDetails": "ዝርዝር ይመልከቱ",
+    "copyEmail": "የደንበኛ ኢሜይል ኮፒ አድርግ",
+    "copyEmailSuccess": "የደንበኛ ኢሜይል ኮፒ ተደርጓል።",
     "selectAllVisible": "ሁሉንም የሚታዩ {entity} ምረጥ",
     "selectRow": "{name} ምረጥ",
     "openActionsFor": "ለ{name} ተጨማሪ ድርጊቶች ክፈት",
-    "copyId": "የ{entity} መለያ ኮድ ቅዳ",
-    "copySuccess": "{label} ተገልብጧል።",
-    "copyEmpty": "የሚቀዳ ነገር የለም።",
-    "copyCodes": "የቅናሽ ኮዶችን ቅዳ",
-    "copyCodesSuccess": "የቅናሽ ኮዶች ወደ ቅንጥብ ሰሌዳ ተገልብጠዋል።",
+    "copyId": "የ{entity} መለያ ኮድ ኮፒ አድርግ",
+    "copySuccess": "{label} ኮፒ ተደርጓል።",
+    "copyEmpty": "ኮፒ የሚደረግ ነገር የለም።",
+    "copyCodes": "የቅናሽ ኮዶችን ኮፒ አድርግ",
+    "copyCodesSuccess": "የቅናሽ ኮዶች ኮፒ ተደርገዋል።",
     "deletePromotion": "ቅናሹን አጥፋ",
     "deletePromotionsQuestion": "{count} ቅናሾችን ማጥፋት ይፈልጋሉ?",
     "deletePromotionsDescription": "የተመረጡት የቅናሽ ኮዶች ወዲያውኑ መስራት ያቆማሉ። ይህን ድርጊት መመለስ አይቻልም።",
     "deletePromotionQuestion": "ቅናሹን ማጥፋት ይፈልጋሉ?",
     "deletePromotionDescription": "“{code}” ወዲያውኑ መስራት ያቆማል። ይህን ድርጊት መመለስ አይቻልም።",
     "deleting": "እየጠፋ ነው…",
-    "copyPhone": "የስልክ ቁጥር ቅዳ"
+    "copyPhone": "የስልክ ቁጥር ኮፒ አድርግ"
   },
   "empty": {
-    "noItems": "እስካሁን ምንም የለም። አንድ ይፍጠሩ ወይም ማጣሪያዎችን ይቀይሩ።",
+    "noItems": "እስካሁን ምንም አልተገኘም። አዲስ ያስገቡ ወይም ማጣሪያዎችን ይቀይሩ።",
     "noItemsTitle": "እስካሁን ምንም የለም",
     "filteredNoItems": "ከአሁኑ ፍለጋ ወይም ማጣሪያ ጋር የሚዛመድ የለም።",
     "filteredNoItemsTitle": "ምንም አልተገኘም",
@@ -38,7 +38,7 @@
     "filtered": "ከዚህ ገጽ ላይ {filteredCount} ከ {pageCount} እያሳየ ነው",
     "unfiltered": "በዚህ ገጽ ላይ {pageCount}፣ በጠቅላላ {totalCount}"
   },
-  "selectedCount": "{count} ተመርጧል",
+  "selectedCount": "{count} የተመረጡ",
   "headers": {
     "order": "ትዕዛዝ",
     "customer": "ደንበኛ",
@@ -53,7 +53,7 @@
     "schedule": "ጊዜ ሰሌዳ",
     "progress": "ሂደት",
     "delivery": "ደሊቨሪ",
-    "placed": "የተደረገበት",
+    "placed": "ትዕዛዝ የተሰጠበት",
     "actions": "ድርጊቶች"
   }
 }
