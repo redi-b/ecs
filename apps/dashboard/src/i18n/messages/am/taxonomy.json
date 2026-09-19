@@ -22,12 +22,12 @@
     }
   },
   "create": {
-    "title": "{entity} ፍጠር",
+    "title": "አዲስ {entity}",
     "category": {
-      "desc": "ምድብ ከተለዋጭ ወላጅ እና የመደብር ገጽ ታይነት ጋር ያክሉ።"
+      "desc": "ምድቡን እንደ ዋና ምድብ ወይም ከሌላ ምድብ ስር አድርገው ያስቀምጡ።"
     },
     "collection": {
-      "desc": "የስብስብ ስም፣ መለያ እና የመደብር ገጽ ታይነት ያክሉ።"
+      "desc": "የስብስቡን ስም፣ መለያ እና በመደብር የመታየት ሁኔታ ይወስኑ።"
     },
     "error": {
       "enterName": "እባክዎ የ{entity} {field} ያስገቡ።",
@@ -49,9 +49,9 @@
     "rootCategory": "ዋና ምድብ",
     "parentDesc": "ከሌላ ምድብ ስር ያስቀምጡት፣ ወይም እንደ ዋና ምድብ ይተውት።",
     "visibleLabel": "በመደብር ገጽ ላይ የሚታይ",
-    "visibleDesc": "የተደበቁ {entityPlural} በዳሽቦርዱ ውስጥ ይቆያሉ ነገር ግን በሕዝብ ዝርዝር ውስጥ አይታዩም።",
+    "visibleDesc": "የተደበቁ {entityPlural} በዳሽቦርድዎ ይቀመጣሉ፤ ነገር ግን በመደብርዎ ላይ ለደንበኞች አይታዩም።",
     "creating": "በመጨመር ላይ…",
-    "createBtn": "{entity} ጨምር",
+    "createBtn": "አዲስ {entity}",
     "nameLabel": "ስም",
     "titleLabel": "ርዕስ",
     "namePlaceholder": "የምድብ ስም",
@@ -68,7 +68,7 @@
     "collectionTitle": "የስብስብ ትርጉም",
     "deliveryTitle": "የመላኪያ ትርጉም",
     "saved": "የአማርኛ ትርጉሙ ተቀምጧል።",
-    "loadFailed": "ትርጉሙን መጫን አልተቻለም። እንደገና ይሞክሩ።",
+    "loadFailed": "ትርጉሙን መክፈት አልተቻለም። እንደገና ይሞክሩ።",
     "saveFailed": "ትርጉሙን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
     "field": {
       "name": "ስም",
@@ -91,8 +91,8 @@
     "updated": "የተሻሻለበት",
     "actions": {
       "edit": "{entity} አስተካክል",
-      "copyId": "የ{entity} መለያ ቅዳ",
-      "copyHandle": "መለያ ቅዳ",
+      "copyId": "የ{entity} መለያ ኮፒ አድርግ",
+      "copyHandle": "መለያ ኮፒ አድርግ",
       "delete": "{entity} አጥፋ",
       "triggerAria": "ለ{name} ተግባራትን ክፈት"
     },
@@ -135,11 +135,11 @@
   },
   "edit": {
     "categoryTitle": "ምድብ አስተካክል",
-    "categoryDesc": "ስም፣ መለያ፣ ወላጅ ምድብ፣ ቅደም ተከተል እና በመደብር ታይነትን ያዘምኑ።",
+    "categoryDesc": "ስም፣ መለያ፣ ወላጅ ምድብ፣ ቅደም ተከተል እና በመደብር ታይነትን ያስተካክሉ።",
     "collectionTitle": "ስብስብ አስተካክል",
-    "collectionDesc": "ዝርዝሮችን፣ SEOን እና በዚህ ስብስብ ውስጥ ያሉ ምርቶችን ያዘምኑ።",
-    "updateFailedCategory": "ምድቡን ማዘመን አልተቻለም",
-    "updateFailedCollection": "ስብስቡን ማዘመን አልተቻለም",
+    "collectionDesc": "ዝርዝሮችን፣ SEOን እና በዚህ ስብስብ ውስጥ ያሉ ምርቶችን ያስተካክሉ።",
+    "updateFailedCategory": "ምድቡን ማስተካከል አልተቻለም",
+    "updateFailedCollection": "ስብስቡን ማስተካከል አልተቻለም",
     "name": "ስም",
     "title": "ርዕስ",
     "handle": "መለያ",
@@ -149,8 +149,8 @@
     "siblingOrder": "ቅደም ተከተል",
     "siblingOrderHelp": "ከአንድ ወላጅ ስር ያሉ ምድቦች ቅደም ተከተል። ትንሽ ቁጥሮች (0፣ 1፣ 2…) በመደብር መጀመሪያ ይታያሉ። ብዙ ምድቦች ካሉ፣ «ቅደም ተከተል አስተካክል»ን ይጠቀሙ።",
     "visibleLabel": "በመደብር ገጽ ላይ የሚታይ",
-    "visibleCategoryDesc": "የተደበቁ ምድቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በሕዝብ ዝርዝር አይታዩም።",
-    "visibleCollectionDesc": "የተደበቁ ስብስቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በሕዝብ ዝርዝር አይታዩም።",
+    "visibleCategoryDesc": "የተደበቁ ምድቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በመደብርዎ ላይ ለደንበኞች አይታዩም።",
+    "visibleCollectionDesc": "የተደበቁ ስብስቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በመደብርዎ ላይ ለደንበኞች አይታዩም።",
     "seo": "SEO",
     "seoCategoryHelp": "ከምድቡ ጋር የሚቀመጥ አማራጭ ርዕስ እና መግለጫ።",
     "seoCollectionHelp": "ከስብስቡ ጋር የሚቀመጥ አማራጭ ርዕስ እና መግለጫ።",
@@ -168,24 +168,24 @@
     "collectionUpdated": "ስብስቡ ተቀይሯል።",
     "categoryNotFound": "ምድቡ አልተገኘም።",
     "collectionNotFound": "ስብስቡ አልተገኘም።",
-    "categorySaveFailed": "ምድቡን መቀየር አልተቻለም። እንደገና ይሞክሩ።",
-    "collectionSaveFailed": "ስብስቡን መቀየር አልተቻለም። እንደገና ይሞክሩ።",
+    "categorySaveFailed": "ምድቡን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "collectionSaveFailed": "ስብስቡን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
     "backendUnavailable": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ትንሽ ቆይተው ይሞክሩ።",
     "credentials": "የካታሎግ ለውጦች ለጊዜው አይገኙም። ድጋፍን ያግኙ።",
     "products": "ምርቶች",
     "productsHelp": "ለመጨመር ምርቶችን ይፈልጉ እና ይምረጡ። አባልነት ወዲያውኑ ይቀመጣል።",
-    "loadingMembers": "አባላት እየተጫኑ ነው…",
+    "loadingMembers": "አባላት እየመጡ ነው…",
     "noProductsYet": "በዚህ ስብስብ ገና ምርት የለም።",
     "createProduct": "አዲስ ምርት",
     "untitledProduct": "ርዕስ የሌለው ምርት",
     "removeProductAria": "{name}ን አስወግድ",
     "productFallback": "ምርት",
-    "membershipFailed": "የስብስብ ምርቶችን ማዘመን አልተቻለም።",
+    "membershipFailed": "የስብስብ ምርቶችን ማስተካከል አልተቻለም።",
     "productAddedOne": "ምርቱ ወደ ስብስቡ ተጨምሯል።",
     "productsAdded": "{count} ምርቶች ተጨምረዋል።",
     "productRemovedOne": "ምርቱ ተወግዷል።",
     "productsRemoved": "{count} ምርቶች ተወግደዋል።",
-    "loadingProducts": "ምርቶች እየተጫኑ ነው…",
+    "loadingProducts": "ምርቶች እየመጡ ነው…",
     "noProductsLeft": "ለመጨመር ምርት አልቀረም",
     "searchProductsToAdd": "ለመጨመር ምርቶችን ፈልግ…",
     "productSelectedOne": "1 ምርት ተመርጧል",
@@ -218,11 +218,11 @@
     "categoriesLabel": "የምርት ምድቦች",
     "collectionsLabel": "የምርት ስብስቦች",
     "setupTitle": "የካታሎግ አወቃቀር ትኩረት ያስፈልገዋል",
-    "setupDesc": "የካታሎግ አገልግሎቶች ዝግጁ ስላልሆኑ {label} መጫን አልተቻለም። አስተዳዳሪን ያግኙ ወይም ከተዘጋጀ በኋላ እንደገና ይሞክሩ።",
+    "setupDesc": "የካታሎግ አገልግሎቶች ዝግጁ ስላልሆኑ {label} መክፈት አልተቻለም። አስተዳዳሪን ያግኙ ወይም ከተዘጋጀ በኋላ እንደገና ይሞክሩ።",
     "serviceTitle": "የካታሎግ አገልግሎቶች አይገኙም",
-    "serviceDesc": "{label} አሁን መጫን አልተቻለም። አገልግሎቶቹ ከተገኙ በኋላ እንደገና ይሞክሩ።",
-    "errorTitle": "{label} መጫን አልተቻለም",
-    "errorDesc": "{label} መጫን አልተቻለም።"
+    "serviceDesc": "{label} አሁን መክፈት አልተቻለም። አገልግሎቶቹ ከተገኙ በኋላ እንደገና ይሞክሩ።",
+    "errorTitle": "{label} መክፈት አልተቻለም",
+    "errorDesc": "{label} መክፈት አልተቻለም።"
   },
   "deleteErrors": {
     "catalogUnavailable": "የካታሎግ ለውጦች ለጊዜው አይገኙም። እንደገና ይሞክሩ።",

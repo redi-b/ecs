@@ -16,7 +16,7 @@
     }
   },
   "error": {
-    "loadTitle": "የምርት ምድቦችን መጫን አልተቻለም"
+    "loadTitle": "የምርት ምድቦችን መክፈት አልተቻለም"
   },
   "actions": {
     "new": "አዲስ ምድብ"
@@ -24,6 +24,6 @@
   "create": {
     "shellTitle": "አዲስ ምድብ",
     "shellDescription": "ምርቶችን በቡድን ለማደራጀት እና በመደብር ለማሳየት አዲስ ምድብ ይፍጠሩ።",
-    "submitLabel": "ምድብ ፍጠር"
+    "submitLabel": "አዲስ ምድብ"
   }
 }

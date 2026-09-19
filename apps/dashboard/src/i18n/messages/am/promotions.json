@@ -2,8 +2,8 @@
   "title": "ቅናሾች",
   "description": "ቅናሾችን ይፍጠሩ እና ያስተዳድሩ።",
   "error": {
-    "loadTitle": "ቅናሾችን መጫን አልተቻለም",
-    "loadDescription": "የቅናሾች ዝርዝር ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።"
+    "loadTitle": "ቅናሾችን መክፈት አልተቻለም",
+    "loadDescription": "የቅናሾች ዝርዝር ለጊዜው አይገኝም። ሪፍሬሽ አድርገው እንደገና ይሞክሩ።"
   },
   "table": {
     "emptyTitle": "ገና ምንም የቅናሽ ማስተዋወቂያ የለም",
@@ -13,8 +13,8 @@
     "searchLabel": "ቅናሾችን ፈልግ",
     "searchPlaceholder": "የቅናሽ ኮዶችን ፈልግ…",
     "clearSearch": "ፍለጋውን አጽዳ",
-    "selectedSummary": "ተመርጧል",
-    "copyCodes": "ኮዶችን ቅዳ",
+    "selectedSummary": "የተመረጠ",
+    "copyCodes": "ኮዶችን ኮፒ አድርግ",
     "promotionCode": "የቅናሽ ኮድ",
     "promotionCodes": "የቅናሽ ኮዶች",
     "codeHeader": "ኮድ",
@@ -34,7 +34,7 @@
     "status": {
       "all": "ሁሉም ሁኔታዎች",
       "active": "በስራ ላይ",
-      "inactive": "ቆሟል",
+      "inactive": "የቆመ",
       "draft": "በዝግጅት ላይ",
       "label": "ሁኔታ"
     },
@@ -44,7 +44,7 @@
       "order": "የትዕዛዝ ቅናሽ",
       "products": "የምርት ቅናሽ",
       "free_shipping": "ነጻ ደሊቨሪ",
-      "buyget": "ገዛና አግኝ",
+      "buyget": "ሲገዙ የሚያገኙት",
       "percentage": "በመቶኛ",
       "fixed": "በገንዘብ መጠን"
     },
@@ -79,7 +79,7 @@
   },
   "action": {
     "edit": "ቅናሹን አስተካክል",
-    "copy": "ኮዱን ቅዳ"
+    "copy": "ኮዱን ኮፒ አድርግ"
   },
   "toast": {
     "deleted": "ቅናሹ ጠፍቷል።",
@@ -98,9 +98,9 @@
     "codeDesc": "ያለ ክፍት ቦታ ፊደላትን እና ቁጥሮችን ብቻ ይጠቀሙ። በራሱ የሚሰራ ካልሆነ በስተቀር ደንበኞች ይህንን ያስገባሉ።",
     "usageLimitDesc": "በሁሉም ትዕዛዞች ላይ የሚፈቀደው አጠቃላይ አጠቃቀም።",
     "autoLabel": "በራሱ ይተግበር",
-    "autoDesc": "ከተፈቀደላቸው ጋሪዎች ጋር ኮድ ሳይገቡ ቅናሹ ይተገበራል።",
+    "autoDesc": "ከተፈቀደላቸው ዘንቢሎች ጋር ኮድ ሳይገቡ ቅናሹ ይተገበራል።",
     "taxLabel": "ከቀረጥ በኋላ ይተግበር",
-    "taxDesc": "ሲጠፋ፣ ቅናሹ ከቀረጥ በፊት ባለው የጋሪ ዋጋ ላይ ይሰላል።",
+    "taxDesc": "ሲጠፋ፣ ቅናሹ ከቀረጥ በፊት ባለው የዘንቢል ዋጋ ላይ ይሰላል።",
     "valueTitle": "የቅናሽ መጠን",
     "percentOff": "የመቶኛ ቅናሽ",
     "amountOff": "የገንዘብ ቅናሽ (ETB)",
@@ -155,13 +155,13 @@
   },
   "edit": {
     "title": "ቅናሽ አስተካክል",
-    "fallbackDesc": "ኮድ፣ ሁኔታ፣ ምርቶች እና መርሐግብር ያዘምኑ።",
+    "fallbackDesc": "ኮድ፣ ሁኔታ፣ ምርቶች እና መርሐግብር ያስተካክሉ።",
     "codeTooShort": "ቢያንስ 2 ፊደል ወይም ቁጥር ያለው የቅናሽ ኮድ ያስገቡ።",
     "invalidValue": "ትክክለኛ የቅናሽ እሴት ያስገቡ።",
     "invalidUsageLimit": "የአጠቃቀም ገደብ አዎንታዊ ቁጥር መሆን አለበት።",
     "invalidMaxQty": "ከፍተኛ መጠን አዎንታዊ ቁጥር መሆን አለበት።",
     "invalidBudget": "ትክክለኛ የዘመቻ በጀት ገደብ ያስገቡ።",
-    "updateFailed": "ቅናሹን ማዘመን አልተቻለም።",
+    "updateFailed": "ቅናሹን ማስተካከል አልተቻለም።",
     "updated": "ቅናሹ ተቀይሯል።",
     "codeLabel": "የቅናሽ ኮድ",
     "status": "ሁኔታ",
@@ -188,7 +188,7 @@
     "freeProducts": "ነጻ ምርቶች (አማራጭ)",
     "freeProductsHelp": "ባዶ ከተተወ ከላይ ካሉት ጋር ተመሳሳይ ይሆናል።",
     "autoLabel": "በራሱ ተግብር",
-    "autoDesc": "ተገቢ ጋሪዎች ያለ ኮድ ቅናሹን ያገኛሉ።",
+    "autoDesc": "ተገቢ ዘንቢሎች ያለ ኮድ ቅናሹን ያገኛሉ።",
     "taxLabel": "ከታክስ በኋላ ተግብር",
     "taxDesc": "ከጠፋ ቅናሹ ከታክስ በፊት ይሰላል።",
     "schedule": "መርሐግብር",
@@ -209,7 +209,7 @@
     "usedOfLimit": "ከ{limit} ውስጥ {count} ጊዜ ተጠቅሟል።",
     "saving": "በማስቀመጥ ላይ…",
     "saveChanges": "ለውጦቹን አስቀምጥ",
-    "loadingProducts": "ምርቶች እየተጫኑ ነው…",
+    "loadingProducts": "ምርቶች እየመጡ ነው…",
     "selectProducts": "ምርቶችን ይምረጡ…",
     "productSelectedOne": "1 ምርት ተመርጧል",
     "productsSelected": "{count} ምርቶች ተመርጠዋል",
