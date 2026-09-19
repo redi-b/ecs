@@ -44,7 +44,7 @@
     "regenerateHandle": "የ{entity} መለያን እንደገና ፍጠር",
     "regenerateFrom": "ከ{field} ላይ እንደገና ፍጠር",
     "handleFollows": "የ{entity} መለያው {field}ን በራስ-ሰር ይከተላል።",
-    "handleCustom": "ብጁ የ{entity} መለያ ለመጻፍ ክፈተዋል።",
+    "handleCustom": "የራስዎን የ{entity} መለያ ለመጻፍ ከፍተዋል።",
     "parentCategory": "ወላጅ ምድብ",
     "rootCategory": "ዋና ምድብ",
     "parentDesc": "ከሌላ ምድብ ስር ያስቀምጡት፣ ወይም እንደ ዋና ምድብ ይተውት።",

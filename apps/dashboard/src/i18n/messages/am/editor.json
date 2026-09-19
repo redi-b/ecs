@@ -14,8 +14,8 @@
     "redo": "እንደገና",
     "hideOutlines": "የማስተካከያ መስመሮችን ደብቅ",
     "showOutlines": "የማስተካከያ መስመሮችን አሳይ",
-    "exitFullscreen": "ከሙሉ ማያ ውጣ",
-    "fullscreen": "ሙሉ ማያ",
+    "exitFullscreen": "ከሙሉ ዕይታ ውጣ",
+    "fullscreen": "ሙሉ ዕይታ",
     "openLive": "ቀጥታ መደብሩን ክፈት",
     "more": "ተጨማሪ ተግባራት",
     "hideSettings": "ማስተካከያዎችን ደብቅ",
@@ -43,7 +43,7 @@
     "publishedLive": "ከቀጥታ መደብሩ ጋር ተመሳሳይ",
     "draftSaved": "የተቀመጠ ለውጥ",
     "unpublishedEdits": "ያልተለቀቁ ለውጦች",
-    "paused": "የቆመ"
+    "paused": "መደብሩ ቆሟል"
   },
   "toast": {
     "savingDraft": "ለውጦቹ እየተቀመጡ ነው…",
@@ -52,7 +52,7 @@
     "publishing": "መደብሩ ለደንበኞች እየተከፈተ ነው…",
     "published": "መደብሩ ለደንበኞች ክፍት ሆኗል።",
     "publishFailed": "መደብሩን ለደንበኞች መክፈት አልተቻለም።",
-    "launchNotReady": "በማዘጋጃ መመሪያው ያሉትን አስፈላጊ ደረጃዎች ያጠናቅቁ፤ ከዚያ መደብርዎን ገምግመው ለደንበኞች ይክፈቱ።",
+    "launchNotReady": "በዝግጅት መመሪያው ያሉትን አስፈላጊ ደረጃዎች ያጠናቅቁ፤ ከዚያ መደብርዎን ገምግመው ለደንበኞች ይክፈቱ።",
     "launchCheckUnavailable": "መደብርዎን አሁን መፈተሽ አልተቻለም። እባክዎ ጥቂት ቆይተው ይሞክሩ።",
     "reset": "ዲዛይኑ ለመጨረሻ ጊዜ ወደተቀመጠው ስራ ተመልሷል።",
     "imageUploaded": "ምስሉ ተጭኗል።",

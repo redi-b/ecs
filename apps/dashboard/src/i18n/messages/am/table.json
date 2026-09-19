@@ -5,14 +5,14 @@
     "copyFailed": "ኮፒ ማድረግ አልተቻለም። እንደገና ይሞክሩ።",
     "copyIds": "መለያዎችን ኮፒ አድርግ",
     "publish": "በመደብር አሳይ",
-    "moveToDraft": "ከመደብር አውጣ",
+    "moveToDraft": "መደብር ላይ አታሳይ",
     "deleteSelected": "አጥፋ",
     "viewDetails": "ዝርዝር ይመልከቱ",
     "copyEmail": "የደንበኛ ኢሜይል ኮፒ አድርግ",
     "copyEmailSuccess": "የደንበኛ ኢሜይል ኮፒ ተደርጓል።",
     "selectAllVisible": "ሁሉንም የሚታዩ {entity} ምረጥ",
     "selectRow": "{name} ምረጥ",
-    "openActionsFor": "ለ{name} ተጨማሪ ድርጊቶች ክፈት",
+    "openActionsFor": "የ{name} አማራጮች",
     "copyId": "የ{entity} መለያ ኮድ ኮፒ አድርግ",
     "copySuccess": "{label} ኮፒ ተደርጓል።",
     "copyEmpty": "ኮፒ የሚደረግ ነገር የለም።",
@@ -20,9 +20,9 @@
     "copyCodesSuccess": "የቅናሽ ኮዶች ኮፒ ተደርገዋል።",
     "deletePromotion": "ቅናሹን አጥፋ",
     "deletePromotionsQuestion": "{count} ቅናሾችን ማጥፋት ይፈልጋሉ?",
-    "deletePromotionsDescription": "የተመረጡት የቅናሽ ኮዶች ወዲያውኑ መስራት ያቆማሉ። ይህን ድርጊት መመለስ አይቻልም።",
+    "deletePromotionsDescription": "የተመረጡት የቅናሽ ኮዶች ወዲያውኑ መስራት ያቆማሉ። ይህን መመለስ አይቻልም።",
     "deletePromotionQuestion": "ቅናሹን ማጥፋት ይፈልጋሉ?",
-    "deletePromotionDescription": "“{code}” ወዲያውኑ መስራት ያቆማል። ይህን ድርጊት መመለስ አይቻልም።",
+    "deletePromotionDescription": "“{code}” ወዲያውኑ መስራት ያቆማል። ይህን መመለስ አይቻልም።",
     "deleting": "እየጠፋ ነው…",
     "copyPhone": "የስልክ ቁጥር ኮፒ አድርግ"
   },
@@ -54,6 +54,6 @@
     "progress": "ሂደት",
     "delivery": "ደሊቨሪ",
     "placed": "ትዕዛዝ የተሰጠበት",
-    "actions": "ድርጊቶች"
+    "actions": "አማራጮች"
   }
 }

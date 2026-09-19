@@ -6,7 +6,7 @@
   },
   "empty": {
     "title": "ክፍያ ለዚህ ሱቅ ገቢር አልተደረገም",
-    "description": "መለያው ሊደረስበት ይችላል፣ ነገር ግን ምንም የደንበኝነት ምዝገባ ወይም የክፍያ መጠየቂያ ሁኔታ ገና አልተገኘም።"
+    "description": "መለያው ሊደረስበት ይችላል፣ ነገር ግን ምንም የደንበኝነት ምዝገባ ወይም የደረሰኝ ሁኔታ ገና አልተገኘም።"
   },
   "unavailable": {
     "title": "ክፍያ አይገኝም",
@@ -30,19 +30,19 @@
     "switchesTo": "ወደ {name} ይቀየራል",
     "freePlan": "ነፃ ዕቅድ",
     "theFreePlan": "ነፃው ዕቅድ",
-    "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ክፍያ የለም። ከዚያ በፊት ማቋረጥ ይችላሉ።"
+    "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ገንዘብ አይኖርም። ከዚያ በፊት ማቋረጥ ይችላሉ።"
   },
   "entitlements": {
     "title": "በዕቅድዎ ውስጥ የተካተቱ",
     "description": "ለዚህ ሱቅ አሁን የሚገኙትን ይመልከቱ።",
-    "customDomains": "ብጁ ዶሜይን",
+    "customDomains": "የራስዎ ዶሜይን",
     "products": "ምርቶች",
     "included": "ተካትቷል",
     "notIncluded": "አልተካተተም",
     "unlimited": "የተወሰነ ገደብ የለም",
     "unlimitedProducts": "የተወሰነ የምርት ገደብ የለም",
     "upToProducts": "እስከ {count} ምርቶች",
-    "upgradeRequired": "Growth ያስፈልጋል",
+    "upgradeRequired": "ወደ Growth ማሳደግ ያስፈልጋል",
     "unavailable": "ገና አይገኝም"
   },
   "plans": {
@@ -79,24 +79,24 @@
     "receivedTitle": "ክፍያ ተቀብሏል",
     "receivedActive": "የሚከፈል ዕቅድዎ አሁን በስራ ላይ ነው።",
     "receivedThrough": "የሚከፈል ዕቅድዎ እስከ {date} በስራ ላይ ነው።",
-    "requiredTitle": "ክፍያ ያስፈልጋል",
-    "requiredDescription": "ዕቅድዎን ለማግበር ወይም ለማራዘም ይክፈሉ።",
+    "requiredTitle": "ክፍያዎን ያጠናቁ",
+    "requiredDescription": "ዕቅድዎን ለማግበር ወይም ለማራዘም ክፍያውን ያጠናቁ።",
     "due": "የመክፈያ ቀን {date}",
     "payWithChapa": "በChapa ይክፈሉ",
-    "payInvoice": "ክፍያ ይክፈሉ",
+    "payInvoice": "ደረሰኙን ይክፈሉ",
     "reviewPending": "ማረጋገጫ በመጠበቅ ላይ",
     "rejectedTitle": "የክፍያ መረጃው ማስተካከል ያስፈልገዋል",
-    "rejectedDescription": "መጠኑን፣ ተቀባዩን እና ደረሰኙን ያረጋግጡ፣ ከዚያ እንደገና ይላኩ።",
+    "rejectedDescription": "መጠኑን፣ ተቀባዩን አካውንት እና ደረሰኙን ያረጋግጡ፣ ከዚያ እንደገና ይላኩ።",
     "detailsUnavailable": "የክፍያ መረጃ አልተዘጋጀም",
     "detailsUnavailableDescription": "የክፍያ መረጃው እየተዘጋጀ ነው። ክፍያ ከመላክዎ በፊት የECS ድጋፍን ያነጋግሩ።",
     "payAmount": "{amount} ይክፈሉ",
-    "historyTitle": "የክፍያ ታሪክ",
+    "historyTitle": "ያለፉ ክፍያዎች",
     "historyDescription": "ለዚህ ሱቅ ያለፉ ክፍያዎች።",
     "paidOn": "ተከፍሏል {date}",
     "createdOn": "ተፈጥሯል {date}"
   },
   "transfer": {
-    "title": "የክፍያ መጠየቂያዎን ይክፈሉ",
+    "title": "ደረሰኝዎን ይክፈሉ",
     "description": "በTelebirr ወይም CBE ይክፈሉ፣ ከዚያ የደረሰኙን መረጃ ያስገቡ።",
     "provider": "የከፈሉበት",
     "other": "ሌላ ባንክ ወይም ዋሌት",
@@ -136,7 +136,7 @@
     "planPayment": "የዕቅድ ክፍያ",
     "planUpgrade": "የዕቅድ ማሻሻያ",
     "open": "ያልተከፈለ ደረሰኝ",
-    "generic": "የክፍያ መጠየቂያ",
+    "generic": "ደረሰኝ",
     "unpaid": "ያልተከፈለ",
     "paid": "የተከፈለ",
     "cancelled": "ተሰርዟል"
@@ -161,13 +161,13 @@
     "endingSoon": "የአሁኑ የአገልግሎት ጊዜዎ ሊያበቃ ተቃርቧል። በዚህ ዕቅድ ለመቀጠል ዕቅዱን ያድሱ።",
     "periodEnded": "የተከፈለበት ጊዜዎ አልቋል። በዚህ ዕቅድ ለመቀጠል ዕቅዱን ያድሱ።",
     "alreadyScheduled": "አስቀድሞ ተይዟል። እስከ {date} በ{current} ላይ ይቆያሉ።",
-    "noRefundKeepUntil": "ተመላሽ የለም። እስከ {date} {current} ይቆያሉ፣ ከዚያ ወደ {next} ይሄዳሉ።",
+    "noRefundKeepUntil": "ተመላሽ ገንዘብ አይኖርም። እስከ {date} {current} ይቆያሉ፣ ከዚያ ወደ {next} ይሄዳሉ።",
     "switchNowPeriodEnded": "አሁን ወደ {name} ይቀይሩ። የተከፈለ ጊዜዎ አስቀድሞ አልቋል።",
-    "completeOrContinue": "ክፍት የክፍያ መጠየቂያውን ይክፈሉ፣ ወይም ይህን ዕቅድ ለማረጋገጥ ይቀጥሉ።",
+    "completeOrContinue": "ያልተከፈለውን ደረሰኝ ይክፈሉ፣ ወይም ይህን ዕቅድ ለማረጋገጥ ይቀጥሉ።",
     "chargedForMonth": "ከክፍያ በኋላ ለአንድ ወር {price} ይከፍላሉ።"
   },
   "toast": {
-    "invoiceReady": "የክፍያ መጠየቂያ ዝግጁ ነው።",
+    "invoiceReady": "ደረሰኝ ተዘጋጅቷል።",
     "trialStarted": "የ{days} ቀን ነፃ ሙከራዎ ተጀምሯል።",
     "paymentConfirmed": "ክፍያ ተረጋግጧል።",
     "openingCheckout": "ደህንነቱ የተጠበቀ የክፍያ ገጽ እየከፈተ ነው…",
@@ -182,7 +182,7 @@
     "price": "ዋጋ",
     "cycle": "ዑደት",
     "subscription": "ምዝገባ",
-    "manualPayment": "በእጅ የሚከፈል ክፍያ"
+    "manualPayment": "የባንክ ወይም ቴሌብር ክፍያ"
   },
   "actions": {
     "manageSettings": "የሱቅ ማስተካከያዎችን ይመልከቱ"

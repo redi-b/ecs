@@ -2,9 +2,9 @@
   "title": "ትዕዛዞች",
   "description": "ትዕዛዞችን፣ የክፍያ ሁኔታዎችን እና የማስረከብ ሂደትን ይገምግሙ።",
   "export": {
-    "label": "ትዕዛዞችን አውርድ",
+    "label": "ትዕዛዞችን ኤክስፖርት አድርግ",
     "pending": "ፋይሉን በማዘጋጀት ላይ…",
-    "failed": "ትዕዛዞቹን ማውረድ አልተቻለም። እንደገና ይሞክሩ።"
+    "failed": "ትዕዛዞቹን ኤክስፖርት ማድረግ አልተቻለም። እንደገና ይሞክሩ።"
   },
   "error": {
     "loadTitle": "ትዕዛዞችን መክፈት አልተቻለም"
@@ -85,7 +85,7 @@
     "noPhonesSelected": "በተመረጡት ትዕዛዞች ላይ የስልክ ቁጥር የለም።",
     "selectedSummary": "የተመረጠ",
     "selectOrderAria": "ትዕዛዝ {name} ምረጥ",
-    "actionsFor": "ለትዕዛዝ {name} ድርጊቶች"
+    "actionsFor": "የትዕዛዝ {name} አማራጮች"
   },
   "filter": {
     "progress": {
@@ -93,7 +93,7 @@
       "all": "ሁሉም",
       "open": "በሂደት ላይ",
       "new": "አዲስ",
-      "ready": "በሂደት ላይ",
+      "ready": "ዝግጁ",
       "completed": "የተጠናቀቀ",
       "canceled": "የተሰረዘ"
     },
@@ -188,7 +188,7 @@
     "adjustmentReason": "የማስተካከያ ምክንያት",
     "required": "(አስፈላጊ)",
     "adjustmentReasonPlaceholder": "ለምሳሌ፣ የተደራደረ የቀጥታ ሽያጭ ዋጋ",
-    "adjustmentReasonRequired": "ለብጁ ዋጋ እና ቅናሽ አስፈላጊ ነው። ቢያንስ 3 ፊደላት ያስገቡ።",
+    "adjustmentReasonRequired": "ለተቀየረ ዋጋ እና ቅናሽ ምክንያት ማስገባት አስፈላጊ ነው። ቢያንስ 3 ፊደላት ያስገቡ።",
     "merchandiseSubtotal": "የዕቃዎች ድምር",
     "itemsTotal": "የዕቃዎች ጠቅላላ",
     "optionFallback": "አማራጭ",
@@ -236,7 +236,7 @@
   "actions": {
     "next": "ቀጣይ",
     "completeAll": "ሁሉንም ደረጃዎች ጨርስ",
-    "moreActions": "ተጨማሪ የትዕዛዝ እርምጃዎች",
+    "moreActions": "ተጨማሪ አማራጮች",
     "completeAllExcludesPayment": "ይህ ትዕዛዙን በቀሩት የደሊቨሪ ወይም የመውሰጃ ደረጃዎች ያሳልፋል። ክፍያን አይቀይርም።",
     "markPaid": "እንደተከፈለ አድርግ",
     "refundPayment": "ተመላሽ ገንዘብ መዝግብ",
@@ -248,7 +248,7 @@
     "confirmCancelTitle": "ይህን ትዕዛዝ ልትሰርዙ ነው?",
     "confirmCancelBody": "ሽያጩን ለዘላለም ይሰርዛል። ትዕዛዙ የማይቀጥል ከሆነ ብቻ ያድርጉት።",
     "confirmFinishTitle": "ሁሉንም የቀሩ ደረጃዎች ጨርስ?",
-    "confirmFinishBody": "ሁሉንም ክፍት ደረጃዎች በአንድ ጊዜ ያስኬዳል፦",
+    "confirmFinishBody": "ሁሉንም የቀሩ ደረጃዎች በአንድ ጊዜ ያጠናቅቃል፦",
     "closeRemaining": "የቀረውን ሥራ ዝጋ",
     "alsoMarkPaid": "እንዲሁም እንደተከፈለ አድርግ (ጥሬ ገንዘብ ተቀብያለሁ)",
     "confirmMarkPaidTitle": "እንደተከፈለ ሊያደርጉ ነው?",

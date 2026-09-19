@@ -32,10 +32,10 @@
       "unscheduled": "ቀን ያልተያዘለት"
     },
     "status": {
-      "all": "ሁሉም ሁኔታዎች",
-      "active": "በስራ ላይ",
-      "inactive": "የቆመ",
-      "draft": "በዝግጅት ላይ",
+      "all": "ሁሉም",
+      "active": "በስራ ላይ ያሉ",
+      "inactive": "የቆሙ",
+      "draft": "በዝግጅት ላይ ያሉ",
       "label": "ሁኔታ"
     },
     "offer": {
