@@ -10,7 +10,31 @@ export type BillingInvoice = {
   provider: string | null;
   providerReference: string | null;
   createdAt: string;
+  paymentEvidence?: {
+    id: string;
+    provider: string;
+    reference: string;
+    status: string;
+    createdAt: string;
+    reviewReason?: string | null;
+    verificationSource?: string | null;
+  } | null;
 };
+
+export type BillingPaymentEvidenceSubmitResult =
+  | {
+      ok: true;
+      evidence: NonNullable<BillingInvoice["paymentEvidence"]>;
+    }
+  | {
+      ok: false;
+      error:
+        | "billing_invoice_not_found"
+        | "billing_invoice_not_payable"
+        | "billing_payment_evidence_invalid"
+        | "billing_payment_reference_duplicate";
+      status: 400 | 404 | 409;
+    };
 
 export type BillingPlanSummary = {
   id: string;
@@ -71,6 +95,12 @@ export type BillingStatus = {
     isFree: boolean;
   };
   invoices: BillingInvoice[];
+  paymentDestinations?: Array<{
+    provider: string;
+    label: string;
+    accountName: string;
+    accountNumber: string;
+  }>;
   /** @deprecated Prefer `catalog`. Paid plans other than the current one. */
   availablePaidPlans: BillingPlanSummary[];
   /** Active plans for selection UI (order stable by price). */

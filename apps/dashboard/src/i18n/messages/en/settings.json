@@ -458,6 +458,7 @@
     "oneInbox": "One inbox for this shop. Press Save to start receiving alerts.",
     "delivery": "Delivery",
     "pauseWithoutRemoving": "Pause without removing the email address.",
+    "billingEmailAlwaysOn": "Important billing emails are always sent. You can choose the other shop alerts below.",
     "sendTest": "Send test",
     "sendTestAria": "Send test email",
     "saveBeforeTest": "Save the email address before sending a test",
@@ -503,6 +504,7 @@
       "storefrontInquiry": "New storefront inquiries",
       "billingPastDue": "Subscription past due",
       "billingInvoiceReady": "Billing invoice ready",
+      "billingPaymentRejected": "Plan payment needs correction",
       "trialStarted": "Free trial started",
       "trialEnding": "Free trial ending soon",
       "trialEnded": "Free trial ended"

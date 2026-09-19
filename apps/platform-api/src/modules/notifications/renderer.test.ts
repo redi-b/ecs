@@ -226,6 +226,25 @@ describe("createCodeNotificationRenderer", () => {
     assert.doesNotMatch(result.body, /invoice_ready|worker|lifecycle/i);
   });
 
+  it("renders a rejected plan payment with the operator's correction note", async () => {
+    const result = await renderer.render({
+      channel: "email",
+      eventType: "billing.payment_rejected",
+      tenantId: "tenant-1",
+      recipient: "owner@example.com",
+      payload: {
+        amount: "2499",
+        currencyCode: "ETB",
+        invoiceId: "invoice-1",
+        reason: "The receipt amount does not match this invoice.",
+      },
+    });
+    assert.match(result.body, /could not confirm/i);
+    assert.match(result.body, /ETB 2,499/);
+    assert.match(result.body, /receipt amount does not match/i);
+    assert.match(result.body, /Open Billing/i);
+  });
+
   it("renders operational events with specific actions instead of the generic fallback", async () => {
     for (const eventType of [
       "chapa.onboarding_needs_review",

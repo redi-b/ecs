@@ -89,6 +89,52 @@ describe("billing lifecycle with PostgreSQL", { skip: !connectionString }, () =>
     assert.deepEqual(events, [{ eventType: "billing.invoice_ready" }]);
   });
 
+  it("settles a verified payment once and advances the subscription period", async () => {
+    const billing = createBillingService(database.db);
+    const invoiceId = randomUUID();
+    const txRef = `ecs_bill_${invoiceId.replaceAll("-", "").slice(0, 12)}_verified`;
+    const [before] = await database.db
+      .select({ currentPeriodEnd: subscriptions.currentPeriodEnd })
+      .from(subscriptions)
+      .where(eq(subscriptions.id, subscriptionId))
+      .limit(1);
+    await database.db.insert(invoices).values({
+      id: invoiceId,
+      amount: "1000",
+      currency: "ETB",
+      planVersionId,
+      provider: `plan:${planId}`,
+      providerReference: txRef,
+      status: "pending",
+      subscriptionId,
+      tenantId,
+    });
+
+    assert.deepEqual(await billing.completeChapaInvoicePayment({ tenantId, txRef }), {
+      ok: true,
+      applied: true,
+    });
+    assert.deepEqual(await billing.completeChapaInvoicePayment({ tenantId, txRef }), {
+      ok: true,
+      applied: false,
+    });
+
+    const [settled] = await database.db
+      .select({ provider: invoices.provider, status: invoices.status })
+      .from(invoices)
+      .where(eq(invoices.id, invoiceId))
+      .limit(1);
+    const [after] = await database.db
+      .select({ currentPeriodEnd: subscriptions.currentPeriodEnd })
+      .from(subscriptions)
+      .where(eq(subscriptions.id, subscriptionId))
+      .limit(1);
+    assert.deepEqual(settled, { provider: "chapa", status: "paid" });
+    assert.ok(before?.currentPeriodEnd);
+    assert.ok(after?.currentPeriodEnd);
+    assert.ok(after.currentPeriodEnd.getTime() > before.currentPeriodEnd.getTime());
+  });
+
   it("keeps failed notification hand-off durable and retries it", async () => {
     let fail = true;
     let deliveries = 0;

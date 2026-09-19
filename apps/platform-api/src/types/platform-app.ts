@@ -398,6 +398,9 @@ export type PlatformAppOptions = {
         tenantId: string;
       }) => Promise<BillingInvoicePayResult>)
     | undefined;
+  submitBillingPaymentEvidence?: ReturnType<
+    typeof import("../modules/billing/service.js").createBillingService
+  >["submitBillingPaymentEvidence"];
   /** Re-verify pending Chapa plan invoices after return_url (local/dev without public callback). */
   confirmBillingPayments?:
     | ((input: { tenantId: string }) => Promise<{
@@ -548,6 +551,24 @@ export type PlatformAppOptions = {
         status: string;
         tenantId: string;
       }) => Promise<BillingInvoiceUpdateResult>)
+    | undefined;
+  listBillingPaymentReviews?:
+    | ((input: { limit: number; offset: number }) => Promise<{
+        count: number;
+        items: Array<{
+          amount: string;
+          createdAt: string;
+          currency: string;
+          evidenceId: string;
+          invoiceId: string;
+          provider: string;
+          reference: string;
+          tenantHandle: string;
+          tenantId: string;
+          tenantName: string;
+          verificationSource: string | null;
+        }>;
+      }>)
     | undefined;
   updateTenantStatus?:
     | ((input: {

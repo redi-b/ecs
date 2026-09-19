@@ -11,12 +11,14 @@ import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
   billingOutboxEvents,
+  billingPaymentEvidence,
   invoices,
   planPresentations,
   plans,
   planVersions,
   subscriptions,
   subscriptionTrials,
+  tenants,
 } from "@ecs/db";
 import { and, desc, eq, isNull, lte, or, sql } from "drizzle-orm";
 
@@ -33,6 +35,12 @@ import {
 } from "../entitlements/catalog.js";
 import { createEntitlementService } from "../entitlements/service.js";
 import {
+  type BillingPaymentVerificationInput,
+  type BillingPaymentVerificationResult,
+  manualBillingPaymentVerifier,
+} from "./payment-verification.js";
+import { isAcceptedLinksEtReference } from "./links-et-payment-verifier.js";
+import {
   DEFAULT_PLAN_CATALOG,
   DEFAULT_PLAN_IDS,
   DEFAULT_PLANS,
@@ -42,7 +50,12 @@ import {
 export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
-const allowedOperatorInvoiceStatuses = new Set(["paid", "cancelled", "void"]);
+const allowedOperatorInvoiceStatuses = new Set([
+  "paid",
+  "cancelled",
+  "void",
+  "evidence_rejected",
+]);
 
 /** Platform-billing Chapa tx_ref prefix (commerce order refs must never use this). */
 export const BILLING_CHAPA_TX_PREFIX = "ecs_bill_";
@@ -125,6 +138,30 @@ function selectInvoiceFields() {
   };
 }
 
+function normalizePaymentReference(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function serializePaymentEvidence(evidence: {
+  createdAt: Date;
+  id: string;
+  provider: string;
+  status: string;
+  submittedReference: string;
+  reviewReason?: string | null;
+  verificationSource?: string | null;
+}) {
+  return {
+    id: evidence.id,
+    provider: evidence.provider,
+    reference: evidence.submittedReference,
+    status: evidence.status,
+    reviewReason: evidence.reviewReason?.trim() || null,
+    verificationSource: evidence.verificationSource?.trim() || null,
+    createdAt: evidence.createdAt.toISOString(),
+  };
+}
+
 function addBillingMonths(from: Date, months: number) {
   const next = new Date(from);
   next.setUTCMonth(next.getUTCMonth() + months);
@@ -179,9 +216,28 @@ export function planBillingLifecycle(input: {
   };
 }
 
-export function createBillingService(db: PlatformDb) {
+export function createBillingService(
+  db: PlatformDb,
+  options?: {
+    paymentDestinations?: Array<{
+      accountName: string;
+      accountNumber: string;
+      label: string;
+      provider: string;
+    }>;
+    verifyPaymentEvidence?: (
+      input: BillingPaymentVerificationInput,
+    ) => Promise<BillingPaymentVerificationResult>;
+    onPaymentVerification?: (result: {
+      decision: BillingPaymentVerificationResult["decision"];
+      invoiceId: string;
+      provider: string;
+      source: string;
+    }) => void;
+  },
+) {
   const entitlementService = createEntitlementService(db);
-  const self = () => createBillingService(db);
+  const self = () => createBillingService(db, options);
 
   const latestPlanVersion = async (
     planId: string,
@@ -266,7 +322,181 @@ export function createBillingService(db: PlatformDb) {
     return (await latestPlanVersion(plan.id)) ?? publication.version;
   };
 
+  const settleInvoice = async (input: {
+    invoiceId: string;
+    provider: string;
+    providerReference: string;
+    tenantId: string;
+  }): Promise<
+    | { ok: true; applied: boolean; invoice: BillingInvoice }
+    | { ok: false; error: "billing_invoice_not_found" | "billing_invoice_not_payable" }
+  > => {
+    const [current] = await db
+      .select({
+        ...selectInvoiceFields(),
+        planVersionId: invoices.planVersionId,
+        subscriptionId: invoices.subscriptionId,
+      })
+      .from(invoices)
+      .where(and(eq(invoices.id, input.invoiceId), eq(invoices.tenantId, input.tenantId)))
+      .limit(1);
+
+    if (!current) return { ok: false, error: "billing_invoice_not_found" };
+    if (current.status === "paid") {
+      return { ok: true, applied: false, invoice: serializeInvoice(current) };
+    }
+    if (current.status !== "pending") {
+      return { ok: false, error: "billing_invoice_not_payable" };
+    }
+
+    const planIdFromInvoice = current.provider?.startsWith("plan:")
+      ? current.provider.slice("plan:".length)
+      : null;
+    let settled: typeof current | null = null;
+
+    await db.transaction(async (transaction) => {
+      const [paid] = await transaction
+        .update(invoices)
+        .set({
+          status: "paid",
+          paidAt: new Date(),
+          provider: input.provider.trim(),
+          providerReference: input.providerReference.trim(),
+        })
+        .where(
+          and(
+            eq(invoices.id, input.invoiceId),
+            eq(invoices.tenantId, input.tenantId),
+            eq(invoices.status, "pending"),
+          ),
+        )
+        .returning({
+          ...selectInvoiceFields(),
+          planVersionId: invoices.planVersionId,
+          subscriptionId: invoices.subscriptionId,
+        });
+      if (!paid) return;
+      settled = paid;
+      if (!paid.subscriptionId) return;
+
+      const [sub] = await transaction
+        .select({
+          billingCycle: subscriptions.billingCycle,
+          currentPeriodEnd: subscriptions.currentPeriodEnd,
+          planId: subscriptions.planId,
+          planVersionId: subscriptions.planVersionId,
+          status: subscriptions.status,
+        })
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.id, paid.subscriptionId),
+            eq(subscriptions.tenantId, input.tenantId),
+          ),
+        )
+        .limit(1);
+
+      const now = new Date();
+      const base =
+        sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
+          ? sub.currentPeriodEnd
+          : now;
+      const nextEnd = addBillingMonths(base, sub?.billingCycle === "yearly" ? 12 : 1);
+      const nextPlanId = planIdFromInvoice ?? sub?.planId ?? DEFAULT_PLAN_IDS.growth;
+      const [nextPlanVersion] = paid.planVersionId
+        ? [{ id: paid.planVersionId }]
+        : await transaction
+            .select({ id: planVersions.id })
+            .from(planVersions)
+            .where(eq(planVersions.planId, nextPlanId))
+            .orderBy(desc(planVersions.version))
+            .limit(1);
+      const nextPlanVersionId = nextPlanVersion?.id ?? sub?.planVersionId;
+      if (!nextPlanVersionId) throw new Error("billing_plan_version_not_found");
+
+      await transaction
+        .update(subscriptions)
+        .set({
+          planId: nextPlanId,
+          planVersionId: nextPlanVersionId,
+          currentPeriodEnd: nextEnd,
+          currentPeriodStart: now,
+          manualPaymentState: "paid",
+          status: "active",
+          trialConvertedAt: sub?.status === "trialing" ? now : undefined,
+          trialEndsAt: sub?.status === "trialing" ? null : undefined,
+        })
+        .where(
+          and(
+            eq(subscriptions.id, paid.subscriptionId),
+            eq(subscriptions.tenantId, input.tenantId),
+          ),
+        );
+      if (sub?.status === "trialing") {
+        await transaction
+          .update(subscriptionTrials)
+          .set({ convertedAt: now, status: "converted" })
+          .where(
+            and(
+              eq(subscriptionTrials.subscriptionId, paid.subscriptionId),
+              eq(subscriptionTrials.status, "active"),
+            ),
+          );
+      }
+    });
+
+    if (!settled) {
+      const [latest] = await db
+        .select(selectInvoiceFields())
+        .from(invoices)
+        .where(eq(invoices.id, input.invoiceId))
+        .limit(1);
+      if (latest?.status === "paid") {
+        return { ok: true, applied: false, invoice: serializeInvoice(latest) };
+      }
+      return { ok: false, error: "billing_invoice_not_payable" };
+    }
+    return { ok: true, applied: true, invoice: serializeInvoice(settled) };
+  };
+
   return {
+    listBillingPaymentReviews: async (input: { limit: number; offset: number }) => {
+      const limit = Math.min(Math.max(input.limit, 1), 100);
+      const offset = Math.max(input.offset, 0);
+      const rows = await db
+        .select({
+          amount: invoices.amount,
+          createdAt: billingPaymentEvidence.createdAt,
+          currency: invoices.currency,
+          evidenceId: billingPaymentEvidence.id,
+          invoiceId: invoices.id,
+          provider: billingPaymentEvidence.provider,
+          reference: billingPaymentEvidence.submittedReference,
+          tenantHandle: tenants.handle,
+          tenantId: tenants.id,
+          tenantName: tenants.name,
+          verificationSource: billingPaymentEvidence.verificationSource,
+        })
+        .from(billingPaymentEvidence)
+        .innerJoin(invoices, eq(invoices.id, billingPaymentEvidence.invoiceId))
+        .innerJoin(tenants, eq(tenants.id, billingPaymentEvidence.tenantId))
+        .where(eq(billingPaymentEvidence.status, "needs_review"))
+        .orderBy(desc(billingPaymentEvidence.createdAt))
+        .limit(limit)
+        .offset(offset);
+      const [total] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(billingPaymentEvidence)
+        .where(eq(billingPaymentEvidence.status, "needs_review"));
+      return {
+        count: total?.count ?? 0,
+        items: rows.map((row) => ({
+          ...row,
+          amount: String(row.amount),
+          createdAt: row.createdAt.toISOString(),
+        })),
+      };
+    },
     ensureDefaultPlans: async () => {
       for (const plan of DEFAULT_PLANS) {
         await db
@@ -1415,6 +1645,29 @@ export function createBillingService(db: PlatformDb) {
         .where(eq(invoices.tenantId, tenantId))
         .orderBy(desc(invoices.createdAt))
         .limit(20);
+      const evidenceRows = await db
+        .select({
+          createdAt: billingPaymentEvidence.createdAt,
+          id: billingPaymentEvidence.id,
+          invoiceId: billingPaymentEvidence.invoiceId,
+          provider: billingPaymentEvidence.provider,
+          reviewReason: billingPaymentEvidence.reviewReason,
+          status: billingPaymentEvidence.status,
+          submittedReference: billingPaymentEvidence.submittedReference,
+          verificationSource: billingPaymentEvidence.verificationSource,
+        })
+        .from(billingPaymentEvidence)
+        .where(eq(billingPaymentEvidence.tenantId, tenantId))
+        .orderBy(desc(billingPaymentEvidence.createdAt));
+      const latestEvidenceByInvoice = new Map<
+        string,
+        ReturnType<typeof serializePaymentEvidence>
+      >();
+      for (const evidence of evidenceRows) {
+        if (!latestEvidenceByInvoice.has(evidence.invoiceId)) {
+          latestEvidenceByInvoice.set(evidence.invoiceId, serializePaymentEvidence(evidence));
+        }
+      }
 
       const planList = await self().listPlans({ tenantId });
       const catalog = planList.plans.map((plan) => ({
@@ -1482,7 +1735,11 @@ export function createBillingService(db: PlatformDb) {
             features: subscription.planFeatures ?? {},
             isFree: isFreePlanPrice(String(subscription.planPrice)),
           },
-          invoices: invoiceRows.map((invoice) => serializeInvoice(invoice)),
+          invoices: invoiceRows.map((invoice) => ({
+            ...serializeInvoice(invoice),
+            paymentEvidence: latestEvidenceByInvoice.get(invoice.id) ?? null,
+          })),
+          paymentDestinations: options?.paymentDestinations ?? [],
           availablePaidPlans: availablePaidPlans.map((plan) => ({
             id: plan.id,
             name: plan.name,
@@ -1785,104 +2042,169 @@ export function createBillingService(db: PlatformDb) {
       if (!invoice) {
         return { ok: false, error: "billing_invoice_not_found" };
       }
+      const result = await settleInvoice({
+        invoiceId: invoice.id,
+        provider: "chapa",
+        providerReference: input.providerReference?.trim() || input.txRef,
+        tenantId: input.tenantId,
+      });
+      return result.ok ? { ok: true, applied: result.applied } : { ok: false, error: result.error };
+    },
 
-      if (invoice.status === "paid") {
-        return { ok: true, applied: false };
+    submitBillingPaymentEvidence: async (input: {
+      invoiceId: string;
+      provider: string;
+      reference: string;
+      tenantId: string;
+    }) => {
+      const provider = input.provider.trim().toLowerCase();
+      const reference = input.reference.trim();
+      if (
+        !new Set(["telebirr", "cbe", "boa", "other"]).has(provider) ||
+        reference.length < 6 ||
+        reference.length > 500 ||
+        ((provider === "telebirr" || provider === "cbe") &&
+          !isAcceptedLinksEtReference(provider, reference))
+      ) {
+        return {
+          ok: false as const,
+          error: "billing_payment_evidence_invalid" as const,
+          status: 400 as const,
+        };
       }
 
+      const [invoice] = await db
+        .select({
+          amount: invoices.amount,
+          currency: invoices.currency,
+          createdAt: invoices.createdAt,
+          id: invoices.id,
+          status: invoices.status,
+        })
+        .from(invoices)
+        .where(and(eq(invoices.id, input.invoiceId), eq(invoices.tenantId, input.tenantId)))
+        .limit(1);
+      if (!invoice) {
+        return {
+          ok: false as const,
+          error: "billing_invoice_not_found" as const,
+          status: 404 as const,
+        };
+      }
       if (invoice.status !== "pending") {
-        return { ok: false, error: "billing_invoice_not_payable" };
+        return {
+          ok: false as const,
+          error: "billing_invoice_not_payable" as const,
+          status: 400 as const,
+        };
       }
 
-      const planIdFromProvider = invoice.provider?.startsWith("plan:")
-        ? invoice.provider.slice("plan:".length)
-        : null;
+      const verification = await (options?.verifyPaymentEvidence ?? manualBillingPaymentVerifier)({
+        approvedRecipients: (options?.paymentDestinations ?? [])
+          .filter((destination) => destination.provider === provider)
+          .map((destination) => ({
+            accountName: destination.accountName,
+            accountNumber: destination.accountNumber,
+          })),
+        amount: String(invoice.amount),
+        currency: invoice.currency,
+        invoiceId: invoice.id,
+        issuedAt: invoice.createdAt,
+        provider,
+        reference,
+        tenantId: input.tenantId,
+      });
+      options?.onPaymentVerification?.({
+        decision: verification.decision,
+        invoiceId: invoice.id,
+        provider,
+        source: verification.source,
+      });
+      const normalizedReference = normalizePaymentReference(
+        verification.providerReference ?? reference,
+      );
 
-      await db.transaction(async (transaction) => {
-        await transaction
-          .update(invoices)
-          .set({
-            status: "paid",
-            paidAt: new Date(),
-            provider: "chapa",
-            providerReference: input.providerReference?.trim() || input.txRef,
+      const evidence = await db.transaction(async (transaction) => {
+        const [created] = await transaction
+          .insert(billingPaymentEvidence)
+          .values({
+            invoiceId: invoice.id,
+            tenantId: input.tenantId,
+            provider,
+            submittedReference: reference,
+            normalizedReference,
+            status: verification.decision,
+            verificationSource: verification.source,
+            verificationResult: verification.details ?? {},
           })
-          .where(eq(invoices.id, invoice.id));
-
-        if (!invoice.subscriptionId) {
-          return;
-        }
-
-        const [sub] = await transaction
-          .select({
-            billingCycle: subscriptions.billingCycle,
-            currentPeriodEnd: subscriptions.currentPeriodEnd,
-            planId: subscriptions.planId,
-            planVersionId: subscriptions.planVersionId,
-            status: subscriptions.status,
+          .onConflictDoNothing({
+            target: [billingPaymentEvidence.provider, billingPaymentEvidence.normalizedReference],
           })
-          .from(subscriptions)
-          .where(
-            and(
-              eq(subscriptions.id, invoice.subscriptionId),
-              eq(subscriptions.tenantId, input.tenantId),
-            ),
-          )
-          .limit(1);
-
-        const now = new Date();
-        const base =
-          sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
-            ? sub.currentPeriodEnd
-            : now;
-        const months = sub?.billingCycle === "yearly" ? 12 : 1;
-        const nextEnd = addBillingMonths(base, months);
-        const nextPlanId = planIdFromProvider ?? sub?.planId ?? DEFAULT_PLAN_IDS.growth;
-        const [nextPlanVersion] = invoice.planVersionId
-          ? [{ id: invoice.planVersionId }]
-          : await transaction
-              .select({ id: planVersions.id })
-              .from(planVersions)
-              .where(eq(planVersions.planId, nextPlanId))
-              .orderBy(desc(planVersions.version))
-              .limit(1);
-        const nextPlanVersionId = nextPlanVersion?.id ?? sub?.planVersionId;
-        if (!nextPlanVersionId) {
-          throw new Error("billing_plan_version_not_found");
-        }
+          .returning({
+            createdAt: billingPaymentEvidence.createdAt,
+            id: billingPaymentEvidence.id,
+            provider: billingPaymentEvidence.provider,
+            reviewReason: billingPaymentEvidence.reviewReason,
+            status: billingPaymentEvidence.status,
+            submittedReference: billingPaymentEvidence.submittedReference,
+            verificationSource: billingPaymentEvidence.verificationSource,
+          });
+        if (!created) return null;
 
         await transaction
-          .update(subscriptions)
-          .set({
-            planId: nextPlanId,
-            planVersionId: nextPlanVersionId,
-            currentPeriodEnd: nextEnd,
-            currentPeriodStart: now,
-            manualPaymentState: "paid",
-            status: "active",
-            trialConvertedAt: sub?.status === "trialing" ? now : undefined,
-            trialEndsAt: sub?.status === "trialing" ? null : undefined,
-          })
+          .update(billingPaymentEvidence)
+          .set({ status: "superseded", updatedAt: new Date() })
           .where(
             and(
-              eq(subscriptions.id, invoice.subscriptionId),
-              eq(subscriptions.tenantId, input.tenantId),
+              eq(billingPaymentEvidence.invoiceId, invoice.id),
+              sql`${billingPaymentEvidence.status} in ('submitted', 'verifying', 'needs_review')`,
+              sql`${billingPaymentEvidence.id} <> ${created.id}`,
             ),
           );
-        if (sub?.status === "trialing") {
+        if (verification.decision === "rejected") {
           await transaction
-            .update(subscriptionTrials)
-            .set({ convertedAt: now, status: "converted" })
-            .where(
-              and(
-                eq(subscriptionTrials.subscriptionId, invoice.subscriptionId),
-                eq(subscriptionTrials.status, "active"),
-              ),
-            );
+            .insert(billingOutboxEvents)
+            .values({
+              tenantId: input.tenantId,
+              eventKey: `billing.payment_rejected:${created.id}`,
+              eventType: "billing.payment_rejected",
+              payload: {
+                amount: String(invoice.amount),
+                currencyCode: invoice.currency,
+                invoiceId: invoice.id,
+                reason: "The receipt details did not match this invoice.",
+                sourceEventId: `payment-evidence:${created.id}`,
+              },
+            })
+            .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
         }
+        return created;
       });
 
-      return { ok: true, applied: true };
+      if (!evidence) {
+        return {
+          ok: false as const,
+          error: "billing_payment_reference_duplicate" as const,
+          status: 409 as const,
+        };
+      }
+      if (verification.decision === "verified") {
+        const settlement = await settleInvoice({
+          invoiceId: invoice.id,
+          provider,
+          providerReference: verification.providerReference ?? reference,
+          tenantId: input.tenantId,
+        });
+        if (!settlement.ok) {
+          return {
+            ok: false as const,
+            error: settlement.error,
+            status:
+              settlement.error === "billing_invoice_not_found" ? (404 as const) : (400 as const),
+          };
+        }
+      }
+      return { ok: true as const, evidence: serializePaymentEvidence(evidence) };
     },
 
     updateBillingInvoiceStatus: async (input: {
@@ -1909,100 +2231,101 @@ export function createBillingService(db: PlatformDb) {
         };
       }
 
-      const invoice = await db.transaction(async (transaction) => {
-        const [row] = await transaction
-          .update(invoices)
-          .set({
-            paidAt: status === "paid" ? new Date() : null,
-            provider: input.provider ?? null,
-            providerReference: input.providerReference ?? null,
-            status,
-          })
-          .where(
-            and(
-              eq(invoices.id, input.invoiceId),
-              eq(invoices.tenantId, input.tenantId),
-              eq(invoices.status, "pending"),
-            ),
-          )
-          .returning({
-            ...selectInvoiceFields(),
-            subscriptionId: invoices.subscriptionId,
-          });
-
-        if (!row) {
-          return null;
-        }
-
-        if (status === "paid" && row.subscriptionId) {
-          const [sub] = await transaction
-            .select({
-              billingCycle: subscriptions.billingCycle,
-              currentPeriodEnd: subscriptions.currentPeriodEnd,
-              status: subscriptions.status,
+      if (status === "evidence_rejected") {
+        const now = new Date();
+        const result = await db.transaction(async (transaction) => {
+          const [evidence] = await transaction
+            .update(billingPaymentEvidence)
+            .set({
+              status: "rejected",
+              reviewedAt: now,
+              reviewedByUserId: input.operatorUserId,
+              reviewReason: input.reason.trim(),
+              updatedAt: now,
             })
-            .from(subscriptions)
             .where(
               and(
-                eq(subscriptions.id, row.subscriptionId),
-                eq(subscriptions.tenantId, input.tenantId),
+                eq(billingPaymentEvidence.invoiceId, input.invoiceId),
+                eq(billingPaymentEvidence.tenantId, input.tenantId),
+                eq(billingPaymentEvidence.status, "needs_review"),
+              ),
+            )
+            .returning({ id: billingPaymentEvidence.id });
+          if (!evidence) return null;
+
+          const [row] = await transaction
+            .select(selectInvoiceFields())
+            .from(invoices)
+            .where(
+              and(
+                eq(invoices.id, input.invoiceId),
+                eq(invoices.tenantId, input.tenantId),
+                eq(invoices.status, "pending"),
               ),
             )
             .limit(1);
-
-          const now = new Date();
-          const base =
-            sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
-              ? sub.currentPeriodEnd
-              : now;
-          const months = sub?.billingCycle === "yearly" ? 12 : 1;
-          const nextEnd = addBillingMonths(base, months);
+          if (!row) return null;
 
           await transaction
-            .update(subscriptions)
-            .set({
-              currentPeriodEnd: nextEnd,
-              currentPeriodStart: now,
-              manualPaymentState: "paid",
-              status: "active",
-              trialConvertedAt: sub?.status === "trialing" ? now : undefined,
-              trialEndsAt: sub?.status === "trialing" ? null : undefined,
+            .insert(billingOutboxEvents)
+            .values({
+              tenantId: input.tenantId,
+              eventKey: `billing.payment_rejected:${evidence.id}`,
+              eventType: "billing.payment_rejected",
+              payload: {
+                amount: String(row.amount),
+                currencyCode: row.currency,
+                invoiceId: row.id,
+                reason: input.reason.trim(),
+                sourceEventId: `payment-evidence:${evidence.id}`,
+              },
             })
-            .where(
-              and(
-                eq(subscriptions.id, row.subscriptionId),
-                eq(subscriptions.tenantId, input.tenantId),
-              ),
-            );
-          if (sub?.status === "trialing") {
-            await transaction
-              .update(subscriptionTrials)
-              .set({ convertedAt: now, status: "converted" })
-              .where(
-                and(
-                  eq(subscriptionTrials.subscriptionId, row.subscriptionId),
-                  eq(subscriptionTrials.status, "active"),
-                ),
-              );
-          }
-        }
-
-        await transaction.insert(auditLogs).values({
-          actorUserId: input.operatorUserId,
-          platformPrincipalId: input.platformPrincipalId,
-          tenantId: input.tenantId,
-          action: "billing.invoice_status_changed",
-          targetType: "invoice",
-          targetId: row.id,
-          metadata: {
-            provider: row.provider,
-            reason: input.reason.trim(),
-            status: row.status,
-          },
+            .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
+          await transaction.insert(auditLogs).values({
+            actorUserId: input.operatorUserId,
+            platformPrincipalId: input.platformPrincipalId,
+            tenantId: input.tenantId,
+            action: "billing.payment_evidence_rejected",
+            targetType: "billing_payment_evidence",
+            targetId: evidence.id,
+            metadata: { invoiceId: row.id, reason: input.reason.trim() },
+          });
+          return serializeInvoice(row);
         });
 
-        return row;
-      });
+        if (!result) {
+          return { ok: false, error: "billing_invoice_status_invalid", status: 400 };
+        }
+        return { ok: true, invoice: result };
+      }
+
+      const settlement =
+        status === "paid"
+          ? await settleInvoice({
+              invoiceId: input.invoiceId,
+              provider: input.provider?.trim() || "manual",
+              providerReference: input.providerReference?.trim() || "",
+              tenantId: input.tenantId,
+            })
+          : null;
+      const invoice = settlement
+        ? settlement.ok
+          ? settlement.invoice
+          : null
+        : await db.transaction(async (transaction) => {
+            const [row] = await transaction
+              .update(invoices)
+              .set({ paidAt: null, status })
+              .where(
+                and(
+                  eq(invoices.id, input.invoiceId),
+                  eq(invoices.tenantId, input.tenantId),
+                  eq(invoices.status, "pending"),
+                ),
+              )
+              .returning(selectInvoiceFields());
+            return row ? serializeInvoice(row) : null;
+          });
 
       if (!invoice) {
         const [existing] = await db
@@ -2017,9 +2340,41 @@ export function createBillingService(db: PlatformDb) {
         };
       }
 
+      await db.transaction(async (transaction) => {
+        const evidenceStatus = status === "paid" ? "verified" : "rejected";
+        await transaction
+          .update(billingPaymentEvidence)
+          .set({
+            status: evidenceStatus,
+            reviewedAt: new Date(),
+            reviewedByUserId: input.operatorUserId,
+            reviewReason: input.reason.trim(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(billingPaymentEvidence.invoiceId, input.invoiceId),
+              sql`${billingPaymentEvidence.status} in ('needs_review', 'rejected')`,
+            ),
+          );
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.operatorUserId,
+          platformPrincipalId: input.platformPrincipalId,
+          tenantId: input.tenantId,
+          action: "billing.invoice_status_changed",
+          targetType: "invoice",
+          targetId: invoice.id,
+          metadata: {
+            provider: invoice.provider,
+            reason: input.reason.trim(),
+            status: invoice.status,
+          },
+        });
+      });
+
       return {
         ok: true,
-        invoice: serializeInvoice(invoice),
+        invoice,
       };
     },
   };

@@ -985,8 +985,30 @@ export const merchantBillingStatusSchema = z.object({
         z.string().min(1).nullable(),
       ),
       createdAt: z.string().min(1),
+      paymentEvidence: z
+        .object({
+          id: z.string().min(1),
+          provider: z.string().min(1),
+          reference: z.string().min(1),
+          status: z.string().min(1),
+          createdAt: z.string().min(1),
+          reviewReason: z.string().nullable().optional(),
+          verificationSource: z.string().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
     }),
   ),
+  paymentDestinations: z
+    .array(
+      z.object({
+        provider: z.string().min(1),
+        label: z.string().min(1),
+        accountName: z.string().min(1),
+        accountNumber: z.string().min(1),
+      }),
+    )
+    .optional(),
   availablePaidPlans: z
     .array(
       z.object({
@@ -1244,6 +1266,18 @@ export const superadminCommerceReviewSchema = z.object({
           provider: z.string().min(1).nullable(),
           providerReference: z.string().min(1).nullable(),
           createdAt: z.string().min(1),
+          paymentEvidence: z
+            .object({
+              id: z.string().min(1),
+              provider: z.string().min(1),
+              reference: z.string().min(1),
+              status: z.string().min(1),
+              createdAt: z.string().min(1),
+              reviewReason: z.string().nullable().optional(),
+              verificationSource: z.string().nullable().optional(),
+            })
+            .nullable()
+            .optional(),
         }),
       ),
     })
@@ -1350,6 +1384,28 @@ export const operatorWorkListSchema = z.object({
   offset: z.number().int().nonnegative(),
 });
 export type OperatorWorkList = z.infer<typeof operatorWorkListSchema>;
+
+export const operatorBillingPaymentReviewListSchema = z.object({
+  items: z.array(
+    z.object({
+      amount: z.string().min(1),
+      createdAt: z.string().min(1),
+      currency: z.string().min(1),
+      evidenceId: z.string().min(1),
+      invoiceId: z.string().min(1),
+      provider: z.string().min(1),
+      reference: z.string().min(1),
+      tenantHandle: z.string().min(1),
+      tenantId: z.string().min(1),
+      tenantName: z.string().min(1),
+      verificationSource: z.string().nullable(),
+    }),
+  ),
+  count: z.number().int().nonnegative(),
+});
+export type OperatorBillingPaymentReviewList = z.infer<
+  typeof operatorBillingPaymentReviewListSchema
+>;
 
 export const operatorAuditListSchema = z.object({
   events: z.array(

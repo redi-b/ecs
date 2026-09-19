@@ -112,7 +112,7 @@ Without cache invalidation, generated storefront HTML remains cached until its T
 
 ### Chapa development
 
-Store checkout and platform billing use Chapa. Configure `CHAPA_SECRET_KEY` and a publicly reachable `PLATFORM_PUBLIC_BASE_URL` for callback processing.
+Store checkout can use Chapa. Platform subscription billing uses submitted bank or wallet transfers and operator review by default. The existing Chapa billing adapter remains available for a future configured rollout. Configure `CHAPA_SECRET_KEY` and a publicly reachable `PLATFORM_PUBLIC_BASE_URL` only when testing Chapa callback processing.
 
 Local `*.lvh.me` domains are not reachable from Chapa. During local development, return confirmation and the `billing.reconcile-payments` worker reconcile pending billing payments. Start the Platform worker with:
 

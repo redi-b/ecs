@@ -1,6 +1,7 @@
 export type NotificationEventType =
   | "cod_order.created"
   | "billing.invoice_ready"
+  | "billing.payment_rejected"
   | "billing.past_due"
   | "billing.trial_started"
   | "billing.trial_ending"

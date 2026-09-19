@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Banknote,
   Building2,
   ChevronsUpDown,
   ClipboardList,
@@ -78,6 +79,13 @@ const navigation = [
     label: "Plans",
     permission: "billing.plans.read",
     shortcut: "B",
+  },
+  {
+    href: "/payment-reviews",
+    icon: Banknote,
+    label: "Payment reviews",
+    permission: "billing.invoices.read",
+    shortcut: "R",
   },
   {
     href: "/storefront-templates",

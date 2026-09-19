@@ -83,11 +83,54 @@
     "requiredDescription": "ዕቅድዎን ለማግበር ወይም ለማራዘም ይክፈሉ።",
     "due": "የመክፈያ ቀን {date}",
     "payWithChapa": "በChapa ይክፈሉ",
+    "payInvoice": "ክፍያ ይክፈሉ",
+    "reviewPending": "ማረጋገጫ በመጠበቅ ላይ",
+    "rejectedTitle": "የክፍያ መረጃው ማስተካከል ያስፈልገዋል",
+    "rejectedDescription": "መጠኑን፣ ተቀባዩን እና ደረሰኙን ያረጋግጡ፣ ከዚያ እንደገና ይላኩ።",
+    "detailsUnavailable": "የክፍያ መረጃ አልተዘጋጀም",
+    "detailsUnavailableDescription": "የክፍያ መረጃው እየተዘጋጀ ነው። ክፍያ ከመላክዎ በፊት የECS ድጋፍን ያነጋግሩ።",
     "payAmount": "{amount} ይክፈሉ",
     "historyTitle": "የክፍያ ታሪክ",
     "historyDescription": "ለዚህ ሱቅ ያለፉ ክፍያዎች።",
     "paidOn": "ተከፍሏል {date}",
     "createdOn": "ተፈጥሯል {date}"
+  },
+  "transfer": {
+    "title": "የክፍያ መጠየቂያዎን ይክፈሉ",
+    "description": "በTelebirr ወይም CBE ይክፈሉ፣ ከዚያ የደረሰኙን መረጃ ያስገቡ።",
+    "provider": "የከፈሉበት",
+    "other": "ሌላ ባንክ ወይም ዋሌት",
+    "sendTo": "ክፍያውን ወደዚህ ይላኩ",
+    "amount": "ትክክለኛው መጠን",
+    "copyAmount": "መጠን ቅዳ",
+    "copyAccount": "አካውንት ቅዳ",
+    "reference": "የግብይት ቁጥር ወይም የደረሰኝ ሊንክ",
+    "referencePlaceholder": "ቁጥሩን ወይም የደረሰኝ ሊንኩን ያስገቡ",
+    "referenceHelp": "በተሳካው የTelebirr ክፍያ ላይ የሚታየውን የግብይት ቁጥር ያስገቡ።",
+    "cbeReferenceHelp": "ከCBE የደረሰኝ ሊንኩን ይለጥፉ። የግብይት ቁጥር ብቻ እስካሁን በራስ-ሰር ሊረጋገጥ አይችልም።",
+    "findReference": "ይህን የት አገኛለሁ?",
+    "telebirrHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ እና Transaction Numberን ይቅዱ።",
+    "cbeHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ፣ Share ወይም Receipt ይጫኑ እና የደረሰኙን ሊንክ እዚህ ይለጥፉ።",
+    "reviewTitle": "ከላኩ በኋላ",
+    "reviewDescription": "ክፍያውን እናረጋግጣለን፣ ሲፀድቅም እናሳውቅዎታለን።",
+    "copied": "ተቀድቷል።",
+    "copyFailed": "መቅዳት አልተቻለም። መርጠው በእጅ ይቅዱ።",
+    "steps": {
+      "openApp": {
+        "title": "{provider}ን ይክፈቱ",
+        "description": "Send money ወይም Transfer money ይምረጡ።"
+      },
+      "sendExact": {
+        "title": "ትክክለኛውን መጠን ይላኩ",
+        "description": "{amount}ን ከላይ ወደሚታየው አካውንት ይላኩ።"
+      },
+      "copyReference": {
+        "title": "የደረሰኙን መረጃ ይቅዱ",
+        "description": "ክፍያው ከተሳካ በኋላ የግብይት ቁጥሩን ወይም የደረሰኙን ሊንክ ይቅዱ።"
+      }
+    },
+    "submit": "ክፍያ ያስገቡ",
+    "submitting": "በማስገባት ላይ…"
   },
   "invoice": {
     "planPayment": "የዕቅድ ክፍያ",
@@ -128,6 +171,8 @@
     "trialStarted": "የ{days} ቀን ነፃ ሙከራዎ ተጀምሯል።",
     "paymentConfirmed": "ክፍያ ተረጋግጧል።",
     "openingCheckout": "ደህንነቱ የተጠበቀ ክፍያ በመክፈት ላይ…",
+    "paymentSubmitted": "ክፍያው ለማረጋገጥ ተልኳል።",
+    "paymentRejected": "ደረሰኙ ከዚህ ክፍያ ጋር አይዛመድም። መጠኑን፣ ተቀባዩን እና የግብይት ቁጥሩን ያረጋግጡ።",
     "switchesOn": "በ{date} ወደ ነፃ ዕቅድ ይቀየራል።",
     "planChangeScheduled": "የዕቅድ ለውጥ ተይዟል።",
     "nowOnFree": "አሁን በነፃ ዕቅድ ላይ ነዎት።",

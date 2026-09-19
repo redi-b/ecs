@@ -2,14 +2,26 @@
 
 import type { MerchantBillingStatus } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -78,6 +90,8 @@ export function BillingWorkspace({
   const { t, locale, formatNumber } = useI18n();
   const [isPending, startTransition] = useTransition();
   const busy = isPending;
+  const paymentDestinations = billing.paymentDestinations ?? [];
+  const hasPaymentDestinations = paymentDestinations.length > 0;
 
   const catalog = useMemo((): CatalogPlan[] => {
     if (!billing.plan) return [];
@@ -170,15 +184,6 @@ export function BillingWorkspace({
       : null;
   const inRenewalWindow = !isCurrentFree && daysToPeriodEnd != null && daysToPeriodEnd <= 7;
 
-  function returnToBillingUrl() {
-    // Build with URLSearchParams only — never HTML-entity-encode (&amp;), which
-    // Chapa/return redirects may otherwise preserve and break query parsing.
-    const url = new URL(dashboardRoutes.billing, window.location.origin);
-    url.searchParams.set("tenantId", tenantId);
-    url.searchParams.set("paid", "1");
-    return url.href;
-  }
-
   const scheduledPlanId = subscription.scheduledPlanId ?? null;
   const scheduledPlanName = subscription.scheduledPlanName ?? null;
   const scheduledEffectiveAt = subscription.scheduledEffectiveAt ?? null;
@@ -257,16 +262,6 @@ export function BillingWorkspace({
   }
 
   function handlePrimaryAction() {
-    // Pay only when a paid plan is selected (not while browsing free/current free).
-    if (openInvoice && !selectedIsFree) {
-      runBillingAction({
-        action: "pay",
-        invoiceId: openInvoice.id,
-        returnUrl: returnToBillingUrl(),
-      });
-      return;
-    }
-
     // Keep paid plan: cancel scheduled free switch.
     if (
       selectedIsCurrent &&
@@ -492,10 +487,14 @@ export function BillingWorkspace({
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">{t("billing.payment.requiredTitle")}</CardTitle>
-            <CardDescription>{t("billing.payment.requiredDescription")}</CardDescription>
+            <CardDescription>
+              {hasPaymentDestinations
+                ? t("billing.payment.requiredDescription")
+                : t("billing.payment.detailsUnavailableDescription")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{invoiceTitle(openInvoice, t)}</p>
               <p className="text-sm text-muted-foreground">
                 {formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
@@ -505,20 +504,34 @@ export function BillingWorkspace({
                     })}`
                   : ""}
               </p>
+              {openInvoice.paymentEvidence?.status === "rejected" ? (
+                <div className="mt-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2.5">
+                  <p className="text-sm font-medium text-destructive">
+                    {t("billing.payment.rejectedTitle")}
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {openInvoice.paymentEvidence.reviewReason ||
+                      t("billing.payment.rejectedDescription")}
+                  </p>
+                </div>
+              ) : null}
             </div>
-            <Button
-              disabled={busy}
-              type="button"
-              onClick={() =>
-                runBillingAction({
-                  action: "pay",
-                  invoiceId: openInvoice.id,
-                  returnUrl: returnToBillingUrl(),
-                })
-              }
-            >
-              {t("billing.payment.payWithChapa")}
-            </Button>
+            {!hasPaymentDestinations ? (
+              <Badge className="shrink-0" variant="outline">
+                {t("billing.payment.detailsUnavailable")}
+              </Badge>
+            ) : openInvoice.paymentEvidence?.status === "needs_review" ? (
+              <Badge className="shrink-0" variant="secondary">
+                {t("billing.payment.reviewPending")}
+              </Badge>
+            ) : (
+              <PaymentEvidenceDialog
+                amount={formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
+                invoiceId={openInvoice.id}
+                paymentDestinations={paymentDestinations}
+                tenantId={tenantId}
+              />
+            )}
           </CardContent>
         </Card>
       ) : null}
@@ -652,14 +665,35 @@ export function BillingWorkspace({
                       price: formatPlanPrice(chosenPlan.price, t, formatNumber),
                     })}
           </p>
-          <Button
-            className="shrink-0 sm:min-w-[12rem]"
-            disabled={primaryDisabled}
-            type="button"
-            onClick={handlePrimaryAction}
-          >
-            {primaryLabel}
-          </Button>
+          {openInvoice && !selectedIsFree ? (
+            !hasPaymentDestinations ? (
+              <Button className="shrink-0 sm:min-w-[12rem]" disabled type="button">
+                {t("billing.payment.detailsUnavailable")}
+              </Button>
+            ) : openInvoice.paymentEvidence?.status === "needs_review" ? (
+              <Button className="shrink-0 sm:min-w-[12rem]" disabled type="button">
+                {t("billing.payment.reviewPending")}
+              </Button>
+            ) : (
+              <PaymentEvidenceDialog
+                amount={formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
+                {...(billingPath ? { billingPath } : {})}
+                invoiceId={openInvoice.id}
+                paymentDestinations={paymentDestinations}
+                tenantId={tenantId}
+                triggerLabel={primaryLabel}
+              />
+            )
+          ) : (
+            <Button
+              className="shrink-0 sm:min-w-[12rem]"
+              disabled={primaryDisabled}
+              type="button"
+              onClick={handlePrimaryAction}
+            >
+              {primaryLabel}
+            </Button>
+          )}
         </div>
       </section>
 
@@ -724,6 +758,228 @@ export function BillingWorkspace({
         </a>
       </p>
     </div>
+  );
+}
+
+function PaymentEvidenceDialog({
+  amount,
+  invoiceId,
+  paymentDestinations,
+  tenantId,
+  triggerLabel,
+}: {
+  amount: string;
+  invoiceId: string;
+  paymentDestinations: Array<{
+    accountName: string;
+    accountNumber: string;
+    label: string;
+    provider: string;
+  }>;
+  tenantId: string;
+  triggerLabel?: string | undefined;
+}) {
+  const router = useRouter();
+  const { t } = useI18n();
+  const referenceId = useId();
+  const [open, setOpen] = useState(false);
+  const [provider, setProvider] = useState(paymentDestinations[0]?.provider ?? "telebirr");
+  const [reference, setReference] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [, startTransition] = useTransition();
+  const destination = paymentDestinations.find((item) => item.provider === provider) ?? null;
+  const referenceValid = isBillingReferenceValid(provider, reference);
+
+  async function submit() {
+    setBusy(true);
+    try {
+      const path = getTenantScopedPath("/dashboard/billing/actions", tenantId);
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { accept: "application/json", "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "submit_payment",
+          invoiceId,
+          provider,
+          reference: reference.trim(),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(toastErrorFromBody(data));
+        return;
+      }
+      const evidenceStatus =
+        data && typeof data === "object" && data.evidence && typeof data.evidence === "object"
+          ? String(data.evidence.status ?? "")
+          : "";
+      if (evidenceStatus === "rejected") {
+        toast.error(t("billing.toast.paymentRejected"));
+        return;
+      }
+      toast.success(
+        evidenceStatus === "verified"
+          ? t("billing.toast.paymentConfirmed")
+          : t("billing.toast.paymentSubmitted"),
+      );
+      setOpen(false);
+      setReference("");
+      startTransition(() => router.refresh());
+    } catch {
+      toast.error(mapPlatformErrorMessage("platform_request_failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className={triggerLabel ? "shrink-0 sm:min-w-[12rem]" : undefined} type="button">
+          {triggerLabel ?? t("billing.payment.payInvoice")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[min(92dvh,48rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 pr-12 text-left sm:px-5 sm:pr-12">
+          <DialogTitle>{t("billing.transfer.title")}</DialogTitle>
+          <DialogDescription>{t("billing.transfer.description")}</DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-5">
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t("billing.transfer.provider")}>
+            {paymentDestinations.map((item) => {
+              const selected = item.provider === provider;
+              const ProviderIcon = item.provider === "telebirr" ? AppIcons.wallet : AppIcons.bank;
+              return (
+                <button
+                  aria-checked={selected}
+                  className={cn(
+                    "flex min-h-14 items-center gap-3 rounded-xl border px-3 text-left transition-colors",
+                    selected
+                      ? "border-primary bg-primary/8 ring-1 ring-primary/25"
+                      : "border-border bg-card hover:border-primary/35",
+                  )}
+                  key={item.provider}
+                  onClick={() => setProvider(item.provider)}
+                  role="radio"
+                  type="button"
+                >
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted">
+                    <ProviderIcon className="size-4" />
+                  </span>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {destination ? (
+            <section className="overflow-hidden rounded-2xl border bg-muted/25">
+              <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">{t("billing.transfer.amount")}</p>
+                  <p className="mt-0.5 text-xl font-semibold tabular-nums">{amount}</p>
+                </div>
+                <CopyPaymentValue label={t("billing.transfer.copyAmount")} value={amount.replace(/[^0-9.]/g, "")} />
+              </div>
+              <div className="grid gap-3 px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground">{t("billing.transfer.sendTo")}</p>
+                  <p className="mt-1 truncate font-medium">{destination.accountName}</p>
+                  <p className="select-all font-mono text-sm tabular-nums">{destination.accountNumber}</p>
+                </div>
+                <CopyPaymentValue label={t("billing.transfer.copyAccount")} value={destination.accountNumber} />
+              </div>
+            </section>
+          ) : null}
+          <ol className="grid gap-3">
+            {["openApp", "sendExact", "copyReference"].map((step, index) => (
+              <li className="flex gap-3" key={step}>
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-medium">
+                    {t(`billing.transfer.steps.${step}.title` as MessageKey, {
+                      amount,
+                      provider: destination?.label ?? "",
+                    })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(`billing.transfer.steps.${step}.description` as MessageKey, {
+                      amount,
+                      provider: destination?.label ?? "",
+                    })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <details className="rounded-xl border px-3 py-2.5 text-sm">
+            <summary className="cursor-pointer font-medium">{t("billing.transfer.findReference")}</summary>
+            <p className="mt-2 text-muted-foreground">{t(provider === "telebirr" ? "billing.transfer.telebirrHelp" : "billing.transfer.cbeHelp")}</p>
+          </details>
+          <Field>
+            <FieldLabel htmlFor={referenceId}>{t("billing.transfer.reference")}</FieldLabel>
+            <Input
+              autoComplete="off"
+              id={referenceId}
+              maxLength={500}
+              onChange={(event) => setReference(event.target.value)}
+              placeholder={t("billing.transfer.referencePlaceholder")}
+              value={reference}
+            />
+            <FieldDescription>{t(provider === "cbe" ? "billing.transfer.cbeReferenceHelp" : "billing.transfer.referenceHelp")}</FieldDescription>
+          </Field>
+          <Alert>
+            <AppIcons.time />
+            <AlertTitle>{t("billing.transfer.reviewTitle")}</AlertTitle>
+            <AlertDescription>{t("billing.transfer.reviewDescription")}</AlertDescription>
+          </Alert>
+        </div>
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button disabled={busy} onClick={() => setOpen(false)} type="button" variant="outline">
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={busy || !referenceValid} onClick={() => void submit()}>
+            {busy ? t("billing.transfer.submitting") : t("billing.transfer.submit")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function isBillingReferenceValid(provider: string, value: string) {
+  const reference = value.trim();
+  if (provider === "telebirr" && /^[a-z0-9]{8,14}$/i.test(reference)) return true;
+  if (provider !== "telebirr" && provider !== "cbe") return reference.length >= 6;
+  try {
+    const url = new URL(reference);
+    if (url.protocol !== "https:") return false;
+    const hosts =
+      provider === "telebirr"
+        ? new Set(["transactioninfo.ethiotelecom.et"])
+        : new Set(["apps.cbe.com.et", "mb.cbe.com.et", "mbreciept.cbe.com.et"]);
+    return hosts.has(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function CopyPaymentValue({ label, value }: { label: string; value: string }) {
+  const { t } = useI18n();
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(t("billing.transfer.copied"));
+    } catch {
+      toast.error(t("billing.transfer.copyFailed"));
+    }
+  }
+  return (
+    <Button className="shrink-0" onClick={() => void copy()} size="sm" type="button" variant="outline">
+      <AppIcons.copy data-icon="inline-start" />
+      {label}
+    </Button>
   );
 }
 

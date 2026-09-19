@@ -56,6 +56,8 @@ import {
 } from "./modules/analytics/index.js";
 import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
 import { createPlanAdministrationService } from "./modules/billing/plan-administration.js";
+import { createLinksEtBillingPaymentVerifier } from "./modules/billing/links-et-payment-verifier.js";
+import { createBillingPaymentVerificationChain } from "./modules/billing/payment-verification.js";
 import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
 import { createBillingProviderEventInbox } from "./modules/billing/provider-event-inbox.js";
 import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
@@ -155,7 +157,38 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
-const billingService = createBillingService(platformDb.db);
+const platformBillingPaymentDestinations = [
+  {
+    provider: "telebirr",
+    label: "Telebirr",
+    accountName: process.env.PLATFORM_BILLING_TELEBIRR_NAME?.trim() ?? "",
+    accountNumber: process.env.PLATFORM_BILLING_TELEBIRR_ACCOUNT?.trim() ?? "",
+  },
+  {
+    provider: "cbe",
+    label: "CBE",
+    accountName: process.env.PLATFORM_BILLING_CBE_NAME?.trim() ?? "",
+    accountNumber: process.env.PLATFORM_BILLING_CBE_ACCOUNT?.trim() ?? "",
+  },
+].filter((destination) => destination.accountName && destination.accountNumber);
+const linksEtApiKey = process.env.LINKS_ET_API_KEY?.trim() ?? "";
+logger.info(
+  {
+    configured: Boolean(linksEtApiKey),
+    paymentDestinations: platformBillingPaymentDestinations.map((item) => item.provider),
+  },
+  "Platform billing payment verification configured.",
+);
+const billingService = createBillingService(platformDb.db, {
+  paymentDestinations: platformBillingPaymentDestinations,
+  onPaymentVerification: (result) =>
+    logger.info(result, "Platform billing payment evidence checked."),
+  verifyPaymentEvidence: createBillingPaymentVerificationChain(
+    linksEtApiKey
+      ? [createLinksEtBillingPaymentVerifier({ apiKey: linksEtApiKey })]
+      : [],
+  ),
+});
 const planAdministrationService = createPlanAdministrationService(platformDb.db);
 const billingProviderEventInbox = createBillingProviderEventInbox(
   platformDb.db,
@@ -865,6 +898,7 @@ const app = createPlatformApp({
   startPlanTrial: billingService.startPlanTrial,
   schedulePlanDowngrade: billingService.schedulePlanDowngrade,
   cancelScheduledPlanDowngrade: billingService.cancelScheduledPlanDowngrade,
+  submitBillingPaymentEvidence: billingService.submitBillingPaymentEvidence,
   confirmBillingPayments: async (input) => {
     const pending = await billingService.listPendingChapaInvoiceTxRefs(input);
     const result = await reconcileChapaBillingPayments({
@@ -1133,6 +1167,7 @@ const app = createPlatformApp({
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
+  listBillingPaymentReviews: billingService.listBillingPaymentReviews,
   updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
   ensurePickupOption: async (input) => {
     const result = await ensureTenantPickupOption(input);
