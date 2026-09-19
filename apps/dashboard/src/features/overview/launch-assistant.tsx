@@ -57,9 +57,13 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     const nextOpen = getLaunchAssistantOpenPreference(access.tenant.id);
 
     setHidden(nextHidden);
-    // Keep unfinished setup close at hand, then collapse it once the required work is done.
-    setOpen(nextHidden ? false : (nextOpen ?? true));
+    // Mount closed first so the floating assistant has a clear entrance instead of
+    // appearing as another piece of page content on the first dashboard paint.
+    setOpen(false);
     setHydrated(true);
+    const entranceFrame = window.requestAnimationFrame(() => {
+      setOpen(nextHidden ? false : (nextOpen ?? true));
+    });
 
     function handlePreferenceChange(event: Event) {
       const detail = (event as CustomEvent<{ hidden?: boolean; tenantId?: string }>).detail;
@@ -75,6 +79,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     window.addEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
 
     return () => {
+      window.cancelAnimationFrame(entranceFrame);
       window.removeEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
     };
   }, [access.tenant.id]);
@@ -171,7 +176,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         aria-hidden={!open}
         inert={!open}
         className={cn(
-          "absolute bottom-full mb-2 flex max-h-[min(720px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-border/50 transition-[opacity,transform] duration-200 ease-[var(--ease-dashboard)] motion-reduce:transition-none dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]",
+          "absolute bottom-full mb-3 flex max-h-[min(720px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-[0_24px_64px_-18px_rgba(0,0,0,0.38),0_8px_24px_-12px_rgba(0,0,0,0.22)] outline outline-1 outline-background/70 transition-[opacity,transform] duration-200 ease-[var(--ease-dashboard)] motion-reduce:transition-none dark:shadow-[0_24px_64px_-16px_rgba(0,0,0,0.72),0_8px_24px_-12px_rgba(0,0,0,0.55)]",
           open
             ? "translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-2 scale-[0.98] opacity-0",
@@ -287,7 +292,12 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         </div>
       </div>
 
-      <Button aria-expanded={open} className="shadow-lg" type="button" onClick={toggleOpen}>
+      <Button
+        aria-expanded={open}
+        className="shadow-[0_8px_24px_-8px_rgba(0,0,0,0.38)]"
+        type="button"
+        onClick={toggleOpen}
+      >
         {catalogUnknown
           ? t("overview.launch.title")
           : launchReady

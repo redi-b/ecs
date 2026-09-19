@@ -16,7 +16,7 @@ import {
   RiTranslate2,
 } from "@remixicon/react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
@@ -81,7 +81,9 @@ export function StorefrontTranslationWorkspace({
   const [refreshing, startRefresh] = useTransition();
   const fieldRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const sectionRefs = useRef(new Map<string, HTMLElement>());
+  const stickySentinelRef = useRef<HTMLDivElement>(null);
   const [activeSectionId, setActiveSectionId] = useState<string>();
+  const [headerStuck, setHeaderStuck] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set());
   const [catalogTarget, setCatalogTarget] = useState<CatalogTarget | null>(null);
   const [catalogProduct, setCatalogProduct] = useState<MerchantProduct | null>(null);
@@ -157,6 +159,17 @@ export function StorefrontTranslationWorkspace({
     (shippingReadiness ? queueTotal(shippingReadiness) : 0);
   const totalReady = pageMetric.ready + catalogReady;
   const totalFields = fields.length + catalogTotal;
+
+  useEffect(() => {
+    const sentinel = stickySentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeaderStuck(entry ? !entry.isIntersecting : false),
+      { rootMargin: "-64px 0px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   function jumpToSection(sectionId: string) {
     setActiveSectionId(sectionId);
@@ -292,9 +305,21 @@ export function StorefrontTranslationWorkspace({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="sticky top-16 z-10 rounded-[calc(var(--radius)+0.25rem)] border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="relative flex flex-col gap-5">
+      <div
+        ref={stickySentinelRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 h-px w-px"
+      />
+      <div
+        className={cn(
+          "sticky top-16 z-20 rounded-[calc(var(--radius)+0.25rem)] border bg-background/95 p-3 backdrop-blur transition-[box-shadow,border-color,width,margin] duration-150 supports-[backdrop-filter]:bg-background/88",
+          headerStuck
+            ? "border-border/90 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.38),0_3px_10px_-6px_rgba(0,0,0,0.18)] sm:-mx-2 sm:w-[calc(100%+1rem)] dark:shadow-[0_14px_34px_-18px_rgba(0,0,0,0.72)]"
+            : "border-border/70 shadow-none",
+        )}
+      >
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
               <RiTranslate2 className="size-4" />
@@ -311,92 +336,102 @@ export function StorefrontTranslationWorkspace({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={t("editor.translations.previous")}
-                  disabled={!unfinished.length}
-                  onClick={() => moveUnfinished(-1)}
-                  size="icon-sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <RiArrowLeftLine />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("editor.translations.previous")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={t("editor.translations.next")}
-                  disabled={!unfinished.length}
-                  onClick={() => moveUnfinished(1)}
-                  size="icon-sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <RiArrowRightLine />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("editor.translations.next")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={t("common.refresh")}
-                  disabled={refreshing}
-                  onClick={() => requestLeave(() => startRefresh(() => router.refresh()))}
-                  size="icon-sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <RiRefreshLine className={refreshing ? "animate-spin" : undefined} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("common.refresh")}</TooltipContent>
-            </Tooltip>
-            <Button disabled={!dirty || pending} onClick={save} size="sm">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:flex sm:justify-end">
+            <div className="flex h-8 items-center rounded-full border bg-muted/25 p-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={t("editor.translations.previous")}
+                    disabled={!unfinished.length}
+                    onClick={() => moveUnfinished(-1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RiArrowLeftLine />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("editor.translations.previous")}</TooltipContent>
+              </Tooltip>
+              <span className="h-4 w-px bg-border" aria-hidden="true" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={t("editor.translations.next")}
+                    disabled={!unfinished.length}
+                    onClick={() => moveUnfinished(1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RiArrowRightLine />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("editor.translations.next")}</TooltipContent>
+              </Tooltip>
+            </div>
+            <Button
+              className="w-full sm:w-auto"
+              disabled={!dirty || pending}
+              onClick={save}
+              size="sm"
+            >
               {pending ? t("editor.translations.saving") : t("editor.translations.save")}
             </Button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-expanded={toolsExpanded}
-                  aria-label={t(
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={t("common.refresh")}
+                    disabled={refreshing}
+                    onClick={() => requestLeave(() => startRefresh(() => router.refresh()))}
+                    size="icon-sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <RiRefreshLine className={refreshing ? "animate-spin" : undefined} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("common.refresh")}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-expanded={toolsExpanded}
+                    aria-label={t(
+                      toolsExpanded
+                        ? "editor.translations.collapseTools"
+                        : "editor.translations.expandTools",
+                    )}
+                    onClick={() => setToolsExpanded((current) => !current)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RiArrowDownSLine
+                      className={cn(
+                        "size-4 transition-transform duration-150",
+                        toolsExpanded && "rotate-180",
+                      )}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t(
                     toolsExpanded
                       ? "editor.translations.collapseTools"
                       : "editor.translations.expandTools",
                   )}
-                  onClick={() => setToolsExpanded((current) => !current)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <RiArrowDownSLine
-                    className={cn(
-                      "size-4 transition-transform duration-150",
-                      toolsExpanded && "rotate-180",
-                    )}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {t(
-                  toolsExpanded
-                    ? "editor.translations.collapseTools"
-                    : "editor.translations.expandTools",
-                )}
-              </TooltipContent>
-            </Tooltip>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
         <Collapsible open={toolsExpanded}>
-          <CollapsibleContent>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <CollapsibleContent className="-mx-1 px-1 pb-1">
+            <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center lg:grid-cols-[minmax(12rem,1fr)_auto_16rem]">
               <ListToolbarSearch
-                className="sm:max-w-none sm:flex-1 lg:max-w-none"
+                className="sm:max-w-none lg:max-w-none"
                 clearLabel={t("common.clearSearch")}
                 debounceMs={0}
                 label={t("editor.translations.search")}
@@ -407,7 +442,7 @@ export function StorefrontTranslationWorkspace({
               <SegmentedControl
                 active="muted"
                 ariaLabel={t("editor.translations.filterLabel")}
-                className="shrink-0 sm:w-auto [&_button]:min-w-24"
+                className="mx-auto shrink-0 sm:mx-0 sm:w-auto [&_button]:min-w-24"
                 fullWidth={false}
                 onChange={setView}
                 options={(["all", "unfinished"] as const).map((option) => ({
@@ -421,7 +456,7 @@ export function StorefrontTranslationWorkspace({
                 <SectionNavigator
                   activeId={activeSectionId}
                   allExpanded={allSectionsExpanded}
-                  className="w-full sm:w-64"
+                  className="w-full sm:col-span-2 lg:col-span-1"
                   collapseAllLabel={t("editor.settings.collapseAll")}
                   emptyLabel={t("editor.settings.noMatchingSection")}
                   expandAllLabel={t("editor.settings.expandAll")}
@@ -614,12 +649,7 @@ export function StorefrontTranslationWorkspace({
                     <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                       {t("common.unsaved.eyebrow")}
                     </span>
-                    <Button
-                      disabled={!dirty || pending}
-                      onClick={save}
-                      size="sm"
-                      type="button"
-                    >
+                    <Button disabled={!dirty || pending} onClick={save} size="sm" type="button">
                       {pending ? t("editor.translations.saving") : t("editor.translations.save")}
                     </Button>
                   </div>
