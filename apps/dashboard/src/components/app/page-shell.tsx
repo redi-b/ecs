@@ -57,7 +57,7 @@ export function PageShell({
             {meta ? <div className="mt-1 flex flex-wrap items-center gap-2">{meta}</div> : null}
           </div>
           {actions ? (
-            <div className="flex min-w-0 w-full flex-wrap items-center gap-2 sm:w-auto md:max-w-md md:shrink-0 md:justify-end">
+            <div className="flex min-w-0 w-full flex-wrap items-center justify-end gap-2 sm:w-auto md:max-w-md md:shrink-0">
               {actions}
             </div>
           ) : null}

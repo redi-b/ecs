@@ -56,7 +56,14 @@ export function StorefrontTemplatePreview({
           />
         </button>
         <TooltipProvider>
-          <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
+          <div
+            className={cn(
+              "absolute",
+              compact
+                ? "bottom-1.5 right-1.5 flex items-center gap-1"
+                : "bottom-2 right-2 flex flex-col gap-1.5",
+            )}
+          >
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -66,7 +73,7 @@ export function StorefrontTemplatePreview({
                     event.stopPropagation();
                     setOpen(true);
                   }}
-                  size="icon-sm"
+                  size={compact ? "icon-xs" : "icon-sm"}
                   type="button"
                   variant="secondary"
                 >
@@ -78,7 +85,11 @@ export function StorefrontTemplatePreview({
             {template.version.demoUrl ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button asChild size="icon-sm" variant="secondary">
+                  <Button
+                    asChild
+                    size={compact ? "icon-xs" : "icon-sm"}
+                    variant="secondary"
+                  >
                     <a
                       aria-label={`${demoLabel}: ${template.name}`}
                       href={template.version.demoUrl}

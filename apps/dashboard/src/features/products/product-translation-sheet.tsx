@@ -34,6 +34,7 @@ import {
 import { TranslationSourceReference } from "@/features/storefront-editor/translation-source-reference";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 type EditableResource = {
   key: string;
@@ -348,64 +349,74 @@ export function ProductTranslationSheet({
             })
           )}
         </SheetBody>
-        <SheetFooter className="flex-row items-center justify-between gap-3 sm:justify-between">
-          <div className="flex items-center gap-2">
-            {queueNavigation?.previous || queueNavigation?.onPrevious ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  {queueNavigation.onPrevious ? (
-                    <Button
-                      aria-label={t("editor.translations.previous")}
-                      disabled={loading || queueNavigation.loading}
-                      onClick={() => requestLeave(() => queueNavigation.onPrevious?.())}
-                      size="icon-sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      <RiArrowLeftLine />
-                    </Button>
-                  ) : (
-                    <Button asChild size="icon-sm" variant="outline">
-                      <a
+        <SheetFooter
+          className={cn(
+            "flex flex-col gap-3 sm:flex-row sm:items-center",
+            queueNavigation?.previous || queueNavigation?.onPrevious || queueNavigation?.next || queueNavigation?.onNext
+              ? "sm:justify-between"
+              : "sm:justify-end",
+          )}
+        >
+          {queueNavigation?.previous || queueNavigation?.onPrevious || queueNavigation?.next || queueNavigation?.onNext ? (
+            <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-start">
+              {queueNavigation?.previous || queueNavigation?.onPrevious ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {queueNavigation.onPrevious ? (
+                      <Button
                         aria-label={t("editor.translations.previous")}
-                        href={queueNavigation.previous}
+                        disabled={loading || queueNavigation.loading}
+                        onClick={() => requestLeave(() => queueNavigation.onPrevious?.())}
+                        size="icon-sm"
+                        type="button"
+                        variant="outline"
                       >
                         <RiArrowLeftLine />
-                      </a>
-                    </Button>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent>{t("editor.translations.previous")}</TooltipContent>
-              </Tooltip>
-            ) : null}
-            {queueNavigation?.next || queueNavigation?.onNext ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  {queueNavigation.onNext ? (
-                    <Button
-                      aria-label={t("editor.translations.next")}
-                      disabled={loading || queueNavigation.loading}
-                      onClick={() => requestLeave(() => queueNavigation.onNext?.())}
-                      size="icon-sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      <RiArrowRightLine />
-                    </Button>
-                  ) : (
-                    <Button asChild size="icon-sm" variant="outline">
-                      <a aria-label={t("editor.translations.next")} href={queueNavigation.next}>
+                      </Button>
+                    ) : (
+                      <Button asChild size="icon-sm" variant="outline">
+                        <a
+                          aria-label={t("editor.translations.previous")}
+                          href={queueNavigation.previous}
+                        >
+                          <RiArrowLeftLine />
+                        </a>
+                      </Button>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>{t("editor.translations.previous")}</TooltipContent>
+                </Tooltip>
+              ) : null}
+              {queueNavigation?.next || queueNavigation?.onNext ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {queueNavigation.onNext ? (
+                      <Button
+                        aria-label={t("editor.translations.next")}
+                        disabled={loading || queueNavigation.loading}
+                        onClick={() => requestLeave(() => queueNavigation.onNext?.())}
+                        size="icon-sm"
+                        type="button"
+                        variant="outline"
+                      >
                         <RiArrowRightLine />
-                      </a>
-                    </Button>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent>{t("editor.translations.next")}</TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
+                      </Button>
+                    ) : (
+                      <Button asChild size="icon-sm" variant="outline">
+                        <a aria-label={t("editor.translations.next")} href={queueNavigation.next}>
+                          <RiArrowRightLine />
+                        </a>
+                      </Button>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>{t("editor.translations.next")}</TooltipContent>
+                </Tooltip>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:items-center">
             <Button
+              className="w-full sm:w-auto"
               disabled={saving}
               onClick={() => requestLeave(() => setOpen(false))}
               variant="outline"
@@ -413,7 +424,11 @@ export function ProductTranslationSheet({
               {t("common.cancel")}
             </Button>
             {readOnly ? null : (
-              <Button disabled={loading || saving || resources.length === 0} onClick={save}>
+              <Button
+                className="w-full sm:w-auto"
+                disabled={loading || saving || resources.length === 0}
+                onClick={save}
+              >
                 {saving ? t("products.translation.saving") : t("products.translation.save")}
               </Button>
             )}

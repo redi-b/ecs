@@ -204,57 +204,59 @@ export function StorefrontTemplateOption({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 rounded-xl border bg-card p-3.5 transition-colors duration-200",
+        "flex min-w-0 max-w-full flex-col gap-3.5 overflow-hidden rounded-xl border bg-card p-3.5 transition-colors duration-200 sm:flex-row sm:items-center sm:gap-4",
         selected
           ? "border-primary/40 ring-1 ring-primary/15"
           : "border-border hover:border-primary/30",
       )}
     >
-      <div className="w-24 shrink-0 sm:w-32">
-        <StorefrontTemplatePreview
-          compact
-          demoLabel={t("common.viewDemo")}
-          previewLabel={t("common.preview")}
-          template={template}
-        />
-      </div>
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
+        <div className="w-28 shrink-0 sm:w-36">
+          <StorefrontTemplatePreview
+            compact
+            demoLabel={t("common.viewDemo")}
+            previewLabel={t("common.preview")}
+            template={template}
+          />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold tracking-tight">{template.name}</p>
-          {selected ? (
-            <Badge className="gap-1 font-medium" variant="secondary">
-              <CheckIcon className="size-3" aria-hidden />
-              {t("settings.storefront.selected")}
-            </Badge>
-          ) : null}
-          {published ? (
-            <Badge className="gap-1 font-medium" variant="success">
-              <span className="size-1.5 rounded-full bg-current" aria-hidden />
-              {t("settings.storefront.live")}
-            </Badge>
-          ) : null}
-          {!selected && hasSavedDraft ? (
-            <Badge className="font-medium" variant="outline">
-              {t("settings.storefront.savedDraft")}
-            </Badge>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <p className="text-sm font-semibold tracking-tight">{template.name}</p>
+            {selected ? (
+              <Badge className="gap-1 font-medium" variant="secondary">
+                <CheckIcon className="size-3" aria-hidden />
+                {t("settings.storefront.selected")}
+              </Badge>
+            ) : null}
+            {published ? (
+              <Badge className="gap-1 font-medium" variant="success">
+                <span className="size-1.5 rounded-full bg-current" aria-hidden />
+                {t("settings.storefront.live")}
+              </Badge>
+            ) : null}
+            {!selected && hasSavedDraft ? (
+              <Badge className="font-medium" variant="outline">
+                {t("settings.storefront.savedDraft")}
+              </Badge>
+            ) : null}
+          </div>
+          {template.description ? (
+            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+              {template.description}
+            </p>
           ) : null}
         </div>
-        {template.description ? (
-          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {template.description}
-          </p>
-        ) : null}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+      <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
         {selected ? (
-          <Button asChild className="rounded-full" size="sm" type="button">
+          <Button asChild className="w-full rounded-full sm:w-auto" size="sm" type="button">
             <Link href={dashboardRoutes.editor}>{t("settings.storefront.editStorefront")}</Link>
           </Button>
         ) : (
           <Button
-            className="rounded-full"
+            className="w-full rounded-full sm:w-auto"
             disabled={pending}
             onClick={() => {
               if (hasSavedDraft) {

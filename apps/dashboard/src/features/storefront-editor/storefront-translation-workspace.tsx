@@ -606,6 +606,24 @@ export function StorefrontTranslationWorkspace({
                     );
                   })}
                 </div>
+                {group.fields.some(
+                  (field) =>
+                    reviewedPaths.has(field.path) || values[field.path] !== savedValues[field.path],
+                ) ? (
+                  <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      {t("common.unsaved.eyebrow")}
+                    </span>
+                    <Button
+                      disabled={!dirty || pending}
+                      onClick={save}
+                      size="sm"
+                      type="button"
+                    >
+                      {pending ? t("editor.translations.saving") : t("editor.translations.save")}
+                    </Button>
+                  </div>
+                ) : null}
               </CollapsibleContent>
             </section>
           </Collapsible>

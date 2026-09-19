@@ -138,6 +138,17 @@ export function MediaEditSheet({
                         <span className="tabular-nums">{dimensions}</span>
                       </>
                     ) : null}
+                    {asset.publicUrl ? (
+                      <a
+                        className="ml-auto inline-flex items-center gap-1 font-medium text-foreground/80 hover:text-foreground hover:underline"
+                        href={asset.publicUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        <span>{t("media.openInNewTab")}</span>
+                        <AppIcons.externalLink className="size-3" aria-hidden />
+                      </a>
+                    ) : null}
                   </div>
                 </div>
 
@@ -178,25 +189,13 @@ export function MediaEditSheet({
                 </div>
               </SheetBody>
 
-              <SheetFooter className="gap-2 sm:flex-row sm:justify-between">
-                <div className="flex gap-2">
-                  {asset.publicUrl ? (
-                    <Button asChild size="sm" type="button" variant="outline">
-                      <a href={asset.publicUrl} rel="noreferrer" target="_blank">
-                        <AppIcons.externalLink data-icon="inline-start" />
-                        {t("media.openInNewTab")}
-                      </a>
-                    </Button>
-                  ) : null}
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={requestClose} size="sm" type="button" variant="outline">
-                    {t("common.cancel")}
-                  </Button>
-                  <Button disabled={saving || !name.trim()} size="sm" type="submit">
-                    {saving ? t("media.saving") : t("common.save")}
-                  </Button>
-                </div>
+              <SheetFooter className="gap-2 sm:flex-row sm:justify-end">
+                <Button onClick={requestClose} size="sm" type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+                <Button disabled={saving || !name.trim()} size="sm" type="submit">
+                  {saving ? t("media.saving") : t("common.save")}
+                </Button>
               </SheetFooter>
             </form>
           ) : null}

@@ -171,11 +171,13 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
         aria-hidden={!open}
         inert={!open}
         className={cn(
-          "absolute bottom-full mb-2 flex max-h-[min(720px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-xl border bg-background dark:bg-popover shadow-lg transition-[opacity,transform] duration-200 ease-[var(--ease-dashboard)] motion-reduce:transition-none",
-          open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
+          "absolute bottom-full mb-2 flex max-h-[min(720px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ring-1 ring-border/50 transition-[opacity,transform] duration-200 ease-[var(--ease-dashboard)] motion-reduce:transition-none dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)]",
+          open
+            ? "translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none translate-y-2 scale-[0.98] opacity-0",
         )}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b p-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/70 bg-muted/30 p-4">
           <EcsArtwork kind="storefront" size="compact" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">

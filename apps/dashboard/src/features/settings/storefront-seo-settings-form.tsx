@@ -217,9 +217,16 @@ export function StorefrontSeoSettingsForm({
           selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty] as const}
         >
           {([canSubmit, isSubmitting, isDirty]) => (
-            <Button disabled={!canSubmit || !isDirty || isSubmitting} type="submit">
-              {isSubmitting ? t("settings.storefront.seoSaving") : t("settings.storefront.seoSave")}
-            </Button>
+            <div className="flex justify-end pt-2">
+              <Button
+                className="w-full rounded-full sm:w-auto"
+                disabled={!canSubmit || !isDirty || isSubmitting}
+                size="sm"
+                type="submit"
+              >
+                {isSubmitting ? t("settings.storefront.seoSaving") : t("settings.storefront.seoSave")}
+              </Button>
+            </div>
           )}
         </form.Subscribe>
       </form>

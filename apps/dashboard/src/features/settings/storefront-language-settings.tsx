@@ -125,9 +125,9 @@ export function StorefrontLanguageSettingsPanel({
         </fieldset>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
         {saved.enabledLocales.includes("am") ? (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
             <Link href={dashboardRoutes.storefrontTranslations}>
               <RiTranslate2 data-icon="inline-start" />
               {t("settings.storefront.languagesTranslate")}
@@ -136,13 +136,18 @@ export function StorefrontLanguageSettingsPanel({
         ) : (
           <span />
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
           {dirty ? (
             <span className="text-xs font-medium text-warning-foreground">
               {t("common.unsaved.eyebrow")}
             </span>
           ) : null}
-          <Button disabled={!dirty || pending} onClick={save} size="sm">
+          <Button
+            className="w-full rounded-full sm:w-auto"
+            disabled={!dirty || pending}
+            onClick={save}
+            size="sm"
+          >
             {pending
               ? t("settings.storefront.languagesSaving")
               : t("settings.storefront.languagesSave")}

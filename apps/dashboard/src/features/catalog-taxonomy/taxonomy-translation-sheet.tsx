@@ -244,8 +244,16 @@ export function TaxonomyTranslationSheet({
             </section>
           ) : null}
         </SheetBody>
-        <SheetFooter className="flex-row items-center justify-between gap-3 sm:justify-between">
-          <div className="flex items-center gap-2">
+        <SheetFooter
+          className={cn(
+            "flex flex-col gap-3 sm:flex-row sm:items-center",
+            queueNavigation?.previous || queueNavigation?.onPrevious || queueNavigation?.next || queueNavigation?.onNext
+              ? "sm:justify-between"
+              : "sm:justify-end",
+          )}
+        >
+          {queueNavigation?.previous || queueNavigation?.onPrevious || queueNavigation?.next || queueNavigation?.onNext ? (
+            <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-start">
             {queueNavigation?.previous || queueNavigation?.onPrevious ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -299,16 +307,22 @@ export function TaxonomyTranslationSheet({
                 <TooltipContent>{t("editor.translations.next")}</TooltipContent>
               </Tooltip>
             ) : null}
-          </div>
-          <div className="flex items-center gap-2">
+            </div>
+          ) : null}
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:items-center">
             <Button
+              className="w-full sm:w-auto"
               disabled={saving}
               onClick={() => requestLeave(() => onOpenChange(false))}
               variant="outline"
             >
               {t("common.cancel")}
             </Button>
-            <Button disabled={loading || saving || !resource} onClick={save}>
+            <Button
+              className="w-full sm:w-auto"
+              disabled={loading || saving || !resource}
+              onClick={save}
+            >
               {saving ? t("products.translation.saving") : t("products.translation.save")}
             </Button>
           </div>
