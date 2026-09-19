@@ -172,8 +172,10 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
         content: document(
           paragraph("ሰላም {{recipient_name}}፣"),
           paragraph("የECS መለያዎን ማዘጋጀት ለመጨረስ ኢሜይልዎን ያረጋግጡ።"),
-          button("ኢሜይል ያረጋግጡ"),
-          paragraph("ይህ አገናኝ በቅርቡ ጊዜው ያልፋል። ይህን መለያ ካልፈጠሩ ኢሜይሉን ችላ ማለት ይችላሉ።"),
+          button("ኢሜይልዎን ያረጋግጡ"),
+          paragraph(
+            "ይህ ሊንክ የሚያገለግለው ለአጭር ጊዜ ብቻ ነው። ይህን መለያ እርስዎ ካልከፈቱት፣ ምንም ማድረግ አይጠበቅብዎትም።",
+          ),
         ),
         preheader: "መለያዎን ማዘጋጀት ለመጨረስ ኢሜይልዎን ያረጋግጡ።",
         subject: "የECS ኢሜይልዎን ያረጋግጡ",
@@ -201,9 +203,9 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
       am: {
         content: document(
           paragraph("ሰላም {{recipient_name}}፣"),
-          paragraph("ለECS መለያዎ አዲስ የይለፍ ቃል ለመምረጥ ከታች ያለውን አዝራር ይጠቀሙ።"),
+          paragraph("ከታች ያለውን በመጫን ለECS መለያዎ አዲስ የይለፍ ቃል ይምረጡ።"),
           button("የይለፍ ቃል ይቀይሩ"),
-          paragraph("ይህን ካልጠየቁ ኢሜይሉን ችላ ማለት ይችላሉ።"),
+          paragraph("ይህን ጥያቄ እርስዎ ካላቀረቡ፣ ምንም ማድረግ አይጠበቅብዎትም።"),
         ),
         preheader: "ለECS መለያዎ አዲስ የይለፍ ቃል ይምረጡ።",
         subject: "የECS የይለፍ ቃልዎን ይቀይሩ",
@@ -232,11 +234,11 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
         content: document(
           paragraph("ሰላም {{recipient_name}}፣"),
           paragraph("የECS ኢሜይልዎን ወደ {{new_email}} ለመቀየር ጥያቄ ቀርቧል።"),
-          button("የኢሜይል ለውጡን ያጽድቁ"),
-          paragraph("ጥያቄውን እርስዎ ካላቀረቡ ለውጡን አያጽድቁ።"),
+          button("የኢሜይል ለውጡን ያረጋግጡ"),
+          paragraph("ጥያቄውን እርስዎ ካላቀረቡ ለውጡን አያረጋግጡ፤ የመለያዎን ደህንነትም ይጠብቁ።"),
         ),
-        preheader: "የECS ኢሜይል ለውጥ ጥያቄዎን ያጽድቁ።",
-        subject: "የECS ኢሜይል ለውጥዎን ያጽድቁ",
+        preheader: "የECS ኢሜይል ለውጥ ጥያቄዎን ያረጋግጡ።",
+        subject: "የECS ኢሜይል ለውጥዎን ያረጋግጡ",
       },
     },
     requiredVariables: ["action_url", "new_email", "recipient_name"],
@@ -261,9 +263,9 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
       am: {
         content: document(
           paragraph("ሰላም {{recipient_name}}፣"),
-          paragraph("ይህን አድራሻ ለECS መለያዎ እንደ አዲሱ ኢሜይል ያረጋግጡ።"),
+          paragraph("ይህን አድራሻ ለECS መለያዎ አዲሱ ኢሜይል አድርገው ያረጋግጡ።"),
           button("አዲሱን ኢሜይል ያረጋግጡ"),
-          paragraph("ይህን ካልጠበቁ ኢሜይሉን ችላ ማለት ይችላሉ።"),
+          paragraph("ይህን ጥያቄ እርስዎ ካልጠበቁት፣ ምንም ማድረግ አይጠበቅብዎትም።"),
         ),
         preheader: "አዲሱን የECS ኢሜይልዎን ያረጋግጡ።",
         subject: "አዲሱን የECS ኢሜይልዎን ያረጋግጡ",
@@ -297,12 +299,12 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
       am: {
         content: document(
           paragraph("ሰላም {{recipient_name}}፣"),
-          paragraph("{{inviter_name}} በECS ላይ ከ{{shop_name}} ጋር እንዲሰሩ ጋብዞዎታል።"),
+          paragraph("{{inviter_name}} በECS ላይ ከ{{shop_name}} ጋር እንዲሰሩ የመቀላቀያ ጥሪ ልከውልዎታል።"),
           button("ቡድኑን ይቀላቀሉ"),
-          paragraph("ግብዣው በ7 ቀናት ውስጥ ጊዜው ያልፋል። ካልጠበቁት ኢሜይሉን ችላ ማለት ይችላሉ።"),
+          paragraph("ይህ ጥሪ የሚያገለግለው ለ7 ቀናት ብቻ ነው። ካልጠበቁት፣ ምንም ማድረግ አይጠበቅብዎትም።"),
         ),
-        preheader: "ከ{{shop_name}} ጋር እንዲሰሩ ተጋብዘዋል።",
-        subject: "{{shop_name}}ን በECS ላይ ይቀላቀሉ",
+        preheader: "ከ{{shop_name}} ጋር እንዲሰሩ የመቀላቀያ ጥሪ ደርሶዎታል።",
+        subject: "የ{{shop_name}} ቡድንን በECS ይቀላቀሉ",
       },
     },
     requiredVariables: ["action_url", "inviter_name", "recipient_name", "shop_name"],
@@ -312,7 +314,7 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
     am: {
       body: "{{shop_name}} ትዕዛዝዎን ተቀብሏል። ሁኔታው ሲቀየር እናሳውቅዎታለን።",
       preheader: "{{shop_name}} ትዕዛዝዎን ተቀብሏል።",
-      subject: "ትዕዛዝ {{order_reference}} ደርሷል",
+      subject: "{{shop_name}} ትዕዛዝ {{order_reference}}ን ተቀብሏል",
     },
     description: "Sent to a customer after the shop receives an order.",
     en: {
@@ -325,8 +327,8 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
   }),
   orderTemplate({
     am: {
-      body: "ትዕዛዝዎ ዝግጁ ነው። በመደብሩ የመረጡትን የመረከቢያ መመሪያ ይከተሉ።",
-      preheader: "ትዕዛዝዎ ከ{{shop_name}} ለመውሰድ ዝግጁ ነው።",
+      body: "ትዕዛዝዎ ዝግጁ ነው። ከመደብሩ የተሰጠውን የመረከቢያ ወይም የደሊቨሪ መመሪያ ይከተሉ።",
+      preheader: "የ{{shop_name}} ትዕዛዝዎ ዝግጁ ነው።",
       subject: "ትዕዛዝ {{order_reference}} ዝግጁ ነው",
     },
     description: "Sent when an order is packed or ready for pickup.",
@@ -340,8 +342,8 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
   }),
   orderTemplate({
     am: {
-      body: "ትዕዛዝዎ ለመላክ ወጥቷል። {{shop_name}} በቅርቡ ያደርስልዎታል።",
-      preheader: "ትዕዛዝዎ ከ{{shop_name}} ለመላክ ወጥቷል።",
+      body: "ትዕዛዝዎ ለደሊቨሪ ወጥቷል። {{shop_name}} በቅርቡ ያደርስልዎታል።",
+      preheader: "የ{{shop_name}} ትዕዛዝዎ ለደሊቨሪ ወጥቷል።",
       subject: "ትዕዛዝ {{order_reference}} በመንገድ ላይ ነው",
     },
     description: "Sent when an order leaves the shop for delivery.",
@@ -355,7 +357,7 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
   }),
   orderTemplate({
     am: {
-      body: "ትዕዛዝዎ እንደደረሰ ተመዝግቧል። ከ{{shop_name}} ስለገዙ እናመሰግናለን።",
+      body: "ትዕዛዝዎ ደርሷል። ከ{{shop_name}} ስለገዙ እናመሰግናለን!",
       preheader: "ትዕዛዝዎ ደርሷል።",
       subject: "ትዕዛዝ {{order_reference}} ደርሷል",
     },
@@ -370,7 +372,7 @@ export const EMAIL_TEMPLATE_CATALOG: readonly EmailTemplateDefinition[] = [
   }),
   orderTemplate({
     am: {
-      body: "ትዕዛዝዎ ተሰርዟል። ክፍያ ከፈጸሙ፣ ስለ ተመላሽ ክፍያው {{shop_name}}ን ያነጋግሩ።",
+      body: "ትዕዛዝዎ ተሰርዟል። ክፍያ ፈጽመው ከነበረ፣ ስለ ተመላሽ ገንዘቡ {{shop_name}}ን ያነጋግሩ።",
       preheader: "ትዕዛዝዎ ተሰርዟል።",
       subject: "ትዕዛዝ {{order_reference}} ተሰርዟል",
     },
