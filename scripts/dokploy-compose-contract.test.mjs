@@ -35,3 +35,18 @@ test("storefront receives the trusted public media base at runtime", () => {
     /MEDIA_S3_PUBLIC_BASE_URL: \$\{MEDIA_S3_PUBLIC_BASE_URL:-https:\/\/media\.\$\{BASE_DOMAIN\}\/\$\{MEDIA_S3_BUCKET:-ecs-media\}\}/,
   );
 });
+
+test("platform-api environment wires platform billing destinations and links.et", () => {
+  assert.match(
+    compose,
+    /PLATFORM_BILLING_TELEBIRR_ACCOUNT: \$\{PLATFORM_BILLING_TELEBIRR_ACCOUNT:-\}/,
+  );
+  assert.match(
+    compose,
+    /PLATFORM_BILLING_CBE_ACCOUNT: \$\{PLATFORM_BILLING_CBE_ACCOUNT:-\}/,
+  );
+  assert.match(
+    compose,
+    /LINKS_ET_API_KEY: \$\{LINKS_ET_API_KEY:-\}/,
+  );
+});
