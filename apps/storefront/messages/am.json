@@ -25,7 +25,7 @@
   "catalog_in_stock": "አለ",
   "cart_empty": "ዘንቢልዎ ባዶ ነው",
   "cart_total": "ጠቅላላ",
-  "checkout_delivery": "ዴሊቨሪ",
+  "checkout_delivery": "ደሊቨሪ",
   "checkout_pickup": "በአካል መውሰድ",
   "checkout_place_order": "ትዕዛዝ ያስገቡ",
   "language_label": "ቋንቋ",
@@ -34,7 +34,7 @@
   "a11y_store_navigation": "የሱቅ ማውጫ",
   "a11y_primary_navigation": "ዋና ማውጫ",
   "a11y_footer_navigation": "የግርጌ ማውጫ",
-  "a11y_customer_links": "የደንበኛ አገናኞች",
+  "a11y_customer_links": "የደንበኛ ሊንኮች",
   "a11y_close_navigation": "ማውጫውን ዝጋ",
   "a11y_open_navigation": "ማውጫውን ክፈት",
   "a11y_skip_to_content": "ወደ ዋናው ይዘት ይሂዱ",
@@ -42,7 +42,7 @@
   "search_products_placeholder": "ምርቶችን ፈልግ",
   "nav_wishlist": "የተቀመጡ ምርቶች",
   "nav_all_products": "ሁሉም ምርቶች",
-  "footer_quick_links": "ፈጣን አገናኞች",
+  "footer_quick_links": "ፈጣን ሊንኮች",
   "footer_products": "ምርቶች",
   "footer_contacts": "ያግኙን",
   "footer_shop": "ሱቅ",
@@ -51,7 +51,7 @@
   "cart_title": "የእርስዎ ዘንቢል",
   "cart_item_count": "{count} ምርቶች",
   "cart_subtotal": "ድምር",
-  "cart_delivery": "ዴሊቨሪ",
+  "cart_delivery": "ደሊቨሪ",
   "cart_delivery_at_checkout": "ትዕዛዙ ሲጠናቀቅ ይሰላል",
   "cart_view": "ዘንቢሉን እና ቅናሾችን ይመልከቱ",
   "cart_close": "ዘንቢሉን ዝጋ",
@@ -84,52 +84,52 @@
   "cart_order_summary": "የትዕዛዝ ማጠቃለያ",
   "cart_discount": "ቅናሽ",
   "cart_tax": "ግብር",
-  "cart_delivery_note": "የዴሊቨሪ አማራጭና የመጨረሻ ክፍያ ትዕዛዙ ሲጠናቀቅ ይረጋገጣል።",
+  "cart_delivery_note": "የደሊቨሪ አማራጭና የመጨረሻ ክፍያ ትዕዛዙ ሲጠናቀቅ ይረጋገጣል።",
   "cart_saved_note": "አስተማማኝ የትዕዛዝ ሂደት። ዘንቢልዎ ለ14 ቀናት ይቀመጣል።",
   "cart_empty_help": "ሱቁን ይጎብኙና የወደዱትን ምርት ይጨምሩ።",
   "cart_promotion_code": "የቅናሽ ኮድ",
   "cart_code_placeholder": "ኮዱን ያስገቡ",
   "cart_code_applied": "{code} ተግባራዊ ሆኗል",
-  "cart_next_step_note": "ዴሊቨሪና ክፍያ በቀጣዩ ደረጃ ይረጋገጣሉ።",
+  "cart_next_step_note": "ደሊቨሪና ክፍያ በቀጣዩ ደረጃ ይረጋገጣሉ።",
   "cart_unavailable": "ዘንቢሉ አይገኝም",
   "status_shop_unavailable": "ይህ ሱቅ ለጊዜው አይገኝም",
   "search_view_all": "ሁሉንም የ{query} ውጤቶች ይመልከቱ",
   "search_for": "{query}ን ይፈልጉ"
   ,"checkout_title": "ትዕዛዝ ማጠናቀቂያ"
-  ,"checkout_intro": "የዴሊቨሪ፣ የክፍያ እና የመገኛ መረጃዎች።"
+  ,"checkout_intro": "የደሊቨሪ፣ የክፍያ እና የመገኛ መረጃዎች።"
   ,"checkout_empty_help": "ወደ ትዕዛዝ ማጠናቀቂያ ከመቀጠልዎ በፊት ምርት ወደ ዘንቢል ይጨምሩ።"
   ,"checkout_contact": "መገኛ መረጃ"
   ,"checkout_first_name": "ስም"
   ,"checkout_last_name": "የአባት ስም"
   ,"checkout_phone": "ስልክ"
   ,"checkout_email": "ኢሜይል"
-  ,"checkout_optional": "አማራጭ"
+  ,"checkout_optional": "የግድ አይደለም"
   ,"checkout_required": "ያስፈልጋል"
   ,"checkout_fulfillment": "የመቀበያ መንገድ"
   ,"checkout_receive_question": "ትዕዛዝዎን እንዴት መቀበል ይፈልጋሉ?"
   ,"checkout_delivery_help": "ትዕዛዙ ወደ አድራሻዎ ይላካል።"
   ,"checkout_pickup_help": "ትዕዛዙን ከሱቁ ይውሰዱ።"
-  ,"checkout_delivery_address": "የዴሊቨሪ አድራሻ"
+  ,"checkout_delivery_address": "የደሊቨሪ አድራሻ"
   ,"checkout_saved_addresses": "የተቀመጡ አድራሻዎች"
   ,"checkout_different_address": "ሌላ አድራሻ ይጠቀሙ"
-  ,"checkout_enter_details": "የዴሊቨሪ መረጃውን ከታች ያስገቡ።"
+  ,"checkout_enter_details": "የደሊቨሪ መረጃውን ከታች ያስገቡ።"
   ,"checkout_city": "ከተማ"
   ,"checkout_street_address": "አድራሻ"
   ,"checkout_landmark": "አቅጣጫ ጠቋሚ"
   ,"checkout_save_address": "ይህን አድራሻ አስቀምጥ"
   ,"checkout_address_label": "የአድራሻ ስም"
   ,"checkout_order_notes": "የትዕዛዝ ማስታወሻ"
-  ,"checkout_delivery_option": "የዴሊቨሪ አማራጭ"
-  ,"checkout_standard_delivery": "መደበኛ ዴሊቨሪ"
+  ,"checkout_delivery_option": "የደሊቨሪ አማራጭ"
+  ,"checkout_standard_delivery": "መደበኛ ደሊቨሪ"
   ,"checkout_free": "ነፃ"
   ,"checkout_payment": "ክፍያ"
-  ,"checkout_pay_on_delivery": "በዴሊቨሪ ጊዜ ይክፈሉ"
+  ,"checkout_pay_on_delivery": "በደሊቨሪ ጊዜ ይክፈሉ"
   ,"checkout_pay_on_delivery_help": "ትዕዛዙ ሲደርስ ይክፈሉ።"
   ,"checkout_no_payment": "የክፍያ አማራጭ የለም።"
   ,"checkout_continue_payment": "ወደ አስተማማኝ ክፍያ ይቀጥሉ"
   ,"checkout_estimated_total": "ግምታዊ ድምር"
   ,"checkout_orders_unavailable": "ትዕዛዝ ለጊዜው አይገኝም።"
-  ,"checkout_fulfillment_unavailable": "ይህ ሱቅ ዴሊቨሪ ወይም ከሱቅ መውሰድን ገና አላዘጋጀም።"
+  ,"checkout_fulfillment_unavailable": "ይህ ሱቅ ደሊቨሪ ወይም ከሱቅ መውሰድን ገና አላዘጋጀም።"
   ,"account_title": "የእኔ መለያ"
   ,"account_welcome": "እንኳን ደህና መጡ፣ {name}"
   ,"account_friend": "ደንበኛ"
@@ -152,7 +152,7 @@
   ,"account_item_count_plural": "{count} ምርቶች"
   ,"order_title": "ትዕዛዝ {reference}"
   ,"order_placed": "{date} የታዘዘ"
-  ,"order_received": "ትዕዛዙ ደርሷል"
+  ,"order_received": "ትዕዛዙ ተመዝግቧል"
   ,"order_preparing": "እየተዘጋጀ ነው"
   ,"order_shipped": "ተልኳል"
   ,"order_delivered": "ደርሷል"
@@ -160,7 +160,7 @@
   ,"order_items": "ምርቶች"
   ,"order_payment_summary": "የክፍያ ማጠቃለያ"
   ,"order_fulfillment": "የመቀበያ መንገድ"
-  ,"order_shipping_address": "የዴሊቨሪ አድራሻ"
+  ,"order_shipping_address": "የደሊቨሪ አድራሻ"
   ,"order_refresh": "ሁኔታውን ሪፍሬሽ አድርግ"
   ,"action_update": "አስተካክል"
   ,"action_view": "ይመልከቱ"
@@ -180,30 +180,30 @@
   ,"catalog_previous": "ቀዳሚ"
   ,"catalog_next": "ቀጣይ"
   ,"checkout_almost_there": "ሊጨርሱ ነው"
-  ,"checkout_shipping_load_error": "የዴሊቨሪ አማራጮችን ማሳየት አልተቻለም። ገጹን አድሰው ይሞክሩ።"
-  ,"checkout_options_unavailable": "የዴሊቨሪ አማራጮች ገና አልተዘጋጁም።"
+  ,"checkout_shipping_load_error": "የደሊቨሪ አማራጮችን ማሳየት አልተቻለም። ገጹን አድሰው ይሞክሩ።"
+  ,"checkout_options_unavailable": "የደሊቨሪ አማራጮች ገና አልተዘጋጁም።"
   ,"checkout_options_retry": "ወደ ዘንቢልዎ ተመልሰው ከጥቂት ጊዜ በኋላ ይሞክሩ።"
-  ,"checkout_contact_delivery": "የደንበኛ እና ዴሊቨሪ መረጃ"
+  ,"checkout_contact_delivery": "የደንበኛ እና ደሊቨሪ መረጃ"
   ,"checkout_full_name": "ሙሉ ስም"
   ,"checkout_method": "የመቀበያ መንገድ"
   ,"checkout_address": "አድራሻ"
   ,"checkout_landmark": "መገኛ ምልክት"
-  ,"checkout_delivery_fee": "የዴሊቨሪ ክፍያ"
+  ,"checkout_delivery_fee": "የደሊቨሪ ክፍያ"
   ,"checkout_pickup_fee": "ከሱቅ የመውሰጃ ክፍያ"
   ,"checkout_pickup_free": "ነፃ · ከሱቁ ይውሰዱ"
-  ,"checkout_no_delivery_fee": "የዴሊቨሪ ክፍያ አማራጭ ገና የለም።"
+  ,"checkout_no_delivery_fee": "የደሊቨሪ ክፍያ አማራጭ ገና የለም።"
   ,"checkout_standard": "መደበኛ"
-  ,"checkout_place_cod": "ትዕዛዝ ያስገቡ · በዴሊቨሪ ጊዜ ይክፈሉ"
+  ,"checkout_place_cod": "ትዕዛዝ ያስገቡ · በደሊቨሪ ጊዜ ይክፈሉ"
   ,"checkout_pay_chapa": "በChapa ይክፈሉ"
-  ,"checkout_online_payment_unavailable": "ለዚህ ትዕዛዝ የኦንላይን ክፍያ አይገኝም። አማራጩ ካለ በዴሊቨሪ ጊዜ መክፈል ይችላሉ።"
+  ,"checkout_online_payment_unavailable": "ለዚህ ትዕዛዝ የኦንላይን ክፍያ አይገኝም። አማራጩ ካለ በደሊቨሪ ጊዜ መክፈል ይችላሉ።"
   ,"checkout_order_summary": "የትዕዛዝ ማጠቃለያ"
   ,"order_success": "ተሳክቷል"
   ,"order_confirmed": "ትዕዛዙ ተረጋግጧል"
   ,"order_thanks": "እናመሰግናለን፣ ትዕዛዝዎ ደርሶናል።"
   ,"order_reference": "የትዕዛዝ መለያ"
   ,"order_total": "የትዕዛዝ ድምር"
-  ,"order_keep_reference": "ሱቁ ስለ ዴሊቨሪ ሊያነጋግርዎ ስለሚችል ይህን ገጽ ወይም ስልክ ቁጥርዎን ያስቀምጡ።"
-  ,"order_unverified_help": "ክፍያውን አሁን ካጠናቀቁ ትዕዛዝዎ ገብቷል። ሙሉ የማረጋገጫ መረጃ ግዢው እንደተጠናቀቀ በዚህ መሣሪያ ላይ ይታያል።"
+  ,"order_keep_reference": "ሱቁ ስለ ደሊቨሪ ሊያነጋግርዎ ስለሚችል ይህን ገጽ ወይም ስልክ ቁጥርዎን ያስቀምጡ።"
+  ,"order_unverified_help": "ክፍያውን አሁን ካጠናቀቁ ትዕዛዝዎ ገብቷል። ሙሉ የማረጋገጫ መረጃ ግዢው እንደተጠናቀቀ እዚህ ላይ ይታያል።"
   ,"product_option": "አማራጭ"
   ,"action_return_home": "ወደ ዋናው ገጽ ተመለስ"
   ,"action_view_order_history": "የትዕዛዝ ታሪክ ይመልከቱ"
@@ -228,7 +228,7 @@
   ,"confirmation_review": "የትዕዛዝ ማረጋገጫ"
   ,"confirmation_review_help": "ሱቁ የምርት መኖርን እና የመቀበያ መረጃዎን ያረጋግጣል።"
   ,"confirmation_preparation": "ዝግጅት"
-  ,"confirmation_preparation_help": "ምርቶችዎ ለዴሊቨሪ ወይም ከሱቅ ለመውሰድ ይዘጋጃሉ።"
+  ,"confirmation_preparation_help": "ምርቶችዎ ለደሊቨሪ ወይም ከሱቅ ለመውሰድ ይዘጋጃሉ።"
   ,"confirmation_updates": "መረጃ"
   ,"confirmation_updates_help": "ስለ ትዕዛዝዎ አዲስ መረጃ ሲኖር ሱቁ ያነጋግርዎታል።"
   ,"confirmation_copy_success": "የትዕዛዝ መለያው ኮፒ ተደርጓል።"
@@ -253,7 +253,7 @@
   ,"contact_empty": "የመገኛ መረጃ ገና አልተጨመረም።"
   ,"contact_send_message": "መልዕክት ይላኩ"
   ,"contact_full_name": "ሙሉ ስም"
-  ,"contact_whatsapp_optional": "ዋትስአፕ (አማራጭ)"
+  ,"contact_whatsapp_optional": "ዋትስአፕ (የግድ አይደለም)"
   ,"contact_message": "መልዕክት"
   ,"contact_send": "መልዕክት ላክ"
   ,"contact_sending": "መልዕክትዎ እየተላከ ነው…"
@@ -263,11 +263,11 @@
   ,"request_title": "ምርት ይጠይቁ"
   ,"request_intro": "ያለዎትን የምርት መረጃ ይላኩ። ሱቁ መኖሩን እና ተመሳሳይ አማራጮችን ይመለከታል።"
   ,"request_product_name": "የምርት ስም"
-  ,"request_brand_optional": "ብራንድ (አማራጭ)"
-  ,"request_link_optional": "የምርት ሊንክ (አማራጭ)"
+  ,"request_brand_optional": "ብራንድ (የግድ አይደለም)"
+  ,"request_link_optional": "የምርት ሊንክ (የግድ አይደለም)"
   ,"request_your_name": "ስምዎ"
   ,"request_contact": "ስልክ ወይም ኢሜይል"
-  ,"request_details_optional": "ተጨማሪ መረጃ (አማራጭ)"
+  ,"request_details_optional": "ተጨማሪ መረጃ (የግድ አይደለም)"
   ,"request_details_placeholder": "መጠን፣ ቀለም፣ ብዛት፣ በጀት ወይም ሌላ ጠቃሚ መረጃ"
   ,"request_send": "የምርት ጥያቄ ላክ"
   ,"request_sending": "ጥያቄዎ እየተላከ ነው…"
@@ -290,20 +290,20 @@
   ,"status_generic_error": "ችግር ተፈጥሯል። እንደገና ይሞክሩ።"
   ,"status_template_unavailable": "ይህ ገጽ ለዚህ ሱቅ ገና አልተዘጋጀም።"
   ,"status_shop_load_failed": "ሱቁን መክፈት አልተቻለም። እባክዎ ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።"
-  ,"account_profile_saved": "የመገለጫዎ መረጃ ተቀምጧል።"
+  ,"account_profile_saved": "የግል መረጃዎ ተቀምጧል።"
   ,"account_address_saved": "የተቀመጠው አድራሻ በክፍያ ጊዜ ለመጠቀም ዝግጁ ነው።"
   ,"account_address_removed": "የተቀመጠው አድራሻ ተወግዷል።"
   ,"account_sign_in_for_order": "ይህን ትዕዛዝ ለማየት ይግቡ።"
-  ,"account_order_not_found": "ይህን ትዕዛዝ በመለያዎ ውስጥ ማግኘት አልቻልንም።"
-  ,"order_device_only": "የዚህ ትዕዛዝ ማረጋገጫ ትዕዛዙ በተላከበት መሣሪያ ላይ ብቻ ይታያል።"
-  ,"catalog_taxonomy_not_found": "ይህ ስብስብ ወይም ምድብ የለም።"
+  ,"account_order_not_found": "ይህን ትዕዛዝ በዚህ አካውንት ውስጥ ማግኘት አልቻልንም።"
+  ,"order_device_only": "የዚህ ትዕዛዝ ማረጋገጫ ትዕዛዙ በተሰጠበት ስልክ ወይም ኮምፒውተር ላይ ብቻ ይታያል።"
+  ,"catalog_taxonomy_not_found": "ይህ ስብስብ ወይም ምድብ አልተገኘም።"
   ,"payment_return_title": "የክፍያ ማረጋገጫ"
   ,"payment_chapa_not_paid": "ክፍያው ገና አልተጠናቀቀም። በቻፓ ክፍያውን ያጠናቅቁና ወደዚህ ይመለሱ።"
   ,"payment_chapa_not_found": "ይህን ክፍያ ማግኘት አልቻልንም። ገንዘብ ከተቀነሰ ሱቁን ያነጋግሩ።"
   ,"payment_chapa_verification_failed": "ክፍያውን በቻፓ ማረጋገጥ አልቻልንም። ከጥቂት ጊዜ በኋላ ይሞክሩ።"
   ,"payment_reference_missing": "የክፍያ ማጣቀሻው አልተገኘም። ከዘንቢልዎ ክፍያውን እንደገና ይጀምሩ።"
   ,"payment_reference_mismatch": "የክፍያ ማጣቀሻው ከዚህ ዘንቢል ጋር አይዛመድም።"
-  ,"payment_online_unavailable_shop": "የመስመር ላይ ክፍያ ለዚህ ሱቅ አሁን አይገኝም።"
+  ,"payment_online_unavailable_shop": "የኦንላይን ክፍያ ለዚህ ሱቅ አሁን አይገኝም።"
   ,"payment_cart_not_found": "ለዚህ ክፍያ ዘንቢል አልተገኘም። ዘንቢልዎን ከፍተው ክፍያውን እንደገና ይሞክሩ።"
   ,"payment_redirecting": "እያስተላለፈ ነው…"
   ,"status_offline_title": "ኢንተርኔት የለም"
@@ -380,13 +380,13 @@
   ,"catalog_collection_intro": "በጥንቃቄ የተመረጡ ምርቶችን በዚህ ስብስብ ውስጥ ይመልከቱ።"
   ,"catalog_explore_more": "ተጨማሪ ይመልከቱ"
   ,"catalog_view_all_products": "ሁሉንም ምርቶች ይመልከቱ"
-  ,"account_profile_eyebrow": "የእርስዎ መገለጫ"
+  ,"account_profile_eyebrow": "የግል መረጃ"
   ,"account_profile_help": "ለትዕዛዝ የሚጠቀሙትን የመገኛ መረጃ ወቅታዊ ያድርጉ።"
   ,"account_first_name": "ስም"
   ,"account_last_name": "የአባት ስም"
   ,"account_email": "ኢሜይል"
   ,"account_phone": "ስልክ"
-  ,"account_optional": "አማራጭ"
+  ,"account_optional": "የግድ አይደለም"
   ,"account_email_locked": "ኢሜይል መቀየር አሁን አይቻልም።"
   ,"account_save_details": "መረጃውን አስቀምጥ"
   ,"account_order_pages": "የትዕዛዝ ታሪክ ገጾች"
@@ -414,9 +414,9 @@
   ,"account_save_address_help": "ለፈጣን ትዕዛዝ የመላኪያ መረጃዎን ያስቀምጡ።"
   ,"account_open": "ክፈት"
   ,"account_save_address": "አድራሻውን አስቀምጥ"
-  ,"account_profile_details": "የመገለጫ መረጃ"
+  ,"account_profile_details": "የግል መረጃ"
   ,"account_contact_details": "የመገኛ መረጃ"
-  ,"account_save_profile": "መገለጫውን አስቀምጥ"
+  ,"account_save_profile": "መረጃውን አስቀምጥ"
   ,"account_guest_heading": "ትዕዛዞችዎ በአንድ ቦታ።"
   ,"account_guest_intro": "ትዕዛዞችዎን ለመከታተል፣ አድራሻዎችን ለመጠቀም እና በፍጥነት ለማዘዝ ይግቡ።"
   ,"account_continue_guest": "እንደ እንግዳ ቀጥል"
@@ -481,7 +481,7 @@
   ,"checkout_signed_in_as": "እንደ {email} ገብተዋል"
   ,"checkout_order_only_changes": "አድራሻውን ካላስቀመጡ ለውጦቹ ለዚህ ትዕዛዝ ብቻ ይሆናሉ።"
   ,"checkout_faster_next_time": "በሚቀጥለው ጊዜ በፍጥነት ማዘዝ ይፈልጋሉ?"
-  ,"checkout_chapa_help": "በመስመር ላይ በደህንነት ይክፈሉ። ኢሜይል ያስፈልጋል።"
+  ,"checkout_chapa_help": "ኦንላይን በደህንነት ይክፈሉ። ኢሜይል ያስፈልጋል።"
   ,"checkout_final_total_note": "የመጨረሻው ድምር ትዕዛዙን ሲያስገቡ ይረጋገጣል።"
   ,"product_fallback_name": "ምርት"
   ,"product_description_fallback": "ለዕለታዊ አጠቃቀምዎ በጥንቃቄ የተመረጠ።"
@@ -540,7 +540,7 @@
   ,"checkout_customer_fulfillment": "የደንበኛና የማድረሻ መረጃ"
   ,"checkout_required_fields": "አስፈላጊ መስኮች"
   ,"checkout_account_benefit": "አድራሻዎችንና የትዕዛዝ ታሪክን ማስቀመጥ ይፈልጋሉ?"
-  ,"checkout_chapa_short": "ደህንነቱ የተጠበቀ የመስመር ላይ ክፍያ።"
+  ,"checkout_chapa_short": "ደህንነቱ የተጠበቀ የኦንላይን ክፍያ።"
   ,"home_featured_fallback": "በመደብሩ ከሚገኙ አዳዲስ ምርቶች አንዱን በቅርብ ይመልከቱ።"
   ,"home_featured_product": "ተመራጭ ምርት"
   ,"home_show_featured": "{product}ን አሳይ"
@@ -601,14 +601,14 @@
   ,"checkout_pickup_unavailable": "ይህ ሱቅ አሁን በአካል መጥቶ መውሰድን አያቀርብም።"
   ,"checkout_phone_required": "ሱቁ ትዕዛዝዎን እንዲያረጋግጥ የስልክ ቁጥር ያስገቡ።"
   ,"checkout_address_required": "የማድረሻ አድራሻውን እና ከተማውን ያስገቡ።"
-  ,"checkout_landmark_required": "ለዚህ ማድረሻ በአቅራቢያ ያለ መለያ ቦታ ያክሉ።"
+  ,"checkout_landmark_required": "ለዚህ ማድረሻ በአቅራቢያ ያለ መለያ ቦታ ይጨምሩ።"
   ,"inquiry_type_unsupported": "ትክክለኛ የጥያቄ ዓይነት መርጠው እንደገና ይሞክሩ።"
   ,"cart_item_missing": "ያ የዘንቢል ዕቃ አልተገኘም። ገጹን ሪፍሬሽ አድርገው እንደገና ይሞክሩ።"
   ,"cart_remove_failed": "ያንን ዕቃ ማስወገድ አልቻልንም። እንደገና ይሞክሩ።"
-  ,"product_choose_option": "ወደ ዘንቢልዎ ከማከልዎ በፊት የምርቱን ምርጫዎች ይምረጡ።"
-  ,"checkout_email_valid_required": "በመስመር ላይ በደህንነት ለመክፈል ትክክለኛ ኢሜይል ያስገቡ።"
+  ,"product_choose_option": "ወደ ዘንቢልዎ ከመጨመርዎ በፊት የምርቱን ምርጫዎች ይምረጡ።"
+  ,"checkout_email_valid_required": "ኦንላይን በደህንነት ለመክፈል ትክክለኛ ኢሜይል ያስገቡ።"
   ,"checkout_phone_valid_required": "ትክክለኛ የስልክ ቁጥር ያስገቡ።"
-  ,"cart_items_changed": "ዘንቢልዎ ተቀይሯል። እንደገና ከመክፈልዎ በፊት ዕቃዎቹን ይፈትሹ።"
+  ,"cart_items_changed": "ዘንቢልዎ ተቀይሯል። እንደገና ከመክፈልዎ በፊት ዕቃዎቹን ያረጋግጡ።"
   ,"status_shop_not_found": "ይህን ሱቅ ማግኘት አልቻልንም።"
   ,"status_try_again_later": "እባክዎ ቆይተው እንደገና ይሞክሩ።"
 }

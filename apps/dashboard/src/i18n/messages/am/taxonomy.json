@@ -94,7 +94,7 @@
       "copyId": "የ{entity} መለያ ኮፒ አድርግ",
       "copyHandle": "መለያ ኮፒ አድርግ",
       "delete": "{entity} አጥፋ",
-      "triggerAria": "ለ{name} ተግባራትን ክፈት"
+      "triggerAria": "የ{name} አማራጮች"
     },
     "selectAria": "{name} ምረጥ",
     "selectAllAria": "ሁሉንም የሚታዩ {entityPlural} ምረጥ",
@@ -119,9 +119,9 @@
   },
   "delete": {
     "title": "{entity} አጥፋ",
-    "desc": "እርግጠኛ ነዎት \"{name}\" ማጥፋት ይፈልጋሉ? ይህ ተግባር ሊመለስ አይችልም።",
+    "desc": "እርግጠኛ ነዎት \"{name}\" ማጥፋት ይፈልጋሉ? ይህን መመለስ አይቻልም።",
     "batchTitle": "{entityPlural} አጥፋ",
-    "batchDesc": "እርግጠኛ ነዎት {count} የተመረጡ {entityPlural} ማጥፋት ይፈልጋሉ? ይህ ተግባር ሊመለስ አይችልም።"
+    "batchDesc": "እርግጠኛ ነዎት {count} የተመረጡ {entityPlural} ማጥፋት ይፈልጋሉ? ይህን መመለስ አይቻልም።"
   },
   "form": {
     "unlockHandle": "መለያን ለመቀየር ክፈት",
@@ -152,8 +152,8 @@
     "visibleCategoryDesc": "የተደበቁ ምድቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በመደብርዎ ላይ ለደንበኞች አይታዩም።",
     "visibleCollectionDesc": "የተደበቁ ስብስቦች በዳሽቦርዱ ይቆያሉ ነገር ግን በመደብርዎ ላይ ለደንበኞች አይታዩም።",
     "seo": "SEO",
-    "seoCategoryHelp": "ከምድቡ ጋር የሚቀመጥ አማራጭ ርዕስ እና መግለጫ።",
-    "seoCollectionHelp": "ከስብስቡ ጋር የሚቀመጥ አማራጭ ርዕስ እና መግለጫ።",
+    "seoCategoryHelp": "ከምድቡ ጋር የሚቀመጥ ተጨማሪ ርዕስ እና መግለጫ (የግድ አይደለም)።",
+    "seoCollectionHelp": "ከስብስቡ ጋር የሚቀመጥ ተጨማሪ ርዕስ እና መግለጫ (የግድ አይደለም)።",
     "seoTitle": "የSEO ርዕስ",
     "seoDescription": "የSEO መግለጫ",
     "seoTitleCategoryPlaceholder": "ጫማዎችን ይግዙ",
