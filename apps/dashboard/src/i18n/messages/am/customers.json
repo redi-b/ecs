@@ -2,8 +2,8 @@
   "title": "ደንበኞች",
   "description": "ደንበኞችን፣ የመገናኛ መረጃን እና የትዕዛዝ ታሪክን ይመልከቱ።",
   "error": {
-    "loadTitle": "ደንበኞችን መጫን አልተቻለም",
-    "loadDescription": "የደንበኞች ዝርዝር ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።"
+    "loadTitle": "ደንበኞችን መክፈት አልተቻለም",
+    "loadDescription": "የደንበኞች ዝርዝር ለጊዜው አይገኝም። ሪፍሬሽ አድርገው እንደገና ይሞክሩ።"
   },
   "detail": {
     "shellDescription": "የዚህ ደንበኛ ትዕዛዞች እና የደሊቨሪ አድራሻዎች።",
@@ -25,7 +25,7 @@
     "firstName": "የመጀመሪያ ስም",
     "lastName": "የአባት ስም",
     "emailDesc": "አማራጭ። ካለ ደረሰኝ ለመላክ ያገለግላል።",
-    "phoneDesc": "ለትዕዛዝ፣ ለድርሰት እና ደንበኛን ለመፈለግ ዋና መገኛ።",
+    "phoneDesc": "ለትዕዛዝ፣ ለደሊቨሪ እና ደንበኛን ለመለየት ዋና ስልክ ቁጥር።",
     "companyPlaceholder": "ከተፈለገ ብቻ",
     "error": {
       "invalid": "ኢሜይሉን እና ሌሎች ቦታዎችን አረጋግጠው እንደገና ይሞክሩ።",
@@ -35,11 +35,11 @@
       "unavailableEdit": "በዚህ ሰዓት ለውጦቹን መቀየር አልተቻለም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።",
       "unavailableCreate": "በዚህ ሰዓት ደንበኛውን ማከል አልተቻለም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።",
       "credentials": "የደንበኛ ለውጦች ለጊዜው አይሰሩም። እባክዎ ድጋፍ ሰጪዎችን ያግኙ።",
-      "fallbackEdit": "የደንበኛ መረጃን ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
-      "fallbackCreate": "ደንበኛውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።"
+      "fallbackEdit": "የደንበኛ መረጃን መቀየር አልተቻለም። እንደገና ይሞክሩ።",
+      "fallbackCreate": "ደንበኛውን መመዝገብ አልተቻለም። እንደገና ይሞክሩ።"
     },
     "enterPhone": "የደንበኛውን ስልክ ቁጥር ያስገቡ።",
-    "toastUpdated": "ለውጦቹ ተቀይረዋል።",
+    "toastUpdated": "ለውጦቹ ተቀምጠዋል።",
     "toastCreated": "ደንበኛው ተመዝግቧል።",
     "saveChanges": "ለውጦቹን አስቀምጥ",
     "firstNamePlaceholder": "ስም",
@@ -52,12 +52,12 @@
     "emptyMessage": "ደንበኞች የመጀመሪያ ትዕዛዛቸውን ሲያደርጉ ወይም እርስዎ ሲያክሏቸው እዚህ ይዘረዘራሉ።",
     "filteredEmptyTitle": "የሚዛመድ ደንበኛ የለም",
     "filteredEmptyMessage": "ሌላ ስም፣ ኢሜይል፣ ስልክ ወይም ድርጅት ይሞክሩ።",
-    "copyEmails": "ኢሜይሎችን ቅዳ",
-    "copyPhones": "ስልኮችን ቅዳ",
+    "copyEmails": "ኢሜይሎችን ኮፒ አድርግ",
+    "copyPhones": "ስልኮችን ኮፒ አድርግ",
     "searchLabel": "ደንበኞችን ፈልግ",
     "searchPlaceholder": "ደንበኞችን ፈልግ…",
     "clearSearch": "ፍለጋውን አጽዳ",
-    "selectedSummary": "ተመርጧል",
+    "selectedSummary": "የተመረጠ",
     "emails": "ኢሜይሎች",
     "phoneNumbers": "የስልክ ቁጥሮች",
     "addressesCount": "{count} አድራሻዎች",
@@ -73,8 +73,8 @@
     "count": "{count} ትዕዛዞች",
     "countOne": "1 ትዕዛዝ",
     "viewAll": "በትዕዛዞች ውስጥ ይመልከቱ",
-    "loadFailed": "የትዕዛዝ ታሪክ ለጊዜው አይገኝም። ያድሱ እና እንደገና ይሞክሩ።",
-    "loadFailedHint": "የቅርብ ጊዜ ትዕዛዞችን መጫን አልተቻለም።",
+    "loadFailed": "የትዕዛዝ ታሪክ ለጊዜው አይገኝም። ሪፍሬሽ አድርገው እንደገና ይሞክሩ።",
+    "loadFailedHint": "የቅርብ ጊዜ ትዕዛዞችን መክፈት አልተቻለም።",
     "showingRecent": "ከ{total} የቅርብ ጊዜ ትዕዛዞች {shown} በማሳየት ላይ።"
   },
   "addresses": {
@@ -90,9 +90,9 @@
     "editTitle": "አድራሻ አስተካክል",
     "addTitle": "አድራሻ ጨምር",
     "formDesc": "ለአካባቢ ደሊቨሪ ቦታ። ኢትዮጵያ እንደተገመተ ነው።",
-    "saveFailedTitle": "አድራሻውን መቀየር አልተቻለም",
+    "saveFailedTitle": "አድራሻውን ማስቀመጥ አልተቻለም",
     "enterStreetOrCity": "የመንገድ አድራሻ ወይም ከተማ ያስገቡ።",
-    "toastUpdated": "አድራሻው ተቀይሯል።",
+    "toastUpdated": "አድራሻው ተቀምጧል።",
     "toastAdded": "አድራሻው ተጨምሯል።",
     "label": "ስያሜ",
     "labelPlaceholder": "ቤት፣ ስራ…",
@@ -115,11 +115,11 @@
     "recipientPhoneHint": "በደሊቨሪ ቦታ የሚገኝ ስልክ።",
     "walkInBlocked": "የ walk-in / ከመስመር ውጭ ሽያጭ መገለጫዎች አድራሻ ማከማቸት አይችሉም። ለደሊቨሪ እውነተኛ ደንበኛ ይጠቀሙ።",
     "saving": "በማስቀመጥ ላይ…",
-    "saveAddress": "አድራሻ ቀይር",
+    "saveAddress": "አድራሻውን አስቀምጥ",
     "remove": "አስወግድ",
     "removeTitle": "ይህን አድራሻ ማስወገድ ይፈልጋሉ?",
     "removeDescription": "አድራሻው ከደንበኛው ይወገዳል። ነባር ትዕዛዞች የደሊቨሪ ዝርዝራቸውን ይይዛሉ።",
-    "removing": "እየተወገደ…",
+    "removing": "እየጠፋ ነው…",
     "toastRemoved": "አድራሻው ተወግዷል።",
     "toastRemoveFailed": "አድራሻውን ማስወገድ አልተቻለም።",
     "errorCustomerNotFound": "ደንበኛው አልተገኘም።",
@@ -127,6 +127,6 @@
     "errorInvalid": "የአድራሻ ዝርዝሮችን ይመልከቱ እና እንደገና ይሞክሩ።",
     "errorWalkIn": "የ walk-in ሽያጭ መገለጫዎች የተቀመጠ አድራሻ ሊኖራቸው አይችልም።",
     "errorUnavailable": "የደንበኛ አድራሻዎች ለጊዜው አይገኙም። እንደገና ይሞክሩ።",
-    "errorSaveFailed": "አድራሻውን መቀየር አልተቻለም። እንደገና ይሞክሩ።"
+    "errorSaveFailed": "አድራሻውን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።"
   }
 }
