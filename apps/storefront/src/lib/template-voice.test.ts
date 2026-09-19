@@ -23,6 +23,15 @@ test("Luvia resolves its approved voice while NexaHub uses the shared fallback",
   );
   assert.equal(
     resolveTemplateVoiceMessage({
+      fallback: "ወደ ዘንቢል ጨምር",
+      locale: "am",
+      messageId: "action_add_to_cart",
+      templateKey: "luvia.v1",
+    }),
+    "ወደ ዘንቢል ጨምር",
+  );
+  assert.equal(
+    resolveTemplateVoiceMessage({
       fallback: "Add to cart",
       locale: "am",
       messageId: "action_add_to_cart",

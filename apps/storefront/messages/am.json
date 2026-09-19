@@ -1,12 +1,12 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "nav_home": "መነሻ",
+  "nav_home": "ዋና ገጽ",
   "nav_shop": "ሱቅ",
   "nav_about": "ስለ እኛ",
   "nav_contact": "ያግኙን",
   "nav_account": "መለያ",
   "search_too_long": "አጠር ያለ ፍለጋ ይጠቀሙ።",
-  "a11y_shop_home": "የ{shop} መነሻ ገጽ",
+  "a11y_shop_home": "የ{shop} ዋና ገጽ",
   "footer_design_by_ecs": "የመደብር ዲዛይን በECS",
   "footer_web_design_by": "የድረ ገጽ ዲዛይን በ{studio}",
   "home_luvia_hero_image_alt": "ሞዴል የተመረጡ ምርቶችን ስታቀርብ",
@@ -205,7 +205,7 @@
   ,"order_keep_reference": "ሱቁ ስለ ዴሊቨሪ ሊያነጋግርዎ ስለሚችል ይህን ገጽ ወይም ስልክ ቁጥርዎን ያስቀምጡ።"
   ,"order_unverified_help": "ክፍያውን አሁን ካጠናቀቁ ትዕዛዝዎ ገብቷል። ሙሉ የማረጋገጫ መረጃ ግዢው እንደተጠናቀቀ በዚህ መሣሪያ ላይ ይታያል።"
   ,"product_option": "አማራጭ"
-  ,"action_return_home": "ወደ መነሻ ተመለስ"
+  ,"action_return_home": "ወደ ዋናው ገጽ ተመለስ"
   ,"action_view_order_history": "የትዕዛዝ ታሪክ ይመልከቱ"
   ,"action_copy_reference": "የትዕዛዝ መለያውን ኮፒ አድርግ"
   ,"action_copy": "ኮፒ አድርግ"

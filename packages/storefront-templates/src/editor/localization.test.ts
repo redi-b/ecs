@@ -43,10 +43,33 @@ test("appearance settings remain shared rather than becoming translatable copy",
 });
 
 test("provides conservative Amharic defaults for stock template labels", () => {
-  const defaults = getStorefrontTemplateTranslationDefaults("nexahub@1", "am");
-  assert.deepEqual(defaults["header.navigation.0.label"], {
+  const nexaDefaults = getStorefrontTemplateTranslationDefaults("nexahub@1", "am");
+  assert.deepEqual(nexaDefaults["header.navigation.0.label"], {
     source: "Home",
-    value: "መነሻ",
+    value: "ዋና ገጽ",
   });
+  assert.deepEqual(nexaDefaults["home.contact.title"], {
+    source: "Any Questions? Let's Get in Touch!",
+    value: "ጥያቄ አለዎት? ያግኙን!",
+  });
+
+  const luviaDefaults = getStorefrontTemplateTranslationDefaults("luvia@1", "am");
+  assert.deepEqual(luviaDefaults["header.navigation.0.label"], {
+    source: "Home",
+    value: "ዋና ገጽ",
+  });
+  assert.deepEqual(luviaDefaults["footer.quickLinks.4.label"], {
+    source: "Wishlist",
+    value: "የተቀመጡ ምርቶች",
+  });
+  assert.deepEqual(luviaDefaults["footer.inquiry.title"], {
+    source: "Do you have any inquiries for us?",
+    value: "የሚጠይቁት ጥያቄ አለዎት?",
+  });
+  assert.deepEqual(luviaDefaults["home.cta.primary.label"], {
+    source: "Shop Now",
+    value: "አሁኑኑ ይግዙ",
+  });
+
   assert.deepEqual(getStorefrontTemplateTranslationDefaults("unknown@1", "am"), {});
 });
