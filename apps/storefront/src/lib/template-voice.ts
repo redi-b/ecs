@@ -15,11 +15,9 @@ const overrides: Record<"luvia" | "nexahub", TemplateVoiceOverrides> = {
   luvia: {
     action_add_to_cart: {
       en: "Add to bag",
-      am: "ወደ ቦርሳ ጨምር",
     },
     action_continue_shopping: {
       en: "Keep browsing",
-      am: "መግዛትዎን ይቀጥሉ",
     },
   },
   nexahub: {},
