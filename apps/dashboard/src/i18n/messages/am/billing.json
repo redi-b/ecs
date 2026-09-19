@@ -2,7 +2,7 @@
   "title": "ሂሳብ እና ክፍያ",
   "description": "የዕቅድ ዝርዝሮችን፣ የደንበኝነት ምዝገባ ሁኔታን እና የቅርብ ጊዜ ደረሰኞችን ይገምግሙ።",
   "error": {
-    "loadTitle": "የክፍያ መረጃዎችን መጫን አልተቻለም"
+    "loadTitle": "የክፍያ መረጃዎችን መክፈት አልተቻለም"
   },
   "empty": {
     "title": "ክፍያ ለዚህ ሱቅ ገቢር አልተደረገም",
@@ -10,7 +10,7 @@
   },
   "unavailable": {
     "title": "ክፍያ አይገኝም",
-    "description": "ለዚህ ሱቅ የዕቅድ ዝርዝሮችን መጫን አልተቻለም። እንደገና ይሞክሩ፣ ወይም ከመለያ ክፍያን ይክፈቱ።",
+    "description": "ለዚህ ሱቅ የዕቅድ ዝርዝሮችን መክፈት አልተቻለም። እንደገና ይሞክሩ፣ ወይም ከመለያ ክፍያን ይክፈቱ።",
     "reload": "ክፍያን እንደገና ጫን"
   },
   "plan": {
@@ -102,19 +102,19 @@
     "other": "ሌላ ባንክ ወይም ዋሌት",
     "sendTo": "ክፍያውን ወደዚህ ይላኩ",
     "amount": "ትክክለኛው መጠን",
-    "copyAmount": "መጠን ቅዳ",
-    "copyAccount": "አካውንት ቅዳ",
+    "copyAmount": "መጠኑን ኮፒ አድርግ",
+    "copyAccount": "የሂሳብ ቁጥሩን ኮፒ አድርግ",
     "reference": "የግብይት ቁጥር ወይም የደረሰኝ ሊንክ",
     "referencePlaceholder": "ቁጥሩን ወይም የደረሰኝ ሊንኩን ያስገቡ",
     "referenceHelp": "በተሳካው የTelebirr ክፍያ ላይ የሚታየውን የግብይት ቁጥር ያስገቡ።",
     "cbeReferenceHelp": "ከCBE የደረሰኝ ሊንኩን ይለጥፉ። የግብይት ቁጥር ብቻ እስካሁን በራስ-ሰር ሊረጋገጥ አይችልም።",
     "findReference": "ይህን የት አገኛለሁ?",
-    "telebirrHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ እና Transaction Numberን ይቅዱ።",
+    "telebirrHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ እና Transaction Numberን ኮፒ ያድርጉ።",
     "cbeHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ፣ Share ወይም Receipt ይጫኑ እና የደረሰኙን ሊንክ እዚህ ይለጥፉ።",
     "reviewTitle": "ከላኩ በኋላ",
     "reviewDescription": "ክፍያውን እናረጋግጣለን፣ ሲፀድቅም እናሳውቅዎታለን።",
-    "copied": "ተቀድቷል።",
-    "copyFailed": "መቅዳት አልተቻለም። መርጠው በእጅ ይቅዱ።",
+    "copied": "ኮፒ ተደርጓል።",
+    "copyFailed": "ኮፒ ማድረግ አልተቻለም። መርጠው በእጅ ኮፒ ያድርጉ።",
     "steps": {
       "openApp": {
         "title": "{provider}ን ይክፈቱ",
@@ -125,17 +125,17 @@
         "description": "{amount}ን ከላይ ወደሚታየው አካውንት ይላኩ።"
       },
       "copyReference": {
-        "title": "የደረሰኙን መረጃ ይቅዱ",
-        "description": "ክፍያው ከተሳካ በኋላ የግብይት ቁጥሩን ወይም የደረሰኙን ሊንክ ይቅዱ።"
+        "title": "የደረሰኙን መረጃ ኮፒ ያድርጉ",
+        "description": "ክፍያው ከተሳካ በኋላ የግብይት ቁጥሩን ወይም የደረሰኙን ሊንክ ኮፒ ያድርጉ።"
       }
     },
     "submit": "ክፍያ ያስገቡ",
-    "submitting": "በማስገባት ላይ…"
+    "submitting": "ክፍያው እየተላከ ነው…"
   },
   "invoice": {
     "planPayment": "የዕቅድ ክፍያ",
     "planUpgrade": "የዕቅድ ማሻሻያ",
-    "open": "ክፍት የክፍያ መጠየቂያ",
+    "open": "ያልተከፈለ ደረሰኝ",
     "generic": "የክፍያ መጠየቂያ",
     "unpaid": "ያልተከፈለ",
     "paid": "የተከፈለ",
@@ -144,8 +144,8 @@
   "primary": {
     "currentPlan": "የአሁኑ ዕቅድ",
     "keepPlan": "ይህን ዕቅድ አቆይ",
-    "renewPlan": "ዕቅድ አድስ",
-    "renewPeriod": "ጊዜ አድስ",
+    "renewPlan": "ዕቅዱን አድስ",
+    "renewPeriod": "ጊዜውን አድስ",
     "changeScheduled": "ለውጥ ተይዟል",
     "switchAfter": "ከ{date} በኋላ ቀይር",
     "switchTo": "ወደ {name} ቀይር",
@@ -158,8 +158,8 @@
     "alreadyOnPlan": "አስቀድመው በዚህ ዕቅድ ላይ ነዎት።",
     "finishPayment": "ዕቅዱን ለማግበር ወይም ለማራዘም ክፍያውን ያጠናቁ።",
     "scheduledKeep": "ወደ {name} መቀየር ተይዟል። ለመሰረዝ ይህን ዕቅድ ያቆዩ።",
-    "endingSoon": "የአሁኑ ጊዜዎ በቅርብ ያበቃል። በዚህ ዕቅድ ለመቆየት ያድሱ።",
-    "periodEnded": "የተከፈለ ጊዜዎ አልቋል። በዚህ ዕቅድ ለመቀጠል ያድሱ።",
+    "endingSoon": "የአሁኑ የአገልግሎት ጊዜዎ ሊያበቃ ተቃርቧል። በዚህ ዕቅድ ለመቀጠል ዕቅዱን ያድሱ።",
+    "periodEnded": "የተከፈለበት ጊዜዎ አልቋል። በዚህ ዕቅድ ለመቀጠል ዕቅዱን ያድሱ።",
     "alreadyScheduled": "አስቀድሞ ተይዟል። እስከ {date} በ{current} ላይ ይቆያሉ።",
     "noRefundKeepUntil": "ተመላሽ የለም። እስከ {date} {current} ይቆያሉ፣ ከዚያ ወደ {next} ይሄዳሉ።",
     "switchNowPeriodEnded": "አሁን ወደ {name} ይቀይሩ። የተከፈለ ጊዜዎ አስቀድሞ አልቋል።",
@@ -170,7 +170,7 @@
     "invoiceReady": "የክፍያ መጠየቂያ ዝግጁ ነው።",
     "trialStarted": "የ{days} ቀን ነፃ ሙከራዎ ተጀምሯል።",
     "paymentConfirmed": "ክፍያ ተረጋግጧል።",
-    "openingCheckout": "ደህንነቱ የተጠበቀ ክፍያ በመክፈት ላይ…",
+    "openingCheckout": "ደህንነቱ የተጠበቀ የክፍያ ገጽ እየከፈተ ነው…",
     "paymentSubmitted": "ክፍያው ለማረጋገጥ ተልኳል።",
     "paymentRejected": "ደረሰኙ ከዚህ ክፍያ ጋር አይዛመድም። መጠኑን፣ ተቀባዩን እና የግብይት ቁጥሩን ያረጋግጡ።",
     "switchesOn": "በ{date} ወደ ነፃ ዕቅድ ይቀየራል።",
@@ -185,7 +185,7 @@
     "manualPayment": "በእጅ የሚከፈል ክፍያ"
   },
   "actions": {
-    "manageSettings": "የሱቅ ማስተካከያዎችን ያስተዳድሩ"
+    "manageSettings": "የሱቅ ማስተካከያዎችን ይመልከቱ"
   },
   "footer": {
     "shopSettings": "የሱቅ ማስተካከያዎች",
