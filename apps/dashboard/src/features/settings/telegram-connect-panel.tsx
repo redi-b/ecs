@@ -412,10 +412,9 @@ export function TelegramConnectPanel({
                 </span>
                 <div className="min-w-0 flex-1 space-y-3">
                   <div>
-                    <p className="text-sm font-semibold">Waiting for Telegram</p>
+                    <p className="text-sm font-semibold">{t("settings.telegram.waitingTitle")}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Open the bot chat and tap <strong className="text-foreground">Start</strong>.
-                      This page checks for you every few seconds.
+                      {t("settings.telegram.waitingBody")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -428,7 +427,7 @@ export function TelegramConnectPanel({
                           window.open(session.deepLink!, "_blank", "noopener,noreferrer")
                         }
                       >
-                        Open Telegram
+                        {t("settings.telegram.openTelegram")}
                         <AppIcons.externalLink className="size-3.5" />
                       </Button>
                     ) : null}
@@ -440,7 +439,7 @@ export function TelegramConnectPanel({
                       variant="outline"
                       onClick={refreshSession}
                     >
-                      Check status
+                      {t("settings.notifications.telegramPanel.refreshAccounts")}
                     </Button>
                     {session?.deepLink ? (
                       <Button
@@ -451,7 +450,7 @@ export function TelegramConnectPanel({
                         onClick={() => void copyDeepLink()}
                       >
                         <AppIcons.copy className="size-3.5" />
-                        Copy link
+                        {t("settings.telegram.copyLink")}
                       </Button>
                     ) : null}
                     <Button
@@ -462,7 +461,7 @@ export function TelegramConnectPanel({
                       variant="ghost"
                       onClick={cancelSession}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </div>
                 </div>
@@ -476,9 +475,11 @@ export function TelegramConnectPanel({
                 <AppIcons.notifications className="size-5 text-muted-foreground" />
               </div>
               <div className="max-w-sm space-y-1">
-                <p className="text-sm font-medium text-foreground">No accounts connected</p>
+                <p className="text-sm font-medium text-foreground">
+                  {t("settings.notifications.telegramPanel.emptyTitle")}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Link a Telegram account to get alerts for orders, payments, and more.
+                  {t("settings.notifications.telegramPanel.emptyDescription")}
                 </p>
               </div>
               <Button
@@ -487,7 +488,7 @@ export function TelegramConnectPanel({
                 type="button"
                 onClick={() => setConnectDialogOpen(true)}
               >
-                Connect Telegram
+                {t("settings.notifications.telegramPanel.connectTelegram")}
               </Button>
             </div>
           ) : null}

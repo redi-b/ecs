@@ -159,39 +159,44 @@ describe("i18n message catalogs", () => {
 
       // 2. Ban ማደስ for refresh (allow billing renewal)
       if (
-        /(ማደስ|ያድሱ|አድስ|ታደሰ|እየታደሰ)/.test(am) &&
+        /(ማደስ|ያድሱ|አድስ|አድሰው|ታደሰ|እየታደሰ|ታድሷል)/.test(am) &&
         !/renew|subscription|period/i.test(en) &&
         !key.startsWith("billing.")
       ) {
         violations.push(`${key}: banned refresh root in "${am}"`);
       }
 
-      // 3. Ban በመጫን ላይ for data loading
-      if (/በመጫን ላይ/.test(am)) {
+      // 3. Ban በመጫን ላይ and አልተጫኑ/አልተጫነ for data loading
+      if (/በመጫን ላይ|አልተጫኑ|አልተጫነ/.test(am)) {
         violations.push(`${key}: banned loading root in "${am}"`);
       }
 
-      // 4. Ban የመስመር እቃ calque
+      // 4. Ban መስክ / መስኮች calque for form/input fields
+      if (/(መስክ|መስኮች)/.test(am)) {
+        violations.push(`${key}: banned form field calque in "${am}"`);
+      }
+
+      // 5. Ban የመስመር እቃ calque
       if (/የመስመር እቃ/.test(am)) {
         violations.push(`${key}: banned line item calque in "${am}"`);
       }
 
-      // 5. Ban የመስመር ላይ / ከመስመር ውጭ calques
+      // 6. Ban የመስመር ላይ / ከመስመር ውጭ calques
       if (/(የ|በ|ከ)?መስመር\s*(ላይ|ውጭ)/.test(am)) {
         violations.push(`${key}: banned online/offline calque in "${am}"`);
       }
 
-      // 6. Ban አማራጭ for optional form fields
+      // 7. Ban አማራጭ for optional form fields
       if (/optional/i.test(en) && /አማራጭ/.test(am)) {
         violations.push(`${key}: optional translated as አማራጭ in "${am}"`);
       }
 
-      // 7. Ban em dashes in copy (allow standalone placeholder "—")
+      // 8. Ban em dashes in copy (allow standalone placeholder "—")
       if (/—/.test(am) && am.trim() !== "—") {
         violations.push(`${key}: em-dash in copy "${am}"`);
       }
 
-      // 8. Ban profile/stock/logo/browse calques
+      // 9. Ban profile/stock/logo/browse calques
       if (/መገለጫ/.test(am)) {
         violations.push(`${key}: banned መገለጫ calque in "${am}"`);
       }
@@ -225,11 +230,14 @@ describe("i18n message catalogs", () => {
           if (/(ያክሉ|ማከል|ያክሏ|ለማከል|ያክላል|አክሉ|አክል)/.test(am)) {
             violations.push(`${sfKey}: banned add root in "${am}"`);
           }
-          if (/(ማደስ|ያድሱ|አድስ|ታደሰ|እየታደሰ)/.test(am)) {
+          if (/(ማደስ|ያድሱ|አድስ|አድሰው|ታደሰ|እየታደሰ|ታድሷል)/.test(am)) {
             violations.push(`${sfKey}: banned refresh root in "${am}"`);
           }
-          if (/በመጫን ላይ/.test(am)) {
+          if (/በመጫን ላይ|አልተጫኑ|አልተጫነ/.test(am)) {
             violations.push(`${sfKey}: banned loading root in "${am}"`);
+          }
+          if (/(መስክ|መስኮች)/.test(am)) {
+            violations.push(`${sfKey}: banned form field calque in "${am}"`);
           }
           if (/የመስመር እቃ/.test(am)) {
             violations.push(`${sfKey}: banned line item calque in "${am}"`);

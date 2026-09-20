@@ -546,7 +546,9 @@
       "continueTelegram": "Continue to Telegram",
       "disconnectDesc": "This account will stop receiving shop event alerts.",
       "disconnecting": "Disconnecting…",
-      "disconnect": "Disconnect"
+      "disconnect": "Disconnect",
+      "emptyTitle": "No accounts connected",
+      "emptyDescription": "Link a Telegram account to get alerts for orders, payments, and more."
     }
   },
   "telegram": {
@@ -619,8 +621,16 @@
       "angle": "Angle",
       "tilt": "Tilt",
       "color": "Color",
-      "angles": { "left": "Left", "straight": "Straight", "right": "Right" },
-      "tilts": { "left": "Tilt left", "straight": "No tilt", "right": "Tilt right" },
+      "angles": {
+        "left": "Left",
+        "straight": "Straight",
+        "right": "Right"
+      },
+      "tilts": {
+        "left": "Tilt left",
+        "straight": "No tilt",
+        "right": "Tilt right"
+      },
       "reset": "Reset",
       "colors": {
         "blue": "Blue",

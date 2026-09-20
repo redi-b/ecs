@@ -51,7 +51,7 @@
     "title": "ቡድን",
     "description": "በዚህ ሱቅ ውስጥ ማን መስራት እና ምን መቀየር እንደሚችል ይቆጣጠሩ።",
     "unavailableTitle": "የቡድን መረጃ ማግኘት አልተቻለም",
-    "unavailableDescription": "የቡድን መረጃን መክፈት አልተቻለም። ገጹን አድሰው እንደገና ይሞክሩ።",
+    "unavailableDescription": "የቡድን መረጃን መክፈት አልተቻለም። ገጹን ሪፍሬሽ አድርገው እንደገና ይሞክሩ።",
     "invite": "አባል ይጥሩ",
     "members": "አባላት",
     "roles": "የስራ ድርሻዎች",
@@ -546,7 +546,9 @@
       "continueTelegram": "ወደ ቴሌግራም ቀጥል",
       "disconnectDesc": "ይህ አካውንት የሱቅ ማሳወቂያዎችን መቀበል ያቆማል።",
       "disconnecting": "እየተቋረጠ ነው…",
-      "disconnect": "አቋርጥ"
+      "disconnect": "አቋርጥ",
+      "emptyTitle": "ምንም የተገናኘ አካውንት የለም",
+      "emptyDescription": "ለትዕዛዞች፣ ለክፍያዎች እና ለሌሎች ማሳወቂያዎችን ለማግኘት የቴሌግራም አካውንት ያገናኙ።"
     }
   },
   "telegram": {

@@ -177,7 +177,7 @@
     "invalidRange": "Choose a valid date range of up to 366 complete days, ending yesterday or earlier.",
     "forbidden": "You do not have permission to view this shop’s Insights.",
     "unavailable": "Sales could not be loaded. Please try again.",
-    "resetRange": " Open the last 30 days."
+    "resetRange": "Open the last 30 days"
   },
   "title": "Insights",
   "description": "Review sales, storefront visits, and recorded shopping activity.",
