@@ -113,7 +113,7 @@ describe("storefront localization fields", () => {
     });
     const home = defaults.find((field) => field.path === "header.navigation.0.label");
     assert.equal(home?.source, "Home");
-    assert.equal(home?.defaultTranslation, "መነሻ");
+    assert.equal(home?.defaultTranslation, "ዋና ገጽ");
     assert.equal(
       home &&
         getStorefrontTranslationStatus({
