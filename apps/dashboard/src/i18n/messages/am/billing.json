@@ -96,29 +96,29 @@
     "createdOn": "ተፈጥሯል {date}"
   },
   "transfer": {
-    "title": "ደረሰኝዎን ይክፈሉ",
-    "description": "በTelebirr ወይም CBE ይክፈሉ፣ ከዚያ የደረሰኙን መረጃ ያስገቡ።",
+    "title": "የባንክ ወይም የቴሌብር ክፍያ",
+    "description": "በቴሌብር ወይም በCBE ይክፈሉ፣ ከዚያ የደረሰኙን መረጃ ያስገቡ።",
     "provider": "የከፈሉበት",
     "other": "ሌላ ባንክ ወይም ዋሌት",
     "sendTo": "ክፍያውን ወደዚህ ይላኩ",
     "amount": "ትክክለኛው መጠን",
     "copyAmount": "መጠኑን ኮፒ አድርግ",
     "copyAccount": "የሂሳብ ቁጥሩን ኮፒ አድርግ",
-    "reference": "የግብይት ቁጥር ወይም የደረሰኝ ሊንክ",
-    "referencePlaceholder": "ቁጥሩን ወይም የደረሰኝ ሊንኩን ያስገቡ",
-    "referenceHelp": "በተሳካው የTelebirr ክፍያ ላይ የሚታየውን የግብይት ቁጥር ያስገቡ።",
-    "cbeReferenceHelp": "ከCBE የደረሰኝ ሊንኩን ይለጥፉ። የግብይት ቁጥር ብቻ እስካሁን በራስ-ሰር ሊረጋገጥ አይችልም።",
+    "reference": "የትራንዛክሽን ቁጥር ወይም የደረሰኝ ሊንክ",
+    "referencePlaceholder": "የትራንዛክሽን ቁጥር ወይም የደረሰኝ ሊንክ እዚህ ያስገቡ",
+    "referenceHelp": "በቴሌብር ክፍያ ማረጋገጫ ላይ የሚታየውን የትራንዛክሽን ቁጥር (Transaction No.) ያስገቡ።",
+    "cbeReferenceHelp": "ከCBE የደረሰኝ ሊንኩን ይለጥፉ። የትራንዛክሽን ቁጥር ብቻውን በራስ-ሰር ማረጋገጥ አይቻልም።",
     "findReference": "ይህን የት አገኛለሁ?",
-    "telebirrHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ እና Transaction Numberን ኮፒ ያድርጉ።",
-    "cbeHelp": "ክፍያውን ከግብይት ታሪክዎ ይክፈቱ፣ Share ወይም Receipt ይጫኑ እና የደረሰኙን ሊንክ እዚህ ይለጥፉ።",
-    "reviewTitle": "ከላኩ በኋላ",
-    "reviewDescription": "ክፍያውን እናረጋግጣለን፣ ሲፀድቅም እናሳውቅዎታለን።",
+    "telebirrHelp": "ክፍያውን ከሂሳብ እንቅስቃሴ ታሪክዎ ይክፈቱ እና የትራንዛክሽን ቁጥሩን (Transaction Number) ኮፒ ያድርጉ።",
+    "cbeHelp": "ክፍያውን ከሂሳብ እንቅስቃሴ ታሪክዎ ይክፈቱ፣ «Share» ወይም «Receipt» የሚለውን ይጫኑ እና የደረሰኙን ሊንክ እዚህ ይለጥፉ።",
+    "reviewTitle": "ማረጋገጫውን ከላኩ በኋላ",
+    "reviewDescription": "ክፍያዎን አረጋግጠን ወዲያውኑ እናሳውቅዎታለን።",
     "copied": "ኮፒ ተደርጓል።",
     "copyFailed": "ኮፒ ማድረግ አልተቻለም። መርጠው በእጅ ኮፒ ያድርጉ።",
     "steps": {
       "openApp": {
         "title": "{provider}ን ይክፈቱ",
-        "description": "Send money ወይም Transfer money ይምረጡ።"
+        "description": "«Send money» ወይም «ገንዘብ ማስተላለፍ» የሚለውን ይምረጡ።"
       },
       "sendExact": {
         "title": "ትክክለኛውን መጠን ይላኩ",
@@ -126,11 +126,11 @@
       },
       "copyReference": {
         "title": "የደረሰኙን መረጃ ኮፒ ያድርጉ",
-        "description": "ክፍያው ከተሳካ በኋላ የግብይት ቁጥሩን ወይም የደረሰኙን ሊንክ ኮፒ ያድርጉ።"
+        "description": "ክፍያው ከተሳካ በኋላ የትራንዛክሽን ቁጥሩን ወይም የደረሰኙን ሊንክ ኮፒ ያድርጉ።"
       }
     },
-    "submit": "ክፍያ ያስገቡ",
-    "submitting": "ክፍያው እየተላከ ነው…"
+    "submit": "ማረጋገጫውን ላክ",
+    "submitting": "እየተላከ ነው…"
   },
   "invoice": {
     "planPayment": "የዕቅድ ክፍያ",
@@ -172,7 +172,7 @@
     "paymentConfirmed": "ክፍያ ተረጋግጧል።",
     "openingCheckout": "ደህንነቱ የተጠበቀ የክፍያ ገጽ እየከፈተ ነው…",
     "paymentSubmitted": "ክፍያው ለማረጋገጥ ተልኳል።",
-    "paymentRejected": "ደረሰኙ ከዚህ ክፍያ ጋር አይዛመድም። መጠኑን፣ ተቀባዩን እና የግብይት ቁጥሩን ያረጋግጡ።",
+    "paymentRejected": "ደረሰኙ ከዚህ ክፍያ ጋር አይዛመድም። መጠኑን፣ ተቀባዩን እና የትራንዛክሽን ቁጥሩን ያረጋግጡ።",
     "switchesOn": "በ{date} ወደ ነፃ ዕቅድ ይቀየራል።",
     "planChangeScheduled": "የዕቅድ ለውጥ ተይዟል።",
     "nowOnFree": "አሁን በነፃ ዕቅድ ላይ ነዎት።",
