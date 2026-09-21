@@ -93,7 +93,7 @@
     "done": "Done",
     "inviteTitle": "Invite a team member",
     "inviteDescription": "Create an invitation, then share its secure link.",
-    "inviteEmailDescription": "We’ll email them a secure link to join this shop.",
+    "inviteEmailDescription": "We’ll send an invite link to this email, or you can copy and share the link directly.",
     "acceptTitle": "Join the shop",
     "acceptDescription": "Accept the invitation to start working with this shop’s team.",
     "invalidInvitation": "This invitation link is incomplete.",

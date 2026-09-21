@@ -764,7 +764,7 @@ export function RichTextEditor({
                       <Pilcrow aria-hidden />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-52">
+                  <DropdownMenuContent align="start" className="w-56 sm:w-64">
                     <DropdownMenuLabel>Text style</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       {headingControls.map((control) => (
@@ -772,7 +772,9 @@ export function RichTextEditor({
                           <control.icon aria-hidden />
                           <span>{control.label}</span>
                           {control.shortcut ? (
-                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                            <span className="ml-auto hidden sm:inline-flex">
+                              <Kbd>{control.shortcut}</Kbd>
+                            </span>
                           ) : null}
                         </DropdownMenuItem>
                       ))}
@@ -807,7 +809,7 @@ export function RichTextEditor({
                       <Menu aria-hidden />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 sm:w-64">
                     <DropdownMenuLabel>Blocks</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       {blockControls.map((control) => (
@@ -815,7 +817,9 @@ export function RichTextEditor({
                           <control.icon aria-hidden />
                           <span>{control.label}</span>
                           {control.shortcut ? (
-                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                            <span className="ml-auto hidden sm:inline-flex">
+                              <Kbd>{control.shortcut}</Kbd>
+                            </span>
                           ) : null}
                         </DropdownMenuItem>
                       ))}
@@ -844,7 +848,9 @@ export function RichTextEditor({
                           <control.icon aria-hidden />
                           <span>{control.label}</span>
                           {control.shortcut ? (
-                            <DropdownMenuShortcut>{control.shortcut}</DropdownMenuShortcut>
+                            <span className="ml-auto hidden sm:inline-flex">
+                              <Kbd>{control.shortcut}</Kbd>
+                            </span>
                           ) : null}
                         </DropdownMenuItem>
                       ))}

@@ -743,7 +743,7 @@ function ReceivingAccountsCard() {
           <ul
             className={cn(
               "divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70 bg-background",
-              accounts.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain",
+              accounts.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto",
             )}
           >
             {accounts.map((account) => {

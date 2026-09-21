@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
 import { DetailMetric, DetailSection } from "@/components/app/detail-surface";
+import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -144,6 +145,7 @@ export function SingleVariantStockPanel({
             value={formatQuantity(stock.stockedQuantity, t)}
           />
           <DetailMetric
+            help={t("products.stock.reservedHelp")}
             label={t("products.stock.reserved")}
             value={formatQuantity(stock.reservedQuantity, t)}
           />
@@ -580,7 +582,12 @@ export function getVariantInventoryColumns(
     {
       id: "reserved",
       accessorFn: (row) => row.stock?.reservedQuantity ?? 0,
-      header: t("products.stock.colReserved"),
+      header: () => (
+        <span className="inline-flex items-center gap-1.5">
+          <span>{t("products.stock.colReserved")}</span>
+          <HelpTip summary={t("products.stock.reservedHelp")} />
+        </span>
+      ),
       cell: ({ row }) => (
         <span className="tabular-nums">
           {row.original.isLoading

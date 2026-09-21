@@ -290,6 +290,7 @@
     "colPrice": "ዋጋ",
     "colAvailable": "ይገኛል",
     "colReserved": "ተይዟል",
+    "reservedHelp": "በትዕዛዝ የተያዙ ነገር ግን ገና ያልተላኩ/ያልተረከቡ እቃዎች።",
     "colStocked": "ተከማችቷል",
     "untitledVariant": "ርዕስ የሌለ አማራጭ",
     "noSku": "SKU የለም",

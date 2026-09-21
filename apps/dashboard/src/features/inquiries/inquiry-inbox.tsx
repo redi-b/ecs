@@ -287,7 +287,7 @@ export function InquiryInbox({
             </SheetBody>
           )}
           {canUpdate ? (
-            <SheetFooter className="flex-row justify-between">
+            <SheetFooter className="gap-2 sm:flex-row sm:justify-between">
               <Button
                 disabled={updating || !selected}
                 onClick={() =>

@@ -10,6 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Command,
   CommandGroup,
   CommandInput,
@@ -689,7 +694,7 @@ export function ProductOptionsBuilder({
       </div>
 
       {options.length ? (
-        <div className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
+        <div className="flex flex-col gap-3">
           {options.map((option, index) => (
             <div
               className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[12rem_minmax(0,1fr)]"
@@ -777,7 +782,7 @@ export function ProductOptionsBuilder({
                     suggestions={
                       option.title.toLowerCase() ===
                       t("products.formReview.placeholderSize").toLowerCase()
-                        ? ["Small", "Medium", "Large", "XL"]
+                        ? ["XS", "S", "M", "L", "XL", "XXL"]
                         : option.title.toLowerCase() ===
                             t("products.formReview.placeholderMaterial").toLowerCase()
                           ? ["Cotton", "Leather", "Polyester"]
@@ -945,8 +950,8 @@ export function VariantMatrixTable({
               t("products.formReview.defaultVariant");
 
             return (
-              <details className="group px-3 py-2.5" key={row.key}>
-                <summary className="flex cursor-pointer list-none items-center gap-2">
+              <Collapsible className="group px-3 py-2.5" key={row.key}>
+                <CollapsibleTrigger className="flex w-full cursor-pointer list-none items-center gap-2 text-left">
                   <Checkbox
                     aria-label={t("products.formReview.toggleVariantAria", { variant: name })}
                     checked={row.enabled}
@@ -957,51 +962,53 @@ export function VariantMatrixTable({
                     }
                   />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground tabular-nums">
                     ETB {override.priceAmount ?? row.priceAmount}
                   </span>
-                  <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="grid gap-3 pt-3 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
-                    <InputGroup>
-                      <InputGroupAddon>ETB</InputGroupAddon>
-                      <InputGroupInput
+                  <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="grid gap-3 pt-3 sm:grid-cols-2">
+                    <Field>
+                      <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
+                      <InputGroup>
+                        <InputGroupAddon>ETB</InputGroupAddon>
+                        <InputGroupInput
+                          disabled={!row.enabled}
+                          inputMode="numeric"
+                          min="0"
+                          onChange={(event) =>
+                            onOverrideChange(row.key, { priceAmount: event.target.value })
+                          }
+                          type="text"
+                          value={override.priceAmount ?? String(row.priceAmount)}
+                        />
+                      </InputGroup>
+                    </Field>
+                    <Field>
+                      <FieldLabel>{t("products.formReview.colStock")}</FieldLabel>
+                      <Input
                         disabled={!row.enabled}
                         inputMode="numeric"
                         min="0"
                         onChange={(event) =>
-                          onOverrideChange(row.key, { priceAmount: event.target.value })
+                          onOverrideChange(row.key, { stockedQuantity: event.target.value })
                         }
                         type="text"
-                        value={override.priceAmount ?? String(row.priceAmount)}
+                        value={override.stockedQuantity ?? String(row.stockedQuantity)}
                       />
-                    </InputGroup>
-                  </Field>
-                  <Field>
-                    <FieldLabel>{t("products.formReview.colStock")}</FieldLabel>
-                    <Input
-                      disabled={!row.enabled}
-                      inputMode="numeric"
-                      min="0"
-                      onChange={(event) =>
-                        onOverrideChange(row.key, { stockedQuantity: event.target.value })
-                      }
-                      type="text"
-                      value={override.stockedQuantity ?? String(row.stockedQuantity)}
-                    />
-                  </Field>
-                  <Field className="sm:col-span-2">
-                    <FieldLabel>{t("products.composer.fieldSkuOptional")}</FieldLabel>
-                    <Input
-                      disabled={!row.enabled}
-                      onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
-                      value={override.sku ?? row.sku}
-                    />
-                  </Field>
-                </div>
-              </details>
+                    </Field>
+                    <Field className="sm:col-span-2">
+                      <FieldLabel>{t("products.composer.fieldSkuOptional")}</FieldLabel>
+                      <Input
+                        disabled={!row.enabled}
+                        onChange={(event) => onOverrideChange(row.key, { sku: event.target.value })}
+                        value={override.sku ?? row.sku}
+                      />
+                    </Field>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>

@@ -258,7 +258,7 @@ export function ProfileAvatarEditor({
             </div>
           </div>
           <Button
-            className="col-start-2 row-start-1 h-11 sm:h-7"
+            className="col-start-2 row-start-1 justify-self-end"
             variant="ghost"
             size="sm"
             type="button"

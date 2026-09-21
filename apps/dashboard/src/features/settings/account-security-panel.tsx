@@ -491,7 +491,7 @@ export function AccountSecurityPanel({
                   disabled={savingProfile}
                 />
               </div>
-              <DialogFooter className="mx-0 mb-0 rounded-none [&_button]:min-h-11 sm:[&_button]:min-h-0">
+              <DialogFooter className="mx-0 mb-0 rounded-none">
                 <DialogClose asChild>
                   <Button variant="outline" type="button">
                     {t("common.cancel")}

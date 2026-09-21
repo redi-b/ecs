@@ -162,10 +162,9 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     });
   }
 
-  const isSetupHome =
-    pathname === dashboardRoutes.overview || pathname === dashboardRoutes.settings;
+  const isOverview = pathname === dashboardRoutes.overview;
 
-  if (!canCompleteSetup || !hydrated || hidden || (launchReady && !isSetupHome)) {
+  if (!canCompleteSetup || !hydrated || hidden || (launchReady && !isOverview)) {
     return null;
   }
 

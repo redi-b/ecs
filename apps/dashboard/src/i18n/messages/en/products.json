@@ -290,6 +290,7 @@
     "colPrice": "Price",
     "colAvailable": "Available",
     "colReserved": "Reserved",
+    "reservedHelp": "Units ordered by customers that haven't been fulfilled yet.",
     "colStocked": "Stocked",
     "untitledVariant": "Untitled variant",
     "noSku": "No SKU",

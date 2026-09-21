@@ -11,6 +11,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -707,7 +712,7 @@ export function BillingWorkspace({
             className={cn(
               "flex flex-col gap-2",
               history.length > 6 &&
-                "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain pr-0.5",
+                "max-h-[min(22rem,45vh)] overflow-y-auto pr-0.5",
             )}
           >
             {history.map((invoice) => (
@@ -913,10 +918,15 @@ function PaymentEvidenceDialog({
               </li>
             ))}
           </ol>
-          <details className="rounded-xl border px-3 py-2.5 text-sm">
-            <summary className="cursor-pointer font-medium">{t("billing.transfer.findReference")}</summary>
-            <p className="mt-2 text-muted-foreground">{t(provider === "telebirr" ? "billing.transfer.telebirrHelp" : "billing.transfer.cbeHelp")}</p>
-          </details>
+          <Collapsible className="rounded-xl border px-3 py-2.5 text-sm">
+            <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between font-medium text-left">
+              <span>{t("billing.transfer.findReference")}</span>
+              <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 text-muted-foreground">
+              {t(provider === "telebirr" ? "billing.transfer.telebirrHelp" : "billing.transfer.cbeHelp")}
+            </CollapsibleContent>
+          </Collapsible>
           <Field>
             <FieldLabel htmlFor={referenceId}>{t("billing.transfer.reference")}</FieldLabel>
             <Input
