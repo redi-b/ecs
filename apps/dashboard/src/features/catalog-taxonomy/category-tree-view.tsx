@@ -3,6 +3,7 @@
 import type { MerchantProductCategory } from "@ecs/contracts";
 import { useMemo, useState } from "react";
 
+import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
 import { RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -159,17 +160,24 @@ function TreeRow({
           <span className="size-7 shrink-0" aria-hidden />
         )}
         <div className="min-w-0">
-          {onEdit ? (
-            <button
-              className={cn(listEntityActionClassName, "truncate text-left")}
-              onClick={onEdit}
-              type="button"
-            >
-              {name}
-            </button>
-          ) : (
-            <span className="truncate text-left font-medium text-foreground">{name}</span>
-          )}
+          <CatalogTranslatedName
+            renderName={
+              onEdit
+                ? (primary) => (
+                    <button
+                      className={cn(listEntityActionClassName, "min-w-0 truncate text-left")}
+                      onClick={onEdit}
+                      type="button"
+                    >
+                      {primary}
+                    </button>
+                  )
+                : undefined
+            }
+            source={node.category.name}
+            translation={node.category.translation}
+            untitled={name}
+          />
           {node.category.handle ? (
             <p className="truncate font-mono text-xs text-muted-foreground">
               {node.category.handle}

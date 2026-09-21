@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { PermissionGate } from "@/components/app/access-context";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { CatalogLabelLocaleControl } from "@/components/app/catalog-label-locale-control";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -102,22 +103,25 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
         <>
           <ListSummary
             actions={
-              !tenantId ? (
-                <PermissionGate permission="products.export">
-                  <ProductDataActions
-                    exportHref={listExportPath(
-                      getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId),
-                      {
-                        q: listParams.q,
-                        status: statusFilter,
-                        categoryId: categoryFilter,
-                        collectionId: collectionFilter,
-                        media: mediaFilter,
-                      },
-                    )}
-                  />
-                </PermissionGate>
-              ) : null
+              <>
+                <CatalogLabelLocaleControl />
+                {!tenantId ? (
+                  <PermissionGate permission="products.export">
+                    <ProductDataActions
+                      exportHref={listExportPath(
+                        getTenantScopedPath(dashboardRoutes.productsExportAction, tenantId),
+                        {
+                          q: listParams.q,
+                          status: statusFilter,
+                          categoryId: categoryFilter,
+                          collectionId: collectionFilter,
+                          media: mediaFilter,
+                        },
+                      )}
+                    />
+                  </PermissionGate>
+                ) : null}
+              </>
             }
             count={result.products.count}
             filtered={listFiltered}

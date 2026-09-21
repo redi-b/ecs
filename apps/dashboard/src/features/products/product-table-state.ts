@@ -53,6 +53,7 @@ export function getProductSearchText(product: MerchantProduct) {
   return [
     product.id,
     product.title,
+    product.translation?.title,
     product.handle,
     product.status,
     product.description,

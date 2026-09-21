@@ -2,6 +2,7 @@
 
 import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/contracts";
 
+import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { AppIcons } from "@/components/app/icons";
 import {
   formatTaxonomyDate,
@@ -14,41 +15,47 @@ import { cn } from "@/lib/utils";
 
 type TaxonomyIdentityCellProps = {
   entity: MerchantProductCategory | MerchantProductCollection;
-  label: string;
+  source: string | null;
+  untitled: string;
   onOpen?: (() => void) | undefined;
 };
 
-export function TaxonomyIdentityCell({ entity, label, onOpen }: TaxonomyIdentityCellProps) {
-  const identity = (
-    <>
-      <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
-        {entity.mediaUrl ? (
-          <span
-            aria-hidden
-            className="size-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${JSON.stringify(entity.mediaUrl)})` }}
-          />
-        ) : (
-          <AppIcons.image aria-hidden className="size-4 text-muted-foreground" />
-        )}
-      </span>
-      <span className="truncate">{label}</span>
-    </>
+export function TaxonomyIdentityCell({ entity, onOpen, source, untitled }: TaxonomyIdentityCellProps) {
+  const media = (
+    <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
+      {entity.mediaUrl ? (
+        <span
+          aria-hidden
+          className="size-full bg-cover bg-center"
+          style={{ backgroundImage: `url(${JSON.stringify(entity.mediaUrl)})` }}
+        />
+      ) : (
+        <AppIcons.image aria-hidden className="size-4 text-muted-foreground" />
+      )}
+    </span>
   );
 
   return (
-    <div className="min-w-48">
-      {onOpen ? (
-        <button
-          className={cn(listEntityActionClassName, "flex w-full items-center gap-3 text-left")}
-          onClick={onOpen}
-          type="button"
-        >
-          {identity}
-        </button>
-      ) : (
-        <div className="flex items-center gap-3 font-medium text-card-foreground">{identity}</div>
-      )}
+    <div className="flex min-w-48 items-center gap-3">
+      {media}
+      <CatalogTranslatedName
+        renderName={
+          onOpen
+            ? (primary) => (
+                <button
+                  className={cn(listEntityActionClassName, "min-w-0 truncate text-left")}
+                  onClick={onOpen}
+                  type="button"
+                >
+                  {primary}
+                </button>
+              )
+            : undefined
+        }
+        source={source}
+        translation={entity.translation}
+        untitled={untitled}
+      />
     </div>
   );
 }
@@ -63,7 +70,8 @@ export function CategoryIdentityCell({
   return (
     <TaxonomyIdentityCell
       entity={category}
-      label={getCategoryDisplayName(category)}
+      source={category.name}
+      untitled={getCategoryDisplayName(category)}
       {...(onOpen ? { onOpen } : {})}
     />
   );
@@ -79,7 +87,8 @@ export function CollectionIdentityCell({
   return (
     <TaxonomyIdentityCell
       entity={collection}
-      label={getCollectionDisplayName(collection)}
+      source={collection.title}
+      untitled={getCollectionDisplayName(collection)}
       {...(onOpen ? { onOpen } : {})}
     />
   );
@@ -107,9 +116,13 @@ export function CategoryParentCell({
 
   if (parentCategory) {
     return (
-      <span className="font-medium text-card-foreground">
-        {getCategoryDisplayName(parentCategory)}
-      </span>
+      <CatalogTranslatedName
+        className="font-medium text-card-foreground"
+        preview="name"
+        source={parentCategory.name}
+        translation={parentCategory.translation}
+        untitled={getCategoryDisplayName(parentCategory)}
+      />
     );
   }
 

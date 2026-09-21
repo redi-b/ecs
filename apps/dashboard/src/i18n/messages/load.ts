@@ -7,6 +7,8 @@ import am_auth from "./am/auth.json";
 import en_auth from "./en/auth.json";
 import am_billing from "./am/billing.json";
 import en_billing from "./en/billing.json";
+import am_catalogLabels from "./am/catalogLabels.json";
+import en_catalogLabels from "./en/catalogLabels.json";
 import am_categories from "./am/categories.json";
 import en_categories from "./en/categories.json";
 import am_collections from "./am/collections.json";
@@ -56,6 +58,7 @@ export const messageNamespaces = [
   "account",
   "auth",
   "billing",
+  "catalogLabels",
   "categories",
   "collections",
   "commandCenter",
@@ -86,6 +89,7 @@ export const messagesByLocale = {
     account: am_account,
     auth: am_auth,
     billing: am_billing,
+    catalogLabels: am_catalogLabels,
     categories: am_categories,
     collections: am_collections,
     commandCenter: am_commandCenter,
@@ -113,6 +117,7 @@ export const messagesByLocale = {
     account: en_account,
     auth: en_auth,
     billing: en_billing,
+    catalogLabels: en_catalogLabels,
     categories: en_categories,
     collections: en_collections,
     commandCenter: en_commandCenter,

@@ -9,6 +9,7 @@ Merchants manage products in the dashboard. The Platform API mutates the commerc
 - Customer-facing category and collection URLs use **handles**. Identifier URLs redirect.
 - CSV import and export exist. Export is safe to run; import overwrites catalog data and should be used with a prior export.
 - Media: `image/avif`, `gif`, `jpeg`, `png`, `webp`; 15 MiB; keys under `tenants/{tenantId}/`; presigned PUT with signed `content-type`. Completing an upload confirms the object exists.
+- Catalog lists show a **source name** plus an አማ mark. The mark opens the other language and translation status. **Catalog names** on the count strip can follow the dashboard language, or pin English or Amharic. Form fields stay in the source language.
 
 ## Cart, checkout, orders
 

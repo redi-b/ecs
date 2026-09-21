@@ -9,6 +9,7 @@ import { RiTranslate2 } from "@remixicon/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
@@ -405,7 +406,7 @@ export function ProductOrganizationSummary({
     );
   }
 
-  const firstCategoryName =
+  const firstCategoryUntitled =
     firstCategory?.name ?? firstCategory?.handle ?? t("products.table.unknownCategory");
 
   return (
@@ -414,23 +415,39 @@ export function ProductOrganizationSummary({
         icon={<AppIcons.folder className="size-4" />}
         tooltip={t("products.table.collection")}
         value={
-          product.collectionId
-            ? (collection?.title ?? collection?.handle ?? t("products.table.unknownCollection"))
-            : t("products.table.noCollection")
+          collection ? (
+            <CatalogTranslatedName
+              preview="name"
+              source={collection.title}
+              translation={collection.translation}
+              untitled={collection.title ?? collection.handle ?? t("products.table.unknownCollection")}
+            />
+          ) : product.collectionId ? (
+            t("products.table.unknownCollection")
+          ) : (
+            t("products.table.noCollection")
+          )
         }
       />
       <OrganizationSignal
         icon={<AppIcons.tag className="size-4" />}
         tooltip={t("products.table.categories")}
         value={
-          categoryCount
-            ? categoryCount > 1
-              ? t("products.table.categoriesMore", {
-                  name: firstCategoryName,
-                  count: categoryCount - 1,
-                })
-              : firstCategoryName
-            : t("products.table.noCategories")
+          firstCategory ? (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <CatalogTranslatedName
+                preview="name"
+                source={firstCategory.name}
+                translation={firstCategory.translation}
+                untitled={firstCategoryUntitled}
+              />
+              {categoryCount > 1 ? (
+                <span className="shrink-0 text-muted-foreground">+{categoryCount - 1}</span>
+              ) : null}
+            </span>
+          ) : (
+            t("products.table.noCategories")
+          )
         }
       />
     </div>
@@ -444,20 +461,18 @@ export function OrganizationSignal({
 }: {
   icon: ReactNode;
   tooltip: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm">
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-sm">
+      <Tooltip>
+        <TooltipTrigger asChild>
           <span className="shrink-0 text-muted-foreground">{icon}</span>
-          <span className="truncate">{value}</span>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>
-        {tooltip}: {value}
-      </TooltipContent>
-    </Tooltip>
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+      <span className="min-w-0 truncate">{value}</span>
+    </span>
   );
 }
 

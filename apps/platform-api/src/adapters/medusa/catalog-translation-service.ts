@@ -1,4 +1,5 @@
 import {
+  type CatalogNameTranslation,
   type CatalogTranslationResource,
   type CatalogTranslationResourceType,
   catalogTranslationFields,
@@ -316,6 +317,7 @@ export function createMedusaCatalogTranslationService(options: {
     }
     const url = new URL("/admin/translations", normalizeBaseUrl(options.medusaInternalUrl));
     for (const input of inputs) url.searchParams.append("reference_id[]", input.resourceId);
+    url.searchParams.set("reference", first.resourceType);
     url.searchParams.set("locale_code", storefrontCommerceLocale(first.locale));
     url.searchParams.set("limit", String(inputs.length));
     const response = await requestMedusa(fetcher, url, {
@@ -646,5 +648,46 @@ export function createMedusaCatalogTranslationService(options: {
       : { ok: false, error: "commerce_backend_error", status: 502 };
   }
 
-  return { read, readMany, readiness, write, writeMany };
+  async function summarizeNames(input: {
+    ids: string[];
+    locale?: "am";
+    resourceType: "product" | "product_category" | "product_collection";
+    salesChannelId?: string;
+    tenantId?: string;
+  }): Promise<Map<string, CatalogNameTranslation>> {
+    const summaries = new Map<string, CatalogNameTranslation>();
+    const ids = [...new Set(input.ids.filter((id) => id.trim().length > 0))];
+    const empty = (): CatalogNameTranslation => ({
+      locale: "am",
+      status: "using_english",
+      title: null,
+    });
+    for (const id of ids) summaries.set(id, empty());
+    if (!ids.length || !options.adminApiToken?.trim()) return summaries;
+
+    const displayField = catalogTranslationFields[input.resourceType][0];
+    const found = await findTranslationsMany(
+      ids.map((resourceId) => ({
+        locale: input.locale ?? "am",
+        resourceId,
+        resourceType: input.resourceType,
+        salesChannelId: input.salesChannelId ?? "",
+        tenantId: input.tenantId ?? "",
+      })),
+    );
+    if ("translations" in found) {
+      for (const id of ids) {
+        const stored = found.translations.get(`${input.resourceType}:${id}`)?.translations ?? {};
+        const title = stored[displayField]?.trim() || null;
+        summaries.set(id, {
+          locale: "am",
+          status: title ? "ready" : "using_english",
+          title,
+        });
+      }
+    }
+    return summaries;
+  }
+
+  return { read, readMany, readiness, summarizeNames, write, writeMany };
 }
