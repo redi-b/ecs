@@ -12,7 +12,7 @@
     },
     "preferences": {
       "label": "ምርጫዎች",
-      "description": "የስራ ቦታ እና የሱቅ ነባሪዎች"
+      "description": "የዳሽቦርድ እና የሱቅ መደበኛ ቅንብሮች"
     },
     "notifications": {
       "label": "ማሳወቂያዎች",
@@ -138,7 +138,7 @@
     "deleteRoleDescription": "የ{role} የስራ ድርሻን ማጥፋት ይፈልጋሉ? መጀመሪያ ይህን የሚጠቀሙ አባላትን ይቀይሩ።",
     "roleDeleted": "የስራ ድርሻው ጠፍቷል",
     "roleActions": "የስራ ድርሻ አማራጮች",
-    "builtIn": "ነባሪ",
+    "builtIn": "ቋሚ",
     "customRole": "ለዚህ ሱቅ የተለየ ፈቃድ",
     "permissionGroups": {
       "commerce": "ንግድ",
@@ -270,7 +270,7 @@
   },
   "shop": {
     "intro": "ለደንበኞች የሚታይ መረጃ እና ሰራተኞች የሚገቡበት የሱቅ አድራሻ።",
-    "detailsTitle": "የሱቅ ዝርዝሮች",
+    "detailsTitle": "የሱቅ መረጃ",
     "detailsDescription": "የሱቅዎ ስም እና የድረ-ገጽ መለያ።",
     "contactDetails": "የመገናኛ እና የሱቅ መረጃ",
     "name": "የሱቅ ስም",
@@ -288,15 +288,15 @@
     "storefrontEditor": "የመደብር ዲዛይን"
   },
   "preferences": {
-    "intro": "የዳሽቦርድ እና የትዕዛዝ ነባሪዎች ለዕለታዊ ስራ።",
+    "intro": "የዳሽቦርድ እና የትዕዛዝ መደበኛ ቅንብሮች ለዕለታዊ ስራ።",
     "dashboardTitle": "ዳሽቦርድ",
     "dashboardDescription": "ለዚህ ሱቅ በዚህ ብራውዘር ውስጥ ብቻ ይቀመጣል።",
     "launchTitle": "የሱቅ ዝግጅት መመሪያ",
     "launchDescription": "ሱቅዎ ዝግጁ እስኪሆን ድረስ የዝግጅት ደረጃዎችን በዳሽቦርዱ ላይ አሳይ።",
-    "commerceTitle": "የንግድ ነባሪዎች",
+    "commerceTitle": "የመገበያያ ቅንብሮች",
     "commerceDescription": "ለዚህ ሱቅ የገንዘብ ምንዛሬ እና የትዕዛዝ አማራጮች።",
     "currencyEtb": "ምንዛሬ · ETB",
-    "currencyHint": "የመደብር ዋጋዎች እና ክፍያዎች በኢትዮጵያ ብር (ETB) ናቸው። ሌሎች ምንዛሬዎች ገና አይደገፉም።",
+    "currencyHint": "የመደብር ዋጋዎች እና ክፍያዎች በኢትዮጵያ ብር (ETB) ናቸው። ሌሎች ምንዛሬዎች ለጊዜው አይሰሩም።",
     "fulfillmentHint": "ደሊቨሪ፣ ከሱቅ መውሰድ እና የስልክ ማረጋገጫ በደሊቨሪ ማስተካከያዎች ስር ይገኛሉ።",
     "openFulfillment": "ደሊቨሪን ክፈት"
   },
@@ -304,7 +304,7 @@
     "intro": "ደንበኞች በትዕዛዝ ማጠናቀቂያ (ቼክአውት) ላይ እቃ እንዴት እንደሚረከቡ። ለውጦች ወዲያውኑ ተግባራዊ ይሆናሉ።",
     "checkoutTitle": "የትዕዛዝ አማራጮች",
     "checkoutDescription": "ደሊቨሪ፣ ከሱቅ መውሰድ እና ተጨማሪ የትዕዛዝ መረጃዎችን ይቆጣጠሩ።",
-    "defaultFee": "ነባሪ የደሊቨሪ ክፍያ",
+    "defaultFee": "መደበኛ የደሊቨሪ ክፍያ",
     "feeHint": "ደንበኞች በትዕዛዝ ጊዜ የሚያዩትን እና የሚከፍሉትን የደሊቨሪ ዋጋ ይወስናል።",
     "keepOneMethod": "ደንበኞች ትዕዛዝ ማጠናቀቅ እንዲችሉ ቢያንስ ደሊቨሪ ወይም ከሱቅ መውሰድ ክፍት መሆን አለበት።",
     "currency": "ምንዛሬ",
@@ -631,7 +631,7 @@
         "straight": "ቀጥታ",
         "right": "ወደ ቀኝ"
       },
-      "reset": "ወደ ነባሪው መልስ",
+      "reset": "ወደ መጀመሪያው መልስ",
       "colors": {
         "blue": "ሰማያዊ",
         "sky": "ፈካ ያለ ሰማያዊ",
@@ -746,9 +746,9 @@
     "retry": "እንደገና ይሞክሩ",
     "status": {
       "loading": "እየከፈተ ነው…",
-      "notConnected": "ያልተገናኘ",
-      "off": "የጠፋ",
-      "on": "የበራ"
+      "notConnected": "አልተገናኘም",
+      "off": "ጠፍቷል",
+      "on": "በርቷል"
     },
     "cod": {
       "title": "እቃ ሲደርስ መክፈል (ጥሬ ገንዘብ)",
@@ -822,9 +822,9 @@
       "accountNumberPlaceholder": "የግድ አይደለም",
       "accountNumberHint": "በደህንነት ይቀመጣል። ሲከፈል የመጨረሻዎቹ አሃዞች ብቻ ይታያሉ።",
       "accountNumberKeep": "ያለውን ቁጥር እንዳለ ለማቆየት ባዶ ይተውት።",
-      "default": "እንደ ነባሪ ተጠቀም",
+      "default": "እንደ ዋና አካውንት ተጠቀም",
       "defaultHint": "ትዕዛዝ ሲከፈል በቅድሚያ ይመረጣል።",
-      "defaultBadge": "ነባሪ",
+      "defaultBadge": "ዋና",
       "save": "ሂሳብ አስቀምጥ",
       "saving": "እየተቀመጠ ነው…",
       "saved": "ክፍያ መቀበያ ሂሳብ ተቀምጧል",

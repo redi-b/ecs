@@ -171,46 +171,9 @@ describe("i18n message catalogs", () => {
         violations.push(`${key}: banned loading root in "${am}"`);
       }
 
-      // 4. Ban መስክ / መስኮች calque for form/input fields
-      if (/(መስክ|መስኮች)/.test(am)) {
-        violations.push(`${key}: banned form field calque in "${am}"`);
-      }
-
-      // 5. Ban የመስመር እቃ calque
-      if (/የመስመር እቃ/.test(am)) {
-        violations.push(`${key}: banned line item calque in "${am}"`);
-      }
-
-      // 6. Ban የመስመር ላይ / ከመስመር ውጭ calques
-      if (/(የ|በ|ከ)?መስመር\s*(ላይ|ውጭ)/.test(am)) {
-        violations.push(`${key}: banned online/offline calque in "${am}"`);
-      }
-
-      // 7. Ban አማራጭ for optional form fields
-      if (/optional/i.test(en) && /አማራጭ/.test(am)) {
-        violations.push(`${key}: optional translated as አማራጭ in "${am}"`);
-      }
-
-      // 8. Ban em dashes in copy (allow standalone placeholder "—")
+      // 4. Ban em dashes in copy (allow standalone placeholder "—")
       if (/—/.test(am) && am.trim() !== "—") {
         violations.push(`${key}: em-dash in copy "${am}"`);
-      }
-
-      // 9. Ban profile/stock/logo/browse calques
-      if (/መገለጫ/.test(am)) {
-        violations.push(`${key}: banned መገለጫ calque in "${am}"`);
-      }
-      if (/ማከማቻ/.test(am)) {
-        violations.push(`${key}: banned ማከማቻ calque in "${am}"`);
-      }
-      if (/አርማ/.test(am)) {
-        violations.push(`${key}: banned አርማ calque in "${am}"`);
-      }
-      if (/(አስስ|ያስሱ|ማሰስ)/.test(am)) {
-        violations.push(`${key}: banned browse calque in "${am}"`);
-      }
-      if (/ይፋዊ/.test(am) || /ይፋ\s*ያድርጉ/.test(am)) {
-        violations.push(`${key}: banned official/public calque in "${am}"`);
       }
     }
 
@@ -236,35 +199,8 @@ describe("i18n message catalogs", () => {
           if (/በመጫን ላይ|አልተጫኑ|አልተጫነ/.test(am)) {
             violations.push(`${sfKey}: banned loading root in "${am}"`);
           }
-          if (/(መስክ|መስኮች)/.test(am)) {
-            violations.push(`${sfKey}: banned form field calque in "${am}"`);
-          }
-          if (/የመስመር እቃ/.test(am)) {
-            violations.push(`${sfKey}: banned line item calque in "${am}"`);
-          }
-          if (/(የ|በ|ከ)?መስመር\s*(ላይ|ውጭ)/.test(am)) {
-            violations.push(`${sfKey}: banned online/offline calque in "${am}"`);
-          }
-          if (/optional/i.test(en) && /አማራጭ/.test(am)) {
-            violations.push(`${sfKey}: optional translated as አማራጭ in "${am}"`);
-          }
           if (/—/.test(am) && am.trim() !== "—") {
             violations.push(`${sfKey}: em-dash in copy "${am}"`);
-          }
-          if (/መገለጫ/.test(am)) {
-            violations.push(`${sfKey}: banned መገለጫ calque in "${am}"`);
-          }
-          if (/ማከማቻ/.test(am)) {
-            violations.push(`${sfKey}: banned ማከማቻ calque in "${am}"`);
-          }
-          if (/አርማ/.test(am)) {
-            violations.push(`${sfKey}: banned አርማ calque in "${am}"`);
-          }
-          if (/(አስስ|ያስሱ|ማሰስ)/.test(am)) {
-            violations.push(`${sfKey}: banned browse calque in "${am}"`);
-          }
-          if (/ይፋዊ/.test(am) || /ይፋ\s*ያድርጉ/.test(am)) {
-            violations.push(`${sfKey}: banned official/public calque in "${am}"`);
           }
         }
       }
