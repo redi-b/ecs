@@ -27,15 +27,25 @@ import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { getLaunchChecklistItems, type LaunchChecklistItem } from "./launch-assistant-model";
 
-export function LaunchAssistant({ access }: { access: MerchantDashboardAccess }) {
+export function LaunchAssistant({
+  access,
+  initialHidden = false,
+  initialReadiness = null,
+}: {
+  access: MerchantDashboardAccess;
+  initialHidden?: boolean;
+  initialReadiness?: LaunchReadiness | null;
+}) {
   const { t } = useI18n();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [productCountUnavailable, setProductCountUnavailable] = useState(false);
   const [checksLoading, setChecksLoading] = useState(false);
-  const [readiness, setReadiness] = useState<LaunchReadiness | null>(null);
+  const [readiness, setReadiness] = useState<LaunchReadiness | null>(initialReadiness);
   const [refresh, setRefresh] = useState(0);
   const [reviewPending, setReviewPending] = useState(false);
+  const initialFetchSkipped = useRef(Boolean(initialReadiness));
+  const lastPathname = useRef(pathname);
   const summary = useMemo(
     () => ({ ...access, hasVisitedEditor: false, productCount: null, readiness }),
     [access, readiness],
@@ -49,19 +59,14 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   const liveShopHref = `//${access.domain.hostname}`;
   const canCompleteSetup = allows(access.permissions ?? [], merchantPolicies.launchSetup);
 
-  const [hydrated, setHydrated] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(initialHidden);
   const [open, setOpen] = useState(false);
-  const initialOpenDecided = useRef(false);
 
   useEffect(() => {
     const nextHidden = isLaunchAssistantHidden(access.tenant.id);
-
-    setHidden(nextHidden);
-    initialOpenDecided.current = false;
-    // Panel openness lasts only for this mounted dashboard session.
-    setOpen(false);
-    setHydrated(true);
+    if (nextHidden !== hidden) {
+      setHidden(nextHidden);
+    }
 
     function handlePreferenceChange(event: Event) {
       const detail = (event as CustomEvent<{ hidden?: boolean; tenantId?: string }>).detail;
@@ -79,19 +84,20 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     return () => {
       window.removeEventListener(LAUNCH_ASSISTANT_PREFERENCE_EVENT, handlePreferenceChange);
     };
-  }, [access.tenant.id]);
-
-  useEffect(() => {
-    if (!hydrated || hidden || !readiness || initialOpenDecided.current) return;
-    initialOpenDecided.current = true;
-    setOpen(!launchReady);
-  }, [hydrated, hidden, readiness, launchReady]);
+  }, [access.tenant.id, hidden]);
 
   // Route changes and the refresh nonce intentionally re-run this request even though they are
   // not read inside the effect body. The assistant lives in the persistent dashboard layout.
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh readiness after navigation, publishing, and explicit refreshes.
   useEffect(() => {
-    if (!hydrated || hidden) return;
+    if (hidden) return;
+
+    if (initialFetchSkipped.current && refresh === 0 && lastPathname.current === pathname) {
+      initialFetchSkipped.current = false;
+      return;
+    }
+    lastPathname.current = pathname;
+    initialFetchSkipped.current = false;
 
     let cancelled = false;
     setProductCountUnavailable(false);
@@ -125,7 +131,7 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
     return () => {
       cancelled = true;
     };
-  }, [hidden, hydrated, access.tenant.id, access.storefront.isPublished, refresh, pathname]);
+  }, [hidden, access.tenant.id, access.storefront.isPublished, refresh, pathname]);
 
   async function confirmReview() {
     if (!readiness || reviewPending) return;
@@ -158,13 +164,16 @@ export function LaunchAssistant({ access }: { access: MerchantDashboardAccess })
   }
 
   function changeOpen(nextOpen: boolean) {
-    initialOpenDecided.current = true;
     setOpen(nextOpen);
   }
 
   const isOverview = pathname === dashboardRoutes.overview;
 
-  if (!canCompleteSetup || !hydrated || hidden || (launchReady && !isOverview)) {
+  if (!canCompleteSetup || hidden) {
+    return null;
+  }
+
+  if (!isOverview && (!readiness || launchReady)) {
     return null;
   }
 
