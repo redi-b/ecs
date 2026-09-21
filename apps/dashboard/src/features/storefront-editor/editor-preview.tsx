@@ -16,6 +16,7 @@ import { getEffectiveLocalizedTranslations } from "./editor-localization";
 import { EditorImageSourceActions } from "./editor-settings";
 import {
   getLocalizedTranslations,
+  getStorefrontPageProps,
   isPreviewImageUrl,
   type StorefrontPageProps,
   updateEditorLinkValue,
@@ -24,7 +25,6 @@ import {
 import { updateStorefrontProp } from "./editor-utils";
 
 export function TemplatePreview({
-  props,
   templateKey,
   previewUrl,
   previewPage = "home",
@@ -56,7 +56,6 @@ export function TemplatePreview({
         onSelectionInteractionChange={onSelectionInteractionChange}
         previewUrl={withPreviewPage(previewUrl, previewPage, previewLocale)}
         previewLocale={previewLocale}
-        props={props}
         selectedPath={selectedPath}
         showEditHints={showEditHints}
         templateKey={templateKey}
@@ -97,7 +96,6 @@ function UnavailableIframePreview({ templateKey }: { templateKey: string }) {
 function StorefrontIframePreview({
   previewUrl,
   previewLocale,
-  props,
   templateKey,
   onSelectPath,
   onSelectionInteractionChange,
@@ -107,7 +105,6 @@ function StorefrontIframePreview({
 }: {
   previewUrl: string;
   previewLocale: "en" | "am";
-  props: StorefrontPageProps;
   templateKey: string;
   onSelectPath?: ((path: string) => void) | undefined;
   onSelectionInteractionChange?: ((active: boolean) => void) | undefined;
@@ -125,17 +122,20 @@ function StorefrontIframePreview({
   const isLoaded = previewState === "ready";
   const data = useStorefrontEditor((api) => api.appState.data);
   const dispatch = useStorefrontEditor((api) => api.dispatch);
+  // Follow the editor store directly so media mutations reach the iframe in the
+  // same render instead of waiting for a saved page snapshot.
+  const liveProps = useMemo(() => getStorefrontPageProps(data), [data]);
   const manifest = useMemo(() => getStorefrontEditorManifest(templateKey), [templateKey]);
   const fields = useMemo(() => {
     const values: Record<string, unknown> = {};
     for (const section of manifest?.sections ?? []) {
       for (const field of section.fields)
-        values[field.path] = structuredClone(props[field.prop as keyof StorefrontPageProps]);
+        values[field.path] = structuredClone(liveProps[field.prop as keyof StorefrontPageProps]);
     }
     if (previewLocale === "am") {
       const translations = getEffectiveLocalizedTranslations(
         templateKey,
-        props,
+        liveProps,
         getLocalizedTranslations(data),
       );
       for (const [path, value] of Object.entries(translations)) {
@@ -145,23 +145,23 @@ function StorefrontIframePreview({
     // Firefox cannot structured-clone URL instances. The manifest payload is a
     // JSON contract, so normalize it before it crosses the iframe boundary.
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
-  }, [data, manifest, previewLocale, props, templateKey]);
+  }, [data, liveProps, manifest, previewLocale, templateKey]);
   const resolvedTheme = useMemo(
     () => ({
-      accent: props.accentColor,
-      background: props.backgroundColor,
-      foreground: props.foregroundColor,
-      muted: props.mutedColor,
-      onAccent: props.accentColor ? contrastingInk(props.accentColor) : undefined,
-      onPrimary: props.primaryColor ? contrastingInk(props.primaryColor) : undefined,
-      primary: props.primaryColor,
+      accent: liveProps.accentColor,
+      background: liveProps.backgroundColor,
+      foreground: liveProps.foregroundColor,
+      muted: liveProps.mutedColor,
+      onAccent: liveProps.accentColor ? contrastingInk(liveProps.accentColor) : undefined,
+      onPrimary: liveProps.primaryColor ? contrastingInk(liveProps.primaryColor) : undefined,
+      primary: liveProps.primaryColor,
     }),
     [
-      props.accentColor,
-      props.backgroundColor,
-      props.foregroundColor,
-      props.mutedColor,
-      props.primaryColor,
+      liveProps.accentColor,
+      liveProps.backgroundColor,
+      liveProps.foregroundColor,
+      liveProps.mutedColor,
+      liveProps.primaryColor,
     ],
   );
   const postConnected = useCallback((message: Record<string, unknown>) => {
@@ -288,7 +288,7 @@ function StorefrontIframePreview({
         return;
       }
       if (field.kind === "links" && path !== field.path) {
-        const current = props[field.prop as keyof StorefrontPageProps];
+        const current = liveProps[field.prop as keyof StorefrontPageProps];
         const next = updateEditorLinkValue(
           current,
           field.path,
@@ -316,7 +316,7 @@ function StorefrontIframePreview({
     manifest,
     onSelectPath,
     postConnected,
-    props,
+    liveProps,
     previewLocale,
     resolvedTheme,
     selectedPath,

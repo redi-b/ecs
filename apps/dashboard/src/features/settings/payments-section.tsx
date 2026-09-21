@@ -182,9 +182,8 @@ export function PaymentsSection({
     <SettingsSectionBody>
       <SectionIntro title={t("settings.sections.payments.label")} />
 
-      {/* Cash on delivery — compact: action lives in the header */}
       <Card size="sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30">
               <AppIcons.orders className="size-4 text-muted-foreground" />
@@ -219,15 +218,8 @@ export function PaymentsSection({
             </Button>
           )}
         </CardHeader>
-        <CardContent className="pt-3">
-          <p className="text-sm text-muted-foreground">{t("settings.payments.cod.hint")}</p>
-        </CardContent>
       </Card>
 
-      {/*
-        Online payments: nested cards for offer and connect form.
-        Setup steps + support copy live in a rich HelpTip (not repeated under the title).
-      */}
       <Card size="sm">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3">
           <div className="flex min-w-0 items-start gap-3">
@@ -280,7 +272,7 @@ export function PaymentsSection({
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4 pt-3">
+        <CardContent className="flex flex-col gap-4 pt-4">
           {status === "loading" ? (
             <div className="h-24 animate-pulse rounded-xl bg-muted/40" />
           ) : null}
@@ -344,8 +336,7 @@ export function PaymentsSection({
             </div>
           ) : null}
 
-          {/* Connect / update key — nested surface, no step list (that lives in HelpTip) */}
-          <div className="space-y-3 rounded-xl border border-border/70 bg-background p-3.5">
+          <div className="space-y-3">
             <div className="space-y-0.5">
               <p className="text-sm font-medium tracking-tight">
                 {connected
@@ -398,7 +389,9 @@ export function PaymentsSection({
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                <FieldDescription>{t("settings.payments.online.secretHint")}</FieldDescription>
+                {!connected ? (
+                  <FieldDescription>{t("settings.payments.online.secretHint")}</FieldDescription>
+                ) : null}
               </FieldContent>
             </Field>
 

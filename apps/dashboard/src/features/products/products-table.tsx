@@ -231,6 +231,7 @@ export function ProductsTable({
           }
         : undefined,
       taxonomy.isLoading,
+      translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
     );
     return resolved;
   }, [
@@ -243,6 +244,7 @@ export function ProductsTable({
     t,
     taxonomy.isLoading,
     tenantId,
+    translationsEnabled,
   ]);
 
   const productRowActions = useCallback(

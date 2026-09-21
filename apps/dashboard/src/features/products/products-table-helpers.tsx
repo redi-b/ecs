@@ -184,6 +184,7 @@ export function getProductColumns(
   productDetailHref?: (product: MerchantProduct) => string,
   onSetInventory?: (product: MerchantProduct) => void,
   isLoading?: boolean,
+  onTranslate?: (product: MerchantProduct) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -316,6 +317,7 @@ export function getProductColumns(
           onStatusChange,
           t,
           onSetInventory,
+          onTranslate,
         );
 
         return <RowActionsMenu {...rowActions} />;
