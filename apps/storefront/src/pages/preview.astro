@@ -205,6 +205,10 @@ function resolveConfiguredEditorOrigin() {
           // image". Prefer an explicit empty-state source, then preserve the
           // source rendered by the template for older adapters.
           const nextSource = value || node.dataset.editorEmptySrc || node.dataset.editorOriginalSrc || '';
+          // Template defaults include responsive candidates. Those override src
+          // selection in the browser, so clear them for live editor replacements.
+          node.removeAttribute('srcset');
+          node.removeAttribute('sizes');
           if (nextSource) node.src = nextSource;
           else node.removeAttribute('src');
           node.hidden = !nextSource;

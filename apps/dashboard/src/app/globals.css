@@ -201,6 +201,23 @@
   --tw-shadow: var(--material-panel-shadow);
 }
 
+.launch-assistant-surface {
+  box-shadow: 0 20px 56px -12px rgb(0 0 0 / 0.25), 0 4px 12px -4px rgb(0 0 0 / 0.12);
+  animation-timing-function: var(--ease-dashboard);
+  animation-duration: var(--motion-base);
+}
+
+.launch-assistant-surface[data-state="closed"] {
+  animation-duration: var(--motion-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-assistant-surface {
+    animation: none;
+    transition: none;
+  }
+}
+
 .dark :is([data-slot="app-header"], [data-slot="sidebar-inner"]) {
   background-image: linear-gradient(115deg, var(--material-sheen), transparent 65%);
   box-shadow: inset 0 1px 0 var(--material-edge);
