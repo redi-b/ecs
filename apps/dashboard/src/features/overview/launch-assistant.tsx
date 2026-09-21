@@ -434,7 +434,7 @@ function ChecklistRow({
               href={item.href}
               prefetch={false}
               className="underline decoration-border underline-offset-4 hover:decoration-current"
-              onClick={onNavigate}
+              {...(onNavigate ? { onClick: onNavigate } : {})}
             >
               {item.label}
             </Link>
@@ -490,7 +490,12 @@ function ChecklistRow({
   }
 
   return (
-    <Link className={className} href={item.href} prefetch={false} onClick={onNavigate}>
+    <Link
+      className={className}
+      href={item.href}
+      prefetch={false}
+      {...(onNavigate ? { onClick: onNavigate } : {})}
+    >
       {content}
     </Link>
   );
