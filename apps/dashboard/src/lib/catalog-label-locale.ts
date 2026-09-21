@@ -36,3 +36,15 @@ export function writeCatalogLabelLocaleCookie(mode: CatalogLabelLocaleMode) {
     new CustomEvent(CATALOG_LABEL_LOCALE_EVENT, { detail: { mode } }),
   );
 }
+
+export const STOREFRONT_LANGUAGES_CHANGED_EVENT = "ecs-storefront-languages-changed";
+
+export function dispatchStorefrontLanguagesChanged(enabledLocales: string[]) {
+  if (typeof window === "undefined") return;
+  const amharicEnabled = enabledLocales.includes("am");
+  window.dispatchEvent(
+    new CustomEvent(STOREFRONT_LANGUAGES_CHANGED_EVENT, {
+      detail: { amharicEnabled, enabledLocales },
+    }),
+  );
+}

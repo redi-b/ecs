@@ -4,6 +4,7 @@ import type { MerchantProduct } from "@ecs/contracts";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,30 +53,43 @@ export function BulkInventoryDialog({
   );
   const [rows, setRows] = useState(initialRows);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const tooLarge = rows.length > 50;
 
-  useEffect(() => setRows(initialRows), [initialRows]);
+  useEffect(() => {
+    setRows(initialRows);
+    setError(null);
+  }, [initialRows]);
 
   async function save() {
-    const updates = rows.map((row) => ({
-      productId: row.productId,
-      variantId: row.variantId,
-      stockedQuantity: Number(row.stockedQuantity),
-    }));
-    if (
-      updates.length === 0 ||
-      updates.some(
-        (row) =>
-          !Number.isInteger(row.stockedQuantity) ||
-          row.stockedQuantity < 0 ||
-          row.stockedQuantity > 1_000_000_000,
-      )
-    ) {
+    if (tooLarge) {
+      setError(t("products.stock.bulkTooLarge"));
+      return;
+    }
+
+    const hasInvalid =
+      rows.length === 0 ||
+      rows.some((row) => {
+        const trimmed = row.stockedQuantity.trim();
+        if (!trimmed) return true;
+        const num = Number(trimmed);
+        return !Number.isInteger(num) || num < 0 || num > 1_000_000_000;
+      });
+
+    if (hasInvalid) {
+      setError(t("products.stock.bulkInvalid"));
       toast.error(t("products.stock.bulkInvalid"));
       return;
     }
 
+    const updates = rows.map((row) => ({
+      productId: row.productId,
+      variantId: row.variantId,
+      stockedQuantity: Number(row.stockedQuantity.trim()),
+    }));
+
     setSaving(true);
+    setError(null);
     try {
       const response = await fetch(dashboardRoutes.productsBatchInventoryAction, {
         method: "POST",
@@ -106,6 +120,7 @@ export function BulkInventoryDialog({
         onSaved();
       }
     } catch {
+      setError(t("products.stock.bulkFailed"));
       toast.error(t("products.stock.bulkFailed"));
     } finally {
       setSaving(false);
@@ -124,6 +139,16 @@ export function BulkInventoryDialog({
           <DialogTitle>{t("products.stock.bulkTitle")}</DialogTitle>
           <DialogDescription>{t("products.stock.bulkDescription")}</DialogDescription>
         </DialogHeader>
+        {tooLarge ? (
+          <Alert variant="destructive">
+            <AlertDescription>{t("products.stock.bulkTooLarge")}</AlertDescription>
+          </Alert>
+        ) : null}
+        {error ? (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
         <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
           {rows.map((row, index) => (
             <label
@@ -138,13 +163,14 @@ export function BulkInventoryDialog({
                 inputMode="numeric"
                 id={`bulk-stock-${index}`}
                 min={0}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setError(null);
                   setRows((current) =>
                     current.map((item, itemIndex) =>
                       itemIndex === index ? { ...item, stockedQuantity: event.target.value } : item,
                     ),
-                  )
-                }
+                  );
+                }}
                 step={1}
                 type="number"
                 value={row.stockedQuantity}
@@ -152,9 +178,6 @@ export function BulkInventoryDialog({
             </label>
           ))}
         </div>
-        {tooLarge ? (
-          <p className="text-sm text-destructive">{t("products.stock.bulkTooLarge")}</p>
-        ) : null}
         <DialogFooter showCloseButton>
           <Button disabled={saving || tooLarge || rows.length === 0} onClick={() => void save()}>
             {saving ? t("products.stock.saving") : t("products.stock.bulkSave")}

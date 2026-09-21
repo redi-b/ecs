@@ -18,6 +18,7 @@ import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useCatalogLabelLocale } from "@/components/providers/catalog-label-locale-provider";
 import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
 import {
   getProductTableCounts,
@@ -97,6 +98,8 @@ export function ProductsTable({
   const canPublish = usePermission("products.publish") && !readOnly;
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { amharicEnabled: localeAmharicEnabled } = useCatalogLabelLocale();
+  const effectiveTranslationsEnabled = translationsEnabled && localeAmharicEnabled;
   const taxonomy = useProductTaxonomy({ enabled: canUpdate, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
@@ -231,7 +234,7 @@ export function ProductsTable({
           }
         : undefined,
       taxonomy.isLoading,
-      translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
+      effectiveTranslationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
     );
     return resolved;
   }, [
@@ -244,7 +247,7 @@ export function ProductsTable({
     t,
     taxonomy.isLoading,
     tenantId,
-    translationsEnabled,
+    effectiveTranslationsEnabled,
   ]);
 
   const productRowActions = useCallback(
@@ -261,9 +264,9 @@ export function ProductsTable({
               setShowBulkInventoryDialog(true);
             }
           : undefined,
-        translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
+        effectiveTranslationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
       ),
-    [canDelete, canUpdate, handleStatusChange, t, tenantId, translationsEnabled],
+    [canDelete, canUpdate, handleStatusChange, t, tenantId, effectiveTranslationsEnabled],
   );
 
   const pushServerFilters = useCallback(
@@ -444,10 +447,15 @@ export function ProductsTable({
 
   return (
     <>
-      {translatingProduct ? (
+      {translatingProduct && effectiveTranslationsEnabled ? (
         <ProductTranslationSheet
           onOpenChange={(open) => {
             if (!open) setTranslatingProduct(null);
+          }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            router.refresh();
           }}
           open
           product={translatingProduct}

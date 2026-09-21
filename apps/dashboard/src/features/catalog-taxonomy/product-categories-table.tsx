@@ -584,6 +584,12 @@ export function ProductCategoriesTable({
               });
             }
           }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            router.refresh();
+          }}
           target={translatingCategory ? { kind: "category", resource: translatingCategory } : null}
           tenantId={tenantId}
           queueNavigation={translationQueueNavigation}

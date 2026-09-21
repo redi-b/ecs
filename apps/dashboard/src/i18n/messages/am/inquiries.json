@@ -13,8 +13,8 @@
     "allTypes": "ሁሉም ዓይነቶች"
   },
   "type": {
-    "contact": "መልዕክቶች",
-    "product_request": "የምርት ጥያቄዎች",
+    "contact": "መልዕክት",
+    "product_request": "የምርት ጥያቄ",
     "contact_short": "መልዕክት",
     "product_request_short": "የምርት ጥያቄ"
   },

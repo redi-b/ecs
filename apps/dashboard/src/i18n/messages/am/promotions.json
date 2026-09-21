@@ -33,9 +33,9 @@
     },
     "status": {
       "all": "ሁሉም",
-      "active": "በስራ ላይ ያሉ",
-      "inactive": "የቆሙ",
-      "draft": "በዝግጅት ላይ ያሉ",
+      "active": "በስራ ላይ ያለ",
+      "inactive": "የቆመ",
+      "draft": "በዝግጅት ላይ ያለ",
       "label": "ሁኔታ"
     },
     "offer": {
@@ -56,7 +56,7 @@
       "how": "እንዴት ይተገበራል",
       "methodsAll": "ሁሉም",
       "codeRequired": "በኮድ",
-      "automatic": "ራስ-ሰር ይተገበር"
+      "automatic": "በራሱ የሚተገበር"
     }
   },
   "format": {

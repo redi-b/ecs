@@ -497,6 +497,12 @@ export function ProductCollectionsTable({
               });
             }
           }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            router.refresh();
+          }}
           target={
             translatingCollection ? { kind: "collection", resource: translatingCollection } : null
           }

@@ -14,6 +14,7 @@ import type { AppLocale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
   CATALOG_LABEL_LOCALE_EVENT,
+  STOREFRONT_LANGUAGES_CHANGED_EVENT,
   type CatalogLabelLocaleMode,
   parseCatalogLabelLocaleCookie,
   readCatalogLabelLocaleCookie,
@@ -31,7 +32,7 @@ type CatalogLabelLocaleContextValue = {
 const CatalogLabelLocaleContext = createContext<CatalogLabelLocaleContextValue | null>(null);
 
 export function CatalogLabelLocaleProvider({
-  amharicEnabled = true,
+  amharicEnabled: initialAmharicEnabled = true,
   children,
   initialMode = "match",
 }: {
@@ -40,9 +41,14 @@ export function CatalogLabelLocaleProvider({
   initialMode?: CatalogLabelLocaleMode;
 }) {
   const { locale } = useI18n();
+  const [amharicEnabled, setAmharicEnabled] = useState(initialAmharicEnabled);
   const [mode, setModeState] = useState<CatalogLabelLocaleMode>(
     () => parseCatalogLabelLocaleCookie(initialMode),
   );
+
+  useEffect(() => {
+    setAmharicEnabled(initialAmharicEnabled);
+  }, [initialAmharicEnabled]);
 
   useEffect(() => {
     setModeState(readCatalogLabelLocaleCookie());
@@ -50,8 +56,16 @@ export function CatalogLabelLocaleProvider({
       const next = (event as CustomEvent<{ mode?: unknown }>).detail?.mode;
       if (typeof next === "string") setModeState(parseCatalogLabelLocaleCookie(next));
     }
+    function onLanguagesChange(event: Event) {
+      const enabled = (event as CustomEvent<{ amharicEnabled?: unknown }>).detail?.amharicEnabled;
+      if (typeof enabled === "boolean") setAmharicEnabled(enabled);
+    }
     window.addEventListener(CATALOG_LABEL_LOCALE_EVENT, onChange);
-    return () => window.removeEventListener(CATALOG_LABEL_LOCALE_EVENT, onChange);
+    window.addEventListener(STOREFRONT_LANGUAGES_CHANGED_EVENT, onLanguagesChange);
+    return () => {
+      window.removeEventListener(CATALOG_LABEL_LOCALE_EVENT, onChange);
+      window.removeEventListener(STOREFRONT_LANGUAGES_CHANGED_EVENT, onLanguagesChange);
+    };
   }, []);
 
   const setMode = useCallback((next: CatalogLabelLocaleMode) => {

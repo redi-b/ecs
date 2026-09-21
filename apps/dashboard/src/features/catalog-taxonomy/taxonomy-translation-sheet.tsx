@@ -2,6 +2,8 @@
 
 import { type CatalogTranslationResource, catalogTranslationResourceSchema } from "@ecs/contracts";
 import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
@@ -61,6 +63,8 @@ export function TaxonomyTranslationSheet({
   onSaved?: (() => void) | undefined;
 }) {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resource, setResource] = useState<CatalogTranslationResource | null>(null);
@@ -134,6 +138,11 @@ export function TaxonomyTranslationSheet({
       setResource(parsed.data);
       setDrafts(parsed.data.translations);
       toast.success(t("taxonomy.translation.saved"));
+      queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      router.refresh();
       onSaved?.();
     } catch {
       toast.error(t("taxonomy.translation.saveFailed"));

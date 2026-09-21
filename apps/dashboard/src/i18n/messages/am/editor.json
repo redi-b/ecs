@@ -40,7 +40,7 @@
   },
   "status": {
     "live": "በስራ ላይ",
-    "publishedLive": "ከቀጥታ መደብሩ ጋር ተመሳሳይ",
+    "publishedLive": "ከመደብሩ ጋር ተመሳሳይ",
     "draftSaved": "የተቀመጠ ለውጥ",
     "unpublishedEdits": "ያልተለቀቁ ለውጦች",
     "paused": "መደብሩ ቆሟል"

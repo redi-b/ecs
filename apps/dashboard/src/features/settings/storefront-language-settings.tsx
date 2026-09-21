@@ -2,6 +2,7 @@
 
 import type { StorefrontLanguageSettings } from "@ecs/contracts";
 import { RiTranslate2 } from "@remixicon/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
@@ -12,6 +13,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
+import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function StorefrontLanguageSettingsPanel({
@@ -23,6 +25,7 @@ export function StorefrontLanguageSettingsPanel({
   onDirtyChange?: ((dirty: boolean) => void) | undefined;
   tenantId: string;
 }) {
+  const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
   const amharicId = useId();
   const { t } = useI18n();
@@ -59,7 +62,10 @@ export function StorefrontLanguageSettingsPanel({
         toast.error(t("settings.storefront.languagesSaveFailed"));
         return;
       }
-      setSaved(result.languageSettings ?? settings);
+      const nextSettings = result.languageSettings ?? settings;
+      setSaved(nextSettings);
+      dispatchStorefrontLanguagesChanged(nextSettings.enabledLocales);
+      router.refresh();
       toast.success(t("settings.storefront.languagesSaved"));
     });
   }

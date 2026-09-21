@@ -128,19 +128,19 @@
       "no_date": "ቀን የሌለው"
     },
     "lifecycle": {
-      "all": "ሁሉም ትዕዛዞች",
+      "all": "ሁሉም",
       "open": "በሂደት ላይ",
       "completed": "የተጠናቀቀ",
       "canceled": "የተሰረዘ",
-      "needs_fulfillment": "ማስረከብ የሚያስፈልጋቸው",
-      "fulfilled": "የደረሱ",
+      "needs_fulfillment": "ማስረከብ የሚያስፈልገው",
+      "fulfilled": "የደረሰ",
       "payment_pending": "ክፍያ በመጠባበቅ ላይ",
-      "paid": "የተከፈሉ",
+      "paid": "የተከፈለ",
       "label": "የትዕዛዝ ሁኔታ"
     },
     "fulfillment": {
       "all": "ሁሉም",
-      "unfulfilled": "ያልተስተናገዱ",
+      "unfulfilled": "ያልተስተናገደ",
       "label": "የማስረከብ ሁኔታ"
     }
   },
