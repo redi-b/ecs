@@ -3,6 +3,7 @@ import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
+import { resolveStorefrontMediaVariantUrl } from "../../../lib/media-url";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 import addToCartIcon from "./icons/add-to-cart-icon.svg?raw";
@@ -17,6 +18,7 @@ const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` 
 const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, variant);
 const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const cardThumbnail = resolveStorefrontMediaVariantUrl(product.thumbnail, 400) ?? product.thumbnail;
 const badgeLabel = badge?.kind === "out-of-stock"
   ? m.catalog_out_of_stock({}, { locale })
   : badge?.kind === "promotion"
@@ -27,7 +29,7 @@ const badgeLabel = badge?.kind === "out-of-stock"
   <h3 class="product-card__name type-heading-5"><a href={href}>{title}</a></h3>
   <div class="product-card__image-box">
     <a href={href} class="product-card__image img-wrapper" aria-label={m.wishlist_view_product({ product: title }, { locale })}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={title} width="720" height="720" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
+      {cardThumbnail ? <img src={cardThumbnail} alt={title} width="400" height="400" loading={eager ? "eager" : "lazy"} decoding="async" class="contain" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
     <button class="product-card__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><SaveIcon /></button>
     {variant ? <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>

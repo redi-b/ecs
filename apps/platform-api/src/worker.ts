@@ -13,7 +13,9 @@ import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaOrderService } from "./adapters/medusa/order/service.js";
 import { createMedusaProductService } from "./adapters/medusa/product/service.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { createMediaStorageFromEnv } from "./adapters/storage/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
+import { createMediaProcessHandler } from "./jobs/handlers/media-process.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
 import { createEmailDeliverHandler } from "./jobs/handlers/email-deliver.js";
@@ -245,6 +247,10 @@ const worker = startPlatformWorkers({
       db: platformDb.db,
       listOrders: (input) => orderService.listMerchantOrders(input),
       listProducts: (input) => productService.listMerchantProducts(input),
+    }) as JobHandler,
+    "media.process": createMediaProcessHandler({
+      db: platformDb.db,
+      storage: createMediaStorageFromEnv(),
     }) as JobHandler,
     "product-import.apply": createProductImportApplyHandler({
       store: createProductImportApplyStore(platformDb.db),

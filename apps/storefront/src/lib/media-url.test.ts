@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { normalizeStorefrontMediaUrl } from "./media-url.js";
+import {
+  buildStorefrontMediaSrcset,
+  normalizeStorefrontMediaUrl,
+  resolveStorefrontMediaVariantUrl,
+} from "./media-url.js";
 
 describe("storefront media URL boundary", () => {
   const base = "https://media.example.com/ecs-media";
@@ -46,4 +50,29 @@ describe("storefront media URL boundary", () => {
       else process.env.NODE_ENV = previous;
     }
   });
+
+  it("resolves variant URLs and srcset for tenant media assets", () => {
+    const original = "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/photo.jpg";
+    assert.equal(
+      resolveStorefrontMediaVariantUrl(original, 400, base),
+      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w400.webp",
+    );
+    assert.equal(
+      resolveStorefrontMediaVariantUrl(original, 96, base),
+      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w96.webp",
+    );
+    assert.equal(
+      buildStorefrontMediaSrcset(original, [400, 800, 1200], base),
+      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w400.webp 400w, https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w800.webp 800w, https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w1200.webp 1200w",
+    );
+  });
+
+  it("leaves gifs and svgs untouched in variant resolvers", () => {
+    const gif = "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/anim.gif";
+    const svg = "/images/icon.svg";
+    assert.equal(resolveStorefrontMediaVariantUrl(gif, 400, base), gif);
+    assert.equal(buildStorefrontMediaSrcset(gif, [400, 800, 1200], base), null);
+    assert.equal(resolveStorefrontMediaVariantUrl(svg, 400, base), svg);
+  });
 });
+

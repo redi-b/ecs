@@ -882,7 +882,18 @@ const app = createPlatformApp({
   createMerchantCustomerAddress: customerService.createCustomerAddress,
   deleteMerchantCustomerAddress: customerService.deleteCustomerAddress,
   deleteMerchantPromotion: promotionService.deletePromotion,
-  completeMediaUpload: mediaService.completeUpload,
+  completeMediaUpload: async (input) => {
+    const result = await mediaService.completeUpload(input);
+    if (result.ok && jobsClient) {
+      await jobsClient.enqueueJob({
+        idempotencyKey: `media.process:${result.asset.id}`,
+        name: "media.process",
+        payload: { assetId: result.asset.id },
+        tenantId: input.tenantId,
+      });
+    }
+    return result;
+  },
   deleteMediaAsset: mediaService.deleteMedia,
   deleteMerchantProduct: productService.deleteMerchantProduct,
   deleteMerchantProductsBatch: productService.deleteMerchantProductsBatch,

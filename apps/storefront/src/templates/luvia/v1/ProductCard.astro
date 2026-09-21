@@ -4,6 +4,7 @@ import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
+import { resolveStorefrontMediaVariantUrl } from "../../../lib/media-url";
 import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
 import bagIcon from "./icons/bag-icon.svg";
@@ -20,11 +21,12 @@ const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thum
 const purchasableVariant = product.variants.find((variant) => variant.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, purchasableVariant);
 const originalPrice = purchasableVariant?.originalPriceAmount ?? product.originalPriceAmount ?? null;
+const cardThumbnail = resolveStorefrontMediaVariantUrl(product.thumbnail, 400) ?? product.thumbnail;
 ---
 <article class="lv-product-card">
   <div class="lv-product-card__media">
     <a class="lv-product-card__media-link" href={href} aria-label={`${m.action_view_product({}, { locale })}: ${title}`}>
-      {product.thumbnail ? <img src={product.thumbnail} alt={title} width="900" height="900" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
+      {cardThumbnail ? <img src={cardThumbnail} alt={title} width="400" height="400" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
     {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={starIcon.src} alt="" /> : null}{badge.label}</span> : null}
     <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><img src={wishlistIcon.src} alt="" /></button>

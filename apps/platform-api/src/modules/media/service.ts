@@ -29,6 +29,7 @@ import type {
   MediaServiceError,
   MediaUploadCreateResult,
 } from "../../types/index.js";
+import { mediaDisplayUrls, type MediaVariantRecord } from "./variants.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type MediaAssetRow = typeof mediaAssets.$inferSelect;
@@ -283,6 +284,9 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
 
     try {
       await storage.deleteObject(asset.objectKey);
+      for (const variant of Object.values(asset.variants ?? {})) {
+        if (variant.objectKey) await storage.deleteObject(variant.objectKey);
+      }
     } catch (error) {
       if (error instanceof MediaStorageUnavailableError) {
         return mediaError("media_storage_unavailable", 503);
@@ -389,6 +393,8 @@ function toMediaAsset(asset: MediaAssetRow): MediaAsset {
     publicUrl: asset.publicUrl,
     status: asset.status,
     updatedAt: asset.updatedAt.toISOString(),
+    urls: mediaDisplayUrls(asset.publicUrl, asset.variants as Record<string, MediaVariantRecord>),
+    variantsStatus: asset.variantsStatus,
     width: asset.width,
   };
 }

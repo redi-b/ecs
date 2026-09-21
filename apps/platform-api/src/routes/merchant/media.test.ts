@@ -18,6 +18,14 @@ const asset: MediaAsset = {
   publicUrl: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
   status: "pending",
   updatedAt: "2026-07-11T00:00:00.000Z",
+  urls: {
+    original: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+    w96: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+    w400: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+    w800: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+    w1200: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+  },
+  variantsStatus: "pending",
   width: null,
 };
 

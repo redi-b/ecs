@@ -24,8 +24,14 @@ export type StorageAdapter = {
   checkHealth(): Promise<void>;
   createUpload(input: StorageUploadRequest): Promise<StorageUploadDescriptor>;
   deleteObject(objectKey: string): Promise<void>;
+  getObject(objectKey: string): Promise<Uint8Array | null>;
   getObjectMetadata(objectKey: string): Promise<StoredObjectMetadata | null>;
   provider: string;
+  putObject(input: {
+    body: Uint8Array;
+    contentType: string;
+    objectKey: string;
+  }): Promise<{ publicUrl: string | null }>;
 };
 
 export class MediaStorageUnavailableError extends Error {
@@ -45,7 +51,9 @@ export function createUnavailableStorageAdapter(): StorageAdapter {
     checkHealth: unavailable,
     createUpload: unavailable,
     deleteObject: unavailable,
+    getObject: unavailable,
     getObjectMetadata: unavailable,
     provider: "unconfigured",
+    putObject: unavailable,
   };
 }

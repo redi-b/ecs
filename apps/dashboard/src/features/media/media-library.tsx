@@ -349,7 +349,11 @@ export function MediaLibrary({
               type="button"
             >
               {/* biome-ignore lint/performance/noImgElement: Runtime object-storage media. */}
-              <img alt="" className="size-11 object-cover" src={asset.publicUrl ?? ""} />
+              <img
+                alt=""
+                className="size-11 object-cover"
+                src={asset.urls?.w96 ?? asset.publicUrl ?? ""}
+              />
             </button>
             <div className="min-w-0">
               {canManage ? (
@@ -572,7 +576,7 @@ export function MediaLibrary({
                       <img
                         alt={asset.altText ?? ""}
                         className="aspect-[4/3] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.015]"
-                        src={asset.publicUrl ?? ""}
+                        src={asset.urls?.w400 ?? asset.publicUrl ?? ""}
                       />
                       <span className="pointer-events-none absolute inset-0 flex items-end justify-end p-2 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
                         <span className="rounded-full border border-white/20 bg-black/70 p-1.5 text-white">
