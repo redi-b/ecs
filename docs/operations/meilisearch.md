@@ -27,7 +27,7 @@ The index is also updated after product create, update, and delete workflows. A 
 
 Set a strong `MEILISEARCH_API_KEY`. Meilisearch is reachable only inside the Compose network and through its loopback-bound administration port. Browsers never receive the master key.
 
-Dokploy runs `reindex-medusa-search` after Medusa migrations and before the Medusa API starts. The persistent `meilisearch-data` volume stores the index and daily snapshots.
+Production Compose runs a one-shot `reindex-medusa-search` job after commerce-engine migrations and before that API starts. The persistent `meilisearch-data` volume stores the index and daily snapshots. After a database restore, reindex; the volume is not the source of truth.
 
 ## Failure behavior
 

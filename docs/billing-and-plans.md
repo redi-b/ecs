@@ -11,12 +11,12 @@ pay that merchant.
 - Plan capabilities, currently including custom-domain access
 - Enforced limits, currently including the number of products a shop may create
 - Free and paid subscription states
-- Manual invoice review and verified Chapa payment confirmation
+- Manual invoice review after transfer or wallet proof (see [Payments and billing](./payments-and-billing.md) for shop checkout vs platform subscriptions)
 - Renewal invoices, payment reminders, and past-due handling
 - Audited operator corrections when a merchant must move to another published version
 
-Plan names, prices, and final tier contents are commercial decisions and can be changed before
-launch without redesigning the billing system.
+Plan names, prices, and tier contents are commercial decisions. Changing them does not require
+redesigning the billing system.
 
 ## Managing plans in ECS Operations
 
