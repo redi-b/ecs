@@ -52,7 +52,7 @@ export function OrderIdentityCell({
 
 export function OrderPlacedCell({ order }: { order: MerchantOrder }) {
   return (
-    <span className="whitespace-nowrap text-sm text-muted-foreground">
+    <span className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
       {formatOrderDateTime(order.createdAt)}
     </span>
   );

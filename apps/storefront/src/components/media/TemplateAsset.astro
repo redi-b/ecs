@@ -28,7 +28,7 @@ const responsiveWidths = [...new Set([...widths.filter((width) => width < fallba
 ---
 
 {override ? (
-  <Image src={override} width={fallback.width} height={fallback.height} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} {...attributes} />
+  <Image src={override} width={fallback.width} height={fallback.height} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} data-editor-empty-src={attributes['data-editor-image-path'] ? fallback.src : undefined} {...attributes} />
 ) : (
-  <Image src={fallback} format="webp" quality={82} widths={responsiveWidths} sizes={sizes} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} {...attributes} />
+  <Image src={fallback} format="webp" quality={82} widths={responsiveWidths} sizes={sizes} alt={alt} loading={loading} decoding="async" fetchpriority={fetchpriority} data-editor-empty-src={attributes['data-editor-image-path'] ? fallback.src : undefined} {...attributes} />
 )}

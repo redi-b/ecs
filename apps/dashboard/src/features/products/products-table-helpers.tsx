@@ -14,6 +14,7 @@ import { AppIcons } from "@/components/app/icons";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatProductDate,
@@ -182,6 +183,8 @@ export function getProductColumns(
   t: Translate,
   productDetailHref?: (product: MerchantProduct) => string,
   onSetInventory?: (product: MerchantProduct) => void,
+  isLoading?: boolean,
+  onTranslate?: (product: MerchantProduct) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -236,7 +239,7 @@ export function getProductColumns(
       accessorFn: (product) => getProductPriceSortValue(product),
       header: ({ column }) => <DataTableHeader column={column} title={t("products.table.price")} />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground tabular-nums">
           {formatProductPriceRange(row.original, t("products.detail.noPrice"))}
         </span>
       ),
@@ -251,7 +254,7 @@ export function getProductColumns(
         const variantCount = row.original.variants?.length ?? 0;
 
         return (
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground tabular-nums">
             {variantCount === 1
               ? t("products.table.variantCountOne")
               : t("products.table.variantCount", { count: variantCount })}
@@ -281,6 +284,7 @@ export function getProductColumns(
         <ProductOrganizationSummary
           categoryById={categoryById}
           collectionById={collectionById}
+          isLoading={isLoading}
           product={row.original}
           t={t}
         />
@@ -300,7 +304,7 @@ export function getProductColumns(
         <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatProductDate(row.original.updatedAt)}</span>
+        <span className="text-muted-foreground tabular-nums">{formatProductDate(row.original.updatedAt)}</span>
       ),
     },
     {
@@ -313,6 +317,7 @@ export function getProductColumns(
           onStatusChange,
           t,
           onSetInventory,
+          onTranslate,
         );
 
         return <RowActionsMenu {...rowActions} />;
@@ -337,7 +342,7 @@ export function ProductStockSummary({ product, t }: { product: MerchantProduct; 
   );
 
   return (
-    <Badge variant={available > 0 ? "success" : "warning"}>
+    <Badge className="tabular-nums" variant={available > 0 ? "success" : "warning"}>
       {available > 0
         ? t
           ? t("products.table.availableCount", { count: available })
@@ -354,16 +359,37 @@ export function ProductOrganizationSummary({
   collectionById,
   product,
   t,
+  isLoading = false,
 }: {
   categoryById: Map<string, MerchantProductCategory>;
   collectionById: Map<string, MerchantProductCollection>;
   product: MerchantProduct;
   t: Translate;
+  isLoading?: boolean | undefined;
 }) {
   const collection = product.collectionId ? collectionById.get(product.collectionId) : undefined;
   const categoryIds = product.categoryIds ?? [];
   const categoryCount = categoryIds.length;
   const firstCategory = categoryIds[0] ? categoryById.get(categoryIds[0]) : undefined;
+
+  if (isLoading && (product.collectionId || categoryCount > 0)) {
+    return (
+      <div className="flex min-w-36 flex-col gap-2">
+        {product.collectionId ? (
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <AppIcons.folder className="size-4 opacity-40" />
+            <Skeleton className="h-3.5 w-20 rounded" />
+          </span>
+        ) : null}
+        {categoryCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <AppIcons.tag className="size-4 opacity-40" />
+            <Skeleton className="h-3.5 w-16 rounded" />
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   if (!product.collectionId && !categoryCount) {
     return (

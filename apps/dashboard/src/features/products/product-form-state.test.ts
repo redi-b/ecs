@@ -3,10 +3,12 @@ import { describe, it } from "node:test";
 import type { MerchantProduct } from "@ecs/contracts";
 
 import {
+  getFirstInvalidFieldForStep,
   getProductDefaultValues,
   getProductVariantsPayload,
   getRemovedExistingVariants,
   suggestAvailableProductHandle,
+  validateProductOptions,
   validateProductVariantConfiguration,
 } from "./product-form-state";
 
@@ -183,6 +185,87 @@ describe("product variant edit state", () => {
     assert.throws(
       () => validateProductVariantConfiguration(values, t as never),
       /products\.validation\.variantLimit/,
+    );
+  });
+
+  it("validates product options correctly", () => {
+    assert.strictEqual(
+      validateProductOptions([], t as never),
+      "products.validation.optionRequired",
+    );
+
+    assert.strictEqual(
+      validateProductOptions([{ key: "opt1", title: "   ", values: [] }], t as never),
+      "products.validation.optionNameRequired",
+    );
+
+    assert.strictEqual(
+      validateProductOptions(
+        [
+          { key: "opt1", title: "Size", values: [{ key: "val1", label: "S" }] },
+          { key: "opt2", title: "size", values: [{ key: "val2", label: "M" }] },
+        ],
+        t as never,
+      ),
+      "products.validation.optionNamesUnique",
+    );
+
+    assert.strictEqual(
+      validateProductOptions([{ key: "opt1", title: "Size", values: [] }], t as never),
+      "products.validation.optionValueRequired",
+    );
+
+    assert.strictEqual(
+      validateProductOptions(
+        [
+          {
+            key: "opt1",
+            title: "Size",
+            values: [
+              { key: "val1", label: "S" },
+              { key: "val2", label: "s" },
+            ],
+          },
+        ],
+        t as never,
+      ),
+      "products.validation.optionValuesUnique",
+    );
+
+    assert.strictEqual(
+      validateProductOptions(
+        [
+          {
+            key: "opt1",
+            title: "Size",
+            values: [
+              { key: "val1", label: "S" },
+              { key: "val2", label: "M" },
+            ],
+          },
+        ],
+        t as never,
+      ),
+      undefined,
+    );
+  });
+
+  it("blocks advancing from variants step if hasVariants is true and options are invalid", () => {
+    const values = getProductDefaultValues(undefined);
+    values.hasVariants = true;
+    values.priceAmount = "100";
+    values.initialStock = "10";
+    values.options = [];
+
+    assert.strictEqual(
+      getFirstInvalidFieldForStep("variants", values, t as never),
+      "options",
+    );
+
+    values.options = [{ key: "opt1", title: "Size", values: [{ key: "val1", label: "S" }] }];
+    assert.strictEqual(
+      getFirstInvalidFieldForStep("variants", values, t as never),
+      null,
     );
   });
 });

@@ -656,7 +656,7 @@ export function ProductCategoriesTable({
                     variant="destructive-outline"
                   >
                     <AppIcons.trash data-icon="inline-start" />
-                    Delete selected
+                    {t("common.delete")}
                   </Button>
                 ) : null}
               </div>

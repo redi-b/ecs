@@ -442,7 +442,7 @@ export function MediaUploadField({
             Viewport breakpoints still apply inside sheets/dialogs, so avoid 4–5
             columns that shrink tiles to stamps. Two larger tiles read clearly.
           */}
-          <div className="max-h-[min(70vh,28rem)] min-w-0 max-w-full overflow-auto overscroll-contain rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
+          <div className="max-h-[min(70vh,28rem)] min-w-0 max-w-full overflow-auto rounded-2xl border bg-muted/10 p-3 sm:max-h-[min(72vh,32rem)]">
             <DndContext
               collisionDetection={closestCenter}
               modifiers={[keepDragInsideGallery]}

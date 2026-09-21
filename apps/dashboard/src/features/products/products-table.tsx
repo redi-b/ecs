@@ -230,6 +230,8 @@ export function ProductsTable({
             setShowBulkInventoryDialog(true);
           }
         : undefined,
+      taxonomy.isLoading,
+      translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
     );
     return resolved;
   }, [
@@ -240,7 +242,9 @@ export function ProductsTable({
     handleStatusChange,
     productDetailHrefBase,
     t,
+    taxonomy.isLoading,
     tenantId,
+    translationsEnabled,
   ]);
 
   const productRowActions = useCallback(
@@ -453,16 +457,17 @@ export function ProductsTable({
         />
       ) : null}
       <DataTable
-        bulkActions={(selectedProducts) => (
+        bulkActions={(selectedProducts, { clearSelection }) => (
           <>
             <Button
-              onClick={() =>
+              onClick={() => {
                 void copyToClipboard(
                   selectedProducts.map((product) => product.id).join("\n"),
                   t("products.table.productIds"),
                   t,
-                )
-              }
+                );
+                clearSelection();
+              }}
               size="sm"
               type="button"
               variant="outline"
@@ -474,12 +479,13 @@ export function ProductsTable({
               <>
                 <Button
                   disabled={isStatusUpdatePending}
-                  onClick={() =>
-                    handleStatusChange(
+                  onClick={async () => {
+                    await handleStatusChange(
                       selectedProducts.map((product) => product.id),
                       "published",
-                    )
-                  }
+                    );
+                    clearSelection();
+                  }}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -488,12 +494,13 @@ export function ProductsTable({
                 </Button>
                 <Button
                   disabled={isStatusUpdatePending}
-                  onClick={() =>
-                    handleStatusChange(
+                  onClick={async () => {
+                    await handleStatusChange(
                       selectedProducts.map((product) => product.id),
                       "draft",
-                    )
-                  }
+                    );
+                    clearSelection();
+                  }}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -507,6 +514,7 @@ export function ProductsTable({
                 onClick={() => {
                   setSelectedProductsForInventory(selectedProducts);
                   setShowBulkInventoryDialog(true);
+                  clearSelection();
                 }}
                 size="sm"
                 type="button"
@@ -520,6 +528,7 @@ export function ProductsTable({
                 onClick={() => {
                   setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
                   setShowBatchDeleteDialog(true);
+                  clearSelection();
                 }}
                 size="sm"
                 type="button"

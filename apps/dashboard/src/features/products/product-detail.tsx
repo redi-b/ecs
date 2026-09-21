@@ -223,7 +223,7 @@ export function ProductDetail({
                 className={cn(
                   "grid grid-cols-2 gap-2.5 sm:grid-cols-3",
                   images.length > IMAGE_SCROLL_THRESHOLD &&
-                    "max-h-[min(26rem,48vh)] overflow-y-auto overscroll-contain pr-0.5",
+                    "max-h-[min(26rem,48vh)] overflow-y-auto pr-0.5",
                 )}
               >
                 {images.map((image, index) => {
@@ -655,6 +655,7 @@ export function ProductDeleteButton({
   return (
     <>
       <Button variant="destructive" onClick={() => setShowConfirm(true)} type="button">
+        <AppIcons.trash data-icon="inline-start" />
         {t("products.table.deleteProduct")}
       </Button>
 

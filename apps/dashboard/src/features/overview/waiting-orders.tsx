@@ -61,7 +61,7 @@ export function WaitingOrders({
           aria-labelledby={headingId}
           // biome-ignore lint/a11y/noNoninteractiveTabindex: Make the scroll region keyboard-scrollable.
           tabIndex={0}
-          className="max-h-[8.125rem] overflow-y-auto overscroll-y-contain rounded-lg border [scrollbar-gutter:stable] [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-ring"
+          className="max-h-[8.125rem] overflow-y-auto rounded-lg border [scrollbar-gutter:stable] [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-ring"
         >
           <ul className="divide-y">
             {orders.map((order) => {

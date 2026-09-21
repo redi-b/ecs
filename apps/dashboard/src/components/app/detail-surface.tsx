@@ -140,10 +140,12 @@ export function DetailFieldGrid({
 export function DetailMetric({
   label,
   value,
+  help,
   className,
 }: {
   label: string;
   value: string;
+  help?: string;
   className?: string;
 }) {
   return (
@@ -153,7 +155,10 @@ export function DetailMetric({
         className,
       )}
     >
-      <p className="text-[11px] leading-none text-muted-foreground">{label}</p>
+      <div className="flex items-center justify-between gap-1">
+        <p className="text-[11px] leading-none text-muted-foreground">{label}</p>
+        {help ? <HelpTip summary={help} /> : null}
+      </div>
       <p className="mt-1 truncate font-mono text-sm font-semibold tabular-nums tracking-tight">
         {value}
       </p>
@@ -184,7 +189,7 @@ export function DetailActivityList({
     <ol
       className={cn(
         "space-y-0",
-        scrollable && "max-h-[min(22rem,45vh)] overflow-y-auto overscroll-contain pr-1",
+        scrollable && "max-h-[min(22rem,45vh)] overflow-y-auto pr-1",
       )}
     >
       {items.map((item, index) => {

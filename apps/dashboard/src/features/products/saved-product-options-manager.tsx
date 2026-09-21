@@ -478,7 +478,7 @@ function SavedOptionEditDialog({
         </div>
         <Footer
           className={cn(
-            "m-0 shrink-0 flex-row justify-end gap-2 border-t p-4",
+            "m-0 shrink-0 gap-2 border-t p-4 sm:flex-row sm:justify-end",
             option.isNew ? "rounded-b-xl" : "rounded-none",
           )}
         >

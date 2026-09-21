@@ -23,6 +23,8 @@ import am_filters from "./am/filters.json";
 import en_filters from "./en/filters.json";
 import am_insights from "./am/insights.json";
 import en_insights from "./en/insights.json";
+import am_inquiries from "./am/inquiries.json";
+import en_inquiries from "./en/inquiries.json";
 import am_language from "./am/language.json";
 import en_language from "./en/language.json";
 import am_media from "./am/media.json";
@@ -61,6 +63,7 @@ export const messageNamespaces = [
   "customers",
   "editor",
   "filters",
+  "inquiries",
   "insights",
   "language",
   "media",
@@ -90,6 +93,7 @@ export const messagesByLocale = {
     customers: am_customers,
     editor: am_editor,
     filters: am_filters,
+    inquiries: am_inquiries,
     insights: am_insights,
     language: am_language,
     media: am_media,
@@ -116,6 +120,7 @@ export const messagesByLocale = {
     customers: en_customers,
     editor: en_editor,
     filters: en_filters,
+    inquiries: en_inquiries,
     insights: en_insights,
     language: en_language,
     media: en_media,

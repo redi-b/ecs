@@ -45,6 +45,6 @@ describe("storefront editor workspace containment", () => {
   it("uses a quiet non-shifting settings selection treatment", () => {
     assert.doesNotMatch(settingsSource, /border-l-2 border-transparent/);
     assert.doesNotMatch(settingsSource, /ring-offset-2 ring-offset-background/);
-    assert.match(settingsSource, /bg-primary\/\[0\.055\] ring-1 ring-primary\/25/);
+    assert.match(settingsSource, /bg-primary\/\[0\.07\] ring-2 ring-primary/);
   });
 });

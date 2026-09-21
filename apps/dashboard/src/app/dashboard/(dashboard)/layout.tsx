@@ -18,6 +18,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { MediaUploadHost } from "@/features/media/media-upload-host";
 import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import { getTranslations } from "@/i18n/server";
+import type { LaunchReadiness } from "@ecs/contracts";
+import { allows, merchantPolicies } from "@/lib/access-policy";
+import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences";
+import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
 import {
   DASHBOARD_PATH_HEADER,
   getDashboardAuthRedirectPath,
@@ -114,6 +118,20 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     );
   }
 
+  let initialReadiness: LaunchReadiness | null = null;
+  const canCompleteSetup = allows(access.access.permissions ?? [], merchantPolicies.launchSetup);
+  const initialHidden =
+    cookieStore.get(getLaunchAssistantCookieName(access.access.tenant.id))?.value === "true";
+
+  if (canCompleteSetup && !initialHidden) {
+    initialReadiness = await getPlatformLaunchReadiness({
+      cookieHeader: requestHeaders.get("cookie"),
+      platformApiBaseUrl,
+      requestHost,
+      tenantId: access.access.tenant.id,
+    });
+  }
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
@@ -131,7 +149,11 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
                 <AppHeader />
                 <OnboardingWarningToast />
                 <DashboardRouteBoundary>{children}</DashboardRouteBoundary>
-                <LaunchAssistant access={access.access} />
+                <LaunchAssistant
+                  access={access.access}
+                  initialHidden={initialHidden}
+                  initialReadiness={initialReadiness}
+                />
                 <ActivityRegistryProvider>
                   <BackgroundTaskCenter />
                   <MediaUploadHost />

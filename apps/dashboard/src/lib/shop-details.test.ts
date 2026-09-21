@@ -20,7 +20,8 @@ test("public shop details reject duplicate normalized phones without requiring p
 
 test("social profiles validate platform boundaries, secure URLs and duplicates", () => {
   assert.equal(shopSocialProfileSchema.safeParse({ platform: "instagram", url: "https://www.instagram.com/myshop/" }).success, true);
-  for (const url of ["not a url", "https://instagram.com.evil.example/shop", "https://facebook.com/shop", "http://instagram.com/shop", "https://user:password@instagram.com/shop"]) {
+  assert.equal(shopSocialProfileSchema.parse({ platform: "instagram", url: "http://instagram.com/shop" }).url, "https://instagram.com/shop");
+  for (const url of ["not a url", "https://instagram.com.evil.example/shop", "https://facebook.com/shop", "ftp://instagram.com/shop", "https://user:password@instagram.com/shop"]) {
     assert.equal(shopSocialProfileSchema.safeParse({ platform: "instagram", url }).success, false);
   }
   const profile = { platform: "instagram", url: "https://instagram.com/myshop" };

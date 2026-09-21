@@ -8,6 +8,17 @@ import {
 
 export const MAX_PRODUCT_IMPORT_BYTES = 2 * 1024 * 1024;
 export const MAX_PRODUCT_IMPORT_ROWS = 10_000;
+export const SIMPLE_PRODUCT_CSV_HEADERS = [
+  "product_title",
+  "description",
+  "price_etb",
+  "stock_quantity",
+  "sku",
+  "status",
+  "product_handle",
+  "variant_title",
+  "image_urls",
+] as const;
 
 export type ProductImportIssue = { code: string; message: string; row: number };
 export type ProductImportPlanRow = {
@@ -96,6 +107,15 @@ export function parseProductImportCsv(text: string): string[][] {
 /** Upgrades the exact v1 shape in memory; malformed or modified headers remain untouched. */
 export function normalizeProductImportCsvRows(rows: string[][]): string[][] {
   const headers = rows[0] ?? [];
+  const isSimple =
+    headers.length === SIMPLE_PRODUCT_CSV_HEADERS.length &&
+    SIMPLE_PRODUCT_CSV_HEADERS.every((header, index) => headers[index] === header);
+  if (isSimple) {
+    return [
+      [...PRODUCT_CSV_HEADERS],
+      ...rows.slice(1).map((row) => normalizeSimpleProductRow(row)),
+    ];
+  }
   const isLegacy =
     headers.length === LEGACY_PRODUCT_CSV_HEADERS.length &&
     LEGACY_PRODUCT_CSV_HEADERS.every((header, index) => headers[index] === header);
@@ -108,6 +128,44 @@ export function normalizeProductImportCsvRows(rows: string[][]): string[][] {
     if (index > 0 && upgraded[0] === "ecs-products-v1") upgraded[0] = PRODUCT_CSV_SCHEMA_VERSION;
     return upgraded;
   });
+}
+
+function normalizeSimpleProductRow(row: string[]): string[] {
+  const value = (name: (typeof SIMPLE_PRODUCT_CSV_HEADERS)[number]) =>
+    row[SIMPLE_PRODUCT_CSV_HEADERS.indexOf(name)]?.trim() ?? "";
+  const title = value("product_title");
+  const handle = value("product_handle") || slugifyProductHandle(title);
+  const price = value("price_etb");
+  const imageUrls = value("image_urls")
+    .split(/[;\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const normalized = new Map<(typeof PRODUCT_CSV_HEADERS)[number], string>([
+    ["schema_version", PRODUCT_CSV_SCHEMA_VERSION],
+    ["product_handle", handle],
+    ["product_title", title],
+    ["description", value("description")],
+    ["status", value("status") || "draft"],
+    ["category_ids", "[]"],
+    ["variant_title", value("variant_title") || "Default"],
+    ["sku", value("sku")],
+    ["option_values_json", "[]"],
+    ["option_presentations_json", "[]"],
+    ["prices_json", price ? JSON.stringify([{ amount: Number(price), currencyCode: "etb" }]) : "[]"],
+    ["stocked_quantity", value("stock_quantity")],
+    ["thumbnail_url", imageUrls[0] ?? ""],
+    ["image_urls_json", JSON.stringify(imageUrls)],
+  ]);
+  return PRODUCT_CSV_HEADERS.map((header) => normalized.get(header) ?? "");
+}
+
+function slugifyProductHandle(value: string) {
+  return value
+    .normalize("NFKD")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function parseJsonArray(value: string, code: string, row: number, issues: ProductImportIssue[]) {

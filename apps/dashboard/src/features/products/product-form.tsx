@@ -70,6 +70,7 @@ import {
   suggestAvailableProductHandle,
   validateInitialStock,
   validatePriceAmount,
+  validateProductOptions,
   validateTitle,
 } from "@/features/products/product-form-state";
 import type { ComposerStep, ProductFormProps } from "@/features/products/product-form-types";
@@ -865,39 +866,53 @@ export function ProductForm({
                           {(values) =>
                             values.hasVariants ? (
                               <>
-                                <form.Field name="options">
+                                <form.Field
+                                  name="options"
+                                  validators={{
+                                    onChange: ({ value }) =>
+                                      form.state.values.hasVariants
+                                        ? validateProductOptions(value, t)
+                                        : undefined,
+                                  }}
+                                >
                                   {(field) => (
-                                    <ProductOptionsWorkspace
-                                      onApplyDefaults={() => {
-                                        const rows = getVariantRows(values);
-                                        form.setFieldValue(
-                                          "variantOverrides",
-                                          Object.fromEntries(
-                                            rows.map((row) => [
-                                              row.key,
-                                              {
-                                                ...values.variantOverrides[row.key],
-                                                priceAmount: values.priceAmount,
-                                                stockedQuantity: values.initialStock,
-                                              },
-                                            ]),
-                                          ),
-                                        );
-                                      }}
-                                      onOptionsChange={field.handleChange}
-                                      onOverrideChange={(key, override) => {
-                                        form.setFieldValue("variantOverrides", {
-                                          ...values.variantOverrides,
-                                          [key]: {
-                                            ...values.variantOverrides[key],
-                                            ...override,
-                                          },
-                                        });
-                                      }}
-                                      options={field.state.value}
-                                      rows={getVariantRows(values)}
-                                      values={values.variantOverrides}
-                                    />
+                                    <div className="flex flex-col gap-2">
+                                      <ProductOptionsWorkspace
+                                        onApplyDefaults={() => {
+                                          const rows = getVariantRows(values);
+                                          form.setFieldValue(
+                                            "variantOverrides",
+                                            Object.fromEntries(
+                                              rows.map((row) => [
+                                                row.key,
+                                                {
+                                                  ...values.variantOverrides[row.key],
+                                                  priceAmount: values.priceAmount,
+                                                  stockedQuantity: values.initialStock,
+                                                },
+                                              ]),
+                                            ),
+                                          );
+                                        }}
+                                        onOptionsChange={field.handleChange}
+                                        onOverrideChange={(key, override) => {
+                                          form.setFieldValue("variantOverrides", {
+                                            ...values.variantOverrides,
+                                            [key]: {
+                                              ...values.variantOverrides[key],
+                                              ...override,
+                                            },
+                                          });
+                                        }}
+                                        options={field.state.value}
+                                        rows={getVariantRows(values)}
+                                        values={values.variantOverrides}
+                                      />
+                                      <FieldError
+                                        errors={field.state.meta.errors}
+                                        touched={field.state.meta.isTouched}
+                                      />
+                                    </div>
                                   )}
                                 </form.Field>
                               </>

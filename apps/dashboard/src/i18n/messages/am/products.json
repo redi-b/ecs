@@ -12,12 +12,12 @@
     "action": "ምርቶችን ኢምፖርት አድርግ",
     "title": "ምርቶችን ኢምፖርት አድርግ",
     "description": "የምርት CSV ፋይል ይምረጡ፣ የሚቀየረውን ይመልከቱ፣ ከዚያም ኢምፖርት ማድረግ ይጀምሩ።",
-    "formatTitle": "የCSV ፎርማት",
-    "formatDescription": "እነዚህን ርዕሶች በዚሁ ቅደም ተከተል ያስቀምጡ።",
+    "formatTitle": "በቀላሉ መሙላት የሚችሉትን ቴምፕሌት ይጠቀሙ",
+    "formatDescription": "ይህን ለአዲስ ምርቶች ይጠቀሙ። የምርት ሊንኩን ባዶ ከተዉት ከስሙ ይዘጋጃል። ያሉ ምርቶችን ለማስተካከል መጀመሪያ ኤክስፖርት ያድርጉ።",
     "copyFormat": "ፎርማቱን ኮፒ አድርግ",
     "formatCopied": "ፎርማቱ ኮፒ ተደርጓል",
     "copyFailed": "ፎርማቱን ኮፒ ማድረግ አልተቻለም። በምትኩ ሳምፕሉን ያውርዱ።",
-    "downloadSample": "ሳምፕል አውርድ",
+    "downloadSample": "ቴምፕሌት አውርድ",
     "fileRequired": "መጀመሪያ CSV ፋይል ይምረጡ።",
     "invalidFile": "ለመቀጠል CSV ፋይል ይምረጡ።",
     "dropTitle": "የምርት CSV ፋይልዎን እዚህ ይጣሉ",
@@ -168,7 +168,7 @@
       "all": "ሁሉም",
       "published": "በመደብር የሚታዩ",
       "draft": "በዝግጅት ላይ ያሉ",
-      "unknown": "ሁኔታ አልታወቀም"
+      "unknown": "ያልታወቀ"
     },
     "media": {
       "label": "ሚዲያ",
@@ -179,12 +179,12 @@
     "collection": {
       "label": "ስብስብ",
       "all": "ሁሉም ስብስቦች",
-      "none": "ስብስብ የለም"
+      "none": "ስብስብ የሌላቸው"
     },
     "category": {
       "label": "ምድብ",
       "all": "ሁሉም ምድቦች",
-      "none": "ምድብ የለም"
+      "none": "ምድብ የሌላቸው"
     }
   },
   "table": {
@@ -290,6 +290,7 @@
     "colPrice": "ዋጋ",
     "colAvailable": "ይገኛል",
     "colReserved": "ተይዟል",
+    "reservedHelp": "በትዕዛዝ የተያዙ ነገር ግን ገና ያልተላኩ/ያልተረከቡ እቃዎች።",
     "colStocked": "ተከማችቷል",
     "untitledVariant": "ርዕስ የሌለ አማራጭ",
     "noSku": "SKU የለም",
@@ -500,7 +501,7 @@
     "collectionHelp": "ስብስቦች አብረው ማሳየት የሚፈልጓቸውን ምርቶች፣ ለምሳሌ አዲስ የገቡ ወይም የበዓል ቅናሾች፣ ያንድ ላይ ያሰባስባሉ። አንድ ምርት በአንድ ስብስብ ውስጥ ሊሆን ይችላል።",
     "categoriesHelpLabel": "ስለ ምድቦች",
     "categoriesHelp": "ምድቦች ደንበኞች እንደ ልብስ፣ ጫማ ወይም የቆዳ እንክብካቤ በምርት ዓይነት እንዲፈልጉ ያግዛሉ። የሚመለከቱትን ሁሉ ይምረጡ።",
-    "defaultSellingTitle": "ነባሪ የሽያጭ ማስተካከያዎች",
+    "defaultSellingTitle": "መደበኛ የሽያጭ ማስተካከያዎች",
     "defaultSellingDesc": "ለእያንዳንዱ አማራጭ መነሻ ዋጋ እና ክምችት ይሆናሉ።",
     "fieldPrice": "ዋጋ",
     "fieldStocked": "ክምችት",
@@ -600,7 +601,7 @@
     "descriptionVariants": "ምርቶችን ይመልከቱ፣ ከዚያ መጠን፣ ቀለም እና ሌሎች አማራጮችን ይምረጡ።",
     "optionCount": "{count} አማራጮች",
     "selectedOf": "{selected} ከ {total} ተመርጠዋል",
-    "defaultOption": "ነባሪ አማራጭ",
+    "defaultOption": "መደበኛ አማራጭ",
     "loadMore": "ተጨማሪ ምርቶች",
     "oneOptionSelected": "1 አማራጭ ተመርጧል",
     "optionsSelected": "{count} አማራጮች ተመርጠዋል",

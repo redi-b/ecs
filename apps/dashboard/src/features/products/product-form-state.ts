@@ -84,33 +84,51 @@ export function getProductPayload(
   return parsed.data;
 }
 
-export function validateProductVariantConfiguration(values: ProductFormValues, t: Translate) {
-  if (!values.hasVariants) return;
-  const options = normalizeProductOptions(values.options);
-
+export function validateProductOptions(
+  options: ProductOptionDraft[],
+  t: Translate,
+): string | undefined {
   if (!options.length) {
-    throw new ProductMutationError(t("products.validation.optionRequired"), "variants");
+    return t("products.validation.optionRequired");
   }
 
   const optionNames = new Set<string>();
   for (const option of options) {
-    const optionName = option.title.toLocaleLowerCase();
-    if (optionNames.has(optionName)) {
-      throw new ProductMutationError(t("products.validation.optionNamesUnique"), "variants");
+    const trimmedTitle = option.title.trim();
+    if (!trimmedTitle) {
+      return t("products.validation.optionNameRequired");
     }
-    optionNames.add(optionName);
+
+    const lowerName = trimmedTitle.toLocaleLowerCase();
+    if (optionNames.has(lowerName)) {
+      return t("products.validation.optionNamesUnique");
+    }
+    optionNames.add(lowerName);
+
+    const validValues = option.values.filter((value) => value.label.trim().length > 0);
+    if (!validValues.length) {
+      return t("products.validation.optionValueRequired");
+    }
 
     const valueNames = new Set<string>();
-    for (const value of option.values) {
-      const valueName = value.label.toLocaleLowerCase();
-      if (valueNames.has(valueName)) {
-        throw new ProductMutationError(
-          t("products.validation.optionValuesUnique", { option: option.title }),
-          "variants",
-        );
+    for (const value of validValues) {
+      const lowerVal = value.label.trim().toLocaleLowerCase();
+      if (valueNames.has(lowerVal)) {
+        return t("products.validation.optionValuesUnique", { option: trimmedTitle });
       }
-      valueNames.add(valueName);
+      valueNames.add(lowerVal);
     }
+  }
+
+  return undefined;
+}
+
+export function validateProductVariantConfiguration(values: ProductFormValues, t: Translate) {
+  if (!values.hasVariants) return;
+
+  const optionsError = validateProductOptions(values.options, t);
+  if (optionsError) {
+    throw new ProductMutationError(optionsError, "variants");
   }
 
   const rows = getVariantRows(values);
@@ -165,12 +183,18 @@ export function getFirstInvalidFieldForStep(
     }
   }
 
-  if (step === "variants" && validatePriceAmount(values.priceAmount, t)) {
-    return "priceAmount";
-  }
+  if (step === "variants") {
+    if (validatePriceAmount(values.priceAmount, t)) {
+      return "priceAmount";
+    }
 
-  if (step === "variants" && validateInitialStock(values.initialStock, t)) {
-    return "initialStock";
+    if (validateInitialStock(values.initialStock, t)) {
+      return "initialStock";
+    }
+
+    if (values.hasVariants && validateProductOptions(values.options, t)) {
+      return "options";
+    }
   }
 
   return null;

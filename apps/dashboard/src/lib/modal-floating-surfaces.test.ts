@@ -20,6 +20,7 @@ const clippedSurfaces = new Map([
   ["features/media/media-upload-composer.tsx", "Upload previews"],
   ["features/orders/refund-order-dialog.tsx", "Select menus portal to body"],
   ["features/settings/account-security-panel.tsx", "Inline avatar controls"],
+  ["features/billing/billing-workspace.tsx", "Transfer payment evidence dialog; no combobox/popovers"],
 ]);
 
 function sourceFiles(directory: string): string[] {

@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { MerchantProduct } from "@ecs/contracts";
 import { buildProductCsv, PRODUCT_CSV_HEADERS } from "./product-export.js";
-import { dryRunProductImport, parseProductImportCsv } from "./product-import-dry-run.js";
+import {
+  dryRunProductImport,
+  parseProductImportCsv,
+  SIMPLE_PRODUCT_CSV_HEADERS,
+} from "./product-import-dry-run.js";
 
 const existing: MerchantProduct = {
   id: "prod_1",
@@ -117,5 +121,29 @@ describe("product import dry run", () => {
     ]).csv;
     const result = dryRunProductImport({ csv, existingProducts: [existing] });
     assert.deepEqual(result.summary, { blocked: 0, creates: 1, rows: 1, updates: 0 });
+  });
+
+  it("accepts the simple new-product template without internal ids or timestamps", () => {
+    const values = [
+      "Sidamo Coffee",
+      "Whole bean coffee",
+      "450",
+      "12",
+      "SIDAMO-1",
+      "draft",
+      "",
+      "250 g",
+      "https://cdn.example.com/sidamo.jpg; https://cdn.example.com/sidamo-side.jpg",
+    ];
+    const csv = [SIMPLE_PRODUCT_CSV_HEADERS, values]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\r\n");
+
+    const result = dryRunProductImport({ csv, existingProducts: [existing] });
+
+    assert.deepEqual(result.issues, []);
+    assert.deepEqual(result.summary, { blocked: 0, creates: 1, rows: 1, updates: 0 });
+    assert.equal(result.plans[0]?.handle, "sidamo-coffee");
+    assert.equal(result.plans[0]?.sku, "SIDAMO-1");
   });
 });
