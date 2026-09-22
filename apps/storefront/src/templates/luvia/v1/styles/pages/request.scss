@@ -1,0 +1,199 @@
+@use "../abstracts" as *;
+
+.lv-request__intro>p,
+.lv-account section>p,
+.lv-wishlist header>p {
+  display: flex;
+  align-items: center;
+  gap: $space-150;
+  color: color-mix(in srgb, var(--clr-ink) 64%, var(--clr-bg));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .17em;
+}
+
+.lv-request__intro h1,
+.lv-account h1,
+.lv-wishlist h1 {
+  margin: $space-600 0;
+  font: 400 #{fluid(64px, 104px)}/.84 "GC Molecule Demo", Arial, sans-serif;
+  letter-spacing: -.055em;
+}
+
+@media(max-width:900px) {
+  .lv-request,
+  
+    .lv-account {
+  
+      gap: $space-650
+  
+    }
+}
+
+@media(max-width:760px) {
+  .lv-request,
+  
+    .lv-account,
+  
+    .lv-account.is-signed-in {
+  
+      padding: $space-1050 0 $space-900;
+  
+      grid-template-columns: 1fr
+  
+    }
+
+  .lv-request__intro h1,
+  
+    .lv-account h1 {
+  
+      font-size: fluid(46px, 58px)
+  
+    }
+
+  .lv-wishlist__grid,
+  
+    .lv-account__address-grid {
+  
+      grid-template-columns: 1fr
+  
+    }
+}
+
+.lv-request {
+  min-height: 850px;
+  margin: auto;
+  padding: $space-1150 0 $space-1050;
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: $space-950;
+  align-items: center;
+}
+
+.lv-request__intro>span {
+  max-width: 520px;
+  display: block;
+  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.lv-request__panel {
+  padding: $space-600;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-500;
+  background: var(--clr-surface);
+  box-shadow: 0 30px 80px alpha(var(--clr-ink), 0.1);
+}
+
+.lv-request__panel>header {
+  margin-bottom: $space-600;
+  display: flex;
+  gap: $space-350;
+  align-items: center;
+}
+
+.lv-request__panel>header>span {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: $radius-full;
+  background: var(--clr-accent);
+}
+
+.lv-request__panel h2 {
+  margin: 0 0 $space-100;
+  font: 400 28px/1 "GC Molecule Demo", Arial, sans-serif;
+}
+
+.lv-request__panel header p {
+  margin: 0;
+  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  font-size: 13px;
+}
+
+.lv-request form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-400;
+}
+
+.lv-request label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: $space-150;
+  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  font-size: 13px;
+}
+
+.lv-request label.is-wide,
+.lv-request form>button,
+.lv-request__unavailable {
+  grid-column: 1 / -1;
+}
+
+.lv-request input,
+.lv-request textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: $space-350;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-200;
+  outline: 0;
+  font: inherit;
+  font-size: 16px;
+}
+
+.lv-request textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.lv-request input:focus,
+.lv-request textarea:focus {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.14);
+}
+
+.lv-request form>button {
+  min-height: 54px;
+  border: 0;
+  border-radius: $radius-pill;
+  background: var(--clr-primary);
+  color: var(--clr-on-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lv-request__unavailable {
+  padding: $space-350;
+  border-radius: $radius-200;
+  background: var(--clr-warning-bg);
+  color: var(--clr-warning);
+}
+
+@media(max-width:760px) {
+  .lv-request__panel {
+  
+      padding: $space-550 $space-400
+  
+    }
+
+  .lv-request form {
+  
+      grid-template-columns: 1fr
+  
+    }
+
+  .lv-request label.is-wide,
+  
+    .lv-request form>button,
+  
+    .lv-request__unavailable {
+  
+      grid-column: auto
+  
+    }
+}

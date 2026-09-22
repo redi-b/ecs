@@ -1,0 +1,63 @@
+---
+import "../styles/pages/contact.scss";
+import Icon from "../components/Icon.astro";
+import Layout from "../layouts/Layout.astro";
+import TemplateImage from "../components/TemplateImage.astro";
+import contactMap from "../assets/contact-map-image.webp";
+import { parseLuviaData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+
+interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const template = parseLuviaData(data);
+const email = template.footer.email?.trim();
+const phone = template.footer.phone?.trim();
+const address = template.footer.address?.trim();
+const socials = template.footer.socialLinks;
+const sent = Astro.url.searchParams.get("sent") === "1";
+const submitError = Astro.url.searchParams.get("error");
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const inquiryMessages = {
+  sending: m.contact_sending({}, { locale }),
+  received: m.contact_received({}, { locale }),
+  failed: m.contact_failed({}, { locale }),
+};
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title={m.contact_title({}, { locale })}>
+  <main class="lv-contact">
+    <header class="lv-contact__hero"><h1 class="type-display">{m.contact_title({}, { locale })}</h1><p class="type-body-400">{m.contact_intro({}, { locale })}</p></header>
+    <section class="lv-contact__layout container">
+      <div class="lv-contact__aside">
+        <article class="lv-contact-info"><h2 class="type-heading-4">{m.contact_information({}, { locale })}</h2><div>
+          {address && <p><span><Icon name="location" /></span><span><small class="type-body-xs">{m.contact_address({}, { locale })}</small><strong class="type-body-s-500">{address}</strong></span></p>}
+          {email && <p><span><Icon name="mail" /></span><span><small class="type-body-xs">{m.contact_email({}, { locale })}</small><a class="type-body-s-500" href={`mailto:${email}`}>{email}</a></span></p>}
+          {[phone, ...(template.footer.additionalPhones ?? [])].filter(Boolean).map((number) => <p><span><Icon name="phone" /></span><span><small class="type-body-xs">{m.contact_phone({}, { locale })}</small><a class="type-body-s-500" href={`tel:${number}`}>{number}</a></span></p>)}
+          {socials.length > 0 && <p><span><Icon name="socials-web" /></span><span><small class="type-body-xs">{m.contact_socials({}, { locale })}</small><span class="lv-contact-socials type-body-s-500">{socials.map((social, index) => <><a href={social.href}>{social.label}</a>{index < socials.length - 1 && " · "}</>)}</span></span></p>}
+          {!address && !email && !phone && !socials.length && <p class="lv-contact-info__empty type-body-400">{m.contact_empty({}, { locale })}</p>}
+        </div></article>
+        {!template.footer.managedContact && <div class="lv-contact-map"><TemplateImage fallback={contactMap} alt={m.contact_map_alt({}, { locale })} widths={[480, 768, 1024, 1440]} sizes="(max-width: 900px) calc(100vw - 40px), 36vw" /></div>}
+      </div>
+
+      <form class="lv-contact-form" action="/actions/inquiries" method="post" data-inquiry-form>
+        <input type="hidden" name="type" value="contact" />
+        <label class="lv-inquiry-honeypot" aria-hidden="true"><span>Website</span><input name="website" tabindex="-1" autocomplete="off" /></label>
+        <label class="is-wide type-body-s-400"><span>{m.contact_full_name({}, { locale })}*</span><input class="type-body-400" name="fullName" required autocomplete="name" /></label>
+        <label class="type-body-s-400"><span>{m.contact_email({}, { locale })}*</span><input class="type-body-400" name="email" type="email" required autocomplete="email" /></label>
+        <label class="type-body-s-400"><span>{m.contact_whatsapp_optional({}, { locale })}</span><input class="type-body-400" name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" /></label>
+        <label class="is-wide type-body-s-400"><span>{m.contact_message({}, { locale })}*</span><textarea class="type-body-400" name="message" required></textarea></label>
+        <button type="submit" class="type-body-l-500"><span>{m.contact_send({}, { locale })}</span></button>
+        <p class:list={["lv-inquiry-status", "type-body-s-400", sent && "is-success", submitError && "is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent ? inquiryMessages.received : submitError ? inquiryMessages.failed : ""}</p>
+      </form>
+    </section>
+  </main>
+</Layout>
+
+<script is:inline define:vars={{ inquiryMessages }}>
+  (() => {
+    const form = document.querySelector("[data-inquiry-form]"); if (!(form instanceof HTMLFormElement)) return;
+    const status = form.querySelector("[data-inquiry-status]"); const button = form.querySelector("button[type=submit]");
+    form.addEventListener("submit", async (event) => { if (!form.reportValidity()) return; event.preventDefault(); if (button instanceof HTMLButtonElement) { button.disabled = true; button.setAttribute("aria-busy", "true"); } if (status) { status.textContent = inquiryMessages.sending; status.className = "lv-inquiry-status is-pending"; } try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); if (!response.ok) throw new Error(inquiryMessages.failed); form.reset(); if (status) { status.textContent = inquiryMessages.received; status.className = "lv-inquiry-status is-success"; } } catch { if (status) { status.textContent = inquiryMessages.failed; status.className = "lv-inquiry-status is-error"; } } finally { if (button instanceof HTMLButtonElement) { button.disabled = false; button.removeAttribute("aria-busy"); } } });
+  })();
+</script>

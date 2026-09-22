@@ -1,0 +1,258 @@
+@use "../abstracts" as *;
+
+.lv-request__intro>p,
+.lv-account section>p,
+.lv-wishlist header>p {
+  display: flex;
+  align-items: center;
+  gap: $space-150;
+  color: color-mix(in srgb, var(--clr-ink) 64%, var(--clr-bg));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .17em;
+}
+
+.lv-request__intro h1,
+.lv-account h1,
+.lv-wishlist h1 {
+  margin: $space-600 0;
+  font: 400 #{fluid(64px, 104px)}/.84 "GC Molecule Demo", Arial, sans-serif;
+  letter-spacing: -.055em;
+}
+
+@media(max-width:900px) {
+  .lv-request,
+  
+    .lv-account {
+  
+      gap: $space-650
+  
+    }
+}
+
+@media(max-width:760px) {
+  .lv-request,
+  
+    .lv-account,
+  
+    .lv-account.is-signed-in {
+  
+      padding: $space-1050 0 $space-900;
+  
+      grid-template-columns: 1fr
+  
+    }
+
+  .lv-request__intro h1,
+  
+    .lv-account h1 {
+  
+      font-size: fluid(46px, 58px)
+  
+    }
+
+  .lv-wishlist__grid,
+  
+    .lv-account__address-grid {
+  
+      grid-template-columns: 1fr
+  
+    }
+}
+
+.lv-wishlist {
+  min-height: 75vh;
+  padding: $space-1150 0 $space-1050;
+}
+
+.lv-wishlist>header {
+  margin: 0 auto $space-800;
+  text-align: center;
+}
+
+.lv-wishlist>header>span {
+  width: 62px;
+  height: 62px;
+  margin: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--clr-accent);
+  border-radius: $radius-full;
+  background: var(--clr-bg);
+}
+
+.lv-wishlist h1 {
+  margin: $space-400 0 $space-200;
+}
+
+.lv-wishlist header p {
+  justify-content: center;
+}
+
+.lv-wishlist header small {
+  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+}
+
+.lv-wishlist>section {
+  margin: auto;
+}
+
+.lv-wishlist__loading,
+.lv-wishlist__empty {
+  padding: $space-1000 $space-600;
+  border-radius: $radius-450;
+  background: var(--clr-soft);
+  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  text-align: center;
+}
+
+.lv-wishlist__loading {
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: $space-250;
+  background: var(--clr-soft);
+  overflow: hidden;
+}
+
+.lv-wishlist__loading>span {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin-bottom: $space-300;
+  border: 1px solid alpha(var(--clr-primary), 0.28);
+  border-radius: $radius-full;
+}
+
+.lv-wishlist__loading>span::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid alpha(var(--clr-primary), 0.52);
+  border-radius: $radius-full;
+}
+
+
+.lv-wishlist__loading strong {
+  color: var(--clr-ink);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.lv-wishlist__loading small {
+  font-size: 13px;
+}
+
+.lv-wishlist__empty h2 {
+  margin: 0 0 $space-200;
+  font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif;
+  color: var(--clr-ink);
+}
+
+.lv-wishlist__empty p {
+  margin: 0 0 $space-550;
+}
+
+.lv-wishlist__empty a {
+  min-height: 50px;
+  padding: 0 $space-550;
+  display: inline-flex;
+  align-items: center;
+  border-radius: $radius-pill;
+  background: var(--clr-primary);
+  color: var(--clr-on-primary);
+  text-decoration: none;
+}
+
+.lv-wishlist__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $space-300;
+}
+
+.lv-wishlist__grid article {
+  min-height: 320px;
+  padding: $space-350;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-350;
+  background: linear-gradient(145deg, var(--clr-soft), var(--clr-white));
+}
+
+.lv-wishlist__media {
+  width: 100%;
+  height: 190px;
+  margin-bottom: $space-450;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: $radius-200;
+  background: var(--clr-bg);
+}
+
+.lv-wishlist__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lv-wishlist__grid span {
+  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.lv-wishlist__grid a {
+  margin: $space-250 0 $space-550;
+  color: var(--clr-ink);
+  font: 400 28px/1 "GC Molecule Demo", Arial, sans-serif;
+  text-transform: capitalize;
+  text-decoration: none;
+}
+
+.lv-wishlist__grid strong {
+  margin-top: calc($space-350 * -1);
+  margin-bottom: $space-450;
+}
+
+.lv-wishlist__grid button {
+  min-height: 40px;
+  padding: 0 $space-350;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-pill;
+  background: var(--clr-surface);
+  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  cursor: pointer;
+}
+
+@media(max-width:900px) {
+  .lv-wishlist {
+  
+      padding-inline: $space-500
+  
+    }
+
+  .lv-wishlist__grid {
+  
+      grid-template-columns: repeat(2, minmax(0, 1fr))
+  
+    }
+}
+
+@media(max-width:760px) {
+  .lv-wishlist {
+  
+      padding: $space-1050 $space-300 $space-900
+  
+    }
+
+  .lv-wishlist h1 {
+  
+      font-size: fluid(54px, 64px);
+  
+    }
+}

@@ -1,0 +1,69 @@
+---
+import "../styles/components/_button.scss";
+import Icon from "./Icon.astro";
+
+interface Props {
+  href?: string;
+  icon?: "bag" | "chat" | "diagonal-arrow";
+  iconSize?: "default" | "small";
+  tone?: "primary" | "secondary" | "dark" | "light";
+  size?: "large" | "small";
+  fullWidth?: boolean;
+  editorPath?: string;
+  editorRelatedPaths?: string[];
+  editorMode?: boolean;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  class?: string;
+  id?: string;
+}
+
+const {
+  href,
+  icon,
+  iconSize = "default",
+  tone = "primary",
+  size = "large",
+  fullWidth = false,
+  editorPath,
+  editorRelatedPaths = [],
+  editorMode = false,
+  type = "button",
+  disabled = false,
+  class: className,
+  id,
+  ...rest
+} = Astro.props;
+
+const resolvedTone = tone === "dark" ? "secondary" : tone;
+const Element = href ? "a" : "button";
+---
+
+<Element
+  class:list={[
+    "lv-button",
+    `lv-button--${resolvedTone}`,
+    `lv-button--${size}`,
+    { "lv-button--small-icon": iconSize === "small" },
+    { "lv-button--full": fullWidth },
+    className,
+  ]}
+  href={href}
+  type={href ? undefined : type}
+  disabled={href ? undefined : disabled}
+  data-editor-path={editorPath}
+  data-editor-related-paths={editorRelatedPaths.length ? editorRelatedPaths.join(" ") : undefined}
+  id={id}
+  {...rest}
+>
+  <span
+    class:list={["lv-button__text", size === "small" ? "type-body-400" : "type-body-l-500"]}
+    contenteditable={editorPath && editorMode ? "plaintext-only" : undefined}
+    data-editor-text-target={editorPath ? "" : undefined}
+  ><slot /></span>
+  {icon ? (
+    <span class="lv-button__icon" aria-hidden="true">
+      <Icon name={icon} />
+    </span>
+  ) : null}
+</Element>

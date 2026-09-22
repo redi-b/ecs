@@ -6,8 +6,8 @@ const source = (path: string) => readFile(new URL(path, import.meta.url), "utf8"
 
 test("production template search entry points use the shared accessible suggestion controller", async () => {
   const [luviaLayout, luviaListing, nexahubLayout, controller] = await Promise.all([
-    source("../../templates/luvia/v1/Layout.astro"),
-    source("../../templates/luvia/v1/ProductList.astro"),
+    source("../../templates/luvia/v1/layouts/Layout.astro"),
+    source("../../templates/luvia/v1/pages/ProductList.astro"),
     source("../../templates/nexahub/v1/Layout.astro"),
     source("./product-search-suggestions.ts"),
   ]);

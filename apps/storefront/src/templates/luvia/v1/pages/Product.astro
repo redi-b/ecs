@@ -1,0 +1,320 @@
+---
+import "../styles/pages/product-detail.scss";
+import Icon from "../components/Icon.astro";
+import { sanitizeProductDescription } from "@ecs/content";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { isColorOptionTitle, resolveColorSwatch } from "../../../../lib/commerce/product-options";
+import type {
+  StoreProduct,
+  StoreProductOption,
+  StoreProductVariant,
+} from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import Layout from "../layouts/Layout.astro";
+import { parseLuviaData } from "../lib";
+import ProductCard from "../components/ProductCard.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import { resolveTemplateVoiceMessage } from "../../../../lib/template-voice";
+import * as m from "../../../../paraglide/messages.js";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+  relatedProducts?: StoreProduct[];
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+  demoMode?: boolean;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  deferCartCount = false,
+  product,
+  handle,
+  notice,
+  error,
+  relatedProducts = [],
+  seo,
+  structuredData,
+  demoMode = false,
+} = Astro.props;
+const template = parseLuviaData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const addToCartLabel = resolveTemplateVoiceMessage({ fallback: m.action_add_to_cart({}, { locale }), locale, messageId: "action_add_to_cart", templateKey: "luvia.v1" });
+const clientMessages = {
+  addFailed: m.product_add_failed({}, { locale }),
+  added: m.product_added({}, { locale }),
+  addedHelp: m.product_added_help({}, { locale }),
+  adding: m.product_adding({}, { locale }),
+  addToCart: addToCartLabel,
+  discountOff: m.catalog_discount_off({ percentage: "__PERCENTAGE__" }, { locale }),
+  inStock: m.catalog_in_stock({}, { locale }),
+  outOfStock: m.catalog_out_of_stock({}, { locale }),
+};
+const defaultVariant: StoreProductVariant | null =
+  product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+const descriptionHtml =
+  sanitizeProductDescription(product?.description) ??
+  `<p>${m.product_description_fallback({}, { locale })}</p>`;
+const optionAxes: StoreProductOption[] = product?.options?.length
+  ? product.options
+  : (() => {
+      const axes = new Map<string, Set<string>>();
+      for (const variant of product?.variants ?? [])
+        for (const option of variant.optionValues) {
+          if (!axes.has(option.optionTitle)) axes.set(option.optionTitle, new Set());
+          axes.get(option.optionTitle)?.add(option.value);
+        }
+      return [...axes.entries()].map(([title, values], index) => ({
+        id: `axis-${index}`,
+        title,
+        values: [...values],
+      }));
+    })();
+const gallery = product
+  ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])]
+  : [];
+const variantsPayload = (product?.variants ?? []).map((variant) => ({
+  id: variant.id,
+  inStock: variant.inStock,
+  priceAmount: variant.priceAmount,
+  originalPriceAmount: variant.originalPriceAmount,
+  discountPercentage: variant.discountPercentage,
+  currencyCode: variant.currencyCode,
+  sku: variant.sku,
+  optionValues: Object.fromEntries(
+    variant.optionValues.map((option) => [option.optionTitle, option.value]),
+  ),
+}));
+const brand = product?.collectionTitle?.toUpperCase() || tenantName.toUpperCase();
+const currentPrice = formatMoney(
+  defaultVariant?.priceAmount ?? product?.priceAmount,
+  defaultVariant?.currencyCode ?? product?.currencyCode,
+  locale,
+);
+const originalPrice = defaultVariant?.originalPriceAmount ?? product?.originalPriceAmount ?? null;
+const badge = product ? resolveProductBadge(product, defaultVariant) : null;
+const wishlistItem = product
+  ? JSON.stringify({
+      path: `/products/${encodeURIComponent(handle)}`,
+      title: product.title ?? m.catalog_product_fallback({}, { locale }),
+      thumbnail: product.thumbnail ?? gallery[0] ?? null,
+      priceAmount: defaultVariant?.priceAmount ?? product.priceAmount,
+      currencyCode: defaultVariant?.currencyCode ?? product.currencyCode,
+    })
+  : "";
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={product?.title ?? m.product_not_found({}, { locale })} seo={seo} structuredData={structuredData}>
+  {!product ? <main class="lv-product-missing"><h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1><p class="type-body-400">{m.product_unavailable({}, { locale })}</p><a class="type-body-500" href="/products">{m.action_back_to_products({}, { locale })}</a></main> : <main class="lv-product-page" data-product-detail>
+    <nav class="lv-product-breadcrumb container type-body-s-400" aria-label={m.breadcrumb_label({}, { locale })}><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.catalog_products({}, { locale })}</span></nav>
+    {(notice === "added" || error) && <p class:list={["lv-product-server-notice container type-body-s-400", { "is-error": error }]} role={error ? "alert" : "status"}>{error ?? m.product_added_to_cart({}, { locale })}</p>}
+
+    <section class="lv-product-detail container">
+      <div class="lv-product-gallery">
+        {gallery.length > 1 && <div class="lv-product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>{gallery.map((src, index) => <button type="button" data-gallery-thumb={src} aria-current={index === 0 ? "true" : undefined} aria-label={m.product_view_image({ number: index + 1 }, { locale })}><img src={src} alt="" width="900" height="900" loading="lazy" decoding="async" /></button>)}</div>}
+        <div class="lv-product-gallery__main" data-gallery-main>{gallery[0] ? <img src={gallery[0]} alt={product.title ?? m.catalog_product_fallback({}, { locale })} width="900" height="900" decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image({ product: product.title ?? m.catalog_product_fallback({}, { locale }) }, { locale })} />}<span class:list={["lv-product-gallery__badge type-body-xs", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}><Icon name="star" data-product-badge-icon hidden={badge?.kind !== "promotion"} /><span>{badge?.label ?? ""}</span></span></div>
+      </div>
+
+      <div class="lv-product-buy">
+        <div class="lv-product-title"><span class="type-body-xs">{brand}</span><h1 class="type-heading-3">{product.title}</h1><p class="lv-product-price type-body-xl"><strong data-product-price class="type-body-xl">{currentPrice}</strong><del data-product-original-price class="type-body-s-400" hidden={!originalPrice}>{originalPrice ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode, locale) : ""}</del></p><small data-product-stock class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}>{defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
+        <form method="post" action="/actions/cart/add" data-add-form>
+          <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
+          <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
+          <input type="hidden" name="quantity" value="1" />
+          {optionAxes.map((axis) => <fieldset data-option-axis={axis.title}><legend class="type-body-s-400">{m.product_select_option({ option: axis.title }, { locale })}</legend><div>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = isColorOptionTitle(axis.title) ? resolveColorSwatch(value, axis.swatches?.[value]) : null; return swatch
+            ? <button class="lv-product-swatch" type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={m.product_select_option({ option: value }, { locale })} title={value}><span style={`background-color:${swatch}`} aria-hidden="true"></span></button>
+            : <button class="type-body-s-500" type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>)}
+          <div class="lv-product-cart-row"><button class="lv-product-add type-body-l-500" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-l-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button><button class="lv-product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button></div>
+          <p class="lv-product-feedback type-body-xs" data-add-feedback aria-live="polite"></p>
+        </form>
+
+        <div class="lv-product-accordions">
+          <details open><summary class="type-body-l-500">{m.product_description({}, { locale })} <Icon name="chevron" /></summary><div class="lv-rich-text type-body-400" set:html={descriptionHtml} /></details>
+          <details><summary class="type-body-l-500">{m.product_delivery_details({}, { locale })} <Icon name="chevron" /></summary><div><p class="type-body-400">{m.product_delivery_help({}, { locale })}</p></div></details>
+        </div>
+      </div>
+    </section>
+
+    {relatedProducts.length > 0 && <section class="lv-related container" aria-labelledby="related-products-title"><header><h2 id="related-products-title" class="type-heading-3">{m.product_related({}, { locale })}</h2><div class="lv-rail-controls"><button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>←</button><button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>→</button></div></header><div class="lv-related__rail" data-related-rail role="region" aria-label={m.product_related({}, { locale })}>{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
+
+    <div class="lv-sticky-product" data-sticky-product><div><strong class="type-body-s-500">{product.title}</strong><span data-sticky-price class="type-body-500">{currentPrice}</span></div><button type="button" data-sticky-add class="type-body-500" disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button></div>
+    <script is:inline type="application/json" id="luvia-product-variants" set:html={JSON.stringify(variantsPayload)} />
+  </main>}
+</Layout>
+
+<script is:inline define:vars={{ clientMessages }}>
+  (() => {
+    const root = document.querySelector("[data-product-detail]");
+    if (!root) return;
+    const variants = JSON.parse(document.getElementById("luvia-product-variants")?.textContent || "[]");
+    const selected = {};
+    root.querySelectorAll("[data-option-axis]").forEach((axis) => {
+      const title = axis.getAttribute("data-option-axis");
+      const pressed = axis.querySelector('[aria-pressed="true"]');
+      if (title && pressed) selected[title] = pressed.getAttribute("data-option-value") || "";
+    });
+    const money = (amount, currency) => { try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount ?? ""); } };
+    const selectedVariant = () => variants.find((variant) => { const entries = Object.entries(variant.optionValues || {}); return entries.length ? entries.every(([title, value]) => selected[title] === value) : variants.length === 1; });
+    const refresh = () => {
+      const variant = selectedVariant();
+      const id = root.querySelector("[data-variant-id]");
+      const price = root.querySelector("[data-product-price]");
+      const originalPrice = root.querySelector("[data-product-original-price]");
+      const badge = root.querySelector("[data-product-badge]");
+      const stickyPrice = root.querySelector("[data-sticky-price]");
+      const stock = root.querySelector("[data-product-stock]");
+      const add = root.querySelector("[data-add-button]");
+      const stickyAdd = root.querySelector("[data-sticky-add]");
+      if (id) id.value = variant?.id || "";
+      if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
+      if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
+      if (badge) {
+        const percentage = Number(variant?.discountPercentage || 0);
+        const originalAmount = Number(variant?.originalPriceAmount ?? 0);
+        const currentAmount = Number(variant?.priceAmount ?? 0);
+        const hasPromotion = percentage > 0 && originalAmount > currentAmount;
+        const soldOut = Boolean(variant && !variant.inStock);
+        const shouldShow = soldOut || hasPromotion;
+        const label = badge.querySelector("span");
+        const icon = badge.querySelector("[data-product-badge-icon]");
+        badge.hidden = !shouldShow;
+        badge.toggleAttribute("hidden", !shouldShow);
+        badge.classList.toggle("is-out-of-stock", soldOut);
+        badge.classList.toggle("is-promotion", !soldOut && hasPromotion);
+        if (icon instanceof HTMLElement) {
+          icon.hidden = !hasPromotion || soldOut;
+          icon.toggleAttribute("hidden", !hasPromotion || soldOut);
+        }
+        if (label) label.textContent = soldOut ? clientMessages.outOfStock : hasPromotion ? clientMessages.discountOff.replace("__PERCENTAGE__", String(percentage)) : "";
+      }
+      if (stock) { stock.textContent = variant?.inStock ? `${clientMessages.inStock}${variant.sku ? ` · SKU ${variant.sku}` : ""}` : clientMessages.outOfStock; stock.classList.toggle("is-out", !variant?.inStock); }
+      [add, stickyAdd].forEach((button) => {
+        if (button instanceof HTMLButtonElement) {
+          button.disabled = !variant?.inStock;
+          const label = button.querySelector("[data-add-label]");
+          if (label) label.textContent = variant?.inStock ? clientMessages.addToCart : clientMessages.outOfStock;
+        }
+      });
+      root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });
+    };
+    root.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const option = target?.closest("[data-option-title]");
+      if (option instanceof HTMLButtonElement && !option.disabled) { selected[option.dataset.optionTitle] = option.dataset.optionValue; refresh(); }
+      const thumb = target?.closest("[data-gallery-thumb]");
+      if (thumb instanceof HTMLButtonElement) { const main = root.querySelector("[data-gallery-main] > img"); if (main && thumb.dataset.galleryThumb) main.setAttribute("src", thumb.dataset.galleryThumb); root.querySelectorAll("[data-gallery-thumb]").forEach((item) => item.removeAttribute("aria-current")); thumb.setAttribute("aria-current", "true"); }
+    });
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    root.querySelectorAll(".lv-product-accordions details").forEach((disclosure) => {
+      if (!(disclosure instanceof HTMLDetailsElement)) return;
+      const summary = disclosure.querySelector("summary");
+      if (!summary) return;
+      let animation;
+      summary.addEventListener("click", (event) => {
+        event.preventDefault();
+        animation?.cancel();
+        if (reducedMotion.matches) { disclosure.open = !disclosure.open; return; }
+        const opening = !disclosure.open;
+        const startHeight = disclosure.offsetHeight;
+        disclosure.style.overflow = "hidden";
+        if (opening) disclosure.open = true;
+        const styles = getComputedStyle(disclosure);
+        const collapsedHeight = summary.offsetHeight
+          + Number.parseFloat(styles.paddingTop)
+          + Number.parseFloat(styles.paddingBottom)
+          + Number.parseFloat(styles.borderTopWidth)
+          + Number.parseFloat(styles.borderBottomWidth);
+        const endHeight = opening ? disclosure.scrollHeight : collapsedHeight;
+        animation = disclosure.animate(
+          { height: [`${startHeight}px`, `${endHeight}px`] },
+          { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" },
+        );
+        const content = disclosure.querySelector(":scope > div");
+        if (opening) content?.animate(
+          { opacity: [0, 1], transform: ["translateY(-5px)", "translateY(0)"] },
+          { duration: 180, easing: "cubic-bezier(.22,1,.36,1)" },
+        );
+        animation.addEventListener("finish", () => {
+          if (!opening) disclosure.open = false;
+          disclosure.style.removeProperty("overflow");
+          animation = undefined;
+        }, { once: true });
+        animation.addEventListener("cancel", () => {
+          disclosure.style.removeProperty("overflow");
+          animation = undefined;
+        }, { once: true });
+      });
+    });
+    const form = root.querySelector("[data-add-form]");
+    const addButton = root.querySelector("[data-add-button]");
+    const stickyAdd = root.querySelector("[data-sticky-add]");
+    const feedback = root.querySelector("[data-add-feedback]");
+    const updateButtons = (loading, text) => {
+      [addButton, stickyAdd].forEach((btn) => {
+        if (!(btn instanceof HTMLButtonElement)) return;
+        btn.disabled = loading;
+        btn.dataset.loading = loading ? "true" : "false";
+        const label = btn.querySelector("[data-add-label]");
+        if (label) label.textContent = text;
+      });
+    };
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!(form instanceof HTMLFormElement) || !(addButton instanceof HTMLButtonElement) || addButton.disabled) return;
+      const badge = document.querySelector("[data-cart-count]");
+      const previousCount = Number(badge?.textContent || 0);
+      updateButtons(true, clientMessages.adding);
+      if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
+      if (badge) { badge.textContent = String(previousCount + 1); badge.hidden = false; }
+      try {
+        const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" }, credentials: "same-origin" });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(clientMessages.addFailed);
+        if (badge) { badge.textContent = String(result.count); badge.hidden = result.count <= 0; }
+        updateButtons(true, clientMessages.added);
+        if (feedback) feedback.textContent = clientMessages.addedHelp;
+        window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
+        setTimeout(() => { updateButtons(!selectedVariant()?.inStock, selectedVariant()?.inStock ? clientMessages.addToCart : clientMessages.outOfStock); }, 1400);
+      } catch (cause) {
+        if (badge) { badge.textContent = previousCount ? String(previousCount) : ""; badge.hidden = previousCount <= 0; }
+        updateButtons(!selectedVariant()?.inStock, clientMessages.addToCart);
+        if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : clientMessages.addFailed; feedback.classList.add("is-error"); }
+      } finally {
+        const inStock = Boolean(selectedVariant()?.inStock);
+        [addButton, stickyAdd].forEach((btn) => {
+          if (btn instanceof HTMLButtonElement) {
+            btn.disabled = !inStock;
+            delete btn.dataset.loading;
+          }
+        });
+      }
+    });
+    stickyAdd?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
+    const rail = document.querySelector("[data-related-rail]");
+    document.querySelector("[data-related-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
+    document.querySelector("[data-related-next]")?.addEventListener("click", () => rail?.scrollBy({ left: Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
+    const stickyProduct = root.querySelector("[data-sticky-product]");
+    const inquiry = document.querySelector(".lv-inquiry");
+    if (stickyProduct instanceof HTMLElement && inquiry instanceof HTMLElement && "IntersectionObserver" in window) {
+      const inquiryObserver = new IntersectionObserver(([entry]) => {
+        stickyProduct.toggleAttribute("data-hidden", Boolean(entry?.isIntersecting));
+      }, { threshold: 0.05 });
+      inquiryObserver.observe(inquiry);
+    }
+    refresh();
+  })();
+</script>
+

@@ -54,7 +54,7 @@ test("Luvia editor exposes reusable catalog and link-list fields", () => {
   assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.kind, "links");
   assert.equal(fields.find((field) => field.path === "footer.inquiry.title")?.kind, "text");
   assert.equal(
-    fields.find((field) => field.path === "home.brandStatement.imageAssetId")?.kind,
+    fields.find((field) => field.path === "home.categories.imageAssetId")?.kind,
     "image",
   );
   assert.equal(new Set(fields.map((field) => field.prop)).size, fields.length);

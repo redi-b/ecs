@@ -58,7 +58,7 @@ test("provides conservative Amharic defaults for stock template labels", () => {
     source: "Home",
     value: "ዋና ገጽ",
   });
-  assert.deepEqual(luviaDefaults["footer.quickLinks.4.label"], {
+  assert.deepEqual(luviaDefaults["footer.quickLinks.3.label"], {
     source: "Wishlist",
     value: "የተቀመጡ ምርቶች",
   });

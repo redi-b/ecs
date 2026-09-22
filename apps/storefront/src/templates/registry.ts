@@ -24,19 +24,18 @@ import NexahubV1AccountOrder from "./nexahub/v1/AccountOrder.astro";
 import NexahubV1SystemState from "./nexahub/v1/SystemState.astro";
 import NexahubV1Product from "./nexahub/v1/Product.astro";
 import NexahubV1ProductList from "./nexahub/v1/ProductList.astro";
-import LuviaV1About from "./luvia/v1/About.astro";
-import LuviaV1Account from "./luvia/v1/Account.astro";
-import LuviaV1AccountOrder from "./luvia/v1/AccountOrder.astro";
-import LuviaV1Cart from "./luvia/v1/Cart.astro";
-import LuviaV1Checkout from "./luvia/v1/Checkout.astro";
-import LuviaV1Contact from "./luvia/v1/Contact.astro";
-import LuviaV1Home from "./luvia/v1/Home.astro";
-import LuviaV1OrderConfirm from "./luvia/v1/OrderConfirm.astro";
-import LuviaV1Product from "./luvia/v1/Product.astro";
-import LuviaV1ProductList from "./luvia/v1/ProductList.astro";
-import LuviaV1RequestItem from "./luvia/v1/RequestItem.astro";
-import LuviaV1SystemState from "./luvia/v1/SystemState.astro";
-import LuviaV1Wishlist from "./luvia/v1/Wishlist.astro";
+import LuviaV1Account from "./luvia/v1/pages/Account.astro";
+import LuviaV1AccountOrder from "./luvia/v1/pages/AccountOrder.astro";
+import LuviaV1Cart from "./luvia/v1/pages/Cart.astro";
+import LuviaV1Checkout from "./luvia/v1/pages/Checkout.astro";
+import LuviaV1Contact from "./luvia/v1/pages/Contact.astro";
+import LuviaV1Home from "./luvia/v1/pages/index.astro";
+import LuviaV1OrderConfirm from "./luvia/v1/pages/OrderConfirm.astro";
+import LuviaV1Product from "./luvia/v1/pages/Product.astro";
+import LuviaV1ProductList from "./luvia/v1/pages/ProductList.astro";
+import LuviaV1RequestItem from "./luvia/v1/pages/RequestItem.astro";
+import LuviaV1SystemState from "./luvia/v1/pages/SystemState.astro";
+import LuviaV1Wishlist from "./luvia/v1/pages/Wishlist.astro";
 import { resolveStorefrontTemplateKey } from "./template-key.js";
 import type { StorefrontPageComponent, StorefrontRenderer } from "./types.js";
 
@@ -57,7 +56,6 @@ export const storefrontRenderers = {
     Checkout: LuviaV1Checkout,
     Contact: LuviaV1Contact,
     OrderConfirm: LuviaV1OrderConfirm,
-    About: LuviaV1About,
     RequestItem: LuviaV1RequestItem,
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,

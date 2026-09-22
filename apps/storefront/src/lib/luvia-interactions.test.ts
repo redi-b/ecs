@@ -6,24 +6,21 @@ const readTemplate = (path: string) =>
   readFile(new URL(`../templates/luvia/v1/${path}`, import.meta.url), "utf8");
 
 test("storefront overlays share one authoritative page scroll lock", async () => {
-  const [layout, layoutStyles, motion] = await Promise.all([
-    readTemplate("Layout.astro"),
-    readTemplate("styles/layout.scss"),
-    readTemplate("scripts/motion.ts"),
+  const [layout, layoutStyles] = await Promise.all([
+    readTemplate("layouts/Layout.astro"),
+    readTemplate("styles/_reset.scss"),
   ]);
 
   assert.match(layout, /const syncPageScrollLock = \(\) =>/);
   assert.match(layout, /document\.documentElement\.toggleAttribute\("data-overlay-open", locked\)/);
   assert.match(layout, /setHeaderSurface\(null\); lastFocused/);
-  assert.match(layoutStyles, /html\[data-overlay-open\].*overflow: hidden/);
-  assert.match(motion, /if \(locked\) lenis\.stop\(\)/);
-  assert.match(motion, /else lenis\.start\(\)/);
+  assert.match(layoutStyles, /html\[data-overlay-open\][\s\S]*overflow:\s*hidden/);
 });
 
 test("product and address disclosures animate their content instead of snapping", async () => {
   const [product, account] = await Promise.all([
-    readTemplate("Product.astro"),
-    readTemplate("Account.astro"),
+    readTemplate("pages/Product.astro"),
+    readTemplate("pages/Account.astro"),
   ]);
 
   assert.match(product, /\.lv-product-accordions details/);
@@ -34,8 +31,8 @@ test("product and address disclosures animate their content instead of snapping"
 
 test("catalog facets support persistent batch filtering and a dedicated scroll region", async () => {
   const [catalog, styles, animation] = await Promise.all([
-    readTemplate("ProductList.astro"),
-    readTemplate("styles/product-list.scss"),
+    readTemplate("pages/ProductList.astro"),
+    readTemplate("styles/pages/product-list.scss"),
     readFile(new URL("./browser/animate-details.ts", import.meta.url), "utf8"),
   ]);
 
@@ -43,7 +40,7 @@ test("catalog facets support persistent batch filtering and a dedicated scroll r
   assert.doesNotMatch(catalog, /other\.open\s*=\s*false/);
   assert.doesNotMatch(catalog, /menu\.open\s*=\s*false/);
   assert.match(styles, /\.lv-catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
-  assert.match(catalog, /lv-catalog-filter__scroll" data-lenis-prevent/);
+  assert.match(catalog, /lv-catalog-filter__scroll/);
   assert.match(catalog, /lv-filter-footer[\s\S]*lv-catalog-filter__active[\s\S]*lv-filter-clear[\s\S]*lv-filter-apply/);
   assert.match(animation, /animation\.finished/);
   assert.match(animation, /if \(!opening\) details\.open = false/);

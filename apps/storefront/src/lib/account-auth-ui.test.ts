@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 test("account access uses explicit modes with secure native form fallbacks", async () => {
   const source = await readFile(
-    new URL("../templates/luvia/v1/Account.astro", import.meta.url),
+    new URL("../templates/luvia/v1/pages/Account.astro", import.meta.url),
     "utf8",
   );
 

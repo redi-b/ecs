@@ -6,7 +6,6 @@ export const luviaV1Defaults: LuviaV1Data = {
       { label: "Home", href: "/" },
       { label: "Shop", href: "/products" },
       { label: "Request Item", href: "/request-item" },
-      { label: "About Us", href: "/about" },
       { label: "Contact", href: "/contact" },
     ],
   },
@@ -33,35 +32,11 @@ export const luviaV1Defaults: LuviaV1Data = {
       collectionId: undefined,
       limit: 12,
     },
-    story: {
-      enabled: true,
-      body: "Pure ingredients sourced for your natural radiance. Explore our curated collection, and start your glowing journey!",
-      titleFirstLine: "ADVANCED",
-      titleSecondLine: "SELF-CARE",
-      ctaLabel: "All Collections",
-      ctaHref: "/products",
-    },
     products: {
       enabled: true,
       title: "Products Listing",
       productIds: [],
       limit: 12,
-    },
-    brandStatement: {
-      enabled: true,
-      firstLine: "COMPLETE",
-      middleLine: "COSMETIC",
-      lastLine: "ESSENTIALS",
-      imageAssetId: undefined,
-    },
-    expertise: {
-      enabled: true,
-      title: "The Expertise Behind Luvia's Products",
-      body: "We are a research-driven lab creating beauty through pure innovation. Every product is a refined result of our shared clinical journey.",
-      quote:
-        "Designed for those who seek purity in their beauty routine. We combine ancient botanical wisdom with modern clinical science to deliver unparalleled results for your skin's health.",
-      ctaLabel: "About Luvia",
-      ctaHref: "/about",
     },
     categories: {
       enabled: true,
@@ -92,7 +67,6 @@ export const luviaV1Defaults: LuviaV1Data = {
     ],
     quickLinks: [
       { label: "Home", href: "/" },
-      { label: "About", href: "/about" },
       { label: "Shop", href: "/products" },
       { label: "Contact", href: "/contact" },
       { label: "Wishlist", href: "/wishlist" },
@@ -122,7 +96,7 @@ export const luviaV1ThemeTokens: LuviaV1ThemeTokens = {
   },
   typography: {
     headingFont: "GC Molecule Demo",
-    bodyFont: "Right Grotesk",
+    bodyFont: "GC Molecule Demo",
   },
   radius: "md",
 };

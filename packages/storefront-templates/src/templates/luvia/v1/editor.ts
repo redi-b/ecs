@@ -46,42 +46,6 @@ export const luviaV1EditorSchema = {
       ],
     },
     {
-      id: "story",
-      label: "Brand story",
-      fields: [
-        { path: "home.story.enabled", prop: "storyEnabled", label: "Show section", kind: "boolean" },
-        { path: "home.story.body", prop: "storyBody", label: "Description", kind: "textarea" },
-        { path: "home.story.titleFirstLine", prop: "storyTitleFirstLine", label: "First title line", kind: "text" },
-        { path: "home.story.titleSecondLine", prop: "storyTitleSecondLine", label: "Second title line", kind: "text" },
-        { path: "home.story.ctaLabel", prop: "storyCtaLabel", label: "Button label", kind: "text" },
-        { path: "home.story.ctaHref", prop: "storyCtaHref", label: "Button link", kind: "link" },
-      ],
-    },
-    {
-      id: "brand-statement",
-      label: "Brand statement",
-      fields: [
-        { path: "home.brandStatement.enabled", prop: "brandStatementEnabled", label: "Show section", kind: "boolean" },
-        { path: "home.brandStatement.firstLine", prop: "brandStatementFirstLine", label: "First line", kind: "text" },
-        { path: "home.brandStatement.middleLine", prop: "brandStatementMiddleLine", label: "Middle line", kind: "text" },
-        { path: "home.brandStatement.lastLine", prop: "brandStatementLastLine", label: "Last line", kind: "text" },
-        { path: "home.brandStatement.imageAssetId", prop: "brandStatementImageAssetId", label: "Product image", kind: "image" },
-      ],
-    },
-    {
-      id: "expertise",
-      label: "Expertise",
-      fields: [
-        { path: "home.expertise.enabled", prop: "expertiseEnabled", label: "Show section", kind: "boolean" },
-        { path: "home.expertise.title", prop: "expertiseTitle", label: "Title", kind: "text" },
-        { path: "home.expertise.body", prop: "expertiseBody", label: "Description", kind: "textarea" },
-        { path: "home.expertise.quote", prop: "expertiseQuote", label: "Statement", kind: "textarea" },
-        { path: "home.expertise.imageAssetId", prop: "expertiseImageAssetId", label: "Laboratory image", kind: "image" },
-        { path: "home.expertise.ctaLabel", prop: "expertiseCtaLabel", label: "Button label", kind: "text" },
-        { path: "home.expertise.ctaHref", prop: "expertiseCtaHref", label: "Button link", kind: "link" },
-      ],
-    },
-    {
       id: "categories",
       label: "Categories",
       fields: [

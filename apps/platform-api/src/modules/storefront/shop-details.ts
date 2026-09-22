@@ -44,9 +44,6 @@ export function createBrandedShopData(data: unknown, name: string, details: unkn
     ...(home && hero ? { home: {
       ...home,
       hero: { ...hero, title: name, eyebrow: "Welcome to our shop", primaryCtaLabel: "Shop products", primaryCtaHref: "/products", trustLabels: [], ...(typeof hero.body === "string" ? { body: parsed.data?.description || "Explore our products and find something for you." } : {}), ...(typeof hero.subtitle === "string" ? { subtitle: parsed.data?.description || "Explore our products and find something for you." } : {}) },
-      ...(record(home.story) ? { story: { ...record(home.story), enabled: false } } : {}),
-      ...(record(home.brandStatement) ? { brandStatement: { ...record(home.brandStatement), enabled: false } } : {}),
-      ...(record(home.expertise) ? { expertise: { ...record(home.expertise), enabled: false, title: `About ${name}`, body: parsed.data?.description || `Discover the products available from ${name}.`, quote: "Contact our shop for product information and help with your order.", ctaLabel: "About our shop" } } : {}),
       ...(record(home.quality) ? { quality: { ...record(home.quality), enabled: false, eyebrow: `About ${name}`, title: `Welcome to ${name}`, body: parsed.data?.description || "Explore our products and contact our shop for help.", accordion1Title: "Product information", accordion1Body: "Check each product for its specifications and available options.", accordion2Title: "Returns and warranty", accordion2Body: "Contact the shop for the terms that apply to your product before ordering." } } : {}),
       ...(record(home.featuredItem) ? { featuredItem: { ...record(home.featuredItem), title: "Featured products", body: "A closer look at products from our shop." } } : {}),
       ...(record(home.categories) ? { categories: { ...record(home.categories), title: "Browse our collections" } } : {}),

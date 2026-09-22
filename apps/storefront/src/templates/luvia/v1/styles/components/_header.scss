@@ -1,0 +1,482 @@
+@use "../abstracts" as *;
+
+.sf-icon {
+  display: contents;
+}
+
+.sf-icon svg {
+  display: block;
+  max-width: none;
+}
+
+.lv-header {
+  position: absolute;
+  z-index: 20;
+  top: 26px;
+  left: 50%;
+  width: calc(100% - 120px);
+  height: 64px;
+  padding: $space-150 $space-250;
+  display: flex;
+  align-items: center;
+  gap: $space-600;
+  transform: translateX(-50%);
+  border-radius: $radius-pill;
+  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-white));
+  box-shadow: 0 0 26px color-mix(in srgb, var(--clr-primary) 22%, transparent);
+}
+
+.lv-logo {
+  width: 82px;
+  flex: none;
+}
+
+.lv-logo img {
+  width: 100%;
+  height: 44px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.lv-logo:has(.lv-wordmark) {
+  width: auto;
+  max-width: 180px;
+  padding-inline: 12px;
+}
+
+.lv-wordmark {
+  display: block;
+  overflow: hidden;
+  color: var(--clr-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lv-nav {
+  display: flex;
+  align-items: center;
+  gap: $space-600;
+}
+
+.lv-nav__customer {
+  display: none;
+}
+
+.lv-nav a {
+  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lv-nav a.is-active {
+  color: var(--clr-ink);
+}
+
+.lv-actions {
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: $space-150;
+}
+
+.lv-search {
+  width: min(376px, 30vw);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--clr-accent);
+  border-radius: $radius-pill;
+  background: color-mix(in srgb, var(--clr-bg) 56%, transparent);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.lv-search:hover {
+  border-color: color-mix(in srgb, var(--clr-primary) 55%, var(--clr-bg));
+  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-primary));
+}
+
+.lv-search:focus-within {
+  border-color: var(--clr-primary);
+  background: var(--clr-bg);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--clr-primary) 18%, transparent), 0 8px 22px color-mix(in srgb, var(--clr-ink) 8%, transparent);
+}
+
+.lv-search input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 $space-400;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--clr-ink);
+}
+
+.lv-search button,
+.lv-action {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid var(--clr-accent);
+  border-radius: $radius-full;
+  background: var(--clr-bg);
+}
+
+.lv-search button {
+  margin-right: $space-50;
+  border: 0;
+}
+
+.lv-search .sf-icon svg,
+.lv-action .sf-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lv-search {
+  position: relative;
+}
+
+.lv-search .product-search-suggestions {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 90;
+  width: min(420px, calc(100vw - 32px));
+  padding: $space-150;
+  overflow: hidden;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-400;
+  background: color-mix(in srgb, var(--clr-bg) 96%, transparent);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--clr-ink) 18%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.lv-search .product-search-suggestions[hidden] {
+  display: none;
+}
+
+.lv-search .product-search-suggestions__item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: $space-300;
+  min-height: 58px;
+  padding: $space-150;
+  border-radius: $radius-250;
+  color: var(--clr-ink);
+  text-decoration: none;
+}
+
+.lv-search .product-search-suggestions__item:hover,
+.lv-search .product-search-suggestions__item[data-active] {
+  background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-bg));
+}
+
+.lv-search .product-search-suggestions__media {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: $radius-200;
+  background: var(--clr-soft);
+}
+
+.lv-search .product-search-suggestions__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lv-search .product-search-suggestions__copy {
+  display: grid;
+  gap: $space-50;
+  min-width: 0;
+}
+
+.lv-search .product-search-suggestions__copy strong,
+.lv-search .product-search-suggestions__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lv-search .product-search-suggestions__copy strong {
+}
+
+.lv-search .product-search-suggestions__copy small {
+  color: color-mix(in srgb, var(--clr-ink) 62%, transparent);
+}
+
+.lv-search .product-search-suggestions__item b {
+  white-space: nowrap;
+}
+
+.lv-search .product-search-suggestions__all {
+  display: block;
+  margin-top: $space-100;
+  padding: $space-250 $space-300;
+  border-top: 1px solid var(--clr-line);
+  color: var(--clr-primary);
+  text-decoration: none;
+}
+
+.lv-action {
+  position: relative;
+  color: var(--clr-ink);
+}
+
+.lv-action--wishlist::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--clr-bg);
+  border-radius: $radius-full;
+  background: var(--clr-primary);
+  opacity: 0;
+  transform: scale(.65);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.lv-action--wishlist[data-active]::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lv-count {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 $space-100;
+  border-radius: $radius-pill;
+  background: var(--clr-primary);
+  color: var(--clr-on-primary);
+  text-align: center;
+}
+
+.lv-menu {
+  display: none;
+}
+
+.lv-header-backdrop {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .lv-header {
+      width: calc(100% - 40px);
+    }
+
+  .lv-nav {
+      gap: $space-350;
+    }
+
+  .lv-search {
+      width: min(280px, 27vw);
+    }
+}
+
+@media (max-width: 760px) {
+  .lv-header {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      width: calc(100% - 24px);
+      height: 58px;
+      padding: $space-100 $space-150;
+      gap: $space-200;
+    }
+
+  .lv-logo {
+      width: 70px;
+    }
+
+  .lv-logo img {
+      height: 40px;
+    }
+
+  .lv-menu {
+      width: 44px;
+      height: 44px;
+      padding: $space-250;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: $space-100;
+      order: -1;
+      border: 0;
+      border-radius: $radius-full;
+      background: transparent;
+    }
+
+  .lv-menu span:not(.sr-only) {
+      width: 19px;
+      height: 1.5px;
+      display: block;
+      background: var(--clr-ink);
+    }
+
+  .lv-header {
+      z-index: 82;
+    }
+
+  .lv-header-backdrop {
+      position: fixed;
+      z-index: 81;
+      inset: 0;
+      padding: 0;
+      display: block;
+      border: 0;
+      background: color-mix(in srgb, var(--clr-ink) 26%, transparent);
+      opacity: 0;
+      visibility: hidden;
+      cursor: default;
+      transition: opacity var(--lv-motion-medium) var(--lv-ease-out), visibility var(--lv-motion-medium);
+    }
+
+  .lv-header-backdrop[data-open] {
+      opacity: 1;
+      visibility: visible;
+    }
+
+  .lv-nav {
+      position: absolute;
+      top: 66px;
+      left: 0;
+      right: 0;
+      max-height: min(70dvh, 520px);
+      padding: $space-300;
+      display: flex;
+      overflow-y: auto;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      border: 1px solid var(--clr-line);
+      border-radius: $radius-450;
+      background: var(--clr-bg);
+      box-shadow: 0 18px 40px color-mix(in srgb, var(--clr-ink) 15%, transparent);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px) scale(.985);
+      transform-origin: top center;
+      pointer-events: none;
+      overscroll-behavior: contain;
+      transition: opacity var(--lv-motion-medium) var(--lv-ease-out), transform var(--lv-motion-medium) var(--lv-ease-out), visibility var(--lv-motion-medium);
+    }
+
+  .lv-nav[data-open] {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+  .lv-nav a {
+      min-height: 48px;
+      padding: 0 $space-250;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--clr-line);
+    }
+
+  .lv-nav>a:last-of-type {
+      border-bottom: 0;
+    }
+
+  .lv-nav__customer {
+      margin-top: $space-200;
+      padding-top: $space-200;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $space-200;
+    }
+
+  .lv-nav__customer a {
+      min-height: 46px;
+      justify-content: center;
+      border: 1px solid var(--clr-line);
+      border-radius: $radius-pill;
+      background: var(--clr-soft);
+    }
+
+  .lv-search {
+      width: 44px;
+      height: 44px;
+      border: 0;
+    }
+
+  .lv-search input {
+      position: absolute;
+      top: 66px;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 50px;
+      padding-inline: 18px 54px;
+      display: block;
+      border: 1px solid color-mix(in srgb, var(--clr-primary) 38%, var(--clr-bg));
+      border-radius: $radius-pill;
+      background: var(--clr-bg);
+      box-shadow: 0 16px 38px color-mix(in srgb, var(--clr-ink) 16%, transparent);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-7px) scale(.985);
+      transform-origin: top right;
+      pointer-events: none;
+      transition: opacity var(--lv-motion-medium) var(--lv-ease-out), transform var(--lv-motion-medium) var(--lv-ease-out), visibility var(--lv-motion-medium);
+    }
+
+  .lv-search input[data-open] {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+  .lv-search .product-search-suggestions {
+      position: fixed;
+      top: 124px;
+      left: 16px;
+      right: 16px;
+      width: auto;
+      max-height: min(420px, calc(100dvh - 148px));
+      overflow-y: auto;
+    }
+
+  .lv-search button {
+      width: 44px;
+      height: 44px;
+      margin: 0;
+      border: 1px solid var(--clr-accent);
+    }
+
+  .lv-action {
+      width: 44px;
+      height: 44px;
+    }
+
+  .lv-action--wishlist,
+    .lv-action--account {
+      display: none;
+    }
+}
+
+@media (max-width: 430px) {
+  .lv-actions {
+      gap: $space-50;
+    }
+
+  .lv-search,
+    .lv-search button,
+    .lv-action {
+      width: 42px;
+      height: 42px;
+    }
+}

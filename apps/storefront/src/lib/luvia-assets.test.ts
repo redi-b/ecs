@@ -17,26 +17,26 @@ test("Luvia template raster assets stay web-ready and within budget", async () =
 });
 
 test("Luvia static editorial images use the responsive Astro image boundary", async () => {
-  const files = ["Home.astro", "About.astro", "Contact.astro", "ProductList.astro"];
+  const files = ["pages/index.astro", "pages/Contact.astro", "pages/ProductList.astro"];
   const sources = await Promise.all(files.map((file) => readFile(new URL(file, templateRoot), "utf8")));
   const styles = await Promise.all(
-    ["home.scss", "about.scss", "contact.scss", "product-list.scss"].map((file) =>
+    ["pages/index.scss", "pages/contact.scss", "pages/product-list.scss"].map((file) =>
       readFile(new URL(`styles/${file}`, templateRoot), "utf8"),
     ),
   );
 
   assert.ok(sources.every((source) => source.includes("TemplateImage")));
-  const adapter = await readFile(new URL("TemplateImage.astro", templateRoot), "utf8");
+  const adapter = await readFile(new URL("components/TemplateImage.astro", templateRoot), "utf8");
   assert.match(adapter, /components\/media\/TemplateAsset\.astro/);
   assert.ok(styles.every((source) => !/url\([^)]*\.(?:png|jpe?g|webp)/i.test(source)));
 });
 
 test("production templates use an accessible visual state when product media is absent", async () => {
   const templateFiles = [
-    "ProductCard.astro",
-    "Product.astro",
-    "HeroProductSlide.astro",
-    "Cart.astro",
+    "components/ProductCard.astro",
+    "pages/Product.astro",
+    "components/HeroProductSlide.astro",
+    "pages/Cart.astro",
     "../../nexahub/v1/ProductCard.astro",
     "../../nexahub/v1/Product.astro",
   ];

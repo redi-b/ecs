@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--clr-bg);
+  color: var(--clr-ink);
+  scrollbar-gutter: stable;
+}
+
+html[data-overlay-open],
+html[data-overlay-open] body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.lv-body {
+  margin: 0;
+  overflow-x: clip;
+  background: var(--clr-bg);
+  color: var(--clr-ink);
+}
+
+body.lv-body[data-cart-open] {
+  overflow: hidden;
+}
+
+body.lv-body[data-header-open] {
+  overflow: hidden;
+}

@@ -1,0 +1,92 @@
+@use "./utils/functions" as *;
+
+$ff-hero: "Right Grotesk", "Noto Sans Ethiopic", sans-serif;
+$ff-body: "GC Molecule Demo", "Noto Sans Ethiopic", sans-serif;
+
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-semi-bold: 600;
+
+$fs-heading-1: 102px;
+$fs-display: 148px;
+$fs-heading-2: 48px;
+$fs-heading-3: 36px;
+$fs-heading-4: 26px;
+$fs-body-xl: 20px;
+$fs-body-l: 18px;
+$fs-body: 16px;
+$fs-body-s: 14px;
+$fs-body-xs: 12px;
+
+$lh-heading-1: 100px;
+$lh-display: 116px;
+$lh-heading-2: 52px;
+$lh-heading-3: 45px;
+$lh-body: 23px;
+$lh-body-s: 20px;
+
+$ls-heading-1: -0.04em;
+$ls-display: -0.03em;
+$ls-heading: -0.02em;
+$ls-none: 0;
+
+:root {
+  --clr-bg: #f7fff7;
+  --clr-ink: #0f3112;
+  --clr-primary: #3ee272;
+  --clr-soft: #edf8ee;
+  --clr-accent: #b5ffa2;
+  --clr-on-primary: #0f3112;
+  --clr-white: #ffffff;
+  --clr-surface: #ffffff;
+  --clr-black: #000000;
+  --clr-danger: #8d2828;
+  --clr-danger-bg: #fff0f0;
+  --clr-warning: #7b541d;
+  --clr-warning-bg: #fff7eb;
+  --clr-line: #{alpha(var(--clr-ink), 0.14)};
+  --clr-dark: color-mix(in srgb, var(--clr-ink) 94%, var(--clr-black));
+  --clr-on-dark: var(--clr-bg);
+}
+
+
+$space-50: 2px;
+$space-100: 4px;
+$space-150: 6px;
+$space-200: 8px;
+$space-250: fluid(8px, 10px);
+$space-300: fluid(10px, 12px);
+$space-350: fluid(11px, 14px);
+$space-400: fluid(13px, 16px);
+$space-450: fluid(14px, 18px);
+$space-500: fluid(16px, 20px);
+$space-550: fluid(18px, 22px);
+$space-600: fluid(19px, 24px);
+$space-650: fluid(24px, 30px);
+$space-700: fluid(28px, 36px);
+$space-750: fluid(34px, 42px);
+$space-800: fluid(36px, 48px);
+$space-850: fluid(42px, 54px);
+$space-900: fluid(44px, 60px);
+$space-950: fluid(52px, 70px);
+$space-1000: fluid(60px, 80px);
+$space-1050: fluid(72px, 100px);
+$space-1100: fluid(88px, 120px);
+$space-1150: fluid(110px, 150px);
+$space-1200: fluid(130px, 180px);
+
+$radius-50: 4px;
+$radius-100: fluid(6px, 8px);
+$radius-150: fluid(8px, 10px);
+$radius-200: fluid(10px, 12px);
+$radius-250: fluid(11px, 14px);
+$radius-300: fluid(13px, 16px);
+$radius-350: fluid(14px, 18px);
+$radius-400: fluid(16px, 20px);
+$radius-450: fluid(18px, 22px);
+$radius-500: fluid(19px, 24px);
+$radius-550: fluid(26px, 34px);
+$radius-600: fluid(36px, 48px);
+$radius-650: 100px;
+$radius-pill: 999px;
+$radius-full: 50%;

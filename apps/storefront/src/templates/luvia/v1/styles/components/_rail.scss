@@ -1,0 +1,35 @@
+@use "../abstracts" as *;
+
+.lv-rail-controls {
+  display: flex;
+  align-items: center;
+  gap: $space-150;
+}
+
+.lv-rail-controls button {
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: $radius-pill;
+  background: var(--clr-soft);
+  color: var(--clr-ink);
+  cursor: pointer;
+  transition: background-color var(--lv-motion-fast) var(--lv-ease-out), color var(--lv-motion-fast) var(--lv-ease-out), opacity var(--lv-motion-fast) var(--lv-ease-out);
+}
+
+.lv-rail-controls button:hover:not(:disabled) {
+  background: var(--clr-accent);
+}
+
+.lv-rail-controls button:focus-visible {
+  outline: 2px solid var(--clr-primary);
+  outline-offset: 3px;
+}
+
+.lv-rail-controls button:disabled {
+  cursor: default;
+  opacity: .35;
+}
