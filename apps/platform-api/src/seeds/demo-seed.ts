@@ -74,6 +74,7 @@ import {
   DEFAULT_REPORTING_TIMEZONE,
 } from "../modules/analytics/commerce-rollup.js";
 import { createBillingService, DEFAULT_PLAN_IDS } from "../modules/billing/service.js";
+import { generateObjectKey } from "../modules/media/variants.js";
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import {
   DEMO_OPERATIONS,
@@ -1440,7 +1441,12 @@ async function seedProductMediaAssets(input: {
     const ext = mimeType.includes("png") ? "png" : "jpg";
     const filename = `${input.productHandle}-${index + 1}.${ext}`;
     const assetId = crypto.randomUUID();
-    const objectKey = `tenants/${input.tenantId}/product/${assetId}/${filename}`;
+    const objectKey = generateObjectKey({
+      accessMode: "public",
+      assetId,
+      filename,
+      tenantId: input.tenantId,
+    });
     const publicUrl = config.publicBaseUrl
       ? `${config.publicBaseUrl.replace(/\/$/, "")}/${objectKey}`
       : null;

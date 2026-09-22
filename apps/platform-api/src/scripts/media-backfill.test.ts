@@ -5,6 +5,7 @@ import {
   parseBackfillArgs,
   extractProductImages,
   getObjectKeyFromUrl,
+  parseImageKeys,
   runBackfill,
   type MedusaProductForBackfill,
 } from "./media-backfill.js";
@@ -258,4 +259,127 @@ test("runBackfill processes images, uploads WebP variants, and updates Medusa me
     },
   });
 });
+
+test("parseImageKeys correctly maps legacy tenant paths to canonical keys", () => {
+  const legacyProductUrl =
+    "https://media.domain.com/ecs-media/tenants/shop_123/product/ast_456/cover.jpg";
+  const parsed1 = parseImageKeys(legacyProductUrl, "shop_123", "ecs-media");
+  assert.equal(parsed1.canonicalKey, "s/shop_123/ast_456/cover.jpg");
+  assert.equal(parsed1.originalStorageKey, "tenants/shop_123/product/ast_456/cover.jpg");
+
+  const legacySimpleUrl =
+    "https://media.domain.com/ecs-media/tenants/shop_123/ast_456/photo.png";
+  const parsed2 = parseImageKeys(legacySimpleUrl, "shop_123", "ecs-media");
+  assert.equal(parsed2.canonicalKey, "s/shop_123/ast_456/photo.png");
+  assert.equal(parsed2.originalStorageKey, "tenants/shop_123/ast_456/photo.png");
+
+  const flawedBackfillUrl =
+    "https://media.domain.com/ecs-media/p/backfill/hash123/watch.jpg";
+  const parsed3 = parseImageKeys(flawedBackfillUrl, "shop_123", "ecs-media");
+  assert.equal(parsed3.canonicalKey, "s/shop_123/hash123/watch.jpg");
+  assert.equal(parsed3.originalStorageKey, "p/backfill/hash123/watch.jpg");
+});
+
+test("shouldBackfillProductImage always returns true for legacy /tenants/ and /p/backfill/ URLs", () => {
+  const legacyUrl = "https://media.domain.com/ecs-media/tenants/shop_1/product/ast_1/cover.jpg";
+  const metadataWithVariants = {
+    media_variants: {
+      [legacyUrl]: { w200: "...", w400: "...", w800: "...", w1200: "..." },
+    },
+  };
+  assert.equal(shouldBackfillProductImage(legacyUrl, metadataWithVariants), true);
+
+  const backfillUrl = "https://media.domain.com/ecs-media/p/backfill/hash/cover.jpg";
+  assert.equal(shouldBackfillProductImage(backfillUrl, metadataWithVariants), true);
+});
+
+test("runBackfill migrates legacy tenant image to canonical s/ path and updates product thumbnail and images", async () => {
+  const sharp = (await import("sharp")).default;
+  const imageBuffer = await sharp({
+    create: {
+      width: 100,
+      height: 100,
+      channels: 4,
+      background: { r: 0, g: 255, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toBuffer();
+
+  const legacyUrl =
+    "https://media.ourdomain.com/ecs-media/tenants/shop_1/product/ast_legacy/cover.jpg";
+  const products: MedusaProductForBackfill[] = [
+    {
+      id: "prod_legacy",
+      images: [{ url: legacyUrl }],
+      metadata: { platform_tenant_id: "shop_1" },
+      tenantId: "shop_1",
+      thumbnail: legacyUrl,
+      title: "Legacy Product",
+    },
+  ];
+
+  const putCalls: Array<{ body: Uint8Array; cacheControl?: string; objectKey: string }> = [];
+  let updatedPayload: any = null;
+
+  const storageMap = new Map<string, Buffer>();
+  storageMap.set("tenants/shop_1/product/ast_legacy/cover.jpg", imageBuffer);
+
+  const summary = await runBackfill({
+    options: { dryRun: false, concurrency: 1 },
+    dependencies: {
+      publicBaseUrl: "https://media.ourdomain.com/ecs-media",
+      storage: {
+        bucket: "ecs-media",
+        provider: "s3",
+        checkHealth: async () => {},
+        createUpload: async () => ({} as any),
+        deleteObject: async () => {},
+        getObject: async (key: string) => {
+          const buf = storageMap.get(key);
+          if (!buf) throw new Error("Not found");
+          return buf;
+        },
+        getObjectMetadata: async () => ({ byteSize: imageBuffer.length, contentType: "image/png" }),
+        putObject: async (input) => {
+          putCalls.push(input as any);
+          storageMap.set(input.objectKey, Buffer.from(input.body));
+          return { publicUrl: `https://media.ourdomain.com/ecs-media/${input.objectKey}` };
+        },
+      },
+      listProducts: async () => ({ count: 1, products }),
+      updateProductMediaVariants: async (input) => {
+        updatedPayload = input;
+      },
+    },
+  });
+
+  assert.equal(summary.productsScanned, 1);
+  assert.equal(summary.productsUpdated, 1);
+  assert.equal(summary.imagesBackfilled, 1);
+
+  // 1 copy of master image to s/shop_1/ast_legacy/cover.jpg + 4 variants
+  assert.equal(putCalls.length, 5);
+  const keys = putCalls.map((c) => c.objectKey);
+  assert.ok(keys.includes("s/shop_1/ast_legacy/cover.jpg"));
+  assert.ok(keys.includes("s/shop_1/ast_legacy/cover-200w.webp"));
+  assert.ok(keys.includes("s/shop_1/ast_legacy/cover-400w.webp"));
+  assert.ok(keys.includes("s/shop_1/ast_legacy/cover-800w.webp"));
+  assert.ok(keys.includes("s/shop_1/ast_legacy/cover-1200w.webp"));
+
+  const newCanonicalUrl =
+    "https://media.ourdomain.com/ecs-media/s/shop_1/ast_legacy/cover.jpg";
+
+  assert.equal(updatedPayload.productId, "prod_legacy");
+  assert.equal(updatedPayload.tenantId, "shop_1");
+  assert.equal(updatedPayload.thumbnail, newCanonicalUrl);
+  assert.deepEqual(updatedPayload.images, [{ url: newCanonicalUrl }]);
+  assert.ok(updatedPayload.mediaVariants[newCanonicalUrl]);
+  assert.ok(updatedPayload.mediaVariants[legacyUrl]); // backward compatibility
+  assert.equal(
+    updatedPayload.mediaVariants[newCanonicalUrl].w200,
+    "https://media.ourdomain.com/ecs-media/s/shop_1/ast_legacy/cover-200w.webp",
+  );
+});
+
 

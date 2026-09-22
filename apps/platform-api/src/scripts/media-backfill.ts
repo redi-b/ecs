@@ -74,11 +74,14 @@ export type BackfillDependencies = {
     | Record<string, string>
     | null
   >;
+  publicBaseUrl?: string;
   storage: StorageAdapter;
   updateProductMediaVariants: (input: {
+    images?: Array<{ url: string }>;
     mediaVariants: Record<string, Record<string, string>>;
     productId: string;
     tenantId?: string;
+    thumbnail?: string | null;
   }) => Promise<unknown>;
 };
 
@@ -98,6 +101,9 @@ export function shouldBackfillProductImage(
 ): boolean {
   if (!url || typeof url !== "string" || !url.trim()) {
     return false;
+  }
+  if (url.includes("/tenants/") || url.includes("/p/backfill/")) {
+    return true;
   }
   const mediaVariants = metadata?.media_variants;
   if (!mediaVariants || typeof mediaVariants !== "object" || mediaVariants === null) {
@@ -180,59 +186,137 @@ export function extractProductImages(product: {
   return Array.from(urls);
 }
 
+export function parseImageKeys(
+  imageUrl: string,
+  tenantId?: string,
+  bucket?: string,
+): { canonicalKey: string; originalStorageKey?: string } {
+  let pathname = "";
+  try {
+    const parsed = new URL(imageUrl);
+    pathname = parsed.pathname.replace(/^\/+/, "");
+  } catch {
+    pathname = imageUrl.replace(/^\/+/, "");
+  }
+
+  if (bucket && pathname.startsWith(`${bucket}/`)) {
+    pathname = pathname.slice(bucket.length + 1);
+  }
+
+  // 1. Check legacy tenants format: tenants/{tenantId}/product/{assetId}/{filename} or tenants/{tenantId}/{assetId}/{filename}
+  const tenantProductMatch = pathname.match(/^tenants\/([^/]+)\/product\/([^/]+)\/(.+)$/);
+  if (tenantProductMatch) {
+    const tid = tenantId || tenantProductMatch[1];
+    const assetId = tenantProductMatch[2];
+    const filename = sanitizeFilename(tenantProductMatch[3] || "image.png") || "image.png";
+    return {
+      canonicalKey: `s/${tid}/${assetId}/${filename}`,
+      originalStorageKey: pathname,
+    };
+  }
+
+  const tenantSimpleMatch = pathname.match(/^tenants\/([^/]+)\/([^/]+)\/(.+)$/);
+  if (tenantSimpleMatch) {
+    const tid = tenantId || tenantSimpleMatch[1];
+    const assetId = tenantSimpleMatch[2];
+    const filename = sanitizeFilename(tenantSimpleMatch[3] || "image.png") || "image.png";
+    return {
+      canonicalKey: `s/${tid}/${assetId}/${filename}`,
+      originalStorageKey: pathname,
+    };
+  }
+
+  // 2. Check previous backfill format: p/backfill/{hash}/{filename} or s/{tenantId}/backfill/{hash}/{filename}
+  const backfillMatch = pathname.match(/^(?:p|s\/[^/]+)\/backfill\/([^/]+)\/(.+)$/);
+  if (backfillMatch) {
+    const hash = backfillMatch[1];
+    const filename = sanitizeFilename(backfillMatch[2] || "image.png") || "image.png";
+    const tid = tenantId || (pathname.startsWith("s/") ? pathname.split("/")[1] : undefined);
+    return {
+      canonicalKey: tid ? `s/${tid}/${hash}/${filename}` : `p/backfill/${hash}/${filename}`,
+      originalStorageKey: pathname,
+    };
+  }
+
+  // 3. Already canonical standard format: s/{tenantId}/{assetId}/{filename}
+  if (pathname.startsWith("s/")) {
+    return {
+      canonicalKey: pathname,
+      originalStorageKey: pathname,
+    };
+  }
+
+  // 4. External or arbitrary URL fallback
+  const filename = sanitizeFilename(pathname.split("/").pop() || "image.png") || "image.png";
+  const hash = createHash("sha256").update(imageUrl).digest("hex").slice(0, 12);
+  const prefix = tenantId ? `s/${tenantId}/backfill` : "p/backfill";
+  return {
+    canonicalKey: `${prefix}/${hash}/${filename}`,
+    originalStorageKey: undefined,
+  };
+}
+
 export function getObjectKeyFromUrl(
   imageUrl: string,
   tenantId?: string,
   bucket?: string,
 ): string {
-  try {
-    const parsed = new URL(imageUrl);
-    let pathname = parsed.pathname.replace(/^\/+/, "");
-    if (bucket && pathname.startsWith(`${bucket}/`)) {
-      pathname = pathname.slice(bucket.length + 1);
-    }
-    if (pathname.startsWith("s/") || pathname.startsWith("p/")) {
-      return pathname;
-    }
-  } catch {
-    let clean = imageUrl.replace(/^\/+/, "");
-    if (bucket && clean.startsWith(`${bucket}/`)) {
-      clean = clean.slice(bucket.length + 1);
-    }
-    if (clean.startsWith("s/") || clean.startsWith("p/")) {
-      return clean;
-    }
-  }
-
-  const filename = sanitizeFilename(imageUrl.split("/").pop() || "image.png") || "image.png";
-  const hash = createHash("sha256").update(imageUrl).digest("hex").slice(0, 12);
-  const prefix = tenantId ? `s/${tenantId}/backfill` : "p/backfill";
-  return `${prefix}/${hash}/${filename}`;
+  return parseImageKeys(imageUrl, tenantId, bucket).canonicalKey;
 }
 
-export function resolveVariantUrlFromSource(sourceUrl: string, variantKey: string): string {
+export function resolveVariantUrlFromSource(
+  sourceUrl: string,
+  variantKey: string,
+  bucket?: string,
+  publicBaseUrl?: string,
+): string {
+  if (publicBaseUrl && publicBaseUrl.trim()) {
+    return `${publicBaseUrl.trim().replace(/\/+$/, "")}/${variantKey.replace(/^\/+/, "")}`;
+  }
   try {
     const parsed = new URL(sourceUrl);
-    return `${parsed.origin}/${variantKey}`;
+    let prefix = "";
+    if (bucket) {
+      const cleanPath = parsed.pathname.replace(/^\/+/, "");
+      if (cleanPath.startsWith(`${bucket}/`)) {
+        prefix = `/${bucket}`;
+      }
+    }
+    return `${parsed.origin}${prefix}/${variantKey.replace(/^\/+/, "")}`;
   } catch {
-    return `/${variantKey}`;
+    return `/${variantKey.replace(/^\/+/, "")}`;
   }
 }
 
 export async function getMasterImageBuffer(
   imageUrl: string,
-  objectKey: string,
+  canonicalKey: string,
+  originalStorageKey: string | undefined,
   storage: StorageAdapter,
 ): Promise<Buffer | null> {
+  // 1. Try canonicalKey
   try {
-    const s3Bytes = await storage.getObject(objectKey);
+    const s3Bytes = await storage.getObject(canonicalKey);
     if (s3Bytes && s3Bytes.length > 0) {
       return Buffer.from(s3Bytes);
     }
   } catch {
-    // Fall back to HTTP fetch
+    // Try originalStorageKey next
   }
 
+  // 2. Try originalStorageKey if different from canonicalKey
+  if (originalStorageKey && originalStorageKey !== canonicalKey) {
+    try {
+      const s3Bytes = await storage.getObject(originalStorageKey);
+      if (s3Bytes && s3Bytes.length > 0) {
+        return Buffer.from(s3Bytes);
+      }
+    } catch {
+      // Try HTTP fetch
+    }
+  }
+
+  // 3. Fall back to HTTP fetch
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     try {
       const response = await fetch(imageUrl);
@@ -250,13 +334,19 @@ export async function getMasterImageBuffer(
 
 export async function processAndUploadVariants(input: {
   buffer: Buffer;
-  objectKey: string;
+  canonicalKey?: string;
+  objectKey?: string;
+  publicBaseUrl?: string;
   sourceUrl?: string;
   storage: StorageAdapter;
 }): Promise<{
   variantRecords: Record<string, MediaVariantRecord>;
   variantUrls: Record<string, string>;
 }> {
+  const targetKey = input.canonicalKey ?? input.objectKey;
+  if (!targetKey) {
+    throw new Error("processAndUploadVariants requires canonicalKey or objectKey");
+  }
   const source = sharp(input.buffer, { failOn: "none" }).rotate();
   const variantUrls: Record<string, string> = {};
   const variantRecords: Record<string, MediaVariantRecord> = {};
@@ -270,7 +360,7 @@ export async function processAndUploadVariants(input: {
       .toBuffer();
 
     const info = await sharp(variantBuffer).metadata();
-    const variantKey = variantObjectKey(input.objectKey, width);
+    const variantKey = variantObjectKey(targetKey, width);
     const stored = await input.storage.putObject({
       body: variantBuffer,
       cacheControl: MEDIA_VARIANT_CACHE_CONTROL,
@@ -280,9 +370,12 @@ export async function processAndUploadVariants(input: {
 
     const publicUrl =
       stored.publicUrl ||
-      (input.sourceUrl
-        ? resolveVariantUrlFromSource(input.sourceUrl, variantKey)
-        : `/${variantKey}`);
+      resolveVariantUrlFromSource(
+        input.sourceUrl || "",
+        variantKey,
+        input.storage.bucket,
+        input.publicBaseUrl,
+      );
 
     variantUrls[`w${width}`] = publicUrl;
     variantRecords[`w${width}`] = {
@@ -386,6 +479,7 @@ export async function runBackfill(input: {
 
     const productNewVariants: Record<string, Record<string, string>> = {};
     const effectiveTenantId = product.tenantId ?? options.tenantId;
+    const urlReplacements = new Map<string, string>();
 
     const imageResults = await Promise.all(
       urlsToBackfill.map((url) =>
@@ -398,7 +492,7 @@ export async function runBackfill(input: {
               };
               if (effectiveTenantId) processInput.tenantId = effectiveTenantId;
               const res = await dependencies.processImage(processInput);
-              if (!res) return { url, variantRecords: undefined, variantUrls: null };
+              if (!res) return { newMasterUrl: url, url, variantRecords: undefined, variantUrls: null };
               const variantUrls =
                 "variantUrls" in res
                   ? (res.variantUrls as Record<string, string>)
@@ -407,10 +501,10 @@ export async function runBackfill(input: {
                 "variantRecords" in res
                   ? (res.variantRecords as Record<string, MediaVariantRecord>)
                   : undefined;
-              return { url, variantRecords, variantUrls };
+              return { newMasterUrl: url, url, variantRecords, variantUrls };
             }
 
-            const objectKey = getObjectKeyFromUrl(
+            const { canonicalKey, originalStorageKey } = parseImageKeys(
               url,
               effectiveTenantId,
               dependencies.storage.bucket,
@@ -418,26 +512,59 @@ export async function runBackfill(input: {
 
             const buffer = await getMasterImageBuffer(
               url,
-              objectKey,
+              canonicalKey,
+              originalStorageKey,
               dependencies.storage,
             );
 
             if (!buffer) {
               logger.warn(`Could not load master image buffer for ${url}`);
-              return { url, variantRecords: undefined, variantUrls: null };
+              return { newMasterUrl: url, url, variantRecords: undefined, variantUrls: null };
+            }
+
+            // If original storage key exists and is different from canonicalKey, ensure master image exists at canonicalKey
+            if (originalStorageKey && canonicalKey !== originalStorageKey) {
+              try {
+                const ext = canonicalKey.split(".").pop()?.toLowerCase();
+                const contentType =
+                  ext === "jpg" || ext === "jpeg"
+                    ? "image/jpeg"
+                    : ext === "webp"
+                    ? "image/webp"
+                    : ext === "gif"
+                    ? "image/gif"
+                    : "image/png";
+
+                await dependencies.storage.putObject({
+                  body: buffer,
+                  cacheControl: "public, max-age=31536000, immutable",
+                  contentType,
+                  objectKey: canonicalKey,
+                });
+              } catch (copyErr) {
+                logger.warn(`Could not copy master image to canonical key ${canonicalKey}:`, copyErr);
+              }
             }
 
             const { variantRecords, variantUrls } = await processAndUploadVariants({
               buffer,
-              objectKey,
+              canonicalKey,
+              publicBaseUrl: dependencies.publicBaseUrl,
               sourceUrl: url,
               storage: dependencies.storage,
             });
 
-            return { url, variantRecords, variantUrls };
+            const newMasterUrl = resolveVariantUrlFromSource(
+              url,
+              canonicalKey,
+              dependencies.storage.bucket,
+              dependencies.publicBaseUrl,
+            );
+
+            return { newMasterUrl, url, variantRecords, variantUrls };
           } catch (err) {
             logger.error(`Failed to process image ${url}:`, err);
-            return { url, variantRecords: undefined, variantUrls: null };
+            return { newMasterUrl: url, url, variantRecords: undefined, variantUrls: null };
           }
         }),
       ),
@@ -445,7 +572,13 @@ export async function runBackfill(input: {
 
     for (const res of imageResults) {
       if (res.variantUrls && Object.keys(res.variantUrls).length > 0) {
-        productNewVariants[res.url] = res.variantUrls;
+        if (res.newMasterUrl && res.newMasterUrl !== res.url) {
+          urlReplacements.set(res.url, res.newMasterUrl);
+        }
+        productNewVariants[res.newMasterUrl || res.url] = res.variantUrls;
+        if (res.newMasterUrl && res.newMasterUrl !== res.url) {
+          productNewVariants[res.url] = res.variantUrls;
+        }
         imagesBackfilled++;
       } else {
         imagesFailed++;
@@ -464,16 +597,45 @@ export async function runBackfill(input: {
         ...productNewVariants,
       };
 
+      let updatedThumbnail: string | null | undefined = undefined;
+      if (product.thumbnail && urlReplacements.has(product.thumbnail)) {
+        updatedThumbnail = urlReplacements.get(product.thumbnail);
+      }
+
+      let updatedImages: Array<{ url: string }> | undefined = undefined;
+      if (Array.isArray(product.images) && product.images.length > 0) {
+        let changed = false;
+        const newImages = product.images.map((img) => {
+          const rawUrl = typeof img === "string" ? img : img?.url;
+          if (rawUrl && urlReplacements.has(rawUrl)) {
+            changed = true;
+            return { url: urlReplacements.get(rawUrl)! };
+          }
+          return typeof img === "string" ? { url: img } : { url: img?.url ?? "" };
+        });
+        if (changed) {
+          updatedImages = newImages;
+        }
+      }
+
       const updatePayload: {
+        images?: Array<{ url: string }>;
         mediaVariants: Record<string, Record<string, string>>;
         productId: string;
         tenantId?: string;
+        thumbnail?: string | null;
       } = {
         mediaVariants: mergedVariants,
         productId: product.id,
       };
       if (effectiveTenantId) {
         updatePayload.tenantId = effectiveTenantId;
+      }
+      if (updatedThumbnail !== undefined) {
+        updatePayload.thumbnail = updatedThumbnail;
+      }
+      if (updatedImages !== undefined) {
+        updatePayload.images = updatedImages;
       }
 
       await dependencies.updateProductMediaVariants(updatePayload);
@@ -582,6 +744,13 @@ export async function fetchMedusaCatalogProducts(input: {
         ? (p.sales_channels as Array<{ id: string }>)
         : [];
 
+      const tenantIdFromMetadata =
+        p.metadata &&
+        typeof p.metadata === "object" &&
+        typeof (p.metadata as Record<string, unknown>).platform_tenant_id === "string"
+          ? ((p.metadata as Record<string, unknown>).platform_tenant_id as string)
+          : undefined;
+
       const productItem: MedusaProductForBackfill = {
         id,
         images: Array.isArray(p.images)
@@ -594,6 +763,9 @@ export async function fetchMedusaCatalogProducts(input: {
         thumbnail: typeof p.thumbnail === "string" ? p.thumbnail : null,
         title: typeof p.title === "string" ? p.title : null,
       };
+      if (tenantIdFromMetadata) {
+        productItem.tenantId = tenantIdFromMetadata;
+      }
       if (salesChannels[0]?.id) {
         productItem.salesChannelId = salesChannels[0].id;
       }
@@ -675,9 +847,11 @@ export async function main() {
     };
 
     const updateProductMediaVariants = async (inputPayload: {
+      images?: Array<{ url: string }>;
       mediaVariants: Record<string, Record<string, string>>;
       productId: string;
       tenantId?: string;
+      thumbnail?: string | null;
     }) => {
       return productService.updateProductMediaVariants(inputPayload);
     };
@@ -686,6 +860,7 @@ export async function main() {
       dependencies: {
         db,
         listProducts,
+        publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || undefined,
         storage,
         updateProductMediaVariants,
       },

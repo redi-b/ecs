@@ -60,13 +60,19 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
   const thumbnail = getProductThumbnail(product);
 
   if (thumbnail.kind === "image") {
+    const rawVariants = (
+      product as {
+        metadata?: { media_variants?: Record<string, Record<string, string>> };
+      }
+    )?.metadata?.media_variants;
+    const variantUrl =
+      rawVariants?.[thumbnail.url]?.w200 ||
+      rawVariants?.[thumbnail.url]?.w400 ||
+      thumbnail.url;
+
     return (
       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border bg-muted/40 ring-1 ring-border/50">
-        <img
-          alt=""
-          className="size-full object-cover"
-          src={toMediaVariantUrl(thumbnail.url, 96)}
-        />
+        <img alt="" className="size-full object-cover" src={variantUrl} />
       </div>
     );
   }

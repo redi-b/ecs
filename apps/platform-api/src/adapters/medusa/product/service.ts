@@ -1027,6 +1027,8 @@ export function createMedusaProductService(options: {
       productId: string;
       mediaVariants: Record<string, Record<string, string>>;
       tenantId?: string;
+      images?: Array<{ url: string }>;
+      thumbnail?: string | null;
     }): Promise<MerchantProductWriteResult> => {
       if (!options.adminApiToken?.trim()) {
         return missingCredentials();
@@ -1059,6 +1061,8 @@ export function createMedusaProductService(options: {
                 ...existingMetadata,
                 media_variants: input.mediaVariants,
               },
+              ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
+              ...(input.images !== undefined ? { images: input.images } : {}),
             },
           }),
           headers: getAdminHeaders(options.adminApiToken),

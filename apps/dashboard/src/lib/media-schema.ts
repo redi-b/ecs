@@ -26,24 +26,13 @@ export const mediaAssetSchema = z.object({
   width: z.number().nullable(),
 });
 
-export type MediaVariantWidth = 96 | 400 | 800 | 1200;
+export type MediaVariantWidth = 96 | 200 | 400 | 800 | 1200;
 
 export function toMediaVariantUrl(
   url: string | null | undefined,
-  width: MediaVariantWidth,
+  _width?: MediaVariantWidth,
 ): string {
   if (!url) return "";
-  const trimmed = url.trim();
-  if (!trimmed) return "";
-
-  const lower = trimmed.toLowerCase();
-  if (lower.endsWith(".gif") || lower.endsWith(".svg")) return trimmed;
-
-  const match = trimmed.match(/^(.*\/tenants\/[^/]+\/.+\/)([^/?#]+)(\?.*)?$/);
-  if (!match) return trimmed;
-
-  const prefix = match[1];
-  const search = match[3] ?? "";
-  return `${prefix}w${width}.webp${search}`;
+  return url.trim();
 }
 
