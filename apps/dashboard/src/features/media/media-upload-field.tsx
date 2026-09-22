@@ -23,17 +23,23 @@ import Uppy, { type UppyFile } from "@uppy/core";
 import { useEffect, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
+import { formatConstraintsBadge } from "@/components/products/product-media-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
+import {
+  DEFAULT_MEDIA_LIMITS,
+  getMediaUploadConfig,
+  type MediaLimitsConfig,
+} from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
 import { MediaLibraryDialog } from "./media-library-dialog";
 import { MediaPreviewLightbox } from "./media-lightbox";
 import { createMediaUploadId } from "./media-upload-id";
 
-const acceptedTypes = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
-const maxByteSize = 15 * 1024 * 1024;
+const acceptedTypes = new Set(DEFAULT_MEDIA_LIMITS.allowedMimeTypes);
+const maxByteSize = DEFAULT_MEDIA_LIMITS.maxFileBytes;
 
 const keepDragInsideGallery: Modifier = ({ containerNodeRect, draggingNodeRect, transform }) => {
   if (!containerNodeRect || !draggingNodeRect) return transform;
@@ -83,6 +89,18 @@ export function MediaUploadField({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const [config, setConfig] = useState<MediaLimitsConfig>(DEFAULT_MEDIA_LIMITS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMediaUploadConfig().then((fetched) => {
+      if (!cancelled && fetched) setConfig(fetched);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [uppy] = useState(() =>
     new Uppy<MediaUploadMeta, Record<string, never>>({
       autoProceed: true,
@@ -245,9 +263,34 @@ export function MediaUploadField({
     };
   }, [t, uppy]);
 
+  useEffect(() => {
+    uppy.setOptions({
+      restrictions: {
+        allowedFileTypes: config.allowedMimeTypes,
+        maxFileSize: config.maxFileBytes,
+      },
+    });
+  }, [config, uppy]);
+
   function queueFiles(files: File[]) {
-    for (const file of files) {
-      const validationError = validateFile(file, t);
+    if (files.length > config.maxFilesPerBatch) {
+      for (const file of files.slice(config.maxFilesPerBatch)) {
+        setPending((current) => [
+          ...current,
+          {
+            error: `Batch limit exceeded (max ${config.maxFilesPerBatch} files)`,
+            file,
+            id: createMediaUploadId(),
+            previewUrl: URL.createObjectURL(file),
+            progress: 0,
+            status: "failed",
+          },
+        ]);
+      }
+    }
+
+    for (const file of files.slice(0, config.maxFilesPerBatch)) {
+      const validationError = validateFile(file, t, config);
       const previewUrl = URL.createObjectURL(file);
 
       if (validationError) {
@@ -383,6 +426,15 @@ export function MediaUploadField({
             {hasImages ? null : (
               <p className="text-xs text-muted-foreground">{t("media.dropDescription")}</p>
             )}
+            <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <Badge
+                className="font-normal tracking-wide"
+                data-testid="media-constraints-badge"
+                variant="outline"
+              >
+                {formatConstraintsBadge(config)}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -405,7 +457,7 @@ export function MediaUploadField({
           />
         </div>
         <input
-          accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+          accept={config.allowedMimeTypes.join(",")}
           className="sr-only"
           multiple
           onChange={(event) => {
@@ -661,9 +713,17 @@ function PendingImage({
   );
 }
 
-function validateFile(file: File, t: ReturnType<typeof useI18n>["t"]) {
-  if (!acceptedTypes.has(file.type)) return t("media.invalidType");
-  if (file.size > maxByteSize) return t("media.tooLarge");
+function validateFile(
+  file: File,
+  t: ReturnType<typeof useI18n>["t"],
+  config: MediaLimitsConfig = DEFAULT_MEDIA_LIMITS,
+) {
+  if (config.allowedMimeTypes.length > 0 && !config.allowedMimeTypes.includes(file.type)) {
+    return t("media.invalidType");
+  }
+  if (file.size > config.maxFileBytes) {
+    return `${t("media.tooLarge")} (max ${config.formattedMaxSize})`;
+  }
   return null;
 }
 

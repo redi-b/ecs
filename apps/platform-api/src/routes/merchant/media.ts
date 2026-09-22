@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getMediaLimitsConfig } from "../../adapters/storage/env.js";
 import type { PlatformAppOptions } from "../../app.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -33,6 +34,16 @@ export function registerMerchantMediaRoutes(
   options: PlatformAppOptions,
   helpers: MerchantRouteHelpers,
 ) {
+  app.get("/platform/merchant/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+  app.get("/api/v1/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+  app.get("/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+
   app.post("/platform/merchant/media/uploads", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;

@@ -38,3 +38,34 @@ function parsePositiveInteger(value: string | undefined, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
+
+export type MediaLimitsConfig = {
+  allowedMimeTypes: string[];
+  formattedMaxSize: string;
+  maxFileBytes: number;
+  maxFilesPerBatch: number;
+};
+
+const DEFAULT_ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+];
+
+export function getMediaLimitsConfig(env: NodeJS.ProcessEnv = process.env): MediaLimitsConfig {
+  const maxBytes = parsePositiveInteger(env.MEDIA_MAX_FILE_BYTES, 15 * 1024 * 1024);
+  const maxFiles = parsePositiveInteger(env.MEDIA_MAX_FILES_PER_BATCH, 10);
+  const mb = Math.round(maxBytes / (1024 * 1024));
+  const allowedMimeTypes = env.MEDIA_ALLOWED_MIME_TYPES
+    ? env.MEDIA_ALLOWED_MIME_TYPES.split(",").map((s) => s.trim()).filter(Boolean)
+    : DEFAULT_ALLOWED_MIME_TYPES;
+
+  return {
+    allowedMimeTypes: allowedMimeTypes.length > 0 ? allowedMimeTypes : DEFAULT_ALLOWED_MIME_TYPES,
+    formattedMaxSize: `${mb}MB`,
+    maxFileBytes: maxBytes,
+    maxFilesPerBatch: maxFiles,
+  };
+}
