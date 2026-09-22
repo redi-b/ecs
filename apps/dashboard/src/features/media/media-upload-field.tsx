@@ -20,13 +20,18 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
+import * as React from "react";
 import { useEffect, useRef, useState } from "react";
+
+import type { ProductOptionMediaBindings } from "@ecs/contracts";
 
 import { AppIcons } from "@/components/app/icons";
 import { formatConstraintsBadge } from "@/components/products/product-media-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
 import {
   DEFAULT_MEDIA_LIMITS,
@@ -70,12 +75,18 @@ type MediaUploadMeta = { assetId?: string };
 export function MediaUploadField({
   imageUrls,
   onImageUrlsChange,
+  onOptionMediaBindingsChange,
   onThumbnailChange,
+  optionMediaBindings,
+  options,
   thumbnail,
 }: {
   imageUrls: string[];
   onImageUrlsChange: (urls: string[]) => void;
+  onOptionMediaBindingsChange?: ((bindings: ProductOptionMediaBindings | null) => void) | undefined;
   onThumbnailChange: (url: string) => void;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
+  options?: ProductOptionDraft[] | undefined;
   thumbnail: string;
 }) {
   const { t } = useI18n();
@@ -349,6 +360,66 @@ export function MediaUploadField({
     void uppy.retryUpload(upload.id);
   }
 
+  function handleTagSelect(
+    url: string,
+    selectedOptionTitle: string,
+    selectedValueLabel: string | null,
+  ) {
+    if (!onOptionMediaBindingsChange) return;
+
+    if (selectedValueLabel === null) {
+      if (!optionMediaBindings) return;
+      const nextMappings: Record<string, string[]> = {};
+      for (const [k, urls] of Object.entries(optionMediaBindings.mappings ?? {})) {
+        const filtered = urls.filter((u) => u !== url);
+        if (filtered.length > 0) {
+          nextMappings[k] = filtered;
+        }
+      }
+      const hasRemaining = Object.keys(nextMappings).length > 0;
+      onOptionMediaBindingsChange(
+        hasRemaining
+          ? {
+              optionTitle: optionMediaBindings.optionTitle,
+              mappings: nextMappings,
+            }
+          : null,
+      );
+      return;
+    }
+
+    const isNewAxis =
+      Boolean(optionMediaBindings?.optionTitle) &&
+      optionMediaBindings?.optionTitle.toLowerCase() !== selectedOptionTitle.toLowerCase();
+
+    if (isNewAxis) {
+      onOptionMediaBindingsChange({
+        optionTitle: selectedOptionTitle,
+        mappings: {
+          [selectedValueLabel]: [url],
+        },
+      });
+      return;
+    }
+
+    const nextMappings: Record<string, string[]> = {};
+    for (const [k, urls] of Object.entries(optionMediaBindings?.mappings ?? {})) {
+      const filtered = urls.filter((u) => u !== url);
+      if (filtered.length > 0) {
+        nextMappings[k] = filtered;
+      }
+    }
+    const currentForVal = nextMappings[selectedValueLabel] ?? [];
+    if (!currentForVal.includes(url)) {
+      nextMappings[selectedValueLabel] = [...currentForVal, url];
+    }
+
+    onOptionMediaBindingsChange({
+      optionTitle: selectedOptionTitle,
+      mappings: nextMappings,
+    });
+  }
+
   function removeUploaded(url: string) {
     const nextUrls = imageUrlsRef.current.filter((item) => item !== url);
     imageUrlsRef.current = nextUrls;
@@ -356,6 +427,28 @@ export function MediaUploadField({
     if (thumbnailRef.current === url) {
       thumbnailRef.current = nextUrls[0] ?? "";
       onThumbnailChange(thumbnailRef.current);
+    }
+    if (optionMediaBindings && onOptionMediaBindingsChange) {
+      let changed = false;
+      const nextMappings: Record<string, string[]> = {};
+      for (const [k, urls] of Object.entries(optionMediaBindings.mappings ?? {})) {
+        const filtered = urls.filter((u) => u !== url);
+        if (filtered.length !== urls.length) changed = true;
+        if (filtered.length > 0) {
+          nextMappings[k] = filtered;
+        }
+      }
+      if (changed) {
+        const hasRemaining = Object.keys(nextMappings).length > 0;
+        onOptionMediaBindingsChange(
+          hasRemaining
+            ? {
+                optionTitle: optionMediaBindings.optionTitle,
+                mappings: nextMappings,
+              }
+            : null,
+        );
+      }
     }
   }
 
@@ -503,16 +596,28 @@ export function MediaUploadField({
             >
               <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
                 <div className="grid min-w-0 max-w-full grid-cols-[repeat(auto-fill,minmax(min(7.5rem,100%),10rem))] justify-start gap-3">
-                  {imageUrls.map((url, index) => (
-                    <UploadedImage
-                      isCover={thumbnail === url || (!thumbnail && index === 0)}
-                      key={url}
-                      onMakeCover={() => onThumbnailChange(url)}
-                      onPreview={() => setLightboxIndex(index)}
-                      onRemove={() => removeUploaded(url)}
-                      url={url}
-                    />
-                  ))}
+                  {imageUrls.map((url, index) => {
+                    const currentTag = getImageTag(url, optionMediaBindings);
+                    const availableOptions = (options ?? []).filter(
+                      (opt) => opt.title?.trim() && opt.values?.some((val) => val.label?.trim()),
+                    );
+
+                    return (
+                      <UploadedImage
+                        availableOptions={availableOptions}
+                        currentTag={currentTag}
+                        isCover={thumbnail === url || (!thumbnail && index === 0)}
+                        key={url}
+                        onMakeCover={() => onThumbnailChange(url)}
+                        onPreview={() => setLightboxIndex(index)}
+                        onRemove={() => removeUploaded(url)}
+                        onSelectTag={(optTitle, valLabel) =>
+                          handleTagSelect(url, optTitle, valLabel)
+                        }
+                        url={url}
+                      />
+                    );
+                  })}
                   {pending.map((upload) => (
                     <PendingImage
                       key={upload.id}
@@ -538,17 +643,133 @@ export function MediaUploadField({
   );
 }
 
+function getImageTag(
+  url: string,
+  bindings: ProductOptionMediaBindings | null | undefined,
+): { optionTitle: string; valueLabel: string } | null {
+  if (!bindings || !bindings.mappings) return null;
+  for (const [valLabel, urls] of Object.entries(bindings.mappings)) {
+    if (Array.isArray(urls) && urls.includes(url)) {
+      return { optionTitle: bindings.optionTitle, valueLabel: valLabel };
+    }
+  }
+  return null;
+}
+
+export function ImageOptionTagPopover({
+  currentTag,
+  onSelectTag,
+  options,
+}: {
+  currentTag: { optionTitle: string; valueLabel: string } | null;
+  onSelectTag: (optionTitle: string, valueLabel: string | null) => void;
+  options: ProductOptionDraft[];
+}) {
+  const [open, setOpen] = useState(false);
+  const tagLabel = currentTag ? currentTag.valueLabel : "Untagged (Universal)";
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <Button
+          aria-label={`Tag image: ${tagLabel}`}
+          className="h-6 w-full justify-start gap-1 px-1.5 text-[11px] font-medium"
+          size="xs"
+          type="button"
+          variant="outline"
+        >
+          <AppIcons.tag className="size-3 shrink-0 text-muted-foreground" />
+          <span className="truncate">{tagLabel}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-1 text-xs" side="bottom">
+        <div className="flex flex-col gap-0.5">
+          <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+            Option Tagging
+          </div>
+          <button
+            className={cn(
+              "flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted",
+              !currentTag && "font-medium text-primary",
+            )}
+            onClick={() => {
+              onSelectTag("", null);
+              setOpen(false);
+            }}
+            type="button"
+          >
+            <span className="flex items-center gap-1.5">
+              <AppIcons.tag className="size-3.5 text-muted-foreground" />
+              Untagged (Universal)
+            </span>
+            {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
+          </button>
+
+          {options.map((opt) => (
+            <div className="flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
+              <div className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {opt.title}
+              </div>
+              {opt.values
+                .filter((v) => v.label.trim())
+                .map((val) => {
+                  const isSelected =
+                    currentTag?.optionTitle.toLowerCase() === opt.title.toLowerCase() &&
+                    currentTag?.valueLabel.toLowerCase() === val.label.toLowerCase();
+
+                  return (
+                    <button
+                      className={cn(
+                        "flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-muted",
+                        isSelected && "font-medium text-primary",
+                      )}
+                      key={val.key ?? val.label}
+                      onClick={() => {
+                        onSelectTag(opt.title, val.label);
+                        setOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        {val.swatch?.kind === "color" ? (
+                          <span
+                            className="size-2.5 shrink-0 rounded-full border"
+                            style={{ backgroundColor: val.swatch.value }}
+                          />
+                        ) : null}
+                        <span className="truncate">{val.label}</span>
+                      </span>
+                      {isSelected ? (
+                        <AppIcons.check className="size-3.5 shrink-0 text-primary" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function UploadedImage({
+  availableOptions,
+  currentTag,
   isCover,
   onMakeCover,
   onPreview,
   onRemove,
+  onSelectTag,
   url,
 }: {
+  availableOptions?: ProductOptionDraft[];
+  currentTag?: { optionTitle: string; valueLabel: string } | null;
   isCover: boolean;
   onMakeCover: () => void;
   onPreview: () => void;
   onRemove: () => void;
+  onSelectTag?: (optionTitle: string, valueLabel: string | null) => void;
   url: string;
 }) {
   const { t } = useI18n();
@@ -587,6 +808,16 @@ function UploadedImage({
           <AppIcons.expand className="size-3" />
         </span>
       </button>
+
+      {availableOptions && availableOptions.length > 0 && onSelectTag ? (
+        <div className="border-t bg-muted/15 p-1">
+          <ImageOptionTagPopover
+            currentTag={currentTag ?? null}
+            onSelectTag={onSelectTag}
+            options={availableOptions}
+          />
+        </div>
+      ) : null}
 
       <div className="flex items-center gap-0.5 border-t bg-card/95 p-1">
         <Tooltip>

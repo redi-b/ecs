@@ -26,6 +26,7 @@ export type VariantDefaults = {
 export type VariantOverride = {
   enabled?: boolean | undefined;
   id?: string | undefined;
+  imageUrl?: string | undefined;
   priceAmount?: number | undefined;
   reservedQuantity?: number | undefined;
   sku?: string | undefined;
@@ -36,6 +37,7 @@ export type VariantMatrixRow = {
   currencyCode: string;
   enabled: boolean;
   id?: string | undefined;
+  imageUrl?: string | undefined;
   key: string;
   optionValues: Record<string, string>;
   priceAmount: number;
@@ -92,6 +94,7 @@ export function buildVariantMatrix(input: {
         currencyCode: input.defaults.currencyCode,
         enabled: override?.enabled ?? true,
         ...(override?.id ? { id: override.id } : {}),
+        ...(override?.imageUrl ? { imageUrl: override.imageUrl } : {}),
         key,
         optionValues: {},
         priceAmount: override?.priceAmount ?? input.defaults.priceAmount,
@@ -135,6 +138,7 @@ export function buildVariantMatrix(input: {
       currencyCode: input.defaults.currencyCode,
       enabled: override?.enabled ?? true,
       ...(override?.id ? { id: override.id } : {}),
+      ...(override?.imageUrl ? { imageUrl: override.imageUrl } : {}),
       key,
       optionValues,
       priceAmount: override?.priceAmount ?? input.defaults.priceAmount,

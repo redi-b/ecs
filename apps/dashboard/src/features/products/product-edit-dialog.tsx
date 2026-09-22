@@ -4,6 +4,7 @@ import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
+  ProductOptionMediaBindings,
 } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
@@ -49,6 +50,7 @@ import {
 } from "@/features/products/product-form-fields";
 import { ProductOptionsWorkspace } from "@/features/products/product-form-sections";
 import {
+  getInitialProductOptions,
   getMediaUrls,
   getProductDefaultValues,
   getProductPayload,
@@ -80,6 +82,7 @@ type ProductOrganizationValues = {
 
 type ProductMediaValues = {
   imageUrls: string;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   thumbnail: string;
 };
 
@@ -282,6 +285,7 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
       buildPayload={() => ({
         thumbnail: values.thumbnail.trim() || null,
         imageUrls: getImageUrls(values.imageUrls),
+        optionMediaBindings: values.optionMediaBindings || undefined,
       })}
       contentClassName="sm:max-w-xl"
       description={t("products.edit.mediaDesc")}
@@ -302,7 +306,12 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
                 : (urls[0] ?? ""),
           }))
         }
+        onOptionMediaBindingsChange={(bindings) =>
+          setValues((current) => ({ ...current, optionMediaBindings: bindings }))
+        }
         onThumbnailChange={(url) => setValues((current) => ({ ...current, thumbnail: url }))}
+        optionMediaBindings={values.optionMediaBindings}
+        options={getInitialProductOptions(product)}
         thumbnail={values.thumbnail}
       />
     </ProductEditSheet>
@@ -613,6 +622,9 @@ function getProductMediaValues(product: MerchantProduct): ProductMediaValues {
       .map((image) => image.url)
       .filter(Boolean)
       .join("\n"),
+    optionMediaBindings:
+      (product as typeof product & { optionMediaBindings?: ProductOptionMediaBindings | null })
+        .optionMediaBindings ?? null,
     thumbnail: product.thumbnail ?? "",
   };
 }

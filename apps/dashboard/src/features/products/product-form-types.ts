@@ -4,6 +4,8 @@ import {
   type MerchantProduct,
   type MerchantProductCategory,
   type MerchantProductCollection,
+  type ProductOptionMediaBindings,
+  productOptionMediaBindingsSchema,
   productOptionSwatchSchema,
 } from "@ecs/contracts";
 import type { ReactNode } from "react";
@@ -40,12 +42,14 @@ export type ProductFormValues = {
   hasVariants: boolean;
   initialStock: string;
   options: ProductOptionDraft[];
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   skuPrefix: string;
   variantOverrides: Record<
     string,
     {
       enabled?: boolean | undefined;
       id?: string | undefined;
+      imageUrl?: string | undefined;
       priceAmount?: string | undefined;
       reservedQuantity?: number | undefined;
       sku?: string | undefined;
@@ -93,6 +97,7 @@ export function createProductPayloadSchema(t: Translate) {
     status: z.enum(["draft", "published"]),
     priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
     currencyCode: z.literal("etb"),
+    optionMediaBindings: productOptionMediaBindingsSchema.nullable().optional(),
     options: z
       .array(
         z.object({
@@ -113,6 +118,7 @@ export function createProductPayloadSchema(t: Translate) {
       .array(
         z.object({
           id: z.string().trim().min(1).optional(),
+          imageUrl: z.string().trim().nullable().optional(),
           optionValues: z.record(z.string().min(1), z.string().min(1)),
           sku: z.string().trim().nullable(),
           priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),

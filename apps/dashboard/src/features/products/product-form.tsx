@@ -54,6 +54,7 @@ import {
   ProductReviewSummary,
 } from "@/features/products/product-form-sections";
 import {
+  applyOptionMediaAutoAssignment,
   getDefaultSkuPrefix,
   getErrorMessage,
   getFirstInvalidFieldForStep,
@@ -621,16 +622,36 @@ export function ProductForm({
 
                         <form.Subscribe
                           selector={(state) =>
-                            [state.values.thumbnail, state.values.imageUrls] as const
+                            [
+                              state.values.thumbnail,
+                              state.values.imageUrls,
+                              state.values.options,
+                              state.values.optionMediaBindings,
+                            ] as const
                           }
                         >
-                          {([thumbnail, imageUrls]) => (
+                          {([thumbnail, imageUrls, options, optionMediaBindings]) => (
                             <MediaUploadField
                               imageUrls={getMediaUrls(thumbnail, imageUrls)}
                               onImageUrlsChange={(urls) =>
                                 form.setFieldValue("imageUrls", urls.join("\n"))
                               }
+                              onOptionMediaBindingsChange={(bindings) => {
+                                form.setFieldValue("optionMediaBindings", bindings);
+                                if (bindings) {
+                                  const rows = getVariantRows(form.state.values);
+                                  const nextOverrides = applyOptionMediaAutoAssignment({
+                                    variantOverrides: form.state.values.variantOverrides,
+                                    options: form.state.values.options,
+                                    rows,
+                                    optionMediaBindings: bindings,
+                                  });
+                                  form.setFieldValue("variantOverrides", nextOverrides);
+                                }
+                              }}
                               onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
+                              optionMediaBindings={optionMediaBindings}
+                              options={options}
                               thumbnail={thumbnail}
                             />
                           )}

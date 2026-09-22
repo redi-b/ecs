@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProductOptionSwatch } from "@ecs/contracts";
+import type { ProductOptionMediaBindings, ProductOptionSwatch } from "@ecs/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
@@ -11,11 +11,7 @@ import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Command,
   CommandGroup,
@@ -28,7 +24,9 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { MediaUploadField } from "@/features/media/media-upload-field";
 import {
+  applyOptionMediaAutoAssignment,
   getRemovedExistingVariants,
   getVariantRows,
   normalizeProductOptions,
@@ -214,8 +212,7 @@ export function ProductColorPopover({
   }
 
   const isSaveDisabled =
-    !customLabel.trim() ||
-    (customMode === "color" ? !customColor.trim() : !customImageUrl.trim());
+    !customLabel.trim() || (customMode === "color" ? !customColor.trim() : !customImageUrl.trim());
 
   return (
     <Popover onOpenChange={handleOpenChange} open={open}>
@@ -427,11 +424,7 @@ export function ProductColorPopover({
               <Button
                 disabled={isSaveDisabled}
                 onClick={() => {
-                  const swatch = buildProductOptionSwatch(
-                    customMode,
-                    customColor,
-                    customImageUrl,
-                  );
+                  const swatch = buildProductOptionSwatch(customMode, customColor, customImageUrl);
                   onSave(customLabel.trim(), swatch);
                   close();
                 }}
@@ -782,11 +775,7 @@ export function ProductOptionsBuilder({
     });
   }
 
-  function addColorValue(
-    index: number,
-    label: string,
-    swatch: ProductOptionSwatch | string,
-  ) {
+  function addColorValue(index: number, label: string, swatch: ProductOptionSwatch | string) {
     const option = options[index];
     if (!option) return;
     if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
@@ -1130,17 +1119,114 @@ function isColorOptionTitle(title: string) {
   return /^(colou?r)$/i.test(title.trim());
 }
 
+export function VariantImagePicker({
+  galleryImages = [],
+  imageUrl,
+  onRemoveImage,
+  onSelectImage,
+}: {
+  galleryImages?: string[] | undefined;
+  imageUrl?: string | undefined;
+  onRemoveImage: () => void;
+  onSelectImage: (url: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <button
+          aria-label={imageUrl ? "Change variant image" : "Select variant image"}
+          className="group relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-lg transition-transform active:scale-95"
+          onClick={(event) => event.stopPropagation()}
+          type="button"
+        >
+          {imageUrl ? (
+            /* biome-ignore lint/performance/noImgElement: Runtime product photo */
+            <img alt="" className="size-9 rounded-lg object-cover border" src={imageUrl} />
+          ) : (
+            <div className="size-9 rounded-lg border border-dashed grid place-items-center text-muted-foreground hover:bg-muted">
+              <AppIcons.image className="size-4" />
+            </div>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3 text-xs" side="bottom">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold">Variant Image</span>
+            {imageUrl ? (
+              <Button
+                className="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  onRemoveImage();
+                  setOpen(false);
+                }}
+                size="xs"
+                type="button"
+                variant="ghost"
+              >
+                <AppIcons.close className="size-3" />
+                Remove
+              </Button>
+            ) : null}
+          </div>
+
+          {galleryImages.length === 0 ? (
+            <p className="py-3 text-center text-xs text-muted-foreground">
+              No product images yet. Upload images in the Media section first.
+            </p>
+          ) : (
+            <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto p-0.5">
+              {galleryImages.map((url) => {
+                const isSelected = imageUrl === url;
+                return (
+                  <button
+                    className={cn(
+                      "relative aspect-square w-full cursor-pointer overflow-hidden rounded-md border transition-all hover:scale-105 active:scale-95",
+                      isSelected
+                        ? "border-primary ring-2 ring-primary ring-offset-1"
+                        : "border-border hover:border-foreground/40",
+                    )}
+                    key={url}
+                    onClick={() => {
+                      onSelectImage(url);
+                      setOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {/* biome-ignore lint/performance/noImgElement: Runtime asset */}
+                    <img alt="" className="size-full object-cover" src={url} />
+                    {isSelected ? (
+                      <span className="absolute inset-0 grid place-items-center bg-primary/25 text-primary-foreground">
+                        <AppIcons.check className="size-3.5 rounded-full bg-primary p-0.5 text-primary-foreground" />
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function VariantMatrixTable({
+  galleryImages,
   onApplyDefaults,
   onOverrideChange,
   rows,
   values,
 }: {
+  galleryImages?: string[] | undefined;
   onApplyDefaults: () => void;
   onOverrideChange: (
     key: string,
     override: {
       enabled?: boolean | undefined;
+      imageUrl?: string | undefined;
       priceAmount?: string | undefined;
       sku?: string | undefined;
       stockedQuantity?: string | undefined;
@@ -1184,6 +1270,19 @@ export function VariantMatrixTable({
                       onOverrideChange(row.key, { enabled: checked === true })
                     }
                   />
+                  <div
+                    className="shrink-0"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    role="presentation"
+                  >
+                    <VariantImagePicker
+                      galleryImages={galleryImages}
+                      imageUrl={override.imageUrl ?? row.imageUrl}
+                      onRemoveImage={() => onOverrideChange(row.key, { imageUrl: undefined })}
+                      onSelectImage={(url) => onOverrideChange(row.key, { imageUrl: url })}
+                    />
+                  </div>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     ETB {override.priceAmount ?? row.priceAmount}
@@ -1239,6 +1338,7 @@ export function VariantMatrixTable({
           <table className="w-full min-w-[46rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
+                <th className="w-14 px-4 py-3 text-left font-medium">Image</th>
                 <th className="px-4 py-3 text-left font-medium">
                   {t("products.formReview.colVariant")}
                 </th>
@@ -1266,6 +1366,14 @@ export function VariantMatrixTable({
                     }
                     key={row.key}
                   >
+                    <td className="w-14 px-4 py-3">
+                      <VariantImagePicker
+                        galleryImages={galleryImages}
+                        imageUrl={override.imageUrl ?? row.imageUrl}
+                        onRemoveImage={() => onOverrideChange(row.key, { imageUrl: undefined })}
+                        onSelectImage={(url) => onOverrideChange(row.key, { imageUrl: url })}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="mb-2 flex items-center gap-2 font-medium">
                         <Checkbox
@@ -1367,6 +1475,7 @@ export function ProductOptionsWorkspace({
     key: string,
     override: {
       enabled?: boolean | undefined;
+      imageUrl?: string | undefined;
       priceAmount?: string | undefined;
       sku?: string | undefined;
       stockedQuantity?: string | undefined;
@@ -1401,6 +1510,7 @@ export function ProductOptionsWorkspace({
         />
       ) : (
         <VariantMatrixTable
+          galleryImages={galleryImages}
           onApplyDefaults={onApplyDefaults}
           onOverrideChange={onOverrideChange}
           rows={rows}
@@ -1408,5 +1518,35 @@ export function ProductOptionsWorkspace({
         />
       )}
     </div>
+  );
+}
+
+export function ProductMediaSection({
+  imageUrls,
+  onImageUrlsChange,
+  onOptionMediaBindingsChange,
+  onThumbnailChange,
+  optionMediaBindings,
+  options,
+  thumbnail,
+}: {
+  imageUrls: string[];
+  onImageUrlsChange: (urls: string[]) => void;
+  onOptionMediaBindingsChange?: (bindings: ProductOptionMediaBindings | null) => void;
+  onThumbnailChange: (url: string) => void;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
+  options?: ProductOptionDraft[] | undefined;
+  thumbnail: string;
+}) {
+  return (
+    <MediaUploadField
+      imageUrls={imageUrls}
+      onImageUrlsChange={onImageUrlsChange}
+      onOptionMediaBindingsChange={onOptionMediaBindingsChange}
+      onThumbnailChange={onThumbnailChange}
+      optionMediaBindings={optionMediaBindings}
+      options={options}
+      thumbnail={thumbnail}
+    />
   );
 }

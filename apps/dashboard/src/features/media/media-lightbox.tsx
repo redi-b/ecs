@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useEffect, useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
