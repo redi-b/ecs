@@ -28,6 +28,7 @@
     "seed:operations": "pnpm --dir apps/platform-api seed:operations",
     "seed:unseed": "node scripts/seed-demo.mjs --clean",
     "seed:bank-logos": "pnpm --filter @ecs/platform-api seed:bank-logos",
+    "media:backfill": "pnpm --filter @ecs/platform-api media:backfill",
 
     "build": "turbo build",
     "typecheck": "turbo typecheck",
