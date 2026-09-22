@@ -36,6 +36,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import type { ProductOptionSwatch } from "@ecs/contracts";
 import { ProductColorPopover } from "@/features/products/product-form-sections";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
@@ -43,7 +44,7 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 
-type SavedValue = { label: string; swatch?: { kind: "color"; value: string } | null };
+type SavedValue = { label: string; swatch?: ProductOptionSwatch | null };
 type SavedOption = { id: string; title: string; values: SavedValue[] };
 type SavedOptionDraft = SavedOption & { isNew?: boolean };
 
@@ -200,11 +201,20 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
               {visibleValues.map((value) => (
                 <Badge className="gap-1.5 font-normal" key={value.label} variant="secondary">
                   {value.swatch ? (
-                    <span
-                      aria-hidden="true"
-                      className="size-2.5 rounded-full border border-border"
-                      style={{ backgroundColor: value.swatch.value }}
-                    />
+                    value.swatch.kind === "image" ? (
+                      <img
+                        alt=""
+                        aria-hidden="true"
+                        className="size-2.5 rounded-full border border-border object-cover"
+                        src={value.swatch.url}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="size-2.5 rounded-full border border-border"
+                        style={{ backgroundColor: value.swatch.value }}
+                      />
+                    )
                   ) : null}
                   {value.label}
                 </Badge>
@@ -402,7 +412,7 @@ function SavedOptionEditDialog({
                 addControl={
                   isColor ? (
                     <ProductColorPopover
-                      onSave={(label, color) => addValue(label, { kind: "color", value: color })}
+                      onSave={(label, swatch) => addValue(label, swatch)}
                     />
                   ) : undefined
                 }
@@ -445,16 +455,16 @@ function SavedOptionEditDialog({
                     {isColor ? (
                       <ProductColorPopover
                         label={value.label}
-                        onSave={(label, color) =>
+                        onSave={(label, swatch) =>
                           update({
                             values: option.values.map((item, itemIndex) =>
                               itemIndex === index
-                                ? { label, swatch: { kind: "color", value: color } }
+                                ? { label, swatch }
                                 : item,
                             ),
                           })
                         }
-                        value={value.swatch?.value ?? "#808080"}
+                        value={value.swatch ?? undefined}
                       />
                     ) : (
                       <span className="px-2 py-1.5">{value.label}</span>

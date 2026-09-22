@@ -49,6 +49,7 @@ import {
 } from "@/features/products/product-form-fields";
 import { ProductOptionsWorkspace } from "@/features/products/product-form-sections";
 import {
+  getMediaUrls,
   getProductDefaultValues,
   getProductPayload,
   getRemovedExistingVariants,
@@ -405,6 +406,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                     </Alert>
                   ) : null}
                   <ProductOptionsWorkspace
+                    galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
                     onApplyDefaults={() => {
                       update({
                         variantOverrides: Object.fromEntries(

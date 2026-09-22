@@ -878,6 +878,7 @@ export function ProductForm({
                                   {(field) => (
                                     <div className="flex flex-col gap-2">
                                       <ProductOptionsWorkspace
+                                        galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
                                         onApplyDefaults={() => {
                                           const rows = getVariantRows(values);
                                           form.setFieldValue(

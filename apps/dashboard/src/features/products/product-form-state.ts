@@ -471,7 +471,12 @@ export function getInitialProductOptions(
             `value:${option.title.toLocaleLowerCase()}:${value.label.toLocaleLowerCase()}:${valueIndex}`,
           label: value.label,
           ...(value.swatch
-            ? { swatch: { kind: "color" as const, value: value.swatch.value } }
+            ? {
+                swatch:
+                  value.swatch.kind === "image"
+                    ? { kind: "image" as const, url: value.swatch.url }
+                    : { kind: "color" as const, value: value.swatch.value },
+              }
             : {}),
         })),
       }));

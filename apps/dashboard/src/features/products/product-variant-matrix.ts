@@ -1,3 +1,5 @@
+import type { ProductOptionSwatch } from "@ecs/contracts";
+
 export type ProductOptionDraft = {
   id?: string | undefined;
   key?: string | undefined;
@@ -11,7 +13,7 @@ export type ProductOptionValueDraft = {
   id?: string | undefined;
   key?: string | undefined;
   label: string;
-  swatch?: { kind: "color"; value: string } | null | undefined;
+  swatch?: ProductOptionSwatch | null | undefined;
 };
 
 export type VariantDefaults = {

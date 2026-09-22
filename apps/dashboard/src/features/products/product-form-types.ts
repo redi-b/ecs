@@ -1,9 +1,10 @@
 "use client";
 
-import type {
-  MerchantProduct,
-  MerchantProductCategory,
-  MerchantProductCollection,
+import {
+  type MerchantProduct,
+  type MerchantProductCategory,
+  type MerchantProductCollection,
+  productOptionSwatchSchema,
 } from "@ecs/contracts";
 import type { ReactNode } from "react";
 import { z } from "zod";
@@ -101,13 +102,7 @@ export function createProductPayloadSchema(t: Translate) {
               z.object({
                 id: z.string().trim().min(1).optional(),
                 label: z.string().trim().min(1),
-                swatch: z
-                  .object({
-                    kind: z.literal("color"),
-                    value: z.string().regex(/^#[0-9a-f]{6}$/i),
-                  })
-                  .nullable()
-                  .optional(),
+                swatch: productOptionSwatchSchema.nullable().optional(),
               }),
             )
             .min(1, t("products.validation.optionValueRequired")),

@@ -1,7 +1,9 @@
 "use client";
 
+import type { ProductOptionSwatch } from "@ecs/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
@@ -43,6 +45,7 @@ import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 const COMMON_PRODUCT_COLORS = [
   ["Black", "#111111"],
@@ -78,20 +81,93 @@ const COMMON_PRODUCT_COLOR_OPTIONS = COMMON_PRODUCT_COLORS.map(([label, value]) 
 }));
 const MAX_PRODUCT_VARIANTS = 100;
 
+export function normalizeProductOptionSwatch(
+  value: ProductOptionSwatch | string | null | undefined,
+): ProductOptionSwatch | undefined {
+  if (!value) return undefined;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("/")
+    ) {
+      return { kind: "image", url: trimmed };
+    }
+    return { kind: "color", value: trimmed.toLowerCase() };
+  }
+  if (value.kind === "image") {
+    return { kind: "image", url: value.url.trim() };
+  }
+  if (value.kind === "color") {
+    return { kind: "color", value: value.value.toLowerCase() };
+  }
+  return undefined;
+}
+
+export function serializeProductOptionSwatch(
+  swatch: ProductOptionSwatch | string | null | undefined,
+): string | null {
+  const normalized = normalizeProductOptionSwatch(swatch);
+  if (!normalized) return null;
+  if (normalized.kind === "image") {
+    return normalized.url;
+  }
+  return normalized.value.toLowerCase();
+}
+
+export function getSwatchMode(
+  value: ProductOptionSwatch | string | null | undefined,
+): "color" | "image" {
+  const normalized = normalizeProductOptionSwatch(value);
+  return normalized?.kind === "image" ? "image" : "color";
+}
+
+export function buildProductOptionSwatch(
+  mode: "color" | "image",
+  colorValue: string,
+  imageUrl: string,
+): ProductOptionSwatch {
+  if (mode === "image") {
+    return { kind: "image", url: imageUrl.trim() };
+  }
+  return { kind: "color", value: colorValue.toLowerCase() };
+}
+
 export function ProductColorPopover({
+  galleryImages,
   label,
   onSave,
   value,
 }: {
-  label?: string;
-  onSave: (label: string, value: string) => void;
-  value?: string;
+  galleryImages?: string[] | undefined;
+  label?: string | undefined;
+  onSave: (label: string, swatch: ProductOptionSwatch) => void;
+  value?: ProductOptionSwatch | string | null | undefined;
 }) {
+  const normalizedSwatch = normalizeProductOptionSwatch(value);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"browse" | "custom">("browse");
   const [query, setQuery] = useState("");
   const [customLabel, setCustomLabel] = useState(label ?? "");
-  const [customValue, setCustomValue] = useState(value ?? "#808080");
+  const [customMode, setCustomMode] = useState<"color" | "image">(
+    normalizedSwatch?.kind === "image" ? "image" : "color",
+  );
+  const [customColor, setCustomColor] = useState(
+    normalizedSwatch?.kind === "color"
+      ? normalizedSwatch.value
+      : typeof value === "string" && !value.startsWith("http") && !value.startsWith("/")
+        ? value
+        : "#808080",
+  );
+  const [customImageUrl, setCustomImageUrl] = useState(
+    normalizedSwatch?.kind === "image"
+      ? normalizedSwatch.url
+      : typeof value === "string" && (value.startsWith("http") || value.startsWith("/"))
+        ? value
+        : "",
+  );
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
 
@@ -109,30 +185,67 @@ export function ProductColorPopover({
     setStep("browse");
   }
 
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      const current = normalizeProductOptionSwatch(value);
+      setCustomLabel(label ?? "");
+      const mode = current?.kind === "image" ? "image" : "color";
+      setCustomMode(mode);
+      setCustomColor(
+        current?.kind === "color"
+          ? current.value
+          : typeof value === "string" && !value.startsWith("http") && !value.startsWith("/")
+            ? value
+            : "#808080",
+      );
+      setCustomImageUrl(
+        current?.kind === "image"
+          ? current.url
+          : typeof value === "string" && (value.startsWith("http") || value.startsWith("/"))
+            ? value
+            : "",
+      );
+      setStep(current?.kind === "image" ? "custom" : "browse");
+    } else {
+      setQuery("");
+      setStep("browse");
+    }
+  }
+
+  const isSaveDisabled =
+    !customLabel.trim() ||
+    (customMode === "color" ? !customColor.trim() : !customImageUrl.trim());
+
   return (
-    <Popover
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
-          setCustomLabel(label ?? "");
-          setCustomValue(value ?? "#808080");
-        } else {
-          setQuery("");
-          setStep("browse");
-        }
-      }}
-      open={open}
-    >
+    <Popover onOpenChange={handleOpenChange} open={open}>
       <PopoverTrigger asChild>
         {label ? (
           <button
             className="inline-flex min-h-7 items-center gap-2 rounded-full px-2 text-xs font-medium hover:bg-accent"
             type="button"
           >
-            <span
-              className="size-3.5 rounded-full border shadow-xs"
-              style={{ backgroundColor: value ?? "transparent" }}
-            />
+            {normalizedSwatch?.kind === "image" ? (
+              <img
+                alt=""
+                aria-hidden="true"
+                className="size-3.5 rounded-full object-cover border shadow-xs"
+                src={normalizedSwatch.url}
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="size-3.5 rounded-full border shadow-xs"
+                style={{
+                  backgroundColor:
+                    normalizedSwatch?.kind === "color"
+                      ? normalizedSwatch.value
+                      : typeof value === "string" && value
+                        ? value
+                        : "transparent",
+                }}
+              />
+            )}
             {label}
           </button>
         ) : (
@@ -171,13 +284,15 @@ export function ProductColorPopover({
                 <CommandItem
                   className="mb-1 border border-dashed"
                   onSelect={() => setStep("custom")}
-                  value="custom color"
+                  value="custom color or fabric pattern"
                 >
                   <span className="grid size-7 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-sm font-medium">Custom color</strong>
+                    <strong className="block text-sm font-medium">
+                      Custom color or fabric pattern...
+                    </strong>
                     <small className="block truncate text-xs text-muted-foreground">
-                      Choose a precise color and label
+                      Choose a precise color or fabric pattern
                     </small>
                   </span>
                 </CommandItem>
@@ -186,7 +301,7 @@ export function ProductColorPopover({
                     <CommandItem
                       key={item.value}
                       onSelect={() => {
-                        onSave(item.label, item.value);
+                        onSave(item.label, { kind: "color", value: item.value.toLowerCase() });
                         close();
                       }}
                       value={`${item.label} ${item.value}`}
@@ -220,32 +335,110 @@ export function ProductColorPopover({
               >
                 <AppIcons.arrowLeft className="size-3.5" />
               </button>
-              <p className="w-full truncate px-9 text-center text-xs font-medium">Custom color</p>
+              <p className="w-full truncate px-9 text-center text-xs font-medium">Custom swatch</p>
             </div>
             <Field>
               <FieldLabel>Label</FieldLabel>
               <Input
                 autoFocus
                 onChange={(event) => setCustomLabel(event.currentTarget.value)}
-                placeholder="Color name"
+                placeholder={customMode === "image" ? "Pattern name" : "Color name"}
                 value={customLabel}
               />
             </Field>
-            <ColorPickerField label="Swatch" onChange={setCustomValue} value={customValue} />
+
+            <SegmentedControl
+              active="muted"
+              ariaLabel="Swatch kind"
+              className="w-full"
+              fullWidth
+              onChange={(next) => setCustomMode(next as "color" | "image")}
+              options={[
+                { id: "color", label: "🎨 Color" },
+                { id: "image", label: "🖼️ Fabric Pattern" },
+              ]}
+              size="sm"
+              value={customMode}
+            />
+
+            {customMode === "color" ? (
+              <ColorPickerField label="Swatch" onChange={setCustomColor} value={customColor} />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="size-12 rounded-full border shadow-xs object-cover overflow-hidden bg-muted grid place-items-center shrink-0">
+                    {customImageUrl.trim() ? (
+                      <img
+                        alt="Pattern preview"
+                        className="size-full object-cover"
+                        src={customImageUrl.trim()}
+                      />
+                    ) : (
+                      <AppIcons.image className="size-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-foreground">Pattern preview</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {customImageUrl.trim() ? "48px circular crop" : "Enter an image URL below"}
+                    </div>
+                  </div>
+                </div>
+
+                <Field>
+                  <FieldLabel>Image URL</FieldLabel>
+                  <Input
+                    onChange={(event) => setCustomImageUrl(event.currentTarget.value)}
+                    placeholder="https://example.com/fabric-texture.jpg"
+                    type="url"
+                    value={customImageUrl}
+                  />
+                </Field>
+
+                {galleryImages && galleryImages.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <FieldLabel className="text-xs text-muted-foreground">
+                      Product images
+                    </FieldLabel>
+                    <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto rounded-md border bg-muted/20 p-1.5">
+                      {galleryImages.map((url, idx) => (
+                        <button
+                          className={cn(
+                            "relative size-9 shrink-0 overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary/50",
+                            customImageUrl.trim() === url && "ring-2 ring-primary border-primary",
+                          )}
+                          key={`${url}-${idx}`}
+                          onClick={() => setCustomImageUrl(url)}
+                          type="button"
+                        >
+                          <img alt="" className="size-full object-cover" src={url} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             <div className="mt-3 flex justify-end gap-2 border-t border-border/60 pt-3">
               <Button onClick={close} size="sm" type="button" variant="ghost">
                 Cancel
               </Button>
               <Button
-                disabled={!customLabel.trim()}
+                disabled={isSaveDisabled}
                 onClick={() => {
-                  onSave(customLabel.trim(), customValue);
+                  const swatch = buildProductOptionSwatch(
+                    customMode,
+                    customColor,
+                    customImageUrl,
+                  );
+                  onSave(customLabel.trim(), swatch);
                   close();
                 }}
                 size="sm"
                 type="button"
               >
-                {label ? "Save color" : "Add color"}
+                {label ? "Save swatch" : "Add swatch"}
               </Button>
             </div>
           </div>
@@ -334,11 +527,20 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
                         key={value.id ?? value.label}
                       >
                         {value.swatch ? (
-                          <span
-                            aria-hidden="true"
-                            className="size-3.5 shrink-0 rounded-full border border-black/15 dark:border-white/20"
-                            style={{ backgroundColor: value.swatch.value }}
-                          />
+                          value.swatch.kind === "image" ? (
+                            <img
+                              alt=""
+                              aria-hidden="true"
+                              className="size-3.5 shrink-0 rounded-full border border-black/15 object-cover dark:border-white/20"
+                              src={value.swatch.url}
+                            />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="size-3.5 shrink-0 rounded-full border border-black/15 dark:border-white/20"
+                              style={{ backgroundColor: value.swatch.value }}
+                            />
+                          )
                         ) : null}
                         <span className="break-words">{value.label}</span>
                       </span>
@@ -355,9 +557,11 @@ export function ProductReviewSummary({ values }: { values: ProductFormValues }) 
 }
 
 export function ProductOptionsBuilder({
+  galleryImages,
   onChange,
   options,
 }: {
+  galleryImages?: string[] | undefined;
   onChange: (options: ProductOptionDraft[]) => void;
   options: ProductOptionDraft[];
 }) {
@@ -549,27 +753,40 @@ export function ProductOptionsBuilder({
     });
   }
 
-  function updateColorValue(index: number, valueIndex: number, label: string, color: string) {
+  function updateColorValue(
+    index: number,
+    valueIndex: number,
+    label: string,
+    swatch: ProductOptionSwatch | string,
+  ) {
     const option = options[index];
     if (!option) return;
+    const normalizedSwatch = normalizeProductOptionSwatch(swatch) ?? {
+      kind: "color" as const,
+      value: typeof swatch === "string" ? swatch.toLowerCase() : "#808080",
+    };
     updateOption(index, {
       ...option,
-      values: option.values.map((value, index) =>
-        index === valueIndex
+      values: option.values.map((value, candidateIndex) =>
+        candidateIndex === valueIndex
           ? {
               ...value,
               // Medusa updates option values by label, not value ID. Keep our client key
               // stable, but let the presentation hook resolve the newly labelled value.
               id: undefined,
               label,
-              swatch: { kind: "color" as const, value: color.toLowerCase() },
+              swatch: normalizedSwatch,
             }
           : value,
       ),
     });
   }
 
-  function addColorValue(index: number, label: string, color: string) {
+  function addColorValue(
+    index: number,
+    label: string,
+    swatch: ProductOptionSwatch | string,
+  ) {
     const option = options[index];
     if (!option) return;
     if (option.values.some((item) => item.label.toLowerCase() === label.toLowerCase())) return;
@@ -582,6 +799,10 @@ export function ProductOptionsBuilder({
       toast.error(t("products.validation.variantLimit", { count: MAX_PRODUCT_VARIANTS }));
       return;
     }
+    const normalizedSwatch = normalizeProductOptionSwatch(swatch) ?? {
+      kind: "color" as const,
+      value: typeof swatch === "string" ? swatch.toLowerCase() : "#808080",
+    };
     updateOption(index, {
       ...option,
       values: [
@@ -589,7 +810,7 @@ export function ProductOptionsBuilder({
         {
           key: createClientId("value"),
           label,
-          swatch: { kind: "color", value: color.toLowerCase() },
+          swatch: normalizedSwatch,
         },
       ],
     });
@@ -718,7 +939,8 @@ export function ProductOptionsBuilder({
                   addControl={
                     isColorOptionTitle(option.title) ? (
                       <ProductColorPopover
-                        onSave={(label, color) => addColorValue(index, label, color)}
+                        galleryImages={galleryImages}
+                        onSave={(label, swatch) => addColorValue(index, label, swatch)}
                       />
                     ) : undefined
                   }
@@ -752,11 +974,12 @@ export function ProductOptionsBuilder({
                     >
                       {isColorOptionTitle(option.title) ? (
                         <ProductColorPopover
+                          galleryImages={galleryImages}
                           label={value.label}
-                          onSave={(label, color) =>
-                            updateColorValue(index, valueIndex, label, color)
+                          onSave={(label, swatch) =>
+                            updateColorValue(index, valueIndex, label, swatch)
                           }
-                          value={value.swatch?.value ?? "#808080"}
+                          value={value.swatch ?? undefined}
                         />
                       ) : (
                         <span className="px-2">{value.label}</span>
@@ -862,7 +1085,7 @@ function getSavedOptionSnapshot(option: Pick<ProductOptionDraft, "title" | "valu
     title: option.title.trim(),
     values: option.values.map((value) => ({
       label: value.label.trim(),
-      swatch: value.swatch?.value?.toLowerCase() ?? null,
+      swatch: serializeProductOptionSwatch(value.swatch),
     })),
   });
 }
@@ -1129,6 +1352,7 @@ export function VariantMatrixTable({
 }
 
 export function ProductOptionsWorkspace({
+  galleryImages,
   onApplyDefaults,
   onOptionsChange,
   onOverrideChange,
@@ -1136,6 +1360,7 @@ export function ProductOptionsWorkspace({
   rows,
   values,
 }: {
+  galleryImages?: string[] | undefined;
   onApplyDefaults: () => void;
   onOptionsChange: (options: ProductOptionDraft[]) => void;
   onOverrideChange: (
@@ -1169,7 +1394,11 @@ export function ProductOptionsWorkspace({
         value={view}
       />
       {view === "options" ? (
-        <ProductOptionsBuilder onChange={onOptionsChange} options={options} />
+        <ProductOptionsBuilder
+          galleryImages={galleryImages}
+          onChange={onOptionsChange}
+          options={options}
+        />
       ) : (
         <VariantMatrixTable
           onApplyDefaults={onApplyDefaults}
