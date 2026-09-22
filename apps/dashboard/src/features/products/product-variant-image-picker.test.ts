@@ -313,12 +313,12 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     assert.equal(updated[redS.key]?.imageUrl, "https://example.com/new-red.jpg");
   });
 
-  it("isVisualOptionTitle matches visual option titles and isColorOptionTitle acts as alias", () => {
+  it("isVisualOptionTitle matches visual option titles and keeps Material as text pills", () => {
     assert.equal(isVisualOptionTitle("Color"), true);
     assert.equal(isVisualOptionTitle("colour"), true);
     assert.equal(isVisualOptionTitle("Pattern"), true);
     assert.equal(isVisualOptionTitle("Fabric"), true);
-    assert.equal(isVisualOptionTitle("Material"), true);
+    assert.equal(isVisualOptionTitle("Material"), false);
     assert.equal(isVisualOptionTitle("Texture"), true);
     assert.equal(isVisualOptionTitle("Finish"), true);
     assert.equal(isVisualOptionTitle("Size"), false);

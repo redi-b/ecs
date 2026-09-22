@@ -632,6 +632,7 @@ export const merchantProductSchema = z.object({
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
   translation: catalogNameTranslationSchema.optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const merchantProductsSchema = z.object({

@@ -413,6 +413,7 @@ function SavedOptionEditDialog({
                   isVisual ? (
                     <ProductColorPopover
                       onSave={(label, swatch) => addValue(label, swatch)}
+                      optionTitle={currentOption.title}
                     />
                   ) : undefined
                 }
@@ -464,6 +465,7 @@ function SavedOptionEditDialog({
                             ),
                           })
                         }
+                        optionTitle={currentOption.title}
                         value={value.swatch ?? undefined}
                       />
                     ) : (

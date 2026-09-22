@@ -196,7 +196,7 @@ export function ProductMediaDropzone({
             </p>
             <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <Badge
-                className="font-normal tracking-wide"
+                className="h-auto max-w-full px-2.5 py-1 text-center font-normal leading-relaxed tracking-wide whitespace-normal"
                 data-testid="media-constraints-badge"
                 variant="outline"
               >

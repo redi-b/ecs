@@ -6,6 +6,7 @@ import type { ProductOptionSwatch } from "@ecs/contracts";
 import {
   ProductColorPopover,
   buildProductOptionSwatch,
+  getAddSwatchLabel,
   getSwatchMode,
   normalizeProductOptionSwatch,
   serializeProductOptionSwatch,
@@ -110,5 +111,40 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
     assert.match(markup, /<img/);
     assert.match(markup, /src="https:\/\/example\.com\/tweed\.jpg"/);
     assert.match(markup, /size-3\.5 rounded-full object-cover border shadow-xs/);
+  });
+
+  it("getAddSwatchLabel returns context-aware action labels", () => {
+    assert.equal(getAddSwatchLabel("Color"), "Add color");
+    assert.equal(getAddSwatchLabel("Colour"), "Add color");
+    assert.equal(getAddSwatchLabel("Pattern"), "Add pattern");
+    assert.equal(getAddSwatchLabel("Fabric"), "Add fabric");
+    assert.equal(getAddSwatchLabel("Texture"), "Add swatch");
+    assert.equal(getAddSwatchLabel(undefined), "Add swatch");
+  });
+
+  it("renders context-aware add trigger button when label is absent", () => {
+    const colorMarkup = renderToStaticMarkup(
+      createElement(ProductColorPopover, {
+        onSave: () => {},
+        optionTitle: "Color",
+      }),
+    );
+    assert.match(colorMarkup, /Add color/);
+
+    const patternMarkup = renderToStaticMarkup(
+      createElement(ProductColorPopover, {
+        onSave: () => {},
+        optionTitle: "Pattern",
+      }),
+    );
+    assert.match(patternMarkup, /Add pattern/);
+
+    const fabricMarkup = renderToStaticMarkup(
+      createElement(ProductColorPopover, {
+        onSave: () => {},
+        optionTitle: "Fabric",
+      }),
+    );
+    assert.match(fabricMarkup, /Add fabric/);
   });
 });

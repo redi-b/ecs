@@ -9,6 +9,7 @@ export {
   buildProductOptionSwatch,
   isVisualOptionTitle,
   isColorOptionTitle,
+  getAddSwatchLabel,
   ProductColorPopover,
 } from "@/features/products/product-swatch-popover";
 

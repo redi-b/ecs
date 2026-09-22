@@ -33,6 +33,10 @@ import {
 } from "@/features/products/product-edit-dialog";
 import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
+import {
+  getImageOptionTag,
+  resolveProductMediaVariant,
+} from "@/features/products/product-media-variants";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
@@ -89,13 +93,13 @@ export function ProductDetail({
           ? `${product.title} · ${t("products.detail.productImage")} ${index + 1}`
           : `${t("products.detail.productImage")} ${index + 1}`,
         id: image.id || image.url,
-        publicUrl: image.url,
+        publicUrl: resolveProductMediaVariant(image.url, product.metadata, "w1200"),
         subtitle:
           product.thumbnail && product.thumbnail === image.url
             ? t("products.detail.coverImage")
             : image.url,
       })),
-    [images, product.thumbnail, product.title, t],
+    [images, product.metadata, product.thumbnail, product.title, t],
   );
 
   const collection = collections.find((item) => item.id === product.collectionId);
@@ -106,7 +110,9 @@ export function ProductDetail({
 
   function openLightboxForUrl(url: string | null | undefined) {
     if (!url || !lightboxItems.length) return;
-    const index = lightboxItems.findIndex((item) => item.publicUrl === url);
+    const index = lightboxItems.findIndex(
+      (item) => item.publicUrl === url || item.id === url || item.subtitle === url,
+    );
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
@@ -122,7 +128,7 @@ export function ProductDetail({
             <div className="flex min-w-0 items-center gap-3.5">
               <ProductThumbnail
                 onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
-                src={product.thumbnail}
+                src={resolveProductMediaVariant(product.thumbnail, product.metadata, "w200")}
                 title={product.title}
               />
               <div className="min-w-0 space-y-2">
@@ -212,7 +218,12 @@ export function ProductDetail({
           <DetailSection
             action={
               effectiveReadOnly ? null : (
-                <ProductMediaEditButton action={action} product={product} />
+                <ProductMediaEditButton
+                  action={action}
+                  product={product}
+                  triggerLabel="Edit media & tags"
+                  triggerVariant="button"
+                />
               )
             }
             meta={t("products.detail.imagesCount", { count: images.length })}
@@ -228,6 +239,13 @@ export function ProductDetail({
               >
                 {images.map((image, index) => {
                   const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
+                  const imageTag = getImageOptionTag(
+                    image.url,
+                    (product.metadata as { option_media_bindings?: Record<string, unknown> } | undefined)
+                      ?.option_media_bindings,
+                  );
+                  const displayUrl = resolveProductMediaVariant(image.url, product.metadata, "w400");
+
                   return (
                     <figure
                       className="group overflow-hidden rounded-xl bg-muted/20 ring-1 ring-border/60"
@@ -243,11 +261,17 @@ export function ProductDetail({
                         <img
                           alt={product.title ?? t("products.detail.productImage")}
                           className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
-                          src={image.url}
+                          src={displayUrl}
                         />
                         {isCover ? (
                           <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
                             {t("products.detail.cover")}
+                          </span>
+                        ) : null}
+                        {imageTag ? (
+                          <span className="absolute bottom-2 left-2 flex max-w-[calc(100%-3rem)] items-center gap-1 truncate rounded-full border border-border/70 bg-background/90 px-2 py-0.5 text-[10px] font-medium text-foreground shadow-xs backdrop-blur-xs">
+                            <AppIcons.tag className="size-2.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{imageTag.optionValue}</span>
                           </span>
                         ) : null}
                         <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/70 p-1.5 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -259,9 +283,17 @@ export function ProductDetail({
                 })}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground">
-                {t("products.detail.noImagesYet")}
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center">
+                <p className="text-sm text-muted-foreground">{t("products.detail.noImagesYet")}</p>
+                {effectiveReadOnly ? null : (
+                  <ProductMediaEditButton
+                    action={action}
+                    product={product}
+                    triggerLabel="Upload media & tag options"
+                    triggerVariant="button"
+                  />
+                )}
+              </div>
             )}
           </DetailSection>
 

@@ -3,6 +3,7 @@
 import type { ProductOptionSwatch } from "@ecs/contracts";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,8 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
+import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
@@ -107,20 +110,34 @@ export function buildProductOptionSwatch(
   return { kind: "color", value: colorValue.toLowerCase() };
 }
 
+/**
+ * Visual option titles indicate options where visual swatches (color or texture) are appropriate.
+ * Material is excluded so it remains descriptive text pills (e.g. "100% Linen", "Full Grain Leather").
+ */
 export function isVisualOptionTitle(title: string) {
-  return /^(colou?r|pattern|fabric|material|texture|finish)$/i.test(title.trim());
+  return /^(colou?r|pattern|fabric|texture|finish)$/i.test(title.trim());
 }
 export const isColorOptionTitle = isVisualOptionTitle;
 
+export function getAddSwatchLabel(optionTitle?: string): string {
+  const norm = (optionTitle ?? "").trim().toLowerCase();
+  if (/^colou?r$/i.test(norm)) return "Add color";
+  if (/^pattern$/i.test(norm)) return "Add pattern";
+  if (/^fabric$/i.test(norm)) return "Add fabric";
+  return "Add swatch";
+}
+
 export function ProductColorPopover({
-  galleryImages,
+  galleryImages: _galleryImages,
   label,
   onSave,
+  optionTitle,
   value,
 }: {
   galleryImages?: string[] | undefined;
   label?: string | undefined;
   onSave: (label: string, swatch: ProductOptionSwatch) => void;
+  optionTitle?: string | undefined;
   value?: ProductOptionSwatch | string | null | undefined;
 }) {
   const normalizedSwatch = normalizeProductOptionSwatch(value);
@@ -145,6 +162,8 @@ export function ProductColorPopover({
         ? value
         : "",
   );
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
 
@@ -190,8 +209,38 @@ export function ProductColorPopover({
     }
   }
 
+  async function handleFileUpload(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadMediaFile(file);
+      setCustomImageUrl(url);
+      if (!customLabel.trim()) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setCustomLabel(baseName.charAt(0).toUpperCase() + baseName.slice(1));
+      }
+      toast.success("Texture image uploaded");
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "upload_failed";
+      toast.error(
+        code === "invalid_type"
+          ? "Unsupported image file format"
+          : code === "too_large"
+            ? "File exceeds maximum upload size (15MB)"
+            : "Failed to upload texture image",
+      );
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   const isSaveDisabled =
     !customLabel.trim() || (customMode === "color" ? !customColor.trim() : !customImageUrl.trim());
+
+  const addTriggerLabel = getAddSwatchLabel(optionTitle);
+  const isColorAxis = !optionTitle || /^colou?r$/i.test(optionTitle.trim());
 
   return (
     <Popover onOpenChange={handleOpenChange} open={open}>
@@ -226,49 +275,55 @@ export function ProductColorPopover({
           </button>
         ) : (
           <Button className="rounded-full" size="sm" type="button" variant="outline">
-            Add color
+            {addTriggerLabel}
           </Button>
         )}
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain p-0"
+        className="flex h-[28rem] w-[22rem] flex-col overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
         collisionPadding={16}
         onKeyDown={(event) => event.stopPropagation()}
         sideOffset={6}
       >
         {step === "browse" ? (
-          <Command className="h-auto min-h-0 rounded-xl! p-0" shouldFilter={false}>
-            <div className="border-b p-3">
-              <div className="text-sm font-medium">Choose a color</div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Select a common color or create an exact custom swatch.
-              </p>
+          <Command className="flex h-full flex-col rounded-none bg-transparent p-0" shouldFilter={false}>
+            <div className="relative flex h-8 shrink-0 items-center justify-between border-b border-border/60 px-3">
+              <span className="text-xs font-semibold">
+                {isColorAxis ? "Preset colors" : "Preset swatches"}
+              </span>
+              <button
+                className="text-xs font-medium text-primary hover:underline"
+                onClick={() => setStep("custom")}
+                type="button"
+              >
+                Custom swatch
+              </button>
             </div>
             <CommandInput
               autoFocus
               onValueChange={setQuery}
-              placeholder="Search colors…"
+              placeholder={isColorAxis ? "Search colors…" : "Search presets…"}
               size="panel"
               value={query}
             />
             <CommandList
-              className="min-h-0 max-h-[min(20rem,calc(var(--radix-popover-content-available-height)-8.5rem))] overscroll-contain p-1"
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-1"
               ref={listRef}
             >
               <CommandGroup>
                 <CommandItem
                   className="mb-1 border border-dashed"
                   onSelect={() => setStep("custom")}
-                  value="custom color or fabric pattern"
+                  value="custom color or image texture"
                 >
-                  <span className="grid size-7 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
+                  <span className="grid size-6 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-sm font-medium">
-                      Custom color or fabric pattern...
+                    <strong className="block text-xs font-medium">
+                      Custom color or texture…
                     </strong>
-                    <small className="block truncate text-xs text-muted-foreground">
-                      Choose a precise color or fabric pattern
+                    <small className="block truncate text-[11px] text-muted-foreground">
+                      Pick an exact color or upload a texture
                     </small>
                   </span>
                 </CommandItem>
@@ -283,17 +338,17 @@ export function ProductColorPopover({
                       value={`${item.label} ${item.value}`}
                     >
                       <span
-                        className="size-6 rounded-full border shadow-xs"
+                        className="size-5 rounded-full border shadow-xs"
                         style={{ backgroundColor: item.value }}
                       />
-                      <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
-                      <span className="font-mono text-xs text-muted-foreground uppercase">
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium">{item.label}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground uppercase">
                         {item.value}
                       </span>
                     </CommandItem>
                   ))
                 ) : (
-                  <p className="px-2.5 py-5 text-center text-sm text-muted-foreground">
+                  <p className="px-2.5 py-6 text-center text-xs text-muted-foreground">
                     No preset matches this search.
                   </p>
                 )}
@@ -301,10 +356,10 @@ export function ProductColorPopover({
             </CommandList>
           </Command>
         ) : (
-          <div className="flex max-h-[var(--radix-popover-content-available-height)] flex-col gap-3 overflow-y-auto overscroll-contain p-3">
-            <div className="relative flex h-8 items-center border-b border-border/60 px-1">
+          <div className="flex h-full flex-col">
+            <div className="relative flex h-8 shrink-0 items-center border-b border-border/60 px-1">
               <button
-                aria-label="Back to common colors"
+                aria-label="Back to preset swatches"
                 className="absolute left-1 z-10 grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 onClick={() => setStep("browse")}
                 type="button"
@@ -313,95 +368,151 @@ export function ProductColorPopover({
               </button>
               <p className="w-full truncate px-9 text-center text-xs font-medium">Custom swatch</p>
             </div>
-            <Field>
-              <FieldLabel>Label</FieldLabel>
-              <Input
-                autoFocus
-                onChange={(event) => setCustomLabel(event.currentTarget.value)}
-                placeholder={customMode === "image" ? "Pattern name" : "Color name"}
-                value={customLabel}
+
+            <div className="flex-1 min-h-0 space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
+              <Field>
+                <FieldLabel>Label</FieldLabel>
+                <Input
+                  autoFocus
+                  onChange={(event) => setCustomLabel(event.currentTarget.value)}
+                  placeholder={customMode === "image" ? "Texture name (e.g. Denim)" : "Color name (e.g. Navy Blue)"}
+                  value={customLabel}
+                />
+              </Field>
+
+              <SegmentedControl
+                active="muted"
+                ariaLabel="Swatch kind"
+                className="w-full"
+                fullWidth
+                onChange={(next) => setCustomMode(next as "color" | "image")}
+                options={[
+                  {
+                    id: "color",
+                    label: (
+                      <span className="flex items-center justify-center gap-1.5 text-xs font-medium">
+                        <AppIcons.editor className="size-3.5" />
+                        <span>Color</span>
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "image",
+                    label: (
+                      <span className="flex items-center justify-center gap-1.5 text-xs font-medium">
+                        <AppIcons.image className="size-3.5" />
+                        <span>Image / Texture</span>
+                      </span>
+                    ),
+                  },
+                ]}
+                size="sm"
+                value={customMode}
               />
-            </Field>
 
-            <SegmentedControl
-              active="muted"
-              ariaLabel="Swatch kind"
-              className="w-full"
-              fullWidth
-              onChange={(next) => setCustomMode(next as "color" | "image")}
-              options={[
-                { id: "color", label: "🎨 Color" },
-                { id: "image", label: "🖼️ Fabric Pattern" },
-              ]}
-              size="sm"
-              value={customMode}
-            />
-
-            {customMode === "color" ? (
-              <ColorPickerField label="Swatch" onChange={setCustomColor} value={customColor} />
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-full border shadow-xs object-cover overflow-hidden bg-muted grid place-items-center shrink-0">
-                    {customImageUrl.trim() ? (
-                      <img
-                        alt="Pattern preview"
-                        className="size-full object-cover"
-                        src={customImageUrl.trim()}
-                      />
-                    ) : (
-                      <AppIcons.image className="size-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-foreground">Pattern preview</div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {customImageUrl.trim() ? "48px circular crop" : "Enter an image URL below"}
-                    </div>
-                  </div>
-                </div>
-
-                <Field>
-                  <FieldLabel>Image URL</FieldLabel>
-                  <Input
-                    onChange={(event) => setCustomImageUrl(event.currentTarget.value)}
-                    placeholder="https://example.com/fabric-texture.jpg"
-                    type="url"
-                    value={customImageUrl}
+              {customMode === "color" ? (
+                <ColorPickerField label="Swatch" onChange={setCustomColor} value={customColor} />
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => void handleFileUpload(event.target.files)}
+                    ref={fileInputRef}
+                    type="file"
                   />
-                </Field>
-
-                {galleryImages && galleryImages.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <FieldLabel className="text-xs text-muted-foreground">
-                      Product images
-                    </FieldLabel>
-                    <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto rounded-md border bg-muted/20 p-1.5">
-                      {galleryImages.map((url, idx) => (
-                        <button
-                          className={cn(
-                            "relative size-9 shrink-0 overflow-hidden rounded-md border transition-all hover:ring-2 hover:ring-primary/50",
-                            customImageUrl.trim() === url && "ring-2 ring-primary border-primary",
-                          )}
-                          key={`${url}-${idx}`}
-                          onClick={() => setCustomImageUrl(url)}
-                          type="button"
-                        >
-                          <img alt="" className="size-full object-cover" src={url} />
-                        </button>
-                      ))}
+                  <div className="flex items-center gap-3 rounded-lg border bg-muted/20 p-2.5">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted shadow-xs grid place-items-center">
+                      {customImageUrl.trim() ? (
+                        <img
+                          alt="Texture preview"
+                          className="size-full object-cover"
+                          src={customImageUrl.trim()}
+                        />
+                      ) : (
+                        <AppIcons.image className="size-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-foreground">
+                        {customImageUrl.trim() ? "Texture active" : "No texture selected"}
+                      </div>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {customImageUrl.trim() ? "48px circular crop" : "Upload or choose from library"}
+                      </p>
+                      {customImageUrl.trim() ? (
+                        <div className="mt-1 flex items-center gap-2">
+                          <Button
+                            className="h-6 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setCustomImageUrl("")}
+                            size="xs"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <AppIcons.close className="size-3" />
+                            Remove
+                          </Button>
+                          <Button
+                            className="h-6 px-1.5 text-[11px]"
+                            disabled={uploading}
+                            onClick={() => fileInputRef.current?.click()}
+                            size="xs"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <AppIcons.upload className="size-3" />
+                            Replace
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
-                ) : null}
-              </div>
-            )}
 
-            <div className="mt-3 flex justify-end gap-2 border-t border-border/60 pt-3">
+                  {!customImageUrl.trim() ? (
+                    <div className="flex flex-col gap-2 pt-1">
+                      <Button
+                        className="w-full justify-center"
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {uploading ? (
+                          <AppIcons.loader className="size-3.5 animate-spin" />
+                        ) : (
+                          <AppIcons.upload className="size-3.5" />
+                        )}
+                        {uploading ? "Uploading texture…" : "Upload texture file"}
+                      </Button>
+                      <MediaLibraryDialog
+                        onSelect={(assets) => {
+                          const url = assets[0]?.publicUrl?.trim();
+                          if (url) {
+                            setCustomImageUrl(url);
+                            if (!customLabel.trim() && assets[0]?.altText) {
+                              setCustomLabel(assets[0].altText);
+                            }
+                          }
+                        }}
+                        selectionMode="single"
+                        triggerClassName="w-full justify-center"
+                        triggerLabel="Choose from media library"
+                        triggerSize="sm"
+                        triggerVariant="outline"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            <div className="flex h-12 shrink-0 items-center justify-end gap-2 border-t border-border/60 bg-background px-3">
               <Button onClick={close} size="sm" type="button" variant="ghost">
                 Cancel
               </Button>
               <Button
-                disabled={isSaveDisabled}
+                disabled={isSaveDisabled || uploading}
                 onClick={() => {
                   const swatch = buildProductOptionSwatch(customMode, customColor, customImageUrl);
                   onSave(customLabel.trim(), swatch);

@@ -274,7 +274,15 @@ export function ProductOrganizationEditButton({
   );
 }
 
-export function ProductMediaEditButton({ action, product }: ProductEditSheetBaseProps) {
+export function ProductMediaEditButton({
+  action,
+  product,
+  triggerLabel,
+  triggerVariant = "button",
+}: ProductEditSheetBaseProps & {
+  triggerLabel?: string | undefined;
+  triggerVariant?: "button" | "icon" | undefined;
+}) {
   const { t } = useI18n();
   const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
   const imageUrlList = getImageUrls(values.imageUrls);
@@ -291,8 +299,8 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
       description={t("products.edit.mediaDesc")}
       onOpen={() => setValues(getProductMediaValues(product))}
       title={t("products.edit.mediaTitle")}
-      triggerLabel={t("products.edit.mediaTrigger")}
-      triggerVariant="icon"
+      triggerLabel={triggerLabel ?? t("products.edit.mediaTrigger")}
+      triggerVariant={triggerVariant}
     >
       <MediaUploadField
         imageUrls={imageUrlList}

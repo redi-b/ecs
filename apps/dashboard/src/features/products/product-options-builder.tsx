@@ -410,6 +410,7 @@ export function ProductOptionsBuilder({
                       <ProductColorPopover
                         galleryImages={galleryImages}
                         onSave={(label, swatch) => addColorValue(index, label, swatch)}
+                        optionTitle={option.title}
                       />
                     ) : undefined
                   }
@@ -448,6 +449,7 @@ export function ProductOptionsBuilder({
                           onSave={(label, swatch) =>
                             updateColorValue(index, valueIndex, label, swatch)
                           }
+                          optionTitle={option.title}
                           value={value.swatch ?? undefined}
                         />
                       ) : (

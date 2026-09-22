@@ -44,8 +44,8 @@ export function VariantMatrixTable({
         <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
-            <p className="text-sm text-muted-foreground">
-              {t("products.formReview.generatedCount", { count: rows.length })}
+            <p className="text-xs text-muted-foreground">
+              {t("products.formReview.generatedCount", { count: rows.length })} • Variants inherit tagged photos from the Media tab unless overridden.
             </p>
           </div>
           <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
@@ -88,6 +88,22 @@ export function VariantMatrixTable({
                 </div>
                 <CollapsibleContent>
                   <div className="grid gap-3 pt-3 sm:grid-cols-2">
+                    <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-2.5 sm:col-span-2">
+                      <div>
+                        <div className="text-xs font-medium text-foreground">Variant photo</div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {override.imageUrl ?? row.imageUrl
+                            ? "Dedicated photo assigned"
+                            : "Inherits tagged option photo"}
+                        </p>
+                      </div>
+                      <VariantImagePicker
+                        galleryImages={galleryImages}
+                        imageUrl={override.imageUrl ?? row.imageUrl}
+                        onRemoveImage={() => onOverrideChange(row.key, { imageUrl: undefined })}
+                        onSelectImage={(url) => onOverrideChange(row.key, { imageUrl: url })}
+                      />
+                    </div>
                     <Field>
                       <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
                       <InputGroup>
@@ -135,7 +151,7 @@ export function VariantMatrixTable({
           <table className="w-full min-w-[46rem] text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr>
-                <th className="w-14 px-4 py-3 text-left font-medium">Image</th>
+                <th className="w-14 px-4 py-3 text-left font-medium">Photo</th>
                 <th className="px-4 py-3 text-left font-medium">
                   {t("products.formReview.colVariant")}
                 </th>
