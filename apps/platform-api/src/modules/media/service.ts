@@ -357,6 +357,7 @@ export function createMediaService(
 
   async function syncProductMedia(input: {
     imageUrls: string[];
+    variantImageUrls?: string[] | undefined;
     productId: string;
     tenantId: string;
     thumbnail: string | null;
@@ -366,7 +367,9 @@ export function createMediaService(
       tenantId: string;
     }) => Promise<unknown>;
   }) {
-    const urls = Array.from(new Set(input.imageUrls.filter(Boolean)));
+    const urls = Array.from(
+      new Set([...(input.imageUrls ?? []), ...(input.variantImageUrls ?? [])].filter(Boolean)),
+    );
     const assets = urls.length
       ? await db
           .select({

@@ -75,7 +75,10 @@ function optionPresentations(product: MerchantProduct) {
             {
               optionTitle: option.title,
               valueLabel: value.label,
-              swatch: { kind: "color" as const, value: value.swatch.value },
+              swatch:
+                value.swatch.kind === "image"
+                  ? { kind: "image" as const, url: value.swatch.url }
+                  : { kind: "color" as const, value: value.swatch.value },
             },
           ]
         : [],

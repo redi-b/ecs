@@ -4,7 +4,12 @@ import type {
   MerchantProductCollection,
   MerchantProductStock,
 } from "../../../types/index.js";
-import { PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY } from "@ecs/contracts";
+import {
+  PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY,
+  productOptionMediaBindingsSchema,
+  type ProductOptionMediaBindings,
+  type ProductOptionSwatchWithSource,
+} from "@ecs/contracts";
 import { getBoolean, getNumber, getString, isRecord } from "./values.js";
 import { getPublicProductHandle } from "./handles.js";
 
@@ -21,6 +26,7 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
 
   const images = getProductImages(value.images);
   const options = getProductOptions(value.options);
+  const optionMediaBindings = getProductOptionMediaBindings(value.metadata);
 
   return [
     {
@@ -37,11 +43,30 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
       thumbnail: getString(value.thumbnail),
       ...(images.length === 0 ? {} : { images }),
       ...(options === undefined ? {} : { options }),
+      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
       variants: getProductVariants(value.variants),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
     },
   ];
+}
+
+export function getProductOptionMediaBindings(
+  metadata: unknown,
+): ProductOptionMediaBindings | null | undefined {
+  if (!isRecord(metadata)) return undefined;
+  let raw = metadata.option_media_bindings;
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return undefined;
+    }
+  }
+  const parsed = productOptionMediaBindingsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export function getProductOptions(value: unknown) {
@@ -61,7 +86,7 @@ export function getProductOptions(value: unknown) {
               if (!isRecord(optionValue)) return [];
               const label = getString(optionValue.value);
               if (!label) return [];
-              const swatch = getExplicitColorSwatch(optionValue.metadata);
+              const swatch = getExplicitSwatch(optionValue.metadata);
               return [
                 {
                   id: getString(optionValue.id),
@@ -76,16 +101,34 @@ export function getProductOptions(value: unknown) {
   });
 }
 
-function getExplicitColorSwatch(metadata: unknown) {
+export function getExplicitSwatch(metadata: unknown): ProductOptionSwatchWithSource | undefined {
   if (!isRecord(metadata)) return undefined;
   const presentation = metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY];
   if (!isRecord(presentation) || presentation.version !== 1) return undefined;
   const swatch = presentation.swatch;
-  if (!isRecord(swatch) || swatch.kind !== "color") return undefined;
-  const value = getString(swatch.value)?.toLowerCase();
-  if (!value || !/^#[0-9a-f]{6}$/.test(value)) return undefined;
-  return { kind: "color" as const, value, source: "explicit" as const };
+  if (!isRecord(swatch)) return undefined;
+
+  if (swatch.kind === "color") {
+    const value = getString(swatch.value)?.toLowerCase();
+    if (!value || !/^#[0-9a-f]{6}$/.test(value)) return undefined;
+    return { kind: "color" as const, value, source: "explicit" as const };
+  }
+
+  if (swatch.kind === "image") {
+    const url = getString(swatch.url);
+    if (!url) return undefined;
+    try {
+      new URL(url);
+      return { kind: "image" as const, url, source: "explicit" as const };
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
+
+export const getExplicitColorSwatch = getExplicitSwatch;
 
 export function getProductCategoryIds(value: unknown) {
   if (!Array.isArray(value)) {
@@ -142,6 +185,7 @@ export function getProductVariants(value: unknown) {
     }
 
     const optionValues = getProductVariantOptionValues(variant.options);
+    const imageUrl = getVariantImageUrl(variant);
 
     return [
       {
@@ -151,11 +195,30 @@ export function getProductVariants(value: unknown) {
         ...(typeof variant.allow_backorder === "boolean" ? { allowBackorder: variant.allow_backorder } : {}),
         title: getString(variant.title),
         sku: getString(variant.sku),
+        ...(imageUrl !== undefined ? { imageUrl } : {}),
         ...(optionValues.length === 0 ? {} : { optionValues }),
         prices: getProductPrices(variant.prices),
       },
     ];
   });
+}
+
+export function getVariantImageUrl(variant: Record<string, unknown>): string | null | undefined {
+  const metadata = isRecord(variant.metadata) ? variant.metadata : undefined;
+  const raw =
+    metadata?.image_url !== undefined
+      ? metadata.image_url
+      : variant.image_url !== undefined
+        ? variant.image_url
+        : variant.imageUrl !== undefined
+          ? variant.imageUrl
+          : variant.thumbnail;
+
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  const str = getString(raw);
+  if (!str) return null;
+  return str;
 }
 
 export function getProductVariantOptionValues(value: unknown) {

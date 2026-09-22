@@ -58,8 +58,12 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
   const metadata = input.tenantId?.trim()
     ? getTenantProductMetadata(input.tenantId, publicHandle, input.metadata)
     : input.metadata;
-  if (metadata && Object.keys(metadata).length > 0) {
-    body.metadata = metadata;
+  const mergedMetadata: Record<string, unknown> = { ...(metadata ?? {}) };
+  if (input.optionMediaBindings !== undefined) {
+    mergedMetadata.option_media_bindings = input.optionMediaBindings;
+  }
+  if (Object.keys(mergedMetadata).length > 0) {
+    body.metadata = mergedMetadata;
   }
 
   const optionValuePresentations = getOptionValuePresentationsForWrite(input.options);
@@ -293,18 +297,24 @@ export function getOptionValuePresentationsForWrite(options: ProductOptionInput[
     option.values.flatMap((value) => {
       if (typeof value === "string") return [];
       if (value.swatch === undefined) return [];
+      const swatch = value.swatch
+        ? value.swatch.kind === "image"
+          ? {
+              kind: "image" as const,
+              url: value.swatch.url.trim(),
+            }
+          : {
+              kind: "color" as const,
+              value: value.swatch.value.toLowerCase(),
+            }
+        : null;
       return [
         {
           ...(option.id?.trim() ? { optionId: option.id.trim() } : {}),
           optionTitle: option.title.trim(),
           ...(value.id?.trim() ? { valueId: value.id.trim() } : {}),
           valueLabel: value.label.trim(),
-          swatch: value.swatch
-            ? {
-                kind: "color" as const,
-                value: value.swatch.value.toLowerCase(),
-              }
-            : null,
+          swatch,
         },
       ];
     }),
@@ -399,6 +409,13 @@ export function getProductVariantWriteBody(
         },
       ];
 
+  const variantMetadata: Record<string, unknown> = {
+    ...((variant as { metadata?: Record<string, unknown> }).metadata ?? {}),
+    ...(variant.imageUrl !== undefined
+      ? { image_url: variant.imageUrl ? variant.imageUrl.trim() : null }
+      : {}),
+  };
+
   return {
     ...(variant.id?.trim() ? { id: variant.id.trim() } : {}),
     title: Object.values(optionValues).join(" / ") || "Default",
@@ -416,6 +433,7 @@ export function getProductVariantWriteBody(
           }
         : {}),
     })),
+    ...(Object.keys(variantMetadata).length > 0 ? { metadata: variantMetadata } : {}),
   };
 }
 

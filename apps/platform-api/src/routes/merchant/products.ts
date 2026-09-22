@@ -27,7 +27,11 @@ import {
   storeErrorStatus,
 } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
-import { getOptionalBodyProductOptions, getOptionalBodyProductVariants } from "./product-body.js";
+import {
+  getOptionalBodyOptionMediaBindings,
+  getOptionalBodyProductOptions,
+  getOptionalBodyProductVariants,
+} from "./product-body.js";
 import { getProductOptionSetValues } from "./product-option-set-body.js";
 
 export function registerMerchantProductRoutes(
@@ -79,6 +83,7 @@ export function registerMerchantProductRoutes(
     const title = getRequiredBodyString(body, "title");
     const productOptions = getOptionalBodyProductOptions(body);
     const productVariants = getOptionalBodyProductVariants(body);
+    const optionMediaBindings = getOptionalBodyOptionMediaBindings(body);
 
     if (!title) {
       return context.json({ error: "missing_title" }, 400);
@@ -91,6 +96,7 @@ export function registerMerchantProductRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
       ...(productOptions ? { options: productOptions } : {}),
       ...(productVariants ? { variants: productVariants } : {}),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
@@ -671,6 +677,7 @@ export function registerMerchantProductRoutes(
     const body = await getJsonBody(context.req.raw);
     const productOptions = getOptionalBodyProductOptions(body);
     const productVariants = getOptionalBodyProductVariants(body);
+    const optionMediaBindings = getOptionalBodyOptionMediaBindings(body);
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
@@ -679,6 +686,7 @@ export function registerMerchantProductRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
       ...(productOptions ? { options: productOptions } : {}),
       ...(productVariants ? { variants: productVariants } : {}),
       regionId: commerce.context.medusaRegionId,
