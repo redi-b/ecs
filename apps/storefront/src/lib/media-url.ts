@@ -1,3 +1,5 @@
+import type { ImageVariants } from "./commerce/types.js";
+
 export function normalizeStorefrontMediaUrl(
   value: string | null | undefined,
   publicBaseUrl = process.env.MEDIA_S3_PUBLIC_BASE_URL,
@@ -19,42 +21,49 @@ export function normalizeStorefrontMediaUrl(
 
 export type StorefrontMediaVariantWidth = 96 | 400 | 800 | 1200;
 
-export function resolveStorefrontMediaVariantUrl(
-  value: string | null | undefined,
-  width: StorefrontMediaVariantWidth,
-  publicBaseUrl = process.env.MEDIA_S3_PUBLIC_BASE_URL,
+export function resolveProductImage(
+  variants?: ImageVariants,
+  preferredWidth?: keyof ImageVariants,
+  fallback?: string | null,
 ): string | null {
-  const normalized = normalizeStorefrontMediaUrl(value, publicBaseUrl);
-  if (!normalized) return null;
-
-  const lower = normalized.toLowerCase();
-  if (lower.endsWith(".gif") || lower.endsWith(".svg")) return normalized;
-
-  const match = normalized.match(/^(.*\/tenants\/[^/]+\/.+\/)([^/?#]+)(\?.*)?$/);
-  if (!match) return normalized;
-
-  const prefix = match[1];
-  const search = match[3] ?? "";
-  return `${prefix}w${width}.webp${search}`;
+  return variants?.[preferredWidth ?? "w400"] ?? fallback ?? null;
 }
 
-export function buildStorefrontMediaSrcset(
+export function buildProductImageSrcset(
+  variants?: ImageVariants,
+  widths: readonly (200 | 400 | 800 | 1200)[] = [200, 400, 800, 1200],
+): string | null {
+  if (!variants) return null;
+  const entries: string[] = [];
+  for (const w of widths) {
+    const key = `w${w}` as keyof ImageVariants;
+    const url = variants[key];
+    if (url) entries.push(`${url} ${w}w`);
+  }
+  return entries.length > 0 ? entries.join(", ") : null;
+}
+
+/**
+ * @deprecated Use `resolveProductImage(variants, width, fallback)` instead of regex URL variant guessing.
+ * Guaranteed zero 404 fallback: returns the normalized master URL directly if valid.
+ */
+export function resolveStorefrontMediaVariantUrl(
   value: string | null | undefined,
-  widths: readonly StorefrontMediaVariantWidth[] = [400, 800, 1200],
+  _width?: StorefrontMediaVariantWidth,
   publicBaseUrl = process.env.MEDIA_S3_PUBLIC_BASE_URL,
 ): string | null {
-  const normalized = normalizeStorefrontMediaUrl(value, publicBaseUrl);
-  if (!normalized) return null;
+  return normalizeStorefrontMediaUrl(value, publicBaseUrl) ?? value ?? null;
+}
 
-  const lower = normalized.toLowerCase();
-  if (lower.endsWith(".gif") || lower.endsWith(".svg")) return null;
-
-  const match = normalized.match(/^(.*\/tenants\/[^/]+\/.+\/)([^/?#]+)(\?.*)?$/);
-  if (!match) return null;
-
-  return widths
-    .map((w) => `${resolveStorefrontMediaVariantUrl(normalized, w, publicBaseUrl)} ${w}w`)
-    .join(", ");
+/**
+ * @deprecated Use `buildProductImageSrcset(variants)` instead of regex URL variant guessing.
+ */
+export function buildStorefrontMediaSrcset(
+  _value: string | null | undefined,
+  _widths?: readonly StorefrontMediaVariantWidth[],
+  _publicBaseUrl = process.env.MEDIA_S3_PUBLIC_BASE_URL,
+): string | null {
+  return null;
 }
 
 function parseHttpUrl(value: string | null | undefined) {

@@ -13,6 +13,7 @@ const product = (input: Partial<StoreProduct> = {}): StoreProduct => ({
   handle: "buna-set",
   id: "prod_1",
   images: [],
+  gallery: [],
   options: [],
   priceAmount: 1250,
   thumbnail: "/media/buna.webp",

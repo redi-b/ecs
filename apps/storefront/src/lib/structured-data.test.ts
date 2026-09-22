@@ -68,6 +68,7 @@ function product(overrides: Partial<StoreProduct> = {}): StoreProduct {
     description: "Fresh coffee",
     thumbnail: "/media/buna.jpg",
     images: [],
+    gallery: [],
     variants: [
       {
         id: "variant_1",

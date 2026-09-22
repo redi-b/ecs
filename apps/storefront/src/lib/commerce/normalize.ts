@@ -2,10 +2,12 @@ import { normalizeStorefrontMediaUrl } from "../media-url.js";
 import { getBoolean, getNumber, getString, isRecord } from "./http.js";
 import type {
   CompletedOrder,
+  ImageVariants,
   StoreCart,
   StoreCartItem,
   StoreDeliveryOptions,
   StoreProduct,
+  StoreProductImage,
   StoreProductVariant,
   StoreShippingOption,
 } from "./types.js";
@@ -104,6 +106,31 @@ function normalizeVariant(value: unknown, productOptions: unknown[]): StoreProdu
   };
 }
 
+function parseImageVariants(entry: unknown): ImageVariants | undefined {
+  if (!isRecord(entry)) return undefined;
+  const variants: ImageVariants = {};
+  if (typeof entry.w200 === "string" && entry.w200.trim()) variants.w200 = entry.w200.trim();
+  if (typeof entry.w400 === "string" && entry.w400.trim()) variants.w400 = entry.w400.trim();
+  if (typeof entry.w800 === "string" && entry.w800.trim()) variants.w800 = entry.w800.trim();
+  if (typeof entry.w1200 === "string" && entry.w1200.trim()) variants.w1200 = entry.w1200.trim();
+  return Object.keys(variants).length > 0 ? variants : undefined;
+}
+
+function resolveMediaUrl(value: unknown): string | null {
+  const candidate = getString(value)?.trim();
+  if (!candidate) return null;
+  const trusted = normalizeStorefrontMediaUrl(candidate);
+  if (trusted) return trusted;
+  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {}
+  return null;
+}
+
 export function normalizeProduct(value: unknown): StoreProduct {
   if (!isRecord(value)) {
     return {
@@ -112,7 +139,9 @@ export function normalizeProduct(value: unknown): StoreProduct {
       handle: null,
       description: null,
       thumbnail: null,
+      thumbnailVariants: undefined,
       images: [],
+      gallery: [],
       variants: [],
       options: [],
       collectionId: null,
@@ -169,13 +198,48 @@ export function normalizeProduct(value: unknown): StoreProduct {
     })
     .filter((option): option is NonNullable<typeof option> => Boolean(option));
 
+  const metadata = isRecord(value.metadata) ? value.metadata : null;
+  const rawMediaVariants = isRecord(metadata?.media_variants)
+    ? (metadata.media_variants as Record<string, unknown>)
+    : null;
+
+  const extractVariants = (url: string): ImageVariants | undefined => {
+    if (!rawMediaVariants) return undefined;
+    if (rawMediaVariants[url]) return parseImageVariants(rawMediaVariants[url]);
+    try {
+      const decoded = decodeURI(url);
+      if (decoded !== url && rawMediaVariants[decoded]) {
+        return parseImageVariants(rawMediaVariants[decoded]);
+      }
+    } catch {}
+    return undefined;
+  };
+
   const images: string[] = [];
+  const gallery: StoreProductImage[] = [];
   if (Array.isArray(value.images)) {
     for (const image of value.images) {
-      const url = isRecord(image) ? getString(image.url) : getString(image);
-      const trustedUrl = normalizeStorefrontMediaUrl(url);
-      if (trustedUrl) images.push(trustedUrl);
+      const raw = isRecord(image) ? image.url : image;
+      const url = resolveMediaUrl(raw);
+      if (url && !images.includes(url)) {
+        images.push(url);
+        const variants = extractVariants(url);
+        gallery.push({
+          url,
+          ...(variants ? { variants } : {}),
+        });
+      }
     }
+  }
+
+  const thumbnail = resolveMediaUrl(value.thumbnail) ?? images[0] ?? null;
+  const thumbnailVariants = thumbnail ? extractVariants(thumbnail) : undefined;
+
+  if (thumbnail && !images.includes(thumbnail)) {
+    gallery.unshift({
+      url: thumbnail,
+      ...(thumbnailVariants ? { variants: thumbnailVariants } : {}),
+    });
   }
 
   const collection = isRecord(value.collection) ? value.collection : null;
@@ -187,7 +251,6 @@ export function normalizeProduct(value: unknown): StoreProduct {
     if (id) categoryIds.push(id);
   }
 
-  const thumbnail = normalizeStorefrontMediaUrl(getString(value.thumbnail)) ?? images[0] ?? null;
   const priced = variants.find((v) => v.priceAmount != null) ?? variants[0];
 
   return {
@@ -196,7 +259,9 @@ export function normalizeProduct(value: unknown): StoreProduct {
     handle: getString(value.handle),
     description: getString(value.description),
     thumbnail,
+    thumbnailVariants,
     images,
+    gallery,
     variants,
     options,
     collectionId: getString(value.collection_id) ?? getString(collection?.id),
@@ -238,7 +303,7 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
     quantity: getNumber(value.quantity) ?? 0,
     unitPrice: getNumber(value.unit_price) ?? getNumber(value.unitPrice) ?? null,
     total: getNumber(value.total) ?? getNumber(value.subtotal) ?? null,
-    thumbnail: normalizeStorefrontMediaUrl(
+    thumbnail: resolveMediaUrl(
       getString(value.thumbnail) ?? getString(product?.thumbnail),
     ),
     variantId: getString(value.variant_id) ?? getString(variant?.id),

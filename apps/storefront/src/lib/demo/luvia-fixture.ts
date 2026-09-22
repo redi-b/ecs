@@ -48,6 +48,7 @@ export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
         "A considered daily essential made for a calm, radiant skincare routine. Gentle textures and thoughtfully selected ingredients make it easy to use every day.",
       thumbnail,
       images: [thumbnail],
+      gallery: [{ url: thumbnail }],
       variants: [
         {
           id: `demo-variant-${index + 1}`,

@@ -37,13 +37,27 @@ export type StoreProductOption = {
   swatches?: Record<string, string>;
 };
 
+export type ImageVariants = {
+  w200?: string;
+  w400?: string;
+  w800?: string;
+  w1200?: string;
+};
+
+export type StoreProductImage = {
+  url: string;
+  variants?: ImageVariants;
+};
+
 export type StoreProduct = {
   id: string;
   title: string | null;
   handle: string | null;
   description: string | null;
   thumbnail: string | null;
+  thumbnailVariants?: ImageVariants;
   images: string[];
+  gallery: StoreProductImage[];
   variants: StoreProductVariant[];
   options: StoreProductOption[];
   collectionId: string | null;

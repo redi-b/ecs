@@ -19,6 +19,7 @@ const PRODUCT_FIELDS = [
   "+handle",
   "+description",
   "+collection_id",
+  "+metadata",
 ].join(",");
 
 type ProductSearchResponse = {

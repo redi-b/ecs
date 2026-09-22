@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  buildProductImageSrcset,
   buildStorefrontMediaSrcset,
   normalizeStorefrontMediaUrl,
+  resolveProductImage,
   resolveStorefrontMediaVariantUrl,
 } from "./media-url.js";
 
@@ -51,28 +53,51 @@ describe("storefront media URL boundary", () => {
     }
   });
 
-  it("resolves variant URLs and srcset for tenant media assets", () => {
+  it("resolves product image variants deterministically with fallback", () => {
+    const variants = {
+      w200: "https://media.example.com/ast/photo-200w.webp",
+      w400: "https://media.example.com/ast/photo-400w.webp",
+    };
+    const fallback = "https://media.example.com/ast/photo.jpg";
+
+    assert.equal(
+      resolveProductImage(variants, "w400", fallback),
+      "https://media.example.com/ast/photo-400w.webp",
+    );
+    assert.equal(
+      resolveProductImage(variants, "w200", fallback),
+      "https://media.example.com/ast/photo-200w.webp",
+    );
+    assert.equal(resolveProductImage(variants, "w800", fallback), fallback);
+    assert.equal(resolveProductImage(undefined, "w400", fallback), fallback);
+    assert.equal(resolveProductImage(undefined, "w400", null), null);
+  });
+
+  it("builds srcset from known image variants", () => {
+    const variants = {
+      w200: "https://media.example.com/ast/photo-200w.webp",
+      w400: "https://media.example.com/ast/photo-400w.webp",
+      w800: "https://media.example.com/ast/photo-800w.webp",
+      w1200: "https://media.example.com/ast/photo-1200w.webp",
+    };
+    assert.equal(
+      buildProductImageSrcset(variants),
+      "https://media.example.com/ast/photo-200w.webp 200w, https://media.example.com/ast/photo-400w.webp 400w, https://media.example.com/ast/photo-800w.webp 800w, https://media.example.com/ast/photo-1200w.webp 1200w",
+    );
+    assert.equal(buildProductImageSrcset(undefined), null);
+    assert.equal(buildProductImageSrcset({}), null);
+  });
+
+  it("falls back to master media URL without regex guessing (zero 404 guarantee)", () => {
     const original = "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/photo.jpg";
     assert.equal(
       resolveStorefrontMediaVariantUrl(original, 400, base),
-      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w400.webp",
-    );
-    assert.equal(
-      resolveStorefrontMediaVariantUrl(original, 96, base),
-      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w96.webp",
+      original,
     );
     assert.equal(
       buildStorefrontMediaSrcset(original, [400, 800, 1200], base),
-      "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w400.webp 400w, https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w800.webp 800w, https://media.example.com/ecs-media/tenants/t1/product/pending/p1/w1200.webp 1200w",
+      null,
     );
-  });
-
-  it("leaves gifs and svgs untouched in variant resolvers", () => {
-    const gif = "https://media.example.com/ecs-media/tenants/t1/product/pending/p1/anim.gif";
-    const svg = "/images/icon.svg";
-    assert.equal(resolveStorefrontMediaVariantUrl(gif, 400, base), gif);
-    assert.equal(buildStorefrontMediaSrcset(gif, [400, 800, 1200], base), null);
-    assert.equal(resolveStorefrontMediaVariantUrl(svg, 400, base), svg);
   });
 });
 

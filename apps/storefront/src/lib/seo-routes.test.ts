@@ -93,6 +93,7 @@ function product(id: string, handle: string): StoreProduct {
     description: null,
     thumbnail: null,
     images: [],
+    gallery: [],
     collectionId: null,
     collectionTitle: null,
     categoryIds: [],
