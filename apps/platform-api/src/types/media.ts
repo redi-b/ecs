@@ -13,6 +13,7 @@ export type MediaAsset = {
   urls: {
     original: string | null;
     w96: string | null;
+    w200: string | null;
     w400: string | null;
     w800: string | null;
     w1200: string | null;

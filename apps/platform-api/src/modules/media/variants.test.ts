@@ -22,17 +22,32 @@ test("writes webp variants next to the original object", () => {
 
 test("display urls fall back to the original until variants exist", () => {
   const original = "https://media.example/photo.jpg";
-  assert.equal(mediaDisplayUrls(original, {}).w400, original);
-  assert.equal(
-    mediaDisplayUrls(original, {
-      w400: {
-        byteSize: 12,
-        height: 300,
-        objectKey: "w400.webp",
-        publicUrl: "https://media.example/w400.webp",
-        width: 400,
-      },
-    }).w400,
-    "https://media.example/w400.webp",
-  );
+  const emptyUrls = mediaDisplayUrls(original, {});
+  assert.equal(emptyUrls.original, original);
+  assert.equal(emptyUrls.w200, original);
+  assert.equal(emptyUrls.w400, original);
+  assert.equal(emptyUrls.w800, original);
+  assert.equal(emptyUrls.w1200, original);
+  assert.equal(emptyUrls.w96, original);
+
+  const populatedUrls = mediaDisplayUrls(original, {
+    w200: {
+      byteSize: 10,
+      height: 150,
+      objectKey: "w200.webp",
+      publicUrl: "https://media.example/w200.webp",
+      width: 200,
+    },
+    w400: {
+      byteSize: 12,
+      height: 300,
+      objectKey: "w400.webp",
+      publicUrl: "https://media.example/w400.webp",
+      width: 400,
+    },
+  });
+  assert.equal(populatedUrls.w200, "https://media.example/w200.webp");
+  assert.equal(populatedUrls.w400, "https://media.example/w400.webp");
+  assert.equal(populatedUrls.w96, "https://media.example/w200.webp");
+  assert.equal(populatedUrls.w800, original);
 });

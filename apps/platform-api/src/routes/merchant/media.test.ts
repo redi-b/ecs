@@ -21,6 +21,7 @@ const asset: MediaAsset = {
   urls: {
     original: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
     w96: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
+    w200: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
     w400: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
     w800: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",
     w1200: "https://cdn.example.com/tenants/tenant_1/product/shoe.jpg",

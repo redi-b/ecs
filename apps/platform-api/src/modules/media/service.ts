@@ -29,7 +29,12 @@ import type {
   MediaServiceError,
   MediaUploadCreateResult,
 } from "../../types/index.js";
-import { generateObjectKey, mediaDisplayUrls, type MediaVariantRecord } from "./variants.js";
+import {
+  generateObjectKey,
+  mediaDisplayUrls,
+  sanitizeFilename,
+  type MediaVariantRecord,
+} from "./variants.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type MediaAssetRow = typeof mediaAssets.$inferSelect;
@@ -404,13 +409,6 @@ function toMediaAsset(asset: MediaAssetRow): MediaAsset {
   };
 }
 
-function sanitizeFilename(value: string) {
-  return value
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 180);
-}
 
 function normalizeOptionalText(value: string | null | undefined) {
   const normalized = value?.trim();
