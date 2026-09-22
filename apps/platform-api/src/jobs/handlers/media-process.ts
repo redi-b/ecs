@@ -38,6 +38,8 @@ export function createMediaProcessHandler(options: {
           updatedAt: new Date(),
           variants: result.skipped ? {} : result.variants,
           variantsStatus: result.skipped ? "skipped" : "ready",
+          ...(!result.skipped && !asset.width && result.width ? { width: result.width } : {}),
+          ...(!result.skipped && !asset.height && result.height ? { height: result.height } : {}),
         })
         .where(and(eq(mediaAssets.id, asset.id), eq(mediaAssets.tenantId, asset.tenantId)));
       return result.skipped ? { skipped: true, reason: "unprocessable" } : { skipped: false };

@@ -110,6 +110,7 @@ export function createS3StorageAdapter(options: S3StorageOptions): StorageAdapte
         new PutObjectCommand({
           Body: input.body,
           Bucket: options.bucket,
+          CacheControl: input.cacheControl,
           ContentType: input.contentType,
           Key: input.objectKey,
         }),

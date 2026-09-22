@@ -29,6 +29,7 @@ export type StorageAdapter = {
   provider: string;
   putObject(input: {
     body: Uint8Array;
+    cacheControl?: string;
     contentType: string;
     objectKey: string;
   }): Promise<{ publicUrl: string | null }>;
