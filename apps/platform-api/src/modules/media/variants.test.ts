@@ -16,7 +16,7 @@ test("skips gifs and multi-page images", () => {
 test("writes webp variants next to the original object", () => {
   assert.equal(
     variantObjectKey("tenants/t/product/pending/id/photo.jpg", 400),
-    "tenants/t/product/pending/id/w400.webp",
+    "tenants/t/product/pending/id/photo-400w.webp",
   );
 });
 

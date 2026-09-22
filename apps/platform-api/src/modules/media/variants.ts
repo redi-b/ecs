@@ -1,4 +1,4 @@
-export const MEDIA_VARIANT_WIDTHS = [96, 400, 800, 1200] as const;
+export const MEDIA_VARIANT_WIDTHS = [200, 400, 800, 1200] as const;
 export type MediaVariantWidth = (typeof MEDIA_VARIANT_WIDTHS)[number];
 
 export type MediaVariantRecord = {
@@ -8,6 +8,29 @@ export type MediaVariantRecord = {
   publicUrl: string | null;
   width: number;
 };
+
+export function generateObjectKey(input: {
+  accessMode: "public" | "private";
+  assetId: string;
+  filename: string;
+  scope?: string;
+  tenantId?: string;
+}) {
+  const cleanFilename = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = input.tenantId
+    ? `s/${input.tenantId}/${input.assetId}/${cleanFilename}`
+    : `p/${input.scope ?? "general"}/${input.assetId}/${cleanFilename}`;
+  return input.accessMode === "private" ? `private/${path}` : path;
+}
+
+export function generatePlatformObjectKey(input: {
+  assetId: string;
+  filename: string;
+  scope: string;
+}) {
+  const cleanFilename = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return `p/${input.scope}/${input.assetId}/${cleanFilename}`;
+}
 
 export function shouldSkipImageProcessing(input: {
   mimeType: string;
@@ -19,9 +42,9 @@ export function shouldSkipImageProcessing(input: {
 }
 
 export function variantObjectKey(originalKey: string, width: MediaVariantWidth) {
-  const slash = originalKey.lastIndexOf("/");
-  const folder = slash >= 0 ? originalKey.slice(0, slash + 1) : "";
-  return `${folder}w${width}.webp`;
+  const dotIndex = originalKey.lastIndexOf(".");
+  const basePath = dotIndex >= 0 ? originalKey.slice(0, dotIndex) : originalKey;
+  return `${basePath}-${width}w.webp`;
 }
 
 export function mediaDisplayUrls(
@@ -29,7 +52,7 @@ export function mediaDisplayUrls(
   variants: Record<string, MediaVariantRecord> | null | undefined,
 ) {
   const original = publicUrl;
-  const pick = (width: MediaVariantWidth) => variants?.[`w${width}`]?.publicUrl ?? original;
+  const pick = (width: number) => variants?.[`w${width}`]?.publicUrl ?? original;
   return {
     original,
     w96: pick(96),

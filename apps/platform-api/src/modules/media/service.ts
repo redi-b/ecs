@@ -29,7 +29,7 @@ import type {
   MediaServiceError,
   MediaUploadCreateResult,
 } from "../../types/index.js";
-import { mediaDisplayUrls, type MediaVariantRecord } from "./variants.js";
+import { generateObjectKey, mediaDisplayUrls, type MediaVariantRecord } from "./variants.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type MediaAssetRow = typeof mediaAssets.$inferSelect;
@@ -71,7 +71,12 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
     }
 
     const assetId = crypto.randomUUID();
-    const objectKey = `tenants/${input.tenantId}/${input.context}/pending/${assetId}/${filename}`;
+    const objectKey = generateObjectKey({
+      accessMode: input.accessMode,
+      assetId,
+      filename,
+      tenantId: input.tenantId,
+    });
 
     try {
       const upload = await storage.createUpload({
