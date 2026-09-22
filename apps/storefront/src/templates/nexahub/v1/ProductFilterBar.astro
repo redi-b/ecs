@@ -1,10 +1,10 @@
 ---
+import Icon from "./Icon.astro";
 import type { CatalogFilters } from "../../../lib/commerce/catalog-filters";
 import type { StoreCategory, StoreCollection, StoreProductsResponse } from "../../../lib/commerce/types";
 import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
-import chevronIcon from "./icons/chevron-down-icon.svg?raw";
 import "./styles/components/_product-filter-bar.scss";
 
 interface Props {
@@ -26,7 +26,7 @@ const selectedOptionNames = new Set(values.optionPairs.flatMap((token) => {
 }));
 ---
 <button class="product-filter-trigger" type="button" aria-expanded="false" aria-controls="product-filter-panel" data-filter-panel-toggle>
-  <span>{m.catalog_filters({}, { locale })}{activeCount ? ` (${activeCount})` : ""}</span><Fragment set:html={chevronIcon} />
+  <span>{m.catalog_filters({}, { locale })}{activeCount ? ` (${activeCount})` : ""}</span><Icon name="chevron-down" />
 </button>
 <button class="product-filter-backdrop" type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-panel-close></button>
 <form class="product-filter-panel" id="product-filter-panel" action={action} method="get" data-filter-panel>
@@ -34,30 +34,30 @@ const selectedOptionNames = new Set(values.optionPairs.flatMap((token) => {
   <header><h2>{m.catalog_filter_products({}, { locale })}</h2><div>{activeCount > 0 && <a href="/products">{m.catalog_clear_filters({}, { locale })}</a>}<button type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-panel-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div></header>
   <div class="product-filter-panel__scroll">
     {collections.length > 0 && <details class="product-filter-group" open>
-      <summary><span>{m.catalog_collection({}, { locale })}</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+      <summary><span>{m.catalog_collection({}, { locale })}</span><Icon name="chevron-down" /></summary><fieldset>
         <label><input type="radio" name="collection" value="" checked={!values.collectionId} /><span>{m.catalog_all_collections({}, { locale })}</span></label>
         {collections.flatMap((item) => { const value = taxonomyHandle(item); return value ? [<label><input type="radio" name="collection" value={value} checked={values.collectionId === value} /><span>{item.title ?? m.catalog_collection_fallback({}, { locale })}</span>{facets?.collections[item.id] !== undefined && <small>{facets.collections[item.id]}</small>}</label>] : []; })}
       </fieldset>
     </details>}
     {categories.length > 0 && <details class="product-filter-group" open>
-      <summary><span>{m.catalog_category({}, { locale })}</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+      <summary><span>{m.catalog_category({}, { locale })}</span><Icon name="chevron-down" /></summary><fieldset>
         <label><input type="radio" name="category" value="" checked={!values.categoryId} /><span>{m.catalog_all_categories({}, { locale })}</span></label>
         {categories.flatMap((item) => { const value = taxonomyHandle(item); return value ? [<label><input type="radio" name="category" value={value} checked={values.categoryId === value} /><span>{item.name ?? m.catalog_category_fallback({}, { locale })}</span>{facets?.categories[item.id] !== undefined && <small>{facets.categories[item.id]}</small>}</label>] : []; })}
       </fieldset>
     </details>}
     {facets?.options.map((option) => <details class="product-filter-group" open={selectedOptionNames.has(option.name)}>
-      <summary><span>{option.name}</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+      <summary><span>{option.name}</span><Icon name="chevron-down" /></summary><fieldset>
         {option.values.map((item) => <label><input type="checkbox" name="option" value={item.token} checked={values.optionPairs.includes(item.token)} /><span>{item.value}</span><small>{item.count}</small></label>)}
       </fieldset>
     </details>)}
     {facets?.price && <details class="product-filter-group" open={values.priceMin !== undefined || values.priceMax !== undefined}>
-      <summary><span>{m.catalog_price_range({}, { locale })}</span><Fragment set:html={chevronIcon} /></summary><fieldset class="product-filter-panel__price">
+      <summary><span>{m.catalog_price_range({}, { locale })}</span><Icon name="chevron-down" /></summary><fieldset class="product-filter-panel__price">
         <p>ETB {number.format(Math.floor(facets.price.min))} {m.catalog_to({}, { locale })} {number.format(Math.ceil(facets.price.max))}</p>
         <div><label><span>{m.catalog_minimum({}, { locale })}</span><input type="number" name="price_min" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={values.priceMin} placeholder={String(Math.floor(facets.price.min))} /></label><label><span>{m.catalog_maximum({}, { locale })}</span><input type="number" name="price_max" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={values.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label></div>
       </fieldset>
     </details>}
     <details class="product-filter-group">
-      <summary><span>{m.catalog_sort_by({}, { locale })}</span><Fragment set:html={chevronIcon} /></summary><fieldset>
+      <summary><span>{m.catalog_sort_by({}, { locale })}</span><Icon name="chevron-down" /></summary><fieldset>
         {[["", values.q ? m.catalog_relevance({}, { locale }) : m.catalog_featured({}, { locale })], ["created_at", m.catalog_newest({}, { locale })], ["price", m.catalog_price_low_high({}, { locale })], ["-price", m.catalog_price_high_low({}, { locale })], ["title", m.catalog_title_az({}, { locale })], ["-title", m.catalog_title_za({}, { locale })]].map(([value, label]) => <label><input type="radio" name="order" value={value} checked={(values.order ?? "") === value} /><span>{label}</span></label>)}
       </fieldset>
     </details>

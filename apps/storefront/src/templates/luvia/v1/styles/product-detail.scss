@@ -1,7 +1,7 @@
 .lv-product-page { min-height: 100vh; padding: 124px 0 110px; color: var(--lv-ink); }
 .lv-product-breadcrumb { width: calc(100% - 120px); max-width: 1392px; margin: 0 auto 26px; display: flex; align-items: center; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); font-size: 14px; }
 .lv-product-breadcrumb a { color: inherit; text-decoration: none; }
-.lv-product-breadcrumb img { width: 5px; }
+.lv-product-breadcrumb .sf-icon svg { width: 5px; height: 8px; }
 .lv-product-server-notice { width: calc(100% - 120px); max-width: 1392px; margin: 0 auto 18px; padding: 12px 16px; border-radius: 12px; background: var(--lv-accent); }
 .lv-product-server-notice.is-error { background: #fff0f0; color: #8d2828; }
 .lv-product-detail { width: calc(100% - 120px); max-width: 1392px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr) 489px; gap: 36px; align-items: start; }
@@ -15,9 +15,9 @@
 .lv-product-gallery__badge { position: absolute; top: 14px; left: 12px; padding: 6px 9px; display: flex; align-items: center; gap: 4px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 13px; }
 .lv-product-gallery__badge[hidden] { display: none !important; }
 .lv-product-gallery__badge.is-out-of-stock { background: var(--lv-dark); color: white; }
-.lv-product-gallery__badge.is-out-of-stock img { display: none; }
-.lv-product-gallery__badge img { width: 12px; height: 12px; }
-.lv-product-gallery__badge img[hidden] { display: none !important; }
+.lv-product-gallery__badge.is-out-of-stock .sf-icon { display: none; }
+.lv-product-gallery__badge .sf-icon svg { width: 12px; height: 12px; }
+.lv-product-gallery__badge .sf-icon[hidden] { display: none !important; }
 .lv-product-buy { padding-top: 20px; display: flex; flex-direction: column; gap: 20px; }
 .lv-product-title { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
 .lv-product-title > span { padding: 6px 12px; border: 1px solid var(--lv-line); border-radius: 999px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 12px; }
@@ -44,7 +44,7 @@
 .lv-product-spinner { width: 16px; height: 16px; margin-left: 8px; display: none; vertical-align: -3px; border: 2px solid rgba(15,49,18,.25); border-top-color: var(--lv-ink); border-radius: 50%; animation: lv-product-spin .7s linear infinite; }
 @keyframes lv-product-spin { to { transform: rotate(360deg); } }
 .lv-product-wishlist { width: 52px; height: 52px; padding: 0; display: grid; place-items: center; flex: none; border: 1px solid var(--lv-line); border-radius: 50%; background: white; cursor: pointer; }
-.lv-product-wishlist img { width: 19px; height: 16px; object-fit: contain; }
+.lv-product-wishlist .sf-icon svg { width: 19px; height: 16px; }
 .lv-product-wishlist[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); box-shadow: inset 0 0 0 2px var(--lv-bg); }
 .lv-product-feedback { min-height: 18px; margin: -8px 5px 0; color: color-mix(in srgb,var(--lv-green) 74%,var(--lv-ink)); font-size: 13px; }
 .lv-product-feedback.is-error { color: #a13b3b; }
@@ -54,8 +54,8 @@
 .lv-product-accordions summary:hover { color: color-mix(in srgb,var(--lv-green) 62%,var(--lv-ink)); }
 .lv-product-accordions summary:focus-visible { outline: 2px solid var(--lv-green); outline-offset: 5px; border-radius: 8px; }
 .lv-product-accordions summary::-webkit-details-marker { display: none; }
-.lv-product-accordions summary img { width: 7px; transform: rotate(90deg); transition: transform var(--lv-motion-medium) var(--lv-ease-out); }
-.lv-product-accordions details[open] summary img { transform: rotate(-90deg); }
+.lv-product-accordions summary .sf-icon svg { width: 7px; height: 11px; transform: rotate(90deg); transition: transform var(--lv-motion-medium) var(--lv-ease-out); }
+.lv-product-accordions details[open] summary .sf-icon svg { transform: rotate(-90deg); }
 .lv-product-accordions details > div { padding-top: 15px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 14px; line-height: 1.45; }
 .lv-product-accordions details p { margin: 0; }
 .lv-rich-text > * + * { margin-top: 10px; }

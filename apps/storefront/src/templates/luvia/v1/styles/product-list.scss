@@ -5,7 +5,7 @@
 .lv-shop-hero__content { height: 100%; padding-top: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: white; }
 .lv-shop-hero nav { display: flex; align-items: center; gap: 7px; font-size: 14px; }
 .lv-shop-hero nav a { color: inherit; text-decoration: none; }
-.lv-shop-hero nav img { width: 5px; filter: brightness(0) invert(1); }
+.lv-shop-hero nav .sf-icon svg { width: 5px; height: 8px; }
 .lv-shop-hero h1 { margin: 0; font-family: var(--lv-font-hero); font-size: clamp(44px,6.75vw,102px); font-weight: 500; line-height: clamp(44px,6.62vw,100px); letter-spacing: -.04em; text-align: center; text-shadow: 0 4px 7px rgba(203,243,207,.42); }
 .lv-shop-products { position: relative; z-index: 2; width: calc(100% - 120px); max-width: 1392px; margin: -103px auto 0; }
 .lv-catalog-filter { position: relative; z-index: 20; overflow: visible; padding: 22px 18px 18px; border: 1px solid var(--lv-accent); border-radius: 20px; background: var(--lv-bg); box-shadow: 1px 4px 33px color-mix(in srgb, var(--lv-ink) 9%, transparent); }
@@ -100,9 +100,9 @@
 .lv-product-card__media-link > img { width: 100%; height: 100%; object-fit: cover; transition: transform 240ms ease; }
 .lv-product-card:hover .lv-product-card__media-link > img { transform: scale(1.035); }
 .lv-product-card__badge { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 12px; }
-.lv-product-card__badge img { width: 12px; height: 12px; }
+.lv-product-card__badge .sf-icon svg { width: 12px; height: 12px; }
 .lv-product-card__heart { position: absolute; z-index: 1; top: 12px; right: 12px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 50%; background: white; cursor: pointer; }
-.lv-product-card__heart img { width: 15px; height: 13px; object-fit: contain; }
+.lv-product-card__heart .sf-icon svg { width: 15px; height: 13px; }
 .lv-product-card__heart[aria-pressed="true"] { border-color: var(--lv-green); background: var(--lv-accent); }
 .lv-product-card__cta { position: absolute; z-index: 2; left: 50%; bottom: 0; margin: 0; opacity: 0; visibility: hidden; transform: translate(-50%, 20px); transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease; }
 .lv-product-card:hover .lv-product-card__cta, .lv-product-card:focus-within .lv-product-card__cta { opacity: 1; visibility: visible; transform: translate(-50%, -16px); }

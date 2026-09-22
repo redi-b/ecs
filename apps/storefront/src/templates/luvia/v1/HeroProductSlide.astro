@@ -1,11 +1,10 @@
 ---
+import Icon from "./Icon.astro";
 import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import ActionButton from "./ActionButton.astro";
-import bagIcon from "./icons/bag-icon.svg";
-import wishlistIcon from "./icons/wishlist-icon.svg";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 
@@ -22,13 +21,13 @@ const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thum
   <div class="lv-promo__media">
     {product.thumbnail ? <img src={product.thumbnail} alt={title} /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     {badge ? <small>{badge.label}</small> : null}
-    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><img src={wishlistIcon.src} alt="" /></button>
+    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><Icon name="wishlist" /></button>
   </div>
   <div class="lv-promo__copy">
     <strong title={title}>{title}</strong>
     <b>{formatMoney(variant?.priceAmount ?? product.priceAmount, variant?.currencyCode ?? product.currencyCode, locale)}</b>
     <div class="lv-promo__actions">
-      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} iconSrc={bagIcon.src} tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
+      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} icon="bag" tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
     </div>
   </div>
 </section>

@@ -29,6 +29,7 @@ const splitMedusa = args.has("--split-medusa") || process.env.MEDUSA_DEV_MODE ==
 info("Syncing the product search index");
 const reindex = spawnSync("pnpm", ["--filter", "@ecs/medusa", "search:reindex"], {
   env: process.env,
+  shell: true,
   stdio: "inherit",
 });
 if (reindex.status !== 0) {

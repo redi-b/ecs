@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import node from "@astrojs/node";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "astro/config";
@@ -60,13 +61,16 @@ export default defineConfig({
     css: {
       preprocessorOptions: {
         scss: {
-          loadPaths: [new URL("./src/templates/nexahub/v1/styles", import.meta.url).pathname],
+          loadPaths: [fileURLToPath(new URL("./src/templates/nexahub/v1/styles", import.meta.url))],
           additionalData: '@use "abstracts" as *;\n',
         },
       },
     },
     server: {
-      allowedHosts: [".lvh.me", "localhost"],
+      allowedHosts: true,
+      watch: {
+        ignored: ["**/.astro/**"],
+      },
     },
   },
 });

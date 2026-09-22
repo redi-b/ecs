@@ -1,7 +1,6 @@
 ---
+import Icon from "./Icon.astro";
 import Layout from "./Layout.astro";
-import searchIcon from "./icons/search-icon.svg";
-import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData } from "./lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
@@ -19,8 +18,8 @@ const inquiryMessages = {
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title={m.request_title({}, { locale })}>
   <main class="lv-request">
-    <section class="lv-request__intro"><p><img src={sparkleIcon.src} alt="" />{m.request_title({}, { locale })}</p><h1>{m.request_title({}, { locale })}</h1><span>{m.request_intro({}, { locale })}</span></section>
-    <section class="lv-request__panel"><header><span><img src={searchIcon.src} alt="" /></span><div><h2>{m.request_title({}, { locale })}</h2><p>{m.request_intro({}, { locale })}</p></div></header>
+    <section class="lv-request__intro"><p><Icon name="sparkle" />{m.request_title({}, { locale })}</p><h1>{m.request_title({}, { locale })}</h1><span>{m.request_intro({}, { locale })}</span></section>
+    <section class="lv-request__panel"><header><span><Icon name="search" /></span><div><h2>{m.request_title({}, { locale })}</h2><p>{m.request_intro({}, { locale })}</p></div></header>
       <form data-inquiry-form action="/actions/inquiries" method="post">
         <input type="hidden" name="type" value="product_request" />
         <label class="lv-inquiry-honeypot" aria-hidden="true"><span>Website</span><input name="website" tabindex="-1" autocomplete="off" /></label>

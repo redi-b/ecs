@@ -1,7 +1,7 @@
 ---
+import Icon from "./Icon.astro";
 import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types";
 import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
-import chevronIcon from "./icons/chevron-down-icon.svg?raw";
 import "./styles/components/_home-product-filter-bar.scss";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
@@ -17,7 +17,7 @@ const groups = [
 {groups.length > 0 && <nav class="home-product-filters" aria-label={m.catalog_browse_products({}, { locale })}>
   <span>{m.catalog_browse_by({}, { locale })}</span>
   {groups.map((group) => <details>
-    <summary>{group.label}<Fragment set:html={chevronIcon} /></summary>
+    <summary>{group.label}<Icon name="chevron-down" /></summary>
     <div>{group.items.slice(0, 8).map((item) => <a href={item.href}>{item.label}</a>)}<a class="home-product-filters__all" href="/products">{m.catalog_view_all_products({}, { locale })}</a></div>
   </details>)}
 </nav>}

@@ -2,7 +2,7 @@
 .lv-cart-page__breadcrumb, .lv-cart-page__heading, .lv-cart-page__layout, .lv-cart-page__error, .lv-cart-page__live, .lv-cart-page__empty { width: calc(100% - 120px); max-width: 1392px; margin-right: auto; margin-left: auto; }
 .lv-cart-page__breadcrumb { margin-bottom: 30px; display: flex; align-items: center; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 78%,var(--lv-bg)); font-size: 14px; }
 .lv-cart-page__breadcrumb a { color: inherit; text-decoration: none; }
-.lv-cart-page__breadcrumb img { width: 5px; }
+.lv-cart-page__breadcrumb .sf-icon svg { width: 5px; height: 8px; }
 .lv-cart-page__heading { margin-bottom: 34px; display: flex; align-items: flex-end; justify-content: space-between; }
 .lv-cart-page__heading > div { display: flex; flex-direction: column; align-items: flex-start; }
 .lv-cart-page__heading span { margin-bottom: 9px; padding: 5px 10px; border-radius: 999px; background: var(--lv-accent); color: var(--lv-ink); font-size: 12px; }
@@ -44,7 +44,7 @@
 .lv-cart-summary > small { margin-top: 12px; display: block; color: color-mix(in srgb,var(--lv-ink) 44%,var(--lv-bg)); text-align: center; }
 .lv-cart-page__empty { padding: 90px 24px; display: flex; flex-direction: column; align-items: center; border-radius: 22px; background: var(--lv-soft); text-align: center; }
 .lv-cart-page__empty > span { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: white; }
-.lv-cart-page__empty > span img { width: 28px; }
+.lv-cart-page__empty > span .sf-icon svg { width: 28px; height: 28px; }
 .lv-cart-page__empty h2 { margin: 22px 0 8px; font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif; }
 .lv-cart-page__empty p { margin: 0 0 22px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
 .lv-cart-page__empty a { min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--lv-green); color: var(--lv-on-primary); text-decoration: none; }

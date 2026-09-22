@@ -27,8 +27,10 @@ img { display: block; max-width: 100%; }
 .lv-button--small .lv-button__text, .lv-button--small .lv-button__icon { height: 38px; }
 .lv-button--small .lv-button__text { padding-inline: 20px; font-size: 16px; font-weight: 400; line-height: 23px; letter-spacing: -.02em; }
 .lv-button--small .lv-button__icon { width: 38px; }
-.lv-button__icon-shape { width: 18px; height: 18px; display: block; background: currentColor; -webkit-mask: var(--lv-button-icon) center / contain no-repeat; mask: var(--lv-button-icon) center / contain no-repeat; }
-.lv-button--small-icon .lv-button__icon-shape { width: 13px; height: 13px; }
+.sf-icon { display: contents; }
+.sf-icon svg { display: block; max-width: none; }
+.lv-button__icon svg { width: 18px; height: 18px; }
+.lv-button--small-icon .lv-button__icon svg { width: 13px; height: 13px; }
 .lv-button--secondary .lv-button__text, .lv-button--secondary .lv-button__icon { background: var(--lv-dark); color: var(--lv-on-dark); }
 .lv-button--light .lv-button__text, .lv-button--light .lv-button__icon { background: var(--lv-bg); color: var(--lv-ink); }
 .lv-button:hover:not(:disabled) .lv-button__text, .lv-button:hover:not(:disabled) .lv-button__icon { filter: brightness(.97); box-shadow: 0 5px 14px color-mix(in srgb,var(--lv-ink) 10%,transparent); }
@@ -51,7 +53,7 @@ img { display: block; max-width: 100%; }
 .lv-search input { min-width: 0; width: 100%; height: 100%; padding: 0 16px; border: 0; outline: 0; background: transparent; color: var(--lv-ink); font-size: 15px; }
 .lv-search button, .lv-action { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; flex: none; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
 .lv-search button { margin-right: 3px; border: 0; }
-.lv-search img, .lv-action img { width: 18px; height: 18px; object-fit: contain; }
+.lv-search .sf-icon svg, .lv-action .sf-icon svg { width: 18px; height: 18px; }
 .lv-search { position: relative; }
 .lv-search .product-search-suggestions { position: absolute; top: calc(100% + 10px); left: 0; z-index: 90; width: min(420px, calc(100vw - 32px)); padding: 6px; overflow: hidden; border: 1px solid var(--lv-line); border-radius: 20px; background: color-mix(in srgb,var(--lv-bg) 96%,transparent); box-shadow: 0 24px 60px color-mix(in srgb,var(--lv-ink) 18%,transparent); backdrop-filter: blur(18px); }
 .lv-search .product-search-suggestions[hidden] { display: none; }

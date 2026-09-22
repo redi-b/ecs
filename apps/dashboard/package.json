@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
-    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
+    "dev": "cross-env NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
+    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "start": "NEXT_TELEMETRY_DISABLED=1 next start -p 3001"
+    "start": "cross-env NEXT_TELEMETRY_DISABLED=1 next start -p 3001"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

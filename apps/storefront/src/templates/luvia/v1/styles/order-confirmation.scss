@@ -5,7 +5,7 @@
 .lv-confirmation__mark { position: relative; width: 82px; height: 82px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-green); color: var(--lv-on-primary); box-shadow: 0 0 0 10px color-mix(in srgb, var(--lv-green) 12%, transparent),0 18px 40px color-mix(in srgb, var(--lv-green) 24%, transparent); }
 .lv-confirmation__mark span { position: absolute; inset: 9px; border: 1px solid rgba(15,49,18,.18); border-radius: inherit; }
 .lv-confirmation__mark svg { width: 42px; height: 42px; fill: none; stroke: var(--lv-ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.lv-confirmation__mark img { position: absolute; right: -19px; top: -6px; width: 18px; }
+.lv-confirmation__mark .sf-icon svg { position: absolute; right: -19px; top: -6px; width: 18px; height: 18px; }
 .lv-confirmation__eyebrow { margin: 42px 0 14px; color: color-mix(in srgb,var(--lv-ink) 64%,var(--lv-bg)); font-size: 12px; font-weight: 600; letter-spacing: .18em; }
 .lv-confirmation h1 { margin: 0; color: var(--lv-dark); font: 400 clamp(58px,6vw,92px)/.88 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.05em; }
 .lv-confirmation__intro { max-width: 610px; margin: 28px 0 34px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 17px; line-height: 1.5; }

@@ -1,8 +1,9 @@
 ---
+import Icon from "./Icon.astro";
+
 interface Props {
   href?: string;
-  iconSrc?: string;
-  iconAlt?: string;
+  icon?: "bag" | "chat" | "diagonal-arrow";
   iconSize?: "default" | "small";
   tone?: "primary" | "secondary" | "dark" | "light";
   size?: "large" | "small";
@@ -18,8 +19,7 @@ interface Props {
 
 const {
   href,
-  iconSrc,
-  iconAlt = "",
+  icon,
   iconSize = "default",
   tone = "primary",
   size = "large",
@@ -60,9 +60,9 @@ const Element = href ? "a" : "button";
     contenteditable={editorPath && editorMode ? "plaintext-only" : undefined}
     data-editor-text-target={editorPath ? "" : undefined}
   ><slot /></span>
-  {iconSrc ? (
+  {icon ? (
     <span class="lv-button__icon" aria-hidden="true">
-      <span class="lv-button__icon-shape" style={`--lv-button-icon: url("${iconSrc}")`} title={iconAlt || undefined}></span>
+      <Icon name={icon} />
     </span>
   ) : null}
 </Element>

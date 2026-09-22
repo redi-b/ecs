@@ -1,10 +1,10 @@
 ---
+import Icon from "./Icon.astro";
 import { categoryProductsHref, collectionProductsHref } from "../../../lib/commerce/taxonomy-links";
 import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 import Button from "./Button.astro";
-import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
 
 interface Props {
   item: StoreCategory | StoreCollection;
@@ -28,7 +28,7 @@ const href =
       {image ? <img src={image} alt="" class="cover" loading="lazy" /> : <span class="catalogue-section__image-placeholder" aria-hidden="true"></span>}
     </div>
     <a href={href} class="catalogue-section__corner-btn" aria-label={m.catalog_explore_collection({ collection: title }, { locale })}>
-      <span aria-hidden="true" set:html={arrowUpRightIcon}></span>
+      <span aria-hidden="true"><Icon name="arrow-up-right" /></span>
     </a>
     <div class="catalogue-section__overlay-box">
       <div class="catalogue-section__overlay-info">

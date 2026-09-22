@@ -1,7 +1,7 @@
 ---
+import Icon from "./Icon.astro";
 import Layout from "./Layout.astro";
 import ActionButton from "./ActionButton.astro";
-import userIcon from "./icons/user-icon.svg";
 import { parseLuviaData } from "./lib";
 import type { CustomerAccountView } from "../../../lib/commerce/account";
 import { formatStorefrontDate } from "../../../lib/date";
@@ -41,7 +41,7 @@ function formatOrderDate(value: string | null) {
     {account ? (
       <>
         <section class="lv-account__hub">
-          <div><span class="lv-account__icon"><img src={userIcon.src} alt="" /></span><div><p>{m.account_title({}, { locale })}</p><h1>{m.account_welcome({ name: account.customer.firstName || m.account_friend({}, { locale }) }, { locale })}</h1></div></div>
+          <div><span class="lv-account__icon"><Icon name="user" /></span><div><p>{m.account_title({}, { locale })}</p><h1>{m.account_welcome({ name: account.customer.firstName || m.account_friend({}, { locale }) }, { locale })}</h1></div></div>
           <div class="lv-account__identity">
             <p>{account.customer.email}</p>
             <form action="/actions/account/logout" method="post"><button type="submit">{m.account_sign_out({}, { locale })}</button></form>
@@ -84,7 +84,7 @@ function formatOrderDate(value: string | null) {
     ) : (
       <>
         <section class="lv-account__welcome">
-          <span class="lv-account__icon"><img src={userIcon.src} alt="" /></span>
+          <span class="lv-account__icon"><Icon name="user" /></span>
           <p>{m.account_title({}, { locale })}</p>
           <h1>{m.account_guest_heading({}, { locale })}</h1>
           <div><p>{m.account_guest_intro({}, { locale })}</p><nav class="lv-account__guest-actions"><a href="/products">{m.account_continue_guest({}, { locale })}</a><a href="/contact">{m.account_order_help({}, { locale })}</a></nav></div>

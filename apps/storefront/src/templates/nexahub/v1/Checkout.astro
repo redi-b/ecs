@@ -1,4 +1,5 @@
 ---
+import Icon from "./Icon.astro";
 import type { StoreCustomer, StoreCustomerAddress } from "../../../lib/commerce/account";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import { resolveStoreFulfillmentOptions } from "../../../lib/commerce/fulfillment";
@@ -12,7 +13,6 @@ import { formatMoney } from "../../../lib/money";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 import Button from "./Button.astro";
-import arrowIcon from "./icons/arrow-up-right.svg?raw";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
 import "./styles/pages/commerce.scss";
@@ -105,7 +105,7 @@ const clientMessages = {
 <fieldset class="nexa-fieldset" data-delivery-option><legend>03 / {m.checkout_delivery_option({}, { locale })}</legend><div class="nexa-choice-grid">{deliveryOptions.map((option, index) => <label class="nexa-choice"><input type="radio" name="shippingOptionId" value={option.id} data-amount={option.amount ?? 0} checked={index === 0} required={defaultChoice === "delivery"} /><span><strong>{option.name?.trim() || m.checkout_standard_delivery({}, { locale })}</strong><small>{option.amount === 0 ? m.checkout_free({}, { locale }) : formatMoney(option.amount, option.currencyCode ?? cart?.currencyCode, locale)}</small></span></label>)}</div></fieldset><div data-pickup-option hidden>{template.footer.address && <p>{m.checkout_collect_from({ address: template.footer.address }, { locale })} {template.footer.phone && <a href={`tel:${template.footer.phone}`}>{template.footer.phone}</a>}</p>}{pickupOption && <input type="hidden" name="shippingOptionId" value={pickupOption.id} disabled={defaultChoice !== "pickup"} />}</div>
             {delivery?.notesEnabled !== false && <label class="nexa-textarea"><span>{m.checkout_order_notes({}, { locale })} ({m.checkout_optional({}, { locale })})</span><textarea name="notes" rows="3"></textarea></label>}
             <fieldset class="nexa-fieldset" data-payment-choice><legend>04 / {m.checkout_payment({}, { locale })}</legend><div class="nexa-choice-grid">{payment.cod && <label class="nexa-choice"><input type="radio" name="paymentMethod" value="cod" checked={defaultPayment === "cod"} /><span><strong>{m.checkout_pay_on_delivery({}, { locale })}</strong><small>{m.checkout_pay_on_delivery_help({}, { locale })}</small></span></label>}{payment.chapa && <label class="nexa-choice"><input type="radio" name="paymentMethod" value="chapa" checked={defaultPayment === "chapa"} /><span><strong>Chapa</strong><small>{m.checkout_chapa_short({}, { locale })}</small></span></label>}</div>{!defaultPayment && <p>{m.checkout_no_payment({}, { locale })}</p>}</fieldset>
-            <button class="nexa-primary-action" type="submit" data-place-order disabled={!canSubmit || !defaultPayment}><span data-place-order-label>{defaultPayment === "chapa" ? m.checkout_continue_payment({}, { locale }) : m.checkout_place_order({}, { locale })}</span><span class="nexa-primary-action__icon" aria-hidden="true" set:html={arrowIcon}></span></button>
+            <button class="nexa-primary-action" type="submit" data-place-order disabled={!canSubmit || !defaultPayment}><span data-place-order-label>{defaultPayment === "chapa" ? m.checkout_continue_payment({}, { locale }) : m.checkout_place_order({}, { locale })}</span><span class="nexa-primary-action__icon" aria-hidden="true"><Icon name="arrow-up-right" /></span></button>
           </form>
         </section>
 

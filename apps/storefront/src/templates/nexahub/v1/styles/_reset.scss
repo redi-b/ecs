@@ -19,6 +19,14 @@ ol {
   list-style: none;
 }
 
+.sf-icon {
+  display: contents;
+}
+
+.sf-icon svg {
+  display: block;
+}
+
 // Set core root defaults
 html:focus-within {
   scroll-behavior: smooth;

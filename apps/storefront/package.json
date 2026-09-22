@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development CODEX_THREAD_ID= ASTRO_TELEMETRY_DISABLED=1 astro dev --host 0.0.0.0 --port 4321",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
-    "typecheck": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "dev": "cross-env NODE_ENV=development ASTRO_TELEMETRY_DISABLED=1 astro dev --host 0.0.0.0 --port 4321",
+    "build": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "typecheck": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro check",
     "i18n:check": "tsx scripts/i18n-report.ts",
     "i18n:coverage": "tsx scripts/i18n-report.ts",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 0.0.0.0 --port 4321"
+    "preview": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro preview --host 0.0.0.0 --port 4321"
   },
   "dependencies": {
     "@ecs/content": "workspace:*",

@@ -1,12 +1,11 @@
 ---
+import Icon from "./Icon.astro";
 import { formatMoney } from "../../../lib/money";
 import { formatOrderReference } from "../../../lib/order-reference";
 import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
-import bagIcon from "./icons/bag-icon.svg";
-import sparkleIcon from "./icons/sparkle-icon.svg";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 
@@ -40,7 +39,7 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
   <main class="lv-confirmation" data-copy-label={m.action_copy({}, { locale })} data-copied-label={m.action_copied({}, { locale })} data-copy-success={m.confirmation_copy_success({}, { locale })} data-copy-fallback={m.confirmation_copy_fallback({ reference: "__REFERENCE__" }, { locale })}>
     <div class="lv-confirmation__glow" aria-hidden="true"></div>
     <section class="lv-confirmation__card" aria-labelledby="confirmation-title">
-      <div class="lv-confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><img src={sparkleIcon.src} alt="" /></div>
+      <div class="lv-confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><Icon name="sparkle" /></div>
       <p class="lv-confirmation__eyebrow">{m.order_received({}, { locale })}</p>
       <h1 id="confirmation-title">{m.confirmation_luvia_heading({}, { locale })}</h1>
       <p class="lv-confirmation__intro">{m.confirmation_luvia_intro({ shop: tenantName }, { locale })}</p>
@@ -50,7 +49,7 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
         <div><span>{m.confirmation_status({}, { locale })}</span><strong>{verified ? m.order_confirmed({}, { locale }) : m.confirmation_order_placed({}, { locale })}</strong></div>
       </div>
       <p class="lv-confirmation__notice" data-copy-status aria-live="polite">{m.confirmation_reference_help({}, { locale })} {hasCustomerSession ? m.confirmation_account_help({}, { locale }) : m.confirmation_guest_help({}, { locale })}</p>
-      <div class="lv-confirmation__actions"><ActionButton href="/products" iconSrc={bagIcon.src}>{m.action_continue_shopping({}, { locale })}</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">{m.action_view_order_history({}, { locale })}</ActionButton>}<ActionButton href="/" tone="secondary">{m.action_return_home({}, { locale })}</ActionButton></div>
+      <div class="lv-confirmation__actions"><ActionButton href="/products" icon="bag">{m.action_continue_shopping({}, { locale })}</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">{m.action_view_order_history({}, { locale })}</ActionButton>}<ActionButton href="/" tone="secondary">{m.action_return_home({}, { locale })}</ActionButton></div>
     </section>
     <aside class="lv-confirmation__steps" aria-label={m.confirmation_next({}, { locale })}><p>{m.confirmation_next({}, { locale })}</p><ol><li><span>01</span><div><strong>{m.confirmation_review({}, { locale })}</strong><small>{m.confirmation_review_help({}, { locale })}</small></div></li><li><span>02</span><div><strong>{m.confirmation_preparation({}, { locale })}</strong><small>{m.confirmation_preparation_help({}, { locale })}</small></div></li><li><span>03</span><div><strong>{m.confirmation_updates({}, { locale })}</strong><small>{m.confirmation_updates_help({}, { locale })}</small></div></li></ol></aside>
   </main>

@@ -1,5 +1,5 @@
 ---
-import arrowIcon from "./icons/arrow-up-right.svg?raw";
+import Icon from "./Icon.astro";
 import "./styles/components/_button.scss";
 
 interface Props {
@@ -23,5 +23,5 @@ const Element = href ? "a" : "button";
 ---
 <Element href={href} type={href ? undefined : type} disabled={href ? undefined : disabled} class:list={classes} data-editor-path={editorPath} data-editor-related-paths={editorRelatedPaths?.length ? editorRelatedPaths.join(" ") : undefined}>
   <span class="btn__text" data-editor-text-target contenteditable={editorMode && editorPath ? "plaintext-only" : undefined}>{text}</span>
-  {icon && <span class="btn__icon" aria-hidden="true" set:html={arrowIcon}></span>}
+  {icon && <span class="btn__icon" aria-hidden="true"><Icon name="arrow-up-right" /></span>}
 </Element>

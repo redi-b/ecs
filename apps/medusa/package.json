@@ -3,17 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=shared medusa develop",
-    "dev:server": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=server medusa develop",
-    "dev:worker": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=worker PORT=9001 medusa develop",
-    "build": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa build",
+    "dev": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=shared medusa develop",
+    "dev:server": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=server medusa develop",
+    "dev:worker": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true MEDUSA_WORKER_MODE=worker PORT=9001 medusa develop",
+    "build": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "db:generate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:generate",
-    "db:migrate": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:migrate",
-    "seed": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/seed.ts",
-    "search:reindex": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/reindex-product-search.ts",
-    "start": "XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa start"
+    "db:generate": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:generate",
+    "db:migrate": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa db:migrate",
+    "seed": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/seed.ts",
+    "search:reindex": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa exec ./src/scripts/reindex-product-search.ts",
+    "start": "cross-env XDG_CONFIG_HOME=../../.cache/xdg MEDUSA_TELEMETRY_DISABLED=true DISABLE_MEDUSA_ADMIN=true medusa start"
   },
   "dependencies": {
     "@ecs/contracts": "workspace:*",

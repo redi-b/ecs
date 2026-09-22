@@ -16,7 +16,6 @@
     "dev:down": "docker compose -f infra/compose/docker-compose.yml down",
     "dev:logs": "docker compose -f infra/compose/docker-compose.yml logs -f --tail=100",
     "dev:turbo": "turbo dev",
-
     "db:generate": "pnpm --filter @ecs/db db:generate",
     "db:migrate": "pnpm --filter @ecs/db db:migrate",
     "db:reset": "node scripts/db-reset.mjs",
@@ -28,14 +27,12 @@
     "seed:operations": "pnpm --dir apps/platform-api seed:operations",
     "seed:unseed": "node scripts/seed-demo.mjs --clean",
     "seed:bank-logos": "pnpm --filter @ecs/platform-api seed:bank-logos",
-
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "lint": "biome ci .",
     "format": "biome format --write .",
     "check:fix": "biome check --write .",
-
     "smoke:commerce": "node scripts/smoke-commerce.mjs",
     "smoke:storefront": "node scripts/smoke-storefront-cod.mjs",
     "verify:media-cors": "node scripts/verify-media-cors.mjs",
@@ -45,6 +42,7 @@
     "@biomejs/biome": "2.2.4",
     "@types/node": "^24.0.0",
     "concurrently": "^9.2.0",
+    "cross-env": "^10.1.0",
     "tsx": "^4.20.0",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0"

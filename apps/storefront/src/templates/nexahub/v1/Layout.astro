@@ -1,4 +1,5 @@
 ---
+import Icon from "./Icon.astro";
 import { contrastingInk, type NexahubV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
@@ -14,14 +15,6 @@ import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
 import logo from "./assets/nexahub-logo.svg";
 import Button from "./Button.astro";
-import chevronIcon from "./icons/chevron-down-icon.svg?raw";
-import facebookIcon from "./icons/facebook-icon.svg?raw";
-import instagramIcon from "./icons/instagram-icon.svg?raw";
-import linkedinIcon from "./icons/linkedin-icon.svg?raw";
-import profileIcon from "./icons/profile-icon.svg?raw";
-import searchIcon from "./icons/search-icon.svg?raw";
-import cartIcon from "./icons/shopping-cart-icon.svg?raw";
-import tiktokIcon from "./icons/tiktok-icon.svg?raw";
 import { parseNexahubThemeTokens } from "./lib";
 import SaveIcon from "./SaveIcon.astro";
 import "./styles/main.scss";
@@ -100,7 +93,7 @@ const productLinks = [
       href: collectionProductsHref(item),
     })),
 ];
-const socialIcons = [facebookIcon, instagramIcon, tiktokIcon, linkedinIcon];
+const socialIconNames = ["facebook", "instagram", "tiktok", "linkedin"] as const;
 const nexahubClientMessages = {
   addFailed: m.product_add_failed({}, { locale }),
   added: m.product_added_to_cart({}, { locale }),
@@ -147,17 +140,17 @@ const nexahubClientMessages = {
           <a href="/" class="site-header__brand" aria-label={m.a11y_shop_home({ shop: tenantName }, { locale })} data-editor-image-scope><img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="nexa-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></a>
           <nav class="site-header__nav" id="nexa-navigation" aria-label={m.a11y_primary_navigation({}, { locale })} data-editor-links-path="header.navigation">
             {primaryNav.slice(0, 1).map((item) => <a class="site-header__link type-body-s-400" href={item.href} aria-current={active(item.href) ? "page" : undefined} data-editor-link-target={header.navigation.indexOf(item)}><span data-editor-link-label>{item.label}</span></a>)}
-            {productNav && <div class="site-header__nav-item site-header__nav-item--dropdown"><button type="button" class="site-header__link site-header__link--dropdown type-body-s-400" aria-expanded="false" aria-controls="nexa-products-menu" data-header-dropdown-btn data-editor-link-target={header.navigation.indexOf(productNav)}><span data-editor-link-label>{productNav.label}</span><Fragment set:html={chevronIcon} /></button><div class="site-header__dropdown" id="nexa-products-menu" data-header-dropdown-menu>{productLinks.map((item) => <a href={item.href} class="site-header__dropdown-item type-body-s-400">{item.label}</a>)}</div></div>}
+            {productNav && <div class="site-header__nav-item site-header__nav-item--dropdown"><button type="button" class="site-header__link site-header__link--dropdown type-body-s-400" aria-expanded="false" aria-controls="nexa-products-menu" data-header-dropdown-btn data-editor-link-target={header.navigation.indexOf(productNav)}><span data-editor-link-label>{productNav.label}</span><Icon name="chevron-down" /></button><div class="site-header__dropdown" id="nexa-products-menu" data-header-dropdown-menu>{productLinks.map((item) => <a href={item.href} class="site-header__dropdown-item type-body-s-400">{item.label}</a>)}</div></div>}
             {primaryNav.slice(1).map((item) => <a class="site-header__link type-body-s-400" href={item.href} aria-current={active(item.href) ? "page" : undefined} data-editor-link-target={header.navigation.indexOf(item)}><span data-editor-link-label>{item.label}</span></a>)}
           </nav>
         </div>
         <button class="site-header__toggle" type="button" aria-expanded="false" aria-controls="nexa-navigation" aria-label={m.a11y_open_navigation({}, { locale })}><span></span><span></span></button>
         <div class="site-header__right">
           <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
-          <form class="site-header__search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}><Fragment set:html={searchIcon} /><label class="nexa-sr-only" for="nexa-search">{m.search_products_label({}, { locale })}</label><input id="nexa-search" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} class="site-header__search-input type-body-s-400" /></form>
+          <form class="site-header__search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}><Icon name="search" /><label class="nexa-sr-only" for="nexa-search">{m.search_products_label({}, { locale })}</label><input id="nexa-search" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} class="site-header__search-input type-body-s-400" /></form>
           <a class="site-header__icon" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><SaveIcon /></a>
-          <button class="site-header__icon" type="button" aria-label={`${m.nav_cart({}, { locale })}: ${m.cart_item_count({ count: cartCount }, { locale })}`} data-cart-open><Fragment set:html={cartIcon} /><span data-cart-count aria-live="polite" hidden={deferCartCount || cartCount === 0}>{cartCount}</span></button>
-          <a class="site-header__icon" href="/account" aria-label={m.nav_account({}, { locale })}><Fragment set:html={profileIcon} /></a>
+          <button class="site-header__icon" type="button" aria-label={`${m.nav_cart({}, { locale })}: ${m.cart_item_count({ count: cartCount }, { locale })}`} data-cart-open><Icon name="shopping-cart" /><span data-cart-count aria-live="polite" hidden={deferCartCount || cartCount === 0}>{cartCount}</span></button>
+          <a class="site-header__icon" href="/account" aria-label={m.nav_account({}, { locale })}><Icon name="profile" /></a>
           <Button text={m.action_shop_now({}, { locale })} href="/products" size="small" variant="secondary" />
         </div>
       </div>
@@ -174,7 +167,7 @@ const nexahubClientMessages = {
         {footer.email && <p><a href={`mailto:${footer.email}`} data-editor-path={!footer.managedContact ? "footer.email" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.email}</a></p>}
         {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <p><a href={`tel:${phone}`} data-editor-path={!footer.managedContact ? "footer.phone" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{phone}</a></p>)}
       </address><div class="site-footer__social" data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined}>{footer.socialLinks.map((item, index) => <a href={item.href} aria-label={item.label} target="_blank" rel="noopener noreferrer" data-editor-link-target={!footer.managedContact ? index : undefined}>
-        {footer.managedContact ? <span class="type-body-s-400">{item.label}</span> : <Fragment set:html={socialIcons[index % socialIcons.length]} />}
+        {footer.managedContact ? <span class="type-body-s-400">{item.label}</span> : <Icon name={socialIconNames[index % socialIconNames.length]} />}
         {!footer.managedContact && <span class="nexa-sr-only" data-editor-link-label data-editor-path={`footer.socialLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</span>}
       </a>)}</div></div>
     </div></footer>

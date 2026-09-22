@@ -1,4 +1,5 @@
 ---
+import Icon from "./Icon.astro";
 import { contrastingInk, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
@@ -11,11 +12,6 @@ import { resolveTemplateVoiceMessage } from "../../../lib/template-voice";
 import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
 import logo from "./assets/luvia-logo.svg";
-import cartIcon from "./icons/cart-icon.svg";
-import chatIcon from "./icons/chat-icon.svg";
-import searchIcon from "./icons/search-icon.svg";
-import userIcon from "./icons/user-icon.svg";
-import wishlistIcon from "./icons/wishlist-icon.svg";
 import { parseLuviaThemeTokens } from "./lib";
 
 interface Props {
@@ -143,11 +139,11 @@ const isActiveLink = (href: string) =>
         <form class="lv-search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
           <label class="sr-only" for="lv-search-input">{m.search_products_label({}, { locale })}</label>
           <input id="lv-search-input" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} />
-          <button type="submit" aria-label={m.action_search({}, { locale })} aria-controls="lv-search-input" aria-expanded="false"><img src={searchIcon.src} alt="" /></button>
+          <button type="submit" aria-label={m.action_search({}, { locale })} aria-controls="lv-search-input" aria-expanded="false"><Icon name="search" /></button>
         </form>
-        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><img src={wishlistIcon.src} alt="" /></a>
-        <a class="lv-action" href="/cart" aria-label={m.nav_cart({}, { locale })} data-cart-trigger><img src={cartIcon.src} alt="" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
-        <a class="lv-action lv-action--account" href="/account" aria-label={m.nav_account({}, { locale })}><img src={userIcon.src} alt="" /></a>
+        <a class="lv-action lv-action--wishlist" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><Icon name="wishlist" /></a>
+        <a class="lv-action" href="/cart" aria-label={m.nav_cart({}, { locale })} data-cart-trigger><Icon name="cart" /><span class="lv-count" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
+        <a class="lv-action lv-action--account" href="/account" aria-label={m.nav_account({}, { locale })}><Icon name="user" /></a>
       </div>
     </header>
     <button class="lv-header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>
@@ -160,7 +156,7 @@ const isActiveLink = (href: string) =>
       <div><strong>{m.contact_information({}, { locale })}</strong>{[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <a href={`tel:${phone}`} data-editor-path={!footer.managedContact ? "footer.phone" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{phone}</a>)}{(footer.email || (editorMode && !footer.managedContact)) && <a href={`mailto:${footer.email ?? ""}`} data-editor-path={!footer.managedContact ? "footer.email" : undefined} data-editor-empty-label={!footer.managedContact ? "Add email" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.email}</a>}{(footer.address || (editorMode && !footer.managedContact)) && <p data-editor-path={!footer.managedContact ? "footer.address" : undefined} data-editor-empty-label={!footer.managedContact ? "Add address" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.address}</p>}</div>
       <small>© {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}</small>
     </footer>
-    <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} iconSrc={chatIcon.src} tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
+    <aside class="lv-inquiry" data-editor-section="footer.inquiry"><p data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} icon="chat" tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
     <button class="lv-cart-backdrop" type="button" data-cart-backdrop aria-label={m.cart_close({}, { locale })} hidden></button>
     <aside class="lv-cart-drawer" data-cart-drawer data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="lv-cart-title" hidden>
       <header><div><h2 id="lv-cart-title">{m.cart_title({}, { locale })}</h2><span data-cart-drawer-count>{m.cart_item_count({ count: 0 }, { locale })}</span></div><button type="button" data-cart-close aria-label={m.cart_close({}, { locale })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>

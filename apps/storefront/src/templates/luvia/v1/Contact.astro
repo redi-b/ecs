@@ -1,11 +1,8 @@
 ---
+import Icon from "./Icon.astro";
 import Layout from "./Layout.astro";
 import TemplateImage from "./TemplateImage.astro";
 import contactMap from "./assets/contact-map-image.webp";
-import locationIcon from "./icons/location-icon.svg";
-import mailIcon from "./icons/mail-icon.svg";
-import phoneIcon from "./icons/phone-icon.svg";
-import socialsIcon from "./icons/socials-web-icon.svg";
 import { parseLuviaData } from "./lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
@@ -33,10 +30,10 @@ const inquiryMessages = {
     <section class="lv-contact__layout">
       <div class="lv-contact__aside">
         <article class="lv-contact-info"><h2>{m.contact_information({}, { locale })}</h2><div>
-          {address && <p><span><img src={locationIcon.src} alt="" /></span><span><small>{m.contact_address({}, { locale })}</small><strong>{address}</strong></span></p>}
-          {email && <p><span><img src={mailIcon.src} alt="" /></span><span><small>{m.contact_email({}, { locale })}</small><a href={`mailto:${email}`}>{email}</a></span></p>}
-          {[phone, ...(template.footer.additionalPhones ?? [])].filter(Boolean).map((number) => <p><span><img src={phoneIcon.src} alt="" /></span><span><small>{m.contact_phone({}, { locale })}</small><a href={`tel:${number}`}>{number}</a></span></p>)}
-          {socials.length > 0 && <p><span><img src={socialsIcon.src} alt="" /></span><span><small>{m.contact_socials({}, { locale })}</small><span class="lv-contact-socials">{socials.map((social, index) => <><a href={social.href}>{social.label}</a>{index < socials.length - 1 && " · "}</>)}</span></span></p>}
+          {address && <p><span><Icon name="location" /></span><span><small>{m.contact_address({}, { locale })}</small><strong>{address}</strong></span></p>}
+          {email && <p><span><Icon name="mail" /></span><span><small>{m.contact_email({}, { locale })}</small><a href={`mailto:${email}`}>{email}</a></span></p>}
+          {[phone, ...(template.footer.additionalPhones ?? [])].filter(Boolean).map((number) => <p><span><Icon name="phone" /></span><span><small>{m.contact_phone({}, { locale })}</small><a href={`tel:${number}`}>{number}</a></span></p>)}
+          {socials.length > 0 && <p><span><Icon name="socials-web" /></span><span><small>{m.contact_socials({}, { locale })}</small><span class="lv-contact-socials">{socials.map((social, index) => <><a href={social.href}>{social.label}</a>{index < socials.length - 1 && " · "}</>)}</span></span></p>}
           {!address && !email && !phone && !socials.length && <p class="lv-contact-info__empty">{m.contact_empty({}, { locale })}</p>}
         </div></article>
         {!template.footer.managedContact && <div class="lv-contact-map"><TemplateImage fallback={contactMap} alt={m.contact_map_alt({}, { locale })} widths={[480, 768, 1024, 1440]} sizes="(max-width: 900px) calc(100vw - 40px), 36vw" /></div>}

@@ -1,4 +1,5 @@
 ---
+import Icon from "./Icon.astro";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import type {
   StoreCategory,
@@ -18,8 +19,6 @@ import heroFallback from "./assets/tech-workspace-hero.webp";
 import Button from "./Button.astro";
 import CollectionCard from "./CollectionCard.astro";
 import HomeProductFilterBar from "./HomeProductFilterBar.astro";
-import arrowRightIcon from "./icons/arrow-right-icon.svg?raw";
-import arrowUpRightIcon from "./icons/arrow-up-right.svg?raw";
 import Layout from "./Layout.astro";
 import { nexahubAsset, parseNexahubData } from "./lib";
 import ProductCard from "./ProductCard.astro";
@@ -154,8 +153,7 @@ const hasCatalogError = "message" in productsResult;
 <div class="hero-section__featured-footer">
 <a href={href} class="hero-section__featured-link type-body-s-500">
 <span>{m.action_view_product({}, { locale })}</span>
-<span class="hero-section__featured-link-icon" aria-hidden="true" set:html={arrowUpRightIcon}>
-</span>
+<span class="hero-section__featured-link-icon" aria-hidden="true"><Icon name="arrow-up-right" /></span>
 </a>
 </div>
 </article>;
@@ -187,12 +185,10 @@ const hasCatalogError = "message" in productsResult;
 <Button text={m.catalog_all_products({}, { locale })} href="/products" />
 <div class="catalogue-section__arrows">
 <button type="button" class="catalogue-section__arrow" aria-label={m.home_previous_category({}, { locale })} data-cat-prev disabled>
-<span class="catalogue-section__arrow-icon catalogue-section__arrow-icon--previous" set:html={arrowRightIcon}>
-</span>
+<span class="catalogue-section__arrow-icon catalogue-section__arrow-icon--previous"><Icon name="arrow-right" /></span>
 </button>
 <button type="button" class="catalogue-section__arrow" aria-label={m.home_next_category({}, { locale })} data-cat-next disabled={selectedTaxonomy.length <= 3}>
-<span class="catalogue-section__arrow-icon" set:html={arrowRightIcon}>
-</span>
+<span class="catalogue-section__arrow-icon"><Icon name="arrow-right" /></span>
 </button>
 </div>
 </footer>

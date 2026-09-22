@@ -1,0 +1,43 @@
+---
+import bag from "./icons/bag-icon.svg?raw";
+import cart from "./icons/cart-icon.svg?raw";
+import chat from "./icons/chat-icon.svg?raw";
+import checkBadge from "./icons/check-badge-icon.svg?raw";
+import chevron from "./icons/chevron-icon.svg?raw";
+import diagonalArrow from "./icons/diagonal-arrow-icon.svg?raw";
+import location from "./icons/location-icon.svg?raw";
+import mail from "./icons/mail-icon.svg?raw";
+import phone from "./icons/phone-icon.svg?raw";
+import search from "./icons/search-icon.svg?raw";
+import socialsWeb from "./icons/socials-web-icon.svg?raw";
+import sparkle from "./icons/sparkle-icon.svg?raw";
+import star from "./icons/star-icon.svg?raw";
+import user from "./icons/user-icon.svg?raw";
+import wishlist from "./icons/wishlist-icon.svg?raw";
+
+const icons = {
+  "bag": bag,
+  "cart": cart,
+  "chat": chat,
+  "check-badge": checkBadge,
+  "chevron": chevron,
+  "diagonal-arrow": diagonalArrow,
+  "location": location,
+  "mail": mail,
+  "phone": phone,
+  "search": search,
+  "socials-web": socialsWeb,
+  "sparkle": sparkle,
+  "star": star,
+  "user": user,
+  "wishlist": wishlist,
+} as const;
+
+interface Props extends astroHTML.JSX.HTMLAttributes {
+  name: keyof typeof icons;
+}
+
+const { name, class: className, ...rest } = Astro.props;
+---
+
+<span class:list={["sf-icon", className]} aria-hidden="true" set:html={icons[name]} {...rest} />

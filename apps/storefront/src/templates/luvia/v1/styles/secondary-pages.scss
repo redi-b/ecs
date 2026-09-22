@@ -1,12 +1,12 @@
 .lv-request { width: calc(100% - 120px); max-width: 1392px; min-height: 850px; margin: auto; padding: 150px 0 100px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; align-items: center; }
 .lv-request__intro > p, .lv-account section > p, .lv-wishlist header > p { display: flex; align-items: center; gap: 7px; color: color-mix(in srgb,var(--lv-ink) 64%,var(--lv-bg)); font-size: 11px; font-weight: 600; letter-spacing: .17em; }
-.lv-request__intro > p img { width: 14px; }
+.lv-request__intro > p .sf-icon svg { width: 14px; height: 14px; }
 .lv-request__intro h1, .lv-account h1, .lv-wishlist h1 { margin: 26px 0; font: 400 clamp(64px,7vw,104px)/.84 "GC Molecule Demo",Arial,sans-serif; letter-spacing: -.055em; }
 .lv-request__intro > span { max-width: 520px; display: block; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); font-size: 17px; line-height: 1.5; }
 .lv-request__panel { padding: 28px; border: 1px solid var(--lv-line); border-radius: 24px; background: white; box-shadow: 0 30px 80px rgba(70,119,75,.1); }
 .lv-request__panel > header { margin-bottom: 24px; display: flex; gap: 14px; align-items: center; }
 .lv-request__panel > header > span { width: 50px; height: 50px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
-.lv-request__panel > header img { width: 20px; }
+.lv-request__panel > header .sf-icon svg { width: 20px; height: 20px; }
 .lv-request__panel h2 { margin: 0 0 4px; font: 400 28px/1 "GC Molecule Demo",Arial,sans-serif; }
 .lv-request__panel header p { margin: 0; color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); font-size: 13px; }
 .lv-request form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -20,7 +20,7 @@
 .lv-wishlist { min-height: 75vh; padding: 150px 60px 100px; }
 .lv-wishlist > header { max-width: 1392px; margin: 0 auto 48px; text-align: center; }
 .lv-wishlist > header > span { width: 62px; height: 62px; margin: auto; display: grid; place-items: center; border: 1px solid var(--lv-accent); border-radius: 50%; background: var(--lv-bg); }
-.lv-wishlist > header img { width: 24px; }
+.lv-wishlist > header .sf-icon svg { width: 24px; height: 24px; }
 .lv-wishlist h1 { margin: 16px 0 8px; }
 .lv-wishlist header p { justify-content: center; }
 .lv-wishlist header small { color: color-mix(in srgb,var(--lv-ink) 54%,var(--lv-bg)); }
@@ -49,7 +49,7 @@
 .lv-account > section, .lv-account > aside { padding: 52px; border-radius: 26px; }
 .lv-account > section { border: 1px solid var(--lv-line); background: white; }
 .lv-account__icon { width: 68px; height: 68px; display: grid; place-items: center; border-radius: 50%; background: var(--lv-accent); }
-.lv-account__icon img { width: 25px; }
+.lv-account__icon .sf-icon svg { width: 25px; height: 25px; }
 .lv-account section > div { max-width: 620px; color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); line-height: 1.5; }
 .lv-account nav { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 9px; }
 .lv-account nav a { min-height: 48px; padding: 0 19px; display: inline-flex; align-items: center; border: 1px solid var(--lv-line); border-radius: 999px; color: var(--lv-ink); text-decoration: none; }

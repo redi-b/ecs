@@ -10,7 +10,7 @@
 .lv-contact-info > div { display: flex; flex-direction: column; gap: 12px; }
 .lv-contact-info p { margin: 0; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; }
 .lv-contact-info p > span:first-child { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid color-mix(in srgb,var(--lv-green) 34%,var(--lv-bg)); border-radius: 12px; background: color-mix(in srgb,var(--lv-accent) 62%,var(--lv-bg)); color: var(--lv-ink); }
-.lv-contact-info p > span:first-child img { width: 17px; height: 17px; }
+.lv-contact-info p > span:first-child .sf-icon svg { width: 17px; height: 17px; }
 .lv-contact-info p > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .lv-contact-info small { color: color-mix(in srgb,var(--lv-ink) 62%,var(--lv-bg)); }
 .lv-contact-info strong, .lv-contact-info a, .lv-contact-info .lv-contact-socials { color: var(--lv-ink); font-size: 14px; font-weight: 400; text-decoration: none; }

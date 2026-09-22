@@ -1,11 +1,11 @@
 ---
+import Icon from "./Icon.astro";
 import Layout from "./Layout.astro";
 import TemplateImage from "./TemplateImage.astro";
 import aboutImage from "./assets/about-feature-image.webp";
 import brandImage from "./assets/brand-statement-image.webp";
 import categoriesImage from "./assets/categories-hero-image.webp";
 import heroImage from "./assets/hero-bg-alt-image.webp";
-import sparkleIcon from "./icons/sparkle-icon.svg";
 import { parseLuviaData, storefrontAsset } from "./lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import * as m from "../../../paraglide/messages.js";
@@ -18,7 +18,7 @@ const expertiseImage = storefrontAsset(template.home.expertise.imageAssetId, abo
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title={m.nav_about({}, { locale })}>
   <main class="lv-about-page">
     <section class="lv-about-hero"><TemplateImage class="lv-about-hero__media" fallback={heroImage} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="(max-width: 900px) calc(100vw - 40px), calc(100vw - 120px)" loading="eager" fetchpriority="high" /><p>{m.about_shop({ shop: tenantName.toUpperCase() }, { locale })}</p><h1>{m.about_luvia_title({}, { locale })}</h1><div><span>{template.home.story.body}</span><a href="/products">{m.home_explore_full_collection({}, { locale })}</a></div></section>
-    <section class="lv-about-principle"><div><TemplateImage fallback={brandImage} alt={m.about_luvia_ingredients_alt({}, { locale })} widths={[480, 768, 1024, 1440]} sizes="(max-width: 760px) calc(100vw - 40px), 50vw" /><span><img src={sparkleIcon.src} alt="" />{m.about_our_approach({}, { locale })}</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>
+    <section class="lv-about-principle"><div><TemplateImage fallback={brandImage} alt={m.about_luvia_ingredients_alt({}, { locale })} widths={[480, 768, 1024, 1440]} sizes="(max-width: 760px) calc(100vw - 40px), 50vw" /><span><Icon name="sparkle" />{m.about_our_approach({}, { locale })}</span></div><div><h2>{template.home.expertise.title}</h2><p>{template.home.expertise.body}</p></div></section>
     <blockquote>{template.home.expertise.quote}</blockquote>
     <section class="lv-about-feature"><TemplateImage src={expertiseImage} fallback={aboutImage} alt={m.about_luvia_studio_alt({}, { locale })} widths={[480, 768, 1024]} sizes="(max-width: 760px) calc(100vw - 40px), 58vw" /><div><p>{m.about_what_guides_us({}, { locale })}</p><h2>{template.home.brandStatement.firstLine}<br />{template.home.brandStatement.middleLine}<br />{template.home.brandStatement.lastLine}</h2><span>{m.about_luvia_guidance({}, { locale })}</span><a href="/contact">{m.about_talk_to_team({}, { locale })}</a></div></section>
     <section class="lv-about-closing"><TemplateImage fallback={categoriesImage} alt={m.about_luvia_ritual_alt({}, { locale })} widths={[480, 768, 1024]} sizes="(max-width: 760px) calc(100vw - 40px), calc(100vw - 120px)" /><div><p>{m.about_luvia_closing({}, { locale })}</p><a href="/products">{m.about_find_match({}, { locale })}</a></div></section>

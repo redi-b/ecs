@@ -74,6 +74,7 @@ import {
   DEFAULT_REPORTING_TIMEZONE,
 } from "../modules/analytics/commerce-rollup.js";
 import { createBillingService, DEFAULT_PLAN_IDS } from "../modules/billing/service.js";
+import { createStorefrontTemplateService } from "../modules/storefront/template-service.js";
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import {
   DEMO_OPERATIONS,
@@ -101,7 +102,7 @@ const env = loadServiceEnv({
 
 const platformDb = createPlatformDb({
   connectionString:
-    process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5432/platform_db",
+    process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5433/platform_db",
   max: Number.parseInt(process.env.PLATFORM_DATABASE_POOL_MAX ?? "5", 10),
   idleTimeoutMillis: Number.parseInt(
     process.env.PLATFORM_DATABASE_POOL_IDLE_TIMEOUT_MS ?? "30000",
@@ -550,6 +551,13 @@ async function seedShop(
   await seedMetrics(provisioned.tenant.id, shop.products.length, shop.customers.length);
   await seedAnalyticsEvents(provisioned.tenant.id, shop);
   const platformExtras = await seedPlatformExtras(shop, provisioned.tenant.id, userId, commerce);
+
+  // Publish demo storefront draft so the live storefront is immediately reachable
+  const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
+  await storefrontTemplateService.publishStorefrontDraft({
+    tenantId: provisioned.tenant.id,
+    userId,
+  });
 
   return {
     handle: shop.tenant.handle,
@@ -2564,7 +2572,7 @@ function resolveMedusaDatabaseUrl() {
     // ignore
   }
 
-  candidates.push("postgres://ecs:ecs@localhost:5432/medusa_db");
+  candidates.push("postgres://ecs:ecs@localhost:5433/medusa_db");
 
   for (const raw of candidates) {
     if (!raw?.trim()) continue;
@@ -2577,7 +2585,7 @@ function resolveMedusaDatabaseUrl() {
     }
   }
 
-  return "postgres://ecs:ecs@localhost:5432/medusa_db";
+  return "postgres://ecs:ecs@localhost:5433/medusa_db";
 }
 
 /** Same Postgres server, sibling database name — common docker-compose layout. */

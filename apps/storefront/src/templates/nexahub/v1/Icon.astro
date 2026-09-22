@@ -1,0 +1,43 @@
+---
+import addToCart from "./icons/add-to-cart-icon.svg?raw";
+import arrowRight from "./icons/arrow-right-icon.svg?raw";
+import arrowUpRight from "./icons/arrow-up-right.svg?raw";
+import chevronDown from "./icons/chevron-down-icon.svg?raw";
+import facebook from "./icons/facebook-icon.svg?raw";
+import instagram from "./icons/instagram-icon.svg?raw";
+import linkedin from "./icons/linkedin-icon.svg?raw";
+import minus from "./icons/minus-icon.svg?raw";
+import plus from "./icons/plus-icon.svg?raw";
+import profile from "./icons/profile-icon.svg?raw";
+import saveFilled from "./icons/save-filled-icon.svg?raw";
+import save from "./icons/save-icon.svg?raw";
+import search from "./icons/search-icon.svg?raw";
+import shoppingCart from "./icons/shopping-cart-icon.svg?raw";
+import tiktok from "./icons/tiktok-icon.svg?raw";
+
+const icons = {
+  "add-to-cart": addToCart,
+  "arrow-right": arrowRight,
+  "arrow-up-right": arrowUpRight,
+  "chevron-down": chevronDown,
+  "facebook": facebook,
+  "instagram": instagram,
+  "linkedin": linkedin,
+  "minus": minus,
+  "plus": plus,
+  "profile": profile,
+  "save-filled": saveFilled,
+  "save": save,
+  "search": search,
+  "shopping-cart": shoppingCart,
+  "tiktok": tiktok,
+} as const;
+
+interface Props extends astroHTML.JSX.HTMLAttributes {
+  name: keyof typeof icons;
+}
+
+const { name, class: className, ...rest } = Astro.props;
+---
+
+<span class:list={["sf-icon", className]} aria-hidden="true" set:html={icons[name]} {...rest} />

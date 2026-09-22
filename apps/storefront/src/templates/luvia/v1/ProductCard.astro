@@ -1,4 +1,5 @@
 ---
+import Icon from "./Icon.astro";
 import type { StoreProduct } from "../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { formatMoney } from "../../../lib/money";
@@ -6,9 +7,6 @@ import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import * as m from "../../../paraglide/messages.js";
 import ActionButton from "./ActionButton.astro";
-import bagIcon from "./icons/bag-icon.svg";
-import starIcon from "./icons/star-icon.svg";
-import wishlistIcon from "./icons/wishlist-icon.svg";
 
 interface Props { product: StoreProduct; eager?: boolean; }
 const { product, eager = false } = Astro.props;
@@ -26,9 +24,9 @@ const originalPrice = purchasableVariant?.originalPriceAmount ?? product.origina
     <a class="lv-product-card__media-link" href={href} aria-label={`${m.action_view_product({}, { locale })}: ${title}`}>
       {product.thumbnail ? <img src={product.thumbnail} alt={title} width="900" height="900" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
-    {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <img src={starIcon.src} alt="" /> : null}{badge.label}</span> : null}
-    <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><img src={wishlistIcon.src} alt="" /></button>
-    {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton iconSrc={bagIcon.src} tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : null}
+    {badge ? <span class:list={["lv-product-card__badge", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <Icon name="star" /> : null}{badge.label}</span> : null}
+    <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button>
+    {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : null}
   </div>
   <p class="lv-product-card__brand">{brand}</p>
   <a class="lv-product-card__title" href={href}>{title}</a>

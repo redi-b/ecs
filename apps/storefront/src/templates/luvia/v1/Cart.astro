@@ -1,11 +1,10 @@
 ---
+import Icon from "./Icon.astro";
 import { resolveStoreCartSummary } from "../../../lib/commerce/cart-summary";
 import type { StoreCart } from "../../../lib/commerce/types";
 import { formatMoney } from "../../../lib/money";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import DiscountCode from "./components/DiscountCode.astro";
-import cartIcon from "./icons/cart-icon.svg";
-import chevronIcon from "./icons/chevron-icon.svg";
 import Layout from "./Layout.astro";
 import { parseLuviaData } from "./lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
@@ -61,12 +60,12 @@ const clientMessages = {
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={m.cart_title({}, { locale })}>
   <main class="lv-cart-page" data-cart-page>
-    <nav class="lv-cart-page__breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/">{m.nav_home({}, { locale })}</a><img src={chevronIcon.src} alt="" /><a href="/products">{m.nav_shop({}, { locale })}</a><img src={chevronIcon.src} alt="" /><span>{m.nav_cart({}, { locale })}</span></nav>
+    <nav class="lv-cart-page__breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span>{m.nav_cart({}, { locale })}</span></nav>
     <header class="lv-cart-page__heading"><div><span>{m.cart_selection_eyebrow({}, { locale })}</span><h1>{m.cart_title({}, { locale })}</h1><p data-page-item-count>{m.cart_ready_count({ count: itemCount }, { locale })}</p></div></header>
     {error && <p class="lv-cart-page__error" role="alert">{error}</p>}
     <p class="lv-cart-page__live" data-cart-page-status aria-live="polite"></p>
 
-    {items.length === 0 ? <section class="lv-cart-page__empty" data-cart-page-empty><span><img src={cartIcon.src} alt="" /></span><h2>{m.cart_empty({}, { locale })}</h2><p>{m.cart_empty_help({}, { locale })}</p><a href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="lv-cart-page__layout" data-cart-page-layout>
+    {items.length === 0 ? <section class="lv-cart-page__empty" data-cart-page-empty><span><Icon name="cart" /></span><h2>{m.cart_empty({}, { locale })}</h2><p>{m.cart_empty_help({}, { locale })}</p><a href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="lv-cart-page__layout" data-cart-page-layout>
       <section class="lv-cart-lines" aria-label={m.cart_items_label({}, { locale })} data-cart-page-lines>
         {items.map((item) => <article class="lv-cart-line" data-cart-line={item.id}>
           <a class="lv-cart-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : <ProductMediaPlaceholder label={m.catalog_no_image({}, { locale })} />}</a>
