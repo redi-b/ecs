@@ -2,7 +2,7 @@
 import { sanitizeProductDescription } from "@ecs/content";
 import StoreShell from "../../components/shell/StoreShell.astro";
 import type { StoreProduct, StoreProductVariant } from "../../lib/commerce/types";
-import { buildStorefrontMediaSrcset, resolveStorefrontMediaVariantUrl } from "../../lib/media-url";
+import { buildProductImageSrcset, resolveProductImage } from "../../lib/media-url";
 import { formatMoney } from "../../lib/money";
 import type { StorefrontSeo } from "../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
@@ -100,8 +100,8 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
           {product.thumbnail ? (
             <img
               class="sf-pdp-media"
-              src={resolveStorefrontMediaVariantUrl(product.thumbnail, 1200) ?? product.thumbnail}
-              srcset={buildStorefrontMediaSrcset(product.thumbnail) ?? undefined}
+              src={resolveProductImage(product.thumbnailVariants, "w1200", product.thumbnail)}
+              srcset={buildProductImageSrcset(product.thumbnailVariants) ?? undefined}
               alt=""
               width="1200"
               height="1200"

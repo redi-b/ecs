@@ -1,0 +1,411 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - generic [ref=f2e5]:
+        - generic [ref=f2e6]:
+          - link "Home" [ref=f2e7] [cursor=pointer]:
+            - /url: /
+            - img "Luvia" [ref=f2e8]
+          - navigation "Primary navigation" [ref=f2e9]:
+            - link "Home" [ref=f2e10] [cursor=pointer]:
+              - /url: /
+            - link "Shop" [ref=f2e11] [cursor=pointer]:
+              - /url: /shop
+            - link "Request Item" [ref=f2e14] [cursor=pointer]:
+              - /url: /request-item
+            - link "About Us" [ref=f2e15] [cursor=pointer]:
+              - /url: /about
+            - link "Contact" [ref=f2e16] [cursor=pointer]:
+              - /url: /contact
+        - generic [ref=f2e17]:
+          - search [ref=f2e18]:
+            - searchbox "Search any product" [ref=f2e19]
+            - button "Search" [ref=f2e20] [cursor=pointer]
+          - generic [ref=f2e23]:
+            - button "Wishlist" [ref=f2e24] [cursor=pointer]
+            - button "Cart" [ref=f2e27] [cursor=pointer]:
+              - generic [ref=f2e30]: "4"
+            - button "Account" [ref=f2e31] [cursor=pointer]
+    - main [ref=f2e34]:
+      - generic [ref=f2e37]:
+        - navigation "Breadcrumb" [ref=f2e38]:
+          - link "Home" [ref=f2e39] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f2e42]: Shop
+        - heading "Our Products Listing" [level=1] [ref=f2e43]
+      - generic [ref=f2e44]:
+        - generic [ref=f2e45]:
+          - heading "Products Listing" [level=2] [ref=f2e47]
+          - generic [ref=f2e49]:
+            - generic [ref=f2e50]:
+              - generic [ref=f2e51]:
+                - button "For Women" [ref=f2e52] [cursor=pointer]
+                - button "For Men" [ref=f2e53] [cursor=pointer]
+                - button "Unisex" [ref=f2e54] [cursor=pointer]
+              - button "Price" [ref=f2e56] [cursor=pointer]
+              - button "Color" [ref=f2e59] [cursor=pointer]
+              - button "Size" [ref=f2e62] [cursor=pointer]
+              - button "Bags" [ref=f2e65] [cursor=pointer]
+              - button "Accessories" [ref=f2e68] [cursor=pointer]
+              - button "Apparels" [ref=f2e71] [cursor=pointer]
+              - button "Footwears" [ref=f2e74] [cursor=pointer]
+            - button "Sort By" [ref=f2e77] [cursor=pointer]
+        - generic [ref=f2e80]:
+          - article [ref=f2e81]:
+            - generic [ref=f2e82]:
+              - generic [ref=f2e83]:
+                - generic [ref=f2e84]: Best Seller
+                - button "Add to wishlist" [ref=f2e88] [cursor=pointer]
+              - link "Crème de la Mer Moisturizer" [ref=f2e91] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Crème de la Mer Moisturizer" [ref=f2e92]
+              - generic [ref=f2e93] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e94]:
+              - paragraph [ref=f2e95]: LA MER
+              - heading [level=3] [ref=f2e96]:
+                - link "Crème de la Mer Moisturizer" [ref=f2e97] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e98]:
+                - paragraph [ref=f2e99]:
+                  - generic [ref=f2e100]: Br 6,500.00
+                  - generic [ref=f2e101]: Br 5,200.00
+                - generic [ref=f2e102]: 20% OFF
+          - article [ref=f2e103]:
+            - generic [ref=f2e104]:
+              - generic [ref=f2e105]:
+                - generic [ref=f2e106]: Best Seller
+                - button "Add to wishlist" [ref=f2e110] [cursor=pointer]
+              - link "Advanced Génifique Face Serum" [ref=f2e113] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Génifique Face Serum" [ref=f2e114]
+              - generic [ref=f2e115] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e116]:
+              - paragraph [ref=f2e117]: LANCÔME
+              - heading [level=3] [ref=f2e118]:
+                - link "Advanced Génifique Face Serum" [ref=f2e119] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e120]:
+                - paragraph [ref=f2e121]:
+                  - generic [ref=f2e122]: Br 12,500.00
+                  - generic [ref=f2e123]: Br 2,800.00
+                - generic [ref=f2e124]: 12% OFF
+          - article [ref=f2e125]:
+            - generic [ref=f2e126]:
+              - generic [ref=f2e127]:
+                - generic [ref=f2e128]: Best Seller
+                - button "Add to wishlist" [ref=f2e132] [cursor=pointer]
+              - link "The Dewy Skin Cream" [ref=f2e135] [cursor=pointer]:
+                - /url: /product-detail
+                - img "The Dewy Skin Cream" [ref=f2e136]
+              - generic [ref=f2e137] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e138]:
+              - paragraph [ref=f2e139]: TATCHA
+              - heading [level=3] [ref=f2e140]:
+                - link "The Dewy Skin Cream" [ref=f2e141] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e142]:
+                - paragraph [ref=f2e143]:
+                  - generic [ref=f2e144]: Br 22,000.00
+                  - generic [ref=f2e145]: Br 18,700.00
+                - generic [ref=f2e146]: 15% OFF
+          - article [ref=f2e147]:
+            - generic [ref=f2e148]:
+              - generic [ref=f2e149]:
+                - generic [ref=f2e150]: Best Seller
+                - button "Add to wishlist" [ref=f2e154] [cursor=pointer]
+              - link "Vinoperfect Brightening Serum" [ref=f2e157] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Vinoperfect Brightening Serum" [ref=f2e158]
+              - generic [ref=f2e159] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e160]:
+              - paragraph [ref=f2e161]: CAUDALIE
+              - heading [level=3] [ref=f2e162]:
+                - link "Vinoperfect Brightening Serum" [ref=f2e163] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e164]:
+                - paragraph [ref=f2e165]:
+                  - generic [ref=f2e166]: Br 34,800.00
+                  - generic [ref=f2e167]: Br 26,100.00
+                - generic [ref=f2e168]: 25% OFF
+          - article [ref=f2e169]:
+            - generic [ref=f2e170]:
+              - generic [ref=f2e171]:
+                - generic [ref=f2e172]: Best Seller
+                - button "Add to wishlist" [ref=f2e176] [cursor=pointer]
+              - link "Advanced Night Repair" [ref=f2e179] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Night Repair" [ref=f2e180]
+              - generic [ref=f2e181] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e182]:
+              - paragraph [ref=f2e183]: ESTÉE LAUDER
+              - heading [level=3] [ref=f2e184]:
+                - link "Advanced Night Repair" [ref=f2e185] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e186]:
+                - paragraph [ref=f2e187]:
+                  - generic [ref=f2e188]: Br 40,000.00
+                  - generic [ref=f2e189]: Br 28,000.00
+                - generic [ref=f2e190]: 30% OFF
+          - article [ref=f2e191]:
+            - generic [ref=f2e192]:
+              - generic [ref=f2e193]:
+                - generic [ref=f2e194]: Best Seller
+                - button "Add to wishlist" [ref=f2e198] [cursor=pointer]
+              - link "Crème de la Mer Moisturizer" [ref=f2e201] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Crème de la Mer Moisturizer" [ref=f2e202]
+              - generic [ref=f2e203] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e204]:
+              - paragraph [ref=f2e205]: LA MER
+              - heading [level=3] [ref=f2e206]:
+                - link "Crème de la Mer Moisturizer" [ref=f2e207] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e208]:
+                - paragraph [ref=f2e209]:
+                  - generic [ref=f2e210]: Br 6,500.00
+                  - generic [ref=f2e211]: Br 5,200.00
+                - generic [ref=f2e212]: 20% OFF
+          - article [ref=f2e213]:
+            - generic [ref=f2e214]:
+              - generic [ref=f2e215]:
+                - generic [ref=f2e216]: Best Seller
+                - button "Add to wishlist" [ref=f2e220] [cursor=pointer]
+              - link "Advanced Génifique Face Serum" [ref=f2e223] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Génifique Face Serum" [ref=f2e224]
+              - generic [ref=f2e225] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e226]:
+              - paragraph [ref=f2e227]: LANCÔME
+              - heading [level=3] [ref=f2e228]:
+                - link "Advanced Génifique Face Serum" [ref=f2e229] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e230]:
+                - paragraph [ref=f2e231]:
+                  - generic [ref=f2e232]: Br 12,500.00
+                  - generic [ref=f2e233]: Br 2,800.00
+                - generic [ref=f2e234]: 12% OFF
+          - article [ref=f2e235]:
+            - generic [ref=f2e236]:
+              - generic [ref=f2e237]:
+                - generic [ref=f2e238]: Best Seller
+                - button "Add to wishlist" [ref=f2e242] [cursor=pointer]
+              - link "The Dewy Skin Cream" [ref=f2e245] [cursor=pointer]:
+                - /url: /product-detail
+                - img "The Dewy Skin Cream" [ref=f2e246]
+              - generic [ref=f2e247] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e248]:
+              - paragraph [ref=f2e249]: TATCHA
+              - heading [level=3] [ref=f2e250]:
+                - link "The Dewy Skin Cream" [ref=f2e251] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e252]:
+                - paragraph [ref=f2e253]:
+                  - generic [ref=f2e254]: Br 22,000.00
+                  - generic [ref=f2e255]: Br 18,700.00
+                - generic [ref=f2e256]: 15% OFF
+          - article [ref=f2e257]:
+            - generic [ref=f2e258]:
+              - generic [ref=f2e259]:
+                - generic [ref=f2e260]: Best Seller
+                - button "Add to wishlist" [ref=f2e264] [cursor=pointer]
+              - link "Vinoperfect Brightening Serum" [ref=f2e267] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Vinoperfect Brightening Serum" [ref=f2e268]
+              - generic [ref=f2e269] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e270]:
+              - paragraph [ref=f2e271]: CAUDALIE
+              - heading [level=3] [ref=f2e272]:
+                - link "Vinoperfect Brightening Serum" [ref=f2e273] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e274]:
+                - paragraph [ref=f2e275]:
+                  - generic [ref=f2e276]: Br 34,800.00
+                  - generic [ref=f2e277]: Br 26,100.00
+                - generic [ref=f2e278]: 25% OFF
+          - article [ref=f2e279]:
+            - generic [ref=f2e280]:
+              - generic [ref=f2e281]:
+                - generic [ref=f2e282]: Best Seller
+                - button "Add to wishlist" [ref=f2e286] [cursor=pointer]
+              - link "Advanced Night Repair" [ref=f2e289] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Night Repair" [ref=f2e290]
+              - generic [ref=f2e291] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e292]:
+              - paragraph [ref=f2e293]: ESTÉE LAUDER
+              - heading [level=3] [ref=f2e294]:
+                - link "Advanced Night Repair" [ref=f2e295] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e296]:
+                - paragraph [ref=f2e297]:
+                  - generic [ref=f2e298]: Br 40,000.00
+                  - generic [ref=f2e299]: Br 28,000.00
+                - generic [ref=f2e300]: 30% OFF
+          - article [ref=f2e301]:
+            - generic [ref=f2e302]:
+              - generic [ref=f2e303]:
+                - generic [ref=f2e304]: Best Seller
+                - button "Add to wishlist" [ref=f2e308] [cursor=pointer]
+              - link "Crème de la Mer Moisturizer" [ref=f2e311] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Crème de la Mer Moisturizer" [ref=f2e312]
+              - generic [ref=f2e313] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e314]:
+              - paragraph [ref=f2e315]: LA MER
+              - heading [level=3] [ref=f2e316]:
+                - link "Crème de la Mer Moisturizer" [ref=f2e317] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e318]:
+                - paragraph [ref=f2e319]:
+                  - generic [ref=f2e320]: Br 6,500.00
+                  - generic [ref=f2e321]: Br 5,200.00
+                - generic [ref=f2e322]: 20% OFF
+          - article [ref=f2e323]:
+            - generic [ref=f2e324]:
+              - generic [ref=f2e325]:
+                - generic [ref=f2e326]: Best Seller
+                - button "Add to wishlist" [ref=f2e330] [cursor=pointer]
+              - link "Advanced Génifique Face Serum" [ref=f2e333] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Génifique Face Serum" [ref=f2e334]
+              - generic [ref=f2e335] [cursor=pointer]: Add to Cart
+            - generic [ref=f2e336]:
+              - paragraph [ref=f2e337]: LANCÔME
+              - heading [level=3] [ref=f2e338]:
+                - link "Advanced Génifique Face Serum" [ref=f2e339] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f2e340]:
+                - paragraph [ref=f2e341]:
+                  - generic [ref=f2e342]: Br 12,500.00
+                  - generic [ref=f2e343]: Br 2,800.00
+                - generic [ref=f2e344]: 12% OFF
+        - generic [ref=f2e345]:
+          - paragraph [ref=f2e346]:
+            - text: Showing 12 out of
+            - strong [ref=f2e347]: "232"
+            - text: results
+          - button "Load More Items" [ref=f2e348] [cursor=pointer]
+    - contentinfo [ref=f2e351]:
+      - generic [ref=f2e352]:
+        - generic [ref=f2e353]:
+          - generic [ref=f2e354]:
+            - paragraph [ref=f2e355]: LUVIA Beauty is a collective of leading female chemists in the biotech and skincare sector found in Ethiopia. It is one of the laboratories certified by ECOCERT.
+            - paragraph [ref=f2e356]:
+              - text: Web Design by
+              - link "Eclipticcreative" [ref=f2e357] [cursor=pointer]:
+                - /url: https://eclipticcreative.com
+          - generic [ref=f2e358]:
+            - paragraph [ref=f2e359]: QUICK LINKS
+            - list [ref=f2e360]:
+              - listitem [ref=f2e361]:
+                - link "Home" [ref=f2e362] [cursor=pointer]:
+                  - /url: /
+              - listitem [ref=f2e363]:
+                - link "About" [ref=f2e364] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=f2e365]:
+                - link "Shop" [ref=f2e366] [cursor=pointer]:
+                  - /url: /shop
+              - listitem [ref=f2e367]:
+                - link "Contact" [ref=f2e368] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=f2e369]:
+                - link "Wishlist" [ref=f2e370] [cursor=pointer]:
+                  - /url: /wishlist
+          - generic [ref=f2e371]:
+            - paragraph [ref=f2e372]: PRODUCTS
+            - list [ref=f2e373]:
+              - listitem [ref=f2e374]:
+                - link "Bags" [ref=f2e375] [cursor=pointer]:
+                  - /url: /shop?category=bags
+              - listitem [ref=f2e376]:
+                - link "Accessories" [ref=f2e377] [cursor=pointer]:
+                  - /url: /shop?category=accessories
+              - listitem [ref=f2e378]:
+                - link "clothings" [ref=f2e379] [cursor=pointer]:
+                  - /url: /shop?category=clothings
+              - listitem [ref=f2e380]:
+                - link "footwears" [ref=f2e381] [cursor=pointer]:
+                  - /url: /shop?category=footwears
+          - generic [ref=f2e382]:
+            - paragraph [ref=f2e383]: SOCIALS
+            - list [ref=f2e384]:
+              - listitem [ref=f2e385]:
+                - link "Facebook" [ref=f2e386] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f2e387]:
+                - link "Instagram" [ref=f2e388] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f2e389]:
+                - link "Twitter" [ref=f2e390] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f2e391]:
+                - link "Pinterest" [ref=f2e392] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=f2e393]:
+            - paragraph [ref=f2e394]: CONTACT INFO
+            - list [ref=f2e395]:
+              - listitem [ref=f2e396]: +251 91 266 5485
+              - listitem [ref=f2e397]: info@luviabeauty.com
+              - listitem [ref=f2e398]: Kassanchis, Addis Ababa, Ethiopia
+        - generic [ref=f2e399]:
+          - img "Luvia" [ref=f2e401]
+          - paragraph [ref=f2e402]: © 2026 Luvia PLC. All rights reserved.
+      - generic [ref=f2e403]:
+        - paragraph [ref=f2e404]: Do you have any inquiries for us?
+        - link "Let's Get in Touch" [ref=f2e405] [cursor=pointer]:
+          - /url: /contact
+  - generic:
+    - button
+    - dialog:
+      - generic:
+        - generic:
+          - paragraph: Your selection
+          - heading [level=2]: Shopping cart (4)
+        - button
+      - generic:
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Skincare
+              - heading [level=3]: Glow Repair Serum
+            - generic:
+              - generic: Qty 1
+              - generic: $34.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Makeup
+              - heading [level=3]: Velvet Bloom Lipstick
+            - generic:
+              - generic: Qty 1
+              - generic: $28.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Skincare
+              - heading [level=3]: Nourish Face Oil
+            - generic:
+              - generic: Qty 1
+              - generic: $42.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Makeup
+              - heading [level=3]: Soft Focus Blush
+            - generic:
+              - generic: Qty 1
+              - generic: $24.00
+          - button
+      - generic:
+        - generic:
+          - generic: Subtotal
+          - strong: $128.00
+        - paragraph: Shipping and taxes are calculated at checkout.
+        - link [ref=f2e410] [cursor=pointer]:
+          - /url: /checkout
+          - text: Continue to checkout
+        - button: Continue shopping

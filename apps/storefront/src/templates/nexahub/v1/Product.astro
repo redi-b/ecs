@@ -5,6 +5,7 @@ import { resolveProductBadge } from "../../../lib/commerce/merchandising";
 import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
 import type {
   StoreProduct,
+  StoreProductImage,
   StoreProductOption,
   StoreProductVariant,
 } from "../../../lib/commerce/types";
@@ -13,7 +14,7 @@ import type { StorefrontSeo } from "../../../lib/seo";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
 import ProductCard from "./ProductCard.astro";
-import { buildStorefrontMediaSrcset, resolveStorefrontMediaVariantUrl } from "../../../lib/media-url";
+import { buildProductImageSrcset, resolveProductImage } from "../../../lib/media-url";
 import SaveIcon from "./SaveIcon.astro";
 import "./styles/pages/product-details.scss";
 import "./styles/responsive.scss";
@@ -69,9 +70,11 @@ const axes: StoreProductOption[] = product?.options?.length
         values: [...values],
       }));
     })();
-const gallery = product
-  ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])]
-  : [];
+const gallery: StoreProductImage[] = product?.gallery?.length
+  ? product.gallery
+  : product?.thumbnail
+    ? [{ url: product.thumbnail, variants: product.thumbnailVariants }]
+    : [];
 const badge = product ? resolveProductBadge(product, defaultVariant) : null;
 const currentPrice = formatMoney(
   defaultVariant?.priceAmount ?? product?.priceAmount,
@@ -118,7 +121,7 @@ const clientMessages = {
     <nav class="product-breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><div class="container product-breadcrumb__wrapper"><a href="/">{m.nav_home({}, { locale })}</a><span>/</span><a href="/products">{m.nav_shop({}, { locale })}</a>{product.collectionTitle ? <><span>/</span><span>{product.collectionTitle}</span></> : null}<span>/</span><span aria-current="page">{product.title}</span></div></nav>
     {(notice === "added" || error) ? <p class="nexa-product-notice" role={error ? "alert" : "status"}>{error ?? m.product_added_to_cart({}, { locale })}</p> : null}
     <section class="product-main"><div class="container product-main__wrapper">
-      <div class="product-gallery"><div class="product-gallery__main-box"><button class="product-gallery__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><SaveIcon /></button><div class="product-gallery__main-slider" data-gallery-main>{gallery[0] ? <img src={resolveStorefrontMediaVariantUrl(gallery[0], 1200) ?? gallery[0]} srcset={buildStorefrontMediaSrcset(gallery[0]) ?? undefined} alt={product.title ?? m.catalog_product_fallback({}, { locale })} width="1000" height="1000" decoding="async" class="contain" /> : <ProductMediaPlaceholder label={m.product_no_image({ product: product.title ?? m.catalog_product_fallback({}, { locale }) }, { locale })} />}</div></div>{gallery.length > 1 ? <div class="product-gallery__thumbs-box" aria-label={m.product_images({}, { locale })}>{gallery.map((src, index) => <button type="button" class:list={{ "is-active": index === 0 }} data-gallery-thumb={resolveStorefrontMediaVariantUrl(src, 1200) ?? src} data-gallery-thumb-srcset={buildStorefrontMediaSrcset(src) ?? undefined} aria-current={index === 0 ? "true" : undefined} aria-label={m.product_view_image({ number: index + 1 }, { locale })}><img src={resolveStorefrontMediaVariantUrl(src, 96) ?? src} alt="" width="96" height="96" loading="lazy" /></button>)}</div> : null}</div>
+      <div class="product-gallery"><div class="product-gallery__main-box"><button class="product-gallery__save" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><SaveIcon /></button><div class="product-gallery__main-slider" data-gallery-main>{gallery[0] ? <img src={resolveProductImage(gallery[0].variants, "w800", gallery[0].url)} srcset={buildProductImageSrcset(gallery[0].variants) ?? undefined} alt={product.title ?? m.catalog_product_fallback({}, { locale })} width="1000" height="1000" decoding="async" class="contain" /> : <ProductMediaPlaceholder label={m.product_no_image({ product: product.title ?? m.catalog_product_fallback({}, { locale }) }, { locale })} />}</div></div>{gallery.length > 1 ? <div class="product-gallery__thumbs-box" aria-label={m.product_images({}, { locale })}>{gallery.map((item, index) => <button type="button" class:list={{ "is-active": index === 0 }} data-gallery-thumb={resolveProductImage(item.variants, "w800", item.url)} data-gallery-thumb-srcset={buildProductImageSrcset(item.variants) ?? undefined} aria-current={index === 0 ? "true" : undefined} aria-label={m.product_view_image({ number: index + 1 }, { locale })}><img src={resolveProductImage(item.variants, "w200", item.url)} alt="" width="96" height="96" loading="lazy" /></button>)}</div> : null}</div>
       <div class="product-info" data-product-config-card>
         <div class="product-info__header"><div class="product-info__header-left"><span class="product-info__price" data-product-price>{currentPrice}</span><span class="product-info__stock-badge" data-product-stock>{defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></div>{badge ? <div class="product-info__header-right"><span class="product-info__discount" data-product-badge>{badge.label}</span></div> : null}</div>
         <form class="product-info__form" method="post" action="/actions/cart/add" data-add-form>

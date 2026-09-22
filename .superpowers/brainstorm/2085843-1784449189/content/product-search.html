@@ -1,0 +1,76 @@
+<h2>How should product search work inside a guided sale/stock flow?</h2>
+<p class="subtitle">
+  This is the “way of searching is trash” problem. Same spine (guided), different pick step.
+  Click one.
+</p>
+
+<div class="cards">
+  <div class="card" data-choice="type-then-buttons" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#0e1621;min-height:280px;font-family:system-ui,sans-serif;font-size:12px;color:#e8eef5;border-radius:8px;">
+      <div style="opacity:.6;margin-bottom:8px;">A · Type → buttons (current idea, polished)</div>
+      <div style="background:#182533;border-radius:10px;padding:10px;margin-bottom:8px;">
+        New sale · Step 1 of 4<br/>
+        <span style="opacity:.8;">Type product name or SKU</span>
+        <div style="margin-top:8px;background:#0e1621;padding:8px;border-radius:6px;">blue</div>
+      </div>
+      <div style="background:#182533;border-radius:10px;padding:10px;">
+        3 matches
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+          <span style="background:#243447;padding:8px;border-radius:6px;">Blue Shirt · M · 3 left</span>
+          <span style="background:#243447;padding:8px;border-radius:6px;">Blue Shirt · L · 1 left</span>
+          <span style="background:#243447;padding:8px;border-radius:6px;">Navy Blue Cap · 8 left</span>
+        </div>
+        <div style="margin-top:8px;opacity:.7;">1 match → skip pick. No matches → try again, stay in flow.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Type → result buttons</h3>
+      <p>Simple. Works with Medusa search. Needs clear stock counts + cancel + “search again”.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="browse-then-filter" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#0e1621;min-height:280px;font-family:system-ui,sans-serif;font-size:12px;color:#e8eef5;border-radius:8px;">
+      <div style="opacity:.6;margin-bottom:8px;">B · Browse recent / popular first (recommended)</div>
+      <div style="background:#182533;border-radius:10px;padding:10px;margin-bottom:8px;">
+        New sale · pick product
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+          <span style="background:#2aabee33;border:1px solid #2aabee;padding:8px;border-radius:6px;">⭐ Recent: Blue Shirt · M</span>
+          <span style="background:#243447;padding:8px;border-radius:6px;">White Tee · L · 12</span>
+          <span style="background:#243447;padding:8px;border-radius:6px;">Cap · Black · 5</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:4px;">
+          <span style="background:#243447;padding:6px 8px;border-radius:6px;">🔎 Search</span>
+          <span style="background:#243447;padding:6px 8px;border-radius:6px;">More…</span>
+        </div>
+      </div>
+      <div style="opacity:.8;">Most counter sales are repeat SKUs. Search is the fallback, not step 1.</div>
+    </div>
+    <div class="card-body">
+      <h3>B. Recent / top products first</h3>
+      <p>Faster for real shops. Still guided. Search only when the item isn’t in the short list.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="sku-first" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#0e1621;min-height:280px;font-family:system-ui,sans-serif;font-size:12px;color:#e8eef5;border-radius:8px;">
+      <div style="opacity:.6;margin-bottom:8px;">C · SKU / barcode style</div>
+      <div style="background:#182533;border-radius:10px;padding:10px;margin-bottom:8px;">
+        New sale · scan or type SKU
+        <div style="margin-top:8px;background:#0e1621;padding:10px;border-radius:6px;font-family:ui-monospace,monospace;letter-spacing:1px;">SHIRT-BLU-M</div>
+      </div>
+      <div style="background:#182533;border-radius:10px;padding:10px;">
+        Exact match → go to qty immediately<br/>
+        Fuzzy name search only if “Search by name”
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. SKU-first</h3>
+      <p>Great if catalog has clean SKUs. Painful if SKUs are empty or messy (common early on).</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">
+  Lean: <strong>B</strong> for everyday speed, with <strong>A</strong> as the search fallback inside the same flow.
+</p>

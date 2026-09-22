@@ -760,9 +760,9 @@ describe("createMedusaProductService", () => {
       fetcher: async (input, init) => {
         const request = new Request(input, init);
 
-        if (request.url.includes("/admin/inventory-items/")) {
+        if (request.url.includes("/admin/inventory-items")) {
           return Response.json({
-            inventory_item: {
+            inventory_items: [{
               id: "iitem_1",
               location_levels: [
                 {
@@ -773,7 +773,7 @@ describe("createMedusaProductService", () => {
                   available_quantity: 10,
                 },
               ],
-            },
+            }],
           });
         }
 
@@ -1459,7 +1459,7 @@ describe("createMedusaProductService", () => {
         }
 
         return Response.json({
-          inventory_item: {
+          inventory_items: [{
             id: "iitem_1",
             location_levels: [
               {
@@ -1470,7 +1470,7 @@ describe("createMedusaProductService", () => {
                 available_quantity: 10,
               },
             ],
-          },
+          }],
         });
       },
     });
@@ -1491,7 +1491,7 @@ describe("createMedusaProductService", () => {
           offset: 0,
           salesChannelId: "sc_1",
         }).toString()}`,
-        "GET http://medusa:9000/admin/inventory-items/iitem_1?fields=id%2C*location_levels",
+        "GET http://medusa:9000/admin/inventory-items?fields=id%2C*location_levels&limit=1&id%5B%5D=iitem_1",
       ],
     );
     assert.deepEqual(result.ok ? result.products[0]?.variants?.[0]?.stock : null, {

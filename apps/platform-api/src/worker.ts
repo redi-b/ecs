@@ -251,6 +251,7 @@ const worker = startPlatformWorkers({
     "media.process": createMediaProcessHandler({
       db: platformDb.db,
       storage: createMediaStorageFromEnv(),
+      updateProductMediaVariants: (input) => productService.updateProductMediaVariants(input),
     }) as JobHandler,
     "product-import.apply": createProductImportApplyHandler({
       store: createProductImportApplyStore(platformDb.db),

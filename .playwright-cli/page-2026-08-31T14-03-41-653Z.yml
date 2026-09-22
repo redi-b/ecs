@@ -1,0 +1,318 @@
+- generic [active] [ref=f4e1]:
+  - link "Skip to content" [ref=f4e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - status [ref=f4e3]
+  - banner [ref=f4e4]:
+    - generic [ref=f4e5]:
+      - link "NexaHub Technology home" [ref=f4e7] [cursor=pointer]:
+        - /url: /
+        - img "NexaHub Technology" [ref=f4e8]
+      - button "Open navigation" [ref=f4e9]
+      - generic [ref=f4e12]:
+        - link "Wishlist" [ref=f4e13] [cursor=pointer]:
+          - /url: /wishlist
+        - button "Shopping cart with 0 items" [ref=f4e17] [cursor=pointer]
+        - link "Account" [ref=f4e20] [cursor=pointer]:
+          - /url: /account
+  - status [ref=f4e24]:
+    - strong [ref=f4e25]: Template preview
+    - navigation "Preview pages" [ref=f4e26]:
+      - link "Home" [ref=f4e27] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub
+      - link "Products" [ref=f4e28] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub/products
+      - link "Product" [ref=f4e29] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub/products/portable-workstation
+      - link "Cart" [ref=f4e30] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub/cart
+      - link "Checkout" [ref=f4e31] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub/checkout
+      - link "Receipt" [ref=f4e32] [cursor=pointer]:
+        - /url: /demo/storefront/nexahub/order-confirmation
+    - generic [ref=f4e33]: Shopping actions are disabled
+  - main [ref=f4e34]:
+    - generic [ref=f4e36]:
+      - generic [ref=f4e37]:
+        - generic [ref=f4e38]:
+          - generic [ref=f4e39]: All-in-One Tech Store
+          - heading "BIG DEALS ON TOP TECH PRODUCTS" [level=1] [ref=f4e43]
+        - generic [ref=f4e44]:
+          - paragraph [ref=f4e45]: EXPLORE DURABLE TECH DEVICES DESIGNED TO FIT YOUR ROUTINE. FIND THE IDEAL GADGETS THAT BOOST YOUR DAILY LIFE AND ENHANCE YOUR PRODUCTIVITY.
+          - generic [ref=f4e46]:
+            - link "Our Products" [ref=f4e47] [cursor=pointer]:
+              - /url: "#products"
+            - link "Contact Us" [ref=f4e52] [cursor=pointer]:
+              - /url: "#contact"
+      - complementary "Featured Products" [ref=f4e57]:
+        - generic [ref=f4e59]:
+          - article [ref=f4e60]:
+            - generic [ref=f4e61]:
+              - img "USB-C Connectivity Dock" [ref=f4e63]
+              - generic [ref=f4e64]: FEATURED PRODUCTS
+            - generic [ref=f4e68]:
+              - generic [ref=f4e69]: ETB 8,200
+              - generic [ref=f4e70]: 13% off
+            - heading "USB-C Connectivity Dock" [level=2] [ref=f4e71]
+            - link "VIEW DETAILS" [ref=f4e73] [cursor=pointer]:
+              - /url: /products/usb-c-dock
+          - article [ref=f4e78]:
+            - generic [ref=f4e79]:
+              - img "Portable Workstation" [ref=f4e81]
+              - generic [ref=f4e82]: FEATURED PRODUCTS
+            - generic [ref=f4e86]: ETB 84,900
+            - heading "Portable Workstation" [level=2] [ref=f4e88]
+            - link "VIEW DETAILS" [ref=f4e90] [cursor=pointer]:
+              - /url: /products/portable-workstation
+          - article [ref=f4e95]:
+            - generic [ref=f4e96]:
+              - img "Everyday Smartphone" [ref=f4e98]
+              - generic [ref=f4e99]: FEATURED PRODUCTS
+            - generic [ref=f4e103]: ETB 34,500
+            - heading "Everyday Smartphone" [level=2] [ref=f4e105]
+            - link "VIEW DETAILS" [ref=f4e107] [cursor=pointer]:
+              - /url: /products/everyday-smartphone
+          - article [ref=f4e112]:
+            - generic [ref=f4e113]:
+              - img "Wireless Keyboard" [ref=f4e115]
+              - generic [ref=f4e116]: FEATURED PRODUCTS
+            - generic [ref=f4e120]: ETB 4,800
+            - heading "Wireless Keyboard" [level=2] [ref=f4e122]
+            - link "VIEW DETAILS" [ref=f4e124] [cursor=pointer]:
+              - /url: /products/wireless-keyboard
+          - article [ref=f4e129]:
+            - generic [ref=f4e130]:
+              - img "Compact Performance Laptop" [ref=f4e132]
+              - generic [ref=f4e133]: FEATURED PRODUCTS
+            - generic [ref=f4e137]: ETB 62,000
+            - heading "Compact Performance Laptop" [level=2] [ref=f4e139]
+            - link "VIEW DETAILS" [ref=f4e141] [cursor=pointer]:
+              - /url: /products/compact-laptop
+        - generic [ref=f4e146]:
+          - button "Show USB-C Connectivity Dock" [ref=f4e147] [cursor=pointer]
+          - button "Show Portable Workstation" [ref=f4e148] [cursor=pointer]
+          - button "Show Everyday Smartphone" [ref=f4e149] [cursor=pointer]
+          - button "Show Wireless Keyboard" [ref=f4e150] [cursor=pointer]
+          - button "Show Compact Performance Laptop" [ref=f4e151] [cursor=pointer]
+    - generic [ref=f4e153]:
+      - generic [ref=f4e154]:
+        - generic [ref=f4e155]: PRODUCTS CATALOGUE
+        - heading "Elite Hardware for High-Performance Workflows" [level=2] [ref=f4e159]
+      - generic [ref=f4e160]:
+        - article [ref=f4e161]:
+          - link "Explore Computing" [ref=f4e163] [cursor=pointer]:
+            - /url: /products?collection=demo-computing
+          - generic [ref=f4e167]:
+            - generic [ref=f4e168]:
+              - heading "Computing" [level=3] [ref=f4e169]
+              - paragraph [ref=f4e170]: EXPLORE THIS COLLECTION OF THOUGHTFULLY SELECTED PRODUCTS.
+            - link "Explore More" [ref=f4e171] [cursor=pointer]:
+              - /url: /products?collection=demo-computing
+        - article [ref=f4e176]:
+          - generic [ref=f4e177]:
+            - heading "Mobile devices" [level=3] [ref=f4e178]
+            - link "Explore More" [ref=f4e179] [cursor=pointer]:
+              - /url: /products?collection=demo-mobile
+        - article [ref=f4e185]:
+          - generic [ref=f4e186]:
+            - heading "Peripherals" [level=3] [ref=f4e187]
+            - link "Explore More" [ref=f4e188] [cursor=pointer]:
+              - /url: /products?collection=demo-peripherals
+      - generic [ref=f4e194]:
+        - link "All Products" [ref=f4e195] [cursor=pointer]:
+          - /url: /products
+        - generic [ref=f4e200]:
+          - button "Previous category" [disabled] [ref=f4e201]
+          - button "Next category" [ref=f4e205] [cursor=pointer]
+    - generic [ref=f4e210]:
+      - generic [ref=f4e211]:
+        - generic [ref=f4e212]:
+          - generic [ref=f4e213]: PRODUCTS CATALOGUE
+          - heading "Browse Our Full Tech Products Collection" [level=2] [ref=f4e217]
+        - generic [ref=f4e218]:
+          - generic [ref=f4e219]: 4 PRODUCTS LISTED
+          - link "All Products" [ref=f4e220] [cursor=pointer]:
+            - /url: /products
+      - generic [ref=f4e225]:
+        - button "Collection" [ref=f4e228] [cursor=pointer]
+        - button "Sort By" [ref=f4e233] [cursor=pointer]
+      - generic [ref=f4e237]:
+        - article [ref=f4e238]:
+          - heading [level=3] [ref=f4e239]:
+            - link "Portable Workstation" [ref=f4e240] [cursor=pointer]:
+              - /url: /products/portable-workstation
+          - generic [ref=f4e241]:
+            - link "View Portable Workstation" [ref=f4e242] [cursor=pointer]:
+              - /url: /products/portable-workstation
+              - img "Portable Workstation" [ref=f4e243]
+            - button "Save Portable Workstation" [ref=f4e244] [cursor=pointer]
+            - generic [ref=f4e248]:
+              - button "Add to Cart" [ref=f4e249] [cursor=pointer]
+              - button "Add Portable Workstation to cart" [ref=f4e251] [cursor=pointer]
+          - generic [ref=f4e256]:
+            - generic [ref=f4e257]: Starting at
+            - strong [ref=f4e258]: ETB 84,900
+        - article [ref=f4e259]:
+          - heading [level=3] [ref=f4e260]:
+            - link "Everyday Smartphone" [ref=f4e261] [cursor=pointer]:
+              - /url: /products/everyday-smartphone
+          - generic [ref=f4e262]:
+            - link "View Everyday Smartphone" [ref=f4e263] [cursor=pointer]:
+              - /url: /products/everyday-smartphone
+              - img "Everyday Smartphone" [ref=f4e264]
+            - button "Save Everyday Smartphone" [ref=f4e265] [cursor=pointer]
+            - generic [ref=f4e269]:
+              - button "Add to Cart" [ref=f4e270] [cursor=pointer]
+              - button "Add Everyday Smartphone to cart" [ref=f4e272] [cursor=pointer]
+          - generic [ref=f4e277]:
+            - generic [ref=f4e278]: Starting at
+            - strong [ref=f4e279]: ETB 34,500
+        - article [ref=f4e280]:
+          - heading [level=3] [ref=f4e281]:
+            - link "Wireless Keyboard" [ref=f4e282] [cursor=pointer]:
+              - /url: /products/wireless-keyboard
+          - generic [ref=f4e283]:
+            - link "View Wireless Keyboard" [ref=f4e284] [cursor=pointer]:
+              - /url: /products/wireless-keyboard
+              - img "Wireless Keyboard" [ref=f4e285]
+            - button "Save Wireless Keyboard" [ref=f4e286] [cursor=pointer]
+            - generic [ref=f4e290]:
+              - button "Add to Cart" [ref=f4e291] [cursor=pointer]
+              - button "Add Wireless Keyboard to cart" [ref=f4e293] [cursor=pointer]
+          - generic [ref=f4e298]:
+            - generic [ref=f4e299]: Starting at
+            - strong [ref=f4e300]: ETB 4,800
+        - article [ref=f4e301]:
+          - heading [level=3] [ref=f4e302]:
+            - link "USB-C Connectivity Dock" [ref=f4e303] [cursor=pointer]:
+              - /url: /products/usb-c-dock
+          - generic [ref=f4e304]:
+            - link "View USB-C Connectivity Dock" [ref=f4e305] [cursor=pointer]:
+              - /url: /products/usb-c-dock
+              - img "USB-C Connectivity Dock" [ref=f4e306]
+            - button "Save USB-C Connectivity Dock" [ref=f4e307] [cursor=pointer]
+            - generic [ref=f4e311]:
+              - button "Add to Cart" [ref=f4e312] [cursor=pointer]
+              - button "Add USB-C Connectivity Dock to cart" [ref=f4e314] [cursor=pointer]
+          - generic [ref=f4e318]:
+            - generic [ref=f4e319]:
+              - generic [ref=f4e320]: Starting at
+              - strong [ref=f4e321]: ETB 8,200
+            - generic [ref=f4e322]: 13% off
+      - generic [ref=f4e323]:
+        - generic [ref=f4e324]: SHOWING 4 PRODUCTS
+        - link "Browse Full Catalog" [ref=f4e325] [cursor=pointer]:
+          - /url: /products
+    - generic [ref=f4e331]:
+      - generic [ref=f4e332]:
+        - generic [ref=f4e333]:
+          - generic [ref=f4e334]: ABOUT NEXAHUB
+          - heading "QUALITY TECHNOLOGY, SELECTED WITH CARE." [level=2] [ref=f4e338]
+        - generic [ref=f4e339]:
+          - paragraph [ref=f4e341]: CONNECTING GLOBAL INNOVATION WITH LOCAL EXCELLENCE, THIS PLATFORM OFFERS CUTTING-EDGE TECH SOLUTIONS AND STRONG SUPPORT TO EMPOWER THE ETHIOPIAN MARKET.
+          - paragraph [ref=f4e343]: CLEAR PRODUCT INFORMATION AND PRACTICAL SUPPORT HELP YOU CHOOSE THE RIGHT TECHNOLOGY WITH CONFIDENCE.
+      - generic [ref=f4e345]:
+        - generic [ref=f4e347]:
+          - paragraph [ref=f4e348]: We provide the highest quality technology products for your daily convinience.
+          - link "Contact Us" [ref=f4e349] [cursor=pointer]:
+            - /url: "#contact"
+        - generic [ref=f4e354]:
+          - generic [ref=f4e355]:
+            - generic [ref=f4e356]:
+              - button "[1] PREMIUM QUALITY PRODUCTS" [expanded] [ref=f4e357] [cursor=pointer]:
+                - generic [ref=f4e358]:
+                  - generic [ref=f4e359]: "[1]"
+                  - generic [ref=f4e360]: PREMIUM QUALITY PRODUCTS
+                - generic [ref=f4e361]: −
+              - paragraph [ref=f4e363]: EXPLORE DURABLE TECH DEVICES DESIGNED TO FIT YOUR ROUTINE. FIND THE IDEAL GADGETS THAT BOOST YOUR DAILY LIFE AND ENHANCE YOUR PRODUCTIVITY.
+            - generic [ref=f4e364]:
+              - button "[2] 1 YEAR WARRANTY PERIOD" [ref=f4e365] [cursor=pointer]:
+                - generic [ref=f4e366]:
+                  - generic [ref=f4e367]: "[2]"
+                  - generic [ref=f4e368]: 1 YEAR WARRANTY PERIOD
+                - generic [ref=f4e369]: +
+              - generic:
+                - paragraph: ALL DEVICES ARE BACKED BY COMPREHENSIVE WARRANTIES DIRECTLY SUPPORTED BY CERTIFIED REPAIR CENTERS AND PARTNER MANUFACTURERS.
+            - generic [ref=f4e370]:
+              - button "[3] FREE DELIVERY" [ref=f4e371] [cursor=pointer]:
+                - generic [ref=f4e372]:
+                  - generic [ref=f4e373]: "[3]"
+                  - generic [ref=f4e374]: FREE DELIVERY
+                - generic [ref=f4e375]: +
+              - generic:
+                - paragraph: EXPEDITED AND SECURE COURIER SHIPPING ACROSS ADDIS ABABA AND MAJOR REGIONAL CITIES WITH REAL-TIME TRACKING.
+            - generic [ref=f4e376]:
+              - button "[4] 24/7 CUSTOMER SUPPORT" [ref=f4e377] [cursor=pointer]:
+                - generic [ref=f4e378]:
+                  - generic [ref=f4e379]: "[4]"
+                  - generic [ref=f4e380]: 24/7 CUSTOMER SUPPORT
+                - generic [ref=f4e381]: +
+              - generic:
+                - paragraph: OUR SUPPORT TEAM IS AVAILABLE AROUND THE CLOCK TO HELP WITH PRODUCT QUESTIONS, ORDERS, AND AFTER-SALES SERVICE.
+          - img "Technology products selected for quality" [ref=f4e383]
+    - generic [ref=f4e386]:
+      - generic [ref=f4e387]:
+        - generic [ref=f4e388]: Contact Us
+        - heading "Any Questions? Let's Get in Touch!" [level=2] [ref=f4e392]
+        - paragraph [ref=f4e393]: Send a message to the NexaHub team.
+        - generic [ref=f4e394]:
+          - generic [ref=f4e395]:
+            - textbox "Full Name*" [ref=f4e396]
+            - textbox "Phone Number" [ref=f4e397]
+          - textbox "Email Address*" [ref=f4e398]
+          - textbox "Message*" [ref=f4e399]
+          - button "Send Message" [ref=f4e400] [cursor=pointer]
+        - paragraph
+      - img "Store interior" [ref=f4e406]
+  - contentinfo [ref=f4e407]:
+    - generic [ref=f4e408]:
+      - generic [ref=f4e409]:
+        - link "NexaHub Technology home" [ref=f4e410] [cursor=pointer]:
+          - /url: /
+          - img "NexaHub Technology" [ref=f4e411]
+        - paragraph [ref=f4e412]: Technology selected for work, creativity, and everyday life.
+        - generic [ref=f4e413]: © 2026 NexaHub Technology. All rights reserved.
+        - generic [ref=f4e414]: Storefront design by ECS
+      - generic [ref=f4e415]:
+        - heading "Quick Links" [level=3] [ref=f4e416]
+        - list [ref=f4e417]:
+          - listitem [ref=f4e418]:
+            - link "Home" [ref=f4e419] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f4e420]:
+            - link "Products" [ref=f4e421] [cursor=pointer]:
+              - /url: /products
+          - listitem [ref=f4e422]:
+            - link "About" [ref=f4e423] [cursor=pointer]:
+              - /url: /about
+          - listitem [ref=f4e424]:
+            - link "Contact" [ref=f4e425] [cursor=pointer]:
+              - /url: /contact
+      - generic [ref=f4e426]:
+        - heading "Products" [level=3] [ref=f4e427]
+        - list [ref=f4e428]:
+          - listitem [ref=f4e429]:
+            - link "Computing" [ref=f4e430] [cursor=pointer]:
+              - /url: /products?collection=demo-computing
+          - listitem [ref=f4e431]:
+            - link "Mobile devices" [ref=f4e432] [cursor=pointer]:
+              - /url: /products?collection=demo-mobile
+          - listitem [ref=f4e433]:
+            - link "Peripherals" [ref=f4e434] [cursor=pointer]:
+              - /url: /products?collection=demo-peripherals
+      - generic [ref=f4e435]:
+        - heading "Contacts" [level=3] [ref=f4e436]
+        - generic [ref=f4e437]:
+          - paragraph [ref=f4e438]: 4th floor 1234 Innovation Avenue, Bole, Addis Ababa, Ethiopia
+          - paragraph [ref=f4e439]:
+            - link "info@nexahub.com" [ref=f4e440] [cursor=pointer]:
+              - /url: mailto:info@nexahub.com
+          - paragraph [ref=f4e441]:
+            - link "+251 91 842 7255" [ref=f4e442] [cursor=pointer]:
+              - /url: tel:+251918427255
+        - generic [ref=f4e443]:
+          - link "Instagram" [ref=f4e444] [cursor=pointer]:
+            - /url: https://instagram.com
+          - link "Facebook" [ref=f4e448] [cursor=pointer]:
+            - /url: https://facebook.com
+          - link "LinkedIn" [ref=f4e453] [cursor=pointer]:
+            - /url: https://linkedin.com
