@@ -54,6 +54,7 @@ import {
   getProductDetailUrl,
   getProductOwnershipUrl,
   getProductSearchUrl,
+  getProductUrl,
   getProductsBaseUrl,
   getProductsUrl,
   getTenantTaxonomyUrl,
@@ -1020,6 +1021,52 @@ export function createMedusaProductService(options: {
       });
 
       return result;
+    },
+
+    updateProductMediaVariants: async (input: {
+      productId: string;
+      mediaVariants: Record<string, Record<string, string>>;
+      tenantId?: string;
+    }): Promise<MerchantProductWriteResult> => {
+      if (!options.adminApiToken?.trim()) {
+        return missingCredentials();
+      }
+
+      const retrieveResponse = await requestMedusa(
+        fetcher,
+        getProductUrl(options.medusaInternalUrl, input.productId),
+        {
+          headers: getAdminHeaders(options.adminApiToken),
+        },
+      );
+
+      if (!retrieveResponse.ok) {
+        return await getWriteError(retrieveResponse);
+      }
+
+      const retrieveData = await retrieveResponse.json().catch(() => undefined);
+      const existingMetadata = isRecord(retrieveData?.product?.metadata)
+        ? retrieveData.product.metadata
+        : {};
+
+      const updateResponse = await requestMedusa(
+        fetcher,
+        getPlatformProductUpdateUrl(options.medusaInternalUrl, input.productId),
+        {
+          body: JSON.stringify({
+            update: {
+              metadata: {
+                ...existingMetadata,
+                media_variants: input.mediaVariants,
+              },
+            },
+          }),
+          headers: getAdminHeaders(options.adminApiToken),
+          method: "POST",
+        },
+      );
+
+      return await parseProductWriteResponse(updateResponse);
     },
 
     deleteMerchantProduct: async (input: {

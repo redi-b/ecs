@@ -214,7 +214,21 @@ if (mediaStorage.provider === "unconfigured") {
     "Media storage configured.",
   );
 }
-const mediaService = createMediaService(platformDb.db, mediaStorage);
+let updateProductMediaVariantsFn:
+  | ((input: {
+      mediaVariants: Record<string, Record<string, string>>;
+      productId: string;
+      tenantId: string;
+    }) => Promise<unknown>)
+  | undefined;
+
+const mediaService = createMediaService(platformDb.db, mediaStorage, {
+  updateProductMediaVariants: async (input) => {
+    if (updateProductMediaVariantsFn) {
+      return updateProductMediaVariantsFn(input);
+    }
+  },
+});
 const storefrontDemoBaseUrl = getTemplateDemoBaseUrl(
   process.env.STOREFRONT_DEMO_HOST ?? "demo.lvh.me",
 );
@@ -628,6 +642,7 @@ const productService = wrapProductServiceWithStorefrontPurge(
     logger,
   },
 );
+updateProductMediaVariantsFn = (input) => productService.updateProductMediaVariants(input);
 const createCapacityLimitedProduct = createProductCapacityWriter({
   createProduct: productService.createMerchantProduct,
   db: platformDb.db,

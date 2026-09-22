@@ -1,1 +1,5 @@
-export { createMediaService } from "./service.js";
+export {
+  buildProductMediaVariantsMetadata,
+  createMediaService,
+  type MediaServiceDependencies,
+} from "./service.js";

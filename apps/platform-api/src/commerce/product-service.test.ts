@@ -588,6 +588,75 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("updates product media_variants metadata while preserving existing metadata", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "GET") {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              metadata: { platform_tenant_id: "tenant_1", custom_tag: "organic" },
+            },
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            handle: "coffee",
+            metadata: {
+              platform_tenant_id: "tenant_1",
+              custom_tag: "organic",
+              media_variants: {
+                "https://media.ourdomain.com/hero.png": {
+                  w200: "https://media.ourdomain.com/hero-200w.webp",
+                },
+              },
+            },
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-03T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.updateProductMediaVariants({
+      productId: "prod_1",
+      mediaVariants: {
+        "https://media.ourdomain.com/hero.png": {
+          w200: "https://media.ourdomain.com/hero-200w.webp",
+        },
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests[0]?.method, "GET");
+    assert.equal(forwardedRequests[0]?.url, "http://medusa:9000/admin/products/prod_1");
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/platform-products/prod_1");
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      update: {
+        metadata: {
+          platform_tenant_id: "tenant_1",
+          custom_tag: "organic",
+          media_variants: {
+            "https://media.ourdomain.com/hero.png": {
+              w200: "https://media.ourdomain.com/hero-200w.webp",
+            },
+          },
+        },
+      },
+    });
+  });
+
   it("gets a product only when it belongs to the resolved tenant sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({

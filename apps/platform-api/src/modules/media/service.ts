@@ -54,7 +54,47 @@ const allowedMimeTypes = new Set([
 ]);
 const maxImageByteSize = 15 * 1024 * 1024;
 
-export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
+export type MediaServiceDependencies = {
+  updateProductMediaVariants?: (input: {
+    mediaVariants: Record<string, Record<string, string>>;
+    productId: string;
+    tenantId: string;
+  }) => Promise<unknown>;
+};
+
+export function buildProductMediaVariantsMetadata(
+  assets: Array<{
+    publicUrl?: string | null;
+    variants?: Record<string, { publicUrl?: string | null } | undefined> | null;
+  }>,
+): Record<string, Record<string, string>> {
+  const result: Record<string, Record<string, string>> = {};
+
+  for (const asset of assets) {
+    if (!asset?.publicUrl || !asset?.variants) {
+      continue;
+    }
+
+    const variantsForAsset: Record<string, string> = {};
+    for (const [key, variant] of Object.entries(asset.variants)) {
+      if (variant?.publicUrl) {
+        variantsForAsset[key] = variant.publicUrl;
+      }
+    }
+
+    if (Object.keys(variantsForAsset).length > 0) {
+      result[asset.publicUrl] = variantsForAsset;
+    }
+  }
+
+  return result;
+}
+
+export function createMediaService(
+  db: PlatformDb,
+  storage: StorageAdapter,
+  dependencies?: MediaServiceDependencies,
+) {
   async function createUpload(input: {
     accessMode: "public" | "private";
     byteSize: number;
@@ -320,11 +360,20 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
     productId: string;
     tenantId: string;
     thumbnail: string | null;
+    updateProductMediaVariants?: (input: {
+      mediaVariants: Record<string, Record<string, string>>;
+      productId: string;
+      tenantId: string;
+    }) => Promise<unknown>;
   }) {
     const urls = Array.from(new Set(input.imageUrls.filter(Boolean)));
     const assets = urls.length
       ? await db
-          .select({ id: mediaAssets.id, publicUrl: mediaAssets.publicUrl })
+          .select({
+            id: mediaAssets.id,
+            publicUrl: mediaAssets.publicUrl,
+            variants: mediaAssets.variants,
+          })
           .from(mediaAssets)
           .where(
             and(
@@ -366,7 +415,18 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
       if (usages.length) await transaction.insert(mediaUsages).values(usages);
     });
 
-    return { count: assets.length, ok: true as const };
+    const mediaVariants = buildProductMediaVariantsMetadata(assets);
+    const updateVariants =
+      input.updateProductMediaVariants ?? dependencies?.updateProductMediaVariants;
+    if (updateVariants) {
+      await updateVariants({
+        mediaVariants,
+        productId: input.productId,
+        tenantId: input.tenantId,
+      });
+    }
+
+    return { count: assets.length, mediaVariants, ok: true as const };
   }
 
   async function findTenantAsset(tenantId: string, assetId: string) {
