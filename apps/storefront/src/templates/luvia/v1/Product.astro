@@ -99,6 +99,8 @@ const variantsPayload = (product?.variants ?? []).map((variant) => ({
   discountPercentage: variant.discountPercentage,
   currencyCode: variant.currencyCode,
   sku: variant.sku,
+  imageUrl: variant.imageUrl ?? null,
+  imageVariants: variant.imageVariants ?? null,
   optionValues: Object.fromEntries(
     variant.optionValues.map((option) => [option.optionTitle, option.value]),
   ),
@@ -111,6 +113,12 @@ const currentPrice = formatMoney(
 );
 const originalPrice = defaultVariant?.originalPriceAmount ?? product?.originalPriceAmount ?? null;
 const badge = product ? resolveProductBadge(product, defaultVariant) : null;
+const initialHeroImage = defaultVariant?.imageUrl
+  ? gallery.find((img) => img.url === defaultVariant.imageUrl) ?? {
+      url: defaultVariant.imageUrl,
+      variants: defaultVariant.imageVariants ?? undefined,
+    }
+  : gallery[0] ?? null;
 const wishlistItem = product
   ? JSON.stringify({
       path: `/products/${encodeURIComponent(handle)}`,
@@ -135,12 +143,14 @@ const wishlistItem = product
               const thumbSrc = resolveProductImage(img.variants, "w200", img.url);
               const mainSrc = resolveProductImage(img.variants, "w1200", resolveProductImage(img.variants, "w800", img.url));
               const mainSrcset = buildProductImageSrcset(img.variants);
+              const isInitialActive = initialHeroImage ? img.url === initialHeroImage.url : index === 0;
               return (
                 <button
                   type="button"
                   data-gallery-thumb={mainSrc}
                   data-gallery-thumb-srcset={mainSrcset ?? undefined}
-                  aria-current={index === 0 ? "true" : undefined}
+                  data-image-url={img.url}
+                  aria-current={isInitialActive ? "true" : undefined}
                   aria-label={m.product_view_image({ number: index + 1 }, { locale })}
                 >
                   <img src={thumbSrc} alt="" width="96" height="96" loading="lazy" decoding="async" />
@@ -150,10 +160,10 @@ const wishlistItem = product
           </div>
         )}
         <div class="lv-product-gallery__main" data-gallery-main>
-          {gallery[0] ? (
+          {initialHeroImage ? (
             <img
-              src={resolveProductImage(gallery[0].variants, "w1200", resolveProductImage(gallery[0].variants, "w800", gallery[0].url))}
-              srcset={buildProductImageSrcset(gallery[0].variants) ?? undefined}
+              src={resolveProductImage(initialHeroImage.variants, "w1200", resolveProductImage(initialHeroImage.variants, "w800", initialHeroImage.url))}
+              srcset={buildProductImageSrcset(initialHeroImage.variants) ?? undefined}
               alt={product.title ?? m.catalog_product_fallback({}, { locale })}
               width="1200"
               height="1200"
@@ -175,9 +185,69 @@ const wishlistItem = product
           <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
           <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
           <input type="hidden" name="quantity" value="1" />
-          {optionAxes.map((axis) => <fieldset data-option-axis={axis.title}><legend>{m.product_select_option({ option: axis.title }, { locale })}</legend><div>{axis.values.map((value) => { const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value); const swatch = isColorOptionTitle(axis.title) ? resolveColorSwatch(value, axis.swatches?.[value]) : null; return swatch
-            ? <button class="lv-product-swatch" type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={m.product_select_option({ option: value }, { locale })} title={value}><span style={`background-color:${swatch}`} aria-hidden="true"></span></button>
-            : <button type="button" data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"}>{value}</button>; })}</div></fieldset>)}
+          {optionAxes.map((axis) => {
+            const isColorAxis = isColorOptionTitle(axis.title);
+            return (
+              <fieldset data-option-axis={axis.title}>
+                <legend>{m.product_select_option({ option: axis.title }, { locale })}</legend>
+                <div>
+                  {axis.values.map((value) => {
+                    const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value);
+                    const richSwatch = axis.optionSwatches?.[value];
+                    const colorSwatch = richSwatch?.kind === "color"
+                      ? richSwatch.value
+                      : isColorAxis
+                        ? resolveColorSwatch(value, axis.swatches?.[value])
+                        : null;
+                    const imageSwatch = richSwatch?.kind === "image" ? richSwatch.url : null;
+
+                    if (imageSwatch) {
+                      return (
+                        <button
+                          class="lv-product-swatch lv-product-swatch--image"
+                          type="button"
+                          data-option-title={axis.title}
+                          data-option-value={value}
+                          aria-pressed={selected ? "true" : "false"}
+                          aria-label={m.product_select_option({ option: value }, { locale })}
+                          title={value}
+                        >
+                          <img src={imageSwatch} alt="" width="28" height="28" loading="lazy" aria-hidden="true" />
+                        </button>
+                      );
+                    }
+
+                    if (colorSwatch) {
+                      return (
+                        <button
+                          class="lv-product-swatch"
+                          type="button"
+                          data-option-title={axis.title}
+                          data-option-value={value}
+                          aria-pressed={selected ? "true" : "false"}
+                          aria-label={m.product_select_option({ option: value }, { locale })}
+                          title={value}
+                        >
+                          <span style={`background-color:${colorSwatch}`} aria-hidden="true"></span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <button
+                        type="button"
+                        data-option-title={axis.title}
+                        data-option-value={value}
+                        aria-pressed={selected ? "true" : "false"}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            );
+          })}
           <div class="lv-product-cart-row"><button class="lv-product-add" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button><button class="lv-product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><img src={wishlistIcon.src} alt="" /></button></div>
           <p class="lv-product-feedback" data-add-feedback aria-live="polite"></p>
         </form>
@@ -193,6 +263,7 @@ const wishlistItem = product
 
     <div class="lv-sticky-product" data-sticky-product><div><strong>{product.title}</strong><span data-sticky-price>{currentPrice}</span></div><button type="button" data-sticky-add disabled={!defaultVariant?.inStock}><span data-add-label>{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button></div>
     <script is:inline type="application/json" id="luvia-product-variants" set:html={JSON.stringify(variantsPayload)} />
+    <script is:inline type="application/json" id="luvia-option-media-bindings" set:html={JSON.stringify(product?.optionMediaBindings ?? null)} />
   </main>}
 </Layout>
 
@@ -201,6 +272,7 @@ const wishlistItem = product
     const root = document.querySelector("[data-product-detail]");
     if (!root) return;
     const variants = JSON.parse(document.getElementById("luvia-product-variants")?.textContent || "[]");
+    const optionMediaBindings = JSON.parse(document.getElementById("luvia-option-media-bindings")?.textContent || "null");
     const selected = {};
     root.querySelectorAll("[data-option-axis]").forEach((axis) => {
       const title = axis.getAttribute("data-option-axis");
@@ -250,6 +322,73 @@ const wishlistItem = product
         }
       });
       root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });
+
+      const thumbButtons = Array.from(root.querySelectorAll("[data-gallery-thumb]"));
+      if (optionMediaBindings && optionMediaBindings.mappings && optionMediaBindings.optionTitle) {
+        const boundTitle = optionMediaBindings.optionTitle.trim().toLowerCase();
+        const selectedKey = Object.keys(selected).find((k) => k.trim().toLowerCase() === boundTitle);
+        const selectedVal = selectedKey ? selected[selectedKey]?.trim() : "";
+        const mappingKey = selectedVal
+          ? Object.keys(optionMediaBindings.mappings).find((k) => k.trim().toLowerCase() === selectedVal.toLowerCase())
+          : null;
+
+        if (mappingKey) {
+          const tagged = new Set(optionMediaBindings.mappings[mappingKey] || []);
+          const allTagged = new Set(Object.values(optionMediaBindings.mappings).flat());
+          let visibleCount = 0;
+          thumbButtons.forEach((btn) => {
+            const url = btn.getAttribute("data-image-url") || "";
+            const visible = tagged.has(url) || !allTagged.has(url);
+            btn.hidden = !visible;
+            btn.toggleAttribute("hidden", !visible);
+            if (visible) visibleCount++;
+          });
+          if (visibleCount === 0) {
+            thumbButtons.forEach((btn) => {
+              btn.hidden = false;
+              btn.removeAttribute("hidden");
+            });
+          }
+        } else {
+          thumbButtons.forEach((btn) => {
+            btn.hidden = false;
+            btn.removeAttribute("hidden");
+          });
+        }
+      }
+
+      const main = root.querySelector("[data-gallery-main] > img");
+      if (variant && variant.imageUrl && main) {
+        const matchingThumb = thumbButtons.find((btn) => !btn.hidden && btn.getAttribute("data-image-url") === variant.imageUrl);
+        if (matchingThumb) {
+          main.setAttribute("src", matchingThumb.dataset.galleryThumb || variant.imageUrl);
+          if (matchingThumb.dataset.galleryThumbSrcset) {
+            main.setAttribute("srcset", matchingThumb.dataset.galleryThumbSrcset);
+          } else {
+            main.removeAttribute("srcset");
+          }
+          thumbButtons.forEach((item) => item.removeAttribute("aria-current"));
+          matchingThumb.setAttribute("aria-current", "true");
+        } else {
+          main.setAttribute("src", variant.imageUrl);
+          main.removeAttribute("srcset");
+        }
+      } else if (main && thumbButtons.length) {
+        const currentThumb = thumbButtons.find((btn) => btn.getAttribute("aria-current") === "true");
+        if (!currentThumb || currentThumb.hidden) {
+          const firstVisible = thumbButtons.find((btn) => !btn.hidden);
+          if (firstVisible) {
+            main.setAttribute("src", firstVisible.dataset.galleryThumb || "");
+            if (firstVisible.dataset.galleryThumbSrcset) {
+              main.setAttribute("srcset", firstVisible.dataset.galleryThumbSrcset);
+            } else {
+              main.removeAttribute("srcset");
+            }
+            thumbButtons.forEach((item) => item.removeAttribute("aria-current"));
+            firstVisible.setAttribute("aria-current", "true");
+          }
+        }
+      }
     };
     root.addEventListener("click", (event) => {
       const target = event.target instanceof Element ? event.target : null;

@@ -27,6 +27,8 @@ export type StoreProductVariant = {
   discountAmount?: number | null;
   discountPercentage?: number | null;
   currencyCode: string | null;
+  imageUrl?: string | null;
+  imageVariants?: ImageVariants | null;
   optionValues: Array<{ optionTitle: string; value: string }>;
 };
 
@@ -35,6 +37,10 @@ export type StoreProductOption = {
   title: string;
   values: string[];
   swatches?: Record<string, string>;
+  optionSwatches?: Record<
+    string,
+    { kind: "color"; value: string } | { kind: "image"; url: string }
+  >;
 };
 
 export type ImageVariants = {
@@ -60,6 +66,7 @@ export type StoreProduct = {
   gallery: StoreProductImage[];
   variants: StoreProductVariant[];
   options: StoreProductOption[];
+  optionMediaBindings?: { optionTitle: string; mappings: Record<string, string[]> } | null;
   collectionId: string | null;
   collectionTitle: string | null;
   categoryIds: string[];
@@ -123,6 +130,7 @@ export type StoreCartItem = {
   unitPrice: number | null;
   total: number | null;
   thumbnail: string | null;
+  imageUrl?: string | null;
   variantId: string | null;
   productHandle: string | null;
   variantTitle: string | null;

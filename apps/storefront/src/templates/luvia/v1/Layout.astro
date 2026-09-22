@@ -281,7 +281,8 @@ const isActiveLink = (href: string) =>
         for (const item of cartItems) {
           const article = node("article", "lv-cart-item"); article.dataset.lineItemId = item.id;
           const media = node("a", "lv-cart-item__media") as HTMLAnchorElement; media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
-          if (item.thumbnail) { const image = node("img") as HTMLImageElement; image.src = item.thumbnail; image.alt = ""; media.append(image); }
+          const itemMedia = item.imageUrl || item.thumbnail;
+          if (itemMedia) { const image = node("img") as HTMLImageElement; image.src = itemMedia; image.alt = ""; media.append(image); }
           const copy = node("div", "lv-cart-item__copy"); copy.append(node("strong", "", item.title || messages.product)); if (item.variantTitle) copy.append(node("span", "", item.variantTitle)); copy.append(node("b", "", formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode)));
           const controls = node("div", "lv-cart-item__actions");
           const quantity = node("div", "lv-cart-quantity");

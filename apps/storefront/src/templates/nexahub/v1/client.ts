@@ -255,7 +255,8 @@ export function initNexahubStorefront() {
     for (const item of items) {
       const row = element("article", "cart-drawer__item"); row.dataset.lineItemId = item.id;
       const media = element("a", "cart-drawer__image img-wrapper") as HTMLAnchorElement; media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
-      if (item.thumbnail) { const image = element("img") as HTMLImageElement; image.src = item.thumbnail; image.alt = ""; media.append(image); }
+      const itemMedia = item.imageUrl || item.thumbnail;
+      if (itemMedia) { const image = element("img") as HTMLImageElement; image.src = itemMedia; image.alt = ""; media.append(image); }
       const details = element("div", "cart-drawer__details"); const info = element("div", "cart-drawer__info");
       info.append(element("h3", "type-heading-5", item.title || clientMessage("product")));
       if (item.variantTitle) info.append(element("span", "cart-drawer__variant type-body-xs-400", item.variantTitle));
