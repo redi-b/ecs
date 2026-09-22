@@ -30,8 +30,7 @@
 .lv-hero__copy {
   position: relative;
   z-index: 2;
-  width: 68%;
-  padding: 143px 0 34px 60px;
+  height: 100%;
 }
 
 @keyframes lv-hero-fade-up {
@@ -84,7 +83,7 @@
 }
 
 .lv-hero__copy ul {
-  margin: 150px 0 0;
+  width: fit-content;
   padding: 0;
   display: flex;
   gap: 8px;
