@@ -61,7 +61,7 @@
   padding: $space-100 $space-200;
   border-radius: $radius-pill;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-drawer>header button {
@@ -73,7 +73,7 @@
   border: 0;
   border-radius: $radius-full;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   line-height: 0;
   cursor: pointer;
 }
@@ -91,7 +91,7 @@
   flex: none;
   min-height: 0;
   padding: 0 $space-600;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-drawer__status:not(:empty) {
@@ -140,7 +140,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: $radius-150;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
+  background: var(--clr-soft);
 }
 
 .lv-cart-item__media img {
@@ -164,7 +164,7 @@
 }
 
 .lv-cart-item__copy span {
-  color: color-mix(in srgb, var(--clr-ink) 46%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-cart-item__copy b {
@@ -197,7 +197,7 @@
   height: 32px;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   cursor: pointer;
 }
 
@@ -210,7 +210,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--clr-ink) 44%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -228,7 +228,7 @@
 .lv-cart-empty p {
   max-width: 280px;
   margin: 0 auto $space-500;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-empty a {
@@ -261,7 +261,7 @@
   display: flex;
   justify-content: space-between;
   gap: $space-500;
-  color: color-mix(in srgb, var(--clr-ink) 46%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-cart-drawer>footer dl>div:last-child {
@@ -305,7 +305,7 @@
   margin-top: $space-200;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--clr-ink) 46%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   cursor: pointer;
 }
 

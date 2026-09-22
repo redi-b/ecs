@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-product-breadcrumb a {
@@ -152,7 +152,7 @@
   padding: $space-150 $space-300;
   border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-product-title h1 {
@@ -175,7 +175,7 @@
 }
 
 .lv-product-title small {
-  color: color-mix(in srgb, var(--clr-primary) 74%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-product-title small.is-out {
@@ -196,7 +196,7 @@
 
 .lv-product-buy legend {
   margin-bottom: $space-350;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-product-buy fieldset>div {
@@ -210,7 +210,7 @@
   padding: 0 $space-400;
   border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
+  background: var(--clr-soft);
   color: var(--clr-ink);
   cursor: pointer;
 }
@@ -319,7 +319,7 @@
 .lv-product-feedback {
   min-height: 18px;
   margin: calc($space-200 * -1) $space-100 0;
-  color: color-mix(in srgb, var(--clr-primary) 74%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-product-feedback.is-error {
@@ -349,7 +349,7 @@
 }
 
 .lv-product-accordions summary:hover {
-  color: color-mix(in srgb, var(--clr-primary) 62%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-product-accordions summary:focus-visible {
@@ -374,7 +374,7 @@
 
 .lv-product-accordions details>div {
   padding-top: $space-350;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   line-height: 1.45;
 }
 
@@ -565,7 +565,7 @@
     align-items: center;
     gap: $space-300;
     border-top: 1px solid var(--clr-line);
-    background: color-mix(in srgb, var(--clr-bg) 96%, var(--clr-white));
+    background: var(--clr-white);
     box-shadow: 0 -12px 34px alpha(var(--clr-ink), 0.12);
     transform: translateY(0);
   }

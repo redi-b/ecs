@@ -19,7 +19,7 @@
 
 .lv-checkout__hero p {
   margin: $space-600 0 0;
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout__layout,
@@ -55,7 +55,7 @@
 
 .lv-checkout-form-wrap>header p {
   margin: 0;
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout-form {
@@ -73,7 +73,7 @@
   display: flex;
   flex-direction: column;
   gap: $space-200;
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-checkout-fields>label.is-wide {
@@ -94,7 +94,7 @@
 .lv-checkout-choice-group legend,
 .lv-checkout-payment legend {
   margin-bottom: $space-200;
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-checkout-choice-group>div {
@@ -120,13 +120,13 @@
 
 .lv-checkout-choice-group label:hover,
 .lv-checkout-payment label:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 48%, var(--clr-line));
+  border-color: alpha(var(--clr-primary), 0.38);
 }
 
 .lv-checkout-choice-group label:has(input:checked),
 .lv-checkout-payment label:has(input:checked) {
   border-color: var(--clr-primary);
-  background: color-mix(in srgb, var(--clr-soft) 62%, var(--clr-white));
+  background: var(--clr-soft);
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.1);
 }
 
@@ -153,7 +153,7 @@
 
 .lv-checkout-choice-group small,
 .lv-checkout-payment small {
-  color: color-mix(in srgb, var(--clr-ink) 52%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   line-height: 1.35;
 }
 
@@ -164,7 +164,7 @@
   gap: $space-450;
   border: 1px solid var(--clr-line);
   border-radius: $radius-400;
-  background: color-mix(in srgb, var(--clr-soft) 48%, var(--clr-white));
+  background: var(--clr-soft);
 }
 
 .lv-checkout-delivery-details>header {
@@ -180,7 +180,7 @@
 }
 
 .lv-checkout-delivery-details>header span {
-  color: color-mix(in srgb, var(--clr-ink) 55%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-delivery-details>header a {
@@ -203,7 +203,7 @@
 .lv-checkout-address-fields label {
   display: grid;
   gap: $space-200;
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-checkout-address-fields label.is-wide {
@@ -237,7 +237,7 @@
 
 .lv-checkout-saved-addresses legend {
   margin-bottom: $space-200;
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-checkout-saved-addresses>div {
@@ -260,7 +260,7 @@
 
 .lv-checkout-saved-addresses label:has(input:checked) {
   border-color: var(--clr-primary);
-  background: color-mix(in srgb, var(--clr-soft) 62%, var(--clr-white));
+  background: var(--clr-soft);
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.1);
 }
 
@@ -279,14 +279,14 @@
 
 .lv-checkout-saved-addresses label small {
   overflow: hidden;
-  color: color-mix(in srgb, var(--clr-ink) 52%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .lv-checkout-saved-addresses>p {
   margin: $space-200 0 0;
-  color: color-mix(in srgb, var(--clr-ink) 52%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-save-address {
@@ -318,7 +318,7 @@
 }
 
 .lv-checkout-save-address>label:first-child small {
-  color: color-mix(in srgb, var(--clr-ink) 52%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-address-name {
@@ -331,7 +331,7 @@
   margin: 0;
   padding: $space-250 $space-300;
   border-radius: $radius-200;
-  background: color-mix(in srgb, var(--clr-accent) 38%, var(--clr-white));
+  background: var(--clr-accent);
 }
 
 .lv-checkout-fields>label>input,
@@ -362,7 +362,7 @@
 
 .lv-checkout-fields>label>input::placeholder,
 .lv-checkout-fields>label>textarea::placeholder {
-  color: color-mix(in srgb, var(--clr-ink) 32%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout-account {
@@ -371,7 +371,7 @@
   display: flex;
   align-items: center;
   gap: $space-250;
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-checkout-account input {
@@ -381,7 +381,7 @@
 }
 
 .lv-checkout-account:has(input:disabled) {
-  color: color-mix(in srgb, var(--clr-ink) 46%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout-account small {
@@ -403,11 +403,11 @@
   gap: $space-50;
   border: 1px solid var(--clr-line);
   border-radius: $radius-300;
-  background: color-mix(in srgb, var(--clr-soft) 72%, var(--clr-white));
+  background: var(--clr-soft);
 }
 
 .lv-checkout-account.is-signed-in span {
-  color: color-mix(in srgb, var(--clr-ink) 58%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-payment {
@@ -429,7 +429,7 @@
   padding: $space-350;
   border-radius: $radius-250;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-actions {
@@ -492,7 +492,7 @@
   padding: $space-100 $space-250;
   border-radius: $radius-pill;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout-summary ul {
@@ -518,7 +518,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: $radius-150;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
+  background: var(--clr-soft);
 }
 
 .lv-checkout-summary li img {
@@ -542,7 +542,7 @@
 }
 
 .lv-checkout-summary li span {
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout-summary li b {
@@ -563,7 +563,7 @@
 .lv-checkout-summary dl>div {
   display: flex;
   justify-content: space-between;
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
 }
 
 .lv-checkout-summary dd {
@@ -579,13 +579,13 @@
 }
 
 .lv-checkout-summary dl>div.is-savings {
-  color: color-mix(in srgb, var(--clr-primary) 76%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-checkout-summary>small {
   margin-top: $space-350;
   display: block;
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   text-align: center;
 }
 
@@ -601,7 +601,7 @@
 }
 
 .lv-checkout__empty p {
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-checkout__empty a {

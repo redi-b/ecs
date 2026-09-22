@@ -16,7 +16,7 @@
   gap: $space-800;
   border-radius: $radius-400;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-footer>div {
@@ -173,7 +173,7 @@
   grid-column: 1 / -1;
   min-height: 1.25rem;
   margin: 0;
-  color: color-mix(in srgb, var(--clr-ink) 58%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   transition: color 180ms ease;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .lv-inquiry-status.is-success {
-  color: color-mix(in srgb, var(--clr-primary) 64%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-inquiry-status.is-error {
@@ -190,5 +190,5 @@
 }
 
 .lv-inquiry-status.is-pending {
-  color: color-mix(in srgb, var(--clr-ink) 72%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }

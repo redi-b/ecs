@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 64%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .17em;
@@ -90,7 +90,7 @@
 }
 
 .lv-wishlist header small {
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-wishlist>section {
@@ -102,7 +102,7 @@
   padding: $space-1000 $space-600;
   border-radius: $radius-450;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   text-align: center;
 }
 
@@ -201,7 +201,7 @@
 }
 
 .lv-wishlist__grid span {
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 12px;
   text-transform: uppercase;
 }
@@ -225,7 +225,7 @@
   border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
   background: var(--clr-surface);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   cursor: pointer;
 }
 

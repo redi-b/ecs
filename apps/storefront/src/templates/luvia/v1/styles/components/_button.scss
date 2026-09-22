@@ -94,7 +94,7 @@
 .lv-button:hover:not(:disabled) .lv-button__text,
 .lv-button:hover:not(:disabled) .lv-button__icon {
   filter: brightness(.97);
-  box-shadow: 0 5px 14px color-mix(in srgb, var(--clr-ink) 10%, transparent);
+  box-shadow: 0 5px 14px alpha(var(--clr-ink), 0.1);
 }
 
 .lv-button:focus-visible {

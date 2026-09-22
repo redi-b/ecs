@@ -79,7 +79,7 @@
 
 .lv-confirmation__eyebrow {
   margin: $space-750 0 $space-350;
-  color: color-mix(in srgb, var(--clr-ink) 64%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .18em;
@@ -95,7 +95,7 @@
 .lv-confirmation__intro {
   max-width: 610px;
   margin: $space-600 0 $space-650;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 17px;
   line-height: 1.5;
 }
@@ -104,7 +104,7 @@
   padding: $space-100 $space-550;
   border: 1px solid var(--clr-line);
   border-radius: $radius-350;
-  background: color-mix(in srgb, var(--clr-soft) 48%, var(--clr-bg));
+  background: var(--clr-soft);
 }
 
 .lv-confirmation__receipt>div {
@@ -121,7 +121,7 @@
 }
 
 .lv-confirmation__receipt span {
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 13px;
 }
 
@@ -143,7 +143,7 @@
 .lv-confirmation__notice {
   min-height: 20px;
   margin: $space-450 $space-50 0;
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 13px;
 }
 
@@ -166,7 +166,7 @@
 
 .lv-confirmation__steps>p {
   margin: 0 auto auto 0;
-  color: color-mix(in srgb, var(--clr-ink) 38%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .17em;
@@ -219,7 +219,7 @@
 
 .lv-confirmation__steps small {
   max-width: 290px;
-  color: color-mix(in srgb, var(--clr-on-dark) 68%, var(--clr-dark));
+  color: alpha(var(--clr-on-dark), 0.68);
   font-size: 13px;
   line-height: 1.4;
 }

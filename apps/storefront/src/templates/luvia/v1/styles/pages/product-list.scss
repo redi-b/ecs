@@ -113,7 +113,7 @@
   gap: $space-250;
   border: 1px solid var(--clr-line);
   border-radius: $radius-250;
-  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-white));
+  background: var(--clr-white);
 }
 
 .lv-catalog-filter__search {
@@ -133,8 +133,8 @@
 }
 
 .lv-catalog-filter__search input:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 48%, var(--clr-bg));
-  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-white));
+  border-color: alpha(var(--clr-primary), 0.38);
+  background: var(--clr-white);
 }
 
 .lv-catalog-filter__search input:focus-visible {
@@ -179,7 +179,7 @@
 
 .lv-catalog-filter__search .product-search-suggestions__item:hover,
 .lv-catalog-filter__search .product-search-suggestions__item[data-active] {
-  background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-bg));
+  background: alpha(var(--clr-primary), 0.10);
 }
 
 .lv-catalog-filter__search .product-search-suggestions__media {
@@ -249,19 +249,19 @@
 }
 
 .lv-filter-pill:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 48%, var(--clr-bg));
-  background: color-mix(in srgb, var(--clr-soft) 72%, var(--clr-bg));
+  border-color: alpha(var(--clr-primary), 0.38);
+  background: var(--clr-soft);
 }
 
 .lv-filter-pill.is-active {
-  border-color: color-mix(in srgb, var(--clr-primary) 40%, var(--clr-bg));
+  border-color: alpha(var(--clr-primary), 0.38);
   background: var(--clr-soft);
 }
 
 .lv-filter-menu {
   position: relative;
   flex: none;
-  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-filter-menu[open] {
@@ -299,8 +299,8 @@
 }
 
 .lv-filter-menu summary:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 40%, var(--clr-bg));
-  background: color-mix(in srgb, var(--clr-soft) 72%, var(--clr-bg));
+  border-color: alpha(var(--clr-primary), 0.38);
+  background: var(--clr-soft);
 }
 
 .lv-filter-menu summary:focus-visible {
@@ -310,7 +310,7 @@
 }
 
 .lv-filter-menu[open] summary {
-  border-color: color-mix(in srgb, var(--clr-primary) 34%, var(--clr-bg));
+  border-color: alpha(var(--clr-primary), 0.38);
   background: var(--clr-soft);
 }
 
@@ -323,7 +323,7 @@
 }
 
 .lv-filter-menu summary>span {
-  color: color-mix(in srgb, var(--clr-ink) 56%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-filter-menu summary>strong {
@@ -398,7 +398,7 @@
 }
 
 .lv-price-filter label>span {
-  color: color-mix(in srgb, var(--clr-ink) 58%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-price-filter input {
@@ -443,7 +443,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: color-mix(in srgb, var(--clr-ink) 70%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
   text-decoration: underline;
   text-underline-offset: 3px;
   white-space: nowrap;
@@ -472,7 +472,7 @@
   gap: $space-100;
   border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   text-decoration: none;
 }
 
@@ -491,8 +491,8 @@
   padding: $space-100 $space-150;
   flex: none;
   border-radius: $radius-200;
-  background: color-mix(in srgb, var(--clr-accent) 58%, var(--clr-bg));
-  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  background: var(--clr-accent);
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-catalog-grid {
@@ -521,7 +521,7 @@
 
 .lv-catalog-state p {
   margin: 0 0 $space-450;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-catalog-state a {
@@ -556,7 +556,7 @@
   aspect-ratio: 342/420;
   overflow: hidden;
   border-radius: $radius-200;
-  background: color-mix(in srgb, var(--clr-soft) 84%, var(--clr-bg));
+  background: var(--clr-soft);
 }
 
 .lv-catalog-loading span::after {
@@ -587,7 +587,7 @@
   align-items: center;
   justify-content: center;
   gap: $space-600;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-catalog-pagination p {
@@ -643,8 +643,8 @@
   aspect-ratio: 342/372;
   overflow: hidden;
   border-radius: $radius-200;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-product-card__media-link {
@@ -736,7 +736,7 @@
 
 .lv-product-card__brand {
   margin: $space-350 0 $space-100;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-product-card__title {

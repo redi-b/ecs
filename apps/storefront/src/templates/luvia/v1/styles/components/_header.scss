@@ -22,8 +22,8 @@
   gap: $space-600;
   transform: translateX(-50%);
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-white));
-  box-shadow: 0 0 26px color-mix(in srgb, var(--clr-primary) 22%, transparent);
+  background: var(--clr-white);
+  box-shadow: 0 0 26px alpha(var(--clr-primary), 0.22);
 }
 
 .lv-logo {
@@ -63,7 +63,7 @@
 }
 
 .lv-nav a {
-  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -87,19 +87,19 @@
   align-items: center;
   border: 1px solid var(--clr-accent);
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-bg) 56%, transparent);
+  background: alpha(var(--clr-bg), 0.56);
   transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
 .lv-search:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 55%, var(--clr-bg));
-  background: color-mix(in srgb, var(--clr-bg) 94%, var(--clr-primary));
+  border-color: alpha(var(--clr-primary), 0.38);
+  background: var(--clr-bg);
 }
 
 .lv-search:focus-within {
   border-color: var(--clr-primary);
   background: var(--clr-bg);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--clr-primary) 18%, transparent), 0 8px 22px color-mix(in srgb, var(--clr-ink) 8%, transparent);
+  box-shadow: 0 0 0 4px alpha(var(--clr-primary), 0.18), 0 8px 22px alpha(var(--clr-ink), 0.08);
 }
 
 .lv-search input {
@@ -151,8 +151,8 @@
   overflow: hidden;
   border: 1px solid var(--clr-line);
   border-radius: $radius-400;
-  background: color-mix(in srgb, var(--clr-bg) 96%, transparent);
-  box-shadow: 0 24px 60px color-mix(in srgb, var(--clr-ink) 18%, transparent);
+  background: alpha(var(--clr-bg), 0.96);
+  box-shadow: 0 24px 60px alpha(var(--clr-ink), 0.18);
   backdrop-filter: blur(18px);
 }
 
@@ -174,7 +174,7 @@
 
 .lv-search .product-search-suggestions__item:hover,
 .lv-search .product-search-suggestions__item[data-active] {
-  background: color-mix(in srgb, var(--clr-primary) 10%, var(--clr-bg));
+  background: alpha(var(--clr-primary), 0.10);
 }
 
 .lv-search .product-search-suggestions__media {
@@ -208,7 +208,7 @@
 }
 
 .lv-search .product-search-suggestions__copy small {
-  color: color-mix(in srgb, var(--clr-ink) 62%, transparent);
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-search .product-search-suggestions__item b {
@@ -334,7 +334,7 @@
       padding: 0;
       display: block;
       border: 0;
-      background: color-mix(in srgb, var(--clr-ink) 26%, transparent);
+      background: alpha(var(--clr-ink), 0.26);
       opacity: 0;
       visibility: hidden;
       cursor: default;
@@ -361,7 +361,7 @@
       border: 1px solid var(--clr-line);
       border-radius: $radius-450;
       background: var(--clr-bg);
-      box-shadow: 0 18px 40px color-mix(in srgb, var(--clr-ink) 15%, transparent);
+      box-shadow: 0 18px 40px alpha(var(--clr-ink), 0.15);
       opacity: 0;
       visibility: hidden;
       transform: translateY(-8px) scale(.985);
@@ -421,10 +421,10 @@
       height: 50px;
       padding-inline: 18px 54px;
       display: block;
-      border: 1px solid color-mix(in srgb, var(--clr-primary) 38%, var(--clr-bg));
+      border: 1px solid alpha(var(--clr-primary), 0.38);
       border-radius: $radius-pill;
       background: var(--clr-bg);
-      box-shadow: 0 16px 38px color-mix(in srgb, var(--clr-ink) 16%, transparent);
+      box-shadow: 0 16px 38px alpha(var(--clr-ink), 0.16);
       opacity: 0;
       visibility: hidden;
       transform: translateY(-7px) scale(.985);

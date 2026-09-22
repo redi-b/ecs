@@ -45,7 +45,7 @@ $ls-none: 0;
   --clr-warning: #7b541d;
   --clr-warning-bg: #fff7eb;
   --clr-line: #{alpha(var(--clr-ink), 0.14)};
-  --clr-dark: color-mix(in srgb, var(--clr-ink) 94%, var(--clr-black));
+  --clr-dark: var(--clr-ink);
   --clr-on-dark: var(--clr-bg);
 }
 

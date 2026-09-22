@@ -144,11 +144,11 @@
   height: 178px;
   padding: $space-200;
   overflow: hidden;
-  border: 6px solid color-mix(in srgb, var(--clr-ink) 24%, var(--clr-bg));
+  border: 6px solid alpha(var(--clr-ink), 0.14);
   border-radius: $radius-450;
   background: var(--clr-bg);
   color: var(--clr-ink);
-  box-shadow: 0 8px 62px color-mix(in srgb, var(--clr-ink) 42%, transparent);
+  box-shadow: 0 8px 62px alpha(var(--clr-ink), 0.42);
 }
 
 .lv-promo__viewport {
@@ -183,7 +183,7 @@
   overflow: hidden;
   border-radius: $radius-250;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 58%, transparent);
+  color: alpha(var(--clr-ink), 0.58);
   text-align: center;
 }
 
@@ -199,7 +199,7 @@
   left: 8px;
   padding: $space-100 $space-150;
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-bg) 90%, transparent);
+  background: alpha(var(--clr-bg), 0.9);
   color: var(--clr-ink);
 }
 
@@ -212,7 +212,7 @@
   padding: 0;
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--clr-ink) 12%, transparent);
+  border: 1px solid alpha(var(--clr-ink), 0.12);
   border-radius: $radius-full;
   background: var(--clr-bg);
   color: var(--clr-ink);
@@ -253,7 +253,7 @@
 
 .lv-promo__copy>b {
   margin-top: $space-50;
-  color: color-mix(in srgb, var(--clr-primary) 56%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-promo__actions {
@@ -302,13 +302,13 @@
   content: "";
   transform: translate(-50%, -50%);
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-ink) 24%, transparent);
+  background: alpha(var(--clr-ink), 0.24);
   transition: width 140ms ease, background-color 140ms ease, transform 140ms ease;
 }
 
 .lv-promo__dots button:hover::before {
   transform: translate(-50%, -50%) scale(1.2);
-  background: color-mix(in srgb, var(--clr-ink) 42%, transparent);
+  background: alpha(var(--clr-ink), 0.42);
 }
 
 .lv-promo__dots button:active::before {
@@ -395,8 +395,8 @@
   height: 355px;
   overflow: hidden;
   border-radius: $radius-100;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
-  color: color-mix(in srgb, var(--clr-ink) 58%, transparent);
+  background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.58);
 }
 
 .lv-product-card__media-link {
@@ -490,7 +490,7 @@
 
 .lv-product-card__brand {
   margin: $space-300 0 $space-100;
-  color: color-mix(in srgb, var(--clr-ink) 62%, transparent);
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-product-card__title {
@@ -514,7 +514,7 @@
 }
 
 .lv-product-card__price del {
-  color: color-mix(in srgb, var(--clr-ink) 48%, transparent);
+  color: alpha(var(--clr-ink), 0.48);
 }
 
 .lv-filter {
@@ -603,7 +603,7 @@
   place-items: center;
   border: 1px dashed var(--clr-line);
   border-radius: $radius-300;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-categories {

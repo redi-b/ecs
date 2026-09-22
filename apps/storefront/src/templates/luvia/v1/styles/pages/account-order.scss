@@ -9,7 +9,7 @@
 .lv-account-order__back {
   display: inline-flex;
   margin-bottom: $space-550;
-  color: color-mix(in srgb, var(--clr-ink) 66%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   text-underline-offset: 4px;
 }
 
@@ -21,7 +21,7 @@
   gap: $space-600;
   border: 1px solid var(--clr-line);
   border-radius: $radius-500;
-  background: color-mix(in srgb, var(--clr-soft) 72%, var(--clr-white));
+  background: var(--clr-soft);
 }
 
 .lv-account-order p {
@@ -38,7 +38,7 @@
 }
 
 .lv-account-order__hero span {
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-account-order__tracking {
@@ -74,14 +74,14 @@
   flex: 0 0 auto;
   border: 1px solid var(--clr-line);
   border-radius: $radius-full;
-  background: color-mix(in srgb, var(--clr-white) 76%, var(--clr-soft));
+  background: var(--clr-soft);
   color: var(--clr-ink);
   cursor: pointer;
 }
 
 .lv-account-order__refresh:hover {
-  border-color: color-mix(in srgb, var(--clr-primary) 55%, var(--clr-line));
-  background: color-mix(in srgb, var(--clr-soft) 70%, var(--clr-white));
+  border-color: alpha(var(--clr-primary), 0.38);
+  background: var(--clr-soft);
 }
 
 .lv-account-order__refresh:focus-visible {
@@ -108,7 +108,7 @@
 }
 
 .lv-account-order__refresh-note {
-  color: color-mix(in srgb, var(--clr-ink) 48%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   font-size: 11px;
   letter-spacing: .01em;
 }
@@ -154,7 +154,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: $radius-pill;
-  background: color-mix(in srgb, var(--clr-accent) 68%, var(--clr-bg));
+  background: var(--clr-accent);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -197,7 +197,7 @@
 
 .lv-account-order__items li span,
 .lv-account-order__items li small {
-  color: color-mix(in srgb, var(--clr-ink) 58%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-account-order__items li>b {
@@ -227,7 +227,7 @@
   display: flex;
   justify-content: space-between;
   gap: $space-500;
-  color: color-mix(in srgb, var(--clr-ink) 66%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-account-order dl dd {
@@ -238,7 +238,7 @@
 
 .lv-account-order dl .is-saving,
 .lv-account-order dl .is-saving dd {
-  color: color-mix(in srgb, var(--clr-primary) 80%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-account-order dl .is-total {
@@ -253,7 +253,7 @@
 .lv-account-order__side section>span,
 .lv-account-order__side section>small {
   display: block;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   line-height: 1.45;
 }
 
@@ -276,7 +276,7 @@
 .lv-account-order address {
   display: grid;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-style: normal;
 }
 

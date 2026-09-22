@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 64%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .17em;
@@ -73,7 +73,7 @@
 .lv-request__intro>span {
   max-width: 520px;
   display: block;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 17px;
   line-height: 1.5;
 }
@@ -109,7 +109,7 @@
 
 .lv-request__panel header p {
   margin: 0;
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 13px;
 }
 
@@ -124,7 +124,7 @@
   min-width: 0;
   flex-direction: column;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   font-size: 13px;
 }
 

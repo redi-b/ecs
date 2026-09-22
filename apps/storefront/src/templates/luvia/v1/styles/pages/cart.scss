@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: color-mix(in srgb, var(--clr-ink) 78%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.80);
 }
 
 .lv-cart-page__breadcrumb a {
@@ -62,7 +62,7 @@
 
 .lv-cart-page__heading p {
   margin: $space-300 0 0;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-page__error {
@@ -76,7 +76,7 @@
   min-height: 20px;
   margin-top: calc($space-300 * -1);
   margin-bottom: $space-300;
-  color: color-mix(in srgb, var(--clr-primary) 74%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-cart-page__live.is-error {
@@ -122,8 +122,8 @@
   place-items: center;
   overflow: hidden;
   border-radius: $radius-200;
-  background: color-mix(in srgb, var(--clr-soft) 82%, var(--clr-bg));
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.62);
   text-decoration: none;
 }
 
@@ -152,7 +152,7 @@
 
 .lv-cart-line__copy span,
 .lv-cart-line__copy small {
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-line__copy small {
@@ -178,7 +178,7 @@
 .lv-cart-line__quantity button {
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
   cursor: pointer;
 }
 
@@ -201,7 +201,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--clr-ink) 46%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -243,7 +243,7 @@
   padding: $space-100 $space-200;
   border-radius: $radius-pill;
   background: var(--clr-soft);
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-summary .lv-discount-code {
@@ -261,7 +261,7 @@
   display: flex;
   justify-content: space-between;
   gap: $space-500;
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-summary dd {
@@ -277,12 +277,12 @@
 }
 
 .lv-cart-summary dl>div[data-summary-discount] {
-  color: color-mix(in srgb, var(--clr-primary) 76%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-cart-summary>p {
   margin: 0 0 $space-500;
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-summary>a {
@@ -299,7 +299,7 @@
 .lv-cart-summary>small {
   margin-top: $space-300;
   display: block;
-  color: color-mix(in srgb, var(--clr-ink) 44%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.45);
   text-align: center;
 }
 
@@ -333,7 +333,7 @@
 
 .lv-cart-page__empty p {
   margin: 0 0 $space-550;
-  color: color-mix(in srgb, var(--clr-ink) 62%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-cart-page__empty a {

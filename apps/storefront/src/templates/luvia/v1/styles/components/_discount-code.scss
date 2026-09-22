@@ -6,7 +6,7 @@
   gap: $space-300;
   border: 1px solid var(--clr-line);
   border-radius: $radius-350;
-  background: color-mix(in srgb, var(--clr-soft) 48%, var(--clr-white));
+  background: var(--clr-soft);
 }
 
 .lv-discount-code label {
@@ -55,7 +55,7 @@
 
 .lv-discount-code form > small,
 .lv-discount-code__applied small {
-  color: color-mix(in srgb, var(--clr-ink) 54%, var(--clr-bg));
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-discount-code form > small {
@@ -105,7 +105,7 @@
 .lv-discount-code__status {
   min-height: 0;
   margin: 0;
-  color: color-mix(in srgb, var(--clr-primary) 76%, var(--clr-ink));
+  color: var(--clr-primary);
 }
 
 .lv-discount-code__status:empty {
