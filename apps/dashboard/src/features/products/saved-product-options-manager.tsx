@@ -37,7 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { ProductOptionSwatch } from "@ecs/contracts";
-import { ProductColorPopover } from "@/features/products/product-form-sections";
+import { isVisualOptionTitle, ProductColorPopover } from "@/features/products/product-form-sections";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -355,7 +355,7 @@ function SavedOptionEditDialog({
   const nameId = useId();
   if (!option) return null;
   const currentOption = option;
-  const isColor = /^(colou?r)$/i.test(currentOption.title.trim());
+  const isVisual = isVisualOptionTitle(currentOption.title);
   const update = (patch: Partial<SavedOptionDraft>) => onChange({ ...currentOption, ...patch });
   function addValue(label: string, swatch?: SavedValue["swatch"]) {
     const next = label.trim();
@@ -410,7 +410,7 @@ function SavedOptionEditDialog({
               <FieldLabel>{t("products.formReview.values")}</FieldLabel>
               <ProductOptionValuesField
                 addControl={
-                  isColor ? (
+                  isVisual ? (
                     <ProductColorPopover
                       onSave={(label, swatch) => addValue(label, swatch)}
                     />
@@ -452,7 +452,7 @@ function SavedOptionEditDialog({
                     className="inline-flex items-center rounded-full border border-border bg-secondary text-xs text-secondary-foreground"
                     key={`${value.label}-${index}`}
                   >
-                    {isColor ? (
+                    {isVisual ? (
                       <ProductColorPopover
                         label={value.label}
                         onSave={(label, swatch) =>

@@ -27,6 +27,7 @@ const updateMetadataSchema = z
 const syncProductMediaSchema = z.object({
   imageUrls: z.array(z.string().url()).max(100),
   thumbnail: z.string().url().nullable(),
+  variantImageUrls: z.array(z.string().url()).max(100).optional(),
 });
 
 export function registerMerchantMediaRoutes(
@@ -164,6 +165,7 @@ export function registerMerchantMediaRoutes(
       ...parsed.data,
       productId: context.req.param("productId"),
       tenantId: merchant.result.context.tenantId,
+      variantImageUrls: parsed.data.variantImageUrls,
     });
     return context.json(result);
   });

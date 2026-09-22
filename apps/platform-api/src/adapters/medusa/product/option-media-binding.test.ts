@@ -30,6 +30,19 @@ test("getProductVariantWriteBody persists imageUrl in metadata", () => {
   assert.deepEqual((body as any).metadata?.image_url, "https://media.ourdomain.com/s/shop_1/ast_1/red.webp");
 });
 
+test("getProductVariantWriteBody explicitly sets metadata image_url to null when imageUrl is null", () => {
+  const body = getProductVariantWriteBody(
+    {
+      currencyCode: "ETB",
+      imageUrl: null,
+      optionValues: { Color: "Red" },
+      priceAmount: 1200,
+    } as any,
+    undefined,
+  );
+  assert.equal((body as any).metadata?.image_url, null);
+});
+
 test("normalizeProduct extracts optionMediaBindings from metadata", () => {
   const normalized = normalizeProduct({
     id: "prod_1",

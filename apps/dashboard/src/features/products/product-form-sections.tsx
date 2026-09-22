@@ -926,7 +926,7 @@ export function ProductOptionsBuilder({
                 <FieldLabel>{t("products.formReview.values")}</FieldLabel>
                 <ProductOptionValuesField
                   addControl={
-                    isColorOptionTitle(option.title) ? (
+                    isVisualOptionTitle(option.title) ? (
                       <ProductColorPopover
                         galleryImages={galleryImages}
                         onSave={(label, swatch) => addColorValue(index, label, swatch)}
@@ -961,7 +961,7 @@ export function ProductOptionsBuilder({
                       className="inline-flex h-7 items-center rounded-full border border-border bg-secondary text-xs font-medium text-secondary-foreground"
                       key={value.id ?? `${value.label}-${valueIndex}`}
                     >
-                      {isColorOptionTitle(option.title) ? (
+                      {isVisualOptionTitle(option.title) ? (
                         <ProductColorPopover
                           galleryImages={galleryImages}
                           label={value.label}
@@ -987,7 +987,7 @@ export function ProductOptionsBuilder({
                   ))}
                 </ProductOptionValuesField>
                 <FieldDescription>{t("products.formReview.valuesHelpShort")}</FieldDescription>
-                {!isColorOptionTitle(option.title) ? (
+                {!/^(colou?r)$/i.test(option.title.trim()) ? (
                   <SuggestedOptionValues
                     existing={option.values.map((value) => value.label)}
                     onAdd={(label) => addValues(index, label)}
@@ -1115,9 +1115,10 @@ function SuggestedOptionValues({
   );
 }
 
-function isColorOptionTitle(title: string) {
-  return /^(colou?r)$/i.test(title.trim());
+export function isVisualOptionTitle(title: string) {
+  return /^(colou?r|pattern|fabric|material|texture|finish)$/i.test(title.trim());
 }
+export const isColorOptionTitle = isVisualOptionTitle;
 
 export function VariantImagePicker({
   galleryImages = [],
@@ -1260,22 +1261,16 @@ export function VariantMatrixTable({
 
             return (
               <Collapsible className="group px-3 py-2.5" key={row.key}>
-                <CollapsibleTrigger className="flex w-full cursor-pointer list-none items-center gap-2 text-left">
+                <div className="flex w-full items-center gap-2">
                   <Checkbox
                     aria-label={t("products.formReview.toggleVariantAria", { variant: name })}
                     checked={row.enabled}
                     disabled={row.reservedQuantity > 0}
-                    onClick={(event) => event.stopPropagation()}
                     onCheckedChange={(checked) =>
                       onOverrideChange(row.key, { enabled: checked === true })
                     }
                   />
-                  <div
-                    className="shrink-0"
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => event.stopPropagation()}
-                    role="presentation"
-                  >
+                  <div className="shrink-0">
                     <VariantImagePicker
                       galleryImages={galleryImages}
                       imageUrl={override.imageUrl ?? row.imageUrl}
@@ -1283,12 +1278,14 @@ export function VariantMatrixTable({
                       onSelectImage={(url) => onOverrideChange(row.key, { imageUrl: url })}
                     />
                   </div>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    ETB {override.priceAmount ?? row.priceAmount}
-                  </span>
-                  <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
-                </CollapsibleTrigger>
+                  <CollapsibleTrigger className="flex min-w-0 flex-1 cursor-pointer list-none items-center gap-2 text-left">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      ETB {override.priceAmount ?? row.priceAmount}
+                    </span>
+                    <AppIcons.arrowDown className="size-4 shrink-0 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+                  </CollapsibleTrigger>
+                </div>
                 <CollapsibleContent>
                   <div className="grid gap-3 pt-3 sm:grid-cols-2">
                     <Field>
@@ -1526,17 +1523,21 @@ export function ProductMediaSection({
   onImageUrlsChange,
   onOptionMediaBindingsChange,
   onThumbnailChange,
+  onVariantOverridesChange,
   optionMediaBindings,
   options,
   thumbnail,
+  variantOverrides,
 }: {
   imageUrls: string[];
   onImageUrlsChange: (urls: string[]) => void;
   onOptionMediaBindingsChange?: (bindings: ProductOptionMediaBindings | null) => void;
   onThumbnailChange: (url: string) => void;
+  onVariantOverridesChange?: (overrides: ProductFormValues["variantOverrides"]) => void;
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionDraft[] | undefined;
   thumbnail: string;
+  variantOverrides?: ProductFormValues["variantOverrides"] | undefined;
 }) {
   return (
     <MediaUploadField
@@ -1544,9 +1545,11 @@ export function ProductMediaSection({
       onImageUrlsChange={onImageUrlsChange}
       onOptionMediaBindingsChange={onOptionMediaBindingsChange}
       onThumbnailChange={onThumbnailChange}
+      onVariantOverridesChange={onVariantOverridesChange}
       optionMediaBindings={optionMediaBindings}
       options={options}
       thumbnail={thumbnail}
+      variantOverrides={variantOverrides}
     />
   );
 }

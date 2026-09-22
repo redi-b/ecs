@@ -255,10 +255,13 @@ export function getProductOptionsPayload(values: ProductFormValues) {
 
 export function getProductVariantsPayload(values: ProductFormValues) {
   if (!values.hasVariants) {
+    const defaultOverride = values.variantOverrides.default;
     return [
       {
-        ...(values.variantOverrides.default?.id ? { id: values.variantOverrides.default.id } : {}),
-        imageUrl: values.variantOverrides.default?.imageUrl || undefined,
+        ...(defaultOverride?.id ? { id: defaultOverride.id } : {}),
+        imageUrl: defaultOverride?.imageUrl?.trim()
+          ? defaultOverride.imageUrl.trim()
+          : (defaultOverride?.id ? null : undefined),
         optionValues: { Default: "Default" },
         sku: values.skuPrefix.trim() ? values.skuPrefix.trim() : null,
         priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
@@ -274,7 +277,9 @@ export function getProductVariantsPayload(values: ProductFormValues) {
       const override = values.variantOverrides[row.key];
       return {
         ...(row.id ? { id: row.id } : {}),
-        imageUrl: override?.imageUrl || undefined,
+        imageUrl: override?.imageUrl?.trim()
+          ? override.imageUrl.trim()
+          : (row.id || row.imageUrl ? null : undefined),
         optionValues: row.optionValues,
         sku: row.sku.trim() ? row.sku.trim() : null,
         priceAmount: row.priceAmount,
@@ -623,6 +628,7 @@ export type ApplyOptionMediaAutoAssignmentInput = {
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionDraft[] | undefined;
   rows?: VariantMatrixRow[] | undefined;
+  validImageUrls?: string[] | Set<string> | undefined;
   variantOverrides: ProductFormValues["variantOverrides"];
 };
 
@@ -634,17 +640,20 @@ export function applyOptionMediaAutoAssignment(
   options?: ProductOptionDraft[] | undefined,
   rows?: VariantMatrixRow[] | undefined,
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined,
+  validImageUrls?: string[] | Set<string> | undefined,
 ): ProductFormValues["variantOverrides"];
 export function applyOptionMediaAutoAssignment(
   inputOrOverrides: ApplyOptionMediaAutoAssignmentInput | ProductFormValues["variantOverrides"],
   optionsArg?: ProductOptionDraft[],
   rowsArg?: VariantMatrixRow[],
   bindingsArg?: ProductOptionMediaBindings | null,
+  validImageUrlsArg?: string[] | Set<string>,
 ): ProductFormValues["variantOverrides"] {
   let variantOverrides: ProductFormValues["variantOverrides"];
   let options: ProductOptionDraft[] | undefined;
   let rows: VariantMatrixRow[] | undefined;
   let optionMediaBindings: ProductOptionMediaBindings | null | undefined;
+  let validImageUrls: string[] | Set<string> | undefined;
 
   if (
     inputOrOverrides &&
@@ -656,14 +665,31 @@ export function applyOptionMediaAutoAssignment(
     options = input.options;
     rows = input.rows;
     optionMediaBindings = input.optionMediaBindings;
+    validImageUrls = input.validImageUrls;
   } else {
     variantOverrides = (inputOrOverrides as ProductFormValues["variantOverrides"]) ?? {};
     options = optionsArg;
     rows = rowsArg;
     optionMediaBindings = bindingsArg;
+    validImageUrls = validImageUrlsArg;
   }
 
   const nextOverrides = { ...variantOverrides };
+
+  const validSet = validImageUrls
+    ? (validImageUrls instanceof Set ? validImageUrls : new Set(validImageUrls))
+    : null;
+
+  if (validSet) {
+    for (const [key, override] of Object.entries(nextOverrides)) {
+      if (override?.imageUrl && !validSet.has(override.imageUrl)) {
+        nextOverrides[key] = {
+          ...override,
+          imageUrl: undefined,
+        };
+      }
+    }
+  }
 
   if (
     !optionMediaBindings ||

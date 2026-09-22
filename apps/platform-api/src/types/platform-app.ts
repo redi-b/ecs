@@ -1610,7 +1610,7 @@ export type PlatformAppOptions = {
   syncProductMedia?:
     | ((input: {
         imageUrls: string[];
-        variantImageUrls?: string[];
+        variantImageUrls?: string[] | undefined;
         productId: string;
         tenantId: string;
         thumbnail: string | null;

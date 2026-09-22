@@ -149,7 +149,28 @@ const clientMessages = {
                     : null;
                 const imageSwatch = richSwatch?.kind === "image" ? richSwatch.url : null;
                 if (imageSwatch) {
-                  return <button type="button" class:list={["product-info__color-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={m.product_select_option({ option: value }, { locale })} title={value}><img src={imageSwatch} alt="" width="28" height="28" loading="lazy" aria-hidden="true" /></button>;
+                  return (
+                    <button
+                      type="button"
+                      class:list={["product-info__color-btn", { "is-selected": selected }]}
+                      data-option-title={axis.title}
+                      data-option-value={value}
+                      aria-pressed={selected ? "true" : "false"}
+                      aria-label={m.product_select_option({ option: value }, { locale })}
+                      title={value}
+                    >
+                      <img
+                        src={imageSwatch}
+                        alt=""
+                        width="28"
+                        height="28"
+                        loading="lazy"
+                        aria-hidden="true"
+                        onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden')"
+                      />
+                      <span class="hidden text-xs">{value}</span>
+                    </button>
+                  );
                 }
                 if (colorSwatch) {
                   return <button type="button" class:list={["product-info__color-btn", { "is-selected": selected }]} data-option-title={axis.title} data-option-value={value} aria-pressed={selected ? "true" : "false"} aria-label={m.product_select_option({ option: value }, { locale })} title={value}><span style={`background-color:${colorSwatch}`} aria-hidden="true"></span></button>;
@@ -168,6 +189,8 @@ const clientMessages = {
   </main>}
 </Layout>
 <style>
+  .hidden { display: none !important; }
+  .text-xs { font-size: 0.75rem; }
   .nexa-product-missing { min-height: 60vh; display: grid; place-content: center; justify-items: start; gap: 1rem; padding: 2rem; }
   .nexa-product-notice { margin: 1rem auto; width: min(100% - 2rem, 1400px); padding: 1rem; border: 1px solid currentColor; }
   .product-gallery__main-slider { height: 100%; display: grid; place-items: center; overflow: hidden; }

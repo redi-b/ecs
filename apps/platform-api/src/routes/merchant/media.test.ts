@@ -135,7 +135,13 @@ describe("merchant media routes", () => {
 
   it("synchronizes ordered product media inside the resolved tenant", async () => {
     let received:
-      | { imageUrls: string[]; productId: string; tenantId: string; thumbnail: string | null }
+      | {
+          imageUrls: string[];
+          productId: string;
+          tenantId: string;
+          thumbnail: string | null;
+          variantImageUrls?: string[] | undefined;
+        }
       | undefined;
     const app = mediaApp({
       syncProductMedia: async (input) => {
@@ -149,6 +155,7 @@ describe("merchant media routes", () => {
         body: JSON.stringify({
           imageUrls: ["https://cdn.example.com/one.jpg", "https://cdn.example.com/two.jpg"],
           thumbnail: "https://cdn.example.com/two.jpg",
+          variantImageUrls: ["https://cdn.example.com/one.jpg"],
         }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -161,6 +168,7 @@ describe("merchant media routes", () => {
       productId: "prod_1",
       tenantId: "tenant_1",
       thumbnail: "https://cdn.example.com/two.jpg",
+      variantImageUrls: ["https://cdn.example.com/one.jpg"],
     });
   });
 });

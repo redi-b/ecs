@@ -3,7 +3,11 @@ import { describe, it } from "node:test";
 import type { MerchantProduct, ProductOptionMediaBindings } from "@ecs/contracts";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { VariantImagePicker } from "./product-form-sections";
+import {
+  isColorOptionTitle,
+  isVisualOptionTitle,
+  VariantImagePicker,
+} from "./product-form-sections";
 import {
   applyOptionMediaAutoAssignment,
   getInitialProductOptions,
@@ -253,6 +257,72 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
 
     const updated = applyOptionMediaAutoAssignment({}, options, rows, bindings);
     assert.equal(updated[redS.key]?.imageUrl, "https://example.com/positional-red.jpg");
+  });
+
+  it("sends imageUrl as null in getProductVariantsPayload when an existing variant image is cleared", () => {
+    const rows = getVariantRows(defaultValues);
+    const firstRow = rows[0];
+    assert.ok(firstRow, "First row must be present");
+    const formValues: ProductFormValues = {
+      ...defaultValues,
+      variantOverrides: {
+        [firstRow.key]: {
+          id: "var_existing_1",
+          imageUrl: undefined,
+          priceAmount: "750",
+          stockedQuantity: "25",
+        },
+      },
+    };
+
+    const payload = getProductVariantsPayload(formValues);
+    assert.ok(payload);
+    const matched = payload.find((v) => v.id === "var_existing_1");
+    assert.ok(matched);
+    assert.equal(matched.imageUrl, null);
+  });
+
+  it("prunes stale deleted image URLs from variantOverrides when validImageUrls is provided", () => {
+    const rows = getVariantRows(defaultValues);
+    const redS = rows.find((r) => r.optionValues.Color === "Red" && r.optionValues.Size === "S");
+    assert.ok(redS, "Row must be present");
+
+    const staleOverrides: ProductFormValues["variantOverrides"] = {
+      [redS.key]: {
+        imageUrl: "https://example.com/deleted-image.jpg",
+      },
+    };
+
+    const bindings: ProductOptionMediaBindings = {
+      optionTitle: "Color",
+      mappings: {
+        Red: ["https://example.com/new-red.jpg"],
+      },
+    };
+
+    const validUrls = ["https://example.com/new-red.jpg"];
+
+    const updated = applyOptionMediaAutoAssignment({
+      variantOverrides: staleOverrides,
+      options,
+      rows,
+      optionMediaBindings: bindings,
+      validImageUrls: validUrls,
+    });
+
+    assert.equal(updated[redS.key]?.imageUrl, "https://example.com/new-red.jpg");
+  });
+
+  it("isVisualOptionTitle matches visual option titles and isColorOptionTitle acts as alias", () => {
+    assert.equal(isVisualOptionTitle("Color"), true);
+    assert.equal(isVisualOptionTitle("colour"), true);
+    assert.equal(isVisualOptionTitle("Pattern"), true);
+    assert.equal(isVisualOptionTitle("Fabric"), true);
+    assert.equal(isVisualOptionTitle("Material"), true);
+    assert.equal(isVisualOptionTitle("Texture"), true);
+    assert.equal(isVisualOptionTitle("Finish"), true);
+    assert.equal(isVisualOptionTitle("Size"), false);
+    assert.equal(isColorOptionTitle("Pattern"), true);
   });
 
   it("renders ImageOptionTagPopover with untagged and tagged states", async () => {

@@ -627,32 +627,71 @@ export function ProductForm({
                               state.values.imageUrls,
                               state.values.options,
                               state.values.optionMediaBindings,
+                              state.values.variantOverrides,
                             ] as const
                           }
                         >
-                          {([thumbnail, imageUrls, options, optionMediaBindings]) => (
+                          {([thumbnail, imageUrls, options, optionMediaBindings, variantOverrides]) => (
                             <MediaUploadField
                               imageUrls={getMediaUrls(thumbnail, imageUrls)}
-                              onImageUrlsChange={(urls) =>
-                                form.setFieldValue("imageUrls", urls.join("\n"))
-                              }
+                              onImageUrlsChange={(urls) => {
+                                form.setFieldValue("imageUrls", urls.join("\n"));
+                                const validUrls = new Set(urls);
+                                const currentOverrides = form.state.values.variantOverrides;
+                                let overridesChanged = false;
+                                const nextOverrides: typeof currentOverrides = {};
+                                for (const [key, override] of Object.entries(currentOverrides)) {
+                                  if (override?.imageUrl && !validUrls.has(override.imageUrl)) {
+                                    overridesChanged = true;
+                                    nextOverrides[key] = {
+                                      ...override,
+                                      imageUrl: undefined,
+                                    };
+                                  } else {
+                                    nextOverrides[key] = override;
+                                  }
+                                }
+                                if (overridesChanged) {
+                                  const rows = getVariantRows({
+                                    ...form.state.values,
+                                    variantOverrides: nextOverrides,
+                                  });
+                                  const reassignedOverrides = applyOptionMediaAutoAssignment({
+                                    variantOverrides: nextOverrides,
+                                    options: form.state.values.options,
+                                    rows,
+                                    optionMediaBindings: form.state.values.optionMediaBindings,
+                                    validImageUrls: validUrls,
+                                  });
+                                  form.setFieldValue("variantOverrides", reassignedOverrides);
+                                }
+                              }}
                               onOptionMediaBindingsChange={(bindings) => {
                                 form.setFieldValue("optionMediaBindings", bindings);
                                 if (bindings) {
                                   const rows = getVariantRows(form.state.values);
+                                  const validUrls = getMediaUrls(
+                                    form.state.values.thumbnail,
+                                    form.state.values.imageUrls,
+                                  );
                                   const nextOverrides = applyOptionMediaAutoAssignment({
                                     variantOverrides: form.state.values.variantOverrides,
                                     options: form.state.values.options,
                                     rows,
                                     optionMediaBindings: bindings,
+                                    validImageUrls: validUrls,
                                   });
                                   form.setFieldValue("variantOverrides", nextOverrides);
                                 }
                               }}
                               onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
+                              onVariantOverridesChange={(overrides) =>
+                                form.setFieldValue("variantOverrides", overrides)
+                              }
                               optionMediaBindings={optionMediaBindings}
                               options={options}
                               thumbnail={thumbnail}
+                              variantOverrides={variantOverrides}
                             />
                           )}
                         </form.Subscribe>

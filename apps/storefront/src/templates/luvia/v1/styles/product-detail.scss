@@ -112,3 +112,6 @@
   .lv-sticky-product button[data-loading="true"] { opacity: .85; }
 }
 @media (prefers-reduced-motion: reduce) { .lv-sticky-product { transition: none; } }
+
+.hidden { display: none !important; }
+.text-xs { font-size: 0.75rem; line-height: 1rem; }

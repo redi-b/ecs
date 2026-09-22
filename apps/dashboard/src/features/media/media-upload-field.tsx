@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ProductFormValues } from "@/features/products/product-form-types";
 import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -77,22 +78,30 @@ export function MediaUploadField({
   onImageUrlsChange,
   onOptionMediaBindingsChange,
   onThumbnailChange,
+  onVariantOverridesChange,
   optionMediaBindings,
   options,
   thumbnail,
+  variantOverrides,
 }: {
   imageUrls: string[];
   onImageUrlsChange: (urls: string[]) => void;
   onOptionMediaBindingsChange?: ((bindings: ProductOptionMediaBindings | null) => void) | undefined;
   onThumbnailChange: (url: string) => void;
+  onVariantOverridesChange?: ((overrides: ProductFormValues["variantOverrides"]) => void) | undefined;
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionDraft[] | undefined;
   thumbnail: string;
+  variantOverrides?: ProductFormValues["variantOverrides"] | undefined;
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const imageUrlsRef = useRef(imageUrls);
   const thumbnailRef = useRef(thumbnail);
+  const variantOverridesRef = useRef(variantOverrides);
+  useEffect(() => {
+    variantOverridesRef.current = variantOverrides;
+  }, [variantOverrides]);
   const [dragActive, setDragActive] = useState(false);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -448,6 +457,21 @@ export function MediaUploadField({
               }
             : null,
         );
+      }
+    }
+    if (variantOverridesRef.current && onVariantOverridesChange) {
+      let changed = false;
+      const nextOverrides: ProductFormValues["variantOverrides"] = {};
+      for (const [k, override] of Object.entries(variantOverridesRef.current)) {
+        if (override?.imageUrl === url) {
+          changed = true;
+          nextOverrides[k] = { ...override, imageUrl: undefined };
+        } else {
+          nextOverrides[k] = override;
+        }
+      }
+      if (changed) {
+        onVariantOverridesChange(nextOverrides);
       }
     }
   }

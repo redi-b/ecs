@@ -212,7 +212,16 @@ const wishlistItem = product
                           aria-label={m.product_select_option({ option: value }, { locale })}
                           title={value}
                         >
-                          <img src={imageSwatch} alt="" width="28" height="28" loading="lazy" aria-hidden="true" />
+                          <img
+                            src={imageSwatch}
+                            alt=""
+                            width="28"
+                            height="28"
+                            loading="lazy"
+                            aria-hidden="true"
+                            onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden')"
+                          />
+                          <span class="hidden text-xs">{value}</span>
                         </button>
                       );
                     }
