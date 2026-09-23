@@ -78,6 +78,7 @@ export type DemoShopDefinition = {
     status: string;
   };
   products: ReadonlyArray<DemoProduct>;
+  templateKey?: string;
   tenant: {
     handle: string;
     name: string;
@@ -188,6 +189,7 @@ export const techShop: DemoShopDefinition = {
     storefrontRevision: "d1000000-0000-4000-8000-000000000006",
     storefrontConfig: "d1000000-0000-4000-8000-000000000007",
   },
+  templateKey: "nexahub@1",
   tenant: {
     handle: "addistech",
     name: "Addis Tech Hub",
@@ -465,6 +467,7 @@ export const fashionShop: DemoShopDefinition = {
     storefrontRevision: "d2000000-0000-4000-8000-000000000006",
     storefrontConfig: "d2000000-0000-4000-8000-000000000007",
   },
+  templateKey: "luvia@1",
   tenant: {
     handle: "bolestyle",
     name: "Bole Style",

@@ -486,6 +486,7 @@ async function seedShop(
     name: shop.tenant.name,
     ownerUserId: userId,
     platformTenantId: shop.ids.tenant,
+    ...(shop.templateKey ? { templateKey: shop.templateKey } : {}),
   });
 
   if (!provisioned.ok) {
@@ -554,6 +555,18 @@ async function seedShop(
 
   // Publish demo storefront draft so the live storefront is immediately reachable
   const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
+  if (shop.templateKey) {
+    const currentDraft = await storefrontTemplateService.getStorefrontDraft({
+      tenantId: provisioned.tenant.id,
+    });
+    if (currentDraft.ok && currentDraft.draft.templateKey !== shop.templateKey) {
+      await storefrontTemplateService.selectStorefrontTemplate({
+        tenantId: provisioned.tenant.id,
+        templateKey: shop.templateKey,
+        mode: "clean",
+      });
+    }
+  }
   await storefrontTemplateService.publishStorefrontDraft({
     tenantId: provisioned.tenant.id,
     userId,
