@@ -11,6 +11,7 @@ import {
   type JobHandler,
 } from "@ecs/jobs";
 import { eq } from "drizzle-orm";
+// @ts-ignore
 import pg from "pg";
 
 import { systemPingHandler } from "./handlers/system-ping.js";

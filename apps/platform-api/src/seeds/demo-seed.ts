@@ -564,6 +564,7 @@ async function seedShop(
         tenantId: provisioned.tenant.id,
         templateKey: shop.templateKey,
         mode: "clean",
+        userId,
       });
     }
   }
@@ -2620,6 +2621,7 @@ function deriveMedusaUrlFromPlatformDatabaseUrl(platformUrl: string | undefined)
 async function loadPgModule() {
   // Prefer direct dependency (listed on platform-api for deploy images).
   try {
+    // @ts-ignore -- dynamic pg import across monorepo layouts
     return await import("pg");
   } catch {
     // Fallbacks for monorepo layouts where pg is only under @ecs/db.
