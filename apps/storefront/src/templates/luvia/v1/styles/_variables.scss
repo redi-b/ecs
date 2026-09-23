@@ -46,6 +46,7 @@ $ls-none: 0;
   --clr-warning: #7b541d;
   --clr-warning-bg: #fff7eb;
   --clr-line: #{alpha(var(--clr-ink), 0.14)};
+  --clr-primary-dark: #12671A;
 }
 
 // Aliases must live on body: theme overrides (themeStyle / editor preview)
@@ -53,6 +54,7 @@ $ls-none: 0;
 body {
   --clr-dark: var(--clr-ink);
   --clr-on-dark: var(--clr-bg);
+  --clr-primary-dark: hsl(from var(--clr-primary) h 70% 24%);
 }
 
 

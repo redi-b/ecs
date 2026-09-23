@@ -5,6 +5,11 @@
   background: var(--clr-bg);
 }
 
+.lv-home > *:last-child,
+.lv-home > *:not([hidden]):last-of-type {
+  margin-bottom: 0;
+}
+
 .lv-hero {
   position: relative;
   height: 100dvh;
@@ -12,6 +17,7 @@
   overflow: hidden;
   background: var(--clr-dark);
   color: var(--clr-on-dark);
+  margin-bottom: $space-950;
 }
 
 .lv-hero__background {
@@ -608,7 +614,7 @@
 
 .lv-categories {
   min-height: 643px;
-  margin-top: $space-1000;
+  margin-bottom: $space-950;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
@@ -667,7 +673,7 @@
   position: relative;
   width: calc(100% - 310px);
   min-height: 560px;
-  margin: $space-1000 auto $space-950;
+  margin: 0 auto $space-950;
   overflow: hidden;
   border-radius: $radius-450;
 }
@@ -725,6 +731,7 @@
   .lv-hero {
     height: auto;
     min-height: max(100dvh, 1020px);
+    margin-bottom: $space-900;
   }
 
   .lv-hero__portrait {
@@ -836,6 +843,7 @@
   }
 
   .lv-categories {
+    margin-bottom: $space-900;
     grid-template-columns: 1fr;
   }
 
@@ -861,7 +869,7 @@
   .lv-cta {
     width: calc(100% - 40px);
     min-height: 480px;
-    margin: $space-800 auto;
+    margin: 0 auto $space-900;
   }
 
   .lv-cta>img {
