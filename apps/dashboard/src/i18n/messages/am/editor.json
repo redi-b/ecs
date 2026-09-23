@@ -115,7 +115,9 @@
     "colorBackground": "የገጹ ቀለም",
     "colorText": "የጽሑፍ ቀለም",
     "colorMuted": "ደብዛዛ ቀለም",
-    "colorAccent": "ማድመቂያ ቀለም"
+    "colorAccent": "ማድመቂያ ቀለም",
+    "customColor": "ሌላ ቀለም ምረጥ",
+    "defaultColor": "የነባሪው ቀለም"
   },
   "media": {
     "referenceSet": "የተመረጠ ምስል",

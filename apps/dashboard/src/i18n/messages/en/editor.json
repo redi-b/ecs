@@ -115,7 +115,9 @@
     "colorBackground": "Background",
     "colorText": "Text",
     "colorMuted": "Muted",
-    "colorAccent": "Accent"
+    "colorAccent": "Accent",
+    "customColor": "Custom color",
+    "defaultColor": "Default template color"
   },
   "media": {
     "referenceSet": "Image reference set",

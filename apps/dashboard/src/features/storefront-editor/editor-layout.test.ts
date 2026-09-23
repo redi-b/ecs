@@ -21,8 +21,9 @@ describe("storefront editor workspace containment", () => {
     assert.match(pageSource, /className="flex-none gap-0/);
   });
 
-  it("keeps settings scrolling inside its own panel", () => {
-    assert.match(settingsSource, /h-full min-h-0 overflow-y-auto overscroll-contain/);
+  it("chains settings scrolling to the outer main scrollbar", () => {
+    assert.match(settingsSource, /h-full min-h-0 overflow-y-auto(?! overscroll)/);
+    assert.doesNotMatch(settingsSource, /overflow-y-auto overscroll-contain/);
   });
 
   it("keeps preview and settings aligned while allowing the desktop panel to collapse", () => {

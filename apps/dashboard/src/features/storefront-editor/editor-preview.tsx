@@ -1,6 +1,6 @@
 "use client";
 
-import { contrastingInk, getStorefrontEditorManifest } from "@ecs/storefront-templates";
+import { contrastingInk, contrastRatio, getStorefrontEditorManifest } from "@ecs/storefront-templates";
 import { RiEditLine, RiExternalLinkLine, RiRefreshLine } from "@remixicon/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -155,6 +155,12 @@ function StorefrontIframePreview({
       onAccent: props.accentColor ? contrastingInk(props.accentColor) : undefined,
       onPrimary: props.primaryColor ? contrastingInk(props.primaryColor) : undefined,
       primary: props.primaryColor,
+      primaryEdge:
+        props.primaryColor && props.backgroundColor && props.foregroundColor
+          ? contrastRatio(props.primaryColor, props.backgroundColor) < 1.3
+            ? props.foregroundColor
+            : "transparent"
+          : undefined,
     }),
     [
       props.accentColor,

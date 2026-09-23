@@ -37,6 +37,7 @@ $ls-none: 0;
   --clr-soft: #edf8ee;
   --clr-accent: #b5ffa2;
   --clr-on-primary: #0f3112;
+  --clr-primary-edge: transparent;
   --clr-white: #ffffff;
   --clr-surface: #ffffff;
   --clr-black: #000000;
@@ -45,6 +46,11 @@ $ls-none: 0;
   --clr-warning: #7b541d;
   --clr-warning-bg: #fff7eb;
   --clr-line: #{alpha(var(--clr-ink), 0.14)};
+}
+
+// Aliases must live on body: theme overrides (themeStyle / editor preview)
+// set --clr-ink/--clr-bg there, and var() resolves where it is declared.
+body {
   --clr-dark: var(--clr-ink);
   --clr-on-dark: var(--clr-bg);
 }

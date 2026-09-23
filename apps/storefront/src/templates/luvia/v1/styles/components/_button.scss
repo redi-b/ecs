@@ -27,6 +27,7 @@
   border-radius: $radius-pill;
   background: var(--clr-primary);
   color: var(--clr-on-primary);
+  outline: 1px solid var(--clr-primary-edge);
   transition: filter 180ms ease, box-shadow 180ms ease;
 }
 

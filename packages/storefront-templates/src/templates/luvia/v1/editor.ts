@@ -7,7 +7,7 @@ export const luviaV1EditorSchema = {
   previewPages: [{ id: "home", label: "Home" }],
   theme: {
     allowSurfaceMode: false,
-    editableColors: ["primary", "foreground", "muted", "accent"],
+    editableColors: ["primary"],
     paletteStrategy: "tonal",
   },
   sections: [
@@ -116,10 +116,6 @@ export const luviaV1EditorSchema = {
       label: "Appearance",
       fields: [
         { path: "themeTokens.colors.primary", prop: "primaryColor", label: "Brand color", kind: "color" },
-        { path: "themeTokens.colors.background", prop: "backgroundColor", label: "Background color", kind: "color" },
-        { path: "themeTokens.colors.foreground", prop: "foregroundColor", label: "Text color", kind: "color" },
-        { path: "themeTokens.colors.muted", prop: "mutedColor", label: "Soft surface", kind: "color" },
-        { path: "themeTokens.colors.accent", prop: "accentColor", label: "Accent color", kind: "color" },
         { path: "themeTokens.typography.headingFont", prop: "headingFont", label: "Heading font", kind: "text" },
         { path: "themeTokens.typography.bodyFont", prop: "bodyFont", label: "Body font", kind: "text" },
       ],

@@ -6,7 +6,7 @@ import "../styles/components/_cart-drawer.scss";
 import "../styles/components/_rail.scss";
 import "../styles/components/_demo-banner.scss";
 import Icon from "../components/Icon.astro";
-import { contrastingInk, type LuviaV1Data } from "@ecs/storefront-templates";
+import { contrastingInk, contrastRatio, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
@@ -91,6 +91,11 @@ const themeStyle = [
   `--clr-soft:${theme.colors.muted}`,
   `--clr-accent:${theme.colors.accent}`,
   `--clr-on-primary:${contrastingInk(theme.colors.primary)}`,
+  `--clr-primary-edge:${
+    contrastRatio(theme.colors.primary, theme.colors.background) < 1.3
+      ? theme.colors.foreground
+      : "transparent"
+  }`,
   `--clr-line:rgb(from var(--clr-ink) r g b / 0.14)`,
 ].join(";");
 const pathname = Astro.url.pathname;
@@ -126,6 +131,7 @@ const isActiveLink = (href: string) =>
       muted: "--clr-soft",
       accent: "--clr-accent",
       onPrimary: "--clr-on-primary",
+      primaryEdge: "--clr-primary-edge",
     }) : undefined}
     style={themeStyle}
   >

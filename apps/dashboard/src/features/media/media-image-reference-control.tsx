@@ -32,7 +32,7 @@ export function MediaImageReferenceControl({
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img alt="" className="size-full object-cover" src={imageUrl} />
+            <img alt="" className="size-full object-contain" src={imageUrl} />
           ) : (
             <RiImageLine aria-hidden className="text-muted-foreground" />
           )}

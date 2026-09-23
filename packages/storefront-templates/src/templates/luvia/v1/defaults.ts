@@ -2,6 +2,7 @@ import type { LuviaV1Data, LuviaV1ThemeTokens } from "./schema";
 
 export const luviaV1Defaults: LuviaV1Data = {
   header: {
+    useShopName: false,
     navigation: [
       { label: "Home", href: "/" },
       { label: "Shop", href: "/products" },
@@ -51,8 +52,7 @@ export const luviaV1Defaults: LuviaV1Data = {
     },
   },
   footer: {
-    blurb:
-      "A collection of leading beauty products for thoughtful, effective skincare routines.",
+    blurb: "A collection of leading beauty products for thoughtful, effective skincare routines.",
     credit: {
       enabled: true,
     },

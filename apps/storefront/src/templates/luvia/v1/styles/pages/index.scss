@@ -66,7 +66,7 @@
 .lv-hero__copy h1 {
   max-width: 1039px;
   margin: 0;
-  text-shadow: 0 4px 6px rgba(203, 243, 207, .42);
+  text-shadow: 0 4px 6px alpha(var(--clr-accent), 0.42);
   animation: lv-hero-fade-up 0.8s cubic-bezier(.22, 1, .36, 1) 0.04s backwards;
 }
 
@@ -98,7 +98,7 @@
   border: 0;
   border-radius: $radius-50 $radius-250 $radius-250;
   background: alpha(var(--clr-ink), 0.56);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 8px 24px rgba(4, 20, 7, .12);
+  box-shadow: inset 0 1px 0 alpha(var(--clr-white), 0.12), 0 8px 24px alpha(var(--clr-ink), 0.12);
   backdrop-filter: blur(12px) saturate(118%);
   -webkit-backdrop-filter: blur(12px) saturate(118%);
 }

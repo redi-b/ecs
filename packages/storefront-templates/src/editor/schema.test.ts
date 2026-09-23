@@ -27,7 +27,7 @@ test("editor preview strategy is declared as a capability", () => {
 test("synthetic manifests preserve template-agnostic editor validation", () => {
   const luvia = storefrontEditorManifestSchema.parse(luviaV1EditorSchema);
   assert.equal(luvia.theme?.allowSurfaceMode, false);
-  assert.deepEqual(luvia.theme?.editableColors, ["primary", "foreground", "muted", "accent"]);
+  assert.deepEqual(luvia.theme?.editableColors, ["primary"]);
   const synthetic = storefrontEditorManifestSchema.parse(syntheticEditorManifest);
   assert.equal(synthetic.templateKey, "test-template@1");
   assert.deepEqual(synthetic.sections[0]?.fields.map((field) => field.path), ["home.title"]);

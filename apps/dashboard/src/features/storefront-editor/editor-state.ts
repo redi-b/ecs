@@ -1,5 +1,6 @@
 import type { StorefrontLanguageSettings, StorefrontLocalizedContent } from "@ecs/contracts";
 import {
+  deriveLuviaPalette,
   generateThemeFromPrimary,
   getStorefrontEditorManifest,
   getStorefrontTemplateDefinition,
@@ -450,7 +451,10 @@ export function themePalettePageProps(
           },
         } satisfies ThemePaletteSeed)
       : undefined;
-  const generated = generateThemeFromPrimary(primary, mode, seed);
+  const generated =
+    templateKey === "luvia@1"
+      ? deriveLuviaPalette(primary)
+      : generateThemeFromPrimary(primary, mode, seed);
   return {
     surfaceMode: mode,
     autoPalette: true,

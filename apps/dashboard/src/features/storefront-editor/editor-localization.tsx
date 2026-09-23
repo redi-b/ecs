@@ -148,7 +148,7 @@ export function StorefrontLocalizationPanel({
   }
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto overscroll-contain" ref={scrollRef}>
+    <div className="h-full min-h-0 overflow-y-auto" ref={scrollRef}>
       <div className="sticky top-0 z-10 border-b border-border/80 bg-background/95 p-3 backdrop-blur-sm sm:px-4">
         <div className="flex items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
