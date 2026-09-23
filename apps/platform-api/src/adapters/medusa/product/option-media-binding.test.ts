@@ -1,3 +1,4 @@
+import { merchantProductSchema } from "@ecs/contracts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getProductWriteBody, getProductVariantWriteBody } from "./write.js";
@@ -27,7 +28,10 @@ test("getProductVariantWriteBody persists imageUrl in metadata", () => {
     } as any,
     undefined,
   );
-  assert.deepEqual((body as any).metadata?.image_url, "https://media.ourdomain.com/s/shop_1/ast_1/red.webp");
+  assert.deepEqual(
+    (body as any).metadata?.image_url,
+    "https://media.ourdomain.com/s/shop_1/ast_1/red.webp",
+  );
 });
 
 test("getProductVariantWriteBody explicitly sets metadata image_url to null when imageUrl is null", () => {
@@ -43,6 +47,32 @@ test("getProductVariantWriteBody explicitly sets metadata image_url to null when
   assert.equal((body as any).metadata?.image_url, null);
 });
 
+test("variant image provenance round-trips through Medusa metadata", () => {
+  const body = getProductVariantWriteBody(
+    {
+      currencyCode: "ETB",
+      imageUrl: "https://media.ourdomain.com/red.png",
+      imageSource: "option",
+      optionValues: { Color: "Red" },
+      priceAmount: 1200,
+    },
+    undefined,
+  );
+  assert.equal((body as any).metadata?.image_source, "option");
+
+  const product = normalizeProduct({
+    id: "prod_1",
+    title: "Sneaker",
+    variants: [
+      {
+        id: "var_1",
+        title: "Red",
+        metadata: { image_url: "https://media.ourdomain.com/red.png", image_source: "option" },
+      },
+    ],
+  });
+  assert.equal(product[0]?.variants?.[0]?.imageSource, "option");
+});
 test("normalizeProduct extracts optionMediaBindings from metadata", () => {
   const normalized = normalizeProduct({
     id: "prod_1",
@@ -158,4 +188,20 @@ test("getExplicitSwatch and getExplicitColorSwatch parse color and image swatche
     url: "https://media.ourdomain.com/floral.webp",
     source: "explicit",
   });
+});
+
+test("product response preserves image bindings and derivative metadata through the dashboard contract", () => {
+  const binding = { optionTitle: "Color", mappings: { Red: ["https://media.example/red.jpg"] } };
+  const sizes = { "https://media.example/red.jpg": { w200: "https://media.example/red-200.webp" } };
+  const [normalized] = normalizeProduct({
+    id: "prod_1", title: "Shirt", metadata: {
+      platform_tenant_id: "private-tenant-id",
+      option_media_bindings: binding,
+      media_variants: sizes,
+    },
+  });
+  const parsed = merchantProductSchema.parse(normalized);
+  assert.deepEqual(parsed.optionMediaBindings, binding);
+  assert.deepEqual(parsed.metadata?.media_variants, sizes);
+  assert.equal(parsed.metadata?.platform_tenant_id, undefined);
 });

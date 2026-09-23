@@ -23,6 +23,7 @@ export type MerchantProductMutationResult =
   | {
       ok: true;
       product: MerchantProduct;
+      mediaSyncWarning?: boolean;
     }
   | {
       ok: false;

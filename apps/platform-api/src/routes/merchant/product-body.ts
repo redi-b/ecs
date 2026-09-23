@@ -146,6 +146,11 @@ export function getOptionalBodyProductVariants(body: unknown) {
           ? { stockedQuantity }
           : {}),
         ...(imageUrl !== undefined ? { imageUrl } : {}),
+        ...((variant as { imageSource?: unknown }).imageSource === "option" ||
+        (variant as { imageSource?: unknown }).imageSource === "manual" ||
+        (variant as { imageSource?: unknown }).imageSource === null
+          ? { imageSource: (variant as { imageSource: "option" | "manual" | null }).imageSource }
+          : {}),
       },
     ];
   });

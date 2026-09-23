@@ -96,6 +96,7 @@ describe("createMedusaProductService", () => {
       description: "Roasted coffee beans",
       handle: "coffee",
       collection_id: "pcol_1",
+      thumbnail: null,
       categories: [{ id: "pcat_1" }],
       images: [{ url: "https://cdn.test/coffee-1.jpg" }],
       options: [
@@ -645,8 +646,6 @@ describe("createMedusaProductService", () => {
     assert.deepEqual(await forwardedRequests[1]?.json(), {
       update: {
         metadata: {
-          platform_tenant_id: "tenant_1",
-          custom_tag: "organic",
           media_variants: {
             "https://media.ourdomain.com/hero.png": {
               w200: "https://media.ourdomain.com/hero-200w.webp",
@@ -711,7 +710,7 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
     assert.equal(
       forwardedRequest.url,
-      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cmetadata%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cmetadata%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.metadata%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
     );
     assert.deepEqual(result, {
       ok: true,

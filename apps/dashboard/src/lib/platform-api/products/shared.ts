@@ -280,6 +280,7 @@ export async function parseProductMutationResponse(
   return {
     ok: true,
     product: parsed.data.product,
+    ...(parsed.data.mediaSyncWarning !== undefined ? { mediaSyncWarning: parsed.data.mediaSyncWarning } : {}),
   };
 }
 

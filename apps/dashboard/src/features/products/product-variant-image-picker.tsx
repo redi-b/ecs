@@ -9,19 +9,23 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export function VariantImagePicker({
   galleryImages = [],
   imageUrl,
+  imageSource,
   onRemoveImage,
   onSelectImage,
 }: {
   galleryImages?: string[] | undefined;
   imageUrl?: string | undefined;
+  imageSource?: "option" | "manual" | undefined;
   onRemoveImage: () => void;
   onSelectImage: (url: string) => void;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,15 +38,15 @@ export function VariantImagePicker({
       const url = await uploadMediaFile(file);
       onSelectImage(url);
       setOpen(false);
-      toast.success("Variant photo uploaded");
+      toast.success(t("media.variantPhotoUploaded"));
     } catch (error) {
       const code = error instanceof Error ? error.message : "upload_failed";
       toast.error(
         code === "invalid_type"
-          ? "Unsupported image file format"
+          ? t("media.invalidType")
           : code === "too_large"
-            ? "File exceeds maximum upload size (15MB)"
-            : "Failed to upload image",
+            ? t("media.tooLarge")
+            : t("media.uploadError"),
       );
     } finally {
       setUploading(false);
@@ -57,7 +61,9 @@ export function VariantImagePicker({
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
               <button
-                aria-label={imageUrl ? "Change variant photo" : "Assign variant photo"}
+                aria-label={
+                  imageUrl ? t("media.variantPhotoChange") : t("media.variantPhotoAssign")
+                }
                 className="group relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-lg transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={(event) => event.stopPropagation()}
                 type="button"
@@ -79,21 +85,29 @@ export function VariantImagePicker({
             </PopoverTrigger>
           </TooltipTrigger>
           <TooltipContent side="top">
-            {imageUrl ? "Change variant photo" : "Assign variant photo"}
+            {imageUrl ? t("media.variantPhotoChange") : t("media.variantPhotoAssign")}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
-      <PopoverContent align="start" className="w-80 rounded-xl p-3 text-xs shadow-md" side="bottom">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+      <PopoverContent
+        align="start"
+        className="h-[min(26rem,calc(100dvh-2rem))] w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden rounded-xl p-0 text-xs shadow-md"
+        side="bottom"
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3.5 py-3">
             <div>
-              <div className="text-xs font-semibold text-foreground">Variant Photo</div>
+              <div className="text-sm font-medium text-foreground">{t("media.variantPhoto")}</div>
               <p className="text-[11px] text-muted-foreground">
-                Assign a dedicated photo to this variant
+                {t(
+                  imageSource === "option"
+                    ? "media.variantPhotoAutoHint"
+                    : "media.variantPhotoHint",
+                )}
               </p>
             </div>
-            {imageUrl ? (
+            {imageUrl && imageSource !== "option" ? (
               <Button
                 className="h-6 gap-1 px-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => {
@@ -105,19 +119,21 @@ export function VariantImagePicker({
                 variant="ghost"
               >
                 <AppIcons.close className="size-3" />
-                Remove
+                {t("media.variantPhotoClear")}
               </Button>
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-muted-foreground">Product images</span>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3.5">
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {t("media.variantPhotoProductImages")}
+            </span>
             {galleryImages.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border/60 bg-muted/10 py-3 text-center text-xs text-muted-foreground">
-                No product images yet in the Media section.
+                {t("media.variantPhotoEmpty")}
               </p>
             ) : (
-              <div className="grid max-h-40 grid-cols-4 gap-2 overflow-y-auto p-0.5">
+              <div className="grid grid-cols-4 gap-2 p-0.5">
                 {galleryImages.map((url) => {
                   const isSelected = imageUrl === url;
                   return (
@@ -149,7 +165,7 @@ export function VariantImagePicker({
             )}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-border/60 pt-2.5">
+          <div className="flex shrink-0 flex-col gap-2 border-t border-border/60 px-3.5 py-3">
             <input
               accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -171,7 +187,7 @@ export function VariantImagePicker({
                 ) : (
                   <AppIcons.upload className="size-3" />
                 )}
-                {uploading ? "Uploading…" : "Upload photo"}
+                {uploading ? t("media.uploading") : t("media.variantPhotoUpload")}
               </Button>
               <MediaLibraryDialog
                 onSelect={(assets) => {
@@ -183,7 +199,7 @@ export function VariantImagePicker({
                 }}
                 selectionMode="single"
                 triggerClassName="h-7 flex-1 justify-center text-xs"
-                triggerLabel="Choose library"
+                triggerLabel={t("media.chooseLibrary")}
                 triggerSize="sm"
                 triggerVariant="outline"
               />

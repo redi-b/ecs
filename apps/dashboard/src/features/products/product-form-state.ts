@@ -261,7 +261,10 @@ export function getProductVariantsPayload(values: ProductFormValues) {
         ...(defaultOverride?.id ? { id: defaultOverride.id } : {}),
         imageUrl: defaultOverride?.imageUrl?.trim()
           ? defaultOverride.imageUrl.trim()
-          : (defaultOverride?.id ? null : undefined),
+          : defaultOverride?.id
+            ? null
+            : undefined,
+        imageSource: defaultOverride?.imageSource ?? null,
         optionValues: { Default: "Default" },
         sku: values.skuPrefix.trim() ? values.skuPrefix.trim() : null,
         priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
@@ -279,7 +282,10 @@ export function getProductVariantsPayload(values: ProductFormValues) {
         ...(row.id ? { id: row.id } : {}),
         imageUrl: override?.imageUrl?.trim()
           ? override.imageUrl.trim()
-          : (row.id || row.imageUrl ? null : undefined),
+          : row.id || row.imageUrl
+            ? null
+            : undefined,
+        imageSource: override?.imageSource ?? null,
         optionValues: row.optionValues,
         sku: row.sku.trim() ? row.sku.trim() : null,
         priceAmount: row.priceAmount,
@@ -566,6 +572,7 @@ export function getInitialVariantOverrides(
       enabled: true,
       id: variant.id,
       ...(variantImageUrl ? { imageUrl: variantImageUrl } : {}),
+      ...(variant.imageSource ? { imageSource: variant.imageSource } : {}),
       ...(price?.amount !== null && price?.amount !== undefined
         ? { priceAmount: String(price.amount) }
         : {}),
@@ -624,6 +631,43 @@ export function getMediaUrls(thumbnail: string, imageUrls: string) {
   );
 }
 
+export function reconcileOptionMediaBindings(
+  bindings: ProductOptionMediaBindings | null | undefined,
+  previousOptions: ProductOptionDraft[],
+  nextOptions: ProductOptionDraft[],
+): ProductOptionMediaBindings | null {
+  if (!bindings) return null;
+  const previousAxis = previousOptions.find(
+    (option) => option.title.trim().toLowerCase() === bindings.optionTitle.trim().toLowerCase(),
+  );
+  if (!previousAxis) return null;
+  const axisIdentity = previousAxis.id ?? previousAxis.key;
+  const nextAxis = nextOptions.find((option) =>
+    axisIdentity
+      ? (option.id ?? option.key) === axisIdentity
+      : option.title.trim().toLowerCase() === previousAxis.title.trim().toLowerCase(),
+  );
+  if (!nextAxis?.title.trim()) return null;
+
+  const mappings: Record<string, string[]> = {};
+  for (const [oldLabel, urls] of Object.entries(bindings.mappings)) {
+    const previousValue = previousAxis.values.find(
+      (value) => value.label.trim().toLowerCase() === oldLabel.trim().toLowerCase(),
+    );
+    if (!previousValue) continue;
+    const valueIdentity = previousValue.id ?? previousValue.key;
+    const nextValue = nextAxis.values.find((value) =>
+      valueIdentity
+        ? (value.id ?? value.key) === valueIdentity
+        : value.label.trim().toLowerCase() === previousValue.label.trim().toLowerCase(),
+    );
+    const nextLabel = nextValue?.label.trim();
+    if (!nextLabel) continue;
+    mappings[nextLabel] = Array.from(new Set([...(mappings[nextLabel] ?? []), ...urls]));
+  }
+  return Object.keys(mappings).length ? { optionTitle: nextAxis.title.trim(), mappings } : null;
+}
+
 export type ApplyOptionMediaAutoAssignmentInput = {
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionDraft[] | undefined;
@@ -677,15 +721,22 @@ export function applyOptionMediaAutoAssignment(
   const nextOverrides = { ...variantOverrides };
 
   const validSet = validImageUrls
-    ? (validImageUrls instanceof Set ? validImageUrls : new Set(validImageUrls))
+    ? validImageUrls instanceof Set
+      ? validImageUrls
+      : new Set(validImageUrls)
     : null;
 
   if (validSet) {
     for (const [key, override] of Object.entries(nextOverrides)) {
-      if (override?.imageUrl && !validSet.has(override.imageUrl)) {
+      if (
+        override?.imageSource === "option" &&
+        override.imageUrl &&
+        !validSet.has(override.imageUrl)
+      ) {
         nextOverrides[key] = {
           ...override,
           imageUrl: undefined,
+          imageSource: undefined,
         };
       }
     }
@@ -697,6 +748,11 @@ export function applyOptionMediaAutoAssignment(
     !optionMediaBindings.mappings ||
     typeof optionMediaBindings.mappings !== "object"
   ) {
+    for (const [key, override] of Object.entries(nextOverrides)) {
+      if (override?.imageSource === "option") {
+        nextOverrides[key] = { ...override, imageUrl: undefined, imageSource: undefined };
+      }
+    }
     return nextOverrides;
   }
 
@@ -732,17 +788,20 @@ export function applyOptionMediaAutoAssignment(
       ([valueKey]) => valueKey.trim().toLowerCase() === rowOptionValue.toLowerCase(),
     );
     const mappedImages = mappedEntry?.[1];
-    const primaryImage = mappedImages?.[0]?.trim();
-
-    if (!primaryImage) continue;
+    const primaryImage = mappedImages
+      ?.find((url) => url.trim() && (!validSet || validSet.has(url.trim())))
+      ?.trim();
 
     const existingOverride = nextOverrides[row.key];
-    if (!existingOverride?.imageUrl) {
-      nextOverrides[row.key] = {
-        ...existingOverride,
-        imageUrl: primaryImage,
-      };
-    }
+    if (!primaryImage && existingOverride?.imageSource !== "option") continue;
+    if (existingOverride?.imageSource === "manual" && existingOverride.imageUrl) continue;
+    if (existingOverride?.imageUrl && !existingOverride.imageSource) continue;
+
+    nextOverrides[row.key] = {
+      ...existingOverride,
+      imageUrl: primaryImage || undefined,
+      imageSource: primaryImage ? "option" : undefined,
+    };
   }
 
   return nextOverrides;

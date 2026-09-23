@@ -7,6 +7,31 @@ import {
   getProductWriteBody,
   splitProductOptionBatchBody,
 } from "./write.js";
+test("variant updates retain unrelated Medusa metadata", () => {
+  const completed = completeVariantOptionsForCurrentProduct(
+    {
+      variants: [
+        {
+          id: "variant_red",
+          metadata: { fulfillment_code: "aisle-3", image_source: "option" },
+          options: [{ value: "Red", option: { title: "Color" } }],
+        },
+      ],
+    },
+    [
+      {
+        id: "variant_red",
+        currencyCode: "etb",
+        optionValues: { Color: "Red" },
+        priceAmount: 100,
+        imageUrl: "https://example.com/new.jpg",
+        imageSource: "option",
+      },
+    ],
+  );
+  assert.equal(completed?.[0]?.metadata?.fulfillment_code, "aisle-3");
+  assert.equal(completed?.[0]?.metadata?.image_source, "option");
+});
 
 test("keeps existing option assignments until retired axes are removed", () => {
   const variants = completeVariantOptionsForCurrentProduct(
@@ -272,4 +297,17 @@ test("preserves existing variant IDs in product updates", () => {
       prices: [{ amount: 1200, currency_code: "etb", rules: { region_id: "reg_1" } }],
     },
   ]);
+});
+
+test("clearing the gallery and cover persists explicit empty media without variant writes", () => {
+  const body = getProductWriteBody({
+    productId: "prod_1",
+    salesChannelId: "sc_1",
+    thumbnail: null,
+    imageUrls: [],
+    optionMediaBindings: null,
+  });
+  assert.equal(body.thumbnail, null);
+  assert.deepEqual(body.images, []);
+  assert.equal("variants" in body, false);
 });

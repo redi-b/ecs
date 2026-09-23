@@ -13,6 +13,7 @@ export type MerchantProduct = {
   options?: MerchantProductOption[];
   variants?: MerchantProductVariant[];
   optionMediaBindings?: ProductOptionMediaBindings | null;
+  metadata?: Record<string, unknown>;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -45,6 +46,7 @@ export type MerchantProductVariant = {
   title: string | null;
   sku: string | null;
   imageUrl?: string | null;
+  imageSource?: "option" | "manual" | null;
   optionValues?: MerchantProductVariantOptionValue[];
   prices: MerchantProductPrice[];
   stock?: Omit<MerchantProductStock, "productId" | "variantId" | "inventoryItemId"> | null;

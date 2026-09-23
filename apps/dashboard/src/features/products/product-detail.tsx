@@ -7,7 +7,7 @@ import type {
   MerchantProductCollection,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
@@ -65,6 +65,7 @@ export function ProductDetail({
 }: ProductDetailProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const canUpdate = usePermission("products.update");
   const effectiveReadOnly = readOnly || !canUpdate;
   const taxonomy = useProductTaxonomy({ enabled: !effectiveReadOnly, tenantId });
@@ -110,9 +111,7 @@ export function ProductDetail({
 
   function openLightboxForUrl(url: string | null | undefined) {
     if (!url || !lightboxItems.length) return;
-    const index = lightboxItems.findIndex(
-      (item) => item.publicUrl === url || item.id === url || item.subtitle === url,
-    );
+    const index = images.findIndex((image) => image.url === url);
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
@@ -221,7 +220,8 @@ export function ProductDetail({
                 <ProductMediaEditButton
                   action={action}
                   product={product}
-                  triggerLabel="Edit media & tags"
+                  defaultOpen={searchParams.get("edit") === "media"}
+                  triggerLabel={t("products.edit.mediaTrigger")}
                   triggerVariant="button"
                 />
               )
@@ -241,8 +241,7 @@ export function ProductDetail({
                   const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
                   const imageTag = getImageOptionTag(
                     image.url,
-                    (product.metadata as { option_media_bindings?: Record<string, unknown> } | undefined)
-                      ?.option_media_bindings,
+                    product.optionMediaBindings,
                   );
                   const displayUrl = resolveProductMediaVariant(image.url, product.metadata, "w400");
 
@@ -289,7 +288,7 @@ export function ProductDetail({
                   <ProductMediaEditButton
                     action={action}
                     product={product}
-                    triggerLabel="Upload media & tag options"
+                    triggerLabel={t("products.edit.mediaAdd")}
                     triggerVariant="button"
                   />
                 )}

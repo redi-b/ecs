@@ -948,7 +948,7 @@ export function createMedusaProductService(options: {
       const retrieveResponse = await requestMedusa(
         fetcher,
         getProductOwnershipUrl(options.medusaInternalUrl, input.productId, {
-          includeOptions: input.options !== undefined,
+          includeOptions: input.options !== undefined || input.variants !== undefined,
         }),
         {
           headers: getAdminHeaders(options.adminApiToken),
@@ -1050,6 +1050,10 @@ export function createMedusaProductService(options: {
       const existingMetadata = isRecord(retrieveData?.product?.metadata)
         ? retrieveData.product.metadata
         : {};
+      if (input.tenantId && existingMetadata.platform_tenant_id &&
+          existingMetadata.platform_tenant_id !== input.tenantId) {
+        return { ok: false, error: "product_not_found", status: 404 };
+      }
 
       const updateResponse = await requestMedusa(
         fetcher,
@@ -1057,10 +1061,8 @@ export function createMedusaProductService(options: {
         {
           body: JSON.stringify({
             update: {
-              metadata: {
-                ...existingMetadata,
-                media_variants: input.mediaVariants,
-              },
+              // Medusa merges metadata keys. Do not resend a stale product metadata snapshot.
+              metadata: { media_variants: input.mediaVariants },
               ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
               ...(input.images !== undefined ? { images: input.images } : {}),
             },

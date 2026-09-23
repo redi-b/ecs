@@ -91,6 +91,12 @@ export function getProductRowActions(
       ...(onSetInventory
         ? [
             {
+              href: `${href}${href.includes("?") ? "&" : "?"}edit=media`,
+              icon: AppIcons.image,
+              label: t("products.edit.mediaTitle"),
+              type: "link" as const,
+            },
+            {
               icon: AppIcons.products,
               label: t("products.stock.bulkAction"),
               type: "button" as const,

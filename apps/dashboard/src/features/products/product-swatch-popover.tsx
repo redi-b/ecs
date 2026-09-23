@@ -20,6 +20,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
+import { useI18n } from "@/i18n/provider";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 
@@ -123,7 +124,7 @@ export function getAddSwatchLabel(optionTitle?: string): string {
   const norm = (optionTitle ?? "").trim().toLowerCase();
   if (/^colou?r$/i.test(norm)) return "Add color";
   if (/^pattern$/i.test(norm)) return "Add pattern";
-  if (/^fabric$/i.test(norm)) return "Add fabric";
+  if (/^fabric$/i.test(norm)) return "Add swatch";
   return "Add swatch";
 }
 
@@ -140,6 +141,7 @@ export function ProductColorPopover({
   optionTitle?: string | undefined;
   value?: ProductOptionSwatch | string | null | undefined;
 }) {
+  const { t } = useI18n();
   const normalizedSwatch = normalizeProductOptionSwatch(value);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"browse" | "custom">("browse");
@@ -220,15 +222,15 @@ export function ProductColorPopover({
         const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
         setCustomLabel(baseName.charAt(0).toUpperCase() + baseName.slice(1));
       }
-      toast.success("Texture image uploaded");
+      toast.success(t("products.swatch.uploaded"));
     } catch (error) {
       const code = error instanceof Error ? error.message : "upload_failed";
       toast.error(
         code === "invalid_type"
-          ? "Unsupported image file format"
+          ? t("media.invalidType")
           : code === "too_large"
-            ? "File exceeds maximum upload size (15MB)"
-            : "Failed to upload texture image",
+            ? t("media.tooLarge")
+            : t("products.swatch.uploadError"),
       );
     } finally {
       setUploading(false);
@@ -239,7 +241,11 @@ export function ProductColorPopover({
   const isSaveDisabled =
     !customLabel.trim() || (customMode === "color" ? !customColor.trim() : !customImageUrl.trim());
 
-  const addTriggerLabel = getAddSwatchLabel(optionTitle);
+  const addTriggerLabel = /^colou?r$/i.test(optionTitle?.trim() ?? "")
+    ? t("products.swatch.addColor")
+    : /^pattern$/i.test(optionTitle?.trim() ?? "")
+      ? t("products.swatch.addPattern")
+      : t("products.swatch.addSwatch");
   const isColorAxis = !optionTitle || /^colou?r$/i.test(optionTitle.trim());
 
   return (
@@ -281,29 +287,36 @@ export function ProductColorPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex h-[28rem] w-[22rem] flex-col overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
+        className="flex h-[min(28rem,calc(100dvh-2rem))] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
         collisionPadding={16}
         onKeyDown={(event) => event.stopPropagation()}
         sideOffset={6}
       >
         {step === "browse" ? (
-          <Command className="flex h-full flex-col rounded-none bg-transparent p-0" shouldFilter={false}>
-            <div className="relative flex h-8 shrink-0 items-center justify-between border-b border-border/60 px-3">
+          <Command
+            className="flex h-full flex-col rounded-none bg-transparent p-0"
+            shouldFilter={false}
+          >
+            <div className="relative flex h-11 shrink-0 items-center justify-between border-b border-border/60 px-3.5">
               <span className="text-xs font-semibold">
-                {isColorAxis ? "Preset colors" : "Preset swatches"}
+                {isColorAxis
+                  ? t("products.swatch.presetColors")
+                  : t("products.swatch.presetSwatches")}
               </span>
               <button
                 className="text-xs font-medium text-primary hover:underline"
                 onClick={() => setStep("custom")}
                 type="button"
               >
-                Custom swatch
+                {t("products.swatch.customSwatch")}
               </button>
             </div>
             <CommandInput
               autoFocus
               onValueChange={setQuery}
-              placeholder={isColorAxis ? "Search colors…" : "Search presets…"}
+              placeholder={
+                isColorAxis ? t("products.swatch.searchColors") : t("products.swatch.searchPresets")
+              }
               size="panel"
               value={query}
             />
@@ -315,15 +328,15 @@ export function ProductColorPopover({
                 <CommandItem
                   className="mb-1 border border-dashed"
                   onSelect={() => setStep("custom")}
-                  value="custom color or image texture"
+                  value="custom color or image swatch"
                 >
                   <span className="grid size-6 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
                   <span className="min-w-0 flex-1">
                     <strong className="block text-xs font-medium">
-                      Custom color or texture…
+                      {t("products.swatch.customSwatch")}
                     </strong>
                     <small className="block truncate text-[11px] text-muted-foreground">
-                      Pick an exact color or upload a texture
+                      {t("products.swatch.customHelp")}
                     </small>
                   </span>
                 </CommandItem>
@@ -341,7 +354,9 @@ export function ProductColorPopover({
                         className="size-5 rounded-full border shadow-xs"
                         style={{ backgroundColor: item.value }}
                       />
-                      <span className="min-w-0 flex-1 truncate text-xs font-medium">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                        {item.label}
+                      </span>
                       <span className="font-mono text-[11px] text-muted-foreground uppercase">
                         {item.value}
                       </span>
@@ -349,7 +364,7 @@ export function ProductColorPopover({
                   ))
                 ) : (
                   <p className="px-2.5 py-6 text-center text-xs text-muted-foreground">
-                    No preset matches this search.
+                    {t("products.swatch.noPreset")}
                   </p>
                 )}
               </CommandGroup>
@@ -357,32 +372,38 @@ export function ProductColorPopover({
           </Command>
         ) : (
           <div className="flex h-full flex-col">
-            <div className="relative flex h-8 shrink-0 items-center border-b border-border/60 px-1">
+            <div className="relative flex h-11 shrink-0 items-center border-b border-border/60 px-2">
               <button
-                aria-label="Back to preset swatches"
+                aria-label={t("products.swatch.backToPresets")}
                 className="absolute left-1 z-10 grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 onClick={() => setStep("browse")}
                 type="button"
               >
                 <AppIcons.arrowLeft className="size-3.5" />
               </button>
-              <p className="w-full truncate px-9 text-center text-xs font-medium">Custom swatch</p>
+              <p className="w-full truncate px-9 text-center text-xs font-medium">
+                {t("products.swatch.customSwatch")}
+              </p>
             </div>
 
             <div className="flex-1 min-h-0 space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
               <Field>
-                <FieldLabel>Label</FieldLabel>
+                <FieldLabel>{t("products.swatch.label")}</FieldLabel>
                 <Input
                   autoFocus
                   onChange={(event) => setCustomLabel(event.currentTarget.value)}
-                  placeholder={customMode === "image" ? "Texture name (e.g. Denim)" : "Color name (e.g. Navy Blue)"}
+                  placeholder={
+                    customMode === "image"
+                      ? t("products.swatch.swatchName")
+                      : t("products.swatch.colorName")
+                  }
                   value={customLabel}
                 />
               </Field>
 
               <SegmentedControl
                 active="muted"
-                ariaLabel="Swatch kind"
+                ariaLabel={t("products.swatch.swatchKind")}
                 className="w-full"
                 fullWidth
                 onChange={(next) => setCustomMode(next as "color" | "image")}
@@ -392,7 +413,7 @@ export function ProductColorPopover({
                     label: (
                       <span className="flex items-center justify-center gap-1.5 text-xs font-medium">
                         <AppIcons.editor className="size-3.5" />
-                        <span>Color</span>
+                        <span>{t("products.swatch.color")}</span>
                       </span>
                     ),
                   },
@@ -401,7 +422,7 @@ export function ProductColorPopover({
                     label: (
                       <span className="flex items-center justify-center gap-1.5 text-xs font-medium">
                         <AppIcons.image className="size-3.5" />
-                        <span>Image / Texture</span>
+                        <span>{t("products.swatch.image")}</span>
                       </span>
                     ),
                   },
@@ -411,7 +432,11 @@ export function ProductColorPopover({
               />
 
               {customMode === "color" ? (
-                <ColorPickerField label="Swatch" onChange={setCustomColor} value={customColor} />
+                <ColorPickerField
+                  label={t("products.swatch.swatch")}
+                  onChange={setCustomColor}
+                  value={customColor}
+                />
               ) : (
                 <div className="space-y-3">
                   <input
@@ -425,7 +450,7 @@ export function ProductColorPopover({
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border bg-muted shadow-xs grid place-items-center">
                       {customImageUrl.trim() ? (
                         <img
-                          alt="Texture preview"
+                          alt={t("products.swatch.preview")}
                           className="size-full object-cover"
                           src={customImageUrl.trim()}
                         />
@@ -435,10 +460,14 @@ export function ProductColorPopover({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-medium text-foreground">
-                        {customImageUrl.trim() ? "Texture active" : "No texture selected"}
+                        {customImageUrl.trim()
+                          ? t("products.swatch.imageSelected")
+                          : t("products.swatch.noImage")}
                       </div>
                       <p className="truncate text-[11px] text-muted-foreground">
-                        {customImageUrl.trim() ? "48px circular crop" : "Upload or choose from library"}
+                        {customImageUrl.trim()
+                          ? t("products.swatch.imageUsedAsSwatch")
+                          : t("products.swatch.imagePrompt")}
                       </p>
                       {customImageUrl.trim() ? (
                         <div className="mt-1 flex items-center gap-2">
@@ -450,7 +479,7 @@ export function ProductColorPopover({
                             variant="ghost"
                           >
                             <AppIcons.close className="size-3" />
-                            Remove
+                            {t("products.swatch.remove")}
                           </Button>
                           <Button
                             className="h-6 px-1.5 text-[11px]"
@@ -461,7 +490,7 @@ export function ProductColorPopover({
                             variant="ghost"
                           >
                             <AppIcons.upload className="size-3" />
-                            Replace
+                            {t("products.swatch.replace")}
                           </Button>
                         </div>
                       ) : null}
@@ -483,7 +512,9 @@ export function ProductColorPopover({
                         ) : (
                           <AppIcons.upload className="size-3.5" />
                         )}
-                        {uploading ? "Uploading texture…" : "Upload texture file"}
+                        {uploading
+                          ? t("products.swatch.uploadingImage")
+                          : t("products.swatch.uploadImage")}
                       </Button>
                       <MediaLibraryDialog
                         onSelect={(assets) => {
@@ -497,7 +528,7 @@ export function ProductColorPopover({
                         }}
                         selectionMode="single"
                         triggerClassName="w-full justify-center"
-                        triggerLabel="Choose from media library"
+                        triggerLabel={t("products.swatch.chooseLibrary")}
                         triggerSize="sm"
                         triggerVariant="outline"
                       />
@@ -509,7 +540,7 @@ export function ProductColorPopover({
 
             <div className="flex h-12 shrink-0 items-center justify-end gap-2 border-t border-border/60 bg-background px-3">
               <Button onClick={close} size="sm" type="button" variant="ghost">
-                Cancel
+                {t("products.swatch.cancel")}
               </Button>
               <Button
                 disabled={isSaveDisabled || uploading}
@@ -521,7 +552,7 @@ export function ProductColorPopover({
                 size="sm"
                 type="button"
               >
-                {label ? "Save swatch" : "Add swatch"}
+                {label ? t("products.swatch.saveSwatch") : t("products.swatch.addSwatchAction")}
               </Button>
             </div>
           </div>

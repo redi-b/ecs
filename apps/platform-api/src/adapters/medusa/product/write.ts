@@ -47,11 +47,15 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
     body.description = null;
   }
 
+  if (input.thumbnail === null) {
+    body.thumbnail = null;
+  }
+
   if (input.categoryIds?.length) {
     body.categories = input.categoryIds.map((id) => ({ id }));
   }
 
-  if (input.imageUrls?.length) {
+  if (input.imageUrls !== undefined) {
     body.images = input.imageUrls.map((url) => ({ url }));
   }
 
@@ -241,7 +245,8 @@ export function getProductOptionBatchBody(
   );
 
   const uniqueRemove = [...new Set(remove)].filter((id) => !removeBeforeUpdate.has(id));
-  if (!add.length && !uniqueRemove.length && !removeBeforeUpdate.size && !update.length) return null;
+  if (!add.length && !uniqueRemove.length && !removeBeforeUpdate.size && !update.length)
+    return null;
   return {
     ...(add.length ? { add } : {}),
     ...(uniqueRemove.length ? { remove: uniqueRemove } : {}),
@@ -351,6 +356,7 @@ export function completeVariantOptionsForCurrentProduct(
   }
 
   const existingById = new Map<string, Record<string, string>>();
+  const existingMetadataById = new Map<string, Record<string, unknown>>();
   const singleValueAssignments: Record<string, string> = {};
   if (Array.isArray(product.options)) {
     for (const option of product.options) {
@@ -365,7 +371,9 @@ export function completeVariantOptionsForCurrentProduct(
   for (const variant of product.variants) {
     if (!isRecord(variant)) continue;
     const id = getString(variant.id);
-    if (!id || !Array.isArray(variant.options)) continue;
+    if (!id) continue;
+    if (isRecord(variant.metadata)) existingMetadataById.set(id, variant.metadata);
+    if (!Array.isArray(variant.options)) continue;
     const assignments: Record<string, string> = {};
     for (const assignment of variant.options) {
       if (!isRecord(assignment)) continue;
@@ -378,9 +386,15 @@ export function completeVariantOptionsForCurrentProduct(
   }
 
   return variants.map((variant) => {
-    const existing = variant.id?.trim() ? existingById.get(variant.id.trim()) : undefined;
+    const id = variant.id?.trim();
+    const existing = id ? existingById.get(id) : undefined;
+    const metadata = {
+      ...(id ? existingMetadataById.get(id) : undefined),
+      ...variant.metadata,
+    };
     return {
       ...variant,
+      ...(Object.keys(metadata).length ? { metadata } : {}),
       optionValues: {
         ...singleValueAssignments,
         ...existing,
@@ -414,6 +428,7 @@ export function getProductVariantWriteBody(
     ...(variant.imageUrl !== undefined
       ? { image_url: variant.imageUrl ? variant.imageUrl.trim() : null }
       : {}),
+    ...(variant.imageSource !== undefined ? { image_source: variant.imageSource } : {}),
   };
 
   return {

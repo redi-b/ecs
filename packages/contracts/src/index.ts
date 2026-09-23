@@ -460,6 +460,7 @@ export const merchantProductVariantWriteSchema = z.object({
   currencyCode: z.string().min(1),
   stockedQuantity: z.number().int().nonnegative().optional(),
   imageUrl: z.string().url().nullable().optional(),
+  imageSource: z.enum(["option", "manual"]).nullable().optional(),
 });
 
 export const PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY =
@@ -597,6 +598,7 @@ export const merchantProductSchema = z.object({
     )
     .optional(),
   options: z.array(merchantProductOptionSchema).optional(),
+  optionMediaBindings: productOptionMediaBindingsSchema.nullable().optional(),
   variants: z
     .array(
       z.object({
@@ -604,6 +606,8 @@ export const merchantProductSchema = z.object({
         inventoryItemId: z.string().min(1).nullable().optional(),
         title: z.string().min(1).nullable(),
         sku: z.string().min(1).nullable(),
+        imageUrl: z.string().url().nullable().optional(),
+        imageSource: z.enum(["option", "manual"]).nullable().optional(),
         optionValues: z
           .array(
             z.object({
@@ -644,6 +648,7 @@ export const merchantProductsSchema = z.object({
 
 export const merchantProductMutationSchema = z.object({
   product: merchantProductSchema,
+  mediaSyncWarning: z.boolean().optional(),
 });
 
 export const merchantProductStockResponseSchema = z.object({

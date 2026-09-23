@@ -4,9 +4,16 @@ import {
   type UpdateProductWorkflowInput,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows";
-import { createWorkflow, transform, WorkflowResponse } from "@medusajs/framework/workflows-sdk";
+import {
+  createWorkflow,
+  transform,
+  when,
+  WorkflowResponse,
+} from "@medusajs/framework/workflows-sdk";
 
 import type { PlatformProductUpdateInput } from "../lib/platform-product-update";
+import { productUpdateChangesMedia } from "../lib/product-variant-media";
+import { reconcileProductVariantImagesWorkflow } from "./reconcile-product-variant-images";
 
 type Input = PlatformProductUpdateInput & { product_id: string };
 
@@ -78,6 +85,25 @@ export const updatePlatformProductWorkflow = createWorkflow(
     );
     applyPlatformProductOptionsAfterUpdateWorkflow.runAsStep({ input: afterOptions });
 
-    return new WorkflowResponse(products);
+    const photoChanges = when(
+      { input, products },
+      ({ input, products }) => products.length > 0 && productUpdateChangesMedia(input.update),
+    ).then(() =>
+      reconcileProductVariantImagesWorkflow.runAsStep({
+        input: { productId: input.product_id },
+      }),
+    );
+    const result = transform({ products, photoChanges }, ({ products, photoChanges }) => {
+      const metadataById = new Map((photoChanges ?? []).map((patch) => [patch.id, patch.metadata]));
+      return products.map((product) => ({
+        ...product,
+        variants: product.variants?.map((variant) => ({
+          ...variant,
+          ...(metadataById.has(variant.id) ? { metadata: metadataById.get(variant.id) } : {}),
+        })),
+      }));
+    });
+
+    return new WorkflowResponse(result);
   },
 );

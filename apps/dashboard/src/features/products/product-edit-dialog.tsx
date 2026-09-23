@@ -50,12 +50,14 @@ import {
 } from "@/features/products/product-form-fields";
 import { ProductOptionsWorkspace } from "@/features/products/product-form-sections";
 import {
+  applyOptionMediaAutoAssignment,
   getInitialProductOptions,
   getMediaUrls,
   getProductDefaultValues,
   getProductPayload,
   getRemovedExistingVariants,
   getVariantRows,
+  reconcileOptionMediaBindings,
 } from "@/features/products/product-form-state";
 import type { ProductFormValues } from "@/features/products/product-form-types";
 import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
@@ -275,11 +277,13 @@ export function ProductOrganizationEditButton({
 }
 
 export function ProductMediaEditButton({
+  defaultOpen = false,
   action,
   product,
   triggerLabel,
   triggerVariant = "button",
 }: ProductEditSheetBaseProps & {
+  defaultOpen?: boolean;
   triggerLabel?: string | undefined;
   triggerVariant?: "button" | "icon" | undefined;
 }) {
@@ -290,11 +294,15 @@ export function ProductMediaEditButton({
   return (
     <ProductEditSheet
       action={action}
-      buildPayload={() => ({
-        thumbnail: values.thumbnail.trim() || null,
-        imageUrls: getImageUrls(values.imageUrls),
-        optionMediaBindings: values.optionMediaBindings || undefined,
-      })}
+      buildPayload={() => buildProductMediaEditPayload(values)}
+      defaultOpen={defaultOpen}
+      hasUnsavedChanges={JSON.stringify(values) !== JSON.stringify(getProductMediaValues(product))}
+      onClose={() => {
+        if (!defaultOpen) return;
+        const url = new URL(window.location.href);
+        url.searchParams.delete("edit");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      }}
       contentClassName="sm:max-w-xl"
       description={t("products.edit.mediaDesc")}
       onOpen={() => setValues(getProductMediaValues(product))}
@@ -359,7 +367,11 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
     let payload: Record<string, unknown>;
     try {
       const productPayload = getProductPayload(values, { includeOptions: true }, t);
-      payload = { options: productPayload.options, variants: productPayload.variants };
+      payload = {
+        options: productPayload.options,
+        variants: productPayload.variants,
+        optionMediaBindings: productPayload.optionMediaBindings ?? null,
+      };
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : t("products.edit.formError"));
       return;
@@ -372,13 +384,18 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     }).catch(() => null);
-    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    const data = (await response?.json().catch(() => ({}))) as {
+      error?: string;
+      mediaSyncWarning?: boolean;
+    };
     setIsSaving(false);
     if (!response?.ok) {
       setError(getProductEditErrorMessage(data.error, t));
       return;
     }
-    toast.success(t("products.edit.toastSaved"));
+    toast[data.mediaSyncWarning ? "warning" : "success"](
+      data.mediaSyncWarning ? t("products.composer.mediaSyncWarn") : t("products.edit.toastSaved"),
+    );
     setDirty(false);
     setOpen(false);
     router.refresh();
@@ -438,15 +455,46 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                         ),
                       });
                     }}
-                    onOptionsChange={(options) => update({ options })}
-                    onOverrideChange={(key, override) =>
+                    onOptionsChange={(options) => {
+                      const bindings = reconcileOptionMediaBindings(
+                        values.optionMediaBindings,
+                        values.options,
+                        options,
+                      );
+                      const nextValues = { ...values, options, optionMediaBindings: bindings };
                       update({
-                        variantOverrides: {
-                          ...values.variantOverrides,
-                          [key]: { ...values.variantOverrides[key], ...override },
-                        },
-                      })
-                    }
+                        options,
+                        optionMediaBindings: bindings,
+                        variantOverrides: applyOptionMediaAutoAssignment({
+                          variantOverrides: values.variantOverrides,
+                          options,
+                          rows: getVariantRows(nextValues),
+                          optionMediaBindings: bindings,
+                          validImageUrls: getMediaUrls(values.thumbnail, values.imageUrls),
+                        }),
+                      });
+                    }}
+                    onOverrideChange={(key, override) => {
+                      const nextOverrides = {
+                        ...values.variantOverrides,
+                        [key]: { ...values.variantOverrides[key], ...override },
+                      };
+                      update({
+                        variantOverrides:
+                          "imageUrl" in override && !override.imageUrl
+                            ? applyOptionMediaAutoAssignment({
+                                variantOverrides: nextOverrides,
+                                options: values.options,
+                                rows: getVariantRows({
+                                  ...values,
+                                  variantOverrides: nextOverrides,
+                                }),
+                                optionMediaBindings: values.optionMediaBindings,
+                                validImageUrls: getMediaUrls(values.thumbnail, values.imageUrls),
+                              })
+                            : nextOverrides,
+                      });
+                    }}
                     options={values.options}
                     rows={getVariantRows(values)}
                     values={values.variantOverrides}
@@ -483,6 +531,9 @@ function ProductEditSheet({
   buildPayload,
   children,
   contentClassName,
+  defaultOpen = false,
+  hasUnsavedChanges,
+  onClose,
   description,
   onOpen,
   title,
@@ -493,6 +544,9 @@ function ProductEditSheet({
   buildPayload: () => Record<string, unknown>;
   children: ReactNode;
   contentClassName?: string;
+  defaultOpen?: boolean;
+  hasUnsavedChanges?: boolean;
+  onClose?: () => void;
   description: string;
   onOpen: () => void;
   title: string;
@@ -502,16 +556,31 @@ function ProductEditSheet({
 }) {
   const { t } = useI18n();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
-    dirty && open,
+    (hasUnsavedChanges ?? dirty) && open,
   );
 
+  function closeSheet() {
+    setOpen(false);
+    onClose?.();
+  }
+
+  function openSheet() {
+    onOpen();
+    setError(null);
+    setDirty(false);
+    setOpen(true);
+  }
+
   function requestClose() {
-    requestLeave(() => setOpen(false));
+    if (!isSaving) requestLeave(closeSheet);
   }
 
   async function submitEdit() {
@@ -535,7 +604,10 @@ function ProductEditSheet({
       },
       method: "POST",
     }).catch(() => null);
-    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    const data = (await response?.json().catch(() => ({}))) as {
+      error?: string;
+      mediaSyncWarning?: boolean;
+    };
 
     setIsSaving(false);
 
@@ -544,9 +616,11 @@ function ProductEditSheet({
       return;
     }
 
-    toast.success(t("products.edit.toastSaved"));
+    toast[data.mediaSyncWarning ? "warning" : "success"](
+      data.mediaSyncWarning ? t("products.composer.mediaSyncWarn") : t("products.edit.toastSaved"),
+    );
     setDirty(false);
-    setOpen(false);
+    closeSheet();
     router.refresh();
   }
 
@@ -555,10 +629,7 @@ function ProductEditSheet({
       <Sheet
         onOpenChange={(nextOpen) => {
           if (nextOpen) {
-            onOpen();
-            setError(null);
-            setDirty(false);
-            setOpen(true);
+            openSheet();
             return;
           }
           requestClose();
@@ -566,14 +637,14 @@ function ProductEditSheet({
         open={open}
       >
         {triggerVariant === "button" ? (
-          <Button onClick={() => setOpen(true)} size="sm" type="button" variant="outline">
+          <Button onClick={openSheet} size="sm" type="button" variant="outline">
             <AppIcons.edit data-icon="inline-start" />
             {triggerLabel}
           </Button>
         ) : (
           <Button
             aria-label={triggerLabel}
-            onClick={() => setOpen(true)}
+            onClick={openSheet}
             size="sm"
             type="button"
             variant="ghost"
@@ -624,15 +695,21 @@ function normalizeProductStatus(status: string | null) {
   return PRODUCT_STATUS_OPTIONS.find((option) => option === status?.toLowerCase()) ?? "draft";
 }
 
+export function buildProductMediaEditPayload(media: ProductMediaValues) {
+  // Reconcile photos against current Medusa data, never the editor's price or stock snapshot.
+  return {
+    thumbnail: media.thumbnail.trim() || null,
+    imageUrls: getImageUrls(media.imageUrls),
+    optionMediaBindings: media.optionMediaBindings ?? null,
+  };
+}
 function getProductMediaValues(product: MerchantProduct): ProductMediaValues {
   return {
     imageUrls: (product.images ?? [])
       .map((image) => image.url)
       .filter(Boolean)
       .join("\n"),
-    optionMediaBindings:
-      (product as typeof product & { optionMediaBindings?: ProductOptionMediaBindings | null })
-        .optionMediaBindings ?? null,
+    optionMediaBindings: product.optionMediaBindings ?? null,
     thumbnail: product.thumbnail ?? "",
   };
 }

@@ -4,8 +4,8 @@ import {
   closestCenter,
   DndContext,
   type DragEndEvent,
-  type Modifier,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   useSensor,
   useSensors,
@@ -18,12 +18,12 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { ProductOptionMediaBindings } from "@ecs/contracts";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
-
-import type { ProductOptionMediaBindings } from "@ecs/contracts";
+import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { formatConstraintsBadge } from "@/components/products/product-media-dropzone";
@@ -31,7 +31,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { ProductFormValues } from "@/features/products/product-form-types";
 import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -78,30 +77,22 @@ export function MediaUploadField({
   onImageUrlsChange,
   onOptionMediaBindingsChange,
   onThumbnailChange,
-  onVariantOverridesChange,
   optionMediaBindings,
   options,
   thumbnail,
-  variantOverrides,
 }: {
   imageUrls: string[];
   onImageUrlsChange: (urls: string[]) => void;
   onOptionMediaBindingsChange?: ((bindings: ProductOptionMediaBindings | null) => void) | undefined;
   onThumbnailChange: (url: string) => void;
-  onVariantOverridesChange?: ((overrides: ProductFormValues["variantOverrides"]) => void) | undefined;
   optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionDraft[] | undefined;
   thumbnail: string;
-  variantOverrides?: ProductFormValues["variantOverrides"] | undefined;
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const imageUrlsRef = useRef(imageUrls);
   const thumbnailRef = useRef(thumbnail);
-  const variantOverridesRef = useRef(variantOverrides);
-  useEffect(() => {
-    variantOverridesRef.current = variantOverrides;
-  }, [variantOverrides]);
   const [dragActive, setDragActive] = useState(false);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -401,6 +392,10 @@ export function MediaUploadField({
       Boolean(optionMediaBindings?.optionTitle) &&
       optionMediaBindings?.optionTitle.toLowerCase() !== selectedOptionTitle.toLowerCase();
 
+    if (isNewAxis && Object.keys(optionMediaBindings?.mappings ?? {}).length > 0) {
+      toast.error(t("media.tagOneAxis"));
+      return;
+    }
     if (isNewAxis) {
       onOptionMediaBindingsChange({
         optionTitle: selectedOptionTitle,
@@ -459,21 +454,6 @@ export function MediaUploadField({
         );
       }
     }
-    if (variantOverridesRef.current && onVariantOverridesChange) {
-      let changed = false;
-      const nextOverrides: ProductFormValues["variantOverrides"] = {};
-      for (const [k, override] of Object.entries(variantOverridesRef.current)) {
-        if (override?.imageUrl === url) {
-          changed = true;
-          nextOverrides[k] = { ...override, imageUrl: undefined };
-        } else {
-          nextOverrides[k] = override;
-        }
-      }
-      if (changed) {
-        onVariantOverridesChange(nextOverrides);
-      }
-    }
   }
 
   function reorderUploaded(event: DragEndEvent) {
@@ -484,9 +464,26 @@ export function MediaUploadField({
     const nextUrls = arrayMove(imageUrlsRef.current, from, to);
     imageUrlsRef.current = nextUrls;
     onImageUrlsChange(nextUrls);
+    if (optionMediaBindings && onOptionMediaBindingsChange) {
+      const position = new Map(nextUrls.map((url, index) => [url, index]));
+      const mappings = Object.fromEntries(
+        Object.entries(optionMediaBindings.mappings).map(([value, urls]) => [
+          value,
+          [...urls].sort(
+            (left, right) =>
+              (position.get(left) ?? Number.MAX_SAFE_INTEGER) -
+              (position.get(right) ?? Number.MAX_SAFE_INTEGER),
+          ),
+        ]),
+      );
+      onOptionMediaBindingsChange({ ...optionMediaBindings, mappings });
+    }
   }
 
   const hasImages = imageUrls.length > 0 || pending.length > 0;
+  const activeTagAxis = Object.keys(optionMediaBindings?.mappings ?? {}).length
+    ? optionMediaBindings?.optionTitle.toLowerCase()
+    : null;
   const lightboxItems = imageUrls.map((url, index) => ({
     altText: "",
     displayName: t("media.previewImage") + (imageUrls.length > 1 ? ` ${index + 1}` : ""),
@@ -536,11 +533,16 @@ export function MediaUploadField({
               <AppIcons.upload className="size-5" />
             )}
           </span>
-          <div className={cn("flex max-w-md flex-col gap-1", hasImages || "items-center")}>
+          <div className={cn("flex min-w-0 max-w-md flex-col gap-1", hasImages || "items-center")}>
             <p className="text-sm font-medium">
               {hasImages ? t("media.addMore") : t("media.dropTitle")}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <div
+              className={cn(
+                "flex min-w-0 flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground",
+                hasImages && "hidden",
+              )}
+            >
               <Badge
                 className="h-auto max-w-full px-2.5 py-1 text-center font-normal leading-relaxed tracking-wide whitespace-normal"
                 data-testid="media-constraints-badge"
@@ -600,6 +602,9 @@ export function MediaUploadField({
             </div>
           </div>
 
+          {(options ?? []).length > 0 ? (
+            <p className="text-xs text-muted-foreground">{t("media.tagHint")}</p>
+          ) : null}
           {/*
             Bounded gallery: denser tiles + scroll so many images do not stretch the form.
             Horizontal scroll on small screens; wrapped grid with max-height on larger ones.
@@ -620,7 +625,10 @@ export function MediaUploadField({
                   {imageUrls.map((url, index) => {
                     const currentTag = getImageTag(url, optionMediaBindings);
                     const availableOptions = (options ?? []).filter(
-                      (opt) => opt.title?.trim() && opt.values?.some((val) => val.label?.trim()),
+                      (opt) =>
+                        opt.title?.trim() &&
+                        opt.values?.some((val) => val.label?.trim()) &&
+                        (!activeTagAxis || opt.title.toLowerCase() === activeTagAxis),
                     );
 
                     return (
@@ -686,14 +694,15 @@ export function ImageOptionTagPopover({
   onSelectTag: (optionTitle: string, valueLabel: string | null) => void;
   options: ProductOptionDraft[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const tagLabel = currentTag ? currentTag.valueLabel : "Untagged (Universal)";
+  const tagLabel = currentTag ? currentTag.valueLabel : t("media.tagForAll");
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          aria-label={`Tag image: ${tagLabel}`}
+          aria-label={t("media.tagAria", { choice: tagLabel })}
           className="h-6 w-full justify-start gap-1 px-1.5 text-[11px] font-medium"
           size="xs"
           type="button"
@@ -706,7 +715,7 @@ export function ImageOptionTagPopover({
       <PopoverContent align="start" className="w-56 p-1 text-xs" side="bottom">
         <div className="flex flex-col gap-0.5">
           <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Option Tagging
+            {t("media.tagAction")}
           </div>
           <button
             className={cn(
@@ -721,7 +730,7 @@ export function ImageOptionTagPopover({
           >
             <span className="flex items-center gap-1.5">
               <AppIcons.tag className="size-3.5 text-muted-foreground" />
-              Untagged (Universal)
+              {t("media.tagForAll")}
             </span>
             {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
           </button>
@@ -830,7 +839,7 @@ function UploadedImage({
         </span>
       </button>
 
-      {availableOptions && availableOptions.length > 0 && onSelectTag ? (
+      {availableOptions && (availableOptions.length > 0 || currentTag) && onSelectTag ? (
         <div className="border-t bg-muted/15 p-1">
           <ImageOptionTagPopover
             currentTag={currentTag ?? null}

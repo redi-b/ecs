@@ -31,17 +31,20 @@ export type ProductOptionInput = {
   values: ProductOptionValueInput[];
 };
 
-export type ProductOptionValueInput = {
-  id?: string | undefined;
-  label: string;
-  swatch?: ProductOptionSwatch | null | undefined;
-} | string;
+export type ProductOptionValueInput =
+  | {
+      id?: string | undefined;
+      label: string;
+      swatch?: ProductOptionSwatch | null | undefined;
+    }
+  | string;
 
 export type ProductVariantWriteInput = {
   currencyCode: string;
   /** Existing Medusa variant identity. Required when an import updates a variant in place. */
   id?: string | null | undefined;
   imageUrl?: string | null | undefined;
+  imageSource?: "option" | "manual" | null | undefined;
   metadata?: Record<string, unknown> | undefined;
   optionValues: Record<string, string>;
   priceAmount?: number | undefined;

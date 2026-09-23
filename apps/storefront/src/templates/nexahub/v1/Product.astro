@@ -1,4 +1,5 @@
 ---
+import { serializeJsonForScript } from "../../../lib/serialize-json";
 import { sanitizeProductDescription } from "@ecs/content";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
@@ -184,8 +185,8 @@ const clientMessages = {
       </div>
     </div></section>
     {relatedProducts.length ? <section class="similar-products" aria-labelledby="nexa-related-title"><div class="container similar-products__wrapper"><header class="similar-products__header"><div class="similar-products__header-left"><div class="similar-products__eyebrow"><span class="similar-products__bar similar-products__bar--sm"></span><span class="similar-products__bar similar-products__bar--md"></span><span class="similar-products__badge">{m.catalog_products({}, { locale })}</span></div><h2 id="nexa-related-title" class="similar-products__title">{m.product_related({}, { locale })}</h2></div></header><div class="similar-products__grid">{relatedProducts.map((item) => <ProductCard product={item} />)}</div></div></section> : null}
-    <script is:inline type="application/json" id="nexahub-product-variants" set:html={JSON.stringify(variants)} />
-    <script is:inline type="application/json" id="nexahub-option-media-bindings" set:html={JSON.stringify(product?.optionMediaBindings ?? null)} />
+    <script is:inline type="application/json" id="nexahub-product-variants" set:html={serializeJsonForScript(variants)} />
+    <script is:inline type="application/json" id="nexahub-option-media-bindings" set:html={serializeJsonForScript(product?.optionMediaBindings ?? null)} />
   </main>}
 </Layout>
 <style>
@@ -249,7 +250,7 @@ const clientMessages = {
           let visibleCount = 0;
           thumbButtons.forEach((btn) => {
             const url = btn.getAttribute('data-image-url') || '';
-            const visible = tagged.has(url) || !allTagged.has(url);
+            const visible = tagged.has(url) || !allTagged.has(url) || url === variant?.imageUrl;
             btn.hidden = !visible;
             btn.toggleAttribute('hidden', !visible);
             if (visible) visibleCount++;
@@ -285,7 +286,8 @@ const clientMessages = {
           matchingThumb.classList.add('is-active');
           matchingThumb.setAttribute('aria-current', 'true');
         } else {
-          main.src = variant.imageUrl;
+          main.src = variant.imageVariants?.w1200 || variant.imageVariants?.w800 || variant.imageUrl;
+          thumbButtons.forEach((item) => { item.classList.remove("is-active"); item.setAttribute("aria-current", "false"); });
           main.removeAttribute('srcset');
         }
       } else if (main && thumbButtons.length) {

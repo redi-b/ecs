@@ -66,6 +66,7 @@ import {
   getRemovedExistingVariants,
   getVariantRows,
   isInitialHandleLocked,
+  reconcileOptionMediaBindings,
   ProductMutationError,
   slugifyProductHandle,
   suggestAvailableProductHandle,
@@ -179,31 +180,22 @@ export function ProductForm({
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
         product?: MerchantProduct;
+        mediaSyncWarning?: boolean;
       };
 
       if (!response.ok || !data.product) {
         throw getProductMutationError(data.error, response.status, t);
       }
 
-      const mediaResponse = await fetch(
-        `/dashboard/media/products/${encodeURIComponent(data.product.id)}`,
-        {
-          body: JSON.stringify({
-            imageUrls: payload.imageUrls,
-            thumbnail: payload.thumbnail,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        },
-      );
-      if (!mediaResponse.ok) toast.warning(t("products.composer.mediaSyncWarn"));
-
-      return data.product;
+      return data;
     },
-    onSuccess: async (savedProduct) => {
+    onSuccess: async ({ product: savedProduct, mediaSyncWarning }) => {
+      if (!savedProduct) return;
       await queryClient.invalidateQueries({ queryKey: ["products"] });
       await queryClient.invalidateQueries({ queryKey: ["product", savedProduct.id] });
-      if (!product && offerTranslationAfterCreate && canTranslateProduct) {
+      if (mediaSyncWarning) {
+        toast.warning(t("products.composer.mediaSyncWarn"));
+      } else if (!product && offerTranslationAfterCreate && canTranslateProduct) {
         toast.success(t("products.composer.toastCreated"), {
           action: {
             label: t("products.composer.addAmharic"),
@@ -213,7 +205,7 @@ export function ProductForm({
               ),
           },
         });
-      } else {
+      } else if (!mediaSyncWarning) {
         toast.success(
           product ? t("products.composer.toastUpdated") : t("products.composer.toastCreated"),
         );
@@ -627,71 +619,46 @@ export function ProductForm({
                               state.values.imageUrls,
                               state.values.options,
                               state.values.optionMediaBindings,
-                              state.values.variantOverrides,
                             ] as const
                           }
                         >
-                          {([thumbnail, imageUrls, options, optionMediaBindings, variantOverrides]) => (
+                          {([thumbnail, imageUrls, options, optionMediaBindings]) => (
                             <MediaUploadField
                               imageUrls={getMediaUrls(thumbnail, imageUrls)}
                               onImageUrlsChange={(urls) => {
                                 form.setFieldValue("imageUrls", urls.join("\n"));
-                                const validUrls = new Set(urls);
-                                const currentOverrides = form.state.values.variantOverrides;
-                                let overridesChanged = false;
-                                const nextOverrides: typeof currentOverrides = {};
-                                for (const [key, override] of Object.entries(currentOverrides)) {
-                                  if (override?.imageUrl && !validUrls.has(override.imageUrl)) {
-                                    overridesChanged = true;
-                                    nextOverrides[key] = {
-                                      ...override,
-                                      imageUrl: undefined,
-                                    };
-                                  } else {
-                                    nextOverrides[key] = override;
-                                  }
-                                }
-                                if (overridesChanged) {
-                                  const rows = getVariantRows({
-                                    ...form.state.values,
-                                    variantOverrides: nextOverrides,
-                                  });
-                                  const reassignedOverrides = applyOptionMediaAutoAssignment({
-                                    variantOverrides: nextOverrides,
-                                    options: form.state.values.options,
-                                    rows,
-                                    optionMediaBindings: form.state.values.optionMediaBindings,
-                                    validImageUrls: validUrls,
-                                  });
-                                  form.setFieldValue("variantOverrides", reassignedOverrides);
-                                }
-                              }}
-                              onOptionMediaBindingsChange={(bindings) => {
-                                form.setFieldValue("optionMediaBindings", bindings);
-                                if (bindings) {
-                                  const rows = getVariantRows(form.state.values);
-                                  const validUrls = getMediaUrls(
-                                    form.state.values.thumbnail,
-                                    form.state.values.imageUrls,
-                                  );
-                                  const nextOverrides = applyOptionMediaAutoAssignment({
+                                const rows = getVariantRows(form.state.values);
+                                form.setFieldValue(
+                                  "variantOverrides",
+                                  applyOptionMediaAutoAssignment({
                                     variantOverrides: form.state.values.variantOverrides,
                                     options: form.state.values.options,
                                     rows,
-                                    optionMediaBindings: bindings,
-                                    validImageUrls: validUrls,
-                                  });
-                                  form.setFieldValue("variantOverrides", nextOverrides);
-                                }
+                                    optionMediaBindings: form.state.values.optionMediaBindings,
+                                    validImageUrls: new Set(urls),
+                                  }),
+                                );
+                              }}
+                              onOptionMediaBindingsChange={(bindings) => {
+                                form.setFieldValue("optionMediaBindings", bindings);
+                                const rows = getVariantRows(form.state.values);
+                                const validUrls = getMediaUrls(
+                                  form.state.values.thumbnail,
+                                  form.state.values.imageUrls,
+                                );
+                                const nextOverrides = applyOptionMediaAutoAssignment({
+                                  variantOverrides: form.state.values.variantOverrides,
+                                  options: form.state.values.options,
+                                  rows,
+                                  optionMediaBindings: bindings,
+                                  validImageUrls: validUrls,
+                                });
+                                form.setFieldValue("variantOverrides", nextOverrides);
                               }}
                               onThumbnailChange={(url) => form.setFieldValue("thumbnail", url)}
-                              onVariantOverridesChange={(overrides) =>
-                                form.setFieldValue("variantOverrides", overrides)
-                              }
                               optionMediaBindings={optionMediaBindings}
                               options={options}
                               thumbnail={thumbnail}
-                              variantOverrides={variantOverrides}
                             />
                           )}
                         </form.Subscribe>
@@ -938,7 +905,10 @@ export function ProductForm({
                                   {(field) => (
                                     <div className="flex flex-col gap-2">
                                       <ProductOptionsWorkspace
-                                        galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
+                                        galleryImages={getMediaUrls(
+                                          values.thumbnail,
+                                          values.imageUrls,
+                                        )}
                                         onApplyDefaults={() => {
                                           const rows = getVariantRows(values);
                                           form.setFieldValue(
@@ -955,15 +925,60 @@ export function ProductForm({
                                             ),
                                           );
                                         }}
-                                        onOptionsChange={field.handleChange}
+                                        onOptionsChange={(nextOptions) => {
+                                          const current = form.state.values;
+                                          const bindings = reconcileOptionMediaBindings(
+                                            current.optionMediaBindings,
+                                            current.options,
+                                            nextOptions,
+                                          );
+                                          const nextValues = {
+                                            ...current,
+                                            options: nextOptions,
+                                            optionMediaBindings: bindings,
+                                          };
+                                          form.setFieldValue("optionMediaBindings", bindings);
+                                          form.setFieldValue(
+                                            "variantOverrides",
+                                            applyOptionMediaAutoAssignment({
+                                              variantOverrides: current.variantOverrides,
+                                              options: nextOptions,
+                                              rows: getVariantRows(nextValues),
+                                              optionMediaBindings: bindings,
+                                              validImageUrls: getMediaUrls(
+                                                current.thumbnail,
+                                                current.imageUrls,
+                                              ),
+                                            }),
+                                          );
+                                          field.handleChange(nextOptions);
+                                        }}
                                         onOverrideChange={(key, override) => {
-                                          form.setFieldValue("variantOverrides", {
+                                          const nextOverrides = {
                                             ...values.variantOverrides,
                                             [key]: {
                                               ...values.variantOverrides[key],
                                               ...override,
                                             },
-                                          });
+                                          };
+                                          form.setFieldValue(
+                                            "variantOverrides",
+                                            "imageUrl" in override && !override.imageUrl
+                                              ? applyOptionMediaAutoAssignment({
+                                                  variantOverrides: nextOverrides,
+                                                  options: values.options,
+                                                  rows: getVariantRows({
+                                                    ...values,
+                                                    variantOverrides: nextOverrides,
+                                                  }),
+                                                  optionMediaBindings: values.optionMediaBindings,
+                                                  validImageUrls: getMediaUrls(
+                                                    values.thumbnail,
+                                                    values.imageUrls,
+                                                  ),
+                                                })
+                                              : nextOverrides,
+                                          );
                                         }}
                                         options={field.state.value}
                                         rows={getVariantRows(values)}

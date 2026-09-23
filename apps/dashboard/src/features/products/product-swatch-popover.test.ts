@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createElement } from "react";
+import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ProductOptionSwatch } from "@ecs/contracts";
 import {
@@ -11,6 +12,15 @@ import {
   normalizeProductOptionSwatch,
   serializeProductOptionSwatch,
 } from "./product-form-sections";
+
+const providerProps = {
+  locale: "en",
+  messages: {
+    products: {
+      swatch: { addColor: "Add color", addPattern: "Add pattern", addSwatch: "Add swatch" },
+    },
+  },
+} as unknown as Parameters<typeof NextIntlClientProvider>[0];
 
 describe("ProductOptionSwatch serialization and mode switching", () => {
   it("normalizes color swatches and lowercases hex codes", () => {
@@ -45,10 +55,7 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
   });
 
   it("serializes color and image swatches for snapshot storage", () => {
-    assert.equal(
-      serializeProductOptionSwatch({ kind: "color", value: "#AABBCC" }),
-      "#aabbcc",
-    );
+    assert.equal(serializeProductOptionSwatch({ kind: "color", value: "#AABBCC" }), "#aabbcc");
     assert.equal(
       serializeProductOptionSwatch({
         kind: "image",
@@ -62,10 +69,7 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
 
   it("detects mode based on swatch type", () => {
     assert.equal(getSwatchMode({ kind: "color", value: "#000000" }), "color");
-    assert.equal(
-      getSwatchMode({ kind: "image", url: "https://example.com/silk.png" }),
-      "image",
-    );
+    assert.equal(getSwatchMode({ kind: "image", url: "https://example.com/silk.png" }), "image");
     assert.equal(getSwatchMode("#123456"), "color");
     assert.equal(getSwatchMode("https://example.com/silk.png"), "image");
     assert.equal(getSwatchMode(undefined), "color");
@@ -88,11 +92,15 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
 
   it("renders color swatch trigger button with colored circle", () => {
     const markup = renderToStaticMarkup(
-      createElement(ProductColorPopover, {
-        label: "Crimson",
-        onSave: () => {},
-        value: { kind: "color", value: "#dc2626" },
-      }),
+      createElement(
+        NextIntlClientProvider,
+        providerProps,
+        createElement(ProductColorPopover, {
+          label: "Crimson",
+          onSave: () => {},
+          value: { kind: "color", value: "#dc2626" },
+        }),
+      ),
     );
     assert.match(markup, /Crimson/);
     assert.match(markup, /background-color:#dc2626/);
@@ -101,11 +109,15 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
 
   it("renders image swatch trigger button with thumbnail image", () => {
     const markup = renderToStaticMarkup(
-      createElement(ProductColorPopover, {
-        label: "Blue Tweed",
-        onSave: () => {},
-        value: { kind: "image", url: "https://example.com/tweed.jpg" },
-      }),
+      createElement(
+        NextIntlClientProvider,
+        providerProps,
+        createElement(ProductColorPopover, {
+          label: "Blue Tweed",
+          onSave: () => {},
+          value: { kind: "image", url: "https://example.com/tweed.jpg" },
+        }),
+      ),
     );
     assert.match(markup, /Blue Tweed/);
     assert.match(markup, /<img/);
@@ -117,34 +129,46 @@ describe("ProductOptionSwatch serialization and mode switching", () => {
     assert.equal(getAddSwatchLabel("Color"), "Add color");
     assert.equal(getAddSwatchLabel("Colour"), "Add color");
     assert.equal(getAddSwatchLabel("Pattern"), "Add pattern");
-    assert.equal(getAddSwatchLabel("Fabric"), "Add fabric");
+    assert.equal(getAddSwatchLabel("Fabric"), "Add swatch");
     assert.equal(getAddSwatchLabel("Texture"), "Add swatch");
     assert.equal(getAddSwatchLabel(undefined), "Add swatch");
   });
 
   it("renders context-aware add trigger button when label is absent", () => {
     const colorMarkup = renderToStaticMarkup(
-      createElement(ProductColorPopover, {
-        onSave: () => {},
-        optionTitle: "Color",
-      }),
+      createElement(
+        NextIntlClientProvider,
+        providerProps,
+        createElement(ProductColorPopover, {
+          onSave: () => {},
+          optionTitle: "Color",
+        }),
+      ),
     );
     assert.match(colorMarkup, /Add color/);
 
     const patternMarkup = renderToStaticMarkup(
-      createElement(ProductColorPopover, {
-        onSave: () => {},
-        optionTitle: "Pattern",
-      }),
+      createElement(
+        NextIntlClientProvider,
+        providerProps,
+        createElement(ProductColorPopover, {
+          onSave: () => {},
+          optionTitle: "Pattern",
+        }),
+      ),
     );
     assert.match(patternMarkup, /Add pattern/);
 
     const fabricMarkup = renderToStaticMarkup(
-      createElement(ProductColorPopover, {
-        onSave: () => {},
-        optionTitle: "Fabric",
-      }),
+      createElement(
+        NextIntlClientProvider,
+        providerProps,
+        createElement(ProductColorPopover, {
+          onSave: () => {},
+          optionTitle: "Fabric",
+        }),
+      ),
     );
-    assert.match(fabricMarkup, /Add fabric/);
+    assert.match(fabricMarkup, /Add swatch/);
   });
 });

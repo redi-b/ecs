@@ -50,6 +50,7 @@ export type ProductFormValues = {
       enabled?: boolean | undefined;
       id?: string | undefined;
       imageUrl?: string | undefined;
+      imageSource?: "option" | "manual" | undefined;
       priceAmount?: string | undefined;
       reservedQuantity?: number | undefined;
       sku?: string | undefined;
@@ -119,6 +120,7 @@ export function createProductPayloadSchema(t: Translate) {
         z.object({
           id: z.string().trim().min(1).optional(),
           imageUrl: z.string().trim().nullable().optional(),
+          imageSource: z.enum(["option", "manual"]).nullable().optional(),
           optionValues: z.record(z.string().min(1), z.string().min(1)),
           sku: z.string().trim().nullable(),
           priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),

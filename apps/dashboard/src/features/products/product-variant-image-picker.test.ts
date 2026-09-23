@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { MerchantProduct, ProductOptionMediaBindings } from "@ecs/contracts";
 import { createElement } from "react";
+import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   isColorOptionTitle,
@@ -16,6 +17,7 @@ import {
   getProductPayload,
   getProductVariantsPayload,
   getVariantRows,
+  reconcileOptionMediaBindings,
 } from "./product-form-state";
 import type { ProductFormValues } from "./product-form-types";
 
@@ -58,6 +60,41 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     categoryIds: [],
   };
 
+  it("keeps image links when an option or value is renamed", () => {
+    const bindings: ProductOptionMediaBindings = {
+      optionTitle: "Color",
+      mappings: { Red: ["https://example.com/red.jpg"], Blue: ["https://example.com/blue.jpg"] },
+    };
+    const renamed = [
+      {
+        ...options[0]!,
+        title: "Shade",
+        values: [{ ...options[0]!.values[0]!, label: "Crimson" }, options[0]!.values[1]!],
+      },
+      options[1]!,
+    ];
+    assert.deepEqual(reconcileOptionMediaBindings(bindings, options, renamed), {
+      optionTitle: "Shade",
+      mappings: {
+        Crimson: ["https://example.com/red.jpg"],
+        Blue: ["https://example.com/blue.jpg"],
+      },
+    });
+  });
+
+  it("removes only image links for a deleted value or option", () => {
+    const bindings: ProductOptionMediaBindings = {
+      optionTitle: "Color",
+      mappings: { Red: ["https://example.com/red.jpg"], Blue: ["https://example.com/blue.jpg"] },
+    };
+    const remaining = [{ ...options[0]!, values: [options[0]!.values[0]!] }, options[1]!];
+    assert.deepEqual(reconcileOptionMediaBindings(bindings, options, remaining), {
+      optionTitle: "Color",
+      mappings: { Red: ["https://example.com/red.jpg"] },
+    });
+    assert.equal(reconcileOptionMediaBindings(bindings, options, [options[1]!]), null);
+  });
+
   it("applies smart auto-assignment to variants matching bound option values", () => {
     const rows = getVariantRows(defaultValues);
     const redS = rows.find((r) => r.optionValues.Color === "Red" && r.optionValues.Size === "S");
@@ -97,6 +134,53 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     assert.equal(updated[blueS.key]?.imageUrl, "https://example.com/auto-blue-primary.jpg");
   });
 
+  it("saves only media fields from the PDP media sheet, never variant price or stock snapshots", async () => {
+    const { buildProductMediaEditPayload } = await import("./product-edit-dialog");
+    const payload = buildProductMediaEditPayload({
+      imageUrls: "https://example.com/old.jpg\nhttps://example.com/new.jpg",
+      thumbnail: "https://example.com/old.jpg",
+      optionMediaBindings: {
+        optionTitle: "Color",
+        mappings: { Red: ["https://example.com/new.jpg"] },
+      },
+    });
+    assert.deepEqual(Object.keys(payload).sort(), ["imageUrls", "optionMediaBindings", "thumbnail"]);
+    assert.equal("variants" in payload, false);
+  });
+  it("updates option-assigned photos while preserving manual variant photos", () => {
+    const rows = getVariantRows(defaultValues);
+    const redS = rows.find(
+      (row) => row.optionValues.Color === "Red" && row.optionValues.Size === "S",
+    );
+    const redM = rows.find(
+      (row) => row.optionValues.Color === "Red" && row.optionValues.Size === "M",
+    );
+    assert.ok(redS && redM);
+    const variantOverrides: ProductFormValues["variantOverrides"] = {
+      [redS.key]: { imageUrl: "https://example.com/old.jpg", imageSource: "option" },
+      [redM.key]: { imageUrl: "https://example.com/manual.jpg", imageSource: "manual" },
+    };
+    const changed = applyOptionMediaAutoAssignment({
+      variantOverrides,
+      rows,
+      optionMediaBindings: {
+        optionTitle: "Color",
+        mappings: { Red: ["https://example.com/new.jpg"] },
+      },
+    });
+    assert.equal(changed[redS.key]?.imageUrl, "https://example.com/new.jpg");
+    assert.equal(changed[redS.key]?.imageSource, "option");
+    assert.equal(changed[redM.key]?.imageUrl, "https://example.com/manual.jpg");
+
+    const cleared = applyOptionMediaAutoAssignment({
+      variantOverrides: changed,
+      rows,
+      optionMediaBindings: null,
+    });
+    assert.equal(cleared[redS.key]?.imageUrl, undefined);
+    assert.equal(cleared[redS.key]?.imageSource, undefined);
+    assert.equal(cleared[redM.key]?.imageUrl, "https://example.com/manual.jpg");
+  });
   it("handles null or empty bindings gracefully", () => {
     const rows = getVariantRows(defaultValues);
     const initialOverrides: ProductFormValues["variantOverrides"] = {
@@ -216,12 +300,21 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
 
   it("renders VariantImagePicker with thumbnail when imageUrl is provided", () => {
     const markup = renderToStaticMarkup(
-      createElement(VariantImagePicker, {
-        imageUrl: "https://example.com/active-photo.jpg",
-        galleryImages: ["https://example.com/active-photo.jpg", "https://example.com/other.jpg"],
-        onSelectImage: () => {},
-        onRemoveImage: () => {},
-      }),
+      createElement(
+        NextIntlClientProvider,
+        {
+          locale: "en",
+          messages: {
+            media: { variantPhotoChange: "Change photo", variantPhotoAssign: "Add photo" },
+          },
+        } as unknown as Parameters<typeof NextIntlClientProvider>[0],
+        createElement(VariantImagePicker, {
+          imageUrl: "https://example.com/active-photo.jpg",
+          galleryImages: ["https://example.com/active-photo.jpg", "https://example.com/other.jpg"],
+          onSelectImage: () => {},
+          onRemoveImage: () => {},
+        }),
+      ),
     );
 
     assert.match(markup, /<img/);
@@ -231,12 +324,21 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
 
   it("renders VariantImagePicker placeholder button when imageUrl is empty", () => {
     const markup = renderToStaticMarkup(
-      createElement(VariantImagePicker, {
-        imageUrl: undefined,
-        galleryImages: ["https://example.com/other.jpg"],
-        onSelectImage: () => {},
-        onRemoveImage: () => {},
-      }),
+      createElement(
+        NextIntlClientProvider,
+        {
+          locale: "en",
+          messages: {
+            media: { variantPhotoChange: "Change photo", variantPhotoAssign: "Add photo" },
+          },
+        } as unknown as Parameters<typeof NextIntlClientProvider>[0],
+        createElement(VariantImagePicker, {
+          imageUrl: undefined,
+          galleryImages: ["https://example.com/other.jpg"],
+          onSelectImage: () => {},
+          onRemoveImage: () => {},
+        }),
+      ),
     );
 
     assert.doesNotMatch(markup, /<img/);
@@ -290,6 +392,7 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     const staleOverrides: ProductFormValues["variantOverrides"] = {
       [redS.key]: {
         imageUrl: "https://example.com/deleted-image.jpg",
+        imageSource: "option",
       },
     };
 
@@ -311,6 +414,14 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     });
 
     assert.equal(updated[redS.key]?.imageUrl, "https://example.com/new-red.jpg");
+    const removed = applyOptionMediaAutoAssignment({
+      variantOverrides: staleOverrides,
+      options,
+      rows,
+      optionMediaBindings: bindings,
+      validImageUrls: [],
+    });
+    assert.equal(removed[redS.key]?.imageUrl, undefined);
   });
 
   it("isVisualOptionTitle matches visual option titles and keeps Material as text pills", () => {
@@ -327,24 +438,29 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
 
   it("renders ImageOptionTagPopover with untagged and tagged states", async () => {
     const { ImageOptionTagPopover } = await import("@/features/media/media-upload-field");
+    const { NextIntlClientProvider } = await import("next-intl");
+    const messages = {
+      media: {
+        tagForAll: "Every choice",
+        tagAction: "Show photo for",
+        tagAria: "Show photo for: {choice}",
+      },
+    };
+    const renderTag = (currentTag: { optionTitle: string; valueLabel: string } | null) =>
+      renderToStaticMarkup(
+        createElement(
+          NextIntlClientProvider,
+          { locale: "en", messages } as unknown as Parameters<typeof NextIntlClientProvider>[0],
+          createElement(ImageOptionTagPopover, {
+            currentTag,
+            options,
+            onSelectTag: () => {},
+          }),
+        ),
+      );
 
-    const untaggedMarkup = renderToStaticMarkup(
-      createElement(ImageOptionTagPopover, {
-        currentTag: null,
-        options,
-        onSelectTag: () => {},
-      }),
-    );
-    assert.match(untaggedMarkup, /Untagged \(Universal\)/);
-
-    const taggedMarkup = renderToStaticMarkup(
-      createElement(ImageOptionTagPopover, {
-        currentTag: { optionTitle: "Color", valueLabel: "Red" },
-        options,
-        onSelectTag: () => {},
-      }),
-    );
-    assert.match(taggedMarkup, /Red/);
+    assert.match(renderTag(null), /Every choice/);
+    assert.match(renderTag({ optionTitle: "Color", valueLabel: "Red" }), /Red/);
   });
 
   it("renders ProductMediaSection with options and optionMediaBindings wired", async () => {

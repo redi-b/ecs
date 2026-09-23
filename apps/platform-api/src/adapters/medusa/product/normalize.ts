@@ -27,6 +27,7 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
   const images = getProductImages(value.images);
   const options = getProductOptions(value.options);
   const optionMediaBindings = getProductOptionMediaBindings(value.metadata);
+  const mediaMetadata = getProductMediaMetadata(value.metadata);
 
   return [
     {
@@ -44,6 +45,7 @@ export function normalizeProduct(value: unknown): MerchantProduct[] {
       ...(images.length === 0 ? {} : { images }),
       ...(options === undefined ? {} : { options }),
       ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
+      ...(Object.keys(mediaMetadata).length ? { metadata: mediaMetadata } : {}),
       variants: getProductVariants(value.variants),
       createdAt: getString(value.created_at),
       updatedAt: getString(value.updated_at),
@@ -191,11 +193,19 @@ export function getProductVariants(value: unknown) {
       {
         id,
         inventoryItemId: getVariantInventoryItemId(variant),
-        ...(typeof variant.manage_inventory === "boolean" ? { manageInventory: variant.manage_inventory } : {}),
-        ...(typeof variant.allow_backorder === "boolean" ? { allowBackorder: variant.allow_backorder } : {}),
+        ...(typeof variant.manage_inventory === "boolean"
+          ? { manageInventory: variant.manage_inventory }
+          : {}),
+        ...(typeof variant.allow_backorder === "boolean"
+          ? { allowBackorder: variant.allow_backorder }
+          : {}),
         title: getString(variant.title),
         sku: getString(variant.sku),
         ...(imageUrl !== undefined ? { imageUrl } : {}),
+        ...(isRecord(variant.metadata) &&
+        (variant.metadata.image_source === "option" || variant.metadata.image_source === "manual")
+          ? { imageSource: variant.metadata.image_source as "option" | "manual" }
+          : {}),
         ...(optionValues.length === 0 ? {} : { optionValues }),
         prices: getProductPrices(variant.prices),
       },
@@ -453,4 +463,21 @@ export function getTenantMetadata(tenantId: string) {
   return {
     platform_tenant_id: tenantId,
   };
+}
+
+/** Expose only media presentation data needed by dashboard consumers. */
+function getProductMediaMetadata(metadata: unknown): Record<string, unknown> {
+  if (!isRecord(metadata) || !isRecord(metadata.media_variants)) return {};
+  const variants: Record<string, Record<string, string>> = {};
+  for (const [original, value] of Object.entries(metadata.media_variants)) {
+    if (!isRecord(value)) continue;
+    const sizes = Object.fromEntries(
+      ["w200", "w400", "w800", "w1200"].flatMap((key) => {
+        const url = getString(value[key]);
+        return url && /^https?:\/\//.test(url) ? [[key, url]] : [];
+      }),
+    );
+    if (Object.keys(sizes).length) variants[original] = sizes;
+  }
+  return { media_variants: variants };
 }
