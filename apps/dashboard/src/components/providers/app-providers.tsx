@@ -4,21 +4,25 @@ import { NextIntlClientProvider } from "next-intl";
 import NextTopLoader from "nextjs-toploader";
 import type { ReactNode } from "react";
 
+import { CatalogLabelLocaleProvider } from "@/components/providers/catalog-label-locale-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { AppLocale } from "@/i18n/config";
 import { appTimeZone } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
+import type { CatalogLabelLocaleMode } from "@/lib/catalog-label-locale";
 import type { SharedTheme } from "@/lib/shared-theme";
 
 export function AppProviders({
   children,
+  catalogLabelLocale = "match",
   locale,
   messages,
   theme = "system",
 }: {
   children: ReactNode;
+  catalogLabelLocale?: CatalogLabelLocaleMode;
   locale: AppLocale;
   messages: Messages;
   /** From ecs-theme cookie (server) so first paint matches preference. */
@@ -34,6 +38,7 @@ export function AppProviders({
         storageKey="ecs-theme-ls"
       >
         <QueryProvider>
+          <CatalogLabelLocaleProvider initialMode={catalogLabelLocale}>
           {/*
             Shows on <Link> navigations (and history changes).
             Programmatic router.push/replace (filters, settings tabs) does not
@@ -53,6 +58,7 @@ export function AppProviders({
           />
           {children}
           <Toaster />
+          </CatalogLabelLocaleProvider>
         </QueryProvider>
       </ThemeProvider>
     </NextIntlClientProvider>

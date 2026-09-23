@@ -4,6 +4,7 @@ import {
   defaultStorefrontLanguageSettings,
   emptyStorefrontLocalizedContent,
   storefrontLanguageSettingsSchema,
+  catalogNameTranslationSchema,
   storefrontLocalizedContentSchema,
 } from "./storefront-localization";
 
@@ -602,6 +603,7 @@ export const merchantProductSchema = z.object({
     .optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
+  translation: catalogNameTranslationSchema.optional(),
 });
 
 export const merchantProductsSchema = z.object({
@@ -634,6 +636,7 @@ export const merchantProductCategorySchema = z.object({
   mediaUrl: z.string().nullable().optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
+  translation: catalogNameTranslationSchema.optional(),
 });
 
 export const merchantProductCategoriesSchema = z.object({
@@ -653,6 +656,7 @@ export const merchantProductCollectionSchema = z.object({
   mediaUrl: z.string().nullable().optional(),
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
+  translation: catalogNameTranslationSchema.optional(),
 });
 
 export const merchantProductCollectionsSchema = z.object({

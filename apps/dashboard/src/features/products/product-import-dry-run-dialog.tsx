@@ -39,55 +39,29 @@ type ApplyResponse = {
   execution: ProductImportExecution;
 };
 
-const PRODUCT_CSV_HEADERS = [
-  "schema_version",
-  "product_id",
-  "product_handle",
+const SIMPLE_PRODUCT_CSV_HEADERS = [
   "product_title",
   "description",
-  "status",
-  "collection_id",
-  "category_ids",
-  "variant_id",
-  "variant_title",
+  "price_etb",
+  "stock_quantity",
   "sku",
-  "option_values_json",
-  "option_presentations_json",
-  "prices_json",
-  "stocked_quantity",
-  "reserved_quantity",
-  "incoming_quantity",
-  "available_quantity",
-  "thumbnail_url",
-  "image_urls_json",
-  "created_at",
-  "updated_at",
+  "status",
+  "product_handle",
+  "variant_title",
+  "image_urls",
 ] as const;
 const SAMPLE_PRODUCT_CSV = [
-  PRODUCT_CSV_HEADERS,
+  SIMPLE_PRODUCT_CSV_HEADERS,
   [
-    "ecs-products-v2",
-    "",
-    "ethiopian-coffee",
     "Ethiopian Coffee",
     "Freshly roasted coffee",
-    "published",
-    "",
-    "[]",
-    "",
-    "250 g",
-    "COFFEE-250",
-    "[]",
-    "[]",
-    '[{"amount":450,"currencyCode":"etb"}]',
+    "450",
     "25",
-    "",
-    "",
-    "",
-    "",
-    "[]",
-    "",
-    "",
+    "COFFEE-250",
+    "draft",
+    "ethiopian-coffee",
+    "250 g",
+    "https://example.com/coffee.jpg",
   ],
 ]
   .map((row) => row.map(csvCell).join(","))
@@ -162,7 +136,7 @@ export function ProductImportDryRunDialog({
 
   async function copyFormat() {
     try {
-      const copied = await copyTextToClipboard(PRODUCT_CSV_HEADERS.join(","));
+      const copied = await copyTextToClipboard(SIMPLE_PRODUCT_CSV_HEADERS.join(","));
       toast[copied ? "success" : "error"](
         t(copied ? "products.import.formatCopied" : "products.import.copyFailed"),
       );
@@ -253,7 +227,7 @@ export function ProductImportDryRunDialog({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">{t("products.import.formatTitle")}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 max-w-md text-xs text-muted-foreground">
                   {t("products.import.formatDescription")}
                 </p>
               </div>
@@ -270,7 +244,7 @@ export function ProductImportDryRunDialog({
             </div>
             <div className="mt-3 max-w-full overflow-x-auto overscroll-x-contain rounded-lg border bg-background px-3 py-2">
               <code className="whitespace-nowrap text-xs text-muted-foreground">
-                {PRODUCT_CSV_HEADERS.join("  ·  ")}
+                {SIMPLE_PRODUCT_CSV_HEADERS.join("  ·  ")}
               </code>
             </div>
           </section>

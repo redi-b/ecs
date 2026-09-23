@@ -1,0 +1,48 @@
+{
+  "title": "ጥያቄዎች",
+  "status": {
+    "new": "አዲስ",
+    "read": "የታየ",
+    "resolved": "የተጠናቀቀ",
+    "archived": "የተቀመጠ"
+  },
+  "filter": {
+    "status": "ሁኔታ",
+    "allStatuses": "ሁሉም ሁኔታዎች",
+    "type": "ዓይነት",
+    "allTypes": "ሁሉም ዓይነቶች"
+  },
+  "type": {
+    "contact": "መልዕክት",
+    "product_request": "የምርት ጥያቄ",
+    "contact_short": "መልዕክት",
+    "product_request_short": "የምርት ጥያቄ"
+  },
+  "search": {
+    "label": "ጥያቄዎችን ፈልግ",
+    "placeholder": "በስም፣ በስልክ/ኢሜይል ወይም በርዕስ ፈልግ…",
+    "clear": "ፍለጋውን አጽዳ"
+  },
+  "empty": {
+    "title": "ምንም ጥያቄ አልተገኘም",
+    "description": "አዳዲስ የመደብር መልዕክቶች እና የምርት ጥያቄዎች እዚህ ይታያሉ።"
+  },
+  "detail": {
+    "customer": "ደንበኛ",
+    "email": "ኢሜይል",
+    "phone": "ስልክ / ዋትስአፕ",
+    "received": "የደረሰው {date}"
+  },
+  "actions": {
+    "archive": "አስቀምጥ",
+    "restore": "ወደ ሳጥን መልስ",
+    "markResolved": "እንደተጠናቀቀ ምልክት አድርግ",
+    "resolved": "ተጠናቋል",
+    "updating": "እየተስተካከለ ነው…"
+  },
+  "toast": {
+    "updateFailed": "ይህን ጥያቄ ማስተካከል አልተቻለም።",
+    "markedResolved": "ጥያቄው እንደተጠናቀቀ ተመዝግቧል",
+    "markedStatus": "ጥያቄው እንደ{status} ተመዝግቧል"
+  }
+}

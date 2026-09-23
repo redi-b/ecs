@@ -88,7 +88,7 @@
     "visits": "ጉብኝቶች",
     "productViews": "የምርት እይታዎች",
     "addedToCart": "ወደ ዘንቢል የተጨመሩ",
-    "checkouts": "የክፍያ ገጽ መክፈቶች",
+    "checkouts": "የተጀመሩ ትዕዛዞች",
     "emptyTitle": "ገና የመደብር እንቅስቃሴ የለም",
     "emptyDescription": "ደንበኞች መደብሩን ሲጠቀሙ ጉብኝትና የግዢ እንቅስቃሴ እዚህ ይታያል።",
     "unavailableTitle": "የመደብር እንቅስቃሴ አልተገኘም",
@@ -264,7 +264,7 @@
     "fulfillment": "መላኪያ",
     "fulfillmentDesc": "ደሊቨሪ፣ ነጻ ከሱቅ መውሰድ እና ክፍያን ያረጋግጡ",
     "payments": "የኦንላይን ክፍያ",
-    "paymentsDesc": "በደሊቨሪ ክፍያ በነባሪ ይሰራል። Chapa በማንኛውም ጊዜ ይጨምሩ።",
+    "paymentsDesc": "በደሊቨሪ ክፍያ በመደበኛነት ይሰራል። Chapa በማንኛውም ጊዜ ይጨምሩ።",
     "billingConnected": "ክፍያ ተገናኝቷል",
     "paymentPending": "ክፍያ ገና አልተዘጋጀም"
   }

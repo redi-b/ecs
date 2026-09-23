@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { PermissionGate } from "@/components/app/access-context";
 import { HelpTip } from "@/components/app/help-tip";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { CatalogLabelLocaleControl } from "@/components/app/catalog-label-locale-control";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -99,6 +100,7 @@ export default async function MerchantProductCollectionsPage({
       {result.ok ? (
         <>
           <ListSummary
+            actions={<CatalogLabelLocaleControl />}
             count={result.count}
             filtered={Boolean(listParams.q) || visibility !== "all"}
             page={listParams.page}

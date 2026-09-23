@@ -497,6 +497,12 @@ export function ProductCollectionsTable({
               });
             }
           }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["product-collections"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            router.refresh();
+          }}
           target={
             translatingCollection ? { kind: "collection", resource: translatingCollection } : null
           }
@@ -544,7 +550,7 @@ export function ProductCollectionsTable({
                 variant="destructive-outline"
               >
                 <AppIcons.trash data-icon="inline-start" />
-                Delete selected
+                {t("common.delete")}
               </Button>
             ) : null}
           </div>

@@ -9,11 +9,13 @@ import { RiTranslate2 } from "@remixicon/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { DataTableHeader } from "@/components/app/data-table-header";
 import { AppIcons } from "@/components/app/icons";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatProductDate,
@@ -182,6 +184,8 @@ export function getProductColumns(
   t: Translate,
   productDetailHref?: (product: MerchantProduct) => string,
   onSetInventory?: (product: MerchantProduct) => void,
+  isLoading?: boolean,
+  onTranslate?: (product: MerchantProduct) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -236,7 +240,7 @@ export function getProductColumns(
       accessorFn: (product) => getProductPriceSortValue(product),
       header: ({ column }) => <DataTableHeader column={column} title={t("products.table.price")} />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground tabular-nums">
           {formatProductPriceRange(row.original, t("products.detail.noPrice"))}
         </span>
       ),
@@ -251,7 +255,7 @@ export function getProductColumns(
         const variantCount = row.original.variants?.length ?? 0;
 
         return (
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground tabular-nums">
             {variantCount === 1
               ? t("products.table.variantCountOne")
               : t("products.table.variantCount", { count: variantCount })}
@@ -281,6 +285,7 @@ export function getProductColumns(
         <ProductOrganizationSummary
           categoryById={categoryById}
           collectionById={collectionById}
+          isLoading={isLoading}
           product={row.original}
           t={t}
         />
@@ -300,7 +305,7 @@ export function getProductColumns(
         <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatProductDate(row.original.updatedAt)}</span>
+        <span className="text-muted-foreground tabular-nums">{formatProductDate(row.original.updatedAt)}</span>
       ),
     },
     {
@@ -313,6 +318,7 @@ export function getProductColumns(
           onStatusChange,
           t,
           onSetInventory,
+          onTranslate,
         );
 
         return <RowActionsMenu {...rowActions} />;
@@ -337,7 +343,7 @@ export function ProductStockSummary({ product, t }: { product: MerchantProduct; 
   );
 
   return (
-    <Badge variant={available > 0 ? "success" : "warning"}>
+    <Badge className="tabular-nums" variant={available > 0 ? "success" : "warning"}>
       {available > 0
         ? t
           ? t("products.table.availableCount", { count: available })
@@ -354,16 +360,37 @@ export function ProductOrganizationSummary({
   collectionById,
   product,
   t,
+  isLoading = false,
 }: {
   categoryById: Map<string, MerchantProductCategory>;
   collectionById: Map<string, MerchantProductCollection>;
   product: MerchantProduct;
   t: Translate;
+  isLoading?: boolean | undefined;
 }) {
   const collection = product.collectionId ? collectionById.get(product.collectionId) : undefined;
   const categoryIds = product.categoryIds ?? [];
   const categoryCount = categoryIds.length;
   const firstCategory = categoryIds[0] ? categoryById.get(categoryIds[0]) : undefined;
+
+  if (isLoading && (product.collectionId || categoryCount > 0)) {
+    return (
+      <div className="flex min-w-36 flex-col gap-2">
+        {product.collectionId ? (
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <AppIcons.folder className="size-4 opacity-40" />
+            <Skeleton className="h-3.5 w-20 rounded" />
+          </span>
+        ) : null}
+        {categoryCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <AppIcons.tag className="size-4 opacity-40" />
+            <Skeleton className="h-3.5 w-16 rounded" />
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   if (!product.collectionId && !categoryCount) {
     return (
@@ -379,7 +406,7 @@ export function ProductOrganizationSummary({
     );
   }
 
-  const firstCategoryName =
+  const firstCategoryUntitled =
     firstCategory?.name ?? firstCategory?.handle ?? t("products.table.unknownCategory");
 
   return (
@@ -388,23 +415,39 @@ export function ProductOrganizationSummary({
         icon={<AppIcons.folder className="size-4" />}
         tooltip={t("products.table.collection")}
         value={
-          product.collectionId
-            ? (collection?.title ?? collection?.handle ?? t("products.table.unknownCollection"))
-            : t("products.table.noCollection")
+          collection ? (
+            <CatalogTranslatedName
+              preview="name"
+              source={collection.title}
+              translation={collection.translation}
+              untitled={collection.title ?? collection.handle ?? t("products.table.unknownCollection")}
+            />
+          ) : product.collectionId ? (
+            t("products.table.unknownCollection")
+          ) : (
+            t("products.table.noCollection")
+          )
         }
       />
       <OrganizationSignal
         icon={<AppIcons.tag className="size-4" />}
         tooltip={t("products.table.categories")}
         value={
-          categoryCount
-            ? categoryCount > 1
-              ? t("products.table.categoriesMore", {
-                  name: firstCategoryName,
-                  count: categoryCount - 1,
-                })
-              : firstCategoryName
-            : t("products.table.noCategories")
+          firstCategory ? (
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <CatalogTranslatedName
+                preview="name"
+                source={firstCategory.name}
+                translation={firstCategory.translation}
+                untitled={firstCategoryUntitled}
+              />
+              {categoryCount > 1 ? (
+                <span className="shrink-0 text-muted-foreground">+{categoryCount - 1}</span>
+              ) : null}
+            </span>
+          ) : (
+            t("products.table.noCategories")
+          )
         }
       />
     </div>
@@ -418,20 +461,18 @@ export function OrganizationSignal({
 }: {
   icon: ReactNode;
   tooltip: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm">
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-sm">
+      <Tooltip>
+        <TooltipTrigger asChild>
           <span className="shrink-0 text-muted-foreground">{icon}</span>
-          <span className="truncate">{value}</span>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>
-        {tooltip}: {value}
-      </TooltipContent>
-    </Tooltip>
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+      <span className="min-w-0 truncate">{value}</span>
+    </span>
   );
 }
 

@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
 import { AppIcons } from "@/components/app/icons";
@@ -35,7 +35,10 @@ import { cn } from "@/lib/utils";
 import { EcsArtwork } from "@/components/app/ecs-brand";
 
 type DataTableProps<TData> = {
-  bulkActions?: (selectedRows: TData[]) => React.ReactNode;
+  bulkActions?: (
+    selectedRows: TData[],
+    context: { clearSelection: () => void },
+  ) => React.ReactNode;
   columns: ColumnDef<TData>[];
   data: TData[];
   emptyMessage: string;
@@ -164,6 +167,14 @@ export function DataTable<TData>({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const hasSelectColumn = useMemo(
+    () => columns.some((c) => (c as { id?: string }).id === "select"),
+    [columns],
+  );
+  const hasActionsColumn = useMemo(
+    () => columns.some((c) => (c as { id?: string }).id === "actions"),
+    [columns],
+  );
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -304,25 +315,32 @@ export function DataTable<TData>({
             </Table>
           </div>
 
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-y-0 left-12 z-10 w-px bg-border transition-opacity",
-              canScrollLeft ? "opacity-100" : "opacity-0",
-            )}
-          />
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-y-0 right-14 z-10 w-px bg-border transition-opacity",
-              canScrollRight ? "opacity-100" : "opacity-0",
-            )}
-          />
+          {hasSelectColumn ? (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 left-12 z-10 w-px bg-border transition-opacity",
+                canScrollLeft ? "opacity-100" : "opacity-0",
+              )}
+            />
+          ) : null}
+          {hasActionsColumn ? (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 right-14 z-10 w-px bg-border transition-opacity",
+                canScrollRight ? "opacity-100" : "opacity-0",
+              )}
+            />
+          ) : null}
         </div>
       )}
 
       <DataTableBulkBar
-        actions={bulkActions?.(selectedRows.map((row) => row.original))}
+        actions={bulkActions?.(
+          selectedRows.map((row) => row.original),
+          { clearSelection: () => table.resetRowSelection() },
+        )}
         onClearSelection={() => table.resetRowSelection()}
         selectedCount={selectedRows.length}
         summaryLabel={selectedSummary}

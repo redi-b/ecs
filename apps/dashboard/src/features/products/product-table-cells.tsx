@@ -1,6 +1,7 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
+import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +33,20 @@ export function ProductIdentityCell({
     <div className="flex w-64 max-w-64 items-center gap-3">
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
-        <Link className={cn(listEntityLinkClassName, "truncate")} href={href} prefetch={false}>
-          {product.title ?? t("products.table.untitledProduct")}
-        </Link>
+        <CatalogTranslatedName
+          renderName={(primary) => (
+            <Link
+              className={cn(listEntityLinkClassName, "min-w-0 truncate")}
+              href={href}
+              prefetch={false}
+            >
+              {primary}
+            </Link>
+          )}
+          source={product.title}
+          translation={product.translation}
+          untitled={t("products.table.untitledProduct")}
+        />
         {product.handle ? (
           <span className="truncate text-xs text-muted-foreground">/{product.handle}</span>
         ) : null}

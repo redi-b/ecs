@@ -273,7 +273,7 @@ export async function OrderDetail({
                 className={cn(
                   "-mx-1 overflow-x-auto",
                   // Tall carts keep the page scannable; totals stay pinned below.
-                  items.length > 6 && "max-h-[min(26rem,50vh)] overflow-y-auto overscroll-contain",
+                  items.length > 6 && "max-h-[min(26rem,50vh)] overflow-y-auto",
                 )}
               >
                 <Table>

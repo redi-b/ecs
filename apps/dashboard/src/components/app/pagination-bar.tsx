@@ -66,7 +66,7 @@ export function PaginationBar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-row items-center justify-between gap-3",
         className,
       )}
     >

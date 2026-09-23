@@ -1,0 +1,17 @@
+{
+  "control": {
+    "legend": "Catalog names",
+    "trigger": "Catalog names",
+    "follow": "Match dashboard language",
+    "followHint": "Follows the language you use in the dashboard",
+    "english": "English",
+    "englishHint": "Always show names in English",
+    "amharic": "Amharic",
+    "amharicHint": "Show names in Amharic when available"
+  },
+  "mark": {
+    "needs_review": "The English name has changed",
+    "open": "Show the other name",
+    "empty": "No Amharic name"
+  }
+}

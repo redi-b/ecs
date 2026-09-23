@@ -87,28 +87,27 @@ export function DataTableFilters({
     setPendingFilterId(nextFilterId);
   }
 
-  const filterControls = (
-    <>
-      {availableFilters.length > 0 ? (
-        <Popover
-          onOpenChange={(open) => {
-            setAddFilterOpen(open);
-            if (!open) setPendingFilter(null);
-          }}
-          open={addFilterOpen}
-        >
-          <PopoverTrigger asChild>
-            <Button
-              ref={addFilterTrigger}
-              className={listToolbarControlClassName}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <AppIcons.filter data-icon="inline-start" />
-              {t("filters.add")}
-            </Button>
-          </PopoverTrigger>
+  const addFilterTriggerControl =
+    availableFilters.length > 0 ? (
+      <Popover
+        onOpenChange={(open) => {
+          setAddFilterOpen(open);
+          if (!open) setPendingFilter(null);
+        }}
+        open={addFilterOpen}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            ref={addFilterTrigger}
+            className={cn(listToolbarControlClassName, "shrink-0")}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <AppIcons.filter data-icon="inline-start" />
+            {t("filters.add")}
+          </Button>
+        </PopoverTrigger>
           <PopoverContent
             onCloseAutoFocus={(event) => {
               if (editingDateId) event.preventDefault();
@@ -201,8 +200,10 @@ export function DataTableFilters({
             </div>
           </PopoverContent>
         </Popover>
-      ) : null}
+      ) : null;
 
+  const activeChips = (
+    <>
       {filters.map((filter) =>
         filter.kind === "date" ? (
           isActive(filter) || editingDateId === filter.id ? (
@@ -243,10 +244,13 @@ export function DataTableFilters({
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       {/* Find → refine (search, Filters, chips) */}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
-        {children ? (
-          <div className="w-full min-w-0 sm:w-auto sm:max-w-none sm:shrink-0">{children}</div>
-        ) : null}
-        {filterControls}
+        <div className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto sm:shrink-0 sm:gap-2">
+          {children ? (
+            <div className="min-w-0 flex-1 sm:w-auto sm:max-w-none sm:shrink-0">{children}</div>
+          ) : null}
+          {addFilterTriggerControl}
+        </div>
+        {activeChips}
       </div>
 
       {actions ? (

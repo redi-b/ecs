@@ -94,7 +94,7 @@ export function ListSummary({
         )}
       </div>
       {right || actions ? (
-        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-nowrap sm:gap-3">
           {right ? (
             <span className="min-w-0 truncate text-right text-muted-foreground">{right}</span>
           ) : null}

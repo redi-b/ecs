@@ -28,13 +28,6 @@ import type {
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-const statusLabels: Record<StorefrontInquiryStatus, string> = {
-  new: "New",
-  read: "Read",
-  resolved: "Resolved",
-  archived: "Archived",
-};
-
 export function InquiryInbox({
   inquiries,
   tenantId,
@@ -55,6 +48,13 @@ export function InquiryInbox({
     searchParams.get("createdFrom") ?? undefined,
     searchParams.get("createdTo") ?? undefined,
   );
+
+  const statusLabels: Record<StorefrontInquiryStatus, string> = {
+    new: t("inquiries.status.new"),
+    read: t("inquiries.status.read"),
+    resolved: t("inquiries.status.resolved"),
+    archived: t("inquiries.status.archived"),
+  };
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -86,14 +86,14 @@ export function InquiryInbox({
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        toast.error(typeof data.error === "string" ? data.error : "Could not update this inquiry.");
+        toast.error(typeof data.error === "string" ? data.error : t("inquiries.toast.updateFailed"));
         return;
       }
       setSelected(data.inquiry as StorefrontInquiry);
       toast.success(
         nextStatus === "resolved"
-          ? "Inquiry marked resolved"
-          : `Inquiry marked ${statusLabels[nextStatus].toLowerCase()}`,
+          ? t("inquiries.toast.markedResolved")
+          : t("inquiries.toast.markedStatus", { status: statusLabels[nextStatus] }),
       );
       router.refresh();
     });
@@ -128,19 +128,23 @@ export function InquiryInbox({
         {
           defaultValue: "all",
           id: "status",
-          label: "Status",
+          label: t("inquiries.filter.status"),
           onChange: (value) => setFilter("status", value),
-          options: Object.entries(statusLabels).map(([value, label]) => ({ label, value })),
+          options: [
+            { label: t("inquiries.filter.allStatuses"), value: "all" },
+            ...Object.entries(statusLabels).map(([value, label]) => ({ label, value })),
+          ],
           value: status,
         },
         {
           defaultValue: "all",
           id: "type",
-          label: "Type",
+          label: t("inquiries.filter.type"),
           onChange: (value) => setFilter("type", value),
           options: [
-            { label: "Messages", value: "contact" },
-            { label: "Product requests", value: "product_request" },
+            { label: t("inquiries.filter.allTypes"), value: "all" },
+            { label: t("inquiries.type.contact"), value: "contact" },
+            { label: t("inquiries.type.product_request"), value: "product_request" },
           ],
           value: type,
         },
@@ -148,10 +152,10 @@ export function InquiryInbox({
       onClearAll={clearFilters}
     >
       <ListToolbarSearch
-        clearLabel="Clear inquiry search"
-        label="Search inquiries"
+        clearLabel={t("inquiries.search.clear")}
+        label={t("inquiries.search.label")}
         onChange={(value) => setFilter("q", value)}
-        placeholder="Search name, contact, or subject…"
+        placeholder={t("inquiries.search.placeholder")}
         value={search}
       />
     </DataTableFilters>
@@ -186,7 +190,9 @@ export function InquiryInbox({
                       {inquiry.customerName}
                     </strong>
                     <Badge variant="outline" className="rounded-full text-[10px] font-medium">
-                      {inquiry.type === "product_request" ? "Product request" : "Message"}
+                      {inquiry.type === "product_request"
+                        ? t("inquiries.type.product_request_short")
+                        : t("inquiries.type.contact_short")}
                     </Badge>
                   </span>
                   <span className="mt-1 block truncate text-sm font-medium text-foreground/85">
@@ -217,9 +223,9 @@ export function InquiryInbox({
                 <EcsArtwork kind="inquiries" />
               )}
             </span>
-            <h2 className="text-sm font-semibold">No inquiries found</h2>
+            <h2 className="text-sm font-semibold">{t("inquiries.empty.title")}</h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              New storefront messages and product requests will appear here.
+              {t("inquiries.empty.description")}
             </p>
           </div>
         )}
@@ -230,7 +236,9 @@ export function InquiryInbox({
           <SheetHeader>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="rounded-full">
-                {selected?.type === "product_request" ? "Product request" : "Message"}
+                {selected?.type === "product_request"
+                  ? t("inquiries.type.product_request_short")
+                  : t("inquiries.type.contact_short")}
               </Badge>
               {selected && (
                 <Badge
@@ -243,7 +251,11 @@ export function InquiryInbox({
             </div>
             <SheetTitle className="pr-8 text-xl">{selected?.subject}</SheetTitle>
             <SheetDescription>
-              Received {selected ? new Date(selected.createdAt).toLocaleString() : ""}
+              {selected
+                ? t("inquiries.detail.received", {
+                    date: new Date(selected.createdAt).toLocaleString(),
+                  })
+                : ""}
             </SheetDescription>
           </SheetHeader>
           {selected && (
@@ -251,14 +263,14 @@ export function InquiryInbox({
               <div className="rounded-2xl border bg-muted/20 p-4">
                 <p className="text-sm leading-6 whitespace-pre-wrap">{selected.message}</p>
               </div>
-              <Detail label="Customer" value={selected.customerName} />
+              <Detail label={t("inquiries.detail.customer")} value={selected.customerName} />
               <Detail
-                label="Email"
+                label={t("inquiries.detail.email")}
                 value={selected.customerEmail}
                 href={selected.customerEmail ? `mailto:${selected.customerEmail}` : undefined}
               />
               <Detail
-                label="Phone / WhatsApp"
+                label={t("inquiries.detail.phone")}
                 value={selected.customerPhone}
                 href={selected.customerPhone ? `tel:${selected.customerPhone}` : undefined}
               />
@@ -275,7 +287,7 @@ export function InquiryInbox({
             </SheetBody>
           )}
           {canUpdate ? (
-            <SheetFooter className="flex-row justify-between">
+            <SheetFooter className="gap-2 sm:flex-row sm:justify-between">
               <Button
                 disabled={updating || !selected}
                 onClick={() =>
@@ -285,7 +297,9 @@ export function InquiryInbox({
                 size="sm"
                 variant="ghost"
               >
-                {selected?.status === "archived" ? "Restore" : "Archive"}
+                {selected?.status === "archived"
+                  ? t("inquiries.actions.restore")
+                  : t("inquiries.actions.archive")}
               </Button>
               <Button
                 disabled={updating || !selected || selected.status === "resolved"}
@@ -293,10 +307,10 @@ export function InquiryInbox({
                 size="sm"
               >
                 {updating
-                  ? "Updating…"
+                  ? t("inquiries.actions.updating")
                   : selected?.status === "resolved"
-                    ? "Resolved"
-                    : "Mark resolved"}
+                    ? t("inquiries.actions.resolved")
+                    : t("inquiries.actions.markResolved")}
               </Button>
             </SheetFooter>
           ) : null}

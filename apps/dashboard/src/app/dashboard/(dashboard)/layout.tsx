@@ -16,8 +16,15 @@ import { SupportAccessBanner } from "@/components/app/support-access-banner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MediaUploadHost } from "@/features/media/media-upload-host";
+import { CatalogLabelLocaleProvider } from "@/components/providers/catalog-label-locale-provider";
 import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import { getTranslations } from "@/i18n/server";
+import type { LaunchReadiness } from "@ecs/contracts";
+import { allows, merchantPolicies } from "@/lib/access-policy";
+import { parseCatalogLabelLocaleCookie } from "@/lib/catalog-label-locale";
+import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences";
+import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
+import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
 import {
   DASHBOARD_PATH_HEADER,
   getDashboardAuthRedirectPath,
@@ -114,6 +121,32 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     );
   }
 
+  let initialReadiness: LaunchReadiness | null = null;
+  const canCompleteSetup = allows(access.access.permissions ?? [], merchantPolicies.launchSetup);
+  const initialHidden =
+    cookieStore.get(getLaunchAssistantCookieName(access.access.tenant.id))?.value === "true";
+
+  if (canCompleteSetup && !initialHidden) {
+    initialReadiness = await getPlatformLaunchReadiness({
+      cookieHeader: requestHeaders.get("cookie"),
+      platformApiBaseUrl,
+      requestHost,
+      tenantId: access.access.tenant.id,
+    });
+  }
+
+  const storefrontDraft = await getStorefrontDraft({
+    cookieHeader: requestHeaders.get("cookie"),
+    platformApiBaseUrl,
+    tenantId: access.access.tenant.id,
+  });
+  const amharicEnabled =
+    !storefrontDraft.ok ||
+    storefrontDraft.draft.languageSettings.enabledLocales.includes("am");
+  const catalogLabelLocale = parseCatalogLabelLocaleCookie(
+    cookieStore.get("ecs_catalog_label_locale")?.value,
+  );
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
@@ -127,17 +160,26 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
               {access.access.actor.supportAccess ? (
                 <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
               ) : null}
+              <CatalogLabelLocaleProvider
+                amharicEnabled={amharicEnabled}
+                initialMode={catalogLabelLocale}
+              >
               <BreadcrumbLabelsProvider>
                 <AppHeader />
                 <OnboardingWarningToast />
                 <DashboardRouteBoundary>{children}</DashboardRouteBoundary>
-                <LaunchAssistant access={access.access} />
+                <LaunchAssistant
+                  access={access.access}
+                  initialHidden={initialHidden}
+                  initialReadiness={initialReadiness}
+                />
                 <ActivityRegistryProvider>
                   <BackgroundTaskCenter />
                   <MediaUploadHost />
                   <ActivityDock />
                 </ActivityRegistryProvider>
               </BreadcrumbLabelsProvider>
+              </CatalogLabelLocaleProvider>
             </SidebarInset>
           </AccessProvider>
         </ActorProvider>

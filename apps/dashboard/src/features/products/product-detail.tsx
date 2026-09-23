@@ -12,6 +12,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { useCatalogLabelLocale } from "@/components/providers/catalog-label-locale-provider";
 
 import {
   DetailField,
@@ -61,6 +62,9 @@ export function ProductDetail({
 }: ProductDetailProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { amharicEnabled: localeAmharicEnabled } = useCatalogLabelLocale();
+  const effectiveTranslationsEnabled = translationsEnabled && localeAmharicEnabled;
   const canUpdate = usePermission("products.update");
   const effectiveReadOnly = readOnly || !canUpdate;
   const taxonomy = useProductTaxonomy({ enabled: !effectiveReadOnly, tenantId });
@@ -128,7 +132,7 @@ export function ProductDetail({
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <ProductStatusBadge status={product.status} />
-                  {translationsEnabled ? (
+                  {effectiveTranslationsEnabled ? (
                     <ProductTranslationSheet
                       defaultOpen={translationOpen}
                       onOpenChange={(open) => {
@@ -137,6 +141,12 @@ export function ProductDetail({
                         url.searchParams.delete("translate");
                         url.searchParams.delete("translationFrom");
                         router.replace(`${url.pathname}${url.search}`, { scroll: false });
+                      }}
+                      onSaved={() => {
+                        queryClient.invalidateQueries({ queryKey: ["products"] });
+                        queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+                        queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+                        router.refresh();
                       }}
                       product={product}
                       queueNavigation={translationQueueNavigation}
@@ -223,7 +233,7 @@ export function ProductDetail({
                 className={cn(
                   "grid grid-cols-2 gap-2.5 sm:grid-cols-3",
                   images.length > IMAGE_SCROLL_THRESHOLD &&
-                    "max-h-[min(26rem,48vh)] overflow-y-auto overscroll-contain pr-0.5",
+                    "max-h-[min(26rem,48vh)] overflow-y-auto pr-0.5",
                 )}
               >
                 {images.map((image, index) => {
@@ -655,6 +665,7 @@ export function ProductDeleteButton({
   return (
     <>
       <Button variant="destructive" onClick={() => setShowConfirm(true)} type="button">
+        <AppIcons.trash data-icon="inline-start" />
         {t("products.table.deleteProduct")}
       </Button>
 

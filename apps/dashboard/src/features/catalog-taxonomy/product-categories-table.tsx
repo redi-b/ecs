@@ -584,6 +584,12 @@ export function ProductCategoriesTable({
               });
             }
           }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            router.refresh();
+          }}
           target={translatingCategory ? { kind: "category", resource: translatingCategory } : null}
           tenantId={tenantId}
           queueNavigation={translationQueueNavigation}
@@ -656,7 +662,7 @@ export function ProductCategoriesTable({
                     variant="destructive-outline"
                   >
                     <AppIcons.trash data-icon="inline-start" />
-                    Delete selected
+                    {t("common.delete")}
                   </Button>
                 ) : null}
               </div>

@@ -18,6 +18,7 @@ import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useCatalogLabelLocale } from "@/components/providers/catalog-label-locale-provider";
 import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
 import {
   getProductTableCounts,
@@ -97,6 +98,8 @@ export function ProductsTable({
   const canPublish = usePermission("products.publish") && !readOnly;
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { amharicEnabled: localeAmharicEnabled } = useCatalogLabelLocale();
+  const effectiveTranslationsEnabled = translationsEnabled && localeAmharicEnabled;
   const taxonomy = useProductTaxonomy({ enabled: canUpdate, tenantId });
   const categories = taxonomy.categories;
   const collections = taxonomy.collections;
@@ -230,6 +233,8 @@ export function ProductsTable({
             setShowBulkInventoryDialog(true);
           }
         : undefined,
+      taxonomy.isLoading,
+      effectiveTranslationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
     );
     return resolved;
   }, [
@@ -240,7 +245,9 @@ export function ProductsTable({
     handleStatusChange,
     productDetailHrefBase,
     t,
+    taxonomy.isLoading,
     tenantId,
+    effectiveTranslationsEnabled,
   ]);
 
   const productRowActions = useCallback(
@@ -257,9 +264,9 @@ export function ProductsTable({
               setShowBulkInventoryDialog(true);
             }
           : undefined,
-        translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
+        effectiveTranslationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
       ),
-    [canDelete, canUpdate, handleStatusChange, t, tenantId, translationsEnabled],
+    [canDelete, canUpdate, handleStatusChange, t, tenantId, effectiveTranslationsEnabled],
   );
 
   const pushServerFilters = useCallback(
@@ -440,10 +447,15 @@ export function ProductsTable({
 
   return (
     <>
-      {translatingProduct ? (
+      {translatingProduct && effectiveTranslationsEnabled ? (
         <ProductTranslationSheet
           onOpenChange={(open) => {
             if (!open) setTranslatingProduct(null);
+          }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+            router.refresh();
           }}
           open
           product={translatingProduct}
@@ -453,16 +465,17 @@ export function ProductsTable({
         />
       ) : null}
       <DataTable
-        bulkActions={(selectedProducts) => (
+        bulkActions={(selectedProducts, { clearSelection }) => (
           <>
             <Button
-              onClick={() =>
+              onClick={() => {
                 void copyToClipboard(
                   selectedProducts.map((product) => product.id).join("\n"),
                   t("products.table.productIds"),
                   t,
-                )
-              }
+                );
+                clearSelection();
+              }}
               size="sm"
               type="button"
               variant="outline"
@@ -474,12 +487,13 @@ export function ProductsTable({
               <>
                 <Button
                   disabled={isStatusUpdatePending}
-                  onClick={() =>
-                    handleStatusChange(
+                  onClick={async () => {
+                    await handleStatusChange(
                       selectedProducts.map((product) => product.id),
                       "published",
-                    )
-                  }
+                    );
+                    clearSelection();
+                  }}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -488,12 +502,13 @@ export function ProductsTable({
                 </Button>
                 <Button
                   disabled={isStatusUpdatePending}
-                  onClick={() =>
-                    handleStatusChange(
+                  onClick={async () => {
+                    await handleStatusChange(
                       selectedProducts.map((product) => product.id),
                       "draft",
-                    )
-                  }
+                    );
+                    clearSelection();
+                  }}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -507,6 +522,7 @@ export function ProductsTable({
                 onClick={() => {
                   setSelectedProductsForInventory(selectedProducts);
                   setShowBulkInventoryDialog(true);
+                  clearSelection();
                 }}
                 size="sm"
                 type="button"
@@ -520,6 +536,7 @@ export function ProductsTable({
                 onClick={() => {
                   setSelectedProductIdsForDelete(selectedProducts.map((p) => p.id));
                   setShowBatchDeleteDialog(true);
+                  clearSelection();
                 }}
                 size="sm"
                 type="button"

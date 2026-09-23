@@ -8,6 +8,10 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/app-providers";
 import type { AppLocale } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages";
+import {
+  CATALOG_LABEL_LOCALE_COOKIE,
+  parseCatalogLabelLocaleCookie,
+} from "@/lib/catalog-label-locale";
 import { getDashboardPublicUrl } from "@/lib/dashboard-hosts";
 import {
   getThemeBootstrapScript,
@@ -102,7 +106,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         </Script>
       </head>
       <body className="min-h-dvh font-sans antialiased">
-        <AppProviders locale={locale} messages={messages} theme={themePreference}>
+        <AppProviders
+          catalogLabelLocale={parseCatalogLabelLocaleCookie(
+            cookieStore.get(CATALOG_LABEL_LOCALE_COOKIE)?.value,
+          )}
+          locale={locale}
+          messages={messages}
+          theme={themePreference}
+        >
           {children}
         </AppProviders>
       </body>

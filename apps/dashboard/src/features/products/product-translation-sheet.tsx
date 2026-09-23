@@ -7,7 +7,9 @@ import {
   type MerchantProduct,
 } from "@ecs/contracts";
 import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LanguagesIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
@@ -115,6 +117,8 @@ export function ProductTranslationSheet({
   showTrigger?: boolean;
 }) {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (next: boolean) => {
@@ -204,6 +208,10 @@ export function ProductTranslationSheet({
         Object.fromEntries(updated.map((resource) => [resource.resourceId, resource.translations])),
       );
       toast.success(t("products.translation.saved"));
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["product-taxonomy"] });
+      router.refresh();
       onSaved?.();
     } catch {
       toast.error(t("products.translation.saveFailed"));

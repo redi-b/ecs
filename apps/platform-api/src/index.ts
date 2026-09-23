@@ -14,6 +14,7 @@ import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commer
 import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
 import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
 import { createMedusaCatalogTranslationService } from "./adapters/medusa/catalog-translation-service.js";
+import { attachCatalogNameTranslations } from "./lib/attach-catalog-name-translations.js";
 import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
 import {
   createMedusaEnsurePickupOptionClient,
@@ -1085,7 +1086,16 @@ const app = createPlatformApp({
   getMerchantOrder: orderService.getMerchantOrder,
   createMerchantManualOrder: manualOrderService.createManualOrder,
   getMerchantCustomer: customerService.getCustomer,
-  getMerchantProduct: productService.getMerchantProduct,
+  getMerchantProduct: async (input) => {
+    const result = await productService.getMerchantProduct(input);
+    if (!result.ok) return result;
+    const [product] = await attachCatalogNameTranslations({
+      items: [result.product],
+      resourceType: "product",
+      summarizeNames: catalogTranslationService.summarizeNames,
+    });
+    return product ? { ...result, product } : result;
+  },
   getMerchantProductStock: productService.getMerchantProductStock,
   getMerchantProductVariantStock: productService.getMerchantProductVariantStock,
   getSession: (headers) => auth.api.getSession({ headers }),
@@ -1094,13 +1104,46 @@ const app = createPlatformApp({
   listMerchantCustomers: customerService.listCustomers,
   listMerchantPromotions: promotionService.listPromotions,
   listMerchantCustomerGroups: customerService.listGroups,
-  listMerchantProducts: productService.listMerchantProducts,
+  listMerchantProducts: async (input) => {
+    const result = await productService.listMerchantProducts(input);
+    if (!result.ok) return result;
+    return {
+      ...result,
+      products: await attachCatalogNameTranslations({
+        items: result.products,
+        resourceType: "product",
+        summarizeNames: catalogTranslationService.summarizeNames,
+      }),
+    };
+  },
   listMerchantProductOptionSets: productOptionSetService.list,
   createMerchantProductOptionSet: productOptionSetService.create,
   updateMerchantProductOptionSet: productOptionSetService.update,
   deleteMerchantProductOptionSet: productOptionSetService.remove,
-  listMerchantProductCategories: productService.listMerchantProductCategories,
-  listMerchantProductCollections: productService.listMerchantProductCollections,
+  listMerchantProductCategories: async (input) => {
+    const result = await productService.listMerchantProductCategories(input);
+    if (!result.ok) return result;
+    return {
+      ...result,
+      categories: await attachCatalogNameTranslations({
+        items: result.categories,
+        resourceType: "product_category",
+        summarizeNames: catalogTranslationService.summarizeNames,
+      }),
+    };
+  },
+  listMerchantProductCollections: async (input) => {
+    const result = await productService.listMerchantProductCollections(input);
+    if (!result.ok) return result;
+    return {
+      ...result,
+      collections: await attachCatalogNameTranslations({
+        items: result.collections,
+        resourceType: "product_collection",
+        summarizeNames: catalogTranslationService.summarizeNames,
+      }),
+    };
+  },
   getMerchantCatalogTranslation: catalogTranslationService.read,
   getMerchantCatalogTranslations: catalogTranslationService.readMany,
   listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,

@@ -115,12 +115,12 @@
     "delivery": {
       "label": "ደሊቨሪ",
       "all": "ሁሉም",
-      "delivery": "አካባቢ ደሊቨሪ",
+      "delivery": "ደሊቨሪ",
       "pickup": "ከሱቅ መውሰድ",
       "none": "ምርጫ የሌለው"
     },
     "created": {
-      "label": "የተደረገበት",
+      "label": "የትዕዛዝ ቀን",
       "all": "ሁሉም ጊዜ",
       "today": "ዛሬ",
       "last_7_days": "ባለፉት 7 ቀናት",
@@ -128,19 +128,19 @@
       "no_date": "ቀን የሌለው"
     },
     "lifecycle": {
-      "all": "ሁሉም ትዕዛዞች",
+      "all": "ሁሉም",
       "open": "በሂደት ላይ",
       "completed": "የተጠናቀቀ",
       "canceled": "የተሰረዘ",
-      "needs_fulfillment": "ማስረከብ የሚያስፈልጋቸው",
-      "fulfilled": "የደረሱ",
+      "needs_fulfillment": "ማስረከብ የሚያስፈልገው",
+      "fulfilled": "የደረሰ",
       "payment_pending": "ክፍያ በመጠባበቅ ላይ",
-      "paid": "የተከፈሉ",
+      "paid": "የተከፈለ",
       "label": "የትዕዛዝ ሁኔታ"
     },
     "fulfillment": {
       "all": "ሁሉም",
-      "unfulfilled": "ያልተስተናገዱ",
+      "unfulfilled": "ያልተስተናገደ",
       "label": "የማስረከብ ሁኔታ"
     }
   },
@@ -206,7 +206,7 @@
     "skipped": "መውሰድ / የለም",
     "savedAddress": "የተቀመጠ አድራሻ",
     "savedAddressHint": "ከዚህ ደንበኛ አድራሻዎች ይምረጡ፣ ወይም ለዚህ ትዕዛዝ ብቻ አዲስ ያስገቡ።",
-    "savedAddressDefault": "{label} (ነባሪ)",
+    "savedAddressDefault": "{label} (ዋና)",
     "selectSavedAddress": "አድራሻ ይምረጡ…",
     "searchSavedAddress": "የተቀመጡ አድራሻዎችን ፈልግ…",
     "noSavedAddresses": "የተቀመጠ አድራሻ የለም።",
@@ -379,7 +379,7 @@
     "methodOnline": "ኦንላይን",
     "methodPayment": "ክፍያ",
     "methodUnknown": "መረጃ የለም",
-    "deliveryLocal": "አካባቢያዊ ደሊቨሪ",
+    "deliveryLocal": "ደሊቨሪ",
     "deliveryPickup": "ደንበኛ ይወስዳል",
     "deliveryUnknown": "መረጃ የለም",
     "noItems": "ንጥል የለም",

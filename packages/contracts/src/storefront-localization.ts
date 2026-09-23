@@ -117,6 +117,14 @@ export const catalogTranslationFields = {
 export const catalogTranslationStatusSchema = z.enum(["using_english", "needs_review", "ready"]);
 export type CatalogTranslationStatus = z.infer<typeof catalogTranslationStatusSchema>;
 
+/** Compact Amharic name carried on catalog list/detail payloads for dashboard labels. */
+export const catalogNameTranslationSchema = z.object({
+  locale: z.literal("am"),
+  status: catalogTranslationStatusSchema,
+  title: z.string().min(1).nullable(),
+});
+export type CatalogNameTranslation = z.infer<typeof catalogNameTranslationSchema>;
+
 export const catalogTranslationResourceQuerySchema = z
   .object({
     resourceType: catalogTranslationResourceTypeSchema,

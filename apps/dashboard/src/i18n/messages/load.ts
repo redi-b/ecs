@@ -7,6 +7,8 @@ import am_auth from "./am/auth.json";
 import en_auth from "./en/auth.json";
 import am_billing from "./am/billing.json";
 import en_billing from "./en/billing.json";
+import am_catalogLabels from "./am/catalogLabels.json";
+import en_catalogLabels from "./en/catalogLabels.json";
 import am_categories from "./am/categories.json";
 import en_categories from "./en/categories.json";
 import am_collections from "./am/collections.json";
@@ -23,6 +25,8 @@ import am_filters from "./am/filters.json";
 import en_filters from "./en/filters.json";
 import am_insights from "./am/insights.json";
 import en_insights from "./en/insights.json";
+import am_inquiries from "./am/inquiries.json";
+import en_inquiries from "./en/inquiries.json";
 import am_language from "./am/language.json";
 import en_language from "./en/language.json";
 import am_media from "./am/media.json";
@@ -54,6 +58,7 @@ export const messageNamespaces = [
   "account",
   "auth",
   "billing",
+  "catalogLabels",
   "categories",
   "collections",
   "commandCenter",
@@ -61,6 +66,7 @@ export const messageNamespaces = [
   "customers",
   "editor",
   "filters",
+  "inquiries",
   "insights",
   "language",
   "media",
@@ -83,6 +89,7 @@ export const messagesByLocale = {
     account: am_account,
     auth: am_auth,
     billing: am_billing,
+    catalogLabels: am_catalogLabels,
     categories: am_categories,
     collections: am_collections,
     commandCenter: am_commandCenter,
@@ -90,6 +97,7 @@ export const messagesByLocale = {
     customers: am_customers,
     editor: am_editor,
     filters: am_filters,
+    inquiries: am_inquiries,
     insights: am_insights,
     language: am_language,
     media: am_media,
@@ -109,6 +117,7 @@ export const messagesByLocale = {
     account: en_account,
     auth: en_auth,
     billing: en_billing,
+    catalogLabels: en_catalogLabels,
     categories: en_categories,
     collections: en_collections,
     commandCenter: en_commandCenter,
@@ -116,6 +125,7 @@ export const messagesByLocale = {
     customers: en_customers,
     editor: en_editor,
     filters: en_filters,
+    inquiries: en_inquiries,
     insights: en_insights,
     language: en_language,
     media: en_media,

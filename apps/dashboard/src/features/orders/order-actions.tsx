@@ -8,8 +8,10 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -238,7 +240,15 @@ export function OrderActions({
   const canceled = (order.status ?? "").toLowerCase().includes("cancel");
   const showCancel = canCancel && !canceled && (next.type !== "none" || showMarkPaid);
   const hasNextAction = canUpdate && next.type !== "none";
-  const hasMenu = hasNextAction || showMarkPaid || showRecheck || showRefund || showCancel;
+  const isMarkPaidPrimary = !hasNextAction && showMarkPaid;
+  const isActionable = hasNextAction || isMarkPaidPrimary;
+  const hasPrecedingActions =
+    hasNextAction ||
+    (showMarkPaid && !isMarkPaidPrimary) ||
+    showRecheck ||
+    showRefund;
+  const hasMenu = hasPrecedingActions || showCancel;
+
   const menu = hasMenu ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -258,7 +268,7 @@ export function OrderActions({
             {t("orders.actions.completeAll")}
           </DropdownMenuItem>
         ) : null}
-        {showMarkPaid ? (
+        {showMarkPaid && !isMarkPaidPrimary ? (
           <DropdownMenuItem onSelect={() => setMarkPaidOpen(true)}>
             {t("orders.actions.markPaid")}
           </DropdownMenuItem>
@@ -275,7 +285,7 @@ export function OrderActions({
         ) : null}
         {showCancel ? (
           <>
-            <DropdownMenuSeparator />
+            {hasPrecedingActions ? <DropdownMenuSeparator /> : null}
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onSelect={() => setPending({ kind: "cancel" })}
@@ -288,56 +298,94 @@ export function OrderActions({
     </DropdownMenu>
   ) : null;
 
-  if (!hasNextAction && !hasMenu)
+  if (variant === "header") {
+    if (!isActionable && !hasMenu) return null;
     return (
-      <div className="rounded-xl bg-muted/30 px-3.5 py-3 text-sm text-muted-foreground ring-1 ring-foreground/[0.06]">
-        {canceled ? t("orders.actions.canceled") : t("orders.actions.noFurther")}
+      <div className="flex items-center gap-2">
+        {isActionable ? (
+          <Button
+            disabled={mutation.isPending || markPaidMutation.isPending}
+            onClick={() =>
+              isMarkPaidPrimary
+                ? setMarkPaidOpen(true)
+                : setPending({ kind: "next", type: next.type })
+            }
+          >
+            {isMarkPaidPrimary ? t("orders.actions.markPaid") : copy.label}
+          </Button>
+        ) : null}
+        {menu}
       </div>
     );
+  }
 
   return (
-    <div className={variant === "card" ? "flex h-full flex-col gap-3" : "space-y-3"}>
+    <div className="flex h-full flex-col gap-3">
       {actionError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("orders.actions.updateFailedTitle")}</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       ) : null}
-      <div
-        className={
-          variant === "header"
-            ? "flex items-center gap-2"
-            : "flex h-full min-h-[11rem] flex-col gap-3"
-        }
-      >
-        {hasNextAction ? (
-          <div
-            className={
-              variant === "card"
-                ? "flex flex-1 flex-col gap-4 rounded-xl bg-primary/[0.07] p-4 ring-1 ring-primary/20"
-                : "contents"
-            }
-          >
-            {variant === "card" ? (
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-primary">{t("orders.actions.next")}</p>
-                <p className="text-base font-semibold">{copy.label}</p>
-                <p className="text-sm leading-relaxed text-muted-foreground">{copy.description}</p>
-              </div>
-            ) : null}
-            <div className={variant === "card" ? "mt-auto flex items-center gap-2" : "contents"}>
+      <div className="flex h-full min-h-[11rem] flex-col gap-3">
+        {isActionable ? (
+          <div className="flex flex-1 flex-col gap-4 rounded-xl bg-primary/[0.07] p-4 ring-1 ring-primary/20">
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-primary">{t("orders.actions.next")}</p>
+              <p className="text-base font-semibold">
+                {isMarkPaidPrimary ? t("orders.actions.markPaid") : copy.label}
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {isMarkPaidPrimary ? t("orders.actions.markPaidDesc") : copy.description}
+              </p>
+            </div>
+            <div className="mt-auto flex items-center gap-2">
               <Button
-                className={variant === "card" ? "flex-1" : undefined}
+                className="flex-1"
                 disabled={mutation.isPending || markPaidMutation.isPending}
-                onClick={() => setPending({ kind: "next", type: next.type })}
+                onClick={() =>
+                  isMarkPaidPrimary
+                    ? setMarkPaidOpen(true)
+                    : setPending({ kind: "next", type: next.type })
+                }
               >
-                {copy.label}
+                {isMarkPaidPrimary ? t("orders.actions.markPaid") : copy.label}
               </Button>
               {menu}
             </div>
           </div>
         ) : (
-          <div className="ml-auto">{menu}</div>
+          <div className="flex flex-1 flex-col justify-between rounded-xl bg-muted/30 p-4 ring-1 ring-foreground/[0.06]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    "grid size-9 shrink-0 place-items-center rounded-lg",
+                    canceled
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  )}
+                >
+                  {canceled ? (
+                    <AppIcons.error className="size-5" />
+                  ) : (
+                    <AppIcons.check className="size-5" />
+                  )}
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">
+                    {canceled ? t("orders.actions.canceled") : t("orders.actions.allDone")}
+                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {canceled
+                      ? t("orders.labels.progressCanceled")
+                      : t("orders.actions.allDoneDesc")}
+                  </p>
+                </div>
+              </div>
+              {menu}
+            </div>
+          </div>
         )}
       </div>
       <MarkPaidDialog

@@ -1,0 +1,48 @@
+{
+  "title": "Inquiries",
+  "status": {
+    "new": "New",
+    "read": "Read",
+    "resolved": "Resolved",
+    "archived": "Archived"
+  },
+  "filter": {
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "type": "Type",
+    "allTypes": "All types"
+  },
+  "type": {
+    "contact": "Messages",
+    "product_request": "Product requests",
+    "contact_short": "Message",
+    "product_request_short": "Product request"
+  },
+  "search": {
+    "label": "Search inquiries",
+    "placeholder": "Search name, contact, or subject…",
+    "clear": "Clear inquiry search"
+  },
+  "empty": {
+    "title": "No inquiries found",
+    "description": "New storefront messages and product requests will appear here."
+  },
+  "detail": {
+    "customer": "Customer",
+    "email": "Email",
+    "phone": "Phone / WhatsApp",
+    "received": "Received {date}"
+  },
+  "actions": {
+    "archive": "Archive",
+    "restore": "Restore",
+    "markResolved": "Mark resolved",
+    "resolved": "Resolved",
+    "updating": "Updating…"
+  },
+  "toast": {
+    "updateFailed": "Could not update this inquiry.",
+    "markedResolved": "Inquiry marked resolved",
+    "markedStatus": "Inquiry marked {status}"
+  }
+}

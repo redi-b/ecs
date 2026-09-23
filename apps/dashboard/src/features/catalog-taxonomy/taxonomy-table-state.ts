@@ -20,9 +20,12 @@ export function filterCollectionsForTable(
       if (current !== visibility) return false;
     }
     if (!query) return true;
-    return getTaxonomySearchText([collection.id, collection.title, collection.handle]).includes(
-      query,
-    );
+    return getTaxonomySearchText([
+      collection.id,
+      collection.title,
+      collection.translation?.title,
+      collection.handle,
+    ]).includes(query);
   });
 }
 
@@ -42,6 +45,7 @@ export function filterCategoriesForTable(
     return getTaxonomySearchText([
       category.id,
       category.name,
+      category.translation?.title,
       category.handle,
       category.parentCategoryId,
     ]).includes(query);
@@ -145,7 +149,7 @@ export function slugifyTaxonomyHandle(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function getTaxonomySearchText(values: Array<string | null>) {
+function getTaxonomySearchText(values: Array<string | null | undefined>) {
   return values
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value))

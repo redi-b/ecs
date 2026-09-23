@@ -46,7 +46,10 @@ export function SettingsSectionBody({
 }) {
   return (
     <div
-      className={cn("flex flex-col gap-4 sm:gap-5 motion-safe:animate-dialog-step-in", className)}
+      className={cn(
+        "flex flex-col gap-4 pb-20 sm:gap-5 sm:pb-8 motion-safe:animate-dialog-step-in",
+        className,
+      )}
     >
       {children}
     </div>
