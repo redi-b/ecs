@@ -1,3 +1,4 @@
+@use '../utils/functions' as *;
 // ==========================================
 // Product Details Page Styles
 // ==========================================
@@ -54,18 +55,18 @@
     font-family: $ff-body;
     font-size: 14px;
     font-weight: $fw-medium;
-    color: $clr-neutral-600;
+    color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
     text-decoration: none;
     letter-spacing: -2%;
   }
 
   a:hover {
-    color: $clr-primary-500;
+    color: alpha(var(--nexa-primary), 0.08)0;
   }
 
   &__divider {
-    color: $clr-neutral-800;
+    color: alpha(var(--nexa-ink), 0.8);
     font-family: $ff-body;
     font-size: 14px;
   }
@@ -109,8 +110,8 @@
     position: relative;
     width: 100%;
     height: 513px;
-    background: $clr-surface-50;
-    border: 1px solid $clr-neutral-300;
+    background: var(--nexa-bg);
+    border: 1px solid alpha(var(--nexa-ink), 0.3);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -124,17 +125,17 @@
     justify-content: center;
     width: 37px;
     height: 37px;
-    background: $clr-surface-0;
+    background: #ffffff;
     border: 0;
     border-radius: 1px;
     box-shadow: 0 4px 14px rgba(198, 207, 210, 0.18);
-    color: $clr-neutral-900;
+    color: var(--nexa-ink);
     cursor: pointer;
     z-index: 10;
     transition: color 0.2s ease, transform 0.2s ease;
 
     &:hover {
-      color: $clr-primary-500;
+      color: alpha(var(--nexa-primary), 0.08)0;
       transform: scale(1.05);
     }
   }
@@ -172,8 +173,8 @@
     .swiper-slide {
       width: 92px;
       height: 65px;
-      background: $clr-surface-50;
-      border: 1px solid $clr-neutral-300;
+      background: var(--nexa-bg);
+      border: 1px solid alpha(var(--nexa-ink), 0.3);
       border-radius: 2px;
       cursor: pointer;
       overflow: hidden;
@@ -189,11 +190,11 @@
       }
 
       &:hover {
-        border-color: $clr-primary-400;
+        border-color: alpha(var(--nexa-primary), 0.6);
       }
 
       &.swiper-slide-thumb-active {
-        border: 1.5px solid $clr-primary-500;
+        border: 1.5px solid alpha(var(--nexa-primary), 0.08)0;
       }
     }
   }
@@ -204,8 +205,8 @@
   width: 653px;
   max-width: 100%;
   height: auto;
-  background: $clr-surface-0;
-  border: 1px solid $clr-neutral-300;
+  background: #ffffff;
+  border: 1px solid alpha(var(--nexa-ink), 0.3);
   border-radius: 4px;
   overflow: hidden;
   display: flex;
@@ -216,8 +217,8 @@
   &__header {
     flex-shrink: 0;
     height: 84px;
-    background: $clr-surface-50;
-    border-bottom: 1px solid $clr-neutral-300;
+    background: var(--nexa-bg);
+    border-bottom: 1px solid alpha(var(--nexa-ink), 0.3);
     padding: 16px 18px;
     display: flex;
     align-items: center;
@@ -235,15 +236,15 @@
     font-family: $ff-body;
     font-size: 24px;
     font-weight: $fw-medium;
-    color: $clr-neutral-800;
+    color: alpha(var(--nexa-ink), 0.8);
     letter-spacing: -5%;
     line-height: 1;
   }
 
   &__stock-badge {
     padding: 2px 6px;
-    background: $clr-primary-100;
-    color: $clr-primary-800;
+    background: alpha(var(--nexa-primary), 0.14);
+    color: var(--nexa-primary);
     font-family: $ff-body;
     font-size: 11px;
     font-weight: $fw-medium;
@@ -259,8 +260,8 @@
 
   &__discount {
     padding: 4px 8px;
-    background: $clr-primary-100;
-    color: $clr-primary-800;
+    background: alpha(var(--nexa-primary), 0.14);
+    color: var(--nexa-primary);
     font-family: $ff-body;
     font-size: 12px;
     font-weight: $fw-medium;
@@ -277,7 +278,7 @@
 
   &__desc-box {
     padding: 16px 18px;
-    border-bottom: 1px solid $clr-neutral-300;
+    border-bottom: 1px solid alpha(var(--nexa-ink), 0.3);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -288,14 +289,14 @@
     font-family: $ff-header;
     font-size: 32px;
     font-weight: $fw-medium;
-    color: $clr-neutral-900;
+    color: var(--nexa-ink);
     letter-spacing: -6%;
     line-height: 1;
   }
 
   &__desc {
     margin: 0;
-    color: $clr-neutral-900;
+    color: var(--nexa-ink);
     font-family: $ff-body;
     font-size: 14px;
     line-height: 1.5;
@@ -308,8 +309,8 @@
     :is(ul, ol) { padding-left: 20px; }
     ul { list-style: disc; }
     ol { list-style: decimal; }
-    blockquote { padding-left: 12px; border-left: 2px solid $clr-primary-800; }
-    a { color: $clr-primary-800; text-underline-offset: 3px; }
+    blockquote { padding-left: 12px; border-left: 2px solid var(--nexa-primary); }
+    a { color: var(--nexa-primary); text-underline-offset: 3px; }
   }
 
   &__desc.is-collapsible:not(.is-expanded) {
@@ -325,7 +326,7 @@
     padding: 4px 0;
     border: 0;
     background: transparent;
-    color: $clr-primary-800;
+    color: var(--nexa-primary);
     font-family: $ff-body;
     font-size: 13px;
     font-weight: $fw-medium;
@@ -334,12 +335,12 @@
     cursor: pointer;
     transition: color var(--nexa-motion-fast) var(--nexa-ease-out);
 
-    &:hover { color: $clr-primary-500; }
+    &:hover { color: alpha(var(--nexa-primary), 0.08)0; }
     &[hidden] { display: none; }
   }
 
   &__view-more {
-    color: $clr-primary-800;
+    color: var(--nexa-primary);
     text-decoration: none;
     font-weight: $fw-medium;
 
@@ -365,7 +366,7 @@
     font-family: $ff-body;
     font-size: 14px;
     font-weight: $fw-medium;
-    color: $clr-neutral-600;
+    color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
     letter-spacing: -2%;
     opacity: 0.6;
@@ -405,8 +406,8 @@
     }
 
     &.is-selected {
-      border-color: $clr-primary-500;
-      background: $clr-surface-50;
+      border-color: alpha(var(--nexa-primary), 0.08)0;
+      background: var(--nexa-bg);
     }
   }
 
@@ -424,9 +425,9 @@
     justify-content: center;
     padding: 6px 18px;
     background: transparent;
-    border: 1px solid $clr-neutral-300;
+    border: 1px solid alpha(var(--nexa-ink), 0.3);
     border-radius: 2px;
-    color: $clr-neutral-700;
+    color: alpha(var(--nexa-ink), 0.7);
     font-family: $ff-body;
     font-size: 14px;
     font-weight: $fw-medium;
@@ -436,22 +437,22 @@
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
     &:hover {
-      border-color: $clr-primary-400;
+      border-color: alpha(var(--nexa-primary), 0.6);
     }
 
     &.is-selected {
-      background: $clr-primary-50;
-      border-color: $clr-primary-800;
-      color: $clr-neutral-700;
+      background: alpha(var(--nexa-primary), 0.08);
+      border-color: var(--nexa-primary);
+      color: alpha(var(--nexa-ink), 0.7);
     }
   }
 
   &__footer {
     flex-shrink: 0;
     height: 118px;
-    border-top: 1px solid $clr-neutral-300;
+    border-top: 1px solid alpha(var(--nexa-ink), 0.3);
     padding: 16px 18px;
-    background: $clr-surface-50;
+    background: var(--nexa-bg);
     box-shadow: 0 -4px 24px rgba(56, 57, 76, 0.08);
     display: flex;
     flex-direction: column;
@@ -463,7 +464,7 @@
     font-family: $ff-body;
     font-size: 12px;
     font-weight: $fw-medium;
-    color: $clr-neutral-600;
+    color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
     letter-spacing: -4%;
   }
@@ -515,7 +516,7 @@
 
   &__bar {
     height: 21px;
-    background: $clr-neutral-800;
+    background: alpha(var(--nexa-ink), 0.8);
     border-radius: 1px;
 
     &--sm {
@@ -530,8 +531,8 @@
   &__badge {
     height: 21px;
     padding: 0 8px;
-    background: $clr-neutral-800;
-    color: $clr-surface-0;
+    background: alpha(var(--nexa-ink), 0.8);
+    color: #ffffff;
     border-radius: 1px;
     display: inline-flex;
     align-items: center;
@@ -549,7 +550,7 @@
     font-weight: $fw-medium;
     letter-spacing: -5%;
     line-height: 56px;
-    color: $clr-neutral-900;
+    color: var(--nexa-ink);
   }
 
   &__arrows {
@@ -564,16 +565,16 @@
     justify-content: center;
     width: 60px;
     height: 57px;
-    background: $clr-surface-200;
+    background: var(--nexa-muted);
     border: 0;
     border-radius: 2px;
-    color: $clr-neutral-700;
+    color: alpha(var(--nexa-ink), 0.7);
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
 
     &:hover {
-      background: $clr-primary-500;
-      color: $clr-surface-0;
+      background: alpha(var(--nexa-primary), 0.08)0;
+      color: #ffffff;
     }
   }
 

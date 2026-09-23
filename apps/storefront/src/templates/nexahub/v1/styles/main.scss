@@ -1,3 +1,4 @@
+@use './utils/functions' as *;
 @use "reset";
 @use "typography";
 
@@ -21,7 +22,7 @@
 }
 
 body.nexa-body {
-  background: $clr-surface-100;
+  background: var(--nexa-bg);
 }
 
 #page-wrapper {
@@ -89,7 +90,7 @@ body.no-scroll {
   border: 1px solid var(--nexa-ink);
   background: var(--nexa-bg);
   color: var(--nexa-ink);
-  box-shadow: 8px 8px 0 color-mix(in srgb, var(--nexa-ink) 18%, transparent);
+  box-shadow: 8px 8px 0 alpha(var(--nexa-ink), 0.18);
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity var(--nexa-motion-base) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out);

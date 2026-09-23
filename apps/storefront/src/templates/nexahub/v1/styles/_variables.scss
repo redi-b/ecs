@@ -1,36 +1,18 @@
 @use './utils/functions' as *;
 
-// The reference design was authored with a blue ramp, but production colors
-// are semantic. Every branded shade follows the merchant-selected primary and
-// the generated accent/surface tokens instead of preserving that fixture blue.
-$clr-primary-50: color-mix(in srgb, var(--nexa-primary) 7%, var(--nexa-bg));
-$clr-primary-100: color-mix(in srgb, var(--nexa-primary) 13%, var(--nexa-bg));
-$clr-primary-200: color-mix(in srgb, var(--nexa-primary) 22%, var(--nexa-bg));
-$clr-primary-300: var(--nexa-accent);
-$clr-primary-300-alpha-50: color-mix(in srgb, var(--nexa-accent) 50%, transparent);
-$clr-primary-400: color-mix(in srgb, var(--nexa-primary) 58%, var(--nexa-accent));
-$clr-primary-500-alpha-40: color-mix(in srgb, var(--nexa-primary) 40%, transparent);
-$clr-primary-500: var(--nexa-primary);
-$clr-primary-500-alpha-80: color-mix(in srgb, var(--nexa-primary) 80%, transparent);
-$clr-primary-600: color-mix(in srgb, var(--nexa-primary) 84%, var(--nexa-ink));
-$clr-primary-700: color-mix(in srgb, var(--nexa-primary) 68%, var(--nexa-ink));
-$clr-primary-800: color-mix(in srgb, var(--nexa-primary) 50%, var(--nexa-ink));
-$clr-neutral-100: #DCDDE5FF;
-$clr-neutral-200: #CACBD1FF;
-$clr-neutral-300-alpha-38: #B1B1B161;
-$clr-neutral-300: #AAAAB0FF;
-$clr-neutral-400: #9B9B9EFF;
-$clr-neutral-600: #4C4D5EFF;
-$clr-neutral-700: #393A43FF;
-$clr-neutral-800: #38394CFF;
-$clr-neutral-900-alpha-60: #26273299;
-$clr-neutral-900-alpha-77: #323334C4;
-$clr-neutral-900: #262732FF;
-$clr-surface-0: #FFFFFFFF;
-$clr-surface-50: #FAFAFCFF;
-$clr-surface-100: #F8F8FCFF;
-$clr-surface-200: #F0F0F6FF;
-$clr-surface-300: #EFEFF2FF;
+:root {
+  --nexa-bg: #f8f8fc;
+  --nexa-ink: #262732;
+  --nexa-primary: #3064d5;
+  --nexa-muted: #f0f0f6;
+  --nexa-accent: #b4cffd;
+  --nexa-on-primary: #ffffff;
+}
+
+body {
+  --nexa-dark: var(--nexa-ink);
+  --nexa-on-dark: var(--nexa-bg);
+}
 
 $ff-header: 'Space Grotesk', 'Noto Sans Ethiopic', sans-serif;
 $ff-body: 'DM Mono', 'Noto Sans Ethiopic', monospace;

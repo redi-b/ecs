@@ -1,19 +1,20 @@
+@use '../utils/functions' as *;
 @use "../variables" as *;
 
 .home-product-filters {
   position: relative; z-index: 30; width: 100%; max-width: 1400px; min-height: 46px; padding: 6px; display: flex; align-items: center; gap: 6px;
-  border: 0; border-radius: 4px; background: $clr-surface-200;
+  border: 0; border-radius: 4px; background: var(--nexa-muted);
   > span { display: none; }
   details { position: relative; }
-  summary { min-height: 34px; padding: 0 14px; display: flex; align-items: center; gap: 22px; border-radius: 2px; background: $clr-surface-0; color: $clr-neutral-900; cursor: pointer; list-style: none; font-size: 14px; }
+  summary { min-height: 34px; padding: 0 14px; display: flex; align-items: center; gap: 22px; border-radius: 2px; background: #ffffff; color: var(--nexa-ink); cursor: pointer; list-style: none; font-size: 14px; }
   summary::-webkit-details-marker { display: none; }
   summary svg { width: 8px; transition: transform var(--nexa-motion-fast) var(--nexa-ease-out); }
-  details[open] summary { color: $clr-primary-700; }
+  details[open] summary { color: var(--nexa-primary); }
   details[open] summary svg { transform: rotate(180deg); }
-  details > div { position: absolute; top: calc(100% + 6px); left: 0; width: 220px; padding: 6px; display: grid; border: 1px solid $clr-neutral-100; border-radius: 3px; background: $clr-surface-0; box-shadow: 0 18px 42px rgb(38 39 50 / 14%); }
-  a { min-height: 40px; padding: 0 10px; display: flex; align-items: center; border-radius: 2px; color: $clr-neutral-700; font-size: 13px; text-decoration: none; }
-  a:hover, a:focus-visible { background: $clr-primary-50; color: $clr-primary-800; }
-  &__all { margin-top: 4px; border-top: 1px solid $clr-neutral-100; color: $clr-primary-700 !important; }
+  details > div { position: absolute; top: calc(100% + 6px); left: 0; width: 220px; padding: 6px; display: grid; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: 3px; background: #ffffff; box-shadow: 0 18px 42px rgb(38 39 50 / 14%); }
+  a { min-height: 40px; padding: 0 10px; display: flex; align-items: center; border-radius: 2px; color: alpha(var(--nexa-ink), 0.7); font-size: 13px; text-decoration: none; }
+  a:hover, a:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
+  &__all { margin-top: 4px; border-top: 1px solid alpha(var(--nexa-ink), 0.14); color: var(--nexa-primary) !important; }
 }
 
 @media (max-width: 767px) {

@@ -1,3 +1,4 @@
+@use '../utils/functions' as *;
 .site-header {
   position: absolute;
   top: 0;
@@ -30,7 +31,7 @@
     width: 94px;
     height: 33px;
     padding: 6px 10px;
-    background: $clr-primary-500;
+    background: alpha(var(--nexa-primary), 0.08)0;
     backdrop-filter: blur(12px);
     border-radius: 2px;
     text-decoration: none;
@@ -62,11 +63,11 @@
     width: 168px;
     height: 33px;
     padding: 6px 10px;
-    background: $clr-neutral-300-alpha-38;
+    background: alpha(var(--nexa-ink), 0.38);
     backdrop-filter: blur(17px);
     border: 0;
     border-radius: 2px;
-    color: $clr-surface-50;
+    color: var(--nexa-bg);
     text-decoration: none;
     white-space: nowrap;
     box-sizing: border-box;
@@ -96,10 +97,10 @@
     top: calc(100% + 4px);
     left: 0;
     width: 168px;
-    background: $clr-neutral-900;
-    border: 1px solid $clr-neutral-200;
+    background: var(--nexa-ink);
+    border: 1px solid alpha(var(--nexa-ink), 0.2);
     border-radius: 2px;
-    box-shadow: 0 8px 16px rgba($clr-neutral-900, 0.4);
+    box-shadow: 0 8px 16px alpha(var(--nexa-ink), 0.4);
     z-index: 100;
     overflow: hidden;
     opacity: 0;
@@ -120,16 +121,16 @@
   &__dropdown-item {
     display: block;
     padding: 8px 12px;
-    color: $clr-surface-50;
+    color: var(--nexa-bg);
     text-decoration: none;
     background: transparent;
-    border-bottom: 1px solid $clr-neutral-800;
+    border-bottom: 1px solid alpha(var(--nexa-ink), 0.8);
     transition: color var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out), padding-left var(--nexa-motion-base) var(--nexa-ease-out);
 
     &:hover,
     &:focus-visible {
       padding-left: 16px;
-      background: $clr-neutral-800;
+      background: alpha(var(--nexa-ink), 0.8);
     }
 
     &:last-child {
@@ -151,26 +152,26 @@
     width: 209px;
     height: 33px;
     padding: 6px 10px;
-    background: $clr-neutral-900-alpha-77;
+    background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(12px);
     border-radius: 2px;
-    color: $clr-neutral-400;
+    color: alpha(var(--nexa-ink), 0.4);
     box-sizing: border-box;
     transition: background-color var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-fast) var(--nexa-ease-out), color var(--nexa-motion-fast) var(--nexa-ease-out);
 
     &:focus-within {
-      background: $clr-surface-50;
-      color: $clr-neutral-900;
-      box-shadow: inset 0 0 0 1px $clr-primary-500, 0 0 0 2px color-mix(in srgb, $clr-primary-500 18%, transparent);
+      background: var(--nexa-bg);
+      color: var(--nexa-ink);
+      box-shadow: inset 0 0 0 1px alpha(var(--nexa-primary), 0.08)0, 0 0 0 2px alpha(var(--nexa-primary), 0.18);
 
-      svg { color: $clr-neutral-900; }
-      .site-header__search-input { color: $clr-neutral-900; }
-      .site-header__search-input::placeholder { color: $clr-neutral-600; }
+      svg { color: var(--nexa-ink); }
+      .site-header__search-input { color: var(--nexa-ink); }
+      .site-header__search-input::placeholder { color: alpha(var(--nexa-ink), 0.6); }
     }
 
     svg {
       flex-shrink: 0;
-      color: $clr-neutral-400;
+      color: alpha(var(--nexa-ink), 0.4);
     }
   }
 
@@ -182,11 +183,11 @@
     width: min(390px, calc(100vw - 32px));
     padding: 4px;
     overflow: hidden;
-    border: 1px solid $clr-neutral-700;
+    border: 1px solid alpha(var(--nexa-ink), 0.7);
     border-radius: 2px;
-    background: $clr-surface-50;
-    box-shadow: 10px 12px 0 color-mix(in srgb, $clr-primary-500 18%, transparent);
-    color: $clr-neutral-900;
+    background: var(--nexa-bg);
+    box-shadow: 10px 12px 0 alpha(var(--nexa-primary), 0.18);
+    color: var(--nexa-ink);
 
     &[hidden] { display: none; }
   }
@@ -198,11 +199,11 @@
     gap: 10px;
     min-height: 60px;
     padding: 5px;
-    color: $clr-neutral-900;
+    color: var(--nexa-ink);
     text-decoration: none;
 
     &:hover,
-    &[data-active] { background: color-mix(in srgb, $clr-primary-500 12%, $clr-surface-50); }
+    &[data-active] { background: alpha(var(--nexa-primary), 0.12); }
 
     b { font-size: 11px; white-space: nowrap; }
   }
@@ -211,8 +212,8 @@
     width: 52px;
     height: 52px;
     overflow: hidden;
-    border: 1px solid $clr-neutral-200;
-    background: $clr-surface-100;
+    border: 1px solid alpha(var(--nexa-ink), 0.2);
+    background: var(--nexa-bg);
 
     img { width: 100%; height: 100%; object-fit: cover; }
   }
@@ -224,15 +225,15 @@
 
     strong, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     strong { font-size: 13px; font-weight: 500; }
-    small { color: $clr-neutral-600; font-size: 10px; text-transform: uppercase; }
+    small { color: alpha(var(--nexa-ink), 0.6); font-size: 10px; text-transform: uppercase; }
   }
 
   .product-search-suggestions__all {
     display: block;
     margin-top: 4px;
     padding: 10px;
-    border-top: 1px solid $clr-neutral-200;
-    color: $clr-primary-700;
+    border-top: 1px solid alpha(var(--nexa-ink), 0.2);
+    color: var(--nexa-primary);
     font-size: 11px;
     text-decoration: none;
     text-transform: uppercase;
@@ -244,14 +245,14 @@
     background: transparent;
     border: 0;
     outline: none;
-    color: $clr-surface-50;
+    color: var(--nexa-bg);
     padding: 0;
 
     &:focus,
     &:focus-visible { outline: 0 !important; box-shadow: none !important; }
 
     &::placeholder {
-      color: $clr-neutral-400;
+      color: alpha(var(--nexa-ink), 0.4);
     }
   }
 
@@ -262,11 +263,11 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: $clr-neutral-300-alpha-38;
+    background: alpha(var(--nexa-ink), 0.38);
     backdrop-filter: blur(12px);
     border: 0;
     border-radius: 2px;
-    color: $clr-surface-50;
+    color: var(--nexa-bg);
     text-decoration: none;
     flex-shrink: 0;
     cursor: pointer;
@@ -284,8 +285,8 @@
       height: 16px;
       padding-inline: 3px;
       border-radius: 999px;
-      background: $clr-primary-500;
-      color: $clr-surface-0;
+      background: alpha(var(--nexa-primary), 0.08)0;
+      color: #ffffff;
       font-size: 9px;
       line-height: 1;
       box-sizing: border-box;
@@ -304,47 +305,47 @@
 
   &--light {
     .site-header__link {
-      background: $clr-surface-300;
+      background: var(--nexa-muted);
       backdrop-filter: blur(17px);
-      color: $clr-neutral-600;
+      color: alpha(var(--nexa-ink), 0.6);
 
     }
 
     .site-header__search {
-      background: $clr-surface-300;
-      border: 1px solid $clr-neutral-300-alpha-38;
-      color: $clr-neutral-300;
+      background: var(--nexa-muted);
+      border: 1px solid alpha(var(--nexa-ink), 0.38);
+      color: alpha(var(--nexa-ink), 0.3);
 
       svg {
-        color: $clr-neutral-300;
+        color: alpha(var(--nexa-ink), 0.3);
       }
     }
 
     .site-header__search-input {
-      color: $clr-neutral-900;
+      color: var(--nexa-ink);
 
       &::placeholder {
-        color: $clr-neutral-300;
+        color: alpha(var(--nexa-ink), 0.3);
       }
     }
 
     .site-header__icon {
-      background: $clr-surface-300;
+      background: var(--nexa-muted);
       backdrop-filter: blur(12px);
-      color: $clr-neutral-600;
+      color: alpha(var(--nexa-ink), 0.6);
 
     }
 
     .site-header__dropdown {
-      background: $clr-surface-0;
-      border: 1px solid $clr-neutral-200;
+      background: #ffffff;
+      border: 1px solid alpha(var(--nexa-ink), 0.2);
 
       .site-header__dropdown-item {
-        color: $clr-neutral-900;
-        border-bottom-color: $clr-surface-200;
+        color: var(--nexa-ink);
+        border-bottom-color: var(--nexa-muted);
 
         &:hover,
-        &:focus-visible { background: $clr-primary-50; color: $clr-primary-800; }
+        &:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
       }
     }
   }
@@ -353,16 +354,16 @@
 @media (max-width: 1100px) {
   .site-header {
     &--light { position: relative; padding-bottom: 10px; }
-    &__toggle { display: grid; place-content: center; gap: 5px; width: 40px; height: 40px; border: 0; background: $clr-neutral-900; }
-    &__toggle span { display: block; width: 20px; height: 1px; background: $clr-surface-0; }
-    &__nav { position: fixed; top: 70px; left: 1rem; right: 1rem; z-index: 53; display: grid; align-content: start; gap: 4px; max-height: calc(100dvh - 86px); overflow-y: auto; padding: 8px; background: $clr-neutral-900; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px) scale(.985); transform-origin: top; transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out); }
+    &__toggle { display: grid; place-content: center; gap: 5px; width: 40px; height: 40px; border: 0; background: var(--nexa-ink); }
+    &__toggle span { display: block; width: 20px; height: 1px; background: #ffffff; }
+    &__nav { position: fixed; top: 70px; left: 1rem; right: 1rem; z-index: 53; display: grid; align-content: start; gap: 4px; max-height: calc(100dvh - 86px); overflow-y: auto; padding: 8px; background: var(--nexa-ink); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px) scale(.985); transform-origin: top; transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out); }
     &__nav.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); transition-delay: 0s; }
     &__nav.is-closing { pointer-events: none; animation: nexa-nav-close var(--nexa-motion-base) var(--nexa-ease-out) both; }
     &__link, &__nav-item { width: 100%; }
     &__dropdown { position: static; width: 100%; max-height: 0; margin-top: 0; border-width: 0; overflow: hidden; transform: none; transition: max-height var(--nexa-motion-slow) var(--nexa-ease-out), opacity var(--nexa-motion-base) var(--nexa-ease-out), margin var(--nexa-motion-base) var(--nexa-ease-out); }
     &__dropdown.is-open { max-height: min(44vh, 22rem); margin-top: 4px; border-width: 1px; overflow-y: auto; }
     &__right .btn { display: none; }
-    &__backdrop { position: fixed; inset: 0; z-index: 49; display: block; border: 0; background: rgba($clr-neutral-900, .42); opacity: 0; visibility: hidden; pointer-events: none; backdrop-filter: blur(3px); transition: opacity var(--nexa-motion-base) var(--nexa-ease-out); }
+    &__backdrop { position: fixed; inset: 0; z-index: 49; display: block; border: 0; background: alpha(var(--nexa-ink), .42); opacity: 0; visibility: hidden; pointer-events: none; backdrop-filter: blur(3px); transition: opacity var(--nexa-motion-base) var(--nexa-ease-out); }
     &__backdrop.is-visible { opacity: 1; visibility: visible; pointer-events: auto; }
     &__backdrop.is-closing { pointer-events: none; animation: nexa-backdrop-close var(--nexa-motion-base) var(--nexa-ease-out) both; }
     &.is-closing &__search { pointer-events: none; animation: nexa-search-close var(--nexa-motion-base) var(--nexa-ease-out) both; }

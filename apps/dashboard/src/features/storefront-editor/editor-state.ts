@@ -1,6 +1,7 @@
 import type { StorefrontLanguageSettings, StorefrontLocalizedContent } from "@ecs/contracts";
 import {
   deriveLuviaPalette,
+  deriveNexahubPalette,
   generateThemeFromPrimary,
   getStorefrontEditorManifest,
   getStorefrontTemplateDefinition,
@@ -454,7 +455,9 @@ export function themePalettePageProps(
   const generated =
     templateKey === "luvia@1"
       ? deriveLuviaPalette(primary)
-      : generateThemeFromPrimary(primary, mode, seed);
+      : templateKey === "nexahub@1"
+        ? deriveNexahubPalette(primary)
+        : generateThemeFromPrimary(primary, mode, seed);
   return {
     surfaceMode: mode,
     autoPalette: true,

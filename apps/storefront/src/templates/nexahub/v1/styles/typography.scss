@@ -13,7 +13,7 @@
 
 body.nexa-body {
   @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-body, none);
-  color: $clr-neutral-900;
+  color: var(--nexa-ink);
 
   .type-heading-1 {
     @include type-token($ff-header, $fw-medium, $fs-heading-1, $lh-heading-1, $ls-heading-1, uppercase);

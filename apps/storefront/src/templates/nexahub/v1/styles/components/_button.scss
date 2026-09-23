@@ -1,3 +1,4 @@
+@use '../utils/functions' as *;
 .btn {
   display: inline-flex;
   align-items: center;
@@ -75,43 +76,43 @@
   }
 
   &--primary {
-    background: $clr-primary-500;
-    color: $clr-surface-0;
+    background: alpha(var(--nexa-primary), 0.08)0;
+    color: #ffffff;
 
     .btn__icon {
-      background: $clr-surface-0;
-      color: $clr-primary-500;
+      background: #ffffff;
+      color: alpha(var(--nexa-primary), 0.08)0;
     }
   }
 
   &--dark {
-    background: $clr-neutral-900-alpha-77;
+    background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(12px);
-    color: $clr-surface-0;
+    color: #ffffff;
 
     .btn__icon {
-      background: rgba($clr-surface-0, 0.18);
-      color: $clr-surface-0;
+      background: rgba(#ffffff, 0.18);
+      color: #ffffff;
     }
   }
 
   &--secondary {
-    background: $clr-primary-300;
-    color: $clr-neutral-900;
+    background: var(--nexa-accent);
+    color: var(--nexa-ink);
 
     .btn__icon {
-      background: $clr-neutral-700;
-      color: $clr-surface-0;
+      background: alpha(var(--nexa-ink), 0.7);
+      color: #ffffff;
     }
   }
 
   &--neutral {
-    background: $clr-surface-0;
-    color: $clr-neutral-900;
+    background: #ffffff;
+    color: var(--nexa-ink);
 
     .btn__icon {
-      background: $clr-neutral-900;
-      color: $clr-surface-0;
+      background: var(--nexa-ink);
+      color: #ffffff;
     }
   }
 

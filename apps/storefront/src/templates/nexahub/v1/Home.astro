@@ -390,7 +390,7 @@ const hasCatalogError = "message" in productsResult;
   :global(.nexa-skip) { position: fixed; z-index: 9999; top: .5rem; left: .5rem; transform: translateY(-200%); background: var(--nexa-ink); color: var(--nexa-bg); padding: .75rem 1rem; }
   :global(.nexa-skip:focus) { transform: none; }
   :global(.nexa-sr-only) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  :global(.nexa-state), :global(.nexa-editor-state) { padding: 2rem; border: 1px solid color-mix(in srgb, var(--nexa-ink) 18%, transparent); }
+  :global(.nexa-state), :global(.nexa-editor-state) { padding: 2rem; border: 1px solid rgb(from var(--nexa-ink) r g b / 0.18); }
   :global(.nexa-image-empty) { display: grid; min-height: 15rem; place-items: center; }
   @media (prefers-reduced-motion: reduce) { :global(*) { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 </style>

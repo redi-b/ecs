@@ -34,3 +34,7 @@
 @function responsiveclamp($min-value, $max-value, $min-width: 375px, $max-width: 1440px, $pixels-per-rem: 16) {
   @return fluid($min-value, $max-value, $min-width, $max-width, $pixels-per-rem);
 }
+
+@function alpha($color, $opacity) {
+  @return rgb(from #{$color} r g b / #{$opacity});
+}
