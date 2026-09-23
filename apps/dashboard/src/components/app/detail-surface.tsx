@@ -186,12 +186,7 @@ export function DetailActivityList({
   const scrollable = items.length > 8;
 
   return (
-    <ol
-      className={cn(
-        "space-y-0",
-        scrollable && "max-h-[min(22rem,45vh)] overflow-y-auto pr-1",
-      )}
-    >
+    <ol className={cn("space-y-0", scrollable && "max-h-[min(22rem,45vh)] overflow-y-auto pr-1")}>
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         return (
@@ -271,7 +266,10 @@ export function DetailStepTrack({
   }, [currentStepId]);
 
   return (
-    <ol className="flex w-full items-start">
+    <ol
+      className="grid w-full items-start"
+      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+    >
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
         const complete = step.done && !step.current && !step.muted;
@@ -280,14 +278,8 @@ export function DetailStepTrack({
         const segmentFilled = index < fillThrough;
 
         return (
-          <li
-            className={cn(
-              "flex min-w-0 flex-col",
-              isLast ? "w-6 shrink-0 items-end sm:w-7" : "flex-1",
-            )}
-            key={step.id}
-          >
-            <div className="flex w-full items-center">
+          <li className="relative flex min-w-0 flex-col items-center text-center" key={step.id}>
+            <div className="relative flex w-full justify-center">
               <span
                 aria-hidden
                 key={current && pulseKey > 0 ? `${step.id}-${pulseKey}` : step.id}
@@ -306,6 +298,7 @@ export function DetailStepTrack({
               >
                 {complete ? (
                   <svg
+                    aria-hidden="true"
                     className="size-3 sm:size-3.5"
                     fill="none"
                     stroke="currentColor"
@@ -323,7 +316,7 @@ export function DetailStepTrack({
               {!isLast ? (
                 <span
                   aria-hidden
-                  className="relative mx-1.5 h-0.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border sm:mx-2"
+                  className="absolute left-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-border"
                 >
                   <span
                     className={cn(
@@ -336,12 +329,11 @@ export function DetailStepTrack({
             </div>
             <span
               className={cn(
-                "mt-1.5 max-w-[4.75rem] text-[11px] font-medium leading-snug transition-colors duration-300 motion-reduce:transition-none sm:mt-2 sm:max-w-none sm:text-xs",
+                "mt-1.5 max-w-[7rem] text-center text-[11px] font-medium leading-snug transition-colors duration-300 motion-reduce:transition-none sm:mt-2 sm:max-w-none sm:text-xs",
                 step.muted && "text-muted-foreground",
                 current && "text-foreground",
                 complete && "text-primary",
                 !complete && !current && !step.muted && "text-muted-foreground",
-                isLast && "text-right",
               )}
             >
               {step.label}
