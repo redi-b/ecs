@@ -1,18 +1,20 @@
+@use "../variables" as *;
+
 .quantity-selector {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--nexa-muted);
-  border-radius: 4px;
+  border-radius: $radius-100;
   box-sizing: border-box;
 
   &__control {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
+    background: var(--nexa-surface);
     border: 0;
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: var(--nexa-ink);
     cursor: pointer;
     transition: background-color 0.2s ease, opacity 0.2s ease;
@@ -37,8 +39,8 @@
 
   &--large {
     width: 131px;
-    padding: 9px 8px;
-    gap: 8px;
+    padding: $space-225 $space-200;
+    gap: $space-200;
 
     .quantity-selector__control {
       width: 38px;
@@ -52,8 +54,8 @@
   }
 
   &--small {
-    padding: 4px;
-    gap: 6px;
+    padding: $space-100;
+    gap: $space-150;
 
     .quantity-selector__control {
       width: 24px;

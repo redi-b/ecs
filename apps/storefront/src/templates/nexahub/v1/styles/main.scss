@@ -2,6 +2,7 @@
 @use "reset";
 @use "typography";
 
+@use "./variables" as *;
 .nexa-demo {
   position: sticky;
   z-index: 90;
@@ -104,7 +105,7 @@ button[data-busy="true"] {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: $space-200;
   pointer-events: none;
   cursor: wait;
 }
@@ -116,7 +117,7 @@ button[data-busy="true"]::before {
   flex: 0 0 12px;
   border: 1.5px solid currentColor;
   border-right-color: transparent;
-  border-radius: 50%;
+  border-radius: $radius-full;
   animation: nexa-spin 700ms linear infinite;
 }
 

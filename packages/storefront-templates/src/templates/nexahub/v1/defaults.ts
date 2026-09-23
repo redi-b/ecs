@@ -5,7 +5,6 @@ export const nexahubV1Defaults: NexahubV1Data = {
     navigation: [
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },
-      { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
     ],
   },
@@ -77,7 +76,6 @@ export const nexahubV1Defaults: NexahubV1Data = {
     quickLinks: [
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },
-      { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
     ],
     socialLinks: [

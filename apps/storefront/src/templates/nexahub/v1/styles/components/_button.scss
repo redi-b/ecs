@@ -1,11 +1,13 @@
 @use '../utils/functions' as *;
+@use "../variables" as *;
+
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: fit-content;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: $radius-50;
   text-decoration: none;
   cursor: pointer;
   box-sizing: border-box;
@@ -24,7 +26,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 2px;
+    border-radius: $radius-50;
     flex-shrink: 0;
     transition: transform 0.2s ease;
 
@@ -37,11 +39,11 @@
 
   &--large {
     min-height: 57px;
-    padding: 6px 26px;
-    gap: 16px;
+    padding: $space-150 $space-650;
+    gap: $space-400;
 
     &.btn--with-icon {
-      padding: 6px 6px 6px 26px;
+      padding: $space-150 $space-150 $space-150 $space-650;
     }
 
     .btn__icon {
@@ -57,11 +59,11 @@
 
   &--small {
     min-height: 32px;
-    padding: 6px 14px;
-    gap: 10px;
+    padding: $space-150 $space-350;
+    gap: $space-250;
 
     &.btn--with-icon {
-      padding: 6px 4px 6px 14px;
+      padding: $space-150 $space-100 $space-150 $space-350;
     }
 
     .btn__icon {
@@ -76,23 +78,23 @@
   }
 
   &--primary {
-    background: alpha(var(--nexa-primary), 0.08)0;
-    color: #ffffff;
+    background: var(--nexa-primary);
+    color: var(--nexa-on-primary);
 
     .btn__icon {
-      background: #ffffff;
-      color: alpha(var(--nexa-primary), 0.08)0;
+      background: var(--nexa-on-primary);
+      color: var(--nexa-primary);
     }
   }
 
   &--dark {
     background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(12px);
-    color: #ffffff;
+    color: var(--nexa-on-primary);
 
     .btn__icon {
-      background: rgba(#ffffff, 0.18);
-      color: #ffffff;
+      background: alpha(var(--nexa-on-primary), 0.18);
+      color: var(--nexa-on-primary);
     }
   }
 
@@ -102,17 +104,17 @@
 
     .btn__icon {
       background: alpha(var(--nexa-ink), 0.7);
-      color: #ffffff;
+      color: var(--nexa-on-primary);
     }
   }
 
   &--neutral {
-    background: #ffffff;
+    background: var(--nexa-surface);
     color: var(--nexa-ink);
 
     .btn__icon {
       background: var(--nexa-ink);
-      color: #ffffff;
+      color: var(--nexa-on-primary);
     }
   }
 
@@ -130,7 +132,7 @@
       }
 
       &.btn--small {
-        padding-inline: 34px;
+        padding-inline: $space-775;
 
         .btn__icon {
           inset-inline-end: 4px;

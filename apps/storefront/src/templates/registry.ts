@@ -15,7 +15,6 @@ import NexahubV1Cart from "./nexahub/v1/pages/Cart.astro";
 import NexahubV1Checkout from "./nexahub/v1/pages/Checkout.astro";
 import NexahubV1OrderConfirm from "./nexahub/v1/pages/OrderConfirm.astro";
 import NexahubV1PaymentReturn from "./nexahub/v1/pages/PaymentReturn.astro";
-import NexahubV1About from "./nexahub/v1/pages/About.astro";
 import NexahubV1Contact from "./nexahub/v1/pages/Contact.astro";
 import NexahubV1RequestItem from "./nexahub/v1/pages/RequestItem.astro";
 import NexahubV1Wishlist from "./nexahub/v1/pages/Wishlist.astro";
@@ -70,7 +69,6 @@ export const storefrontRenderers = {
     Checkout: NexahubV1Checkout,
     PaymentReturn: NexahubV1PaymentReturn,
     OrderConfirm: NexahubV1OrderConfirm,
-    About: NexahubV1About,
     Contact: NexahubV1Contact,
     RequestItem: NexahubV1RequestItem,
     Wishlist: NexahubV1Wishlist,

@@ -5,50 +5,50 @@
 .product-filter-panel {
   position: sticky; top: 20px; width: 274px; height: min(720px, calc(100dvh - 40px)); min-height: 420px; flex: 0 0 274px; align-self: start;
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden;
-  border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: 6px; background: #ffffff; color: var(--nexa-ink);
+  border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: $radius-150; background: var(--nexa-surface); color: var(--nexa-ink);
   box-shadow: 0 18px 44px alpha(var(--nexa-ink), 0.07);
-  header { min-height: 66px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid alpha(var(--nexa-ink), 0.14); }
-  h2 { margin: 0; font: 600 18px/1.2 $ff-header; letter-spacing: -.025em; }
-  header > div { display: flex; align-items: center; gap: 8px; }
-  header a { min-height: 32px; padding: 0 10px; display: inline-flex; align-items: center; border: 1px solid alpha(var(--nexa-primary), 0.22); border-radius: 2px; background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); font-size: 12px; text-decoration: none; }
+  header { min-height: 66px; padding: 0 $space-450; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid alpha(var(--nexa-ink), 0.14); }
+  h2 { margin: 0; font-family: $ff-header; font-size: $fs-body-l; font-weight: $fw-bold; line-height: 1.2; letter-spacing: -.025em; }
+  header > div { display: flex; align-items: center; gap: $space-200; }
+  header a { min-height: 32px; padding: 0 $space-250; display: inline-flex; align-items: center; border: 1px solid alpha(var(--nexa-primary), 0.22); border-radius: $radius-50; background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); font-size: $fs-body-xs-400; text-decoration: none; }
   header button { display: none; }
   &__scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: alpha(var(--nexa-ink), 0.2) transparent; }
   .product-filter-group { border-bottom: 1px solid alpha(var(--nexa-ink), 0.14); }
-  .product-filter-group summary { min-height: 54px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; list-style: none; font-size: 13px; font-weight: 700; }
+  .product-filter-group summary { min-height: 54px; padding: 0 $space-450; display: flex; align-items: center; justify-content: space-between; gap: $space-400; cursor: pointer; list-style: none; font-size: $fs-body-s-400; font-weight: $fw-bold; }
   .product-filter-group summary::-webkit-details-marker { display: none; }
   .product-filter-group > fieldset { overflow: hidden; }
   .product-filter-group summary svg { width: 9px; flex: none; transition: transform var(--nexa-motion-fast) var(--nexa-ease-out); }
   .product-filter-group[open] summary svg { transform: rotate(180deg); }
   .product-filter-group[open] summary { color: var(--nexa-primary); }
-  fieldset { margin: 0; padding: 0 18px 16px; display: grid; gap: 2px; border: 0; }
-  label { min-height: 39px; padding: 0 8px; display: flex; align-items: center; gap: 10px; border-radius: 3px; cursor: pointer; color: alpha(var(--nexa-ink), 0.7); font-size: 13px; }
+  fieldset { margin: 0; padding: 0 $space-450 $space-400; display: grid; gap: $space-50; border: 0; }
+  label { min-height: 39px; padding: 0 $space-200; display: flex; align-items: center; gap: $space-250; border-radius: $radius-75; cursor: pointer; color: alpha(var(--nexa-ink), 0.7); font-size: $fs-body-s-400; }
   label:hover, label:has(input:checked) { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
-  label small { margin-left: auto; color: alpha(var(--nexa-ink), 0.6); font: inherit; font-size: 11px; }
-  input[type="radio"], input[type="checkbox"] { width: 17px; height: 17px; margin: 0; flex: none; accent-color: alpha(var(--nexa-primary), 0.08)0; }
-  input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid alpha(var(--nexa-primary), 0.08)0; outline-offset: 2px; }
-  &__price p { margin: 0 0 10px; color: alpha(var(--nexa-ink), 0.6); font-size: 11px; }
-  &__price > div { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-  &__price label { min-width: 0; height: auto; padding: 0; display: grid; gap: 6px; background: transparent !important; }
-  &__price label > span { color: alpha(var(--nexa-ink), 0.6); font-size: 11px; }
-  &__price input { width: 100%; min-width: 0; height: 42px; padding: 0 10px; border: 1px solid alpha(var(--nexa-ink), 0.2); border-radius: 3px; background: var(--nexa-bg); color: var(--nexa-ink); box-sizing: border-box; }
-  &__price input:focus { border-color: alpha(var(--nexa-primary), 0.08)0; }
-  &__actions { position: relative; z-index: 3; padding: 14px 16px; display: grid; border-top: 1px solid alpha(var(--nexa-ink), 0.14); background: #ffffff; box-shadow: 0 -12px 24px alpha(var(--nexa-ink), 0.04); }
-  &__actions button, &__actions a { min-height: 44px; padding: 0 14px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font: 600 13px/1 inherit; text-decoration: none; cursor: pointer; }
-  &__actions button { border: 1px solid alpha(var(--nexa-primary), 0.08)0; background: alpha(var(--nexa-primary), 0.08)0; color: #ffffff; }
+  label small { margin-left: auto; color: alpha(var(--nexa-ink), 0.6); font: inherit; font-size: $fs-body-xs-400; }
+  input[type="radio"], input[type="checkbox"] { width: 17px; height: 17px; margin: 0; flex: none; accent-color: var(--nexa-primary); }
+  input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--nexa-primary); outline-offset: 2px; }
+  &__price p { margin: 0 0 $space-250; color: alpha(var(--nexa-ink), 0.6); font-size: $fs-body-xs-400; }
+  &__price > div { display: grid; grid-template-columns: 1fr 1fr; gap: $space-225; }
+  &__price label { min-width: 0; height: auto; padding: 0; display: grid; gap: $space-150; background: transparent !important; }
+  &__price label > span { color: alpha(var(--nexa-ink), 0.6); font-size: $fs-body-xs-400; }
+  &__price input { width: 100%; min-width: 0; height: 42px; padding: 0 $space-250; border: 1px solid alpha(var(--nexa-ink), 0.2); border-radius: $radius-75; background: var(--nexa-bg); color: var(--nexa-ink); box-sizing: border-box; }
+  &__price input:focus { border-color: var(--nexa-primary); }
+  &__actions { position: relative; z-index: 3; padding: $space-350 $space-400; display: grid; border-top: 1px solid alpha(var(--nexa-ink), 0.14); background: var(--nexa-surface); box-shadow: 0 -12px 24px alpha(var(--nexa-ink), 0.04); }
+  &__actions button, &__actions a { min-height: 44px; padding: 0 $space-350; display: flex; align-items: center; justify-content: center; border-radius: $radius-75; font-size: $fs-body-s-400; font-weight: $fw-bold; line-height: 1; text-decoration: none; cursor: pointer; }
+  &__actions button { border: 1px solid var(--nexa-primary); background: var(--nexa-primary); color: var(--nexa-on-primary); }
   &__actions button:hover { background: var(--nexa-primary); }
 }
 
 @media (max-width: 767px) {
-  .product-filter-trigger { width: 100%; min-height: 48px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: 3px; background: #ffffff; color: var(--nexa-ink); }
+  .product-filter-trigger { width: 100%; min-height: 48px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: $radius-75; background: var(--nexa-surface); color: var(--nexa-ink); }
   .product-filter-trigger svg { transition: transform var(--nexa-motion-base) var(--nexa-ease-out); }
   .product-filter-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
   .product-filter-backdrop { position: fixed; inset: 0; z-index: 399; width: 100%; border: 0; background: alpha(var(--nexa-ink), 0.48); opacity: 0; pointer-events: none; backdrop-filter: blur(3px); transition: opacity var(--nexa-motion-base) var(--nexa-ease-out); }
-  .product-filter-panel { position: fixed; z-index: 400; inset: auto 0 0 auto; top: auto; width: min(94vw, 410px); height: min(88dvh, 780px); min-height: 0; border-radius: 8px 0 0 0; transform: translateX(100%); visibility: hidden; transition: transform var(--nexa-motion-base) var(--nexa-ease-out), visibility var(--nexa-motion-base); }
+  .product-filter-panel { position: fixed; z-index: 400; inset: auto 0 0 auto; top: auto; width: min(94vw, 410px); height: min(88dvh, 780px); min-height: 0; border-radius: $radius-200 0 0 0; transform: translateX(100%); visibility: hidden; transition: transform var(--nexa-motion-base) var(--nexa-ease-out), visibility var(--nexa-motion-base); }
   .product-filter-panel[data-open] { transform: translateX(0); visibility: visible; }
   .product-filter-panel header { min-height: 64px; }
   .product-filter-panel header button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--nexa-ink); }
   .product-filter-panel header button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: square; }
-  .product-filter-panel__actions { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .product-filter-panel__actions { padding-bottom: max($space-350, env(safe-area-inset-bottom)); }
   html[data-catalog-filter-open] { overflow: hidden; }
   html[data-catalog-filter-open] .product-filter-backdrop { display: block; opacity: 1; pointer-events: auto; }
 }

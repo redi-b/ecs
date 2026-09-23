@@ -1,4 +1,6 @@
 @use '../utils/functions' as *;
+@use "../variables" as *;
+
 // ==========================================
 // Product Details Page Styles
 // ==========================================
@@ -39,7 +41,7 @@
 
 // 1. Breadcrumb Bar
 .product-breadcrumb {
-  padding-top: 100px;
+  padding-top: $space-1075;
   width: 100%;
 
   &__wrapper {
@@ -47,18 +49,18 @@
     margin-inline: auto;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: $space-150;
   }
 
   a,
   span {
     font-family: $ff-body;
-    font-size: 14px;
+    font-size: $fs-body-s-500;
     font-weight: $fw-medium;
     color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
     text-decoration: none;
-    letter-spacing: -2%;
+    letter-spacing: $ls-body-s-500;
   }
 
   a:hover {
@@ -68,13 +70,13 @@
   &__divider {
     color: alpha(var(--nexa-ink), 0.8);
     font-family: $ff-body;
-    font-size: 14px;
+    font-size: $fs-body-s-500;
   }
 }
 
 // 2. Product Main Section
 .product-main {
-  margin-block: 24px 64px;
+  margin-block: $space-600 $space-900;
   width: 100%;
 
   &__wrapper {
@@ -82,7 +84,7 @@
     margin-inline: auto;
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: $space-500;
     align-items: flex-start;
 
     @media (max-width: 1200px) {
@@ -96,7 +98,7 @@
 .product-gallery {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: $space-250;
   width: 576px;
   max-width: 100%;
   flex-shrink: 0;
@@ -112,7 +114,7 @@
     height: 513px;
     background: var(--nexa-bg);
     border: 1px solid alpha(var(--nexa-ink), 0.3);
-    border-radius: 4px;
+    border-radius: $radius-100;
     overflow: hidden;
   }
 
@@ -125,9 +127,9 @@
     justify-content: center;
     width: 37px;
     height: 37px;
-    background: #ffffff;
+    background: var(--nexa-surface);
     border: 0;
-    border-radius: 1px;
+    border-radius: $radius-25;
     box-shadow: 0 4px 14px alpha(var(--nexa-ink), 0.18);
     color: var(--nexa-ink);
     cursor: pointer;
@@ -135,7 +137,7 @@
     transition: color 0.2s ease, transform 0.2s ease;
 
     &:hover {
-      color: alpha(var(--nexa-primary), 0.08)0;
+      color: var(--nexa-primary);
       transform: scale(1.05);
     }
   }
@@ -175,7 +177,7 @@
       height: 65px;
       background: var(--nexa-bg);
       border: 1px solid alpha(var(--nexa-ink), 0.3);
-      border-radius: 2px;
+      border-radius: $radius-50;
       cursor: pointer;
       overflow: hidden;
       box-sizing: border-box;
@@ -194,7 +196,7 @@
       }
 
       &.swiper-slide-thumb-active {
-        border: 1.5px solid alpha(var(--nexa-primary), 0.08)0;
+        border: 1.5px solid var(--nexa-primary);
       }
     }
   }
@@ -205,9 +207,9 @@
   width: 653px;
   max-width: 100%;
   height: auto;
-  background: #ffffff;
+  background: var(--nexa-surface);
   border: 1px solid alpha(var(--nexa-ink), 0.3);
-  border-radius: 4px;
+  border-radius: $radius-100;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -219,7 +221,7 @@
     height: 84px;
     background: var(--nexa-bg);
     border-bottom: 1px solid alpha(var(--nexa-ink), 0.3);
-    padding: 16px 18px;
+    padding: $space-400 $space-450;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -229,26 +231,26 @@
   &__header-left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__price {
     font-family: $ff-body;
-    font-size: 24px;
+    font-size: $fs-heading-6;
     font-weight: $fw-medium;
     color: alpha(var(--nexa-ink), 0.8);
-    letter-spacing: -5%;
+    letter-spacing: $ls-heading-6;
     line-height: 1;
   }
 
   &__stock-badge {
-    padding: 2px 6px;
+    padding: $space-50 $space-150;
     background: alpha(var(--nexa-primary), 0.14);
     color: var(--nexa-primary);
     font-family: $ff-body;
-    font-size: 11px;
+    font-size: $fs-body-xs-500;
     font-weight: $fw-medium;
-    border-radius: 2px;
+    border-radius: $radius-50;
     text-transform: uppercase;
     width: fit-content;
   }
@@ -259,13 +261,13 @@
   }
 
   &__discount {
-    padding: 4px 8px;
+    padding: $space-100 $space-200;
     background: alpha(var(--nexa-primary), 0.14);
     color: var(--nexa-primary);
     font-family: $ff-body;
-    font-size: 12px;
+    font-size: $fs-body-xs-500;
     font-weight: $fw-medium;
-    border-radius: 2px;
+    border-radius: $radius-50;
     text-transform: uppercase;
   }
 
@@ -277,20 +279,20 @@
   }
 
   &__desc-box {
-    padding: 16px 18px;
+    padding: $space-400 $space-450;
     border-bottom: 1px solid alpha(var(--nexa-ink), 0.3);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: $space-200;
   }
 
   &__title {
     margin: 0;
     font-family: $ff-header;
-    font-size: 32px;
+    font-size: $fs-heading-4;
     font-weight: $fw-medium;
     color: var(--nexa-ink);
-    letter-spacing: -6%;
+    letter-spacing: $ls-heading-4;
     line-height: 1;
   }
 
@@ -298,18 +300,18 @@
     margin: 0;
     color: var(--nexa-ink);
     font-family: $ff-body;
-    font-size: 14px;
+    font-size: $fs-body-s-400;
     line-height: 1.5;
-    letter-spacing: -2%;
+    letter-spacing: $ls-body-s-400;
     text-transform: uppercase;
     opacity: 0.8;
 
     > * { margin: 0; }
-    > * + * { margin-top: 10px; }
-    :is(ul, ol) { padding-left: 20px; }
+    > * + * { margin-top: $space-250; }
+    :is(ul, ol) { padding-left: $space-500; }
     ul { list-style: disc; }
     ol { list-style: decimal; }
-    blockquote { padding-left: 12px; border-left: 2px solid var(--nexa-primary); }
+    blockquote { padding-left: $space-300; border-left: 2px solid var(--nexa-primary); }
     a { color: var(--nexa-primary); text-underline-offset: 3px; }
   }
 
@@ -323,19 +325,19 @@
   &__desc-toggle {
     align-self: flex-start;
     min-height: 32px;
-    padding: 4px 0;
+    padding: $space-100 0;
     border: 0;
     background: transparent;
     color: var(--nexa-primary);
     font-family: $ff-body;
-    font-size: 13px;
+    font-size: $fs-body-s-500;
     font-weight: $fw-medium;
     text-decoration: underline;
     text-underline-offset: 3px;
     cursor: pointer;
     transition: color var(--nexa-motion-fast) var(--nexa-ease-out);
 
-    &:hover { color: alpha(var(--nexa-primary), 0.08)0; }
+    &:hover { color: var(--nexa-primary); }
     &[hidden] { display: none; }
   }
 
@@ -350,25 +352,25 @@
   }
 
   &__configs-box {
-    padding: 16px 18px;
+    padding: $space-400 $space-450;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__config-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: $space-200;
   }
 
   &__config-label {
     font-family: $ff-body;
-    font-size: 14px;
+    font-size: $fs-body-s-500;
     font-weight: $fw-medium;
     color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
-    letter-spacing: -2%;
+    letter-spacing: $ls-body-s-500;
     opacity: 0.6;
   }
 
@@ -376,13 +378,13 @@
   &__color-swatches {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__color-btn {
     width: 38px;
     height: 38px;
-    border-radius: 50%;
+    border-radius: $radius-full;
     background: transparent;
     border: 2px solid transparent;
     display: inline-flex;
@@ -396,9 +398,9 @@
     span {
       width: 28px;
       height: 28px;
-      border-radius: 50%;
+      border-radius: $radius-full;
       display: block;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+      box-shadow: inset 0 0 0 1px alpha(var(--nexa-black), 0.05);
     }
 
     &:hover {
@@ -406,7 +408,7 @@
     }
 
     &.is-selected {
-      border-color: alpha(var(--nexa-primary), 0.08)0;
+      border-color: var(--nexa-primary);
       background: var(--nexa-bg);
     }
   }
@@ -415,7 +417,7 @@
   &__config-options {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-100;
     flex-wrap: wrap;
   }
 
@@ -423,15 +425,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 18px;
+    padding: $space-150 $space-450;
     background: transparent;
     border: 1px solid alpha(var(--nexa-ink), 0.3);
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: alpha(var(--nexa-ink), 0.7);
     font-family: $ff-body;
-    font-size: 14px;
+    font-size: $fs-body-s-500;
     font-weight: $fw-medium;
-    letter-spacing: -2%;
+    letter-spacing: $ls-body-s-500;
     text-transform: uppercase;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
@@ -451,7 +453,7 @@
     flex-shrink: 0;
     height: 118px;
     border-top: 1px solid alpha(var(--nexa-ink), 0.3);
-    padding: 16px 18px;
+    padding: $space-400 $space-450;
     background: var(--nexa-bg);
     box-shadow: 0 -4px 24px alpha(var(--nexa-ink), 0.08);
     display: flex;
@@ -462,17 +464,17 @@
 
   &__summary {
     font-family: $ff-body;
-    font-size: 12px;
+    font-size: $fs-body-xs-500;
     font-weight: $fw-medium;
     color: alpha(var(--nexa-ink), 0.6);
     text-transform: uppercase;
-    letter-spacing: -4%;
+    letter-spacing: $ls-body-xs-500;
   }
 
   &__actions-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: $space-250;
     width: 100%;
 
     .btn {
@@ -483,7 +485,7 @@
 
 // 3. Similar Products Section
 .similar-products {
-  margin-block: 64px 80px;
+  margin-block: $space-900 $space-1000;
   width: 100%;
 
   &__wrapper {
@@ -491,33 +493,33 @@
     margin-inline: auto;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: $space-700;
   }
 
   &__header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
+    gap: $space-500;
   }
 
   &__header-left {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__bar {
     height: 21px;
     background: alpha(var(--nexa-ink), 0.8);
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -530,33 +532,33 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: alpha(var(--nexa-ink), 0.8);
-    color: #ffffff;
-    border-radius: 1px;
+    color: var(--nexa-on-primary);
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-family: $ff-body;
-    font-size: 12px;
-    letter-spacing: -4%;
+    font-size: $fs-body-xs-400;
+    letter-spacing: $ls-body-xs-400;
     text-transform: uppercase;
   }
 
   &__title {
     margin: 0;
     font-family: $ff-header;
-    font-size: 52px;
+    font-size: $fs-heading-2;
     font-weight: $fw-medium;
-    letter-spacing: -5%;
-    line-height: 56px;
+    letter-spacing: $ls-heading-2;
+    line-height: $lh-heading-2;
     color: var(--nexa-ink);
   }
 
   &__arrows {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $space-200;
   }
 
   &__arrow {
@@ -567,21 +569,21 @@
     height: 57px;
     background: var(--nexa-muted);
     border: 0;
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: alpha(var(--nexa-ink), 0.7);
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
 
     &:hover {
-      background: alpha(var(--nexa-primary), 0.08)0;
-      color: #ffffff;
+      background: var(--nexa-primary);
+      color: var(--nexa-on-primary);
     }
   }
 
   &__grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px 9px;
+    gap: $space-400 $space-225;
     width: 100%;
     justify-items: center;
 

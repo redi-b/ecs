@@ -83,7 +83,7 @@ test("every selectable template uses the shared analytics boundary exactly once"
     const analyticsMounts = sourceFiles
       .map((sourceFile) => read(sourceFile))
       .filter((source) => source.includes("<StorefrontAnalytics"));
-    const layout = read(`${templateDirectory}/Layout.astro`);
+    const layout = read(`${templateDirectory}/layouts/Layout.astro`);
     if (layout.includes("<StorefrontAnalytics")) analyticsMounts.push(layout);
 
     assert.equal(

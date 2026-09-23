@@ -1,10 +1,12 @@
 @use '../utils/functions' as *;
+@use "../variables" as *;
+
 .site-footer {
   position: relative;
   width: 100%;
   max-width: 1400px;
   margin-inline: auto;
-  margin-top: 48px;
+  margin-top: $space-850;
 
   &__layers {
     position: absolute;
@@ -18,7 +20,7 @@
     right: 2.5%;
     bottom: -16px;
     height: 32px;
-    border-radius: 2px;
+    border-radius: $radius-50;
 
     &--1 {
       bottom: -22px;
@@ -43,7 +45,7 @@
     display: grid;
     grid-template-columns: 1.3fr 1fr 1fr 1.2fr;
     background: var(--nexa-ink);
-    border-radius: 2px;
+    border-radius: $radius-50;
     border-bottom: 1px solid alpha(var(--nexa-ink), 0.7);
     overflow: hidden;
   }
@@ -65,7 +67,7 @@
   &__logo {
     display: block;
     width: 94px;
-    margin-bottom: 24px;
+    margin-bottom: $space-600;
 
     img {
       width: 100%;
@@ -75,7 +77,7 @@
   }
 
   &__text {
-    margin: 0 0 32px;
+    margin: 0 0 $space-750;
     color: alpha(var(--nexa-ink), 0.4);
   }
 
@@ -85,7 +87,7 @@
   }
 
   &__heading {
-    margin: 0 0 22px;
+    margin: 0 0 $space-550;
     color: var(--nexa-muted);
   }
 
@@ -95,7 +97,7 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: $space-250;
 
     a {
       color: alpha(var(--nexa-ink), 0.4);
@@ -103,7 +105,7 @@
       transition: color 0.2s ease;
 
       &:hover {
-        color: #ffffff;
+        color: var(--nexa-on-primary);
       }
     }
   }
@@ -111,8 +113,8 @@
   &__contact-info {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 28px;
+    gap: $space-250;
+    margin-bottom: $space-700;
 
     p, a {
       margin: 0;
@@ -121,21 +123,21 @@
     }
 
     a:hover {
-      color: #ffffff;
+      color: var(--nexa-on-primary);
     }
   }
 
   &__social {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: $space-350;
     margin-top: auto;
 
     a {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: var(--nexa-on-primary);
       transition: transform 0.2s ease, opacity 0.2s ease;
 
       &:hover {
@@ -173,7 +175,7 @@
     }
 
     &__col {
-      padding: 24px;
+      padding: $space-600;
       border-left: none !important;
       border-top: 1px solid alpha(var(--nexa-ink), 0.7);
 

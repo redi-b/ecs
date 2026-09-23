@@ -91,7 +91,7 @@ test("NexaHub checkout and confirmation own shared fulfillment and payment contr
 
 test("NexaHub owns account, wishlist, and inquiry surfaces", () => {
   const registry = read("templates/registry.ts");
-  for (const slot of ["Account", "AccountOrder", "Wishlist", "Contact", "RequestItem", "About", "PaymentReturn"]) {
+  for (const slot of ["Account", "AccountOrder", "Wishlist", "Contact", "RequestItem", "PaymentReturn"]) {
     assert.match(registry, new RegExp(`${slot}:\\s*NexahubV1${slot}`), `${slot} is not NexaHub-owned`);
   }
   const account = read("templates/nexahub/v1/pages/Account.astro");
@@ -108,7 +108,7 @@ test("NexaHub renderer map has no borrowed fallback presentation", () => {
   const block = registry.match(/"nexahub@1"\s*:\s*\{([\s\S]*?)\n\s*},\n}/)?.[1] ?? "";
   assert.ok(block, "NexaHub registry block was not found");
   assert.doesNotMatch(block, /Fallback[A-Z]/);
-  for (const slot of ["Home", "ProductList", "Product", "Cart", "Checkout", "PaymentReturn", "OrderConfirm", "Contact", "About", "RequestItem", "Wishlist", "Account", "AccountOrder", "SystemState"]) assert.match(block, new RegExp(`${slot}:\\s*NexahubV1`), `${slot} is not owned`);
+  for (const slot of ["Home", "ProductList", "Product", "Cart", "Checkout", "PaymentReturn", "OrderConfirm", "Contact", "RequestItem", "Wishlist", "Account", "AccountOrder", "SystemState"]) assert.match(block, new RegExp(`${slot}:\\s*NexahubV1`), `${slot} is not owned`);
   const notFound = read("pages/404.astro");
   const state = read("templates/nexahub/v1/pages/SystemState.astro");
   assert.ok(notFound.includes("SystemState"));
@@ -215,7 +215,6 @@ test("NexaHub keeps labels centered and uses the reference carousel icons", () =
 
 test("NexaHub never invents featured commerce and preserves reference secondary-page geometry", () => {
   const home = read("templates/nexahub/v1/pages/index.astro");
-  const about = read("templates/nexahub/v1/pages/About.astro");
   const indexStyles = read("templates/nexahub/v1/styles/pages/index.scss");
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
 
@@ -224,9 +223,6 @@ test("NexaHub never invents featured commerce and preserves reference secondary-
   assert.match(indexStyles, /&__dot[\s\S]*?background:\s*transparent/);
   assert.match(indexStyles, /&__featured-link-icon[\s\S]*?width:\s*8px/);
   assert.match(headerStyles, /&--dropdown[\s\S]*?svg[\s\S]*?width:\s*8px[\s\S]*?height:\s*4px/);
-  assert.match(about, /about-page/);
-  assert.match(about, /about-section__eyebrow/);
-  assert.doesNotMatch(about, /nexa-editorial-grid|Since 2020/i);
 });
 
 test("NexaHub interaction polish is keyboard-safe, reduced-motion-safe, and announces busy commerce", () => {

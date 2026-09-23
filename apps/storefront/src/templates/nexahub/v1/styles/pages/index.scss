@@ -1,4 +1,5 @@
 @use '../utils/functions' as *;
+@use "../variables" as *;
 // ==========================================
 // 1. Hero Section Styles
 // ==========================================
@@ -41,7 +42,7 @@
     justify-content: space-between;
     width: min(100% - 2rem, 1400px);
     margin-inline: auto;
-    gap: 32px;
+    gap: $space-750;
   }
 
   &__content {
@@ -55,20 +56,20 @@
   &__top {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__bar {
     height: 21px;
     background: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -81,10 +82,10 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: #ffffff;
     color: var(--nexa-ink);
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -99,14 +100,14 @@
     display: inline-block;
     background: alpha(var(--nexa-primary), 0.6);
     color: #ffffff;
-    padding: 0 8px;
-    border-radius: 2px;
+    padding: 0 $space-200;
+    border-radius: $radius-50;
   }
 
   &__bottom {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: $space-600;
   }
 
   &__desc {
@@ -119,7 +120,7 @@
   &__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $space-200;
   }
 
   // Featured Card
@@ -130,10 +131,10 @@
     justify-content: space-between;
     width: 342px;
     height: 335px;
-    padding: 7px 7px 16px;
+    padding: $space-175 $space-175 $space-400;
     background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(29.5px);
-    border-radius: 3px;
+    border-radius: $radius-75;
     box-sizing: border-box;
     color: #ffffff;
   }
@@ -165,7 +166,7 @@
     width: 100%;
     height: 186px;
     background: transparent;
-    border-radius: 3px;
+    border-radius: $radius-75;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -194,14 +195,14 @@
     left: 6px;
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__featured-bar {
     height: 21px;
     background: alpha(var(--nexa-ink), 0.85);
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -214,10 +215,10 @@
 
   &__featured-tag {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: alpha(var(--nexa-ink), 0.85);
     color: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -227,8 +228,8 @@
   &__featured-meta {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding-inline: 9px;
+    gap: $space-175;
+    padding-inline: $space-225;
   }
 
   &__featured-price {
@@ -236,15 +237,15 @@
   }
 
   &__featured-discount {
-    padding: 2px 4px;
+    padding: $space-50 $space-100;
     background: var(--nexa-accent);
     color: var(--nexa-ink);
-    border-radius: 2px;
+    border-radius: $radius-50;
   }
 
   &__featured-title {
     margin: 0;
-    padding-inline: 9px;
+    padding-inline: $space-225;
     color: #ffffff;
   }
 
@@ -252,13 +253,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-inline: 9px;
+    padding-inline: $space-225;
   }
 
   &__featured-link {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: $space-75;
     color: var(--nexa-accent);
     text-decoration: underline;
     text-underline-position: from-font;
@@ -281,7 +282,7 @@
     bottom: 18px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: $space-125;
   }
 
   &__dot {
@@ -294,7 +295,7 @@
   &__dot {
     width: 6px;
     height: 6px;
-    border-radius: 1px;
+    border-radius: $radius-25;
     border: 1px solid rgba(#ffffff, 0.39);
     box-sizing: border-box;
 
@@ -308,14 +309,14 @@
 @media (max-width: 767px) {
   .contact-section__card { grid-template-columns: 1fr !important; }
   .contact-section__image { min-height: 260px; max-height: 320px; order: -1; }
-  .contact-section__form-box { padding: 24px 18px; }
+  .contact-section__form-box { padding: $space-600 $space-450; }
 }
 
 // ==========================================
 // 2. Catalogue Section Styles
 // ==========================================
 .catalogue-section {
-  margin-block: 84px 96px;
+  margin-block: $space-1025 $space-1050;
   width: 100%;
 
   &__wrapper {
@@ -334,15 +335,15 @@
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
-    margin-bottom: 12px;
+    margin-bottom: $space-300;
   }
 
   &__bar {
     height: 21px;
     background: alpha(var(--nexa-ink), 0.8);
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -355,10 +356,10 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: alpha(var(--nexa-ink), 0.8);
     color: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -372,7 +373,7 @@
 
   &__grid {
     display: flex;
-    gap: 20px;
+    gap: $space-500;
     width: 100%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -382,7 +383,7 @@
   }
 
   &__card {
-    border-radius: 4px;
+    border-radius: $radius-100;
     box-sizing: border-box;
     overflow: hidden;
 
@@ -396,13 +397,13 @@
     &--standard {
       flex: 0 0 calc(25% - 15px);
       height: 480px;
-      padding: 20px 18px 18px;
+      padding: $space-500 $space-450 $space-450;
       background: var(--nexa-muted);
       border: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 16px;
+      gap: $space-400;
       scroll-snap-align: start;
     }
   }
@@ -434,7 +435,7 @@
     width: 38px;
     height: 38px;
     background: var(--nexa-accent);
-    border-radius: 2px;
+    border-radius: $radius-50;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -448,14 +449,14 @@
     left: 12px;
     right: 12px;
     bottom: 12px;
-    padding: 20px;
+    padding: $space-500;
     background: alpha(var(--nexa-ink), 0.88);
     backdrop-filter: blur(20px);
-    border-radius: 3px;
+    border-radius: $radius-75;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
+    gap: $space-500;
     z-index: 2;
     color: #ffffff;
   }
@@ -467,7 +468,7 @@
     }
 
     p {
-      margin: 8px 0 0;
+      margin: $space-200 0 0;
       max-width: 360px;
       color: #ffffff;
     }
@@ -477,7 +478,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: $space-250;
 
     h3 {
       margin: 0;
@@ -489,7 +490,7 @@
     width: 100%;
     flex: 1;
     min-height: 0;
-    border-radius: 3px;
+    border-radius: $radius-75;
     overflow: hidden;
 
     img {
@@ -505,13 +506,13 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    margin-top: 32px;
+    margin-top: $space-750;
   }
 
   &__arrows {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: $space-150;
   }
 
   &__arrow {
@@ -522,7 +523,7 @@
     height: 57px;
     background: var(--nexa-muted);
     border: 0;
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: var(--nexa-ink);
     cursor: pointer;
     transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-fast) var(--nexa-ease-out);
@@ -551,13 +552,13 @@
 // 3. Products Section Styles
 // ==========================================
 .products-section {
-  margin-block: 96px;
+  margin-block: $space-1050;
   width: 100%;
 
   &__wrapper {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: $space-700;
     width: min(100% - 2rem, 1400px);
     margin-inline: auto;
   }
@@ -571,20 +572,20 @@
   &__header-left {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: $space-200;
   }
 
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__bar {
     height: 21px;
     background: alpha(var(--nexa-ink), 0.8);
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -597,10 +598,10 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: alpha(var(--nexa-ink), 0.8);
     color: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -616,7 +617,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__count {
@@ -626,7 +627,7 @@
   &__grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: $space-500;
     width: 100%;
   }
 
@@ -634,8 +635,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    margin-top: 18px;
+    gap: $space-350;
+    margin-top: $space-450;
   }
 
   &__pagination-info {
@@ -649,7 +650,7 @@
 .benefits-section {
   position: relative;
   width: 100%;
-  padding-block: 72px 80px;
+  padding-block: $space-950 $space-1000;
   background-color: var(--nexa-primary);
   color: #ffffff;
   overflow: hidden;
@@ -719,26 +720,26 @@
   &__header {
     display: flex;
     flex-direction: column;
-    gap: 36px;
+    gap: $space-800;
   }
 
   &__header-top {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: $space-400;
   }
 
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__bar {
     height: 21px;
     background: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -751,10 +752,10 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: #ffffff;
     color: alpha(var(--nexa-ink), 0.8);
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -784,12 +785,12 @@
 
     @media (max-width: 1024px) {
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: $space-500;
     }
 
     @media (max-width: 640px) {
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: $space-350;
     }
   }
 
@@ -800,7 +801,7 @@
   }
 
   &__header-col {
-    padding-left: 12px;
+    padding-left: $space-300;
 
     @media (max-width: 1024px) {
       padding-left: 0;
@@ -822,18 +823,18 @@
     height: 1px;
     background-color: var(--nexa-primary);
     opacity: 0.7;
-    margin-block: 26px 20px;
+    margin-block: $space-650 $space-500;
     width: 100%;
   }
 
   &__faq-row {
     display: flex;
-    gap: 12px;
+    gap: $space-300;
     align-items: stretch;
 
     @media (max-width: 1024px) {
       flex-direction: column;
-      gap: 20px;
+      gap: $space-500;
     }
   }
 
@@ -841,7 +842,7 @@
     flex: 0 0 341.5px;
     min-height: 356px;
     position: relative;
-    border-radius: 2px;
+    border-radius: $radius-50;
     overflow: hidden;
     border: 1px solid var(--nexa-primary);
     background: linear-gradient(225deg, var(--nexa-primary) 0%, var(--nexa-ink) 100%);
@@ -875,9 +876,9 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 24px 26px 26px;
+    padding: $space-600 $space-650 $space-650;
     box-sizing: border-box;
-    gap: 24px;
+    gap: $space-600;
   }
 
   &__cta-text {
@@ -894,8 +895,8 @@
     flex: 1;
     min-height: 356px;
     background-color: #ffffff;
-    border-radius: 2px;
-    padding: 26px 30px;
+    border-radius: $radius-50;
+    padding: $space-650 $space-725;
     display: grid;
     grid-template-columns: 1.15fr 1fr;
     gap: 35px;
@@ -904,28 +905,28 @@
 
     @media (max-width: 1024px) {
       grid-template-columns: 1fr;
-      padding: 24px 20px;
-      gap: 24px;
+      padding: $space-600 $space-500;
+      gap: $space-600;
     }
   }
 
   &__accordion {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__acc-item {
     border-bottom: 1px solid alpha(var(--nexa-ink), 0.14);
-    padding: 12px 8px;
+    padding: $space-300 $space-200;
     box-sizing: border-box;
 
     &.is-open {
       .benefits-section__acc-content {
         grid-template-rows: 1fr;
         opacity: 1;
-        padding-top: 14px;
-        padding-bottom: 6px;
+        padding-top: $space-350;
+        padding-bottom: $space-150;
       }
     }
   }
@@ -945,7 +946,7 @@
   &__acc-heading {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__acc-num {
@@ -972,7 +973,7 @@
     font-size: 20px;
     font-weight: 400;
     color: alpha(var(--nexa-ink), 0.7);
-    margin-left: 12px;
+    margin-left: $space-300;
     flex-shrink: 0;
     line-height: 1;
     width: 14px;
@@ -985,7 +986,7 @@
     grid-template-rows: 0fr;
     padding-top: 0;
     padding-bottom: 0;
-    padding-left: 32px;
+    padding-left: $space-750;
     opacity: 0;
     overflow: hidden;
     transition: grid-template-rows var(--nexa-motion-slow) var(--nexa-ease-out), opacity var(--nexa-motion-base) var(--nexa-ease-out), padding var(--nexa-motion-slow) var(--nexa-ease-out);
@@ -1006,7 +1007,7 @@
   &__promo-image {
     width: 100%;
     height: 296px;
-    border-radius: 2px;
+    border-radius: $radius-50;
     overflow: hidden;
 
     img {
@@ -1022,7 +1023,7 @@
 // 5. Contact Section Styles
 // ==========================================
 .contact-section {
-  margin-block: 84px 96px;
+  margin-block: $space-1025 $space-1050;
   width: 100%;
 
   &__wrapper {
@@ -1035,29 +1036,29 @@
     grid-template-columns: 1.15fr 1fr;
     background: var(--nexa-bg);
     border: 1px solid alpha(var(--nexa-ink), 0.14);
-    border-radius: 4px;
+    border-radius: $radius-100;
     box-shadow: 0 4px 95px alpha(var(--nexa-ink), 0.08);
     overflow: hidden;
   }
 
   &__form-box {
-    padding: 48px;
+    padding: $space-850;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: $space-400;
   }
 
   &__eyebrow {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $space-50;
     height: 21px;
   }
 
   &__bar {
     height: 21px;
     background: alpha(var(--nexa-ink), 0.8);
-    border-radius: 1px;
+    border-radius: $radius-25;
 
     &--sm {
       width: 3px;
@@ -1070,17 +1071,17 @@
 
   &__badge {
     height: 21px;
-    padding: 0 8px;
+    padding: 0 $space-200;
     background: alpha(var(--nexa-ink), 0.8);
     color: #ffffff;
-    border-radius: 1px;
+    border-radius: $radius-25;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 
   &__title {
-    margin: 0 0 12px;
+    margin: 0 0 $space-300;
     color: var(--nexa-ink);
     line-height: 1.15;
   }
@@ -1088,22 +1089,22 @@
   &__form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__input,
   &__textarea {
     width: 100%;
-    padding: 12px 14px;
+    padding: $space-300 $space-350;
     background: var(--nexa-bg);
     border: 1px solid alpha(var(--nexa-ink), 0.2);
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: var(--nexa-ink);
     box-sizing: border-box;
     outline: none;

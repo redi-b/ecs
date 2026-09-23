@@ -1,4 +1,6 @@
 @use '../utils/functions' as *;
+@use "../variables" as *;
+
 .site-header {
   position: absolute;
   top: 0;
@@ -6,7 +8,7 @@
   right: 0;
   z-index: 50;
   width: 100%;
-  padding-top: 18px;
+  padding-top: $space-450;
   box-sizing: border-box;
 
   &__inner {
@@ -15,13 +17,13 @@
     justify-content: space-between;
     width: min(100% - 2rem, 1400px);
     margin-inline: auto;
-    gap: 12px;
+    gap: $space-300;
   }
 
   &__left {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__brand {
@@ -30,10 +32,10 @@
     justify-content: center;
     width: 94px;
     height: 33px;
-    padding: 6px 10px;
-    background: alpha(var(--nexa-primary), 0.08)0;
+    padding: $space-150 $space-250;
+    background: var(--nexa-primary);
     backdrop-filter: blur(12px);
-    border-radius: 2px;
+    border-radius: $radius-50;
     text-decoration: none;
     flex-shrink: 0;
     box-sizing: border-box;
@@ -48,7 +50,7 @@
   &__nav {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__nav-item {
@@ -59,14 +61,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: $space-100;
     width: 168px;
     height: 33px;
-    padding: 6px 10px;
+    padding: $space-150 $space-250;
     background: alpha(var(--nexa-ink), 0.38);
     backdrop-filter: blur(17px);
     border: 0;
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: var(--nexa-bg);
     text-decoration: none;
     white-space: nowrap;
@@ -99,7 +101,7 @@
     width: 168px;
     background: var(--nexa-ink);
     border: 1px solid alpha(var(--nexa-ink), 0.2);
-    border-radius: 2px;
+    border-radius: $radius-50;
     box-shadow: 0 8px 16px alpha(var(--nexa-ink), 0.4);
     z-index: 100;
     overflow: hidden;
@@ -120,7 +122,7 @@
 
   &__dropdown-item {
     display: block;
-    padding: 8px 12px;
+    padding: $space-200 $space-300;
     color: var(--nexa-bg);
     text-decoration: none;
     background: transparent;
@@ -129,7 +131,7 @@
 
     &:hover,
     &:focus-visible {
-      padding-left: 16px;
+      padding-left: $space-400;
       background: alpha(var(--nexa-ink), 0.8);
     }
 
@@ -141,20 +143,20 @@
   &__right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $space-100;
   }
 
   &__search {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $space-200;
     width: 209px;
     height: 33px;
-    padding: 6px 10px;
+    padding: $space-150 $space-250;
     background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(12px);
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: alpha(var(--nexa-ink), 0.4);
     box-sizing: border-box;
     transition: background-color var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-fast) var(--nexa-ease-out), color var(--nexa-motion-fast) var(--nexa-ease-out);
@@ -162,7 +164,7 @@
     &:focus-within {
       background: var(--nexa-bg);
       color: var(--nexa-ink);
-      box-shadow: inset 0 0 0 1px alpha(var(--nexa-primary), 0.08)0, 0 0 0 2px alpha(var(--nexa-primary), 0.18);
+      box-shadow: inset 0 0 0 1px var(--nexa-primary), 0 0 0 2px alpha(var(--nexa-primary), 0.18);
 
       svg { color: var(--nexa-ink); }
       .site-header__search-input { color: var(--nexa-ink); }
@@ -181,10 +183,10 @@
     right: 0;
     z-index: 100;
     width: min(390px, calc(100vw - 32px));
-    padding: 4px;
+    padding: $space-100;
     overflow: hidden;
     border: 1px solid alpha(var(--nexa-ink), 0.7);
-    border-radius: 2px;
+    border-radius: $radius-50;
     background: var(--nexa-bg);
     box-shadow: 10px 12px 0 alpha(var(--nexa-primary), 0.18);
     color: var(--nexa-ink);
@@ -196,16 +198,16 @@
     display: grid;
     grid-template-columns: 52px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
+    gap: $space-250;
     min-height: 60px;
-    padding: 5px;
+    padding: $space-125;
     color: var(--nexa-ink);
     text-decoration: none;
 
     &:hover,
     &[data-active] { background: alpha(var(--nexa-primary), 0.12); }
 
-    b { font-size: 11px; white-space: nowrap; }
+    b { font-size: $fs-body-xs-400; white-space: nowrap; }
   }
 
   .product-search-suggestions__media {
@@ -220,21 +222,21 @@
 
   .product-search-suggestions__copy {
     display: grid;
-    gap: 3px;
+    gap: $space-75;
     min-width: 0;
 
     strong, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    strong { font-size: 13px; font-weight: 500; }
+    strong { font-size: $fs-body-s-500; font-weight: $fw-medium; }
     small { color: alpha(var(--nexa-ink), 0.6); font-size: 10px; text-transform: uppercase; }
   }
 
   .product-search-suggestions__all {
     display: block;
-    margin-top: 4px;
-    padding: 10px;
+    margin-top: $space-100;
+    padding: $space-250;
     border-top: 1px solid alpha(var(--nexa-ink), 0.2);
     color: var(--nexa-primary);
-    font-size: 11px;
+    font-size: $fs-body-xs-400;
     text-decoration: none;
     text-transform: uppercase;
   }
@@ -266,7 +268,7 @@
     background: alpha(var(--nexa-ink), 0.38);
     backdrop-filter: blur(12px);
     border: 0;
-    border-radius: 2px;
+    border-radius: $radius-50;
     color: var(--nexa-bg);
     text-decoration: none;
     flex-shrink: 0;
@@ -283,10 +285,10 @@
       place-items: center;
       min-width: 16px;
       height: 16px;
-      padding-inline: 3px;
-      border-radius: 999px;
-      background: alpha(var(--nexa-primary), 0.08)0;
-      color: #ffffff;
+      padding-inline: $space-75;
+      border-radius: $radius-pill;
+      background: var(--nexa-primary);
+      color: var(--nexa-on-primary);
       font-size: 9px;
       line-height: 1;
       box-sizing: border-box;
@@ -308,7 +310,6 @@
       background: var(--nexa-muted);
       backdrop-filter: blur(17px);
       color: alpha(var(--nexa-ink), 0.6);
-
     }
 
     .site-header__search {
@@ -333,11 +334,10 @@
       background: var(--nexa-muted);
       backdrop-filter: blur(12px);
       color: alpha(var(--nexa-ink), 0.6);
-
     }
 
     .site-header__dropdown {
-      background: #ffffff;
+      background: var(--nexa-surface);
       border: 1px solid alpha(var(--nexa-ink), 0.2);
 
       .site-header__dropdown-item {
@@ -353,15 +353,15 @@
 
 @media (max-width: 1100px) {
   .site-header {
-    &--light { position: relative; padding-bottom: 10px; }
-    &__toggle { display: grid; place-content: center; gap: 5px; width: 40px; height: 40px; border: 0; background: var(--nexa-ink); }
-    &__toggle span { display: block; width: 20px; height: 1px; background: #ffffff; }
-    &__nav { position: fixed; top: 70px; left: 1rem; right: 1rem; z-index: 53; display: grid; align-content: start; gap: 4px; max-height: calc(100dvh - 86px); overflow-y: auto; padding: 8px; background: var(--nexa-ink); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px) scale(.985); transform-origin: top; transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out); }
+    &--light { position: relative; padding-bottom: $space-250; }
+    &__toggle { display: grid; place-content: center; gap: $space-125; width: 40px; height: 40px; border: 0; background: var(--nexa-ink); }
+    &__toggle span { display: block; width: 20px; height: 1px; background: var(--nexa-on-primary); }
+    &__nav { position: fixed; top: 70px; left: 1rem; right: 1rem; z-index: 53; display: grid; align-content: start; gap: $space-100; max-height: calc(100dvh - 86px); overflow-y: auto; padding: $space-200; background: var(--nexa-ink); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px) scale(.985); transform-origin: top; transition: opacity var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out); }
     &__nav.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); transition-delay: 0s; }
     &__nav.is-closing { pointer-events: none; animation: nexa-nav-close var(--nexa-motion-base) var(--nexa-ease-out) both; }
     &__link, &__nav-item { width: 100%; }
     &__dropdown { position: static; width: 100%; max-height: 0; margin-top: 0; border-width: 0; overflow: hidden; transform: none; transition: max-height var(--nexa-motion-slow) var(--nexa-ease-out), opacity var(--nexa-motion-base) var(--nexa-ease-out), margin var(--nexa-motion-base) var(--nexa-ease-out); }
-    &__dropdown.is-open { max-height: min(44vh, 22rem); margin-top: 4px; border-width: 1px; overflow-y: auto; }
+    &__dropdown.is-open { max-height: min(44vh, 22rem); margin-top: $space-100; border-width: 1px; overflow-y: auto; }
     &__right .btn { display: none; }
     &__backdrop { position: fixed; inset: 0; z-index: 49; display: block; border: 0; background: alpha(var(--nexa-ink), .42); opacity: 0; visibility: hidden; pointer-events: none; backdrop-filter: blur(3px); transition: opacity var(--nexa-motion-base) var(--nexa-ease-out); }
     &__backdrop.is-visible { opacity: 1; visibility: visible; pointer-events: auto; }

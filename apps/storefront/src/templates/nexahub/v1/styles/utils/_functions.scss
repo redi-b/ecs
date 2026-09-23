@@ -14,25 +14,25 @@
   @return $value;
 }
 
-@function fluid($min-value, $max-value, $min-width: 375px, $max-width: 1440px, $pixels-per-rem: 16) {
-  @if $min-value == $max-value {
-    @error "Fluid error: Min and Max are equal (#{$min-value}).";
+@function fluid($start-value, $end-value, $min-width: 350px, $max-width: 1440px, $pixels-per-rem: 16) {
+  @if $start-value == $end-value {
+    @return $start-value;
   }
 
-  $min-rem: to-rem($min-value, $pixels-per-rem);
-  $max-rem: to-rem($max-value, $pixels-per-rem);
+  $start-rem: to-rem($start-value, $pixels-per-rem);
+  $end-rem: to-rem($end-value, $pixels-per-rem);
   $min-w-rem: to-rem($min-width, $pixels-per-rem);
   $max-w-rem: to-rem($max-width, $pixels-per-rem);
 
-  $slope: math.div($max-rem - $min-rem, $max-w-rem - $min-w-rem);
-  $y-intercept: $min-rem - ($min-w-rem * $slope);
+  $slope: math.div($end-rem - $start-rem, $max-w-rem - $min-w-rem);
+  $y-intercept: $start-rem - ($min-w-rem * $slope);
   $slope-vw: $slope * 100;
 
-  @return clamp(#{$min-rem}, #{$y-intercept} + #{$slope-vw}vw, #{$max-rem});
-}
+  @if $start-value > $end-value {
+    @return clamp(#{$end-rem}, #{$y-intercept} + #{$slope-vw}vw, #{$start-rem});
+  }
 
-@function responsiveclamp($min-value, $max-value, $min-width: 375px, $max-width: 1440px, $pixels-per-rem: 16) {
-  @return fluid($min-value, $max-value, $min-width, $max-width, $pixels-per-rem);
+  @return clamp(#{$start-rem}, #{$y-intercept} + #{$slope-vw}vw, #{$end-rem});
 }
 
 @function alpha($color, $opacity) {
