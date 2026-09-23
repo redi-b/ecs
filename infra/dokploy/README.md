@@ -207,7 +207,7 @@ Platform-api invalidates public storefront HTML after **publish/unpublish** and 
 | `STOREFRONT_INTERNAL_BASE_URL` | platform-api | Set to `http://storefront:4321` in compose |
 | `REDIS_URL` | storefront (+ platform already) | HTML cache store |
 
-See `apps/storefront/README.md` and `dev-docs/07-storefront-routing.md`.
+See `apps/storefront/README.md` for storefront cache and routing details.
 
 To enable the optional deployment trigger, add all three repository secrets:
 

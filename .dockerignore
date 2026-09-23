@@ -24,7 +24,6 @@ coverage
 .env.*
 **/.env
 **/.env.*
-dev-docs
 docs
 *.log
 .DS_Store

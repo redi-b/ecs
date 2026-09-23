@@ -123,7 +123,6 @@ export const telegramConnectSessions = pgTable(
 /**
  * Links a Telegram identity to a platform membership for shop tools (writes).
  * Separate from notification_destinations (alert sinks).
- * @see dev-docs/superpowers/specs/2026-07-18-telegram-merchant-tools-design.md
  */
 export const telegramOperatorBindings = pgTable(
   "telegram_operator_bindings",

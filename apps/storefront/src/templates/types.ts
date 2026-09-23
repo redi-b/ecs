@@ -9,7 +9,6 @@
  * Component types are intentionally loose (`any`) so Astro components from
  * different templates type-check when used as dynamic tags.
  *
- * @see dev-docs/post-mvp/14-storefront-completeness-and-templates-plan.md
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StorefrontPageComponent = any;
