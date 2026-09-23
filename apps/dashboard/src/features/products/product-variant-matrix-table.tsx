@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import type { ProductFormValues } from "@/features/products/product-form-types";
@@ -76,7 +76,7 @@ export function VariantMatrixTable({
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
               <Field>
-                <FieldLabel className="flex items-center gap-2">
+                <FieldTitle>
                   <Checkbox
                     checked={bulkFields.price}
                     onCheckedChange={(checked) =>
@@ -84,7 +84,7 @@ export function VariantMatrixTable({
                     }
                   />
                   {t("products.formReview.colPrice")}
-                </FieldLabel>
+                </FieldTitle>
                 <InputGroup>
                   <InputGroupAddon>ETB</InputGroupAddon>
                   <InputGroupInput
@@ -103,7 +103,7 @@ export function VariantMatrixTable({
                 </InputGroup>
               </Field>
               <Field>
-                <FieldLabel className="flex items-center gap-2">
+                <FieldTitle>
                   <Checkbox
                     checked={bulkFields.stock}
                     onCheckedChange={(checked) =>
@@ -111,7 +111,7 @@ export function VariantMatrixTable({
                     }
                   />
                   {t("products.formReview.colStock")}
-                </FieldLabel>
+                </FieldTitle>
                 <Input
                   disabled={!bulkFields.stock}
                   inputMode="numeric"

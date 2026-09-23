@@ -175,14 +175,7 @@ export function ProductOptionsBuilder({
   function setOptionDisplayMode(index: number, displayMode: "text" | "swatch") {
     const option = options[index];
     if (!option) return;
-    updateOption(index, {
-      ...option,
-      displayMode,
-      values:
-        displayMode === "text"
-          ? option.values.map((value) => ({ ...value, swatch: null }))
-          : option.values,
-    });
+    updateOption(index, { ...option, displayMode });
   }
 
   function addValues(index: number, rawValue: string) {
@@ -315,7 +308,7 @@ export function ProductOptionsBuilder({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-b bg-background/95 px-1 pb-3 pt-1 backdrop-blur-sm supports-[backdrop-filter]:bg-background/85">
+      <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-b bg-background px-1 pb-3 pt-1">
         <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
         <Popover onOpenChange={setAddMenuOpen} open={addMenuOpen}>
           <PopoverTrigger asChild>
@@ -331,10 +324,10 @@ export function ProductOptionsBuilder({
             <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
               {t("products.formReview.chooseOptionType")}
             </div>
-            <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-1">
               {presetOptions.map((preset) => (
                 <button
-                  className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                  className="flex min-h-8 w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
                   disabled={options.some(
                     (option) => option.title.toLowerCase() === preset.toLowerCase(),
                   )}
@@ -347,13 +340,13 @@ export function ProductOptionsBuilder({
               ))}
               {optionSetsQuery.data?.optionSets.length ? (
                 <>
-                  <div className="my-1 border-t" />
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="my-0.5 border-t" />
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
                     {t("products.formReview.savedOptions")}
                   </div>
                   {optionSetsQuery.data.optionSets.map((optionSet) => (
                     <button
-                      className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                      className="flex min-h-8 w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
                       disabled={options.some(
                         (option) => option.title.toLowerCase() === optionSet.title.toLowerCase(),
                       )}
@@ -383,16 +376,16 @@ export function ProductOptionsBuilder({
                   {t("products.formReview.retrySavedOptions")}
                 </button>
               ) : null}
-              <div className="my-1 border-t" />
+              <div className="my-0.5 border-t" />
               <button
-                className="w-full rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent"
+                className="min-h-8 w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-accent"
                 onClick={() => addOption()}
                 type="button"
               >
                 {t("products.formReview.customOption")}
               </button>
             </div>
-            <div className="shrink-0 border-t p-1.5">
+            <div className="shrink-0 border-t p-1">
               <Button asChild className="w-full justify-start" size="sm" variant="ghost">
                 <Link href={getTenantScopedPath(dashboardRoutes.productOptions, tenantId)}>
                   <AppIcons.settings data-icon="inline-start" />
@@ -408,35 +401,37 @@ export function ProductOptionsBuilder({
         <div className="flex flex-col gap-3">
           {options.map((option, index) => (
             <div
-              className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[11rem_10rem_minmax(0,1fr)]"
+              className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[13rem_minmax(0,1fr)]"
               key={option.id ?? option.key ?? index}
             >
-              <Field>
-                <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
-                <Input
-                  autoFocus={!option.title}
-                  onChange={(event) =>
-                    updateOption(index, { ...option, title: event.target.value })
-                  }
-                  placeholder={t("products.formReview.customOptionPlaceholder")}
-                  value={option.title}
-                />
-              </Field>
-              <Field>
-                <FieldLabel>{t("products.formReview.optionDisplay")}</FieldLabel>
-                <SegmentedControl
-                  active="muted"
-                  ariaLabel={t("products.formReview.optionDisplay")}
-                  fullWidth
-                  onChange={(value) => setOptionDisplayMode(index, value as "text" | "swatch")}
-                  options={[
-                    { id: "text", label: t("products.formReview.optionDisplayText") },
-                    { id: "swatch", label: t("products.formReview.optionDisplaySwatch") },
-                  ]}
-                  size="sm"
-                  value={getOptionDisplayMode(option)}
-                />
-              </Field>
+              <div className="grid content-start gap-3">
+                <Field>
+                  <FieldLabel>{t("products.formReview.optionName")}</FieldLabel>
+                  <Input
+                    autoFocus={!option.title}
+                    onChange={(event) =>
+                      updateOption(index, { ...option, title: event.target.value })
+                    }
+                    placeholder={t("products.formReview.customOptionPlaceholder")}
+                    value={option.title}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>{t("products.formReview.optionDisplay")}</FieldLabel>
+                  <SegmentedControl
+                    active="muted"
+                    ariaLabel={t("products.formReview.optionDisplay")}
+                    fullWidth
+                    onChange={(value) => setOptionDisplayMode(index, value as "text" | "swatch")}
+                    options={[
+                      { id: "text", label: t("products.formReview.optionDisplayText") },
+                      { id: "swatch", label: t("products.formReview.optionDisplaySwatch") },
+                    ]}
+                    size="sm"
+                    value={getOptionDisplayMode(option)}
+                  />
+                </Field>
+              </div>
 
               <Field>
                 <FieldLabel>{t("products.formReview.values")}</FieldLabel>

@@ -734,8 +734,8 @@ export function ImageOptionTagPopover({
               }}
               type="button"
             >
-              <span className="flex items-center gap-1.5">
-                <AppIcons.tag className="size-3.5 text-muted-foreground" />
+              <span className="flex items-center gap-2.5">
+                <AppIcons.tag className="size-3.5 shrink-0 text-muted-foreground" />
                 {t("media.tagForAll")}
               </span>
               {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
