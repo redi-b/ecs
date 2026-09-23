@@ -54,7 +54,7 @@ $ls-none: 0;
 body {
   --clr-dark: var(--clr-ink);
   --clr-on-dark: var(--clr-bg);
-  --clr-primary-dark: hsl(from var(--clr-primary) h 70% 24%);
+  --clr-primary-dark: color-mix(in srgb, var(--clr-primary), #000 65%);
 }
 
 

@@ -11,7 +11,7 @@
   summary svg { width: 8px; transition: transform var(--nexa-motion-fast) var(--nexa-ease-out); }
   details[open] summary { color: var(--nexa-primary); }
   details[open] summary svg { transform: rotate(180deg); }
-  details > div { position: absolute; top: calc(100% + 6px); left: 0; width: 220px; padding: 6px; display: grid; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: 3px; background: #ffffff; box-shadow: 0 18px 42px rgb(38 39 50 / 14%); }
+  details > div { position: absolute; top: calc(100% + 6px); left: 0; width: 220px; padding: 6px; display: grid; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: 3px; background: #ffffff; box-shadow: 0 18px 42px alpha(var(--nexa-ink), 0.14); }
   a { min-height: 40px; padding: 0 10px; display: flex; align-items: center; border-radius: 2px; color: alpha(var(--nexa-ink), 0.7); font-size: 13px; text-decoration: none; }
   a:hover, a:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
   &__all { margin-top: 4px; border-top: 1px solid alpha(var(--nexa-ink), 0.14); color: var(--nexa-primary) !important; }

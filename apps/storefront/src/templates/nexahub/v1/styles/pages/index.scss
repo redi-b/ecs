@@ -131,7 +131,7 @@
     width: 342px;
     height: 335px;
     padding: 7px 7px 16px;
-    background: rgba(66, 67, 68, 0.77);
+    background: alpha(var(--nexa-ink), 0.77);
     backdrop-filter: blur(29.5px);
     border-radius: 3px;
     box-sizing: border-box;
@@ -449,7 +449,7 @@
     right: 12px;
     bottom: 12px;
     padding: 20px;
-    background: rgba(56, 57, 76, 0.88);
+    background: alpha(var(--nexa-ink), 0.88);
     backdrop-filter: blur(20px);
     border-radius: 3px;
     display: flex;

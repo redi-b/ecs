@@ -46,12 +46,17 @@
 
 .lv-hero__copy {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   height: 100%;
   padding: $space-1100 $space-900 $space-700;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  pointer-events: none;
+}
+
+.lv-hero__copy > * {
+  pointer-events: auto;
 }
 
 @keyframes lv-hero-fade-up {
