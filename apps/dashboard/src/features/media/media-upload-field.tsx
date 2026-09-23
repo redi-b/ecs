@@ -4,8 +4,8 @@ import {
   closestCenter,
   DndContext,
   type DragEndEvent,
-  type Modifier,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   useSensor,
   useSensors,
@@ -18,22 +18,34 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { ProductOptionMediaBindings } from "@ecs/contracts";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
+import * as React from "react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
+import { formatConstraintsBadge } from "@/components/products/product-media-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ProductOptionSwatchPreview } from "@/features/products/product-swatch-popover";
+import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
+import {
+  DEFAULT_MEDIA_LIMITS,
+  getMediaUploadConfig,
+  type MediaLimitsConfig,
+} from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
 import { MediaLibraryDialog } from "./media-library-dialog";
 import { MediaPreviewLightbox } from "./media-lightbox";
 import { createMediaUploadId } from "./media-upload-id";
 
-const acceptedTypes = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
-const maxByteSize = 15 * 1024 * 1024;
+const acceptedTypes = new Set(DEFAULT_MEDIA_LIMITS.allowedMimeTypes);
+const maxByteSize = DEFAULT_MEDIA_LIMITS.maxFileBytes;
 
 const keepDragInsideGallery: Modifier = ({ containerNodeRect, draggingNodeRect, transform }) => {
   if (!containerNodeRect || !draggingNodeRect) return transform;
@@ -64,12 +76,18 @@ type MediaUploadMeta = { assetId?: string };
 export function MediaUploadField({
   imageUrls,
   onImageUrlsChange,
+  onOptionMediaBindingsChange,
   onThumbnailChange,
+  optionMediaBindings,
+  options,
   thumbnail,
 }: {
   imageUrls: string[];
   onImageUrlsChange: (urls: string[]) => void;
+  onOptionMediaBindingsChange?: ((bindings: ProductOptionMediaBindings | null) => void) | undefined;
   onThumbnailChange: (url: string) => void;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
+  options?: ProductOptionDraft[] | undefined;
   thumbnail: string;
 }) {
   const { t } = useI18n();
@@ -83,6 +101,18 @@ export function MediaUploadField({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const [config, setConfig] = useState<MediaLimitsConfig>(DEFAULT_MEDIA_LIMITS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMediaUploadConfig().then((fetched) => {
+      if (!cancelled && fetched) setConfig(fetched);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [uppy] = useState(() =>
     new Uppy<MediaUploadMeta, Record<string, never>>({
       autoProceed: true,
@@ -245,9 +275,34 @@ export function MediaUploadField({
     };
   }, [t, uppy]);
 
+  useEffect(() => {
+    uppy.setOptions({
+      restrictions: {
+        allowedFileTypes: config.allowedMimeTypes,
+        maxFileSize: config.maxFileBytes,
+      },
+    });
+  }, [config, uppy]);
+
   function queueFiles(files: File[]) {
-    for (const file of files) {
-      const validationError = validateFile(file, t);
+    if (files.length > config.maxFilesPerBatch) {
+      for (const file of files.slice(config.maxFilesPerBatch)) {
+        setPending((current) => [
+          ...current,
+          {
+            error: `Batch limit exceeded (max ${config.maxFilesPerBatch} files)`,
+            file,
+            id: createMediaUploadId(),
+            previewUrl: URL.createObjectURL(file),
+            progress: 0,
+            status: "failed",
+          },
+        ]);
+      }
+    }
+
+    for (const file of files.slice(0, config.maxFilesPerBatch)) {
+      const validationError = validateFile(file, t, config);
       const previewUrl = URL.createObjectURL(file);
 
       if (validationError) {
@@ -306,6 +361,70 @@ export function MediaUploadField({
     void uppy.retryUpload(upload.id);
   }
 
+  function handleTagSelect(
+    url: string,
+    selectedOptionTitle: string,
+    selectedValueLabel: string | null,
+  ) {
+    if (!onOptionMediaBindingsChange) return;
+
+    if (selectedValueLabel === null) {
+      if (!optionMediaBindings) return;
+      const nextMappings: Record<string, string[]> = {};
+      for (const [k, urls] of Object.entries(optionMediaBindings.mappings ?? {})) {
+        const filtered = urls.filter((u) => u !== url);
+        if (filtered.length > 0) {
+          nextMappings[k] = filtered;
+        }
+      }
+      const hasRemaining = Object.keys(nextMappings).length > 0;
+      onOptionMediaBindingsChange(
+        hasRemaining
+          ? {
+              optionTitle: optionMediaBindings.optionTitle,
+              mappings: nextMappings,
+            }
+          : null,
+      );
+      return;
+    }
+
+    const isNewAxis =
+      Boolean(optionMediaBindings?.optionTitle) &&
+      optionMediaBindings?.optionTitle.toLowerCase() !== selectedOptionTitle.toLowerCase();
+
+    if (isNewAxis && Object.keys(optionMediaBindings?.mappings ?? {}).length > 0) {
+      toast.error(t("media.tagOneAxis"));
+      return;
+    }
+    if (isNewAxis) {
+      onOptionMediaBindingsChange({
+        optionTitle: selectedOptionTitle,
+        mappings: {
+          [selectedValueLabel]: [url],
+        },
+      });
+      return;
+    }
+
+    const nextMappings: Record<string, string[]> = {};
+    for (const [k, urls] of Object.entries(optionMediaBindings?.mappings ?? {})) {
+      const filtered = urls.filter((u) => u !== url);
+      if (filtered.length > 0) {
+        nextMappings[k] = filtered;
+      }
+    }
+    const currentForVal = nextMappings[selectedValueLabel] ?? [];
+    if (!currentForVal.includes(url)) {
+      nextMappings[selectedValueLabel] = [...currentForVal, url];
+    }
+
+    onOptionMediaBindingsChange({
+      optionTitle: selectedOptionTitle,
+      mappings: nextMappings,
+    });
+  }
+
   function removeUploaded(url: string) {
     const nextUrls = imageUrlsRef.current.filter((item) => item !== url);
     imageUrlsRef.current = nextUrls;
@@ -313,6 +432,28 @@ export function MediaUploadField({
     if (thumbnailRef.current === url) {
       thumbnailRef.current = nextUrls[0] ?? "";
       onThumbnailChange(thumbnailRef.current);
+    }
+    if (optionMediaBindings && onOptionMediaBindingsChange) {
+      let changed = false;
+      const nextMappings: Record<string, string[]> = {};
+      for (const [k, urls] of Object.entries(optionMediaBindings.mappings ?? {})) {
+        const filtered = urls.filter((u) => u !== url);
+        if (filtered.length !== urls.length) changed = true;
+        if (filtered.length > 0) {
+          nextMappings[k] = filtered;
+        }
+      }
+      if (changed) {
+        const hasRemaining = Object.keys(nextMappings).length > 0;
+        onOptionMediaBindingsChange(
+          hasRemaining
+            ? {
+                optionTitle: optionMediaBindings.optionTitle,
+                mappings: nextMappings,
+              }
+            : null,
+        );
+      }
     }
   }
 
@@ -324,9 +465,26 @@ export function MediaUploadField({
     const nextUrls = arrayMove(imageUrlsRef.current, from, to);
     imageUrlsRef.current = nextUrls;
     onImageUrlsChange(nextUrls);
+    if (optionMediaBindings && onOptionMediaBindingsChange) {
+      const position = new Map(nextUrls.map((url, index) => [url, index]));
+      const mappings = Object.fromEntries(
+        Object.entries(optionMediaBindings.mappings).map(([value, urls]) => [
+          value,
+          [...urls].sort(
+            (left, right) =>
+              (position.get(left) ?? Number.MAX_SAFE_INTEGER) -
+              (position.get(right) ?? Number.MAX_SAFE_INTEGER),
+          ),
+        ]),
+      );
+      onOptionMediaBindingsChange({ ...optionMediaBindings, mappings });
+    }
   }
 
   const hasImages = imageUrls.length > 0 || pending.length > 0;
+  const activeTagAxis = Object.keys(optionMediaBindings?.mappings ?? {}).length
+    ? optionMediaBindings?.optionTitle.toLowerCase()
+    : null;
   const lightboxItems = imageUrls.map((url, index) => ({
     altText: "",
     displayName: t("media.previewImage") + (imageUrls.length > 1 ? ` ${index + 1}` : ""),
@@ -376,13 +534,24 @@ export function MediaUploadField({
               <AppIcons.upload className="size-5" />
             )}
           </span>
-          <div className={cn("flex max-w-md flex-col gap-1", hasImages || "items-center")}>
+          <div className={cn("flex min-w-0 max-w-md flex-col gap-1", hasImages || "items-center")}>
             <p className="text-sm font-medium">
               {hasImages ? t("media.addMore") : t("media.dropTitle")}
             </p>
-            {hasImages ? null : (
-              <p className="text-xs text-muted-foreground">{t("media.dropDescription")}</p>
-            )}
+            <div
+              className={cn(
+                "flex min-w-0 flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground",
+                hasImages && "hidden",
+              )}
+            >
+              <Badge
+                className="h-auto max-w-full px-2.5 py-1 text-center font-normal leading-relaxed tracking-wide whitespace-normal"
+                data-testid="media-constraints-badge"
+                variant="outline"
+              >
+                {formatConstraintsBadge(config)}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -405,7 +574,7 @@ export function MediaUploadField({
           />
         </div>
         <input
-          accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
+          accept={config.allowedMimeTypes.join(",")}
           className="sr-only"
           multiple
           onChange={(event) => {
@@ -434,6 +603,9 @@ export function MediaUploadField({
             </div>
           </div>
 
+          {(options ?? []).length > 0 ? (
+            <p className="text-xs text-muted-foreground">{t("media.tagHint")}</p>
+          ) : null}
           {/*
             Bounded gallery: denser tiles + scroll so many images do not stretch the form.
             Horizontal scroll on small screens; wrapped grid with max-height on larger ones.
@@ -451,16 +623,31 @@ export function MediaUploadField({
             >
               <SortableContext items={imageUrls} strategy={rectSortingStrategy}>
                 <div className="grid min-w-0 max-w-full grid-cols-[repeat(auto-fill,minmax(min(7.5rem,100%),10rem))] justify-start gap-3">
-                  {imageUrls.map((url, index) => (
-                    <UploadedImage
-                      isCover={thumbnail === url || (!thumbnail && index === 0)}
-                      key={url}
-                      onMakeCover={() => onThumbnailChange(url)}
-                      onPreview={() => setLightboxIndex(index)}
-                      onRemove={() => removeUploaded(url)}
-                      url={url}
-                    />
-                  ))}
+                  {imageUrls.map((url, index) => {
+                    const currentTag = getImageTag(url, optionMediaBindings);
+                    const availableOptions = (options ?? []).filter(
+                      (opt) =>
+                        opt.title?.trim() &&
+                        opt.values?.some((val) => val.label?.trim()) &&
+                        (!activeTagAxis || opt.title.toLowerCase() === activeTagAxis),
+                    );
+
+                    return (
+                      <UploadedImage
+                        availableOptions={availableOptions}
+                        currentTag={currentTag}
+                        isCover={thumbnail === url || (!thumbnail && index === 0)}
+                        key={url}
+                        onMakeCover={() => onThumbnailChange(url)}
+                        onPreview={() => setLightboxIndex(index)}
+                        onRemove={() => removeUploaded(url)}
+                        onSelectTag={(optTitle, valLabel) =>
+                          handleTagSelect(url, optTitle, valLabel)
+                        }
+                        url={url}
+                      />
+                    );
+                  })}
                   {pending.map((upload) => (
                     <PendingImage
                       key={upload.id}
@@ -486,17 +673,135 @@ export function MediaUploadField({
   );
 }
 
+function getImageTag(
+  url: string,
+  bindings: ProductOptionMediaBindings | null | undefined,
+): { optionTitle: string; valueLabel: string } | null {
+  if (!bindings || !bindings.mappings) return null;
+  for (const [valLabel, urls] of Object.entries(bindings.mappings)) {
+    if (Array.isArray(urls) && urls.includes(url)) {
+      return { optionTitle: bindings.optionTitle, valueLabel: valLabel };
+    }
+  }
+  return null;
+}
+
+export function ImageOptionTagPopover({
+  currentTag,
+  onSelectTag,
+  options,
+}: {
+  currentTag: { optionTitle: string; valueLabel: string } | null;
+  onSelectTag: (optionTitle: string, valueLabel: string | null) => void;
+  options: ProductOptionDraft[];
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const tagLabel = currentTag ? currentTag.valueLabel : t("media.tagForAll");
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <Button
+          aria-label={t("media.tagAria", { choice: tagLabel })}
+          className="h-6 w-full justify-start gap-1 px-1.5 text-[11px] font-medium"
+          size="xs"
+          type="button"
+          variant="outline"
+        >
+          <AppIcons.tag className="size-3 shrink-0 text-muted-foreground" />
+          <span className="truncate">{tagLabel}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
+        side="bottom"
+      >
+        <div className="flex min-h-0 flex-col">
+          <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
+            {t("media.tagAction")}
+          </div>
+          <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
+            <button
+              className={cn(
+                "flex min-h-9 w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted",
+                !currentTag && "font-medium text-primary",
+              )}
+              onClick={() => {
+                onSelectTag("", null);
+                setOpen(false);
+              }}
+              type="button"
+            >
+              <span className="flex items-center gap-2.5">
+                <AppIcons.tag className="size-3.5 shrink-0 text-muted-foreground" />
+                {t("media.tagForAll")}
+              </span>
+              {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
+            </button>
+
+            {options.map((opt) => (
+              <div className="flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
+                <div className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
+                  {opt.title}
+                </div>
+                {opt.values
+                  .filter((v) => v.label.trim())
+                  .map((val) => {
+                    const isSelected =
+                      currentTag?.optionTitle.toLowerCase() === opt.title.toLowerCase() &&
+                      currentTag?.valueLabel.toLowerCase() === val.label.toLowerCase();
+
+                    return (
+                      <button
+                        className={cn(
+                          "flex min-h-9 w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted",
+                          isSelected && "font-medium text-primary",
+                        )}
+                        key={val.key ?? val.label}
+                        onClick={() => {
+                          onSelectTag(opt.title, val.label);
+                          setOpen(false);
+                        }}
+                        type="button"
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          <ProductOptionSwatchPreview className="size-3.5" value={val.swatch} />
+                          <span className="truncate">{val.label}</span>
+                        </span>
+                        {isSelected ? (
+                          <AppIcons.check className="size-3.5 shrink-0 text-primary" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function UploadedImage({
+  availableOptions,
+  currentTag,
   isCover,
   onMakeCover,
   onPreview,
   onRemove,
+  onSelectTag,
   url,
 }: {
+  availableOptions?: ProductOptionDraft[];
+  currentTag?: { optionTitle: string; valueLabel: string } | null;
   isCover: boolean;
   onMakeCover: () => void;
   onPreview: () => void;
   onRemove: () => void;
+  onSelectTag?: (optionTitle: string, valueLabel: string | null) => void;
   url: string;
 }) {
   const { t } = useI18n();
@@ -535,6 +840,16 @@ function UploadedImage({
           <AppIcons.expand className="size-3" />
         </span>
       </button>
+
+      {availableOptions && (availableOptions.length > 0 || currentTag) && onSelectTag ? (
+        <div className="border-t bg-muted/15 p-1">
+          <ImageOptionTagPopover
+            currentTag={currentTag ?? null}
+            onSelectTag={onSelectTag}
+            options={availableOptions}
+          />
+        </div>
+      ) : null}
 
       <div className="flex items-center gap-0.5 border-t bg-card/95 p-1">
         <Tooltip>
@@ -661,9 +976,17 @@ function PendingImage({
   );
 }
 
-function validateFile(file: File, t: ReturnType<typeof useI18n>["t"]) {
-  if (!acceptedTypes.has(file.type)) return t("media.invalidType");
-  if (file.size > maxByteSize) return t("media.tooLarge");
+function validateFile(
+  file: File,
+  t: ReturnType<typeof useI18n>["t"],
+  config: MediaLimitsConfig = DEFAULT_MEDIA_LIMITS,
+) {
+  if (config.allowedMimeTypes.length > 0 && !config.allowedMimeTypes.includes(file.type)) {
+    return t("media.invalidType");
+  }
+  if (file.size > config.maxFileBytes) {
+    return `${t("media.tooLarge")} (max ${config.formattedMaxSize})`;
+  }
   return null;
 }
 

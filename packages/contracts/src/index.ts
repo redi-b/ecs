@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 import {
+  catalogNameTranslationSchema,
   defaultStorefrontLanguageSettings,
   emptyStorefrontLocalizedContent,
   storefrontLanguageSettingsSchema,
-  catalogNameTranslationSchema,
   storefrontLocalizedContentSchema,
 } from "./storefront-localization";
 
@@ -459,6 +459,8 @@ export const merchantProductVariantWriteSchema = z.object({
   priceAmount: z.number().nonnegative(),
   currencyCode: z.string().min(1),
   stockedQuantity: z.number().int().nonnegative().optional(),
+  imageUrl: z.string().url().nullable().optional(),
+  imageSource: z.enum(["option", "manual"]).nullable().optional(),
 });
 
 export const PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY =
@@ -472,33 +474,52 @@ export const productColorSwatchSchema = z.object({
   value: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
+export const productImageSwatchSchema = z.object({
+  kind: z.literal("image"),
+  url: z.string().url(),
+});
+
+export const productOptionSwatchSchema = z.discriminatedUnion("kind", [
+  productColorSwatchSchema,
+  productImageSwatchSchema,
+]);
+
 export const productOptionValueWriteSchema = z.union([
   z.string().trim().min(1),
   z.object({
     id: z.string().trim().min(1).optional(),
     label: z.string().trim().min(1),
-    swatch: productColorSwatchSchema.nullable().optional(),
+    swatch: productOptionSwatchSchema.nullable().optional(),
   }),
 ]);
 
 export const merchantProductOptionWriteSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   id: z.string().trim().min(1).optional(),
   title: z.string().trim().min(1),
   values: z.array(productOptionValueWriteSchema).min(1),
 });
 
 export const productOptionValuePresentationWriteSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   optionId: z.string().trim().min(1).optional(),
   optionTitle: z.string().trim().min(1),
   valueId: z.string().trim().min(1).optional(),
   valueLabel: z.string().trim().min(1),
-  swatch: productColorSwatchSchema.nullable(),
+  swatch: productOptionSwatchSchema.nullable(),
 });
 
 export const productOptionValuePresentationsAdditionalDataSchema = z.object({
   version: z.literal(1),
   values: z.array(productOptionValuePresentationWriteSchema),
 });
+
+export const productOptionMediaBindingsSchema = z.object({
+  optionTitle: z.string().min(1),
+  mappings: z.record(z.string().min(1), z.array(z.string().min(1))),
+});
+
+export type ProductOptionMediaBindings = z.infer<typeof productOptionMediaBindingsSchema>;
 
 export const merchantProductWriteSchema = z.object({
   categoryIds: z.array(z.string().min(1)).optional(),
@@ -507,6 +528,7 @@ export const merchantProductWriteSchema = z.object({
   description: z.string().min(1).nullable().optional(),
   handle: z.string().min(1).nullable().optional(),
   imageUrls: z.array(z.string().min(1)).optional(),
+  optionMediaBindings: productOptionMediaBindingsSchema.nullable().optional(),
   options: z.array(merchantProductOptionWriteSchema).optional(),
   priceAmount: z.number().nonnegative().optional(),
   status: z.string().min(1).nullable().optional(),
@@ -529,13 +551,22 @@ export const merchantProductStockSchema = z.object({
   availableQuantity: z.number().nullable(),
 });
 
+export const productColorSwatchWithSourceSchema = productColorSwatchSchema.extend({
+  source: z.enum(["explicit", "inferred"]),
+});
+
+export const productImageSwatchWithSourceSchema = productImageSwatchSchema.extend({
+  source: z.enum(["explicit", "inferred"]),
+});
+
+export const productOptionSwatchWithSourceSchema = z.discriminatedUnion("kind", [
+  productColorSwatchWithSourceSchema,
+  productImageSwatchWithSourceSchema,
+]);
+
 export const productOptionValuePresentationSchema = z.object({
   label: z.string().min(1),
-  swatch: productColorSwatchSchema
-    .extend({
-      source: z.enum(["explicit", "inferred"]),
-    })
-    .optional(),
+  swatch: productOptionSwatchWithSourceSchema.optional(),
 });
 
 export const merchantProductOptionValueSchema = productOptionValuePresentationSchema.extend({
@@ -543,6 +574,7 @@ export const merchantProductOptionValueSchema = productOptionValuePresentationSc
 });
 
 export const merchantProductOptionSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   id: z.string().min(1).nullable(),
   title: z.string().min(1),
   values: z.array(merchantProductOptionValueSchema),
@@ -569,6 +601,7 @@ export const merchantProductSchema = z.object({
     )
     .optional(),
   options: z.array(merchantProductOptionSchema).optional(),
+  optionMediaBindings: productOptionMediaBindingsSchema.nullable().optional(),
   variants: z
     .array(
       z.object({
@@ -576,6 +609,8 @@ export const merchantProductSchema = z.object({
         inventoryItemId: z.string().min(1).nullable().optional(),
         title: z.string().min(1).nullable(),
         sku: z.string().min(1).nullable(),
+        imageUrl: z.string().url().nullable().optional(),
+        imageSource: z.enum(["option", "manual"]).nullable().optional(),
         optionValues: z
           .array(
             z.object({
@@ -604,6 +639,7 @@ export const merchantProductSchema = z.object({
   createdAt: z.string().min(1).nullable(),
   updatedAt: z.string().min(1).nullable(),
   translation: catalogNameTranslationSchema.optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const merchantProductsSchema = z.object({
@@ -615,6 +651,7 @@ export const merchantProductsSchema = z.object({
 
 export const merchantProductMutationSchema = z.object({
   product: merchantProductSchema,
+  mediaSyncWarning: z.boolean().optional(),
 });
 
 export const merchantProductStockResponseSchema = z.object({
@@ -673,6 +710,12 @@ export type MerchantProductOption = z.infer<typeof merchantProductOptionSchema>;
 export type MerchantProductOptionValue = z.infer<typeof merchantProductOptionValueSchema>;
 
 export type ProductColorSwatch = z.infer<typeof productColorSwatchSchema>;
+
+export type ProductImageSwatch = z.infer<typeof productImageSwatchSchema>;
+
+export type ProductOptionSwatch = z.infer<typeof productOptionSwatchSchema>;
+
+export type ProductOptionSwatchWithSource = z.infer<typeof productOptionSwatchWithSourceSchema>;
 
 export type ProductOptionValuePresentation = z.infer<typeof productOptionValuePresentationSchema>;
 
@@ -2144,7 +2187,9 @@ export const storefrontDraftSchema = z.object({
         data: z.unknown(),
         themeTokens: z.unknown(),
         seo: storefrontSeoSettingsSchema.optional(),
-        languageSettings: storefrontLanguageSettingsSchema.default(defaultStorefrontLanguageSettings),
+        languageSettings: storefrontLanguageSettingsSchema.default(
+          defaultStorefrontLanguageSettings,
+        ),
         localizedContent: storefrontLocalizedContentSchema.default(emptyStorefrontLocalizedContent),
       })
       .nullable()

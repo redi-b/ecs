@@ -45,8 +45,6 @@ Catalog pages (home, PLP, PDP) use **SSR + Redis HTML cache** (Astro 7 cache pro
 - Catalog writes (products, stock, categories, collections) → same purge
 - Endpoint: `POST /internal/cache-purge` with header `x-ecs-cache-purge-secret`
 
-See `dev-docs/07-storefront-routing.md`.
-
 ## Environment
 
 Copy `apps/storefront/.env.example` → `.env`. Important vars:
@@ -69,10 +67,3 @@ With apps running (`pnpm dev` / `pnpm dev:apps`):
 - Browse → add to cart → checkout COD
 
 COD needs Medusa shipping options for the cart. Chapa requires merchant credentials on the tenant (Settings → Payments).
-
-## Plans / status
-
-- v0 core: `dev-docs/post-mvp/12-storefront-commerce-core-plan.md`
-- Completeness + template contracts: `dev-docs/post-mvp/14-storefront-completeness-and-templates-plan.md`
-- Merchant Chapa: `dev-docs/post-mvp/13-merchant-online-payments-plan.md`
-- Status: `dev-docs/00-current-status.md`

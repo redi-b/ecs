@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { ProductOptionSwatchPreview } from "@/features/products/product-swatch-popover";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -158,8 +159,7 @@ export function ProductOptionConfigurator({
               const available = isValueAvailable(axis.title, value);
               const swatch = variants.find(
                 (variant) =>
-                  variant.options?.[axis.title] === value &&
-                  variant.optionSwatches?.[axis.title],
+                  variant.options?.[axis.title] === value && variant.optionSwatches?.[axis.title],
               )?.optionSwatches?.[axis.title];
               return (
                 <button
@@ -182,13 +182,7 @@ export function ProductOptionConfigurator({
                   }}
                   type="button"
                 >
-                  {swatch ? (
-                    <span
-                      aria-hidden="true"
-                      className="size-4 shrink-0 rounded-full border border-black/15 dark:border-white/20"
-                      style={{ backgroundColor: swatch }}
-                    />
-                  ) : null}
+                  {swatch ? <ProductOptionSwatchPreview value={swatch} /> : null}
                   {value}
                 </button>
               );

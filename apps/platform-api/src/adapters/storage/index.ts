@@ -1,4 +1,4 @@
-export { createMediaStorageFromEnv } from "./env.js";
+export { createMediaStorageFromEnv, getMediaLimitsConfig, type MediaLimitsConfig } from "./env.js";
 export type { S3StorageOptions } from "./s3-storage.js";
 export { createS3StorageAdapter } from "./s3-storage.js";
 export type {

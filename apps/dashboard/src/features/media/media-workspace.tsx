@@ -150,6 +150,9 @@ export function MediaWorkspace({
         page={page}
         pageSize={pageSize}
       />
+      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+        {t("media.libraryTaggingHint")}
+      </p>
       {loadError ? (
         <Alert variant="destructive">
           <AlertTitle>{t("media.libraryLoadError")}</AlertTitle>

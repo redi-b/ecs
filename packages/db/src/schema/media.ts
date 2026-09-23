@@ -1,8 +1,10 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -32,6 +34,16 @@ export const mediaAssets = pgTable(
     height: integer("height"),
     accessMode: mediaAccessMode("access_mode").notNull().default("public"),
     publicUrl: text("public_url"),
+    variants: jsonb("variants")
+      .$type<
+        Record<
+          string,
+          { byteSize: number; height: number; objectKey: string; publicUrl: string | null; width: number }
+        >
+      >()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    variantsStatus: text("variants_status").notNull().default("pending"),
     status: mediaAssetStatus("status").notNull().default("pending"),
     altText: text("alt_text"),
     createdByUserId: text("created_by_user_id").references(() => users.id),

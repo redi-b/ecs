@@ -1,0 +1,143 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Bole Style home" [ref=e3] [cursor=pointer]:
+      - /url: /
+      - img "Bole Style" [ref=e4]
+    - navigation "Store" [ref=e5]:
+      - link "Home" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - link "Shop" [ref=e7] [cursor=pointer]:
+        - /url: /products
+      - link "Request Item" [ref=e8] [cursor=pointer]:
+        - /url: /request-item
+      - link "About Us" [ref=e9] [cursor=pointer]:
+        - /url: /about
+      - link "Contact" [ref=e10] [cursor=pointer]:
+        - /url: /contact
+    - generic [ref=e11]:
+      - search [ref=e12]:
+        - generic [ref=e13]: Search products
+        - searchbox "Search products" [ref=e14]
+        - button "Search" [ref=e15]
+      - link "Wishlist" [ref=e16] [cursor=pointer]:
+        - /url: /wishlist
+      - link "Shopping cart" [ref=e17] [cursor=pointer]:
+        - /url: /cart
+      - link "Account" [ref=e18] [cursor=pointer]:
+        - /url: /account
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - heading "Wake Up to Softer, Brighter, and More Radiant Skin" [level=1] [ref=e22]
+        - paragraph [ref=e23]: Essentials that nourish your skin's barrier, promoting a radiant, dewy glow that looks stunning and feels refreshing and healthy all day.
+        - link "Shop Our Essentials" [ref=e24] [cursor=pointer]:
+          - /url: /products
+        - list [ref=e28]:
+          - listitem [ref=e29]: Clean & Natural
+          - listitem [ref=e36]: Barrier Focused
+          - listitem [ref=e43]: Clinically Inspired
+      - generic [ref=e50]:
+        - img "Model with radiant skin" [ref=e51]
+        - article "Featured products" [ref=e52]:
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e56]:
+                - img "Linen Midi Dress" [ref=e57]
+                - button "Save Linen Midi Dress to wishlist" [ref=e58] [cursor=pointer]
+              - generic [ref=e59]:
+                - strong [ref=e60]: Linen Midi Dress
+                - generic [ref=e61]: ETB 3,200
+                - button "Add to Cart" [ref=e64] [cursor=pointer]
+            - generic [ref=e69]:
+              - button [ref=e72] [cursor=pointer]
+              - generic [ref=e73]:
+                - strong [ref=e74]: Cotton Wrap Blouse
+                - generic [ref=e75]: ETB 1,850
+                - button [ref=e78] [cursor=pointer]:
+                  - generic [ref=e79]: Add to Cart
+            - generic [ref=e83]:
+              - button [ref=e86] [cursor=pointer]
+              - generic [ref=e87]:
+                - strong [ref=e88]: Relaxed Chino Trousers
+                - generic [ref=e89]: ETB 2,100
+                - button [ref=e92] [cursor=pointer]:
+                  - generic [ref=e93]: Add to Cart
+            - generic [ref=e97]:
+              - button [ref=e100] [cursor=pointer]
+              - generic [ref=e101]:
+                - strong [ref=e102]: Essential Crew Tee
+                - generic [ref=e103]: ETB 890
+                - button [ref=e106] [cursor=pointer]:
+                  - generic [ref=e107]: Add to Cart
+            - generic [ref=e111]:
+              - button [ref=e114] [cursor=pointer]
+              - generic [ref=e115]:
+                - strong [ref=e116]: Leather Crossbody Bag
+                - generic [ref=e117]: ETB 4,500
+                - button [ref=e120] [cursor=pointer]:
+                  - generic [ref=e121]: Add to Cart
+            - generic [ref=e125]:
+              - button [ref=e128] [cursor=pointer]
+              - generic [ref=e129]:
+                - strong [ref=e130]: Canvas Tote
+                - generic [ref=e131]: ETB 780
+                - button [ref=e134] [cursor=pointer]:
+                  - generic [ref=e135]: Add to Cart
+          - generic "Choose featured product" [ref=e139]:
+            - button "Show featured product 1" [ref=e140] [cursor=pointer]
+            - button "Show featured product 2" [ref=e141] [cursor=pointer]
+            - button "Show featured product 3" [ref=e142] [cursor=pointer]
+            - button "Show featured product 4" [ref=e143] [cursor=pointer]
+            - button "Show featured product 5" [ref=e144] [cursor=pointer]
+            - button "Show featured product 6" [ref=e145] [cursor=pointer]
+  - contentinfo [ref=e146]:
+    - generic [ref=e147]:
+      - paragraph [ref=e148]: A collection of leading beauty products for thoughtful, effective skincare routines.
+      - link "Web Design by Eclipticcreative" [ref=e149] [cursor=pointer]:
+        - /url: https://eclipticcreative.com
+      - img "Bole Style" [ref=e150]
+    - generic [ref=e151]:
+      - strong [ref=e152]: QUICK LINKS
+      - generic [ref=e153]:
+        - link "Home" [ref=e154] [cursor=pointer]:
+          - /url: /
+        - link "About" [ref=e155] [cursor=pointer]:
+          - /url: /about
+        - link "Shop" [ref=e156] [cursor=pointer]:
+          - /url: /products
+        - link "Contact" [ref=e157] [cursor=pointer]:
+          - /url: /contact
+        - link "Wishlist" [ref=e158] [cursor=pointer]:
+          - /url: /wishlist
+    - generic [ref=e159]:
+      - strong [ref=e160]: SHOP
+      - generic [ref=e161]:
+        - link "All products" [ref=e162] [cursor=pointer]:
+          - /url: /products
+        - link "Request an item" [ref=e163] [cursor=pointer]:
+          - /url: /request-item
+        - link "Wishlist" [ref=e164] [cursor=pointer]:
+          - /url: /wishlist
+    - generic [ref=e165]:
+      - strong [ref=e166]: SOCIALS
+      - generic [ref=e167]:
+        - link "Facebook" [ref=e168] [cursor=pointer]:
+          - /url: https://facebook.com
+        - link "Instagram" [ref=e169] [cursor=pointer]:
+          - /url: https://instagram.com
+        - link "Twitter" [ref=e170] [cursor=pointer]:
+          - /url: https://x.com
+        - link "Pinterest" [ref=e171] [cursor=pointer]:
+          - /url: https://pinterest.com
+    - generic [ref=e172]:
+      - strong [ref=e173]: CONTACT INFO
+      - link "+251 91 266 5485" [ref=e174] [cursor=pointer]:
+        - /url: tel:+251 91 266 5485
+      - link "hello@luviabeauty.com" [ref=e175] [cursor=pointer]:
+        - /url: mailto:hello@luviabeauty.com
+      - paragraph [ref=e176]: Kassanchis, Addis Ababa, Ethiopia
+    - generic [ref=e177]: © 2026 Bole Style. All rights reserved.
+  - complementary [ref=e178]:
+    - paragraph [ref=e179]: Do you have any inquiries for us?
+    - link "Let’s Get in Touch" [ref=e180] [cursor=pointer]:
+      - /url: /contact

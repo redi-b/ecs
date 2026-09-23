@@ -237,12 +237,14 @@
   background: transparent;
 }
 
-.lv-product-buy fieldset .lv-product-swatch>span {
+.lv-product-buy fieldset .lv-product-swatch>span,
+.lv-product-buy fieldset .lv-product-swatch>img {
   width: 34px;
   height: 34px;
   display: block;
   border-radius: $radius-full;
   box-shadow: inset 0 0 0 1px alpha(var(--clr-black), 0.12);
+  object-fit: cover;
 }
 
 .lv-product-buy fieldset .lv-product-swatch[aria-pressed="true"] {

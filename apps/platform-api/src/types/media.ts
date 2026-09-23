@@ -10,6 +10,15 @@ export type MediaAsset = {
   mimeType: string;
   publicUrl: string | null;
   status: "pending" | "uploaded" | "processing" | "ready" | "failed" | "deleted";
+  urls: {
+    original: string | null;
+    w96: string | null;
+    w200: string | null;
+    w400: string | null;
+    w800: string | null;
+    w1200: string | null;
+  };
+  variantsStatus: string;
   updatedAt: string;
   width: number | null;
 };

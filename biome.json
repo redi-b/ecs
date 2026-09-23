@@ -10,7 +10,6 @@
       "**",
       "!.agents",
       "!.codex",
-      "!dev-docs",
       "!node_modules",
       "!dist",
       "!build",

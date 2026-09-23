@@ -1,4 +1,7 @@
+import type { ProductOptionSwatch } from "@ecs/contracts";
+
 export type ProductOptionDraft = {
+  displayMode?: "text" | "swatch" | undefined;
   id?: string | undefined;
   key?: string | undefined;
   savedOptionSetId?: string | undefined;
@@ -11,7 +14,7 @@ export type ProductOptionValueDraft = {
   id?: string | undefined;
   key?: string | undefined;
   label: string;
-  swatch?: { kind: "color"; value: string } | null | undefined;
+  swatch?: ProductOptionSwatch | null | undefined;
 };
 
 export type VariantDefaults = {
@@ -24,6 +27,7 @@ export type VariantDefaults = {
 export type VariantOverride = {
   enabled?: boolean | undefined;
   id?: string | undefined;
+  imageUrl?: string | undefined;
   priceAmount?: number | undefined;
   reservedQuantity?: number | undefined;
   sku?: string | undefined;
@@ -34,6 +38,7 @@ export type VariantMatrixRow = {
   currencyCode: string;
   enabled: boolean;
   id?: string | undefined;
+  imageUrl?: string | undefined;
   key: string;
   optionValues: Record<string, string>;
   priceAmount: number;
@@ -90,6 +95,7 @@ export function buildVariantMatrix(input: {
         currencyCode: input.defaults.currencyCode,
         enabled: override?.enabled ?? true,
         ...(override?.id ? { id: override.id } : {}),
+        ...(override?.imageUrl ? { imageUrl: override.imageUrl } : {}),
         key,
         optionValues: {},
         priceAmount: override?.priceAmount ?? input.defaults.priceAmount,
@@ -133,6 +139,7 @@ export function buildVariantMatrix(input: {
       currencyCode: input.defaults.currencyCode,
       enabled: override?.enabled ?? true,
       ...(override?.id ? { id: override.id } : {}),
+      ...(override?.imageUrl ? { imageUrl: override.imageUrl } : {}),
       key,
       optionValues,
       priceAmount: override?.priceAmount ?? input.defaults.priceAmount,

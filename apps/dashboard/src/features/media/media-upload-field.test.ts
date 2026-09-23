@@ -11,4 +11,6 @@ test("product uploads join the selection and keep the populated picker bounded",
   assert.match(source, /repeat\(auto-fill,minmax\(min\(7\.5rem,100%\),10rem\)\)/);
   assert.match(source, /modifiers=\{\[keepDragInsideGallery\]\}/);
   assert.match(source, /data-media-upload-scope/);
+  assert.match(source, /data-testid="media-constraints-badge"/);
+  assert.match(source, /formatConstraintsBadge/);
 });

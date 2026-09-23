@@ -12,12 +12,14 @@ import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
 import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
 import { createMedusaOrderService } from "./adapters/medusa/order/service.js";
 import { createMedusaProductService } from "./adapters/medusa/product/service.js";
+import { createMediaStorageFromEnv } from "./adapters/storage/env.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
 import { createEmailDeliverHandler } from "./jobs/handlers/email-deliver.js";
 import { createInAppNotificationMaterializeHandler } from "./jobs/handlers/in-app-notification-materialize.js";
+import { createMediaProcessHandler } from "./jobs/handlers/media-process.js";
 import { createNotificationsDeliverHandler } from "./jobs/handlers/notifications-deliver.js";
 import {
   createProductImportApplyHandler,
@@ -36,6 +38,7 @@ import {
 import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
 import { createCustomerOrderEmailDispatcher } from "./modules/email/customer-order-dispatcher.js";
 import { createEmailDeliveryService } from "./modules/email/delivery-service.js";
+import { createMediaService } from "./modules/media/index.js";
 import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
 import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
 import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
@@ -246,8 +249,16 @@ const worker = startPlatformWorkers({
       listOrders: (input) => orderService.listMerchantOrders(input),
       listProducts: (input) => productService.listMerchantProducts(input),
     }) as JobHandler,
+    "media.process": createMediaProcessHandler({
+      db: platformDb.db,
+      storage: createMediaStorageFromEnv(),
+      updateProductMediaVariants: (input) => productService.updateProductMediaVariants(input),
+    }) as JobHandler,
     "product-import.apply": createProductImportApplyHandler({
       store: createProductImportApplyStore(platformDb.db),
+      syncProductMedia: createMediaService(platformDb.db, createMediaStorageFromEnv(), {
+        updateProductMediaVariants: productService.updateProductMediaVariants,
+      }).syncProductMedia,
       commerce: {
         createProduct: createCapacityLimitedProduct,
         findImportedProduct: productService.findImportedProduct,

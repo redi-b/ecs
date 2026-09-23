@@ -5,9 +5,10 @@ import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
+  ProductOptionSwatch,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
@@ -32,6 +33,11 @@ import {
   ProductOptionsEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
+import {
+  getImageOptionTag,
+  resolveProductMediaVariant,
+} from "@/features/products/product-media-variants";
+import { ProductOptionSwatchPreview } from "@/features/products/product-swatch-popover";
 import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { useI18n } from "@/i18n/provider";
@@ -63,6 +69,7 @@ export function ProductDetail({
   const { t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const { amharicEnabled: localeAmharicEnabled } = useCatalogLabelLocale();
   const effectiveTranslationsEnabled = translationsEnabled && localeAmharicEnabled;
   const canUpdate = usePermission("products.update");
@@ -93,13 +100,13 @@ export function ProductDetail({
           ? `${product.title} · ${t("products.detail.productImage")} ${index + 1}`
           : `${t("products.detail.productImage")} ${index + 1}`,
         id: image.id || image.url,
-        publicUrl: image.url,
+        publicUrl: resolveProductMediaVariant(image.url, product.metadata, "w1200"),
         subtitle:
           product.thumbnail && product.thumbnail === image.url
             ? t("products.detail.coverImage")
             : image.url,
       })),
-    [images, product.thumbnail, product.title, t],
+    [images, product.metadata, product.thumbnail, product.title, t],
   );
 
   const collection = collections.find((item) => item.id === product.collectionId);
@@ -110,7 +117,7 @@ export function ProductDetail({
 
   function openLightboxForUrl(url: string | null | undefined) {
     if (!url || !lightboxItems.length) return;
-    const index = lightboxItems.findIndex((item) => item.publicUrl === url);
+    const index = images.findIndex((image) => image.url === url);
     setLightboxIndex(index >= 0 ? index : 0);
   }
 
@@ -126,7 +133,7 @@ export function ProductDetail({
             <div className="flex min-w-0 items-center gap-3.5">
               <ProductThumbnail
                 onOpen={() => openLightboxForUrl(product.thumbnail ?? images[0]?.url)}
-                src={product.thumbnail}
+                src={resolveProductMediaVariant(product.thumbnail, product.metadata, "w200")}
                 title={product.title}
               />
               <div className="min-w-0 space-y-2">
@@ -222,7 +229,13 @@ export function ProductDetail({
           <DetailSection
             action={
               effectiveReadOnly ? null : (
-                <ProductMediaEditButton action={action} product={product} />
+                <ProductMediaEditButton
+                  action={action}
+                  product={product}
+                  defaultOpen={searchParams.get("edit") === "media"}
+                  triggerLabel={t("products.edit.mediaTrigger")}
+                  triggerVariant="icon"
+                />
               )
             }
             meta={t("products.detail.imagesCount", { count: images.length })}
@@ -238,6 +251,13 @@ export function ProductDetail({
               >
                 {images.map((image, index) => {
                   const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
+                  const imageTag = getImageOptionTag(image.url, product.optionMediaBindings);
+                  const displayUrl = resolveProductMediaVariant(
+                    image.url,
+                    product.metadata,
+                    "w400",
+                  );
+
                   return (
                     <figure
                       className="group overflow-hidden rounded-xl bg-muted/20 ring-1 ring-border/60"
@@ -253,11 +273,17 @@ export function ProductDetail({
                         <img
                           alt={product.title ?? t("products.detail.productImage")}
                           className="aspect-square w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
-                          src={image.url}
+                          src={displayUrl}
                         />
                         {isCover ? (
                           <span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-sm">
                             {t("products.detail.cover")}
+                          </span>
+                        ) : null}
+                        {imageTag ? (
+                          <span className="absolute bottom-2 left-2 flex max-w-[calc(100%-3rem)] items-center gap-1 truncate rounded-full border border-border/70 bg-background/90 px-2 py-0.5 text-[10px] font-medium text-foreground shadow-xs backdrop-blur-xs">
+                            <AppIcons.tag className="size-2.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{imageTag.optionValue}</span>
                           </span>
                         ) : null}
                         <span className="absolute right-2 bottom-2 rounded-full border border-white/20 bg-black/70 p-1.5 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -269,9 +295,17 @@ export function ProductDetail({
                 })}
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground">
-                {t("products.detail.noImagesYet")}
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/80 bg-muted/15 px-4 py-8 text-center">
+                <p className="text-sm text-muted-foreground">{t("products.detail.noImagesYet")}</p>
+                {effectiveReadOnly ? null : (
+                  <ProductMediaEditButton
+                    action={action}
+                    product={product}
+                    triggerLabel={t("products.edit.mediaAdd")}
+                    triggerVariant="button"
+                  />
+                )}
+              </div>
             )}
           </DetailSection>
 
@@ -282,7 +316,7 @@ export function ProductDetail({
               )
             }
             meta={t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
-            title={t("products.detail.optionsTitle")}
+            title={t("products.detail.optionsVariantsTitle")}
           >
             <ProductOptionsSummary product={product} />
           </DetailSection>
@@ -372,37 +406,45 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
   const VALUE_PREVIEW = 12;
 
   return (
-    <div className="grid gap-2.5 sm:grid-cols-2">
-      {options.map((option) => {
-        const extra = Math.max(0, option.values.length - VALUE_PREVIEW);
-        const values = option.values.slice(0, VALUE_PREVIEW);
-        return (
-          <div
-            className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
-            key={option.title}
-          >
-            <div className="text-sm font-medium">{option.title}</div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {values.map((value) => (
-                <Badge className="rounded-md font-normal" key={value} variant="secondary">
-                  {value}
-                </Badge>
-              ))}
-              {extra > 0 ? (
-                <Badge className="rounded-md font-normal" variant="outline">
-                  +{extra}
-                </Badge>
-              ) : null}
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{t("products.detail.variantsHelp")}</p>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {options.map((option) => {
+          const extra = Math.max(0, option.values.length - VALUE_PREVIEW);
+          const values = option.values.slice(0, VALUE_PREVIEW);
+          return (
+            <div
+              className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
+              key={option.title}
+            >
+              <div className="text-sm font-medium">{option.title}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {values.map((value) => (
+                  <Badge
+                    className="gap-1.5 rounded-md font-normal"
+                    key={value.label}
+                    variant="secondary"
+                  >
+                    <ProductOptionSwatchPreview value={value.swatch} />
+                    {value.label}
+                  </Badge>
+                ))}
+                {extra > 0 ? (
+                  <Badge className="rounded-md font-normal" variant="outline">
+                    +{extra}
+                  </Badge>
+                ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function getProductOptionGroups(product: MerchantProduct) {
-  const optionGroups = new Map<string, Set<string>>();
+  const optionGroups = new Map<string, Map<string, ProductOptionSwatch | undefined>>();
 
   for (const variant of product.variants ?? []) {
     for (const option of variant.optionValues ?? []) {
@@ -410,15 +452,27 @@ function getProductOptionGroups(product: MerchantProduct) {
         continue;
       }
 
-      const values = optionGroups.get(option.optionTitle) ?? new Set<string>();
-      values.add(option.value);
+      const values =
+        optionGroups.get(option.optionTitle) ?? new Map<string, ProductOptionSwatch | undefined>();
+      const configuredValue = product.options
+        ?.find(
+          (axis) =>
+            axis.title.localeCompare(option.optionTitle ?? "", undefined, {
+              sensitivity: "base",
+            }) === 0,
+        )
+        ?.values.find(
+          (item) =>
+            item.label.localeCompare(option.value ?? "", undefined, { sensitivity: "base" }) === 0,
+        );
+      values.set(option.value, configuredValue?.swatch);
       optionGroups.set(option.optionTitle, values);
     }
   }
 
   return Array.from(optionGroups, ([title, values]) => ({
     title,
-    values: Array.from(values),
+    values: Array.from(values, ([label, swatch]) => ({ label, swatch })),
   }));
 }
 

@@ -9,6 +9,7 @@ const PRODUCT_FIELDS = [
   "+variants.manage_inventory",
   "+variants.allow_backorder",
   "+variants.sku",
+  "+variants.metadata",
   "*options",
   "*options.values",
   "+options.values.metadata",
@@ -19,6 +20,7 @@ const PRODUCT_FIELDS = [
   "+handle",
   "+description",
   "+collection_id",
+  "+metadata",
 ].join(",");
 
 type ProductSearchResponse = {

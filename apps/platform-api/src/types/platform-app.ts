@@ -1,4 +1,4 @@
-import type { SuperadminTenant } from "@ecs/contracts";
+import type { ProductOptionMediaBindings, ProductOptionSwatch, SuperadminTenant } from "@ecs/contracts";
 import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
 import type {
   PlatformAuthorizationResult,
@@ -641,6 +641,7 @@ export type PlatformAppOptions = {
         description?: string | null | undefined;
         handle?: string | null | undefined;
         imageUrls?: string[] | undefined;
+        optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
         options?:
           | Array<{
               id?: string | undefined;
@@ -650,7 +651,7 @@ export type PlatformAppOptions = {
                 | {
                     id?: string | undefined;
                     label: string;
-                    swatch?: { kind: "color"; value: string } | null | undefined;
+                    swatch?: ProductOptionSwatch | null | undefined;
                   }
               >;
             }>
@@ -667,6 +668,7 @@ export type PlatformAppOptions = {
         variants?:
           | Array<{
               currencyCode: string;
+              imageUrl?: string | null | undefined;
               optionValues: Record<string, string>;
               priceAmount: number;
               sku?: string | null | undefined;
@@ -1436,6 +1438,7 @@ export type PlatformAppOptions = {
         description?: string | null | undefined;
         handle?: string | null | undefined;
         imageUrls?: string[] | undefined;
+        optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
         options?:
           | Array<{
               id?: string | undefined;
@@ -1445,7 +1448,7 @@ export type PlatformAppOptions = {
                 | {
                     id?: string | undefined;
                     label: string;
-                    swatch?: { kind: "color"; value: string } | null | undefined;
+                    swatch?: ProductOptionSwatch | null | undefined;
                   }
               >;
             }>
@@ -1454,13 +1457,16 @@ export type PlatformAppOptions = {
         productId: string;
         regionId?: string | null | undefined;
         salesChannelId: string;
+        shippingProfileId?: string | null | undefined;
         status?: string | null | undefined;
+        stockLocationId?: string | null | undefined;
         tenantId?: string;
         thumbnail?: string | null | undefined;
         title?: string | null | undefined;
         variants?:
           | Array<{
               currencyCode: string;
+              imageUrl?: string | null | undefined;
               optionValues: Record<string, string>;
               priceAmount: number;
               sku?: string | null | undefined;
@@ -1604,6 +1610,7 @@ export type PlatformAppOptions = {
   syncProductMedia?:
     | ((input: {
         imageUrls: string[];
+        variantImageUrls?: string[] | undefined;
         productId: string;
         tenantId: string;
         thumbnail: string | null;

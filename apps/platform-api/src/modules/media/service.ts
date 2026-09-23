@@ -29,6 +29,12 @@ import type {
   MediaServiceError,
   MediaUploadCreateResult,
 } from "../../types/index.js";
+import {
+  generateObjectKey,
+  mediaDisplayUrls,
+  sanitizeFilename,
+  type MediaVariantRecord,
+} from "./variants.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 type MediaAssetRow = typeof mediaAssets.$inferSelect;
@@ -48,7 +54,53 @@ const allowedMimeTypes = new Set([
 ]);
 const maxImageByteSize = 15 * 1024 * 1024;
 
-export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
+export type MediaServiceDependencies = {
+  updateProductMediaVariants?: (input: {
+    mediaVariants: Record<string, Record<string, string>>;
+    productId: string;
+    tenantId: string;
+  }) => Promise<unknown>;
+};
+
+export function assertProductMediaUpdateSucceeded(result: unknown): void {
+  if (result && typeof result === "object" && "ok" in result && result.ok === false) {
+    throw new Error("product_media_metadata_update_failed");
+  }
+}
+
+export function buildProductMediaVariantsMetadata(
+  assets: Array<{
+    publicUrl?: string | null;
+    variants?: Record<string, { publicUrl?: string | null } | undefined> | null;
+  }>,
+): Record<string, Record<string, string>> {
+  const result: Record<string, Record<string, string>> = {};
+
+  for (const asset of assets) {
+    if (!asset?.publicUrl || !asset?.variants) {
+      continue;
+    }
+
+    const variantsForAsset: Record<string, string> = {};
+    for (const [key, variant] of Object.entries(asset.variants)) {
+      if (variant?.publicUrl) {
+        variantsForAsset[key] = variant.publicUrl;
+      }
+    }
+
+    if (Object.keys(variantsForAsset).length > 0) {
+      result[asset.publicUrl] = variantsForAsset;
+    }
+  }
+
+  return result;
+}
+
+export function createMediaService(
+  db: PlatformDb,
+  storage: StorageAdapter,
+  dependencies?: MediaServiceDependencies,
+) {
   async function createUpload(input: {
     accessMode: "public" | "private";
     byteSize: number;
@@ -70,7 +122,12 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
     }
 
     const assetId = crypto.randomUUID();
-    const objectKey = `tenants/${input.tenantId}/${input.context}/pending/${assetId}/${filename}`;
+    const objectKey = generateObjectKey({
+      accessMode: input.accessMode,
+      assetId,
+      filename,
+      tenantId: input.tenantId,
+    });
 
     try {
       const upload = await storage.createUpload({
@@ -125,6 +182,7 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
   }): Promise<MediaAssetResult> {
     const asset = await findTenantAsset(input.tenantId, input.assetId);
     if (!asset) return mediaError("media_asset_not_found", 404);
+    if (asset.status === "ready") return { asset: toMediaAsset(asset), ok: true };
     if (asset.status !== "pending" && asset.status !== "uploaded") {
       return mediaError("invalid_media_asset", 400);
     }
@@ -283,6 +341,9 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
 
     try {
       await storage.deleteObject(asset.objectKey);
+      for (const variant of Object.values(asset.variants ?? {})) {
+        if (variant.objectKey) await storage.deleteObject(variant.objectKey);
+      }
     } catch (error) {
       if (error instanceof MediaStorageUnavailableError) {
         return mediaError("media_storage_unavailable", 503);
@@ -303,14 +364,27 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
 
   async function syncProductMedia(input: {
     imageUrls: string[];
+    variantImageUrls?: string[] | undefined;
     productId: string;
     tenantId: string;
     thumbnail: string | null;
+    updateProductMediaVariants?: (input: {
+      mediaVariants: Record<string, Record<string, string>>;
+      productId: string;
+      tenantId: string;
+    }) => Promise<unknown>;
   }) {
-    const urls = Array.from(new Set(input.imageUrls.filter(Boolean)));
+    const urls = Array.from(
+      new Set([input.thumbnail, ...(input.imageUrls ?? []), ...(input.variantImageUrls ?? [])]
+        .filter((url): url is string => typeof url === "string" && Boolean(url))),
+    );
     const assets = urls.length
       ? await db
-          .select({ id: mediaAssets.id, publicUrl: mediaAssets.publicUrl })
+          .select({
+            id: mediaAssets.id,
+            publicUrl: mediaAssets.publicUrl,
+            variants: mediaAssets.variants,
+          })
           .from(mediaAssets)
           .where(
             and(
@@ -352,7 +426,20 @@ export function createMediaService(db: PlatformDb, storage: StorageAdapter) {
       if (usages.length) await transaction.insert(mediaUsages).values(usages);
     });
 
-    return { count: assets.length, ok: true as const };
+    const mediaVariants = buildProductMediaVariantsMetadata(assets);
+    const updateVariants =
+      input.updateProductMediaVariants ?? dependencies?.updateProductMediaVariants;
+    if (updateVariants) {
+      assertProductMediaUpdateSucceeded(
+        await updateVariants({
+          mediaVariants,
+          productId: input.productId,
+          tenantId: input.tenantId,
+        }),
+      );
+    }
+
+    return { count: assets.length, mediaVariants, ok: true as const };
   }
 
   async function findTenantAsset(tenantId: string, assetId: string) {
@@ -389,16 +476,10 @@ function toMediaAsset(asset: MediaAssetRow): MediaAsset {
     publicUrl: asset.publicUrl,
     status: asset.status,
     updatedAt: asset.updatedAt.toISOString(),
+    urls: mediaDisplayUrls(asset.publicUrl, asset.variants as Record<string, MediaVariantRecord>),
+    variantsStatus: asset.variantsStatus,
     width: asset.width,
   };
-}
-
-function sanitizeFilename(value: string) {
-  return value
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 180);
 }
 
 function normalizeOptionalText(value: string | null | undefined) {

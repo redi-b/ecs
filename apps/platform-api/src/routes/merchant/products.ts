@@ -1,3 +1,4 @@
+import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
@@ -27,8 +28,36 @@ import {
   storeErrorStatus,
 } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
-import { getOptionalBodyProductOptions, getOptionalBodyProductVariants } from "./product-body.js";
+import {
+  getOptionalBodyOptionMediaBindings,
+  getOptionalBodyProductOptions,
+  getOptionalBodyProductVariants,
+} from "./product-body.js";
 import { getProductOptionSetValues } from "./product-option-set-body.js";
+
+async function syncWrittenProductMedia(
+  options: PlatformAppOptions,
+  input: { productId: string; salesChannelId: string; tenantId: string },
+): Promise<boolean> {
+  if (!options.getMerchantProduct || !options.syncProductMedia) return true;
+  try {
+    const latest = await options.getMerchantProduct({
+      productId: input.productId,
+      salesChannelId: input.salesChannelId,
+    });
+    if (!latest.ok) return true;
+    const product = latest.product;
+    await options.syncProductMedia({
+      ...getProductMediaReferences(product),
+      productId: input.productId,
+      tenantId: input.tenantId,
+    });
+    return false;
+  } catch (error) {
+    console.error("Product media sync failed after save", error);
+    return true;
+  }
+}
 
 export function registerMerchantProductRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -79,6 +108,7 @@ export function registerMerchantProductRoutes(
     const title = getRequiredBodyString(body, "title");
     const productOptions = getOptionalBodyProductOptions(body);
     const productVariants = getOptionalBodyProductVariants(body);
+    const optionMediaBindings = getOptionalBodyOptionMediaBindings(body);
 
     if (!title) {
       return context.json({ error: "missing_title" }, 400);
@@ -91,6 +121,7 @@ export function registerMerchantProductRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
       ...(productOptions ? { options: productOptions } : {}),
       ...(productVariants ? { variants: productVariants } : {}),
       priceAmount: getOptionalBodyNumber(body, "priceAmount"),
@@ -112,8 +143,22 @@ export function registerMerchantProductRoutes(
       return context.json({ error: product.error }, product.status);
     }
 
+    const hasMedia = Boolean(
+      getOptionalBodyString(body, "thumbnail") ||
+        getOptionalBodyStringArray(body, "imageUrls")?.length ||
+        productVariants?.some((variant) => variant.imageUrl),
+    );
+    const mediaSyncWarning = hasMedia
+      ? await syncWrittenProductMedia(options, {
+          productId: product.product.id,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          tenantId: result.context.tenantId,
+        })
+      : false;
+
     return context.json({
       product: product.product,
+      mediaSyncWarning,
     });
   });
 
@@ -671,6 +716,7 @@ export function registerMerchantProductRoutes(
     const body = await getJsonBody(context.req.raw);
     const productOptions = getOptionalBodyProductOptions(body);
     const productVariants = getOptionalBodyProductVariants(body);
+    const optionMediaBindings = getOptionalBodyOptionMediaBindings(body);
     const product = await options.updateMerchantProduct({
       productId: context.req.param("productId"),
       title: getOptionalBodyString(body, "title"),
@@ -679,6 +725,7 @@ export function registerMerchantProductRoutes(
       collectionId: getOptionalBodyString(body, "collectionId"),
       categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
       imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
       ...(productOptions ? { options: productOptions } : {}),
       ...(productVariants ? { variants: productVariants } : {}),
       regionId: commerce.context.medusaRegionId,
@@ -695,8 +742,21 @@ export function registerMerchantProductRoutes(
       return context.json({ error: product.error }, product.status);
     }
 
+    const mediaChanged =
+      body !== null &&
+      typeof body === "object" &&
+      ["imageUrls", "thumbnail", "variants", "options", "optionMediaBindings"].some((key) => key in body);
+    const mediaSyncWarning = mediaChanged
+      ? await syncWrittenProductMedia(options, {
+          productId: product.product.id,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          tenantId: result.context.tenantId,
+        })
+      : false;
+
     return context.json({
       product: product.product,
+      mediaSyncWarning,
     });
   });
 

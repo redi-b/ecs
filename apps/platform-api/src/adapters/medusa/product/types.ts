@@ -1,3 +1,8 @@
+import type { ProductOptionMediaBindings, ProductOptionSwatch } from "@ecs/contracts";
+import type { MerchantProduct, MerchantProductVariant } from "../../../types/index.js";
+
+export type { MerchantProduct, MerchantProductVariant };
+
 export type ProductWriteInput = {
   categoryIds?: string[] | undefined;
   collectionId?: string | null | undefined;
@@ -6,6 +11,7 @@ export type ProductWriteInput = {
   handle?: string | null | undefined;
   imageUrls?: string[] | undefined;
   metadata?: Record<string, unknown> | undefined;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   options?: ProductOptionInput[] | undefined;
   priceAmount?: number | undefined;
   regionId?: string | null | undefined;
@@ -20,27 +26,27 @@ export type ProductWriteInput = {
 };
 
 export type ProductOptionInput = {
+  displayMode?: "text" | "swatch" | undefined;
   id?: string | undefined;
   title: string;
   values: ProductOptionValueInput[];
 };
 
-export type ProductOptionValueInput = {
-  id?: string | undefined;
-  label: string;
-  swatch?:
-    | {
-        kind: "color";
-        value: string;
-      }
-    | null
-    | undefined;
-} | string;
+export type ProductOptionValueInput =
+  | {
+      id?: string | undefined;
+      label: string;
+      swatch?: ProductOptionSwatch | null | undefined;
+    }
+  | string;
 
 export type ProductVariantWriteInput = {
   currencyCode: string;
   /** Existing Medusa variant identity. Required when an import updates a variant in place. */
   id?: string | null | undefined;
+  imageUrl?: string | null | undefined;
+  imageSource?: "option" | "manual" | null | undefined;
+  metadata?: Record<string, unknown> | undefined;
   optionValues: Record<string, string>;
   priceAmount?: number | undefined;
   prices?: Array<{ amount: number; currencyCode: string }> | undefined;

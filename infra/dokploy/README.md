@@ -169,9 +169,9 @@ This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (r
 | `MEDIA_S3_PUBLIC_BASE_URL` | Object URLs stored on media assets / product images |
 | `MEDIA_S3_MIN_FREE_SPACE` | Disk reserve before uploads pause; defaults to `1GiB` |
 
-Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts. Keep `MEDIA_S3_CORS_ALLOW_ORIGIN=*`: browser uploads may originate from the dashboard, tenant subdomains, or custom shop domains. This only permits those browsers to attempt a request; every upload still requires a short-lived, object-specific signed URL and accepted method and headers.
 
-If uploads fail with red network rows on the media host: confirm (1) Host is preserved, (2) presigned URLs lack `x-amz-checksum-*` query params (platform-api disables flexible checksums), (3) CORS allows the dashboard origin.
+If uploads fail with red network rows on the media host: confirm (1) Host is preserved, (2) presigned URLs lack `x-amz-checksum-*` query params (platform-api disables flexible checksums), (3) a PUT preflight from a shop dashboard origin returns 204 with its exact `Access-Control-Allow-Origin`. Deploy/reload Caddy for the shop-origin CORS route to take effect.
 
 Shop **create** does not require object storage. Media uploads and full demo seed images do.
 
@@ -207,7 +207,7 @@ Platform-api invalidates public storefront HTML after **publish/unpublish** and 
 | `STOREFRONT_INTERNAL_BASE_URL` | platform-api | Set to `http://storefront:4321` in compose |
 | `REDIS_URL` | storefront (+ platform already) | HTML cache store |
 
-See `apps/storefront/README.md` and `dev-docs/07-storefront-routing.md`.
+See `apps/storefront/README.md` for storefront cache and routing details.
 
 To enable the optional deployment trigger, add all three repository secrets:
 

@@ -13,6 +13,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
+import { toMediaVariantUrl } from "@/lib/media-schema";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -59,9 +60,19 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
   const thumbnail = getProductThumbnail(product);
 
   if (thumbnail.kind === "image") {
+    const rawVariants = (
+      product as {
+        metadata?: { media_variants?: Record<string, Record<string, string>> };
+      }
+    )?.metadata?.media_variants;
+    const variantUrl =
+      rawVariants?.[thumbnail.url]?.w200 ||
+      rawVariants?.[thumbnail.url]?.w400 ||
+      thumbnail.url;
+
     return (
       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border bg-muted/40 ring-1 ring-border/50">
-        <img alt="" className="size-full object-cover" src={thumbnail.url} />
+        <img alt="" className="size-full object-cover" src={variantUrl} />
       </div>
     );
   }

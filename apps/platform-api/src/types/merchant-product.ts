@@ -1,3 +1,5 @@
+import type { ProductOptionMediaBindings, ProductOptionSwatchWithSource } from "@ecs/contracts";
+
 export type MerchantProduct = {
   id: string;
   categoryIds?: string[];
@@ -10,11 +12,14 @@ export type MerchantProduct = {
   images?: MerchantProductImage[];
   options?: MerchantProductOption[];
   variants?: MerchantProductVariant[];
+  optionMediaBindings?: ProductOptionMediaBindings | null;
+  metadata?: Record<string, unknown>;
   createdAt: string | null;
   updatedAt: string | null;
 };
 
 export type MerchantProductOption = {
+  displayMode?: "text" | "swatch";
   id: string | null;
   title: string;
   values: MerchantProductOptionValue[];
@@ -23,11 +28,7 @@ export type MerchantProductOption = {
 export type MerchantProductOptionValue = {
   id: string | null;
   label: string;
-  swatch?: {
-    kind: "color";
-    value: string;
-    source: "explicit";
-  };
+  swatch?: ProductOptionSwatchWithSource;
 };
 
 export type MerchantProductImage = {
@@ -45,6 +46,8 @@ export type MerchantProductVariant = {
   inventoryItemId?: string | null;
   title: string | null;
   sku: string | null;
+  imageUrl?: string | null;
+  imageSource?: "option" | "manual" | null;
   optionValues?: MerchantProductVariantOptionValue[];
   prices: MerchantProductPrice[];
   stock?: Omit<MerchantProductStock, "productId" | "variantId" | "inventoryItemId"> | null;

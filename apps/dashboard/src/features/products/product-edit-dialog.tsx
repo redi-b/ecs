@@ -4,6 +4,7 @@ import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
+  ProductOptionMediaBindings,
 } from "@ecs/contracts";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
@@ -49,10 +50,14 @@ import {
 } from "@/features/products/product-form-fields";
 import { ProductOptionsWorkspace } from "@/features/products/product-form-sections";
 import {
+  applyOptionMediaAutoAssignment,
+  getInitialProductOptions,
+  getMediaUrls,
   getProductDefaultValues,
   getProductPayload,
   getRemovedExistingVariants,
   getVariantRows,
+  reconcileOptionMediaBindings,
 } from "@/features/products/product-form-state";
 import type { ProductFormValues } from "@/features/products/product-form-types";
 import { useProductHandleAvailability } from "@/features/products/use-product-handle-availability";
@@ -79,6 +84,7 @@ type ProductOrganizationValues = {
 
 type ProductMediaValues = {
   imageUrls: string;
+  optionMediaBindings?: ProductOptionMediaBindings | null | undefined;
   thumbnail: string;
 };
 
@@ -270,7 +276,21 @@ export function ProductOrganizationEditButton({
   );
 }
 
-export function ProductMediaEditButton({ action, product }: ProductEditSheetBaseProps) {
+export function ProductMediaEditButton({
+  defaultOpen = false,
+  action,
+  onClose,
+  product,
+  showTrigger = true,
+  triggerLabel,
+  triggerVariant = "button",
+}: ProductEditSheetBaseProps & {
+  defaultOpen?: boolean;
+  onClose?: (() => void) | undefined;
+  showTrigger?: boolean | undefined;
+  triggerLabel?: string | undefined;
+  triggerVariant?: "button" | "icon" | undefined;
+}) {
   const { t } = useI18n();
   const [values, setValues] = useState<ProductMediaValues>(() => getProductMediaValues(product));
   const imageUrlList = getImageUrls(values.imageUrls);
@@ -278,16 +298,28 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
   return (
     <ProductEditSheet
       action={action}
-      buildPayload={() => ({
-        thumbnail: values.thumbnail.trim() || null,
-        imageUrls: getImageUrls(values.imageUrls),
-      })}
+      buildPayload={() => buildProductMediaEditPayload(values)}
+      defaultOpen={defaultOpen}
+      hasUnsavedChanges={JSON.stringify(values) !== JSON.stringify(getProductMediaValues(product))}
+      onClose={() => {
+        if (defaultOpen) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("edit");
+          window.history.replaceState(
+            window.history.state,
+            "",
+            url.pathname + url.search + url.hash,
+          );
+        }
+        onClose?.();
+      }}
       contentClassName="sm:max-w-xl"
       description={t("products.edit.mediaDesc")}
       onOpen={() => setValues(getProductMediaValues(product))}
       title={t("products.edit.mediaTitle")}
-      triggerLabel={t("products.edit.mediaTrigger")}
-      triggerVariant="icon"
+      triggerLabel={triggerLabel ?? t("products.edit.mediaTrigger")}
+      triggerVariant={triggerVariant}
+      showTrigger={showTrigger}
     >
       <MediaUploadField
         imageUrls={imageUrlList}
@@ -301,11 +333,29 @@ export function ProductMediaEditButton({ action, product }: ProductEditSheetBase
                 : (urls[0] ?? ""),
           }))
         }
+        onOptionMediaBindingsChange={(bindings) =>
+          setValues((current) => ({ ...current, optionMediaBindings: bindings }))
+        }
         onThumbnailChange={(url) => setValues((current) => ({ ...current, thumbnail: url }))}
+        optionMediaBindings={values.optionMediaBindings}
+        options={getInitialProductOptions(product)}
         thumbnail={values.thumbnail}
       />
     </ProductEditSheet>
   );
+}
+
+function getProductBulkValues(product: MerchantProduct) {
+  const overrides = Object.values(getProductDefaultValues(product).variantOverrides).filter(
+    (override) => override.enabled !== false,
+  );
+  const prices = new Set(overrides.map((override) => override.priceAmount).filter(Boolean));
+  const stock = new Set(overrides.map((override) => override.stockedQuantity).filter(Boolean));
+
+  return {
+    priceAmount: prices.size === 1 ? ([...prices][0] ?? "") : "",
+    stockedQuantity: stock.size === 1 ? ([...stock][0] ?? "") : "",
+  };
 }
 
 export function ProductOptionsEditButton({ action, product }: ProductEditSheetBaseProps) {
@@ -315,6 +365,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
     ...getProductDefaultValues(product),
     hasVariants: true,
   }));
+  const [bulkValues, setBulkValues] = useState(() => getProductBulkValues(product));
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -326,6 +377,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
 
   function reset() {
     setValues({ ...getProductDefaultValues(product), hasVariants: true });
+    setBulkValues(getProductBulkValues(product));
   }
 
   function update(next: Partial<ProductFormValues>) {
@@ -341,7 +393,11 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
     let payload: Record<string, unknown>;
     try {
       const productPayload = getProductPayload(values, { includeOptions: true }, t);
-      payload = { options: productPayload.options, variants: productPayload.variants };
+      payload = {
+        options: productPayload.options,
+        variants: productPayload.variants,
+        optionMediaBindings: productPayload.optionMediaBindings ?? null,
+      };
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : t("products.edit.formError"));
       return;
@@ -354,13 +410,18 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     }).catch(() => null);
-    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    const data = (await response?.json().catch(() => ({}))) as {
+      error?: string;
+      mediaSyncWarning?: boolean;
+    };
     setIsSaving(false);
     if (!response?.ok) {
       setError(getProductEditErrorMessage(data.error, t));
       return;
     }
-    toast.success(t("products.edit.toastSaved"));
+    toast[data.mediaSyncWarning ? "warning" : "success"](
+      data.mediaSyncWarning ? t("products.composer.mediaSyncWarn") : t("products.edit.toastSaved"),
+    );
     setDirty(false);
     setOpen(false);
     router.refresh();
@@ -380,13 +441,13 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
         variant="ghost"
       >
         <AppIcons.edit data-icon="inline-start" />
-        {t("common.edit")}
+        {t("products.edit.variantsTrigger")}
       </Button>
       <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : requestClose())} open={open}>
         <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-visible p-0 sm:max-w-5xl">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[inherit]">
             <DialogHeader className="border-b px-4 py-4 pr-12 sm:px-5">
-              <DialogTitle>{t("products.detail.editOptions")}</DialogTitle>
+              <DialogTitle>{t("products.edit.variantsTitle")}</DialogTitle>
               <DialogDescription>{t("products.edit.optionsDesc")}</DialogDescription>
             </DialogHeader>
             <form
@@ -405,29 +466,79 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                     </Alert>
                   ) : null}
                   <ProductOptionsWorkspace
-                    onApplyDefaults={() => {
+                    stableHeight
+                    bulkValues={bulkValues}
+                    galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
+                    onApplyDefaults={(fields = { price: true, stock: true }) => {
                       update({
+                        ...(fields.price ? { priceAmount: bulkValues.priceAmount } : {}),
+                        ...(fields.stock ? { initialStock: bulkValues.stockedQuantity } : {}),
                         variantOverrides: Object.fromEntries(
                           getVariantRows(values).map((row) => [
                             row.key,
                             {
                               ...values.variantOverrides[row.key],
-                              priceAmount: values.priceAmount,
-                              stockedQuantity: values.initialStock,
+                              ...(fields.price ? { priceAmount: bulkValues.priceAmount } : {}),
+                              ...(fields.stock
+                                ? { stockedQuantity: bulkValues.stockedQuantity }
+                                : {}),
                             },
                           ]),
                         ),
                       });
                     }}
-                    onOptionsChange={(options) => update({ options })}
-                    onOverrideChange={(key, override) =>
+                    onBulkValuesChange={(nextBulkValues) => {
+                      setBulkValues(nextBulkValues);
+                      setDirty(true);
+                    }}
+                    onGalleryImageAdd={(url) => {
+                      const imageUrls = getImageUrls(values.imageUrls);
+                      if (!imageUrls.includes(url)) imageUrls.push(url);
                       update({
-                        variantOverrides: {
-                          ...values.variantOverrides,
-                          [key]: { ...values.variantOverrides[key], ...override },
-                        },
-                      })
-                    }
+                        imageUrls: imageUrls.join("\n"),
+                        ...(!values.thumbnail.trim() ? { thumbnail: url } : {}),
+                      });
+                    }}
+                    onOptionsChange={(options) => {
+                      const bindings = reconcileOptionMediaBindings(
+                        values.optionMediaBindings,
+                        values.options,
+                        options,
+                      );
+                      const nextValues = { ...values, options, optionMediaBindings: bindings };
+                      update({
+                        options,
+                        optionMediaBindings: bindings,
+                        variantOverrides: applyOptionMediaAutoAssignment({
+                          variantOverrides: values.variantOverrides,
+                          options,
+                          rows: getVariantRows(nextValues),
+                          optionMediaBindings: bindings,
+                          validImageUrls: getMediaUrls(values.thumbnail, values.imageUrls),
+                        }),
+                      });
+                    }}
+                    onOverrideChange={(key, override) => {
+                      const nextOverrides = {
+                        ...values.variantOverrides,
+                        [key]: { ...values.variantOverrides[key], ...override },
+                      };
+                      update({
+                        variantOverrides:
+                          "imageUrl" in override && !override.imageUrl
+                            ? applyOptionMediaAutoAssignment({
+                                variantOverrides: nextOverrides,
+                                options: values.options,
+                                rows: getVariantRows({
+                                  ...values,
+                                  variantOverrides: nextOverrides,
+                                }),
+                                optionMediaBindings: values.optionMediaBindings,
+                                validImageUrls: getMediaUrls(values.thumbnail, values.imageUrls),
+                              })
+                            : nextOverrides,
+                      });
+                    }}
                     options={values.options}
                     rows={getVariantRows(values)}
                     values={values.variantOverrides}
@@ -462,8 +573,12 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
 function ProductEditSheet({
   action,
   buildPayload,
+  showTrigger = true,
   children,
   contentClassName,
+  defaultOpen = false,
+  hasUnsavedChanges,
+  onClose,
   description,
   onOpen,
   title,
@@ -472,8 +587,12 @@ function ProductEditSheet({
 }: {
   action: string;
   buildPayload: () => Record<string, unknown>;
+  showTrigger?: boolean;
   children: ReactNode;
   contentClassName?: string;
+  defaultOpen?: boolean;
+  hasUnsavedChanges?: boolean;
+  onClose?: () => void;
   description: string;
   onOpen: () => void;
   title: string;
@@ -483,16 +602,31 @@ function ProductEditSheet({
 }) {
   const { t } = useI18n();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
-    dirty && open,
+    (hasUnsavedChanges ?? dirty) && open,
   );
 
+  function closeSheet() {
+    setOpen(false);
+    onClose?.();
+  }
+
+  function openSheet() {
+    onOpen();
+    setError(null);
+    setDirty(false);
+    setOpen(true);
+  }
+
   function requestClose() {
-    requestLeave(() => setOpen(false));
+    if (!isSaving) requestLeave(closeSheet);
   }
 
   async function submitEdit() {
@@ -516,7 +650,10 @@ function ProductEditSheet({
       },
       method: "POST",
     }).catch(() => null);
-    const data = (await response?.json().catch(() => ({}))) as { error?: string };
+    const data = (await response?.json().catch(() => ({}))) as {
+      error?: string;
+      mediaSyncWarning?: boolean;
+    };
 
     setIsSaving(false);
 
@@ -525,9 +662,11 @@ function ProductEditSheet({
       return;
     }
 
-    toast.success(t("products.edit.toastSaved"));
+    toast[data.mediaSyncWarning ? "warning" : "success"](
+      data.mediaSyncWarning ? t("products.composer.mediaSyncWarn") : t("products.edit.toastSaved"),
+    );
     setDirty(false);
-    setOpen(false);
+    closeSheet();
     router.refresh();
   }
 
@@ -536,25 +675,22 @@ function ProductEditSheet({
       <Sheet
         onOpenChange={(nextOpen) => {
           if (nextOpen) {
-            onOpen();
-            setError(null);
-            setDirty(false);
-            setOpen(true);
+            openSheet();
             return;
           }
           requestClose();
         }}
         open={open}
       >
-        {triggerVariant === "button" ? (
-          <Button onClick={() => setOpen(true)} size="sm" type="button" variant="outline">
+        {showTrigger && triggerVariant === "button" ? (
+          <Button onClick={openSheet} size="sm" type="button" variant="outline">
             <AppIcons.edit data-icon="inline-start" />
             {triggerLabel}
           </Button>
-        ) : (
+        ) : showTrigger ? (
           <Button
             aria-label={triggerLabel}
-            onClick={() => setOpen(true)}
+            onClick={openSheet}
             size="sm"
             type="button"
             variant="ghost"
@@ -562,7 +698,7 @@ function ProductEditSheet({
             <AppIcons.edit data-icon="inline-start" />
             <span className="text-xs font-medium">{t("common.edit")}</span>
           </Button>
-        )}
+        ) : null}
         <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
@@ -605,12 +741,21 @@ function normalizeProductStatus(status: string | null) {
   return PRODUCT_STATUS_OPTIONS.find((option) => option === status?.toLowerCase()) ?? "draft";
 }
 
+export function buildProductMediaEditPayload(media: ProductMediaValues) {
+  // Reconcile photos against current Medusa data, never the editor's price or stock snapshot.
+  return {
+    thumbnail: media.thumbnail.trim() || null,
+    imageUrls: getImageUrls(media.imageUrls),
+    optionMediaBindings: media.optionMediaBindings ?? null,
+  };
+}
 function getProductMediaValues(product: MerchantProduct): ProductMediaValues {
   return {
     imageUrls: (product.images ?? [])
       .map((image) => image.url)
       .filter(Boolean)
       .join("\n"),
+    optionMediaBindings: product.optionMediaBindings ?? null,
     thumbnail: product.thumbnail ?? "",
   };
 }

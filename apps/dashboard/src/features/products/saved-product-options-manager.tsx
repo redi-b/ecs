@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProductOptionSwatch } from "@ecs/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCallback, useId, useMemo, useState } from "react";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Sheet,
   SheetContent,
@@ -36,15 +38,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ProductColorPopover } from "@/features/products/product-form-sections";
+import {
+  isVisualOptionTitle,
+  ProductColorPopover,
+} from "@/features/products/product-form-sections";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
 
-type SavedValue = { label: string; swatch?: { kind: "color"; value: string } | null };
-type SavedOption = { id: string; title: string; values: SavedValue[] };
+type SavedValue = {
+  displayMode?: "text" | "swatch";
+  label: string;
+  swatch?: ProductOptionSwatch | null;
+};
+type SavedOption = {
+  displayMode?: "text" | "swatch";
+  id: string;
+  title: string;
+  values: SavedValue[];
+};
 type SavedOptionDraft = SavedOption & { isNew?: boolean };
 
 function cloneForEditing(option: SavedOption): SavedOptionDraft {
@@ -85,7 +99,16 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
         ? "/dashboard/products/actions/option-sets"
         : `/dashboard/products/actions/option-sets/${encodeURIComponent(option.id)}`;
       const response = await fetch(getTenantScopedPath(target, tenantId), {
-        body: JSON.stringify({ title: option.title, values: option.values }),
+        body: JSON.stringify({
+          title: option.title,
+          values: option.values.map((value) => ({
+            ...value,
+            displayMode:
+              option.displayMode ??
+              option.values[0]?.displayMode ??
+              (isVisualOptionTitle(option.title) ? "swatch" : "text"),
+          })),
+        }),
         headers: { accept: "application/json", "content-type": "application/json" },
         method: "POST",
       });
@@ -200,11 +223,20 @@ export function SavedProductOptionsManager({ tenantId }: { tenantId: string | nu
               {visibleValues.map((value) => (
                 <Badge className="gap-1.5 font-normal" key={value.label} variant="secondary">
                   {value.swatch ? (
-                    <span
-                      aria-hidden="true"
-                      className="size-2.5 rounded-full border border-border"
-                      style={{ backgroundColor: value.swatch.value }}
-                    />
+                    value.swatch.kind === "image" ? (
+                      <img
+                        alt=""
+                        aria-hidden="true"
+                        className="size-2.5 rounded-full border border-border object-cover"
+                        src={value.swatch.url}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="size-2.5 rounded-full border border-border"
+                        style={{ backgroundColor: value.swatch.value }}
+                      />
+                    )
                   ) : null}
                   {value.label}
                 </Badge>
@@ -345,7 +377,11 @@ function SavedOptionEditDialog({
   const nameId = useId();
   if (!option) return null;
   const currentOption = option;
-  const isColor = /^(colou?r)$/i.test(currentOption.title.trim());
+  const displayMode =
+    currentOption.displayMode ??
+    currentOption.values[0]?.displayMode ??
+    (isVisualOptionTitle(currentOption.title) ? "swatch" : "text");
+  const isVisual = displayMode === "swatch";
   const update = (patch: Partial<SavedOptionDraft>) => onChange({ ...currentOption, ...patch });
   function addValue(label: string, swatch?: SavedValue["swatch"]) {
     const next = label.trim();
@@ -355,7 +391,10 @@ function SavedOptionEditDialog({
     )
       return;
     update({
-      values: [...currentOption.values, { label: next, ...(swatch ? { swatch } : {}) }],
+      values: [
+        ...currentOption.values,
+        { displayMode, label: next, ...(swatch ? { swatch } : {}) },
+      ],
     });
     setDraftValue("");
   }
@@ -397,12 +436,28 @@ function SavedOptionEditDialog({
               />
             </Field>
             <Field>
+              <FieldLabel>{t("products.formReview.optionDisplay")}</FieldLabel>
+              <SegmentedControl
+                active="muted"
+                ariaLabel={t("products.formReview.optionDisplay")}
+                fullWidth
+                onChange={(value) => update({ displayMode: value as "text" | "swatch" })}
+                options={[
+                  { id: "text", label: t("products.formReview.optionDisplayText") },
+                  { id: "swatch", label: t("products.formReview.optionDisplaySwatch") },
+                ]}
+                size="sm"
+                value={displayMode}
+              />
+            </Field>
+            <Field>
               <FieldLabel>{t("products.formReview.values")}</FieldLabel>
               <ProductOptionValuesField
                 addControl={
-                  isColor ? (
+                  isVisual ? (
                     <ProductColorPopover
-                      onSave={(label, color) => addValue(label, { kind: "color", value: color })}
+                      onSave={(label, swatch) => addValue(label, swatch)}
+                      optionTitle={currentOption.title}
                     />
                   ) : undefined
                 }
@@ -425,7 +480,7 @@ function SavedOptionEditDialog({
                       seen.add(normalized);
                       return true;
                     })
-                    .map((label) => ({ label }));
+                    .map((label) => ({ displayMode, label }));
                   update({ values: [...option.values, ...additions] });
                   setDraftValue("");
                 }}
@@ -442,19 +497,18 @@ function SavedOptionEditDialog({
                     className="inline-flex items-center rounded-full border border-border bg-secondary text-xs text-secondary-foreground"
                     key={`${value.label}-${index}`}
                   >
-                    {isColor ? (
+                    {isVisual ? (
                       <ProductColorPopover
                         label={value.label}
-                        onSave={(label, color) =>
+                        onSave={(label, swatch) =>
                           update({
                             values: option.values.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { label, swatch: { kind: "color", value: color } }
-                                : item,
+                              itemIndex === index ? { displayMode, label, swatch } : item,
                             ),
                           })
                         }
-                        value={value.swatch?.value ?? "#808080"}
+                        optionTitle={currentOption.title}
+                        value={value.swatch ?? undefined}
                       />
                     ) : (
                       <span className="px-2 py-1.5">{value.label}</span>

@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -45,6 +46,12 @@ function createClient(options: S3StorageOptions, endpoint: string | undefined) {
   });
 }
 
+function publicUrlFor(options: S3StorageOptions, objectKey: string) {
+  return options.publicBaseUrl
+    ? `${options.publicBaseUrl.replace(/\/$/, "")}/${objectKey}`
+    : null;
+}
+
 export function createS3StorageAdapter(options: S3StorageOptions): StorageAdapter {
   // Presign with the public endpoint so Host + path match the browser request.
   const signClient = createClient(options, options.endpoint);
@@ -77,15 +84,38 @@ export function createS3StorageAdapter(options: S3StorageOptions): StorageAdapte
           "content-type": input.mimeType,
         },
         method: "PUT",
-        publicUrl:
-          input.accessMode === "public" && options.publicBaseUrl
-            ? `${options.publicBaseUrl.replace(/\/$/, "")}/${input.objectKey}`
-            : null,
+        publicUrl: input.accessMode === "public" ? publicUrlFor(options, input.objectKey) : null,
         uploadUrl,
       };
     },
     async deleteObject(objectKey) {
       await opsClient.send(new DeleteObjectCommand({ Bucket: options.bucket, Key: objectKey }));
+    },
+    async getObject(objectKey) {
+      try {
+        const result = await opsClient.send(
+          new GetObjectCommand({ Bucket: options.bucket, Key: objectKey }),
+        );
+        const bytes = await result.Body?.transformToByteArray();
+        return bytes ? Uint8Array.from(bytes) : null;
+      } catch (error) {
+        const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+          ?.httpStatusCode;
+        if (status === 404) return null;
+        throw error;
+      }
+    },
+    async putObject(input) {
+      await opsClient.send(
+        new PutObjectCommand({
+          Body: input.body,
+          Bucket: options.bucket,
+          CacheControl: input.cacheControl,
+          ContentType: input.contentType,
+          Key: input.objectKey,
+        }),
+      );
+      return { publicUrl: publicUrlFor(options, input.objectKey) };
     },
     async getObjectMetadata(objectKey) {
       try {

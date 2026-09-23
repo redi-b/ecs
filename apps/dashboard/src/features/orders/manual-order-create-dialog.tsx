@@ -30,6 +30,7 @@ import {
   ProductCatalogPickerTrigger,
   type ProductCatalogPickProduct,
 } from "@/features/products/product-catalog-picker-dialog";
+import { normalizeProductOptionSwatch } from "@/features/products/product-swatch-popover";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { getDisplayCustomerEmail } from "@/lib/customer-identity";
@@ -168,7 +169,11 @@ function ManualOrderCreateDialogInner() {
               ?.values.find(
                 (item) => item.label.localeCompare(value, undefined, { sensitivity: "base" }) === 0,
               )?.swatch;
-            const resolvedSwatch = resolveProductColorSwatch(title, value, swatch?.value);
+            const normalizedSwatch = normalizeProductOptionSwatch(swatch);
+            const resolvedSwatch =
+              normalizedSwatch?.kind === "image"
+                ? normalizedSwatch.url
+                : resolveProductColorSwatch(title, value, normalizedSwatch?.value);
             if (resolvedSwatch) optionSwatches[title] = resolvedSwatch;
           }
           const stock = variant.stock;

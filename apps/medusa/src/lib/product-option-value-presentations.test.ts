@@ -43,13 +43,16 @@ test("reads only the namespaced, versioned additional-data payload", () => {
 });
 
 test("matches by normalized title and label while preserving unrelated metadata", () => {
-  const [mutation] = buildOptionValuePresentationMutations([product], [
-    {
-      optionTitle: " color ",
-      valueLabel: " black ",
-      swatch: { kind: "color", value: "#ABCDEF" },
-    },
-  ]);
+  const [mutation] = buildOptionValuePresentationMutations(
+    [product],
+    [
+      {
+        optionTitle: " color ",
+        valueLabel: " black ",
+        swatch: { kind: "color", value: "#ABCDEF" },
+      },
+    ],
+  );
 
   assert.deepEqual(mutation, {
     id: "optval_black",
@@ -64,6 +67,27 @@ test("matches by normalized title and label while preserving unrelated metadata"
   });
 });
 
+test("preserves an explicit image swatch in option-value metadata", () => {
+  const [mutation] = buildOptionValuePresentationMutations(
+    [product],
+    [
+      {
+        optionTitle: "Color",
+        valueLabel: "Black",
+        swatch: { kind: "image", url: "https://media.example.com/black-texture.webp" },
+      },
+    ],
+  );
+
+  assert.deepEqual(mutation?.metadata, {
+    retained: true,
+    ecs_option_value_presentation: {
+      version: 1,
+      swatch: { kind: "image", url: "https://media.example.com/black-texture.webp" },
+    },
+  });
+});
+
 test("stable IDs take precedence and a null swatch removes only the owned key", () => {
   const withPresentation = {
     ...product,
@@ -75,22 +99,28 @@ test("stable IDs take precedence and a null swatch removes only the owned key", 
             ...product.options[0].values[0],
             metadata: {
               retained: true,
-              ecs_option_value_presentation: { version: 1, swatch: { kind: "color", value: "#000000" } },
+              ecs_option_value_presentation: {
+                version: 1,
+                swatch: { kind: "color", value: "#000000" },
+              },
             },
           },
         ],
       },
     ],
   };
-  const [mutation] = buildOptionValuePresentationMutations([withPresentation], [
-    {
-      optionId: "opt_color",
-      optionTitle: "Renamed color",
-      valueId: "optval_black",
-      valueLabel: "Renamed black",
-      swatch: null,
-    },
-  ]);
+  const [mutation] = buildOptionValuePresentationMutations(
+    [withPresentation],
+    [
+      {
+        optionId: "opt_color",
+        optionTitle: "Renamed color",
+        valueId: "optval_black",
+        valueLabel: "Renamed black",
+        swatch: null,
+      },
+    ],
+  );
 
   assert.deepEqual(mutation?.metadata, { retained: true });
 });
@@ -98,9 +128,10 @@ test("stable IDs take precedence and a null swatch removes only the owned key", 
 test("rejects ambiguous or unmatched values rather than updating the wrong record", () => {
   assert.throws(
     () =>
-      buildOptionValuePresentationMutations([product], [
-        { optionTitle: "Color", valueLabel: "Missing", swatch: null },
-      ]),
+      buildOptionValuePresentationMutations(
+        [product],
+        [{ optionTitle: "Color", valueLabel: "Missing", swatch: null }],
+      ),
     /Could not uniquely match product option value/,
   );
 });

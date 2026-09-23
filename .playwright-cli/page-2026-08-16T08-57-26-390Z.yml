@@ -1,0 +1,279 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - banner [ref=f3e3]:
+      - generic [ref=f3e5]:
+        - generic [ref=f3e6]:
+          - link "Home" [ref=f3e7] [cursor=pointer]:
+            - /url: /
+            - img "Luvia" [ref=f3e8]
+          - navigation "Primary navigation" [ref=f3e9]:
+            - link "Home" [ref=f3e10] [cursor=pointer]:
+              - /url: /
+            - link "Shop" [ref=f3e11] [cursor=pointer]:
+              - /url: /shop
+            - link "Request Item" [ref=f3e14] [cursor=pointer]:
+              - /url: /request-item
+            - link "About Us" [ref=f3e15] [cursor=pointer]:
+              - /url: /about
+            - link "Contact" [ref=f3e16] [cursor=pointer]:
+              - /url: /contact
+        - generic [ref=f3e17]:
+          - search [ref=f3e18]:
+            - searchbox "Search any product" [ref=f3e19]
+            - button "Search" [ref=f3e20] [cursor=pointer]
+          - generic [ref=f3e23]:
+            - button "Wishlist" [ref=f3e24] [cursor=pointer]
+            - button "Cart" [ref=f3e27] [cursor=pointer]:
+              - generic [ref=f3e30]: "4"
+            - button "Account" [ref=f3e31] [cursor=pointer]
+    - main [ref=f3e34]:
+      - navigation "Breadcrumb" [ref=f3e35]:
+        - link "Home" [ref=f3e36] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f3e39]: Product Detail
+      - generic [ref=f3e40]:
+        - generic [ref=f3e41]:
+          - generic [ref=f3e42]:
+            - button "View product image 1" [ref=f3e43] [cursor=pointer]
+            - button "View product image 2" [ref=f3e44] [cursor=pointer]
+            - button "View product image 3" [ref=f3e45] [cursor=pointer]
+          - generic [ref=f3e46]:
+            - img "Lancôme Advanced Génifique Serum bottle" [ref=f3e47]
+            - generic [ref=f3e48]: Best Seller
+        - generic [ref=f3e51]:
+          - generic [ref=f3e52]:
+            - generic [ref=f3e53]: LANCÔME
+            - heading "LANCÔME Advanced Génifique Serum" [level=1] [ref=f3e54]
+            - generic [ref=f3e55]:
+              - generic [ref=f3e56]: Br 22,000.00
+              - generic [ref=f3e57]: Br 18,700.00
+              - generic [ref=f3e58]: 15% OFF
+          - generic [ref=f3e59]:
+            - paragraph [ref=f3e60]: Select Volume
+            - generic [ref=f3e61]:
+              - button "300 ml" [ref=f3e62] [cursor=pointer]
+              - button "500 ml" [ref=f3e63] [cursor=pointer]
+              - button "800 ml" [ref=f3e64] [cursor=pointer]
+              - button "950 ml" [ref=f3e65] [cursor=pointer]
+          - generic [ref=f3e66]:
+            - button "Add to Cart" [ref=f3e67] [cursor=pointer]
+            - button "Add to wishlist" [ref=f3e68] [cursor=pointer]
+          - generic [ref=f3e71]:
+            - group [ref=f3e72]:
+              - generic "Product Description" [ref=f3e73] [cursor=pointer]
+              - generic [ref=f3e76]:
+                - paragraph [ref=f3e77]: "Crafted with carefully selected natural extracts, this serum revitalizes your skin for a luminous, youthful glow. Experience the perfect blend of science and nature with benefits like:"
+                - list [ref=f3e78]:
+                  - listitem [ref=f3e79]: Deep hydration for all skin types
+                  - listitem [ref=f3e80]: Antioxidant protection against environmental stressors
+                  - listitem [ref=f3e81]: Improved skin texture and elasticity
+                - paragraph [ref=f3e82]: Enhance your skincare routine and reveal radiant beauty every day.
+            - group [ref=f3e83]:
+              - generic "Delivery Details" [ref=f3e84] [cursor=pointer]
+      - generic [ref=f3e87]:
+        - generic [ref=f3e88]:
+          - heading "Related Products" [level=2] [ref=f3e89]
+          - generic [ref=f3e90]:
+            - button "Previous related products" [ref=f3e91] [cursor=pointer]
+            - button "Next related products" [ref=f3e94] [cursor=pointer]
+        - generic [ref=f3e97]:
+          - article [ref=f3e98]:
+            - generic [ref=f3e99]:
+              - generic [ref=f3e100]:
+                - generic [ref=f3e101]: Best Seller
+                - button "Add to wishlist" [ref=f3e105] [cursor=pointer]
+              - link "Advanced Génifique Face Serum" [ref=f3e108] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Génifique Face Serum" [ref=f3e109]
+              - generic [ref=f3e110] [cursor=pointer]: Add to Cart
+            - generic [ref=f3e111]:
+              - paragraph [ref=f3e112]: LANCÔME
+              - heading [level=3] [ref=f3e113]:
+                - link "Advanced Génifique Face Serum" [ref=f3e114] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f3e115]:
+                - paragraph [ref=f3e116]:
+                  - generic [ref=f3e117]: Br 12,500.00
+                  - generic [ref=f3e118]: Br 2,800.00
+                - generic [ref=f3e119]: 12% OFF
+          - article [ref=f3e120]:
+            - generic [ref=f3e121]:
+              - generic [ref=f3e122]:
+                - generic [ref=f3e123]: Best Seller
+                - button "Add to wishlist" [ref=f3e127] [cursor=pointer]
+              - link "The Dewy Skin Cream" [ref=f3e130] [cursor=pointer]:
+                - /url: /product-detail
+                - img "The Dewy Skin Cream" [ref=f3e131]
+              - generic [ref=f3e132] [cursor=pointer]: Add to Cart
+            - generic [ref=f3e133]:
+              - paragraph [ref=f3e134]: TATCHA
+              - heading [level=3] [ref=f3e135]:
+                - link "The Dewy Skin Cream" [ref=f3e136] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f3e137]:
+                - paragraph [ref=f3e138]:
+                  - generic [ref=f3e139]: Br 22,000.00
+                  - generic [ref=f3e140]: Br 18,700.00
+                - generic [ref=f3e141]: 15% OFF
+          - article [ref=f3e142]:
+            - generic [ref=f3e143]:
+              - generic [ref=f3e144]:
+                - generic [ref=f3e145]: Best Seller
+                - button "Add to wishlist" [ref=f3e149] [cursor=pointer]
+              - link "Vinoperfect Brightening Serum" [ref=f3e152] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Vinoperfect Brightening Serum" [ref=f3e153]
+              - generic [ref=f3e154] [cursor=pointer]: Add to Cart
+            - generic [ref=f3e155]:
+              - paragraph [ref=f3e156]: CAUDALIE
+              - heading [level=3] [ref=f3e157]:
+                - link "Vinoperfect Brightening Serum" [ref=f3e158] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f3e159]:
+                - paragraph [ref=f3e160]:
+                  - generic [ref=f3e161]: Br 34,800.00
+                  - generic [ref=f3e162]: Br 26,100.00
+                - generic [ref=f3e163]: 25% OFF
+          - article [ref=f3e164]:
+            - generic [ref=f3e165]:
+              - generic [ref=f3e166]:
+                - generic [ref=f3e167]: Best Seller
+                - button "Add to wishlist" [ref=f3e171] [cursor=pointer]
+              - link "Advanced Night Repair" [ref=f3e174] [cursor=pointer]:
+                - /url: /product-detail
+                - img "Advanced Night Repair" [ref=f3e175]
+              - generic [ref=f3e176] [cursor=pointer]: Add to Cart
+            - generic [ref=f3e177]:
+              - paragraph [ref=f3e178]: ESTÉE LAUDER
+              - heading [level=3] [ref=f3e179]:
+                - link "Advanced Night Repair" [ref=f3e180] [cursor=pointer]:
+                  - /url: /product-detail
+              - generic [ref=f3e181]:
+                - paragraph [ref=f3e182]:
+                  - generic [ref=f3e183]: Br 40,000.00
+                  - generic [ref=f3e184]: Br 28,000.00
+                - generic [ref=f3e185]: 30% OFF
+    - contentinfo [ref=f3e186]:
+      - generic [ref=f3e187]:
+        - generic [ref=f3e188]:
+          - generic [ref=f3e189]:
+            - paragraph [ref=f3e190]: LUVIA Beauty is a collective of leading female chemists in the biotech and skincare sector found in Ethiopia. It is one of the laboratories certified by ECOCERT.
+            - paragraph [ref=f3e191]:
+              - text: Web Design by
+              - link "Eclipticcreative" [ref=f3e192] [cursor=pointer]:
+                - /url: https://eclipticcreative.com
+          - generic [ref=f3e193]:
+            - paragraph [ref=f3e194]: QUICK LINKS
+            - list [ref=f3e195]:
+              - listitem [ref=f3e196]:
+                - link "Home" [ref=f3e197] [cursor=pointer]:
+                  - /url: /
+              - listitem [ref=f3e198]:
+                - link "About" [ref=f3e199] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=f3e200]:
+                - link "Shop" [ref=f3e201] [cursor=pointer]:
+                  - /url: /shop
+              - listitem [ref=f3e202]:
+                - link "Contact" [ref=f3e203] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=f3e204]:
+                - link "Wishlist" [ref=f3e205] [cursor=pointer]:
+                  - /url: /wishlist
+          - generic [ref=f3e206]:
+            - paragraph [ref=f3e207]: PRODUCTS
+            - list [ref=f3e208]:
+              - listitem [ref=f3e209]:
+                - link "Bags" [ref=f3e210] [cursor=pointer]:
+                  - /url: /shop?category=bags
+              - listitem [ref=f3e211]:
+                - link "Accessories" [ref=f3e212] [cursor=pointer]:
+                  - /url: /shop?category=accessories
+              - listitem [ref=f3e213]:
+                - link "clothings" [ref=f3e214] [cursor=pointer]:
+                  - /url: /shop?category=clothings
+              - listitem [ref=f3e215]:
+                - link "footwears" [ref=f3e216] [cursor=pointer]:
+                  - /url: /shop?category=footwears
+          - generic [ref=f3e217]:
+            - paragraph [ref=f3e218]: SOCIALS
+            - list [ref=f3e219]:
+              - listitem [ref=f3e220]:
+                - link "Facebook" [ref=f3e221] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f3e222]:
+                - link "Instagram" [ref=f3e223] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f3e224]:
+                - link "Twitter" [ref=f3e225] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=f3e226]:
+                - link "Pinterest" [ref=f3e227] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=f3e228]:
+            - paragraph [ref=f3e229]: CONTACT INFO
+            - list [ref=f3e230]:
+              - listitem [ref=f3e231]: +251 91 266 5485
+              - listitem [ref=f3e232]: info@luviabeauty.com
+              - listitem [ref=f3e233]: Kassanchis, Addis Ababa, Ethiopia
+        - generic [ref=f3e234]:
+          - img "Luvia" [ref=f3e236]
+          - paragraph [ref=f3e237]: © 2026 Luvia PLC. All rights reserved.
+      - generic [ref=f3e238]:
+        - paragraph [ref=f3e239]: Do you have any inquiries for us?
+        - link "Let's Get in Touch" [ref=f3e240] [cursor=pointer]:
+          - /url: /contact
+  - generic:
+    - button
+    - dialog:
+      - generic:
+        - generic:
+          - paragraph: Your selection
+          - heading [level=2]: Shopping cart (4)
+        - button
+      - generic:
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Skincare
+              - heading [level=3]: Glow Repair Serum
+            - generic:
+              - generic: Qty 1
+              - generic: $34.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Makeup
+              - heading [level=3]: Velvet Bloom Lipstick
+            - generic:
+              - generic: Qty 1
+              - generic: $28.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Skincare
+              - heading [level=3]: Nourish Face Oil
+            - generic:
+              - generic: Qty 1
+              - generic: $42.00
+          - button
+        - article:
+          - generic:
+            - generic:
+              - paragraph: Makeup
+              - heading [level=3]: Soft Focus Blush
+            - generic:
+              - generic: Qty 1
+              - generic: $24.00
+          - button
+      - generic:
+        - generic:
+          - generic: Subtotal
+          - strong: $128.00
+        - paragraph: Shipping and taxes are calculated at checkout.
+        - link [ref=f3e245] [cursor=pointer]:
+          - /url: /checkout
+          - text: Continue to checkout
+        - button: Continue shopping

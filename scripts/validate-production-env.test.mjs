@@ -23,7 +23,7 @@ const validEnvironment = () => ({
   UMAMI_APP_SECRET: secret("umami"),
   MEDIA_S3_ENDPOINT: "https://media.ecs.acme.test",
   MEDIA_S3_PUBLIC_BASE_URL: "https://media.ecs.acme.test/ecs-media",
-  MEDIA_S3_CORS_ALLOW_ORIGIN: "https://app.ecs.acme.test",
+  MEDIA_S3_CORS_ALLOW_ORIGIN: "*",
   EMAIL_PROVIDER: "resend",
   RESEND_API_KEY: secret("resend"),
   EMAIL_FROM_ACCOUNTS: "ECS Accounts <accounts@ecs.acme.test>",

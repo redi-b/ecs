@@ -136,7 +136,6 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
 
   for (const path of [
     "home.hero.imageAssetId",
-    "home.featuredItem.body",
     "home.categories.collectionIds",
     "home.bestSellers.productIds",
     "footer.socialLinks",

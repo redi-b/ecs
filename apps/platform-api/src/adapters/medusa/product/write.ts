@@ -47,19 +47,27 @@ export function getProductWriteBody(input: ProductWriteInput | ProductUpdateInpu
     body.description = null;
   }
 
+  if (input.thumbnail === null) {
+    body.thumbnail = null;
+  }
+
   if (input.categoryIds?.length) {
     body.categories = input.categoryIds.map((id) => ({ id }));
   }
 
-  if (input.imageUrls?.length) {
+  if (input.imageUrls !== undefined) {
     body.images = input.imageUrls.map((url) => ({ url }));
   }
 
   const metadata = input.tenantId?.trim()
     ? getTenantProductMetadata(input.tenantId, publicHandle, input.metadata)
     : input.metadata;
-  if (metadata && Object.keys(metadata).length > 0) {
-    body.metadata = metadata;
+  const mergedMetadata: Record<string, unknown> = { ...(metadata ?? {}) };
+  if (input.optionMediaBindings !== undefined) {
+    mergedMetadata.option_media_bindings = input.optionMediaBindings;
+  }
+  if (Object.keys(mergedMetadata).length > 0) {
+    body.metadata = mergedMetadata;
   }
 
   const optionValuePresentations = getOptionValuePresentationsForWrite(input.options);
@@ -237,7 +245,8 @@ export function getProductOptionBatchBody(
   );
 
   const uniqueRemove = [...new Set(remove)].filter((id) => !removeBeforeUpdate.has(id));
-  if (!add.length && !uniqueRemove.length && !removeBeforeUpdate.size && !update.length) return null;
+  if (!add.length && !uniqueRemove.length && !removeBeforeUpdate.size && !update.length)
+    return null;
   return {
     ...(add.length ? { add } : {}),
     ...(uniqueRemove.length ? { remove: uniqueRemove } : {}),
@@ -292,19 +301,26 @@ export function getOptionValuePresentationsForWrite(options: ProductOptionInput[
   return (options ?? []).flatMap((option) =>
     option.values.flatMap((value) => {
       if (typeof value === "string") return [];
-      if (value.swatch === undefined) return [];
+      if (value.swatch === undefined && option.displayMode === undefined) return [];
+      const swatch = value.swatch
+        ? value.swatch.kind === "image"
+          ? {
+              kind: "image" as const,
+              url: value.swatch.url.trim(),
+            }
+          : {
+              kind: "color" as const,
+              value: value.swatch.value.toLowerCase(),
+            }
+        : null;
       return [
         {
           ...(option.id?.trim() ? { optionId: option.id.trim() } : {}),
+          ...(option.displayMode ? { displayMode: option.displayMode } : {}),
           optionTitle: option.title.trim(),
           ...(value.id?.trim() ? { valueId: value.id.trim() } : {}),
           valueLabel: value.label.trim(),
-          swatch: value.swatch
-            ? {
-                kind: "color" as const,
-                value: value.swatch.value.toLowerCase(),
-              }
-            : null,
+          swatch,
         },
       ];
     }),
@@ -341,6 +357,7 @@ export function completeVariantOptionsForCurrentProduct(
   }
 
   const existingById = new Map<string, Record<string, string>>();
+  const existingMetadataById = new Map<string, Record<string, unknown>>();
   const singleValueAssignments: Record<string, string> = {};
   if (Array.isArray(product.options)) {
     for (const option of product.options) {
@@ -355,7 +372,9 @@ export function completeVariantOptionsForCurrentProduct(
   for (const variant of product.variants) {
     if (!isRecord(variant)) continue;
     const id = getString(variant.id);
-    if (!id || !Array.isArray(variant.options)) continue;
+    if (!id) continue;
+    if (isRecord(variant.metadata)) existingMetadataById.set(id, variant.metadata);
+    if (!Array.isArray(variant.options)) continue;
     const assignments: Record<string, string> = {};
     for (const assignment of variant.options) {
       if (!isRecord(assignment)) continue;
@@ -368,9 +387,15 @@ export function completeVariantOptionsForCurrentProduct(
   }
 
   return variants.map((variant) => {
-    const existing = variant.id?.trim() ? existingById.get(variant.id.trim()) : undefined;
+    const id = variant.id?.trim();
+    const existing = id ? existingById.get(id) : undefined;
+    const metadata = {
+      ...(id ? existingMetadataById.get(id) : undefined),
+      ...variant.metadata,
+    };
     return {
       ...variant,
+      ...(Object.keys(metadata).length ? { metadata } : {}),
       optionValues: {
         ...singleValueAssignments,
         ...existing,
@@ -399,6 +424,14 @@ export function getProductVariantWriteBody(
         },
       ];
 
+  const variantMetadata: Record<string, unknown> = {
+    ...((variant as { metadata?: Record<string, unknown> }).metadata ?? {}),
+    ...(variant.imageUrl !== undefined
+      ? { image_url: variant.imageUrl ? variant.imageUrl.trim() : null }
+      : {}),
+    ...(variant.imageSource !== undefined ? { image_source: variant.imageSource } : {}),
+  };
+
   return {
     ...(variant.id?.trim() ? { id: variant.id.trim() } : {}),
     title: Object.values(optionValues).join(" / ") || "Default",
@@ -416,6 +449,7 @@ export function getProductVariantWriteBody(
           }
         : {}),
     })),
+    ...(Object.keys(variantMetadata).length > 0 ? { metadata: variantMetadata } : {}),
   };
 }
 

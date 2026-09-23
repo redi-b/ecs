@@ -280,8 +280,14 @@ export function DetailStepTrack({
         const segmentFilled = index < fillThrough;
 
         return (
-          <li className="flex min-w-0 flex-1 flex-col" key={step.id}>
-            <div className="flex items-center">
+          <li
+            className={cn(
+              "flex min-w-0 flex-col",
+              isLast ? "w-6 shrink-0 items-end sm:w-7" : "flex-1",
+            )}
+            key={step.id}
+          >
+            <div className="flex w-full items-center">
               <span
                 aria-hidden
                 key={current && pulseKey > 0 ? `${step.id}-${pulseKey}` : step.id}
@@ -335,6 +341,7 @@ export function DetailStepTrack({
                 current && "text-foreground",
                 complete && "text-primary",
                 !complete && !current && !step.muted && "text-muted-foreground",
+                isLast && "text-right",
               )}
             >
               {step.label}

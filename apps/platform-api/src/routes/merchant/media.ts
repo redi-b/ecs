@@ -1,5 +1,7 @@
+import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import { z } from "zod";
 
+import { getMediaLimitsConfig } from "../../adapters/storage/env.js";
 import type { PlatformAppOptions } from "../../app.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -26,6 +28,7 @@ const updateMetadataSchema = z
 const syncProductMediaSchema = z.object({
   imageUrls: z.array(z.string().url()).max(100),
   thumbnail: z.string().url().nullable(),
+  variantImageUrls: z.array(z.string().url()).max(100).optional(),
 });
 
 export function registerMerchantMediaRoutes(
@@ -33,6 +36,16 @@ export function registerMerchantMediaRoutes(
   options: PlatformAppOptions,
   helpers: MerchantRouteHelpers,
 ) {
+  app.get("/platform/merchant/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+  app.get("/api/v1/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+  app.get("/media/config", async (context) => {
+    return context.json(getMediaLimitsConfig());
+  });
+
   app.post("/platform/merchant/media/uploads", async (context) => {
     const merchant = await helpers.getAuthorizedMerchantContext(context, { media: ["manage"] });
     if (!merchant.ok) return merchant.response;
@@ -144,14 +157,22 @@ export function registerMerchantMediaRoutes(
       products: ["update"],
     });
     if (!merchant.ok) return merchant.response;
-    if (!options.syncProductMedia) {
+    if (!options.syncProductMedia || !options.getMerchantProduct) {
       return context.json({ error: "media_storage_unavailable" }, 503);
     }
     const parsed = syncProductMediaSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_media_asset" }, 400);
-    const result = await options.syncProductMedia({
-      ...parsed.data,
+    const commerce = helpers.getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    const product = await options.getMerchantProduct({
       productId: context.req.param("productId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!product.ok) return context.json({ error: product.error }, product.status);
+    // Reconcile the saved product, not arbitrary references supplied by a caller.
+    const result = await options.syncProductMedia({
+      ...getProductMediaReferences(product.product),
+      productId: product.product.id,
       tenantId: merchant.result.context.tenantId,
     });
     return context.json(result);

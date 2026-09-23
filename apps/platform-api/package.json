@@ -14,6 +14,7 @@
     "seed:demo:clean": "tsx src/seeds/demo-seed.ts --clean",
     "seed:operations": "tsx src/seeds/demo-seed.ts --operations-only",
     "seed:bank-logos": "tsx src/seeds/bank-logos-seed.ts",
+    "media:backfill": "tsx src/scripts/media-backfill.ts",
     "bootstrap:platform-access": "tsx src/scripts/platform-access-bootstrap.ts",
     "start": "tsx src/index.ts"
   },
@@ -33,6 +34,7 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.7.0",
     "pg": "^8.13.0",
+    "sharp": "^0.35.3",
     "tsx": "^4.20.0",
     "zod": "^4.0.0"
   },

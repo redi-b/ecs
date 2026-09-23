@@ -96,6 +96,7 @@ describe("createMedusaProductService", () => {
       description: "Roasted coffee beans",
       handle: "coffee",
       collection_id: "pcol_1",
+      thumbnail: null,
       categories: [{ id: "pcat_1" }],
       images: [{ url: "https://cdn.test/coffee-1.jpg" }],
       options: [
@@ -588,6 +589,73 @@ describe("createMedusaProductService", () => {
     });
   });
 
+  it("updates product media_variants metadata while preserving existing metadata", async () => {
+    const forwardedRequests: Request[] = [];
+    const service = createMedusaProductService({
+      adminApiToken: "medusa_token",
+      medusaInternalUrl: "http://medusa:9000",
+      fetcher: async (input, init) => {
+        const request = new Request(input, init);
+        forwardedRequests.push(request);
+
+        if (request.method === "GET") {
+          return Response.json({
+            product: {
+              id: "prod_1",
+              metadata: { platform_tenant_id: "tenant_1", custom_tag: "organic" },
+            },
+          });
+        }
+
+        return Response.json({
+          product: {
+            id: "prod_1",
+            title: "Coffee",
+            handle: "coffee",
+            metadata: {
+              platform_tenant_id: "tenant_1",
+              custom_tag: "organic",
+              media_variants: {
+                "https://media.ourdomain.com/hero.png": {
+                  w200: "https://media.ourdomain.com/hero-200w.webp",
+                },
+              },
+            },
+            created_at: "2026-01-01T00:00:00.000Z",
+            updated_at: "2026-01-03T00:00:00.000Z",
+          },
+        });
+      },
+    });
+
+    const result = await service.updateProductMediaVariants({
+      productId: "prod_1",
+      mediaVariants: {
+        "https://media.ourdomain.com/hero.png": {
+          w200: "https://media.ourdomain.com/hero-200w.webp",
+        },
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(forwardedRequests.length, 2);
+    assert.equal(forwardedRequests[0]?.method, "GET");
+    assert.equal(forwardedRequests[0]?.url, "http://medusa:9000/admin/products/prod_1");
+    assert.equal(forwardedRequests[1]?.method, "POST");
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/platform-products/prod_1");
+    assert.deepEqual(await forwardedRequests[1]?.json(), {
+      update: {
+        metadata: {
+          media_variants: {
+            "https://media.ourdomain.com/hero.png": {
+              w200: "https://media.ourdomain.com/hero-200w.webp",
+            },
+          },
+        },
+      },
+    });
+  });
+
   it("gets a product only when it belongs to the resolved tenant sales channel", async () => {
     let forwardedRequest: Request | undefined;
     const service = createMedusaProductService({
@@ -642,7 +710,7 @@ describe("createMedusaProductService", () => {
     assert.equal(forwardedRequest.headers.get("authorization"), "Basic medusa_token");
     assert.equal(
       forwardedRequest.url,
-      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cmetadata%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
+      "http://medusa:9000/admin/products/prod_1?fields=id%2Ctitle%2Cdescription%2Chandle%2Cmetadata%2Cstatus%2Cthumbnail%2Ccollection_id%2Ccategories.id%2Cimages.id%2Cimages.url%2Cimages.rank%2Cimages.created_at%2Cimages.updated_at%2Coptions.id%2Coptions.title%2Coptions.values.id%2Coptions.values.value%2Coptions.values.metadata%2Cvariants.id%2Cvariants.title%2Cvariants.sku%2Cvariants.metadata%2Cvariants.options.value%2Cvariants.options.option.title%2Cvariants.prices.amount%2Cvariants.prices.currency_code%2Cvariants.inventory_items.inventory_item_id%2Ccreated_at%2Cupdated_at%2Csales_channels.id",
     );
     assert.deepEqual(result, {
       ok: true,
@@ -691,9 +759,9 @@ describe("createMedusaProductService", () => {
       fetcher: async (input, init) => {
         const request = new Request(input, init);
 
-        if (request.url.includes("/admin/inventory-items/")) {
+        if (request.url.includes("/admin/inventory-items")) {
           return Response.json({
-            inventory_item: {
+            inventory_items: [{
               id: "iitem_1",
               location_levels: [
                 {
@@ -704,7 +772,7 @@ describe("createMedusaProductService", () => {
                   available_quantity: 10,
                 },
               ],
-            },
+            }],
           });
         }
 
@@ -1390,7 +1458,7 @@ describe("createMedusaProductService", () => {
         }
 
         return Response.json({
-          inventory_item: {
+          inventory_items: [{
             id: "iitem_1",
             location_levels: [
               {
@@ -1401,7 +1469,7 @@ describe("createMedusaProductService", () => {
                 available_quantity: 10,
               },
             ],
-          },
+          }],
         });
       },
     });
@@ -1422,7 +1490,7 @@ describe("createMedusaProductService", () => {
           offset: 0,
           salesChannelId: "sc_1",
         }).toString()}`,
-        "GET http://medusa:9000/admin/inventory-items/iitem_1?fields=id%2C*location_levels",
+        "GET http://medusa:9000/admin/inventory-items?fields=id%2C*location_levels&limit=1&id%5B%5D=iitem_1",
       ],
     );
     assert.deepEqual(result.ok ? result.products[0]?.variants?.[0]?.stock : null, {

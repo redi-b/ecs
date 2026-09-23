@@ -129,7 +129,7 @@ const clientMessages = {
 
       <aside class="lv-checkout-summary" aria-label={m.cart_order_summary({}, { locale })} data-currency={cart?.currencyCode ?? "ETB"} data-base-total={baseTotal} data-locale={locale === "am" ? "am-ET" : "en-ET"}>
         <header><h2 class="type-heading-3">{m.cart_order_summary({}, { locale })}</h2><span class="type-body-xs">{m.cart_item_count({ count: summary.itemCount }, { locale })}</span></header>
-        <ul>{items.map((item) => <li><div>{item.thumbnail ? <img src={item.thumbnail} alt="" /> : null}</div><p class="type-body-s-400"><strong class="type-body-s-500">{item.title ?? m.product_fallback_name({}, { locale })}</strong><span class="type-body-xs">{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b class="type-body-s-500">{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</b></li>)}</ul>
+        <ul>{items.map((item) => <li><div>{(item.imageUrl || item.thumbnail) ? <img src={item.imageUrl || item.thumbnail} alt="" /> : null}</div><p class="type-body-s-400"><strong class="type-body-s-500">{item.title ?? m.product_fallback_name({}, { locale })}</strong><span class="type-body-xs">{item.variantTitle ?? ""}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span></p><b class="type-body-s-500">{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</b></li>)}</ul>
         <DiscountCode appliedCodes={summary.appliedCodes} idPrefix="checkout" />
         <dl>
           <div><dt class="type-body-s-400">{m.cart_subtotal({}, { locale })}</dt><dd class="type-body-s-500" data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</dd></div>

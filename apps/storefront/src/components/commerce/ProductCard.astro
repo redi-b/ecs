@@ -1,6 +1,7 @@
 ---
 import { formatMoney } from "../../lib/money";
 import type { StoreProduct } from "../../lib/commerce/types";
+import { buildProductImageSrcset } from "../../lib/media-url";
 import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
 import * as m from "../../paraglide/messages.js";
 
@@ -12,13 +13,24 @@ const { product } = Astro.props;
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "#";
 const title = product.title ?? m.catalog_product_fallback({}, { locale });
+const cardThumbnail = product.thumbnailVariants?.w400 ?? product.thumbnail;
+const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
 ---
 
 <li>
   <a class="sf-card" href={href}>
     {
-      product.thumbnail ? (
-        <img class="sf-card-media" src={product.thumbnail} alt="" width="900" height="900" loading="lazy" decoding="async" />
+      cardThumbnail ? (
+        <img
+          class="sf-card-media"
+          src={cardThumbnail}
+          srcset={cardSrcset ?? undefined}
+          alt=""
+          width="400"
+          height="400"
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div class="sf-card-media-placeholder" aria-hidden="true" />
       )

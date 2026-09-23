@@ -1,0 +1,15 @@
+- generic [ref=f1e4]:
+  - generic [ref=f1e5]:
+    - checkbox "Use dark theme" [ref=f1e6]
+    - generic [ref=f1e7] [cursor=pointer]: Use dark theme
+  - banner [ref=f1e17]:
+    - generic [ref=f1e18]:
+      - heading "TypeError" [level=2] [ref=f1e19]
+      - heading "An error occurred." [level=1] [ref=f1e20]
+  - generic [ref=f1e26]: fetch failed
+  - generic [ref=f1e32]:
+    - heading "Stack Trace" [level=2] [ref=f1e34]
+    - generic [ref=f1e40]: "TypeError: fetch failed"
+  - generic [ref=f1e41]:
+    - heading "Cause" [level=2] [ref=f1e42]
+    - generic [ref=f1e43]: "{ \"code\": \"ECONNREFUSED\" }"

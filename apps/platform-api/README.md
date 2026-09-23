@@ -15,7 +15,7 @@ After **storefront publish/unpublish** and successful **catalog writes** (produc
 
 Calls `POST {STOREFRONT_INTERNAL_BASE_URL}/internal/cache-purge` with header `x-ecs-cache-purge-secret` and body `{ tenantId, tags: ["tenant:…"] }`.
 
-See `apps/storefront/README.md` and `dev-docs/07-storefront-routing.md`.
+See `apps/storefront/README.md` for storefront cache and routing details.
 
 ## Worker (`pnpm --filter @ecs/platform-api dev:worker`)
 
@@ -35,5 +35,3 @@ Schedules use **BullMQ repeatable jobs** (not process `setInterval`). Set an int
 - **callback_url** (server): `{PLATFORM_PUBLIC_BASE_URL}/platform/payments/chapa/callback` — Chapa notifies us; we **verify** with `CHAPA_SECRET_KEY` then apply.
 - **return_url** (browser): merchant/storefront return; billing also re-verifies on `paid=1`.
 - Platform subscription refs use the `ecs_bill_` prefix so they never hit Medusa capture.
-
-See `dev-docs/post-mvp/09-billing-v1-free-and-growth.md` for the full billing v1 flow.

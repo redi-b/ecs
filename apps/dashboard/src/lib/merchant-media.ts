@@ -27,6 +27,47 @@ const mediaListSchema = z.object({
 export type MediaAsset = z.infer<typeof mediaAssetSchema>;
 export type MediaUploadDescriptor = z.infer<typeof createUploadResponseSchema>;
 
+export type MediaLimitsConfig = {
+  allowedMimeTypes: string[];
+  formattedMaxSize: string;
+  maxFileBytes: number;
+  maxFilesPerBatch: number;
+};
+
+export const DEFAULT_MEDIA_LIMITS: MediaLimitsConfig = {
+  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"],
+  formattedMaxSize: "15MB",
+  maxFileBytes: 15 * 1024 * 1024,
+  maxFilesPerBatch: 10,
+};
+
+const mediaLimitsSchema = z.object({
+  allowedMimeTypes: z.array(z.string()).default(DEFAULT_MEDIA_LIMITS.allowedMimeTypes),
+  formattedMaxSize: z.string().default(DEFAULT_MEDIA_LIMITS.formattedMaxSize),
+  maxFileBytes: z.number().positive().default(DEFAULT_MEDIA_LIMITS.maxFileBytes),
+  maxFilesPerBatch: z.number().positive().default(DEFAULT_MEDIA_LIMITS.maxFilesPerBatch),
+});
+
+export async function getMediaUploadConfig(
+  context?: PlatformRequestContext,
+): Promise<MediaLimitsConfig> {
+  try {
+    const response =
+      typeof window === "undefined" || context
+        ? await platformFetch("/platform/merchant/media/config", context ?? {})
+        : await fetch("/dashboard/media/config", {
+            cache: "no-store",
+            headers: { accept: "application/json" },
+          });
+    if (!response.ok) return DEFAULT_MEDIA_LIMITS;
+    const data = await response.json().catch(() => null);
+    const parsed = mediaLimitsSchema.safeParse(data);
+    return parsed.success ? parsed.data : DEFAULT_MEDIA_LIMITS;
+  } catch {
+    return DEFAULT_MEDIA_LIMITS;
+  }
+}
+
 export async function getMerchantMedia(
   context: PlatformRequestContext,
   input: {

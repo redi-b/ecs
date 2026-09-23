@@ -27,14 +27,33 @@ export type StoreProductVariant = {
   discountAmount?: number | null;
   discountPercentage?: number | null;
   currencyCode: string | null;
+  imageUrl?: string | null;
+  imageVariants?: ImageVariants | null;
   optionValues: Array<{ optionTitle: string; value: string }>;
 };
 
 export type StoreProductOption = {
+  displayMode?: "text" | "swatch";
   id: string;
   title: string;
   values: string[];
   swatches?: Record<string, string>;
+  optionSwatches?: Record<
+    string,
+    { kind: "color"; value: string } | { kind: "image"; url: string }
+  >;
+};
+
+export type ImageVariants = {
+  w200?: string;
+  w400?: string;
+  w800?: string;
+  w1200?: string;
+};
+
+export type StoreProductImage = {
+  url: string;
+  variants?: ImageVariants;
 };
 
 export type StoreProduct = {
@@ -43,9 +62,12 @@ export type StoreProduct = {
   handle: string | null;
   description: string | null;
   thumbnail: string | null;
+  thumbnailVariants?: ImageVariants;
   images: string[];
+  gallery: StoreProductImage[];
   variants: StoreProductVariant[];
   options: StoreProductOption[];
+  optionMediaBindings?: { optionTitle: string; mappings: Record<string, string[]> } | null;
   collectionId: string | null;
   collectionTitle: string | null;
   categoryIds: string[];
@@ -109,6 +131,7 @@ export type StoreCartItem = {
   unitPrice: number | null;
   total: number | null;
   thumbnail: string | null;
+  imageUrl?: string | null;
   variantId: string | null;
   productHandle: string | null;
   variantTitle: string | null;

@@ -1,6 +1,6 @@
 # Platform API source layout
 
-Target shape from `dev-docs/post-mvp/00-platform-api-organization-cleanup-plan.md`.
+The source tree is organized by runtime responsibility and domain boundary.
 
 ```text
 src/

@@ -33,6 +33,7 @@ export const PRODUCT_LIST_FIELDS = [
   "variants.id",
   "variants.title",
   "variants.sku",
+  "variants.metadata",
   "variants.options.value",
   "variants.options.option.title",
   "variants.prices.amount",
@@ -66,6 +67,7 @@ export const PRODUCT_DETAIL_FIELDS = [
   "variants.id",
   "variants.title",
   "variants.sku",
+  "variants.metadata",
   "variants.options.value",
   "variants.options.option.title",
   "variants.prices.amount",
@@ -302,7 +304,7 @@ export function getProductOwnershipUrl(
   url.searchParams.set(
     "fields",
     options.includeOptions
-      ? "id,sales_channels.id,options.id,options.title,options.values.id,options.values.value,variants.id,variants.options.value,variants.options.option.title"
+      ? "id,sales_channels.id,options.id,options.title,options.values.id,options.values.value,variants.id,variants.metadata,variants.options.value,variants.options.option.title"
       : "id,sales_channels.id",
   );
 

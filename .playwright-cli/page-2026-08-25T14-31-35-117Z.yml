@@ -1,0 +1,207 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - link "Buna & Beyond home" [ref=e4] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e5]: M
+      - strong [ref=e6]: Buna & Beyond
+    - navigation "Store" [ref=e7]:
+      - link "Home" [ref=e8]:
+        - /url: /
+      - link "Shop" [ref=e9]:
+        - /url: /products
+      - link "Request item" [ref=e10]:
+        - /url: /request-item
+      - link "About" [ref=e11]:
+        - /url: /about
+      - link "Contact" [ref=e12]:
+        - /url: /contact
+    - generic [ref=e13]:
+      - link "Search" [ref=e14] [cursor=pointer]:
+        - /url: /products
+      - link "Account" [ref=e15] [cursor=pointer]:
+        - /url: /account
+      - link "Shopping cart" [ref=e16] [cursor=pointer]:
+        - /url: /cart
+        - text: Cart
+        - generic [ref=e17]: "2"
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - paragraph [ref=e21]: Independent commerce, made local
+        - heading "A modern market for everyday discoveries" [level=1] [ref=e22]
+        - paragraph [ref=e23]: Browse a carefully selected catalog from an Ethiopian business you can reach and trust.
+        - link "Browse the market" [ref=e24] [cursor=pointer]:
+          - /url: /products
+          - text: Browse the market
+          - generic [ref=e25]: ↗
+      - generic "Store highlights" [ref=e26]:
+        - paragraph [ref=e27]: OPEN / ONLINE
+        - link "01 Woven Carryall ETB 850" [ref=e28] [cursor=pointer]:
+          - /url: /products/woven-carryall
+          - generic [ref=e29]: "01"
+          - strong [ref=e30]: Woven Carryall
+          - emphasis [ref=e31]: ETB 850
+        - link "02 Daily Coffee Set ETB 1,125" [ref=e32] [cursor=pointer]:
+          - /url: /products/daily-coffee-set
+          - generic [ref=e33]: "02"
+          - strong [ref=e34]: Daily Coffee Set
+          - emphasis [ref=e35]: ETB 1,125
+        - link "03 Desk Organizer ETB 1,400" [ref=e36] [cursor=pointer]:
+          - /url: /products/desk-organizer
+          - generic [ref=e37]: "03"
+          - strong [ref=e38]: Desk Organizer
+          - emphasis [ref=e39]: ETB 1,400
+      - list [ref=e40]:
+        - listitem [ref=e41]: Local merchant
+        - listitem [ref=e42]: Clear pricing
+        - listitem [ref=e43]: Direct support
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - paragraph [ref=e46]: 01 / CURATED
+        - heading "Market highlights" [level=2] [ref=e47]
+      - generic [ref=e48]:
+        - article [ref=e49]:
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /products/woven-carryall
+            - generic [ref=e51]:
+              - heading "Woven Carryall" [level=3] [ref=e52]
+              - paragraph [ref=e53]: ETB 850
+        - article [ref=e54]:
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /products/daily-coffee-set
+            - generic [ref=e56]:
+              - heading "Daily Coffee Set" [level=3] [ref=e57]
+              - paragraph [ref=e58]: ETB 1,125
+        - article [ref=e59]:
+          - link [ref=e60] [cursor=pointer]:
+            - /url: /products/desk-organizer
+            - generic [ref=e61]:
+              - heading "Desk Organizer" [level=3] [ref=e62]
+              - paragraph [ref=e63]: ETB 1,400
+        - article [ref=e64]:
+          - link [ref=e65] [cursor=pointer]:
+            - /url: /products/hand-thrown-bowl
+            - generic [ref=e66]:
+              - heading "Hand-thrown Bowl" [level=3] [ref=e67]
+              - paragraph [ref=e68]: ETB 1,675
+        - article [ref=e69]:
+          - link [ref=e70] [cursor=pointer]:
+            - /url: /products/travel-flask
+            - generic [ref=e71]:
+              - heading "Travel Flask" [level=3] [ref=e72]
+              - paragraph [ref=e73]: ETB 1,950
+        - article [ref=e74]:
+          - link [ref=e75] [cursor=pointer]:
+            - /url: /products/cotton-throw
+            - generic [ref=e76]:
+              - heading "Cotton Throw" [level=3] [ref=e77]
+              - paragraph [ref=e78]: ETB 2,225
+    - generic [ref=e79]:
+      - paragraph [ref=e80]: Useful goods, honest details, and a direct path from discovery to checkout.
+      - heading "BUILT FOR DAILY LIFE" [level=2] [ref=e81]:
+        - generic [ref=e82]: BUILT FOR
+        - generic [ref=e83]: DAILY LIFE
+      - link "See everything →" [ref=e84]:
+        - /url: /products
+    - generic [ref=e85]:
+      - generic [ref=e86]:
+        - paragraph [ref=e87]: 02 / FIND YOUR WAY
+        - heading "Shop by collection" [level=2] [ref=e88]
+      - generic [ref=e89]:
+        - link "01 Home and living" [ref=e90] [cursor=pointer]:
+          - /url: /products?collection=home
+          - generic [ref=e91]: "01"
+          - strong [ref=e92]: Home and living
+          - generic [ref=e93]: ↗
+        - link "02 Out and about" [ref=e94] [cursor=pointer]:
+          - /url: /products?collection=travel
+          - generic [ref=e95]: "02"
+          - strong [ref=e96]: Out and about
+          - generic [ref=e97]: ↗
+        - link "03 Thoughtful gifts" [ref=e98] [cursor=pointer]:
+          - /url: /products?collection=gifts
+          - generic [ref=e99]: "03"
+          - strong [ref=e100]: Thoughtful gifts
+          - generic [ref=e101]: ↗
+    - generic [ref=e102]:
+      - generic [ref=e103]:
+        - paragraph [ref=e104]: 03 / NEW ARRIVALS
+        - heading "Fresh in the shop" [level=2] [ref=e105]
+        - link "View the full catalog" [ref=e106] [cursor=pointer]:
+          - /url: /products
+      - generic [ref=e107]:
+        - article [ref=e108]:
+          - link [ref=e109] [cursor=pointer]:
+            - /url: /products/woven-carryall
+            - generic [ref=e110]:
+              - heading "Woven Carryall" [level=3] [ref=e111]
+              - paragraph [ref=e112]: ETB 850
+        - article [ref=e113]:
+          - link [ref=e114] [cursor=pointer]:
+            - /url: /products/daily-coffee-set
+            - generic [ref=e115]:
+              - heading "Daily Coffee Set" [level=3] [ref=e116]
+              - paragraph [ref=e117]: ETB 1,125
+        - article [ref=e118]:
+          - link [ref=e119] [cursor=pointer]:
+            - /url: /products/desk-organizer
+            - generic [ref=e120]:
+              - heading "Desk Organizer" [level=3] [ref=e121]
+              - paragraph [ref=e122]: ETB 1,400
+        - article [ref=e123]:
+          - link [ref=e124] [cursor=pointer]:
+            - /url: /products/hand-thrown-bowl
+            - generic [ref=e125]:
+              - heading "Hand-thrown Bowl" [level=3] [ref=e126]
+              - paragraph [ref=e127]: ETB 1,675
+        - article [ref=e128]:
+          - link [ref=e129] [cursor=pointer]:
+            - /url: /products/travel-flask
+            - generic [ref=e130]:
+              - heading "Travel Flask" [level=3] [ref=e131]
+              - paragraph [ref=e132]: ETB 1,950
+        - article [ref=e133]:
+          - link [ref=e134] [cursor=pointer]:
+            - /url: /products/cotton-throw
+            - generic [ref=e135]:
+              - heading "Cotton Throw" [level=3] [ref=e136]
+              - paragraph [ref=e137]: ETB 2,225
+    - generic [ref=e138]:
+      - paragraph [ref=e139]: READY WHEN YOU ARE
+      - heading "Find something worth taking home" [level=2] [ref=e140]
+      - generic [ref=e141]:
+        - link "Shop now" [ref=e142] [cursor=pointer]:
+          - /url: /products
+          - text: Shop now
+          - generic [ref=e143]: ↗
+        - link "Ask a question" [ref=e144] [cursor=pointer]:
+          - /url: /contact
+  - contentinfo [ref=e145]:
+    - generic [ref=e146]:
+      - paragraph [ref=e147]: Buna & Beyond
+      - heading "Need help before you order?" [level=2] [ref=e148]
+      - link "Contact the shop" [ref=e149]:
+        - /url: /contact
+    - generic [ref=e150]:
+      - paragraph [ref=e151]: A direct, dependable online shop built for local commerce.
+      - navigation "Footer" [ref=e152]:
+        - link "Home" [ref=e153] [cursor=pointer]:
+          - /url: /
+        - link "Shop" [ref=e154] [cursor=pointer]:
+          - /url: /products
+        - link "About" [ref=e155] [cursor=pointer]:
+          - /url: /about
+        - link "Contact" [ref=e156] [cursor=pointer]:
+          - /url: /contact
+      - generic [ref=e157]:
+        - text: Addis Ababa, Ethiopia
+        - link "hello@example.com" [ref=e158]:
+          - /url: mailto:hello@example.com
+    - text: © 2026 Buna & Beyond
+  - generic [ref=e161]:
+    - button [ref=e162]
+    - button [ref=e168]
+    - button [ref=e172]
+    - button [ref=e177]

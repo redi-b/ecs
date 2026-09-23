@@ -2,10 +2,12 @@ import { normalizeStorefrontMediaUrl } from "../media-url.js";
 import { getBoolean, getNumber, getString, isRecord } from "./http.js";
 import type {
   CompletedOrder,
+  ImageVariants,
   StoreCart,
   StoreCartItem,
   StoreDeliveryOptions,
   StoreProduct,
+  StoreProductImage,
   StoreProductVariant,
   StoreShippingOption,
 } from "./types.js";
@@ -75,7 +77,51 @@ function normalizeOptionValues(
   return values;
 }
 
-function normalizeVariant(value: unknown, productOptions: unknown[]): StoreProductVariant | null {
+function parseImageVariants(entry: unknown): ImageVariants | undefined {
+  if (!isRecord(entry)) return undefined;
+  const variants: ImageVariants = {};
+  if (typeof entry.w200 === "string" && entry.w200.trim()) variants.w200 = entry.w200.trim();
+  if (typeof entry.w400 === "string" && entry.w400.trim()) variants.w400 = entry.w400.trim();
+  if (typeof entry.w800 === "string" && entry.w800.trim()) variants.w800 = entry.w800.trim();
+  if (typeof entry.w1200 === "string" && entry.w1200.trim()) variants.w1200 = entry.w1200.trim();
+  return Object.keys(variants).length > 0 ? variants : undefined;
+}
+
+function resolveMediaUrl(value: unknown): string | null {
+  const candidate = getString(value)?.trim();
+  if (!candidate) return null;
+  const trusted = normalizeStorefrontMediaUrl(candidate);
+  if (trusted) return trusted;
+  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {}
+  return null;
+}
+
+function resolveImageVariants(
+  url: string,
+  rawMediaVariants?: Record<string, unknown> | null,
+): ImageVariants | undefined {
+  if (!rawMediaVariants) return undefined;
+  if (rawMediaVariants[url]) return parseImageVariants(rawMediaVariants[url]);
+  try {
+    const decoded = decodeURI(url);
+    if (decoded !== url && rawMediaVariants[decoded]) {
+      return parseImageVariants(rawMediaVariants[decoded]);
+    }
+  } catch {}
+  return undefined;
+}
+
+export function normalizeVariant(
+  value: unknown,
+  productOptions: unknown[],
+  rawMediaVariants?: Record<string, unknown> | null,
+): StoreProductVariant | null {
   if (!isRecord(value)) return null;
   const id = getString(value.id);
   if (!id) return null;
@@ -86,6 +132,23 @@ function normalizeVariant(value: unknown, productOptions: unknown[]): StoreProdu
   const inventoryQuantity = getNumber(value.inventory_quantity) ?? null;
   const inStock =
     !manageInventory || allowBackorder || (inventoryQuantity != null && inventoryQuantity > 0);
+
+  const metadata = isRecord(value.metadata) ? value.metadata : null;
+  const variantMediaVariants = isRecord(metadata?.media_variants)
+    ? (metadata.media_variants as Record<string, unknown>)
+    : null;
+  const combinedMediaVariants = variantMediaVariants ?? rawMediaVariants;
+
+  const candidateImageUrl =
+    (metadata && metadata.image_url !== undefined ? metadata.image_url : undefined) ??
+    (value.imageUrl !== undefined ? value.imageUrl : undefined) ??
+    (value.thumbnail !== undefined ? value.thumbnail : undefined) ??
+    (value.image_url !== undefined ? value.image_url : undefined);
+
+  const imageUrl = candidateImageUrl !== undefined ? resolveMediaUrl(candidateImageUrl) : undefined;
+  const imageVariants = imageUrl
+    ? resolveImageVariants(imageUrl, combinedMediaVariants)
+    : undefined;
 
   return {
     id,
@@ -100,8 +163,117 @@ function normalizeVariant(value: unknown, productOptions: unknown[]): StoreProdu
     discountAmount: price.discountAmount,
     discountPercentage: price.discountPercentage,
     currencyCode: price.currency,
+    ...(imageUrl !== undefined ? { imageUrl } : {}),
+    ...(imageVariants !== undefined ? { imageVariants } : {}),
     optionValues: normalizeOptionValues(value, productOptions),
   };
+}
+
+function parseOptionMediaBindings(
+  metadata: unknown,
+  direct?: unknown,
+): { optionTitle: string; mappings: Record<string, string[]> } | null | undefined {
+  const candidate =
+    isRecord(metadata) && metadata.option_media_bindings !== undefined
+      ? metadata.option_media_bindings
+      : direct;
+
+  if (candidate === undefined) return undefined;
+  if (candidate === null) return null;
+
+  let parsed = candidate;
+  if (typeof candidate === "string") {
+    try {
+      parsed = JSON.parse(candidate);
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (!isRecord(parsed)) return undefined;
+  const optionTitle = getString(parsed.optionTitle);
+  if (!optionTitle) return undefined;
+
+  const rawMappings = isRecord(parsed.mappings) ? parsed.mappings : {};
+  const mappings: Record<string, string[]> = {};
+  for (const [key, list] of Object.entries(rawMappings)) {
+    if (Array.isArray(list)) {
+      mappings[key] = list
+        .map((item) => (typeof item === "string" ? (resolveMediaUrl(item) ?? item) : ""))
+        .filter(Boolean);
+    }
+  }
+
+  return { optionTitle, mappings };
+}
+
+function getExplicitOptionDisplayMode(metadata: unknown) {
+  if (!isRecord(metadata)) return null;
+  const presentation = metadata.ecs_option_value_presentation;
+  if (!isRecord(presentation) || presentation.version !== 1) return null;
+  return presentation.displayMode === "text" || presentation.displayMode === "swatch"
+    ? presentation.displayMode
+    : null;
+}
+
+function getExplicitOptionValueSwatch(metadata: unknown) {
+  if (!isRecord(metadata)) return null;
+  const presentation = metadata.ecs_option_value_presentation;
+  if (!isRecord(presentation) || presentation.version !== 1) return null;
+  const swatch = presentation.swatch;
+  if (!isRecord(swatch)) return null;
+  if (swatch.kind === "color") {
+    const value = getString(swatch.value)?.toLowerCase() ?? "";
+    return /^#[0-9a-f]{6}$/.test(value) ? { kind: "color" as const, value } : null;
+  }
+  if (swatch.kind === "image") {
+    const url = resolveMediaUrl(swatch.url) ?? getString(swatch.url);
+    return url ? { kind: "image" as const, url } : null;
+  }
+  return null;
+}
+
+export function filterProductGallery(params: {
+  images: StoreProductImage[];
+  selectedOptions: Record<string, string>;
+  optionMediaBindings?: { optionTitle: string; mappings: Record<string, string[]> } | null;
+}): StoreProductImage[] {
+  const { images, selectedOptions, optionMediaBindings } = params;
+  if (!images || images.length === 0) return [];
+  if (!optionMediaBindings || !optionMediaBindings.mappings || !optionMediaBindings.optionTitle) {
+    return images;
+  }
+
+  const boundTitle = optionMediaBindings.optionTitle.trim().toLowerCase();
+  const matchingEntry = Object.entries(selectedOptions || {}).find(
+    ([title]) => title.trim().toLowerCase() === boundTitle,
+  );
+  if (!matchingEntry) {
+    return images;
+  }
+
+  const selectedValue = matchingEntry[1]?.trim();
+  if (!selectedValue) {
+    return images;
+  }
+
+  const mappingKey = Object.keys(optionMediaBindings.mappings).find(
+    (key) => key.trim().toLowerCase() === selectedValue.toLowerCase(),
+  );
+  if (!mappingKey) {
+    return images;
+  }
+
+  const taggedUrls = new Set(optionMediaBindings.mappings[mappingKey] || []);
+  const allTaggedUrls = new Set(Object.values(optionMediaBindings.mappings).flat());
+
+  const filtered = images.filter((img) => {
+    const isTaggedForSelected = taggedUrls.has(img.url);
+    const isUniversal = !allTaggedUrls.has(img.url);
+    return isTaggedForSelected || isUniversal;
+  });
+
+  return filtered.length > 0 ? filtered : images;
 }
 
 export function normalizeProduct(value: unknown): StoreProduct {
@@ -112,7 +284,9 @@ export function normalizeProduct(value: unknown): StoreProduct {
       handle: null,
       description: null,
       thumbnail: null,
+      thumbnailVariants: undefined,
       images: [],
+      gallery: [],
       variants: [],
       options: [],
       collectionId: null,
@@ -123,9 +297,14 @@ export function normalizeProduct(value: unknown): StoreProduct {
     };
   }
 
+  const metadata = isRecord(value.metadata) ? value.metadata : null;
+  const rawMediaVariants = isRecord(metadata?.media_variants)
+    ? (metadata.media_variants as Record<string, unknown>)
+    : null;
+
   const productOptions = Array.isArray(value.options) ? value.options : [];
   const variants = (Array.isArray(value.variants) ? value.variants : [])
-    .map((variant) => normalizeVariant(variant, productOptions))
+    .map((variant) => normalizeVariant(variant, productOptions, rawMediaVariants))
     .filter((variant): variant is StoreProductVariant => Boolean(variant));
 
   const options = productOptions
@@ -134,7 +313,12 @@ export function normalizeProduct(value: unknown): StoreProduct {
       const id = getString(option.id) ?? "";
       const title = getString(option.title) ?? getString(option.name) ?? "Option";
       const values: string[] = [];
+      let displayMode: "text" | "swatch" | null = null;
       const swatches: Record<string, string> = {};
+      const optionSwatches: Record<
+        string,
+        { kind: "color"; value: string } | { kind: "image"; url: string }
+      > = {};
       if (Array.isArray(option.values)) {
         for (const entry of option.values) {
           const v =
@@ -145,8 +329,14 @@ export function normalizeProduct(value: unknown): StoreProduct {
                 : "";
           if (v && !values.includes(v)) values.push(v);
           if (v && isRecord(entry)) {
+            displayMode ??= getExplicitOptionDisplayMode(entry.metadata);
             const swatch = getExplicitOptionValueSwatch(entry.metadata);
-            if (swatch) swatches[v] = swatch;
+            if (swatch) {
+              optionSwatches[v] = swatch;
+              if (swatch.kind === "color") {
+                swatches[v] = swatch.value;
+              }
+            }
           }
         }
       }
@@ -163,19 +353,42 @@ export function normalizeProduct(value: unknown): StoreProduct {
             id: id || title,
             title,
             values,
+            ...(displayMode ? { displayMode } : {}),
             ...(Object.keys(swatches).length ? { swatches } : {}),
+            ...(Object.keys(optionSwatches).length ? { optionSwatches } : {}),
           }
         : null;
     })
     .filter((option): option is NonNullable<typeof option> => Boolean(option));
 
+  const extractVariants = (url: string): ImageVariants | undefined =>
+    resolveImageVariants(url, rawMediaVariants);
+
   const images: string[] = [];
+  const gallery: StoreProductImage[] = [];
   if (Array.isArray(value.images)) {
     for (const image of value.images) {
-      const url = isRecord(image) ? getString(image.url) : getString(image);
-      const trustedUrl = normalizeStorefrontMediaUrl(url);
-      if (trustedUrl) images.push(trustedUrl);
+      const raw = isRecord(image) ? image.url : image;
+      const url = resolveMediaUrl(raw);
+      if (url && !images.includes(url)) {
+        images.push(url);
+        const variants = extractVariants(url);
+        gallery.push({
+          url,
+          ...(variants ? { variants } : {}),
+        });
+      }
     }
+  }
+
+  const thumbnail = resolveMediaUrl(value.thumbnail) ?? images[0] ?? null;
+  const thumbnailVariants = thumbnail ? extractVariants(thumbnail) : undefined;
+
+  if (thumbnail && !images.includes(thumbnail)) {
+    gallery.unshift({
+      url: thumbnail,
+      ...(thumbnailVariants ? { variants: thumbnailVariants } : {}),
+    });
   }
 
   const collection = isRecord(value.collection) ? value.collection : null;
@@ -187,8 +400,8 @@ export function normalizeProduct(value: unknown): StoreProduct {
     if (id) categoryIds.push(id);
   }
 
-  const thumbnail = normalizeStorefrontMediaUrl(getString(value.thumbnail)) ?? images[0] ?? null;
   const priced = variants.find((v) => v.priceAmount != null) ?? variants[0];
+  const optionMediaBindings = parseOptionMediaBindings(metadata, value.optionMediaBindings);
 
   return {
     id: getString(value.id) ?? "",
@@ -196,9 +409,12 @@ export function normalizeProduct(value: unknown): StoreProduct {
     handle: getString(value.handle),
     description: getString(value.description),
     thumbnail,
+    thumbnailVariants,
     images,
+    gallery,
     variants,
     options,
+    ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
     collectionId: getString(value.collection_id) ?? getString(collection?.id),
     collectionTitle: getString(collection?.title),
     categoryIds,
@@ -210,15 +426,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
   };
 }
 
-function getExplicitOptionValueSwatch(metadata: unknown) {
-  if (!isRecord(metadata)) return null;
-  const presentation = metadata.ecs_option_value_presentation;
-  if (!isRecord(presentation) || presentation.version !== 1) return null;
-  const swatch = presentation.swatch;
-  if (!isRecord(swatch) || swatch.kind !== "color") return null;
-  const value = getString(swatch.value)?.toLowerCase() ?? "";
-  return /^#[0-9a-f]{6}$/.test(value) ? value : null;
-}
+export const normalizeStoreProduct = normalizeProduct;
 
 function normalizeCartItem(value: unknown): StoreCartItem | null {
   if (!isRecord(value)) return null;
@@ -232,15 +440,26 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
       ? variant.product
       : null;
 
+  const variantImageUrl =
+    (isRecord(variant?.metadata) ? getString(variant.metadata.image_url) : null) ??
+    getString(variant?.imageUrl) ??
+    getString(variant?.image_url) ??
+    getString(variant?.thumbnail);
+
+  const thumbnail = resolveMediaUrl(
+    variantImageUrl ?? getString(value.thumbnail) ?? getString(product?.thumbnail),
+  );
+
+  const imageUrl = resolveMediaUrl(variantImageUrl) ?? thumbnail;
+
   return {
     id,
     title: getString(value.title) ?? getString(value.product_title) ?? getString(product?.title),
     quantity: getNumber(value.quantity) ?? 0,
     unitPrice: getNumber(value.unit_price) ?? getNumber(value.unitPrice) ?? null,
     total: getNumber(value.total) ?? getNumber(value.subtotal) ?? null,
-    thumbnail: normalizeStorefrontMediaUrl(
-      getString(value.thumbnail) ?? getString(product?.thumbnail),
-    ),
+    thumbnail,
+    imageUrl,
     variantId: getString(value.variant_id) ?? getString(variant?.id),
     productHandle: getString(product?.handle) ?? getString(value.product_handle),
     variantTitle: getString(value.variant_title) ?? getString(variant?.title),
