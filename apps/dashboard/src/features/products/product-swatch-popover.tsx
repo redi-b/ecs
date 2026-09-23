@@ -195,6 +195,7 @@ export function ProductColorPopover({
   );
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileDialogPendingRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
 
@@ -213,6 +214,7 @@ export function ProductColorPopover({
   }
 
   function handleOpenChange(next: boolean) {
+    if (!next && fileDialogPendingRef.current) return;
     setOpen(next);
     if (next) {
       const current = normalizeProductOptionSwatch(value);
@@ -239,7 +241,18 @@ export function ProductColorPopover({
       setStep("browse");
     }
   }
+  function openFilePicker() {
+    fileDialogPendingRef.current = true;
+    const clearPending = () => {
+      window.setTimeout(() => {
+        fileDialogPendingRef.current = false;
+      }, 0);
+    };
+    window.addEventListener("focus", clearPending, { once: true });
+    fileInputRef.current?.click();
+  }
   async function handleFileUpload(files: FileList | null) {
+    fileDialogPendingRef.current = false;
     const file = files?.[0];
     if (!file) return;
     setUploading(true);
@@ -366,9 +379,6 @@ export function ProductColorPopover({
                     <strong className="block text-sm font-medium">
                       {t("products.swatch.customSwatch")}
                     </strong>
-                    <small className="block truncate text-xs text-muted-foreground">
-                      {t("products.swatch.customHelp")}
-                    </small>
                   </span>
                 </CommandItem>
                 {filtered.length ? (
@@ -388,7 +398,7 @@ export function ProductColorPopover({
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">
                         {item.label}
                       </span>
-                      <span className="font-mono text-[11px] text-muted-foreground uppercase">
+                      <span className="font-mono text-xs text-muted-foreground uppercase">
                         {item.value}
                       </span>
                     </CommandItem>
@@ -515,7 +525,7 @@ export function ProductColorPopover({
                           <Button
                             className="h-6 px-1.5 text-[11px]"
                             disabled={uploading}
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={openFilePicker}
                             size="xs"
                             type="button"
                             variant="ghost"
@@ -533,7 +543,7 @@ export function ProductColorPopover({
                       <Button
                         className="w-full justify-center"
                         disabled={uploading}
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={openFilePicker}
                         size="sm"
                         type="button"
                         variant="outline"

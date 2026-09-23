@@ -33,6 +33,7 @@ export type StoreProductVariant = {
 };
 
 export type StoreProductOption = {
+  displayMode?: "text" | "swatch";
   id: string;
   title: string;
   values: string[];

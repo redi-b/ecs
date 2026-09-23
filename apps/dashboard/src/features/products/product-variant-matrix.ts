@@ -1,6 +1,7 @@
 import type { ProductOptionSwatch } from "@ecs/contracts";
 
 export type ProductOptionDraft = {
+  displayMode?: "text" | "swatch" | undefined;
   id?: string | undefined;
   key?: string | undefined;
   savedOptionSetId?: string | undefined;

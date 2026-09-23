@@ -76,13 +76,18 @@ export function buildOptionValuePresentationMutations(
     const previousMetadata = { ...(value.metadata ?? {}) } as Record<string, unknown>;
     const metadata = { ...previousMetadata };
 
-    if (presentation.swatch) {
+    if (presentation.swatch || presentation.displayMode) {
       metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY] = {
         version: 1,
-        swatch:
-          presentation.swatch.kind === "color"
-            ? { kind: "color", value: presentation.swatch.value.toLowerCase() }
-            : { kind: "image", url: presentation.swatch.url },
+        ...(presentation.displayMode ? { displayMode: presentation.displayMode } : {}),
+        ...(presentation.swatch
+          ? {
+              swatch:
+                presentation.swatch.kind === "color"
+                  ? { kind: "color", value: presentation.swatch.value.toLowerCase() }
+                  : { kind: "image", url: presentation.swatch.url },
+            }
+          : {}),
       };
     } else {
       delete metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY];

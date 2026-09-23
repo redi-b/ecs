@@ -12,6 +12,7 @@ import { VariantMatrixTable } from "@/features/products/product-variant-matrix-t
 import { useI18n } from "@/i18n/provider";
 
 export function ProductOptionsWorkspace({
+  stableHeight = false,
   galleryImages,
   bulkValues,
   onApplyDefaults,
@@ -24,8 +25,9 @@ export function ProductOptionsWorkspace({
   values,
 }: {
   galleryImages?: string[] | undefined;
+  stableHeight?: boolean | undefined;
   bulkValues?: { priceAmount: string; stockedQuantity: string } | undefined;
-  onApplyDefaults: () => void;
+  onApplyDefaults: (fields?: { price: boolean; stock: boolean }) => void;
   onGalleryImageAdd?: ((url: string) => void) | undefined;
   onBulkValuesChange?:
     | ((values: { priceAmount: string; stockedQuantity: string }) => void)
@@ -63,24 +65,32 @@ export function ProductOptionsWorkspace({
         ]}
         value={view}
       />
-      {view === "options" ? (
-        <ProductOptionsBuilder
-          galleryImages={galleryImages}
-          onChange={onOptionsChange}
-          options={options}
-        />
-      ) : (
-        <VariantMatrixTable
-          galleryImages={galleryImages}
-          bulkValues={bulkValues}
-          onApplyDefaults={onApplyDefaults}
-          onGalleryImageAdd={onGalleryImageAdd}
-          onBulkValuesChange={onBulkValuesChange}
-          onOverrideChange={onOverrideChange}
-          rows={rows}
-          values={values}
-        />
-      )}
+      <div
+        className={
+          stableHeight
+            ? "h-[clamp(18rem,58dvh,38rem)] min-h-0 overflow-y-auto overscroll-contain pr-1"
+            : undefined
+        }
+      >
+        {view === "options" ? (
+          <ProductOptionsBuilder
+            galleryImages={galleryImages}
+            onChange={onOptionsChange}
+            options={options}
+          />
+        ) : (
+          <VariantMatrixTable
+            galleryImages={galleryImages}
+            bulkValues={bulkValues}
+            onApplyDefaults={onApplyDefaults}
+            onGalleryImageAdd={onGalleryImageAdd}
+            onBulkValuesChange={onBulkValuesChange}
+            onOverrideChange={onOverrideChange}
+            rows={rows}
+            values={values}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -494,12 +494,14 @@ export const productOptionValueWriteSchema = z.union([
 ]);
 
 export const merchantProductOptionWriteSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   id: z.string().trim().min(1).optional(),
   title: z.string().trim().min(1),
   values: z.array(productOptionValueWriteSchema).min(1),
 });
 
 export const productOptionValuePresentationWriteSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   optionId: z.string().trim().min(1).optional(),
   optionTitle: z.string().trim().min(1),
   valueId: z.string().trim().min(1).optional(),
@@ -572,6 +574,7 @@ export const merchantProductOptionValueSchema = productOptionValuePresentationSc
 });
 
 export const merchantProductOptionSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   id: z.string().min(1).nullable(),
   title: z.string().min(1),
   values: z.array(merchantProductOptionValueSchema),

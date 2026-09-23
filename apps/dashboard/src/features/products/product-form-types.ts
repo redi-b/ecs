@@ -102,6 +102,7 @@ export function createProductPayloadSchema(t: Translate) {
     options: z
       .array(
         z.object({
+          displayMode: z.enum(["text", "swatch"]).optional(),
           title: z.string().trim().min(1, t("products.validation.optionNameRequired")),
           values: z
             .array(

@@ -26,6 +26,7 @@ export type ProductWriteInput = {
 };
 
 export type ProductOptionInput = {
+  displayMode?: "text" | "swatch" | undefined;
   id?: string | undefined;
   title: string;
   values: ProductOptionValueInput[];

@@ -22,6 +22,14 @@ function mapRow(row: typeof productOptionSets.$inferSelect): ProductOptionSet {
   };
 }
 
+function isHexColor(value: string) {
+  return (
+    value.length === 7 &&
+    value.startsWith("#") &&
+    [...value.slice(1)].every((character) => /[0-9a-f]/i.test(character))
+  );
+}
+
 export function normalizeProductOptionSetValues(values: ProductOptionSetValue[]) {
   const seen = new Set<string>();
   return values.flatMap((value) => {
@@ -29,14 +37,17 @@ export function normalizeProductOptionSetValues(values: ProductOptionSetValue[])
     const key = label.toLocaleLowerCase();
     if (!label || seen.has(key)) return [];
     seen.add(key);
-    return [
-      {
-        label,
-        ...(value.swatch?.kind === "color" && /^#[0-9a-f]{6}$/i.test(value.swatch.value)
-          ? { swatch: { kind: "color" as const, value: value.swatch.value.toLowerCase() } }
-          : {}),
-      },
-    ];
+    const displayMode =
+      value.displayMode === "text" || value.displayMode === "swatch"
+        ? value.displayMode
+        : undefined;
+    const swatch =
+      value.swatch?.kind === "color" && isHexColor(value.swatch.value)
+        ? { kind: "color" as const, value: value.swatch.value.toLowerCase() }
+        : value.swatch?.kind === "image" && value.swatch.url.trim()
+          ? { kind: "image" as const, url: value.swatch.url.trim() }
+          : undefined;
+    return [{ label, ...(displayMode ? { displayMode } : {}), ...(swatch ? { swatch } : {}) }];
   });
 }
 

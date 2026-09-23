@@ -22,6 +22,7 @@ export const productOptionSwatchSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const productOptionValuePresentationWriteSchema = z.object({
+  displayMode: z.enum(["text", "swatch"]).optional(),
   optionId: z.string().trim().min(1).optional(),
   optionTitle: z.string().trim().min(1),
   valueId: z.string().trim().min(1).optional(),

@@ -336,6 +336,7 @@ export function normalizeProductOptions(options: ProductOptionDraft[]) {
     .map((option) => ({
       ...(option.id ? { id: option.id } : {}),
       ...(option.key ? { key: option.key } : {}),
+      ...(option.displayMode ? { displayMode: option.displayMode } : {}),
       title: option.title.trim(),
       values: option.values
         .map((value) => ({
@@ -496,6 +497,7 @@ export function getInitialProductOptions(
       .filter((option) => option.title !== "Default")
       .map((option) => ({
         ...(option.id ? { id: option.id } : {}),
+        ...(option.displayMode ? { displayMode: option.displayMode } : {}),
         key: option.id ?? `option:${option.title.toLocaleLowerCase()}`,
         title: option.title,
         values: option.values.map((value, valueIndex) => ({

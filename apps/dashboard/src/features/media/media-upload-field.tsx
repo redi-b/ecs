@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ProductOptionSwatchPreview } from "@/features/products/product-swatch-popover";
 import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -712,71 +713,72 @@ export function ImageOptionTagPopover({
           <span className="truncate">{tagLabel}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-1 text-xs" side="bottom">
-        <div className="flex flex-col gap-0.5">
-          <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+      <PopoverContent
+        align="start"
+        className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
+        side="bottom"
+      >
+        <div className="flex min-h-0 flex-col">
+          <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
             {t("media.tagAction")}
           </div>
-          <button
-            className={cn(
-              "flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted",
-              !currentTag && "font-medium text-primary",
-            )}
-            onClick={() => {
-              onSelectTag("", null);
-              setOpen(false);
-            }}
-            type="button"
-          >
-            <span className="flex items-center gap-1.5">
-              <AppIcons.tag className="size-3.5 text-muted-foreground" />
-              {t("media.tagForAll")}
-            </span>
-            {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
-          </button>
+          <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
+            <button
+              className={cn(
+                "flex min-h-9 w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted",
+                !currentTag && "font-medium text-primary",
+              )}
+              onClick={() => {
+                onSelectTag("", null);
+                setOpen(false);
+              }}
+              type="button"
+            >
+              <span className="flex items-center gap-1.5">
+                <AppIcons.tag className="size-3.5 text-muted-foreground" />
+                {t("media.tagForAll")}
+              </span>
+              {!currentTag ? <AppIcons.check className="size-3.5 text-primary" /> : null}
+            </button>
 
-          {options.map((opt) => (
-            <div className="flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
-              <div className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {opt.title}
-              </div>
-              {opt.values
-                .filter((v) => v.label.trim())
-                .map((val) => {
-                  const isSelected =
-                    currentTag?.optionTitle.toLowerCase() === opt.title.toLowerCase() &&
-                    currentTag?.valueLabel.toLowerCase() === val.label.toLowerCase();
+            {options.map((opt) => (
+              <div className="flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
+                <div className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
+                  {opt.title}
+                </div>
+                {opt.values
+                  .filter((v) => v.label.trim())
+                  .map((val) => {
+                    const isSelected =
+                      currentTag?.optionTitle.toLowerCase() === opt.title.toLowerCase() &&
+                      currentTag?.valueLabel.toLowerCase() === val.label.toLowerCase();
 
-                  return (
-                    <button
-                      className={cn(
-                        "flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-muted",
-                        isSelected && "font-medium text-primary",
-                      )}
-                      key={val.key ?? val.label}
-                      onClick={() => {
-                        onSelectTag(opt.title, val.label);
-                        setOpen(false);
-                      }}
-                      type="button"
-                    >
-                      <span className="flex items-center gap-1.5 truncate">
-                        {val.swatch?.kind === "color" ? (
-                          <span
-                            className="size-2.5 shrink-0 rounded-full border"
-                            style={{ backgroundColor: val.swatch.value }}
-                          />
+                    return (
+                      <button
+                        className={cn(
+                          "flex min-h-9 w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted",
+                          isSelected && "font-medium text-primary",
+                        )}
+                        key={val.key ?? val.label}
+                        onClick={() => {
+                          onSelectTag(opt.title, val.label);
+                          setOpen(false);
+                        }}
+                        type="button"
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          <ProductOptionSwatchPreview className="size-3.5" value={val.swatch} />
+                          <span className="truncate">{val.label}</span>
+                        </span>
+                        {isSelected ? (
+                          <AppIcons.check className="size-3.5 shrink-0 text-primary" />
                         ) : null}
-                        <span className="truncate">{val.label}</span>
-                      </span>
-                      {isSelected ? (
-                        <AppIcons.check className="size-3.5 shrink-0 text-primary" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-            </div>
-          ))}
+                      </button>
+                    );
+                  })}
+              </div>
+            ))}
+          </div>
         </div>
       </PopoverContent>
     </Popover>

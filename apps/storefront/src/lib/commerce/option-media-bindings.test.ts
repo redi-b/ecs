@@ -186,6 +186,7 @@ test("normalizeStoreProduct parses both color and image swatches", () => {
             metadata: {
               ecs_option_value_presentation: {
                 version: 1,
+                displayMode: "swatch",
                 swatch: { kind: "color", value: "#FF0000" },
               },
             },
@@ -208,6 +209,8 @@ test("normalizeStoreProduct parses both color and image swatches", () => {
 
   const option = product.options[0];
   assert.ok(option);
+
+  assert.equal(option?.displayMode, "swatch");
 
   // Rich swatches support both color and image
   assert.deepEqual(option?.optionSwatches, {

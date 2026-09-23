@@ -1,5 +1,4 @@
 ---
-import { serializeJsonForScript } from "../../../lib/serialize-json";
 import { sanitizeProductDescription } from "@ecs/content";
 import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
 import { resolveProductBadge } from "../../../lib/commerce/merchandising";
@@ -10,12 +9,13 @@ import type {
   StoreProductOption,
   StoreProductVariant,
 } from "../../../lib/commerce/types";
+import { buildProductImageSrcset, resolveProductImage } from "../../../lib/media-url";
 import { formatMoney } from "../../../lib/money";
 import type { StorefrontSeo } from "../../../lib/seo";
+import { serializeJsonForScript } from "../../../lib/serialize-json";
 import Layout from "./Layout.astro";
 import { parseNexahubData } from "./lib";
 import ProductCard from "./ProductCard.astro";
-import { buildProductImageSrcset, resolveProductImage } from "../../../lib/media-url";
 import SaveIcon from "./SaveIcon.astro";
 import "./styles/pages/product-details.scss";
 import "./styles/responsive.scss";
@@ -83,11 +83,11 @@ const currentPrice = formatMoney(
   locale,
 );
 const initialHeroImage = defaultVariant?.imageUrl
-  ? gallery.find((img) => img.url === defaultVariant.imageUrl) ?? {
+  ? (gallery.find((img) => img.url === defaultVariant.imageUrl) ?? {
       url: defaultVariant.imageUrl,
       variants: defaultVariant.imageVariants ?? undefined,
-    }
-  : gallery[0] ?? null;
+    })
+  : (gallery[0] ?? null);
 const variants = (product?.variants ?? []).map((variant) => ({
   id: variant.id,
   inStock: variant.inStock,
@@ -116,7 +116,8 @@ const selectedSummary =
   defaultVariant?.title ||
   m.product_select_option({ option: "" }, { locale }).trim();
 const descriptionHtml =
-  sanitizeProductDescription(product?.description) ?? `<p>${m.product_description({}, { locale })}</p>`;
+  sanitizeProductDescription(product?.description) ??
+  `<p>${m.product_description({}, { locale })}</p>`;
 const clientMessages = {
   inStock: m.catalog_in_stock({}, { locale }),
   outOfStock: m.catalog_out_of_stock({}, { locale }),
@@ -140,12 +141,13 @@ const clientMessages = {
             <div class="product-info__configs-box">{axes.map((axis) => {
               const colorAxis = isColorOptionTitle(axis.title);
               const hasSwatches = Boolean(axis.optionSwatches && Object.keys(axis.optionSwatches).length);
-              return <fieldset class="product-info__config-group" data-option-axis={axis.title}><legend class="product-info__config-label">{axis.title}</legend><div class={colorAxis || hasSwatches ? "product-info__color-swatches" : "product-info__config-options"}>{axis.values.map((value) => {
+              const showSwatches = axis.displayMode === "swatch" || (axis.displayMode !== "text" && (colorAxis || hasSwatches));
+              return <fieldset class="product-info__config-group" data-option-axis={axis.title}><legend class="product-info__config-label">{axis.title}</legend><div class={showSwatches ? "product-info__color-swatches" : "product-info__config-options"}>{axis.values.map((value) => {
                 const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value);
-                const richSwatch = axis.optionSwatches?.[value];
+                const richSwatch = showSwatches ? axis.optionSwatches?.[value] : undefined;
                 const colorSwatch = richSwatch?.kind === "color"
                   ? richSwatch.value
-                  : colorAxis
+                  : showSwatches && colorAxis
                     ? resolveColorSwatch(value, axis.swatches?.[value])
                     : null;
                 const imageSwatch = richSwatch?.kind === "image" ? richSwatch.url : null;

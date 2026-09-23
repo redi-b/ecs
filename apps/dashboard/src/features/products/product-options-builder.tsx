@@ -8,26 +8,28 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ProductOptionValuesField } from "@/features/products/product-option-values-field";
-import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import {
-  ProductColorPopover,
   isVisualOptionTitle,
   normalizeProductOptionSwatch,
+  ProductColorPopover,
   serializeProductOptionSwatch,
 } from "@/features/products/product-swatch-popover";
+import type { ProductOptionDraft } from "@/features/products/product-variant-matrix";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 
 export const MAX_PRODUCT_VARIANTS = 100;
+function getOptionDisplayMode(option: ProductOptionDraft): "text" | "swatch" {
+  return option.displayMode ?? (isVisualOptionTitle(option.title) ? "swatch" : "text");
+}
 
 export function ProductOptionsBuilder({
   galleryImages,
@@ -71,7 +73,13 @@ export function ProductOptionsBuilder({
         ? `/dashboard/products/actions/option-sets/${encodeURIComponent(optionSetId)}${tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : ""}`
         : optionSetsUrl;
       const response = await fetch(actionUrl, {
-        body: JSON.stringify({ title: option.title, values: option.values }),
+        body: JSON.stringify({
+          title: option.title,
+          values: option.values.map((value) => ({
+            ...value,
+            displayMode: getOptionDisplayMode(option),
+          })),
+        }),
         headers: { accept: "application/json", "content-type": "application/json" },
         method: "POST",
       });
@@ -146,6 +154,7 @@ export function ProductOptionsBuilder({
         key: createClientId("option"),
         savedOptionSetId: optionSet.id,
         savedOptionSnapshot: getSavedOptionSnapshot(optionSet),
+        displayMode: optionSet.values[0]?.displayMode,
         title: optionSet.title,
         values: optionSet.values.map((value) => ({
           key: createClientId("value"),
@@ -162,6 +171,18 @@ export function ProductOptionsBuilder({
 
     next[index] = nextOption;
     onChange(next);
+  }
+  function setOptionDisplayMode(index: number, displayMode: "text" | "swatch") {
+    const option = options[index];
+    if (!option) return;
+    updateOption(index, {
+      ...option,
+      displayMode,
+      values:
+        displayMode === "text"
+          ? option.values.map((value) => ({ ...value, swatch: null }))
+          : option.values,
+    });
   }
 
   function addValues(index: number, rawValue: string) {
@@ -294,7 +315,7 @@ export function ProductOptionsBuilder({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-20 -mx-1 flex items-center justify-between gap-3 border-b bg-background/95 px-1 pb-3 pt-1 backdrop-blur-sm supports-[backdrop-filter]:bg-background/85">
         <h3 className="text-sm font-medium">{t("products.formReview.optionsTitle")}</h3>
         <Popover onOpenChange={setAddMenuOpen} open={addMenuOpen}>
           <PopoverTrigger asChild>
@@ -307,13 +328,13 @@ export function ProductOptionsBuilder({
             align="end"
             className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
           >
-            <div className="shrink-0 border-b px-3 py-2.5 text-xs font-medium text-muted-foreground">
+            <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
               {t("products.formReview.chooseOptionType")}
             </div>
             <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
               {presetOptions.map((preset) => (
                 <button
-                  className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                  className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
                   disabled={options.some(
                     (option) => option.title.toLowerCase() === preset.toLowerCase(),
                   )}
@@ -332,7 +353,7 @@ export function ProductOptionsBuilder({
                   </div>
                   {optionSetsQuery.data.optionSets.map((optionSet) => (
                     <button
-                      className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
+                      className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
                       disabled={options.some(
                         (option) => option.title.toLowerCase() === optionSet.title.toLowerCase(),
                       )}
@@ -364,7 +385,7 @@ export function ProductOptionsBuilder({
               ) : null}
               <div className="my-1 border-t" />
               <button
-                className="w-full rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
+                className="w-full rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => addOption()}
                 type="button"
               >
@@ -387,7 +408,7 @@ export function ProductOptionsBuilder({
         <div className="flex flex-col gap-3">
           {options.map((option, index) => (
             <div
-              className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[12rem_minmax(0,1fr)]"
+              className="grid gap-3 rounded-xl border bg-background p-3 md:grid-cols-[11rem_10rem_minmax(0,1fr)]"
               key={option.id ?? option.key ?? index}
             >
               <Field>
@@ -401,12 +422,27 @@ export function ProductOptionsBuilder({
                   value={option.title}
                 />
               </Field>
+              <Field>
+                <FieldLabel>{t("products.formReview.optionDisplay")}</FieldLabel>
+                <SegmentedControl
+                  active="muted"
+                  ariaLabel={t("products.formReview.optionDisplay")}
+                  fullWidth
+                  onChange={(value) => setOptionDisplayMode(index, value as "text" | "swatch")}
+                  options={[
+                    { id: "text", label: t("products.formReview.optionDisplayText") },
+                    { id: "swatch", label: t("products.formReview.optionDisplaySwatch") },
+                  ]}
+                  size="sm"
+                  value={getOptionDisplayMode(option)}
+                />
+              </Field>
 
               <Field>
                 <FieldLabel>{t("products.formReview.values")}</FieldLabel>
                 <ProductOptionValuesField
                   addControl={
-                    isVisualOptionTitle(option.title) ? (
+                    getOptionDisplayMode(option) === "swatch" ? (
                       <ProductColorPopover
                         galleryImages={galleryImages}
                         onSave={(label, swatch) => addColorValue(index, label, swatch)}
@@ -442,7 +478,7 @@ export function ProductOptionsBuilder({
                       className="inline-flex h-7 items-center rounded-full border border-border bg-secondary text-xs font-medium text-secondary-foreground"
                       key={value.id ?? `${value.label}-${valueIndex}`}
                     >
-                      {isVisualOptionTitle(option.title) ? (
+                      {getOptionDisplayMode(option) === "swatch" ? (
                         <ProductColorPopover
                           galleryImages={galleryImages}
                           label={value.label}
@@ -548,11 +584,24 @@ export function ProductOptionsBuilder({
 type SavedProductOptionSet = {
   id: string;
   title: string;
-  values: Array<ProductOptionDraft["values"][number]>;
+  values: Array<
+    ProductOptionDraft["values"][number] & { displayMode?: "text" | "swatch" | undefined }
+  >;
 };
 
-function getSavedOptionSnapshot(option: Pick<ProductOptionDraft, "title" | "values">) {
+function getSavedOptionSnapshot(
+  option: Pick<ProductOptionDraft, "displayMode" | "title"> & {
+    values: Array<
+      ProductOptionDraft["values"][number] & { displayMode?: "text" | "swatch" | undefined }
+    >;
+  },
+) {
+  const displayMode =
+    option.displayMode ??
+    option.values[0]?.displayMode ??
+    (isVisualOptionTitle(option.title) ? "swatch" : "text");
   return JSON.stringify({
+    displayMode,
     title: option.title.trim(),
     values: option.values.map((value) => ({
       label: value.label.trim(),

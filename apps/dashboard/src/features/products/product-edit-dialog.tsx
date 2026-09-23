@@ -466,19 +466,22 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                     </Alert>
                   ) : null}
                   <ProductOptionsWorkspace
+                    stableHeight
                     bulkValues={bulkValues}
                     galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
-                    onApplyDefaults={() => {
+                    onApplyDefaults={(fields = { price: true, stock: true }) => {
                       update({
-                        priceAmount: bulkValues.priceAmount,
-                        initialStock: bulkValues.stockedQuantity,
+                        ...(fields.price ? { priceAmount: bulkValues.priceAmount } : {}),
+                        ...(fields.stock ? { initialStock: bulkValues.stockedQuantity } : {}),
                         variantOverrides: Object.fromEntries(
                           getVariantRows(values).map((row) => [
                             row.key,
                             {
                               ...values.variantOverrides[row.key],
-                              priceAmount: bulkValues.priceAmount,
-                              stockedQuantity: bulkValues.stockedQuantity,
+                              ...(fields.price ? { priceAmount: bulkValues.priceAmount } : {}),
+                              ...(fields.stock
+                                ? { stockedQuantity: bulkValues.stockedQuantity }
+                                : {}),
                             },
                           ]),
                         ),

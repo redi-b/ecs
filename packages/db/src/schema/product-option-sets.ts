@@ -3,8 +3,9 @@ import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizz
 import { tenants } from "./tenants.js";
 
 export type ProductOptionSetValue = {
+  displayMode?: "text" | "swatch";
   label: string;
-  swatch?: { kind: "color"; value: string } | null;
+  swatch?: { kind: "color"; value: string } | { kind: "image"; url: string } | null;
 };
 
 /** Merchant-owned option values that can be copied into multiple products. */

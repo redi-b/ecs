@@ -1,17 +1,17 @@
+import {
+  PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY,
+  type ProductOptionMediaBindings,
+  type ProductOptionSwatchWithSource,
+  productOptionMediaBindingsSchema,
+} from "@ecs/contracts";
 import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
   MerchantProductStock,
 } from "../../../types/index.js";
-import {
-  PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY,
-  productOptionMediaBindingsSchema,
-  type ProductOptionMediaBindings,
-  type ProductOptionSwatchWithSource,
-} from "@ecs/contracts";
-import { getBoolean, getNumber, getString, isRecord } from "./values.js";
 import { getPublicProductHandle } from "./handles.js";
+import { getBoolean, getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeProduct(value: unknown): MerchantProduct[] {
   if (!isRecord(value)) {
@@ -78,9 +78,17 @@ export function getProductOptions(value: unknown) {
     if (!isRecord(option)) return [];
     const title = getString(option.title);
     if (!title) return [];
+    const displayMode = Array.isArray(option.values)
+      ? option.values
+          .flatMap((optionValue) =>
+            isRecord(optionValue) ? [getExplicitOptionDisplayMode(optionValue.metadata)] : [],
+          )
+          .find((mode) => mode !== undefined)
+      : undefined;
 
     return [
       {
+        ...(displayMode ? { displayMode } : {}),
         id: getString(option.id),
         title,
         values: Array.isArray(option.values)
@@ -101,6 +109,15 @@ export function getProductOptions(value: unknown) {
       },
     ];
   });
+}
+
+export function getExplicitOptionDisplayMode(metadata: unknown): "text" | "swatch" | undefined {
+  if (!isRecord(metadata)) return undefined;
+  const presentation = metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY];
+  if (!isRecord(presentation) || presentation.version !== 1) return undefined;
+  return presentation.displayMode === "text" || presentation.displayMode === "swatch"
+    ? presentation.displayMode
+    : undefined;
 }
 
 export function getExplicitSwatch(metadata: unknown): ProductOptionSwatchWithSource | undefined {

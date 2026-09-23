@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function VariantMatrixTable({
 }: {
   galleryImages?: string[] | undefined;
   bulkValues?: { priceAmount: string; stockedQuantity: string } | undefined;
-  onApplyDefaults: () => void;
+  onApplyDefaults: (fields?: { price: boolean; stock: boolean }) => void;
   onGalleryImageAdd?: ((url: string) => void) | undefined;
   onBulkValuesChange?:
     | ((values: { priceAmount: string; stockedQuantity: string }) => void)
@@ -45,9 +46,11 @@ export function VariantMatrixTable({
   values: ProductFormValues["variantOverrides"];
 }) {
   const { t } = useI18n();
+  const [bulkFields, setBulkFields] = useState({ price: true, stock: true });
   const canApplyBulkValues = Boolean(
-    bulkValues?.priceAmount.trim().match(/^\d+$/) &&
-      bulkValues.stockedQuantity.trim().match(/^\d+$/),
+    (bulkFields.price || bulkFields.stock) &&
+      (!bulkFields.price || bulkValues?.priceAmount.trim().match(/^\d+$/)) &&
+      (!bulkFields.stock || bulkValues?.stockedQuantity.trim().match(/^\d+$/)),
   );
 
   return (
@@ -57,12 +60,11 @@ export function VariantMatrixTable({
           <div>
             <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
             <p className="text-xs text-muted-foreground">
-              {t("products.formReview.generatedCount", { count: rows.length })}.{" "}
-              {t("products.formReview.matrixDesc")}
+              {t("products.formReview.generatedCount", { count: rows.length })}
             </p>
           </div>
           {!bulkValues ? (
-            <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
+            <Button onClick={() => onApplyDefaults()} size="sm" type="button" variant="outline">
               {t("products.formReview.applyStartingValues")}
             </Button>
           ) : null}
@@ -71,16 +73,22 @@ export function VariantMatrixTable({
           <div className="border-b bg-muted/10 px-4 py-3">
             <div className="mb-3">
               <p className="text-sm font-medium">{t("products.formReview.bulkValuesTitle")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("products.formReview.bulkValuesDesc")}
-              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
               <Field>
-                <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
+                <FieldLabel className="flex items-center gap-2">
+                  <Checkbox
+                    checked={bulkFields.price}
+                    onCheckedChange={(checked) =>
+                      setBulkFields((current) => ({ ...current, price: checked === true }))
+                    }
+                  />
+                  {t("products.formReview.colPrice")}
+                </FieldLabel>
                 <InputGroup>
                   <InputGroupAddon>ETB</InputGroupAddon>
                   <InputGroupInput
+                    disabled={!bulkFields.price}
                     inputMode="numeric"
                     min="0"
                     onChange={(event) =>
@@ -95,8 +103,17 @@ export function VariantMatrixTable({
                 </InputGroup>
               </Field>
               <Field>
-                <FieldLabel>{t("products.formReview.colStock")}</FieldLabel>
+                <FieldLabel className="flex items-center gap-2">
+                  <Checkbox
+                    checked={bulkFields.stock}
+                    onCheckedChange={(checked) =>
+                      setBulkFields((current) => ({ ...current, stock: checked === true }))
+                    }
+                  />
+                  {t("products.formReview.colStock")}
+                </FieldLabel>
                 <Input
+                  disabled={!bulkFields.stock}
                   inputMode="numeric"
                   min="0"
                   onChange={(event) =>
@@ -111,7 +128,7 @@ export function VariantMatrixTable({
               </Field>
               <Button
                 disabled={!canApplyBulkValues}
-                onClick={onApplyDefaults}
+                onClick={() => onApplyDefaults(bulkFields)}
                 size="sm"
                 type="button"
                 variant="outline"

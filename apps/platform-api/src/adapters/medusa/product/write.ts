@@ -301,7 +301,7 @@ export function getOptionValuePresentationsForWrite(options: ProductOptionInput[
   return (options ?? []).flatMap((option) =>
     option.values.flatMap((value) => {
       if (typeof value === "string") return [];
-      if (value.swatch === undefined) return [];
+      if (value.swatch === undefined && option.displayMode === undefined) return [];
       const swatch = value.swatch
         ? value.swatch.kind === "image"
           ? {
@@ -316,6 +316,7 @@ export function getOptionValuePresentationsForWrite(options: ProductOptionInput[
       return [
         {
           ...(option.id?.trim() ? { optionId: option.id.trim() } : {}),
+          ...(option.displayMode ? { displayMode: option.displayMode } : {}),
           optionTitle: option.title.trim(),
           ...(value.id?.trim() ? { valueId: value.id.trim() } : {}),
           valueLabel: value.label.trim(),

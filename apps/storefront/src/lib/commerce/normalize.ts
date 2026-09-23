@@ -146,7 +146,9 @@ export function normalizeVariant(
     (value.image_url !== undefined ? value.image_url : undefined);
 
   const imageUrl = candidateImageUrl !== undefined ? resolveMediaUrl(candidateImageUrl) : undefined;
-  const imageVariants = imageUrl ? resolveImageVariants(imageUrl, combinedMediaVariants) : undefined;
+  const imageVariants = imageUrl
+    ? resolveImageVariants(imageUrl, combinedMediaVariants)
+    : undefined;
 
   return {
     id,
@@ -197,12 +199,21 @@ function parseOptionMediaBindings(
   for (const [key, list] of Object.entries(rawMappings)) {
     if (Array.isArray(list)) {
       mappings[key] = list
-        .map((item) => (typeof item === "string" ? resolveMediaUrl(item) ?? item : ""))
+        .map((item) => (typeof item === "string" ? (resolveMediaUrl(item) ?? item) : ""))
         .filter(Boolean);
     }
   }
 
   return { optionTitle, mappings };
+}
+
+function getExplicitOptionDisplayMode(metadata: unknown) {
+  if (!isRecord(metadata)) return null;
+  const presentation = metadata.ecs_option_value_presentation;
+  if (!isRecord(presentation) || presentation.version !== 1) return null;
+  return presentation.displayMode === "text" || presentation.displayMode === "swatch"
+    ? presentation.displayMode
+    : null;
 }
 
 function getExplicitOptionValueSwatch(metadata: unknown) {
@@ -302,6 +313,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
       const id = getString(option.id) ?? "";
       const title = getString(option.title) ?? getString(option.name) ?? "Option";
       const values: string[] = [];
+      let displayMode: "text" | "swatch" | null = null;
       const swatches: Record<string, string> = {};
       const optionSwatches: Record<
         string,
@@ -317,6 +329,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
                 : "";
           if (v && !values.includes(v)) values.push(v);
           if (v && isRecord(entry)) {
+            displayMode ??= getExplicitOptionDisplayMode(entry.metadata);
             const swatch = getExplicitOptionValueSwatch(entry.metadata);
             if (swatch) {
               optionSwatches[v] = swatch;
@@ -340,6 +353,7 @@ export function normalizeProduct(value: unknown): StoreProduct {
             id: id || title,
             title,
             values,
+            ...(displayMode ? { displayMode } : {}),
             ...(Object.keys(swatches).length ? { swatches } : {}),
             ...(Object.keys(optionSwatches).length ? { optionSwatches } : {}),
           }
@@ -433,9 +447,7 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
     getString(variant?.thumbnail);
 
   const thumbnail = resolveMediaUrl(
-    variantImageUrl ??
-      getString(value.thumbnail) ??
-      getString(product?.thumbnail),
+    variantImageUrl ?? getString(value.thumbnail) ?? getString(product?.thumbnail),
   );
 
   const imageUrl = resolveMediaUrl(variantImageUrl) ?? thumbnail;

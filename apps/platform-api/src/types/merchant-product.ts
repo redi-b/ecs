@@ -19,6 +19,7 @@ export type MerchantProduct = {
 };
 
 export type MerchantProductOption = {
+  displayMode?: "text" | "swatch";
   id: string | null;
   title: string;
   values: MerchantProductOptionValue[];
