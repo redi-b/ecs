@@ -1,9 +1,9 @@
 ---
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import "./styles/pages/secondary.scss";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/pages/secondary.scss";
 
 interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; }
 const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
@@ -39,8 +39,8 @@ const wishlistMessages = {
   </main>
 </Layout>
 <script>
-  import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../lib/browser/wishlist";
-  import { localizeBrowserPath } from "../../../lib/browser/localized-path";
+  import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../../lib/browser/wishlist";
+  import { localizeBrowserPath } from "../../../../lib/browser/localized-path";
 
   (() => {
     const root = document.querySelector<HTMLElement>("[data-wishlist-page]");

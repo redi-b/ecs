@@ -70,7 +70,7 @@ test("every selectable template uses the shared analytics boundary exactly once"
   for (const template of selectableStorefrontTemplates) {
     const templateDirectory = `templates/${template.slug}/v${template.version}`;
     const sourceFiles = ["Home", "ProductList", "Product", "Cart", "Checkout", "OrderConfirm"].map(
-      (slot) => `${templateDirectory}/${slot}.astro`,
+      (slot) => `${templateDirectory}/pages/${slot === "Home" ? "index" : slot}.astro`,
     );
 
     for (const sourceFile of sourceFiles) {

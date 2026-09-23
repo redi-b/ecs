@@ -8,7 +8,7 @@ test("production template search entry points use the shared accessible suggesti
   const [luviaLayout, luviaListing, nexahubLayout, controller] = await Promise.all([
     source("../../templates/luvia/v1/layouts/Layout.astro"),
     source("../../templates/luvia/v1/pages/ProductList.astro"),
-    source("../../templates/nexahub/v1/Layout.astro"),
+    source("../../templates/nexahub/v1/layouts/Layout.astro"),
     source("./product-search-suggestions.ts"),
   ]);
 

@@ -1,13 +1,13 @@
 ---
-import { formatMoney } from "../../../lib/money";
-import { formatOrderReference } from "../../../lib/order-reference";
-import type { LastOrderCookie } from "../../../lib/session/cart-cookie";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import Button from "./Button.astro";
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import "./styles/pages/commerce.scss";
+import { formatMoney } from "../../../../lib/money";
+import { formatOrderReference } from "../../../../lib/order-reference";
+import type { LastOrderCookie } from "../../../../lib/session/cart-cookie";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import "../styles/pages/commerce.scss";
 
 interface Props {
   data: unknown;

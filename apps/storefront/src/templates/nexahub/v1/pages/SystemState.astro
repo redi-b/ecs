@@ -1,11 +1,11 @@
 ---
-import OfflineStateEnhancer from "../../../components/shell/OfflineStateEnhancer.astro";
-import Button from "./Button.astro";
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import "./styles/pages/commerce.scss";
+import OfflineStateEnhancer from "../../../../components/shell/OfflineStateEnhancer.astro";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/pages/commerce.scss";
 interface Props {
   data: unknown;
   themeTokens?: unknown;

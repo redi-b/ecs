@@ -1,23 +1,23 @@
 ---
 import { sanitizeProductDescription } from "@ecs/content";
-import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
-import { resolveProductBadge } from "../../../lib/commerce/merchandising";
-import { isColorOptionTitle, resolveColorSwatch } from "../../../lib/commerce/product-options";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { isColorOptionTitle, resolveColorSwatch } from "../../../../lib/commerce/product-options";
 import type {
   StoreProduct,
   StoreProductOption,
   StoreProductVariant,
-} from "../../../lib/commerce/types";
-import { formatMoney } from "../../../lib/money";
-import type { StorefrontSeo } from "../../../lib/seo";
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import ProductCard from "./ProductCard.astro";
-import SaveIcon from "./SaveIcon.astro";
-import "./styles/pages/product-details.scss";
-import "./styles/responsive.scss";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
+} from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import ProductCard from "../components/ProductCard.astro";
+import SaveIcon from "../components/SaveIcon.astro";
+import "../styles/pages/product-details.scss";
+import "../styles/responsive.scss";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 
 interface Props {
   data: unknown;

@@ -37,8 +37,8 @@ test("production templates use an accessible visual state when product media is 
     "pages/Product.astro",
     "components/HeroProductSlide.astro",
     "pages/Cart.astro",
-    "../../nexahub/v1/ProductCard.astro",
-    "../../nexahub/v1/Product.astro",
+    "../../nexahub/v1/components/ProductCard.astro",
+    "../../nexahub/v1/pages/Product.astro",
   ];
   const sources = await Promise.all(
     templateFiles.map((file) => readFile(new URL(file, templateRoot), "utf8")),

@@ -1,18 +1,18 @@
 ---
-import type { StoreCategory, StoreCollection, StoreProduct } from "../../../lib/commerce/types";
-import { catalogHref, type CatalogFilters } from "../../../lib/commerce/catalog-filters";
-import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
-import type { StorefrontSeo } from "../../../lib/seo";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import Button from "./Button.astro";
-import Layout from "./Layout.astro";
-import ProductCard from "./ProductCard.astro";
-import ProductFilterBar from "./ProductFilterBar.astro";
-import heroTexture from "./assets/product-listing-hero-texture.webp";
-import { parseNexahubData } from "./lib";
-import "./styles/pages/products.scss";
-import "./styles/responsive.scss";
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../../../lib/commerce/types";
+import { catalogHref, type CatalogFilters } from "../../../../lib/commerce/catalog-filters";
+import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import ProductCard from "../components/ProductCard.astro";
+import ProductFilterBar from "../components/ProductFilterBar.astro";
+import heroTexture from "../assets/product-listing-hero-texture.webp";
+import { parseNexahubData } from "../lib";
+import "../styles/pages/products.scss";
+import "../styles/responsive.scss";
 
 interface Props {
   data: unknown; themeTokens?: unknown; tenantName: string; cartCount?: number; deferCartCount?: boolean;

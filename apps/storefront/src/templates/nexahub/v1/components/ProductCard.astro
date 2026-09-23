@@ -1,13 +1,13 @@
 ---
 import Icon from "./Icon.astro";
-import type { StoreProduct } from "../../../lib/commerce/types";
-import { resolveProductBadge } from "../../../lib/commerce/merchandising";
-import { formatMoney } from "../../../lib/money";
-import ProductMediaPlaceholder from "../../../components/media/ProductMediaPlaceholder.astro";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
+import type { StoreProduct } from "../../../../lib/commerce/types";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { formatMoney } from "../../../../lib/money";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 import SaveIcon from "./SaveIcon.astro";
-import "./styles/components/_product-card.scss";
+import "../styles/components/_product-card.scss";
 
 interface Props { product: StoreProduct; eager?: boolean; }
 const { product, eager = false } = Astro.props;

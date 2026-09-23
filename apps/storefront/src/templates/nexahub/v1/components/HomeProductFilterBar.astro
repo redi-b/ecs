@@ -1,10 +1,10 @@
 ---
 import Icon from "./Icon.astro";
-import type { StoreCategory, StoreCollection } from "../../../lib/commerce/types";
-import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
-import "./styles/components/_home-product-filter-bar.scss";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import "../styles/components/_home-product-filter-bar.scss";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 
 interface Props { collections?: StoreCollection[]; categories?: StoreCategory[]; }
 const { collections = [], categories = [] } = Astro.props;

@@ -1,9 +1,9 @@
 ---
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import "./styles/pages/about.scss";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import "../styles/pages/about.scss";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 
 interface Props {
   data: unknown;

@@ -1,29 +1,29 @@
 ---
-import Icon from "./Icon.astro";
-import { resolveProductBadge } from "../../../lib/commerce/merchandising";
+import Icon from "../components/Icon.astro";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
 import type {
   StoreCategory,
   StoreCollection,
   StorefrontError,
   StoreProduct,
   StoreProductsResponse,
-} from "../../../lib/commerce/types";
-import { formatMoney } from "../../../lib/money";
-import type { StorefrontSeo } from "../../../lib/seo";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import contactFallback from "./assets/contact-store-interior.webp";
-import featuredFallback from "./assets/featured-item-promo.webp";
-import qualityFallback from "./assets/product-quality-phone-promo.webp";
-import heroFallback from "./assets/tech-workspace-hero.webp";
-import Button from "./Button.astro";
-import CollectionCard from "./CollectionCard.astro";
-import HomeProductFilterBar from "./HomeProductFilterBar.astro";
-import Layout from "./Layout.astro";
-import { nexahubAsset, parseNexahubData } from "./lib";
-import ProductCard from "./ProductCard.astro";
-import "./styles/pages/index.scss";
-import "./styles/responsive.scss";
+} from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import contactFallback from "../assets/contact-store-interior.webp";
+import featuredFallback from "../assets/featured-item-promo.webp";
+import qualityFallback from "../assets/product-quality-phone-promo.webp";
+import heroFallback from "../assets/tech-workspace-hero.webp";
+import Button from "../components/Button.astro";
+import CollectionCard from "../components/CollectionCard.astro";
+import HomeProductFilterBar from "../components/HomeProductFilterBar.astro";
+import Layout from "../layouts/Layout.astro";
+import { nexahubAsset, parseNexahubData } from "../lib";
+import ProductCard from "../components/ProductCard.astro";
+import "../styles/pages/index.scss";
+import "../styles/responsive.scss";
 
 interface Props {
   data: unknown;

@@ -1,5 +1,5 @@
-import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../lib/browser/cart-count";
-import { initWishlistController } from "../../../lib/browser/wishlist";
+import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
+import { initWishlistController } from "../../../../lib/browser/wishlist";
 import EmblaCarousel from "embla-carousel";
 
 export function initNexahubStorefront() {

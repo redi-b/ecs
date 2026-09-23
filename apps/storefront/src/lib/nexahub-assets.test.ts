@@ -26,7 +26,7 @@ test("NexaHub rendered editorial rasters stay within practical delivery budgets"
 });
 
 test("NexaHub renderers do not ship copied multi-megabyte PNG sources", () => {
-  const rendererSource = ["Home.astro", "ProductList.astro", "Product.astro"]
+  const rendererSource = ["pages/index.astro", "pages/ProductList.astro", "pages/Product.astro"]
     .map((file) => readFileSync(source(file), "utf8"))
     .join("\n");
   for (const file of readdirSync(assetsDirectory)) {

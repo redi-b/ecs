@@ -1,11 +1,11 @@
 ---
 import Icon from "./Icon.astro";
-import type { CatalogFilters } from "../../../lib/commerce/catalog-filters";
-import type { StoreCategory, StoreCollection, StoreProductsResponse } from "../../../lib/commerce/types";
-import { taxonomyHandle } from "../../../lib/commerce/taxonomy-links";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import "./styles/components/_product-filter-bar.scss";
+import type { CatalogFilters } from "../../../../lib/commerce/catalog-filters";
+import type { StoreCategory, StoreCollection, StoreProductsResponse } from "../../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/components/_product-filter-bar.scss";
 
 interface Props {
   collections?: StoreCollection[];
@@ -66,7 +66,7 @@ const selectedOptionNames = new Set(values.optionPairs.flatMap((token) => {
 </form>
 
 <script>
-  import { initAnimatedDetails } from "../../../lib/browser/animate-details";
+  import { initAnimatedDetails } from "../../../../lib/browser/animate-details";
 
   const trigger = document.querySelector<HTMLButtonElement>("[data-filter-panel-toggle]");
   const panel = document.querySelector<HTMLElement>("[data-filter-panel]");

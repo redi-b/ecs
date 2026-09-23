@@ -1,14 +1,14 @@
 ---
-import type { CustomerAccountView } from "../../../lib/commerce/account";
-import { formatStorefrontDate } from "../../../lib/date";
-import { formatMoney } from "../../../lib/money";
-import { formatOrderReference } from "../../../lib/order-reference";
-import { orderStatusLabel } from "../../../lib/order-status-label";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import Layout from "./Layout.astro";
-import { parseNexahubData } from "./lib";
-import "./styles/pages/secondary.scss";
+import type { CustomerAccountView } from "../../../../lib/commerce/account";
+import { formatStorefrontDate } from "../../../../lib/date";
+import { formatMoney } from "../../../../lib/money";
+import { formatOrderReference } from "../../../../lib/order-reference";
+import { orderStatusLabel } from "../../../../lib/order-status-label";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import Layout from "../layouts/Layout.astro";
+import { parseNexahubData } from "../lib";
+import "../styles/pages/secondary.scss";
 interface Props {
   data: unknown;
   themeTokens?: unknown;

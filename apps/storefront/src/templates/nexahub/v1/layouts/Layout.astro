@@ -1,27 +1,27 @@
 ---
-import Icon from "./Icon.astro";
+import Icon from "../components/Icon.astro";
 import { contrastingInk, type NexahubV1Data } from "@ecs/storefront-templates";
-import SeoHead from "../../../components/shell/SeoHead.astro";
-import StorefrontAnalytics from "../../../components/shell/StorefrontAnalytics.astro";
-import StorefrontFonts from "../../../components/shell/StorefrontFonts.astro";
-import StorefrontLanguageSwitcher from "../../../components/shell/StorefrontLanguageSwitcher.astro";
-import StructuredData from "../../../components/shell/StructuredData.astro";
-import { listStoreCollections } from "../../../lib/commerce/catalog";
-import { collectionProductsHref } from "../../../lib/commerce/taxonomy-links";
-import type { StoreCollection } from "../../../lib/commerce/types";
-import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env";
-import type { StorefrontSeo } from "../../../lib/seo";
-import { STOREFRONT_LOCALE_HEADER } from "../../../lib/storefront-locale";
-import * as m from "../../../paraglide/messages.js";
-import logo from "./assets/nexahub-logo.svg";
-import Button from "./Button.astro";
-import { parseNexahubThemeTokens } from "./lib";
-import SaveIcon from "./SaveIcon.astro";
-import "./styles/main.scss";
-import "./styles/components/_header.scss";
-import "./styles/components/_footer.scss";
-import "./styles/components/_cart-drawer.scss";
-import "./styles/responsive.scss";
+import SeoHead from "../../../../components/shell/SeoHead.astro";
+import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
+import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
+import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
+import StructuredData from "../../../../components/shell/StructuredData.astro";
+import { listStoreCollections } from "../../../../lib/commerce/catalog";
+import { collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import type { StoreCollection } from "../../../../lib/commerce/types";
+import { getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import logo from "../assets/nexahub-logo.svg";
+import Button from "../components/Button.astro";
+import { parseNexahubThemeTokens } from "../lib";
+import SaveIcon from "../components/SaveIcon.astro";
+import "../styles/main.scss";
+import "../styles/components/_header.scss";
+import "../styles/components/_footer.scss";
+import "../styles/components/_cart-drawer.scss";
+import "../styles/responsive.scss";
 
 interface Props {
   tenantName: string;
@@ -185,8 +185,8 @@ const nexahubClientMessages = {
     </script>
     <script>
       import { gsap } from "gsap";
-      import { initProductSearchSuggestions } from "../../../lib/browser/product-search-suggestions";
-      import { initNexahubStorefront } from "./client";
+      import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
+      import { initNexahubStorefront } from "../scripts/client";
       initNexahubStorefront();
       if (document.body.dataset.demoMode !== "true" && document.body.dataset.editorMode !== "true") {
         initProductSearchSuggestions(document.querySelector<HTMLFormElement>(".site-header__search"));
