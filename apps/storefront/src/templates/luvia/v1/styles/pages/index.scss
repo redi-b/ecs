@@ -35,6 +35,15 @@
   background: alpha(var(--clr-ink), 0.24);
 }
 
+.lv-hero::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+  background: alpha(var(--clr-primary-dark), 0.60);
+}
+
 .lv-hero__copy {
   position: relative;
   z-index: 2;
@@ -120,6 +129,7 @@
 
 .lv-hero__portrait {
   position: absolute;
+  z-index: 2;
   inset: 0 0 0 auto;
   width: 50%;
   animation: lv-hero-portrait-in 1.1s cubic-bezier(.22, 1, .36, 1) backwards;
