@@ -4,6 +4,7 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "astro/config";
 
 import { ecsRedisCache } from "./src/cache/ecs-redis-cache.ts";
+import { templateCssScopePostcss } from "./src/lib/css/template-css-scope.ts";
 
 /**
  * Multi-tenant shops sit behind Caddy/Traefik (TLS terminates at the edge).
@@ -59,6 +60,11 @@ export default defineConfig({
       }),
     ],
     css: {
+      // Scope each template's CSS under .template-<name> (class on <html>) so
+      // luvia/nexahub/afro can share class names without colliding.
+      postcss: {
+        plugins: [templateCssScopePostcss()],
+      },
       preprocessorOptions: {
         scss: {
           loadPaths: [fileURLToPath(new URL("./src/templates/nexahub/v1/styles", import.meta.url))],
