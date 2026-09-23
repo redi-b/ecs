@@ -37,9 +37,9 @@ export async function processMediaAssetImage(input: {
   }
 
   const original = await input.storage.getObject(input.objectKey);
-  if (!original) return { skipped: true };
+  if (!original) throw new Error("media_original_not_found");
 
-  const source = sharp(original, { failOn: "none" }).rotate();
+  const source = sharp(original, { failOn: "error", limitInputPixels: 50_000_000 }).rotate();
   const metadata = await source.metadata();
   if (shouldSkipImageProcessing({ mimeType: input.mimeType, pageCount: metadata.pages })) {
     return { skipped: true };

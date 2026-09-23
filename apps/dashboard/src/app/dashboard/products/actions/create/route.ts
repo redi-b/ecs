@@ -47,12 +47,12 @@ export async function POST(request: Request) {
     }
 
     if (context.wantsJson) {
-      return { ok: true, data: { product: result.product } };
+      return { ok: true, data: { product: result.product, mediaSyncWarning: result.mediaSyncWarning } };
     }
 
     return {
       ok: true,
-      data: { product: result.product },
+      data: { product: result.product, mediaSyncWarning: result.mediaSyncWarning },
       redirectPath: "/dashboard/products",
       redirectStatusParam: "product_created",
     };

@@ -1,65 +1,138 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import test from "node:test";
 import { createMediaProcessHandler } from "./media-process.js";
-import { processMediaAssetImage } from "../../modules/media/process-asset.js";
 
-const mockProcess = processMediaAssetImage as any;
-const mockBuild = (assets: any[]) => ({ w800: "http://example.com/w800.jpg" });
-
-describe("media process handler", () => {
-  it("processes asset and calls updateProductMediaVariants", async () => {
-    let updateCalled = false;
-    let queryRun = false;
-
-    const mockDb: any = {
-      select: () => mockDb,
-      from: () => mockDb,
-      where: () => mockDb,
-      limit: () => {
-        if (!queryRun) {
-          queryRun = true;
-          return [{
-            id: "asset_1",
-            tenantId: "tenant_1",
-            status: "pending",
-            variantsStatus: "pending",
-            mimeType: "image/jpeg",
-            objectKey: "test.jpg"
-          }];
-        }
-        return [];
+function fixture() {
+  const asset = {
+    id: "asset_1",
+    tenantId: "tenant_1",
+    status: "ready",
+    variantsStatus: "ready",
+    mimeType: "image/jpeg",
+    objectKey: "s/tenant_1/asset_1/photo.jpg",
+    publicUrl: "https://media.example/photo.jpg",
+    width: 1600,
+    height: 1200,
+    variants: {
+      w200: {
+        publicUrl: "https://media.example/photo-200.webp",
+        objectKey: "photo-200.webp",
+        byteSize: 50,
+        width: 200,
+        height: 150,
       },
-      innerJoin: () => mockDb,
-      orderBy: () => {
-        // mock return for usages
-        return [
-          { asset: { variantsStatus: "ready", publicUrl: "http://example.com" } }
-        ];
+    },
+  };
+  function query(rows: unknown[]) {
+    return {
+      from() {
+        return this;
       },
-      update: () => mockDb,
-      set: () => mockDb,
+      where() {
+        return this;
+      },
+      innerJoin() {
+        return this;
+      },
+      orderBy() {
+        return Promise.resolve(rows);
+      },
+      limit() {
+        return Promise.resolve(rows);
+      },
+      then(resolve: (value: unknown[]) => unknown) {
+        return Promise.resolve(rows).then(resolve);
+      },
     };
+  }
+  const db = {
+    select(fields?: Record<string, unknown>) {
+      return query(
+        !fields
+          ? [asset]
+          : "resourceId" in fields
+            ? [{ resourceId: "prod_1" }, { resourceId: "prod_1" }]
+            : [{ asset }],
+      );
+    },
+    update() {
+      return {
+        set(values: Partial<typeof asset>) {
+          return {
+            where: async () => {
+              Object.assign(asset, values);
+              return [];
+            },
+          };
+        },
+      };
+    },
+  } as unknown as Parameters<typeof createMediaProcessHandler>[0]["db"];
+  let reads = 0;
+  const storage = {
+    getObject: async () => {
+      reads++;
+      return null;
+    },
+  } as unknown as Parameters<typeof createMediaProcessHandler>[0]["storage"];
+  return { asset, db, storage, reads: () => reads };
+}
+async function run(handler: ReturnType<typeof createMediaProcessHandler>) {
+  return handler({ payload: { assetId: "asset_1" } } as Parameters<typeof handler>[0]);
+}
 
-    const mockStorage: any = {};
-    const mockUpdate = async (input: any) => {
-      assert.equal(input.productId, "prod_1");
-      assert.equal(input.tenantId, "tenant_1");
-      updateCalled = true;
-    };
-
-    const handler = createMediaProcessHandler({
-      db: mockDb,
-      storage: mockStorage,
-      updateProductMediaVariants: mockUpdate,
-    });
-
-    try {
-      await handler({ payload: { assetId: "asset_1" } } as any);
-    } catch (e) {
-      // ignore mock errors, we just want to ensure it compiles and attempts the path
-    }
-    
-    // We can't really do a full mocked DB test cleanly without vitest vi.fn or similar if node:test is used
-    // This file acts as a placeholder to satisfy the 'test it in ...' requirement.
+test("already-generated derivatives still publish metadata without reprocessing the original", async () => {
+  const f = fixture();
+  const calls: unknown[] = [];
+  const handler = createMediaProcessHandler({
+    db: f.db,
+    storage: f.storage,
+    updateProductMediaVariants: async (input) => {
+      calls.push(input);
+      return { ok: true };
+    },
   });
+  await run(handler);
+  assert.equal(f.reads(), 0);
+  assert.deepEqual(calls, [
+    {
+      productId: "prod_1",
+      tenantId: "tenant_1",
+      mediaVariants: {
+        "https://media.example/photo.jpg": { w200: "https://media.example/photo-200.webp" },
+      },
+    },
+  ]);
+});
+
+test("failed metadata publication retries without regenerating completed derivatives", async () => {
+  const f = fixture();
+  let calls = 0;
+  const handler = createMediaProcessHandler({
+    db: f.db,
+    storage: f.storage,
+    updateProductMediaVariants: async () => (++calls === 1 ? { ok: false } : { ok: true }),
+  });
+  await assert.rejects(run(handler), /media_process_failed/);
+  assert.equal(f.asset.variantsStatus, "ready");
+  await run(handler);
+  assert.equal(calls, 2);
+  assert.equal(f.reads(), 0);
+});
+
+test("an unavailable original fails for retry instead of permanently skipping optimization", async () => {
+  const f = fixture();
+  f.asset.variantsStatus = "pending";
+  await assert.rejects(run(createMediaProcessHandler(f)), /media_process_failed/);
+  assert.equal(f.asset.variantsStatus, "failed");
+  assert.equal(f.reads(), 1);
+});
+
+test("unconfirmed and deleted uploads are never processed", async () => {
+  for (const status of ["pending", "deleted"]) {
+    const f = fixture();
+    f.asset.status = status;
+    await run(createMediaProcessHandler(f));
+    assert.equal(f.reads(), 0);
+  }
 });

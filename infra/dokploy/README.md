@@ -169,9 +169,9 @@ This stack runs **SeaweedFS** (S3-compatible) for product and library uploads (r
 | `MEDIA_S3_PUBLIC_BASE_URL` | Object URLs stored on media assets / product images |
 | `MEDIA_S3_MIN_FREE_SPACE` | Disk reserve before uploads pause; defaults to `1GiB` |
 
-Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts, and set `MEDIA_S3_CORS_ALLOW_ORIGIN` to your dashboard origin so browser uploads can preflight.
+Caddy reverse-proxies `media.${BASE_DOMAIN}` → `seaweedfs:8333` and **preserves the original `Host` header** so SigV4 on browser PUTs still matches. Point DNS for `media.${BASE_DOMAIN}` at the same entry used by other app hosts. SeaweedFS allows the configured `app` origin, while Caddy handles presigned PUT preflight for HTTPS shop subdomains under `BASE_DOMAIN`. Do not set `MEDIA_S3_CORS_ALLOW_ORIGIN` to `*`: the Caddy route keeps the browser upload origin check scoped to dashboard hosts.
 
-If uploads fail with red network rows on the media host: confirm (1) Host is preserved, (2) presigned URLs lack `x-amz-checksum-*` query params (platform-api disables flexible checksums), (3) CORS allows the dashboard origin.
+If uploads fail with red network rows on the media host: confirm (1) Host is preserved, (2) presigned URLs lack `x-amz-checksum-*` query params (platform-api disables flexible checksums), (3) a PUT preflight from a shop dashboard origin returns 204 with its exact `Access-Control-Allow-Origin`. Deploy/reload Caddy for the shop-origin CORS route to take effect.
 
 Shop **create** does not require object storage. Media uploads and full demo seed images do.
 

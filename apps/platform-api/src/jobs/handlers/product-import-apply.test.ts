@@ -131,11 +131,24 @@ describe("product import apply handler", () => {
       },
     };
 
-    const result = await createProductImportApplyHandler({ commerce, store })(job());
+    const result = await createProductImportApplyHandler({
+      commerce,
+      store,
+      syncProductMedia: async (input) => {
+        assert.deepEqual(input, {
+          imageUrls: [],
+          productId: "prod_created",
+          tenantId: "tenant_1",
+          thumbnail: null,
+        });
+        events.push("media:prod_created");
+      },
+    })(job());
     assert.deepEqual(result, { ok: true, executionId: "execution_1", failed: 0, succeeded: 1 });
     assert.deepEqual(events, [
       "active",
       "stock:variant_created:7",
+      "media:prod_created",
       "succeeded:prod_created",
       "finished",
     ]);

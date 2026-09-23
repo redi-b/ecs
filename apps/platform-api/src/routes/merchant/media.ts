@@ -1,3 +1,4 @@
+import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import { z } from "zod";
 
 import { getMediaLimitsConfig } from "../../adapters/storage/env.js";
@@ -156,16 +157,23 @@ export function registerMerchantMediaRoutes(
       products: ["update"],
     });
     if (!merchant.ok) return merchant.response;
-    if (!options.syncProductMedia) {
+    if (!options.syncProductMedia || !options.getMerchantProduct) {
       return context.json({ error: "media_storage_unavailable" }, 503);
     }
     const parsed = syncProductMediaSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_media_asset" }, 400);
-    const result = await options.syncProductMedia({
-      ...parsed.data,
+    const commerce = helpers.getResolvedCommerce(merchant.result.context);
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    const product = await options.getMerchantProduct({
       productId: context.req.param("productId"),
+      salesChannelId: commerce.context.medusaSalesChannelId,
+    });
+    if (!product.ok) return context.json({ error: product.error }, product.status);
+    // Reconcile the saved product, not arbitrary references supplied by a caller.
+    const result = await options.syncProductMedia({
+      ...getProductMediaReferences(product.product),
+      productId: product.product.id,
       tenantId: merchant.result.context.tenantId,
-      variantImageUrls: parsed.data.variantImageUrls,
     });
     return context.json(result);
   });

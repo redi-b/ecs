@@ -252,7 +252,6 @@ export function parseImageKeys(
   const prefix = tenantId ? `s/${tenantId}/backfill` : "p/backfill";
   return {
     canonicalKey: `${prefix}/${hash}/${filename}`,
-    originalStorageKey: undefined,
   };
 }
 
@@ -549,7 +548,7 @@ export async function runBackfill(input: {
             const { variantRecords, variantUrls } = await processAndUploadVariants({
               buffer,
               canonicalKey,
-              publicBaseUrl: dependencies.publicBaseUrl,
+              ...(dependencies.publicBaseUrl ? { publicBaseUrl: dependencies.publicBaseUrl } : {}),
               sourceUrl: url,
               storage: dependencies.storage,
             });
@@ -860,7 +859,7 @@ export async function main() {
       dependencies: {
         db,
         listProducts,
-        publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() || undefined,
+        ...(process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() ? { publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL.trim() } : {}),
         storage,
         updateProductMediaVariants,
       },

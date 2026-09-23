@@ -70,6 +70,30 @@
 			}
 		}
 
+		# Browser uploads may start on any shop dashboard. Restrict CORS to
+		# HTTPS subdomains that this Caddy instance serves.
+		@merchant_upload_origin {
+			method PUT OPTIONS
+			expression `{http.request.header.Origin}.startsWith("https://") && {http.request.header.Origin}.endsWith(".{$BASE_DOMAIN}")`
+		}
+		handle @merchant_upload_origin {
+			header >Access-Control-Allow-Origin {http.request.header.Origin}
+			header +Vary Origin
+			@upload_preflight method OPTIONS
+			handle @upload_preflight {
+				header Access-Control-Allow-Methods "PUT, OPTIONS"
+				header Access-Control-Allow-Headers "content-type"
+				respond 204
+			}
+			handle {
+				reverse_proxy ecs-seaweedfs:8333 {
+					header_up Host {host}
+					header_up -Origin
+					header_down -Access-Control-Allow-Origin
+				}
+			}
+		}
+
 		# PUT/POST/DELETE/OPTIONS (presigned uploads + CORS preflight).
 		handle {
 			reverse_proxy ecs-seaweedfs:8333 {

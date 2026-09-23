@@ -80,6 +80,28 @@ describe("merchant media routes", () => {
     assert.deepEqual(await response.json(), { error: "media_asset_not_found" });
   });
 
+  it("does not synchronize media for a product outside the shop", async () => {
+    let synchronized = false;
+    const app = mediaApp({
+      getMerchantProduct: async () => ({ ok: false, error: "product_not_found", status: 404 }),
+      syncProductMedia: async () => {
+        synchronized = true;
+        return { ok: true, count: 0 };
+      },
+    });
+    const response = await app.request(
+      "http://shop.example.com/platform/merchant/media/products/other_shop_product",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ productId: "other_shop_product", imageUrls: [], thumbnail: null }),
+      },
+    );
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "product_not_found" });
+    assert.equal(synchronized, false);
+  });
+
   it("requires a merchant session before media access", async () => {
     const app = mediaApp({}, false);
     const response = await app.request("http://shop.example.com/platform/merchant/media");
@@ -144,6 +166,37 @@ describe("merchant media routes", () => {
         }
       | undefined;
     const app = mediaApp({
+      getMerchantProduct: async (input) => {
+        assert.equal(input.salesChannelId, "channel_1");
+        return {
+          ok: true,
+          product: {
+            id: "prod_1",
+            title: "Shirt",
+            handle: "shirt",
+            status: "published",
+            thumbnail: "https://cdn.example.com/two.jpg",
+            createdAt: null,
+            updatedAt: null,
+            images: ["one", "two"].map((name) => ({
+              id: name,
+              url: `https://cdn.example.com/${name}.jpg`,
+              rank: null,
+              createdAt: null,
+              updatedAt: null,
+            })),
+            variants: [
+              {
+                id: "variant_1",
+                title: "Red",
+                sku: null,
+                prices: [],
+                imageUrl: "https://cdn.example.com/one.jpg",
+              },
+            ],
+          },
+        };
+      },
       syncProductMedia: async (input) => {
         received = input;
         return { count: input.imageUrls.length, ok: true };
@@ -153,7 +206,7 @@ describe("merchant media routes", () => {
       "http://shop.example.com/platform/merchant/media/products/prod_1",
       {
         body: JSON.stringify({
-          imageUrls: ["https://cdn.example.com/one.jpg", "https://cdn.example.com/two.jpg"],
+          imageUrls: ["https://cdn.example.com/arbitrary.jpg"],
           thumbnail: "https://cdn.example.com/two.jpg",
           variantImageUrls: ["https://cdn.example.com/one.jpg"],
         }),
@@ -176,7 +229,11 @@ describe("merchant media routes", () => {
 function mediaApp(
   mediaOptions: Pick<
     Parameters<typeof createPlatformApp>[0],
-    "createMediaUpload" | "deleteMediaAsset" | "listMediaAssets" | "syncProductMedia"
+    | "createMediaUpload"
+    | "deleteMediaAsset"
+    | "listMediaAssets"
+    | "syncProductMedia"
+    | "getMerchantProduct"
   >,
   authenticated = true,
 ) {

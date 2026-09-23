@@ -1,7 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { drizzle } from "drizzle-orm/pg-proxy";
-import { buildProductMediaVariantsMetadata, createMediaService } from "./service.js";
+import {
+  assertProductMediaUpdateSucceeded,
+  buildProductMediaVariantsMetadata,
+  createMediaService,
+} from "./service.js";
+
+test("failed Medusa metadata updates fail media synchronization", () => {
+  assert.doesNotThrow(() => assertProductMediaUpdateSucceeded({ ok: true }));
+  assert.throws(
+    () => assertProductMediaUpdateSucceeded({ ok: false, error: "commerce_unavailable" }),
+    /product_media_metadata_update_failed/,
+  );
+});
 
 test("buildProductMediaVariantsMetadata maps asset variants to original public URLs", () => {
   const assets = [

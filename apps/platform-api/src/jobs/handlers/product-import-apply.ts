@@ -278,6 +278,12 @@ export function createProductImportApplyStore(db: PlatformDb): ProductImportAppl
 export function createProductImportApplyHandler(options: {
   commerce: ProductImportApplyCommerce;
   store: ProductImportApplyStore;
+  syncProductMedia?: (input: {
+    imageUrls: string[];
+    productId: string;
+    tenantId: string;
+    thumbnail: string | null;
+  }) => Promise<unknown>;
 }): JobHandler<{ executionId: string }> {
   return async (job) => {
     const executionId = job.payload?.executionId?.trim();
@@ -385,6 +391,14 @@ export function createProductImportApplyHandler(options: {
           outcomeId: outcome.id,
         });
         continue;
+      }
+      if (options.syncProductMedia) {
+        await options.syncProductMedia({
+          imageUrls: write.imageUrls,
+          productId,
+          tenantId,
+          thumbnail: write.thumbnail,
+        });
       }
       await options.store.markSucceeded({
         attempt: job.attempt,

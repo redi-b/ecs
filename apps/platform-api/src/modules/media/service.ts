@@ -62,6 +62,12 @@ export type MediaServiceDependencies = {
   }) => Promise<unknown>;
 };
 
+export function assertProductMediaUpdateSucceeded(result: unknown): void {
+  if (result && typeof result === "object" && "ok" in result && result.ok === false) {
+    throw new Error("product_media_metadata_update_failed");
+  }
+}
+
 export function buildProductMediaVariantsMetadata(
   assets: Array<{
     publicUrl?: string | null;
@@ -176,6 +182,7 @@ export function createMediaService(
   }): Promise<MediaAssetResult> {
     const asset = await findTenantAsset(input.tenantId, input.assetId);
     if (!asset) return mediaError("media_asset_not_found", 404);
+    if (asset.status === "ready") return { asset: toMediaAsset(asset), ok: true };
     if (asset.status !== "pending" && asset.status !== "uploaded") {
       return mediaError("invalid_media_asset", 400);
     }
@@ -368,7 +375,8 @@ export function createMediaService(
     }) => Promise<unknown>;
   }) {
     const urls = Array.from(
-      new Set([...(input.imageUrls ?? []), ...(input.variantImageUrls ?? [])].filter(Boolean)),
+      new Set([input.thumbnail, ...(input.imageUrls ?? []), ...(input.variantImageUrls ?? [])]
+        .filter((url): url is string => typeof url === "string" && Boolean(url))),
     );
     const assets = urls.length
       ? await db
@@ -422,11 +430,13 @@ export function createMediaService(
     const updateVariants =
       input.updateProductMediaVariants ?? dependencies?.updateProductMediaVariants;
     if (updateVariants) {
-      await updateVariants({
-        mediaVariants,
-        productId: input.productId,
-        tenantId: input.tenantId,
-      });
+      assertProductMediaUpdateSucceeded(
+        await updateVariants({
+          mediaVariants,
+          productId: input.productId,
+          tenantId: input.tenantId,
+        }),
+      );
     }
 
     return { count: assets.length, mediaVariants, ok: true as const };
@@ -471,7 +481,6 @@ function toMediaAsset(asset: MediaAssetRow): MediaAsset {
     width: asset.width,
   };
 }
-
 
 function normalizeOptionalText(value: string | null | undefined) {
   const normalized = value?.trim();
