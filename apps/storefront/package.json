@@ -13,9 +13,9 @@
     "preview": "cross-env ASTRO_TELEMETRY_DISABLED=1 astro preview --host 0.0.0.0 --port 4321"
   },
   "dependencies": {
-    "@ecs/content": "workspace:*",
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^11.0.2",
+    "@ecs/content": "workspace:*",
     "@ecs/contracts": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
     "@inlang/paraglide-js": "^2.25.4",
@@ -28,6 +28,7 @@
     "typescript": "^5.9.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "sass-embedded": "^1.102.0"
   }
 }
