@@ -1,33 +1,41 @@
 "use client";
 
-import * as React from "react";
 import { useState } from "react";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { ProductFormValues } from "@/features/products/product-form-types";
+import { ProductOptionsBuilder } from "@/features/products/product-options-builder";
 import type {
   ProductOptionDraft,
   VariantMatrixRow,
 } from "@/features/products/product-variant-matrix";
-import { ProductOptionsBuilder } from "@/features/products/product-options-builder";
 import { VariantMatrixTable } from "@/features/products/product-variant-matrix-table";
 import { useI18n } from "@/i18n/provider";
 
 export function ProductOptionsWorkspace({
   galleryImages,
+  bulkValues,
   onApplyDefaults,
   onOptionsChange,
+  onBulkValuesChange,
+  onGalleryImageAdd,
   onOverrideChange,
   options,
   rows,
   values,
 }: {
   galleryImages?: string[] | undefined;
+  bulkValues?: { priceAmount: string; stockedQuantity: string } | undefined;
   onApplyDefaults: () => void;
+  onGalleryImageAdd?: ((url: string) => void) | undefined;
+  onBulkValuesChange?:
+    | ((values: { priceAmount: string; stockedQuantity: string }) => void)
+    | undefined;
   onOptionsChange: (options: ProductOptionDraft[]) => void;
   onOverrideChange: (
     key: string,
     override: {
       enabled?: boolean | undefined;
+      imageSource?: "option" | "manual" | undefined;
       imageUrl?: string | undefined;
       priceAmount?: string | undefined;
       sku?: string | undefined;
@@ -64,7 +72,10 @@ export function ProductOptionsWorkspace({
       ) : (
         <VariantMatrixTable
           galleryImages={galleryImages}
+          bulkValues={bulkValues}
           onApplyDefaults={onApplyDefaults}
+          onGalleryImageAdd={onGalleryImageAdd}
+          onBulkValuesChange={onBulkValuesChange}
           onOverrideChange={onOverrideChange}
           rows={rows}
           values={values}

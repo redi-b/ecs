@@ -79,10 +79,10 @@ export function buildOptionValuePresentationMutations(
     if (presentation.swatch) {
       metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY] = {
         version: 1,
-        swatch: {
-          kind: "color",
-          value: presentation.swatch.value.toLowerCase(),
-        },
+        swatch:
+          presentation.swatch.kind === "color"
+            ? { kind: "color", value: presentation.swatch.value.toLowerCase() }
+            : { kind: "image", url: presentation.swatch.url },
       };
     } else {
       delete metadata[PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY];

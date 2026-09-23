@@ -5,6 +5,7 @@ import type {
   MerchantProduct,
   MerchantProductCategory,
   MerchantProductCollection,
+  ProductOptionSwatch,
 } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,12 +32,13 @@ import {
   ProductOptionsEditButton,
   ProductOrganizationEditButton,
 } from "@/features/products/product-edit-dialog";
-import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
-import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import {
   getImageOptionTag,
   resolveProductMediaVariant,
 } from "@/features/products/product-media-variants";
+import { ProductOptionSwatchPreview } from "@/features/products/product-swatch-popover";
+import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
+import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { dashboardRoutes } from "@/lib/routes";
@@ -222,7 +224,7 @@ export function ProductDetail({
                   product={product}
                   defaultOpen={searchParams.get("edit") === "media"}
                   triggerLabel={t("products.edit.mediaTrigger")}
-                  triggerVariant="button"
+                  triggerVariant="icon"
                 />
               )
             }
@@ -239,11 +241,12 @@ export function ProductDetail({
               >
                 {images.map((image, index) => {
                   const isCover = Boolean(product.thumbnail && product.thumbnail === image.url);
-                  const imageTag = getImageOptionTag(
+                  const imageTag = getImageOptionTag(image.url, product.optionMediaBindings);
+                  const displayUrl = resolveProductMediaVariant(
                     image.url,
-                    product.optionMediaBindings,
+                    product.metadata,
+                    "w400",
                   );
-                  const displayUrl = resolveProductMediaVariant(image.url, product.metadata, "w400");
 
                   return (
                     <figure
@@ -303,7 +306,7 @@ export function ProductDetail({
               )
             }
             meta={t("products.detail.variantsCount", { count: product.variants?.length ?? 0 })}
-            title={t("products.detail.optionsTitle")}
+            title={t("products.detail.optionsVariantsTitle")}
           >
             <ProductOptionsSummary product={product} />
           </DetailSection>
@@ -393,37 +396,45 @@ function ProductOptionsSummary({ product }: { product: MerchantProduct }) {
   const VALUE_PREVIEW = 12;
 
   return (
-    <div className="grid gap-2.5 sm:grid-cols-2">
-      {options.map((option) => {
-        const extra = Math.max(0, option.values.length - VALUE_PREVIEW);
-        const values = option.values.slice(0, VALUE_PREVIEW);
-        return (
-          <div
-            className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
-            key={option.title}
-          >
-            <div className="text-sm font-medium">{option.title}</div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {values.map((value) => (
-                <Badge className="rounded-md font-normal" key={value} variant="secondary">
-                  {value}
-                </Badge>
-              ))}
-              {extra > 0 ? (
-                <Badge className="rounded-md font-normal" variant="outline">
-                  +{extra}
-                </Badge>
-              ) : null}
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">{t("products.detail.variantsHelp")}</p>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {options.map((option) => {
+          const extra = Math.max(0, option.values.length - VALUE_PREVIEW);
+          const values = option.values.slice(0, VALUE_PREVIEW);
+          return (
+            <div
+              className="rounded-lg bg-muted/25 px-3.5 py-3 ring-1 ring-foreground/[0.06]"
+              key={option.title}
+            >
+              <div className="text-sm font-medium">{option.title}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {values.map((value) => (
+                  <Badge
+                    className="gap-1.5 rounded-md font-normal"
+                    key={value.label}
+                    variant="secondary"
+                  >
+                    <ProductOptionSwatchPreview value={value.swatch} />
+                    {value.label}
+                  </Badge>
+                ))}
+                {extra > 0 ? (
+                  <Badge className="rounded-md font-normal" variant="outline">
+                    +{extra}
+                  </Badge>
+                ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function getProductOptionGroups(product: MerchantProduct) {
-  const optionGroups = new Map<string, Set<string>>();
+  const optionGroups = new Map<string, Map<string, ProductOptionSwatch | undefined>>();
 
   for (const variant of product.variants ?? []) {
     for (const option of variant.optionValues ?? []) {
@@ -431,15 +442,27 @@ function getProductOptionGroups(product: MerchantProduct) {
         continue;
       }
 
-      const values = optionGroups.get(option.optionTitle) ?? new Set<string>();
-      values.add(option.value);
+      const values =
+        optionGroups.get(option.optionTitle) ?? new Map<string, ProductOptionSwatch | undefined>();
+      const configuredValue = product.options
+        ?.find(
+          (axis) =>
+            axis.title.localeCompare(option.optionTitle ?? "", undefined, {
+              sensitivity: "base",
+            }) === 0,
+        )
+        ?.values.find(
+          (item) =>
+            item.label.localeCompare(option.value ?? "", undefined, { sensitivity: "base" }) === 0,
+        );
+      values.set(option.value, configuredValue?.swatch);
       optionGroups.set(option.optionTitle, values);
     }
   }
 
   return Array.from(optionGroups, ([title, values]) => ({
     title,
-    values: Array.from(values),
+    values: Array.from(values, ([label, swatch]) => ({ label, swatch })),
   }));
 }
 

@@ -117,9 +117,14 @@ describe("product variant edit state", () => {
     option.title = "Fit";
     mediumValue.label = "Medium";
 
-    const medium = getProductVariantsPayload(values).find((variant) => variant.id === "variant_m");
+    const variants = getProductVariantsPayload(values);
+    const medium = variants.find((variant) => variant.id === "variant_m");
 
     assert.deepEqual(medium?.optionValues, { Fit: "Medium" });
+    assert.deepEqual(
+      variants.map((variant) => [variant.id, variant.priceAmount]),
+      [["variant_s", 1000], ["variant_m", 1200]],
+    );
   });
 
   it("omits disabled variants and exposes them for explicit removal review", () => {

@@ -925,6 +925,19 @@ export function ProductForm({
                                             ),
                                           );
                                         }}
+                                        onGalleryImageAdd={(url) => {
+                                          const current = form.state.values;
+                                          const imageUrls = getMediaUrls("", current.imageUrls);
+                                          if (!imageUrls.includes(url)) {
+                                            form.setFieldValue(
+                                              "imageUrls",
+                                              [...imageUrls, url].join("\n"),
+                                            );
+                                          }
+                                          if (!current.thumbnail.trim()) {
+                                            form.setFieldValue("thumbnail", url);
+                                          }
+                                        }}
                                         onOptionsChange={(nextOptions) => {
                                           const current = form.state.values;
                                           const bindings = reconcileOptionMediaBindings(

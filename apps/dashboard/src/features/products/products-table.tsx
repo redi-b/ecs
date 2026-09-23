@@ -19,11 +19,13 @@ import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
+import { ProductMediaEditButton } from "@/features/products/product-edit-dialog";
 import {
   getProductTableCounts,
   type ProductMediaFilter,
   type ProductStatusFilter,
 } from "@/features/products/product-table-state";
+
 import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useProductTaxonomy } from "@/features/products/use-product-taxonomy";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -102,6 +104,7 @@ export function ProductsTable({
   const collections = taxonomy.collections;
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
+  const [editingMediaProduct, setEditingMediaProduct] = useState<MerchantProduct | null>(null);
   // Stock remains page-local until its backend availability query is implemented.
   const media = initialMedia;
   void pageSize;
@@ -232,6 +235,7 @@ export function ProductsTable({
         : undefined,
       taxonomy.isLoading,
       translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
+      canUpdate ? (item) => setEditingMediaProduct(item) : undefined,
     );
     return resolved;
   }, [
@@ -262,6 +266,7 @@ export function ProductsTable({
             }
           : undefined,
         translationsEnabled ? (item) => setTranslatingProduct(item) : undefined,
+        canUpdate ? (item) => setEditingMediaProduct(item) : undefined,
       ),
     [canDelete, canUpdate, handleStatusChange, t, tenantId, translationsEnabled],
   );
@@ -454,6 +459,18 @@ export function ProductsTable({
           readOnly={!canUpdate}
           showTrigger={false}
           tenantId={tenantId}
+        />
+      ) : null}
+      {editingMediaProduct ? (
+        <ProductMediaEditButton
+          action={getTenantScopedPath(
+            dashboardRoutes.productUpdateAction(editingMediaProduct.id),
+            tenantId,
+          )}
+          defaultOpen
+          onClose={() => setEditingMediaProduct(null)}
+          product={editingMediaProduct}
+          showTrigger={false}
         />
       ) : null}
       <DataTable

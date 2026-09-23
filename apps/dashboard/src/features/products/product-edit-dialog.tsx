@@ -279,11 +279,15 @@ export function ProductOrganizationEditButton({
 export function ProductMediaEditButton({
   defaultOpen = false,
   action,
+  onClose,
   product,
+  showTrigger = true,
   triggerLabel,
   triggerVariant = "button",
 }: ProductEditSheetBaseProps & {
   defaultOpen?: boolean;
+  onClose?: (() => void) | undefined;
+  showTrigger?: boolean | undefined;
   triggerLabel?: string | undefined;
   triggerVariant?: "button" | "icon" | undefined;
 }) {
@@ -298,10 +302,16 @@ export function ProductMediaEditButton({
       defaultOpen={defaultOpen}
       hasUnsavedChanges={JSON.stringify(values) !== JSON.stringify(getProductMediaValues(product))}
       onClose={() => {
-        if (!defaultOpen) return;
-        const url = new URL(window.location.href);
-        url.searchParams.delete("edit");
-        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+        if (defaultOpen) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("edit");
+          window.history.replaceState(
+            window.history.state,
+            "",
+            url.pathname + url.search + url.hash,
+          );
+        }
+        onClose?.();
       }}
       contentClassName="sm:max-w-xl"
       description={t("products.edit.mediaDesc")}
@@ -309,6 +319,7 @@ export function ProductMediaEditButton({
       title={t("products.edit.mediaTitle")}
       triggerLabel={triggerLabel ?? t("products.edit.mediaTrigger")}
       triggerVariant={triggerVariant}
+      showTrigger={showTrigger}
     >
       <MediaUploadField
         imageUrls={imageUrlList}
@@ -334,6 +345,19 @@ export function ProductMediaEditButton({
   );
 }
 
+function getProductBulkValues(product: MerchantProduct) {
+  const overrides = Object.values(getProductDefaultValues(product).variantOverrides).filter(
+    (override) => override.enabled !== false,
+  );
+  const prices = new Set(overrides.map((override) => override.priceAmount).filter(Boolean));
+  const stock = new Set(overrides.map((override) => override.stockedQuantity).filter(Boolean));
+
+  return {
+    priceAmount: prices.size === 1 ? ([...prices][0] ?? "") : "",
+    stockedQuantity: stock.size === 1 ? ([...stock][0] ?? "") : "",
+  };
+}
+
 export function ProductOptionsEditButton({ action, product }: ProductEditSheetBaseProps) {
   const { t } = useI18n();
   const router = useRouter();
@@ -341,6 +365,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
     ...getProductDefaultValues(product),
     hasVariants: true,
   }));
+  const [bulkValues, setBulkValues] = useState(() => getProductBulkValues(product));
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -352,6 +377,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
 
   function reset() {
     setValues({ ...getProductDefaultValues(product), hasVariants: true });
+    setBulkValues(getProductBulkValues(product));
   }
 
   function update(next: Partial<ProductFormValues>) {
@@ -415,13 +441,13 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
         variant="ghost"
       >
         <AppIcons.edit data-icon="inline-start" />
-        {t("common.edit")}
+        {t("products.edit.variantsTrigger")}
       </Button>
       <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : requestClose())} open={open}>
         <DialogContent className="flex max-h-[min(92dvh,56rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-visible p-0 sm:max-w-5xl">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[inherit]">
             <DialogHeader className="border-b px-4 py-4 pr-12 sm:px-5">
-              <DialogTitle>{t("products.detail.editOptions")}</DialogTitle>
+              <DialogTitle>{t("products.edit.variantsTitle")}</DialogTitle>
               <DialogDescription>{t("products.edit.optionsDesc")}</DialogDescription>
             </DialogHeader>
             <form
@@ -440,19 +466,34 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                     </Alert>
                   ) : null}
                   <ProductOptionsWorkspace
+                    bulkValues={bulkValues}
                     galleryImages={getMediaUrls(values.thumbnail, values.imageUrls)}
                     onApplyDefaults={() => {
                       update({
+                        priceAmount: bulkValues.priceAmount,
+                        initialStock: bulkValues.stockedQuantity,
                         variantOverrides: Object.fromEntries(
                           getVariantRows(values).map((row) => [
                             row.key,
                             {
                               ...values.variantOverrides[row.key],
-                              priceAmount: values.priceAmount,
-                              stockedQuantity: values.initialStock,
+                              priceAmount: bulkValues.priceAmount,
+                              stockedQuantity: bulkValues.stockedQuantity,
                             },
                           ]),
                         ),
+                      });
+                    }}
+                    onBulkValuesChange={(nextBulkValues) => {
+                      setBulkValues(nextBulkValues);
+                      setDirty(true);
+                    }}
+                    onGalleryImageAdd={(url) => {
+                      const imageUrls = getImageUrls(values.imageUrls);
+                      if (!imageUrls.includes(url)) imageUrls.push(url);
+                      update({
+                        imageUrls: imageUrls.join("\n"),
+                        ...(!values.thumbnail.trim() ? { thumbnail: url } : {}),
                       });
                     }}
                     onOptionsChange={(options) => {
@@ -529,6 +570,7 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
 function ProductEditSheet({
   action,
   buildPayload,
+  showTrigger = true,
   children,
   contentClassName,
   defaultOpen = false,
@@ -542,6 +584,7 @@ function ProductEditSheet({
 }: {
   action: string;
   buildPayload: () => Record<string, unknown>;
+  showTrigger?: boolean;
   children: ReactNode;
   contentClassName?: string;
   defaultOpen?: boolean;
@@ -636,12 +679,12 @@ function ProductEditSheet({
         }}
         open={open}
       >
-        {triggerVariant === "button" ? (
+        {showTrigger && triggerVariant === "button" ? (
           <Button onClick={openSheet} size="sm" type="button" variant="outline">
             <AppIcons.edit data-icon="inline-start" />
             {triggerLabel}
           </Button>
-        ) : (
+        ) : showTrigger ? (
           <Button
             aria-label={triggerLabel}
             onClick={openSheet}
@@ -652,7 +695,7 @@ function ProductEditSheet({
             <AppIcons.edit data-icon="inline-start" />
             <span className="text-xs font-medium">{t("common.edit")}</span>
           </Button>
-        )}
+        ) : null}
         <SheetContent className={cn("w-full sm:max-w-md", contentClassName)}>
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>

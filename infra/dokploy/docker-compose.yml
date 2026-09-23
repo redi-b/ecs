@@ -221,8 +221,8 @@ services:
       MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET:-ecs-media}
       MEDIA_S3_ACCESS_KEY_ID: ${MEDIA_S3_ACCESS_KEY_ID:-ecs}
       MEDIA_S3_SECRET_ACCESS_KEY: ${MEDIA_S3_SECRET_ACCESS_KEY:?set MEDIA_S3_SECRET_ACCESS_KEY}
-      # Browser uploads come from the dashboard origin; allow it for preflight.
-      MEDIA_S3_CORS_ALLOW_ORIGIN: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-https://app.${BASE_DOMAIN}}
+      # Signed browser uploads may originate from dashboard, tenant, or custom shop domains.
+      MEDIA_S3_CORS_ALLOW_ORIGIN: ${MEDIA_S3_CORS_ALLOW_ORIGIN:-*}
       MEDIA_S3_MIN_FREE_SPACE: ${MEDIA_S3_MIN_FREE_SPACE:-1GiB}
     volumes:
       - seaweed-data:/data

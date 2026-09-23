@@ -110,6 +110,35 @@ export function buildProductOptionSwatch(
   }
   return { kind: "color", value: colorValue.toLowerCase() };
 }
+export function ProductOptionSwatchPreview({
+  className,
+  value,
+}: {
+  className?: string | undefined;
+  value: ProductOptionSwatch | string | null | undefined;
+}) {
+  const swatch = normalizeProductOptionSwatch(value);
+  if (!swatch) return null;
+
+  if (swatch.kind === "image") {
+    return (
+      <img
+        alt=""
+        aria-hidden="true"
+        className={cn("size-4 shrink-0 rounded-full border object-cover shadow-xs", className)}
+        src={swatch.url}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("size-4 shrink-0 rounded-full border shadow-xs", className)}
+      style={{ backgroundColor: swatch.value }}
+    />
+  );
+}
 
 /**
  * Visual option titles indicate options where visual swatches (color or texture) are appropriate.
@@ -210,7 +239,6 @@ export function ProductColorPopover({
       setStep("browse");
     }
   }
-
   async function handleFileUpload(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
@@ -218,6 +246,9 @@ export function ProductColorPopover({
     try {
       const url = await uploadMediaFile(file);
       setCustomImageUrl(url);
+      setCustomMode("image");
+      setStep("custom");
+      setOpen(true);
       if (!customLabel.trim()) {
         const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
         setCustomLabel(baseName.charAt(0).toUpperCase() + baseName.slice(1));
@@ -287,18 +318,18 @@ export function ProductColorPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex h-[min(28rem,calc(100dvh-2rem))] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
+        className="flex max-h-[calc(100dvh-2rem)] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl p-0 shadow-md ring-1 ring-foreground/10"
         collisionPadding={16}
         onKeyDown={(event) => event.stopPropagation()}
         sideOffset={6}
       >
         {step === "browse" ? (
           <Command
-            className="flex h-full flex-col rounded-none bg-transparent p-0"
+            className="flex max-h-[min(28rem,calc(100dvh-2rem))] flex-col rounded-none bg-transparent p-0"
             shouldFilter={false}
           >
             <div className="relative flex h-11 shrink-0 items-center justify-between border-b border-border/60 px-3.5">
-              <span className="text-xs font-semibold">
+              <span className="text-sm font-semibold">
                 {isColorAxis
                   ? t("products.swatch.presetColors")
                   : t("products.swatch.presetSwatches")}
@@ -332,10 +363,10 @@ export function ProductColorPopover({
                 >
                   <span className="grid size-6 place-items-center rounded-full border bg-[conic-gradient(red,yellow,lime,aqua,blue,magenta,red)]" />
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-xs font-medium">
+                    <strong className="block text-sm font-medium">
                       {t("products.swatch.customSwatch")}
                     </strong>
-                    <small className="block truncate text-[11px] text-muted-foreground">
+                    <small className="block truncate text-xs text-muted-foreground">
                       {t("products.swatch.customHelp")}
                     </small>
                   </span>
@@ -354,7 +385,7 @@ export function ProductColorPopover({
                         className="size-5 rounded-full border shadow-xs"
                         style={{ backgroundColor: item.value }}
                       />
-                      <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
                         {item.label}
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground uppercase">
@@ -371,7 +402,7 @@ export function ProductColorPopover({
             </CommandList>
           </Command>
         ) : (
-          <div className="flex h-full flex-col">
+          <div className="flex min-h-0 flex-col">
             <div className="relative flex h-11 shrink-0 items-center border-b border-border/60 px-2">
               <button
                 aria-label={t("products.swatch.backToPresets")}
@@ -381,12 +412,12 @@ export function ProductColorPopover({
               >
                 <AppIcons.arrowLeft className="size-3.5" />
               </button>
-              <p className="w-full truncate px-9 text-center text-xs font-medium">
+              <p className="w-full truncate px-9 text-center text-sm font-medium">
                 {t("products.swatch.customSwatch")}
               </p>
             </div>
 
-            <div className="flex-1 min-h-0 space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
+            <div className="min-h-0 space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
               <Field>
                 <FieldLabel>{t("products.swatch.label")}</FieldLabel>
                 <Input

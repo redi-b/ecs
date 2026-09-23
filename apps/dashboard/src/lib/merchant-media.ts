@@ -52,7 +52,13 @@ export async function getMediaUploadConfig(
   context?: PlatformRequestContext,
 ): Promise<MediaLimitsConfig> {
   try {
-    const response = await platformFetch("/platform/merchant/media/config", context ?? {});
+    const response =
+      typeof window === "undefined" || context
+        ? await platformFetch("/platform/merchant/media/config", context ?? {})
+        : await fetch("/dashboard/media/config", {
+            cache: "no-store",
+            headers: { accept: "application/json" },
+          });
     if (!response.ok) return DEFAULT_MEDIA_LIMITS;
     const data = await response.json().catch(() => null);
     const parsed = mediaLimitsSchema.safeParse(data);

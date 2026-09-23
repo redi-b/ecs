@@ -16,6 +16,7 @@ export function VariantImagePicker({
   galleryImages = [],
   imageUrl,
   imageSource,
+  onAddImageToGallery,
   onRemoveImage,
   onSelectImage,
 }: {
@@ -23,6 +24,7 @@ export function VariantImagePicker({
   imageUrl?: string | undefined;
   imageSource?: "option" | "manual" | undefined;
   onRemoveImage: () => void;
+  onAddImageToGallery?: ((url: string) => void) | undefined;
   onSelectImage: (url: string) => void;
 }) {
   const { t } = useI18n();
@@ -37,6 +39,7 @@ export function VariantImagePicker({
     try {
       const url = await uploadMediaFile(file);
       onSelectImage(url);
+      onAddImageToGallery?.(url);
       setOpen(false);
       toast.success(t("media.variantPhotoUploaded"));
     } catch (error) {
@@ -92,14 +95,14 @@ export function VariantImagePicker({
 
       <PopoverContent
         align="start"
-        className="h-[min(26rem,calc(100dvh-2rem))] w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden rounded-xl p-0 text-xs shadow-md"
+        className="flex max-h-[calc(100dvh-2rem)] w-[min(22rem,calc(100vw-2rem))] flex-col gap-0 overflow-hidden rounded-xl p-0 shadow-md"
         side="bottom"
       >
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-col">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3.5 py-3">
             <div>
               <div className="text-sm font-medium text-foreground">{t("media.variantPhoto")}</div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t(
                   imageSource === "option"
                     ? "media.variantPhotoAutoHint"
@@ -124,8 +127,8 @@ export function VariantImagePicker({
             ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3.5">
-            <span className="text-[11px] font-medium text-muted-foreground">
+          <div className="max-h-[18rem] min-h-0 space-y-2 overflow-y-auto overscroll-contain p-3.5">
+            <span className="text-xs font-medium text-muted-foreground">
               {t("media.variantPhotoProductImages")}
             </span>
             {galleryImages.length === 0 ? (
@@ -175,7 +178,7 @@ export function VariantImagePicker({
             />
             <div className="flex items-center gap-2">
               <Button
-                className="h-7 flex-1 justify-center text-xs"
+                className="flex-1 justify-center"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
                 size="sm"
@@ -194,11 +197,12 @@ export function VariantImagePicker({
                   const url = assets[0]?.publicUrl?.trim();
                   if (url) {
                     onSelectImage(url);
+                    onAddImageToGallery?.(url);
                     setOpen(false);
                   }
                 }}
                 selectionMode="single"
-                triggerClassName="h-7 flex-1 justify-center text-xs"
+                triggerClassName="flex-1 justify-center"
                 triggerLabel={t("media.chooseLibrary")}
                 triggerSize="sm"
                 triggerVariant="outline"

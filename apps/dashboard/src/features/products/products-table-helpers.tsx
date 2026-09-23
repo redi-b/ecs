@@ -70,6 +70,7 @@ export function getProductRowActions(
   t: Translate,
   onSetInventory?: (product: MerchantProduct) => void,
   onTranslate?: (product: MerchantProduct) => void,
+  onEditMedia?: (product: MerchantProduct) => void,
 ): ResourceRowActions {
   const href = getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
   const normalizedStatus = normalizeProductStatus(product.status);
@@ -88,14 +89,18 @@ export function getProductRowActions(
             },
           ]
         : []),
-      ...(onSetInventory
+      ...(onEditMedia
         ? [
             {
-              href: `${href}${href.includes("?") ? "&" : "?"}edit=media`,
               icon: AppIcons.image,
-              label: t("products.edit.mediaTitle"),
-              type: "link" as const,
+              label: t("products.edit.mediaTrigger"),
+              onSelect: () => onEditMedia(product),
+              type: "button" as const,
             },
+          ]
+        : []),
+      ...(onSetInventory
+        ? [
             {
               icon: AppIcons.products,
               label: t("products.stock.bulkAction"),
@@ -192,6 +197,7 @@ export function getProductColumns(
   onSetInventory?: (product: MerchantProduct) => void,
   isLoading?: boolean,
   onTranslate?: (product: MerchantProduct) => void,
+  onEditMedia?: (product: MerchantProduct) => void,
 ): ColumnDef<MerchantProduct>[] {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
@@ -311,7 +317,9 @@ export function getProductColumns(
         <DataTableHeader column={column} title={t("taxonomy.table.updated")} />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground tabular-nums">{formatProductDate(row.original.updatedAt)}</span>
+        <span className="text-muted-foreground tabular-nums">
+          {formatProductDate(row.original.updatedAt)}
+        </span>
       ),
     },
     {
@@ -325,6 +333,7 @@ export function getProductColumns(
           t,
           onSetInventory,
           onTranslate,
+          onEditMedia,
         );
 
         return <RowActionsMenu {...rowActions} />;
@@ -426,7 +435,9 @@ export function ProductOrganizationSummary({
               preview="name"
               source={collection.title}
               translation={collection.translation}
-              untitled={collection.title ?? collection.handle ?? t("products.table.unknownCollection")}
+              untitled={
+                collection.title ?? collection.handle ?? t("products.table.unknownCollection")
+              }
             />
           ) : product.collectionId ? (
             t("products.table.unknownCollection")

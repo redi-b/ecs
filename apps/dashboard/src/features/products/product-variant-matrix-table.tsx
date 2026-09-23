@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,14 +14,22 @@ import type { VariantMatrixRow } from "@/features/products/product-variant-matri
 import { useI18n } from "@/i18n/provider";
 
 export function VariantMatrixTable({
+  bulkValues,
   galleryImages,
   onApplyDefaults,
+  onGalleryImageAdd,
+  onBulkValuesChange,
   onOverrideChange,
   rows,
   values,
 }: {
   galleryImages?: string[] | undefined;
+  bulkValues?: { priceAmount: string; stockedQuantity: string } | undefined;
   onApplyDefaults: () => void;
+  onGalleryImageAdd?: ((url: string) => void) | undefined;
+  onBulkValuesChange?:
+    | ((values: { priceAmount: string; stockedQuantity: string }) => void)
+    | undefined;
   onOverrideChange: (
     key: string,
     override: {
@@ -38,22 +45,82 @@ export function VariantMatrixTable({
   values: ProductFormValues["variantOverrides"];
 }) {
   const { t } = useI18n();
+  const canApplyBulkValues = Boolean(
+    bulkValues?.priceAmount.trim().match(/^\d+$/) &&
+      bulkValues.stockedQuantity.trim().match(/^\d+$/),
+  );
 
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-2xl border bg-background">
-        <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="text-sm font-medium">{t("products.formReview.matrixTitle")}</h3>
             <p className="text-xs text-muted-foreground">
-              {t("products.formReview.generatedCount", { count: rows.length })} • Photos follow
-              Media tags by default. Select a row’s photo to give that variant its own image.
+              {t("products.formReview.generatedCount", { count: rows.length })}.{" "}
+              {t("products.formReview.matrixDesc")}
             </p>
           </div>
-          <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
-            {t("products.formReview.applyDefaults")}
-          </Button>
+          {!bulkValues ? (
+            <Button onClick={onApplyDefaults} size="sm" type="button" variant="outline">
+              {t("products.formReview.applyStartingValues")}
+            </Button>
+          ) : null}
         </div>
+        {bulkValues && onBulkValuesChange ? (
+          <div className="border-b bg-muted/10 px-4 py-3">
+            <div className="mb-3">
+              <p className="text-sm font-medium">{t("products.formReview.bulkValuesTitle")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("products.formReview.bulkValuesDesc")}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+              <Field>
+                <FieldLabel>{t("products.formReview.colPrice")}</FieldLabel>
+                <InputGroup>
+                  <InputGroupAddon>ETB</InputGroupAddon>
+                  <InputGroupInput
+                    inputMode="numeric"
+                    min="0"
+                    onChange={(event) =>
+                      onBulkValuesChange({
+                        ...bulkValues,
+                        priceAmount: event.target.value,
+                      })
+                    }
+                    type="text"
+                    value={bulkValues.priceAmount}
+                  />
+                </InputGroup>
+              </Field>
+              <Field>
+                <FieldLabel>{t("products.formReview.colStock")}</FieldLabel>
+                <Input
+                  inputMode="numeric"
+                  min="0"
+                  onChange={(event) =>
+                    onBulkValuesChange({
+                      ...bulkValues,
+                      stockedQuantity: event.target.value,
+                    })
+                  }
+                  type="text"
+                  value={bulkValues.stockedQuantity}
+                />
+              </Field>
+              <Button
+                disabled={!canApplyBulkValues}
+                onClick={onApplyDefaults}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t("products.formReview.applyBulkValues")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
         <div className="divide-y md:hidden">
           {rows.map((row) => {
             const override = values[row.key] ?? {};
@@ -77,6 +144,7 @@ export function VariantMatrixTable({
                       galleryImages={galleryImages}
                       imageUrl={override.imageUrl ?? row.imageUrl}
                       imageSource={override.imageSource}
+                      onAddImageToGallery={onGalleryImageAdd}
                       onRemoveImage={() =>
                         onOverrideChange(row.key, { imageUrl: undefined, imageSource: undefined })
                       }
@@ -175,6 +243,7 @@ export function VariantMatrixTable({
                         galleryImages={galleryImages}
                         imageUrl={override.imageUrl ?? row.imageUrl}
                         imageSource={override.imageSource}
+                        onAddImageToGallery={onGalleryImageAdd}
                         onRemoveImage={() =>
                           onOverrideChange(row.key, { imageUrl: undefined, imageSource: undefined })
                         }
