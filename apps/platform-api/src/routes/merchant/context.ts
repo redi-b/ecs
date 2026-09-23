@@ -1,8 +1,8 @@
 import type { Context, Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables, PlatformSession } from "../../app.js";
-import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
-import type { TenantResolutionResult } from "../../tenancy/tenant-resolver.js";
+import type { MerchantPermissionRequest } from "../../context/merchant-permissions.js";
+import type { TenantResolutionResult } from "../../context/tenant-resolver.js";
 import { getRequestHost, storeErrorStatus } from "../shared.js";
 
 export type MerchantRouteApp = Hono<{ Variables: PlatformAppVariables }>;

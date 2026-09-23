@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-
-import { createMedusaOrderService } from "./order-service.js";
-import { decodeRefundNote } from "../adapters/medusa/order/refunds.js";
+import { decodeRefundNote } from "./refunds.js";
+import { createMedusaOrderService } from "./service.js";
 
 describe("createMedusaOrderService", () => {
   it("lists orders through the Medusa Admin API scoped by sales channel", async () => {

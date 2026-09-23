@@ -3,7 +3,7 @@ import type { PlatformAppOptions } from "../../app.js";
 import {
   getOperationalCustomerEmail,
   normalizeOperationalPhone,
-} from "../../commerce/customer-identity.js";
+} from "../../modules/commerce/customer-identity.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -142,42 +142,32 @@ export function registerMerchantCustomerRoutes(
       : context.json({ error: result.error }, result.status);
   });
 
-  app.post(
-    "/platform/merchant/customers/:customerId/addresses/:addressId",
-    async (context) => {
-      const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
-      if (!merchant.ok) return merchant.response;
-      const parsed = addressSchema.safeParse(await context.req.json().catch(() => null));
-      if (!parsed.success) return context.json({ error: "invalid_customer_address" }, 400);
-      if (!options.updateMerchantCustomerAddress)
-        return context.json({ error: "commerce_backend_unavailable" }, 503);
-      const result = await options.updateMerchantCustomerAddress({
-        address: parsed.data,
-        addressId: context.req.param("addressId"),
-        customerId: context.req.param("customerId"),
-        tenantId: merchant.result.context.tenantId,
-      });
-      return result.ok
-        ? context.json(result)
-        : context.json({ error: result.error }, result.status);
-    },
-  );
+  app.post("/platform/merchant/customers/:customerId/addresses/:addressId", async (context) => {
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
+    if (!merchant.ok) return merchant.response;
+    const parsed = addressSchema.safeParse(await context.req.json().catch(() => null));
+    if (!parsed.success) return context.json({ error: "invalid_customer_address" }, 400);
+    if (!options.updateMerchantCustomerAddress)
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const result = await options.updateMerchantCustomerAddress({
+      address: parsed.data,
+      addressId: context.req.param("addressId"),
+      customerId: context.req.param("customerId"),
+      tenantId: merchant.result.context.tenantId,
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
 
-  app.delete(
-    "/platform/merchant/customers/:customerId/addresses/:addressId",
-    async (context) => {
-      const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
-      if (!merchant.ok) return merchant.response;
-      if (!options.deleteMerchantCustomerAddress)
-        return context.json({ error: "commerce_backend_unavailable" }, 503);
-      const result = await options.deleteMerchantCustomerAddress({
-        addressId: context.req.param("addressId"),
-        customerId: context.req.param("customerId"),
-        tenantId: merchant.result.context.tenantId,
-      });
-      return result.ok
-        ? context.json(result)
-        : context.json({ error: result.error }, result.status);
-    },
-  );
+  app.delete("/platform/merchant/customers/:customerId/addresses/:addressId", async (context) => {
+    const merchant = await helpers.getAuthorizedMerchantContext(context, { customers: ["update"] });
+    if (!merchant.ok) return merchant.response;
+    if (!options.deleteMerchantCustomerAddress)
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    const result = await options.deleteMerchantCustomerAddress({
+      addressId: context.req.param("addressId"),
+      customerId: context.req.param("customerId"),
+      tenantId: merchant.result.context.tenantId,
+    });
+    return result.ok ? context.json(result) : context.json({ error: result.error }, result.status);
+  });
 }

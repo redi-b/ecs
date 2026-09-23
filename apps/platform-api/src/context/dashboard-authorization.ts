@@ -8,12 +8,12 @@ import {
   users,
 } from "@ecs/db";
 import { and, eq, gt, isNull } from "drizzle-orm";
+import type { DashboardAuthorizationResult } from "../types/index.js";
 import {
   builtInMerchantRoleAllows,
   createMerchantPermissionLookup,
-} from "../auth/merchant-authorization.js";
-import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
-import type { DashboardAuthorizationResult } from "../types/index.js";
+} from "./merchant-authorization.js";
+import type { MerchantPermissionRequest } from "./merchant-permissions.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

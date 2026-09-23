@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
-import { productListFiltersSchema } from "../../../commerce/product-list-filters.js";
+import { productListFiltersSchema } from "../../../modules/commerce/product-list-filters.js";
 import {
   exportProductsToCsv,
   productExportFilename,

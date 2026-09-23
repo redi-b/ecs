@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
+import type { MerchantPermissionRequest } from "../../context/merchant-permissions.js";
 import type { NotificationEventType } from "../../types/index.js";
 import type { EmailTemplateKey } from "../email/template-catalog.js";
 
@@ -215,33 +215,41 @@ const definitions = [
     category: "inventory",
     retentionDays: 30,
   }),
-  ...(["billing.invoice_ready", "billing.past_due", "billing.payment_rejected"] as const).map((eventType) =>
-    defineEvent({
-      eventType,
-      version: 1,
-      context: "billing",
-      status: "production",
-      emitter: "Billing lifecycle outbox",
-      fixture:
-        eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected"
-          ? { amount: "1000", currencyCode: "ETB", invoiceId: "invoice_fixture" }
-          : { amount: "1000", currencyCode: "ETB", subscriptionId: "subscription_fixture" },
-      audience: billingAudience,
-      channels: ["email", "in_app", "telegram"],
-      configurable: true,
-      payloadSchema: eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected" ? invoicePayload : subscriptionPayload,
-      prohibitedPayloadFields: prohibited,
-      dedupe: eventType === "billing.past_due" ? "entity_daily" : "entity",
-      templateIds: {
-        email: `merchant.${eventType}.v1`,
-        in_app: `merchant.${eventType}.v1`,
-        telegram: `merchant.${eventType}.v1`,
-      },
-      deepLink: "billing",
-      priority: eventType === "billing.past_due" || eventType === "billing.payment_rejected" ? "high" : "normal",
-      category: "billing",
-      retentionDays: eventType === "billing.past_due" || eventType === "billing.payment_rejected" ? 180 : 90,
-    }),
+  ...(["billing.invoice_ready", "billing.past_due", "billing.payment_rejected"] as const).map(
+    (eventType) =>
+      defineEvent({
+        eventType,
+        version: 1,
+        context: "billing",
+        status: "production",
+        emitter: "Billing lifecycle outbox",
+        fixture:
+          eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected"
+            ? { amount: "1000", currencyCode: "ETB", invoiceId: "invoice_fixture" }
+            : { amount: "1000", currencyCode: "ETB", subscriptionId: "subscription_fixture" },
+        audience: billingAudience,
+        channels: ["email", "in_app", "telegram"],
+        configurable: true,
+        payloadSchema:
+          eventType === "billing.invoice_ready" || eventType === "billing.payment_rejected"
+            ? invoicePayload
+            : subscriptionPayload,
+        prohibitedPayloadFields: prohibited,
+        dedupe: eventType === "billing.past_due" ? "entity_daily" : "entity",
+        templateIds: {
+          email: `merchant.${eventType}.v1`,
+          in_app: `merchant.${eventType}.v1`,
+          telegram: `merchant.${eventType}.v1`,
+        },
+        deepLink: "billing",
+        priority:
+          eventType === "billing.past_due" || eventType === "billing.payment_rejected"
+            ? "high"
+            : "normal",
+        category: "billing",
+        retentionDays:
+          eventType === "billing.past_due" || eventType === "billing.payment_rejected" ? 180 : 90,
+      }),
   ),
   ...(["billing.trial_started", "billing.trial_ending", "billing.trial_expired"] as const).map(
     (eventType) =>

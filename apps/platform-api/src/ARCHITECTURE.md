@@ -32,14 +32,13 @@ src/
   test/                  # shared test harness
 ```
 
-Legacy top-level folders (`auth/`, `tenants/`, `billing/`, …) keep **compatibility re-exports** so older import paths still work.
-
 ## Rules
 
 - **Routes** validate request/auth/context and call modules (or injected `PlatformAppOptions`).
 - **Modules** own domain behavior and factories used by composition.
 - **Adapters** talk to Medusa, Chapa, and other providers.
 - **types/** holds `PlatformAppOptions` and merchant/commerce result types.
+- Import implementations from their canonical `context/`, `modules/`, or `adapters/` path; compatibility re-export folders are intentionally not maintained.
 - Prefer new post-MVP resources under:
   - `routes/merchant/<resource>.ts`
   - `modules/<domain>/…`

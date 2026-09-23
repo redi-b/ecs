@@ -1,4 +1,4 @@
-import { normalizeHostname } from "../tenancy/tenant-resolver.js";
+import { normalizeHostname } from "../context/tenant-resolver.js";
 
 export type HostConfigEnv = {
   PLATFORM_PUBLIC_BASE_URL?: string;

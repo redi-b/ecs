@@ -7,11 +7,10 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { organization } from "better-auth/plugins";
 import { and, eq, ne } from "drizzle-orm";
-
-import { merchantAccessControl, merchantRoles } from "../auth/merchant-permissions.js";
 import { getEmailTemplateDefinition } from "../modules/email/template-catalog.js";
 import { renderEmailTemplate } from "../modules/email/template-renderer.js";
 import type { NotificationProvider } from "../modules/notifications/providers/types.js";
+import { merchantAccessControl, merchantRoles } from "./merchant-permissions.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

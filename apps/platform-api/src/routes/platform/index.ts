@@ -6,13 +6,13 @@ import { registerDeliveryRoutes } from "./delivery-routes.js";
 import { registerPlatformHealthAuthRoutes } from "./health-auth.js";
 import { registerPlatformInquiryRoutes } from "./inquiries.js";
 import { registerPlatformInternalNotificationRoutes } from "./internal-notifications.js";
+import { registerLaunchReadinessRoutes } from "./launch-readiness.js";
 import { registerPlatformOnboardingRoutes } from "./onboarding.js";
 import { registerPlatformOperatorRoutes } from "./operator.js";
 import { registerPlatformStorefrontRoutes } from "./storefront.js";
-import { registerPlatformTenantCommerceRoutes } from "./tenant-commerce.js";
+import { registerPlatformTenantCommerceRoutes } from "./tenant-commerce/index.js";
 import { registerPlatformTenantOpsRoutes } from "./tenant-ops.js";
 import { registerPlatformTenantRoutes } from "./tenants.js";
-import { registerLaunchReadinessRoutes } from "./launch-readiness.js";
 
 export function registerPlatformRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,

@@ -1,6 +1,6 @@
 import { formatPublicOrderReference } from "@ecs/contracts";
 import type { PlatformAppOptions } from "../../app.js";
-import { isSyntheticCustomerEmail } from "../../commerce/customer-identity.js";
+import { isSyntheticCustomerEmail } from "../../modules/commerce/customer-identity.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -87,9 +87,11 @@ export function registerMerchantSearchRoutes(
         const authorization = await options.authorizeDashboardForTenant?.({
           tenantId: merchant.result.context.tenantId,
           userId: merchant.session.user.id,
-          permission: permission as NonNullable<Parameters<
-            NonNullable<PlatformAppOptions["authorizeDashboardForTenant"]>
-          >[0]["permission"]>,
+          permission: permission as NonNullable<
+            Parameters<
+              NonNullable<PlatformAppOptions["authorizeDashboardForTenant"]>
+            >[0]["permission"]
+          >,
         });
         return [type, authorization?.ok === true] as const;
       }),

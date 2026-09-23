@@ -1,5 +1,5 @@
 import type { MerchantProduct } from "@ecs/contracts";
-import type { ProductListFilters } from "../../commerce/product-list-filters.js";
+import type { ProductListFilters } from "../commerce/product-list-filters.js";
 
 export const PRODUCT_CSV_SCHEMA_VERSION = "ecs-products-v2";
 const EXPORT_PAGE_SIZE = 100;

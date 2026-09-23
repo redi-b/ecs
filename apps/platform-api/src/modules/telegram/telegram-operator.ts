@@ -1,19 +1,16 @@
 import { randomBytes } from "node:crypto";
 import type { createPlatformDb } from "@ecs/db";
 import {
+  organizationMembers,
   telegramOperatorBindings,
   telegramOperatorLinkSessions,
-  organizationMembers,
   tenants,
 } from "@ecs/db";
 import { and, desc, eq, or } from "drizzle-orm";
 
-import { createMerchantPermissionLookup } from "../../auth/merchant-authorization.js";
+import { createMerchantPermissionLookup } from "../../context/merchant-authorization.js";
 import { sendTelegramBotMessage } from "../notifications/providers/telegram-provider.js";
-import {
-  deleteChatBotCommands,
-  setOperatorChatCommands,
-} from "./telegram-bot-commands.js";
+import { deleteChatBotCommands, setOperatorChatCommands } from "./telegram-bot-commands.js";
 import { mainReplyKeyboard } from "./telegram-keyboards.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -85,12 +82,7 @@ async function getActiveWriteMembership(
     })
     .from(organizationMembers)
     .innerJoin(tenants, eq(organizationMembers.organizationId, tenants.organizationId))
-    .where(
-      and(
-        eq(tenants.id, input.tenantId),
-        eq(organizationMembers.userId, input.userId),
-      ),
-    )
+    .where(and(eq(tenants.id, input.tenantId), eq(organizationMembers.userId, input.userId)))
     .limit(1);
 
   if (!row || row.status !== "active") {
@@ -276,11 +268,7 @@ export function createTelegramOperatorService(
     /**
      * Operator self-service unlink from Telegram (must match telegram user + tenant).
      */
-    unlinkSelf: async (input: {
-      telegramUserId: string;
-      tenantId: string;
-      bindingId: string;
-    }) => {
+    unlinkSelf: async (input: { telegramUserId: string; tenantId: string; bindingId: string }) => {
       const deleted = await db
         .delete(telegramOperatorBindings)
         .where(
@@ -307,11 +295,7 @@ export function createTelegramOperatorService(
       return { ok: true as const, chatId };
     },
 
-    setBindingEnabled: async (input: {
-      tenantId: string;
-      bindingId: string;
-      enabled: boolean;
-    }) => {
+    setBindingEnabled: async (input: { tenantId: string; bindingId: string; enabled: boolean }) => {
       const [row] = await db
         .update(telegramOperatorBindings)
         .set({ enabled: input.enabled, updatedAt: new Date() })
@@ -348,10 +332,7 @@ export function createTelegramOperatorService(
      * Whether this chat may receive write action buttons on alerts.
      * Private chats: chat_id matches telegram_user_id / telegram_chat_id.
      */
-    isOperatorChatForActions: async (input: {
-      tenantId: string;
-      chatId: string;
-    }) => {
+    isOperatorChatForActions: async (input: { tenantId: string; chatId: string }) => {
       const [binding] = await db
         .select({
           id: telegramOperatorBindings.id,

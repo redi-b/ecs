@@ -4,7 +4,7 @@ import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
   getBuiltInMerchantCapabilities,
   getBuiltInMerchantPermissions,
-} from "../../auth/merchant-authorization.js";
+} from "../../context/merchant-authorization.js";
 import { getJsonBody, getRequestHost, getRequiredBodyString, storeErrorStatus } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 import { createMerchantDashboardSummary } from "./dashboard-summary.js";

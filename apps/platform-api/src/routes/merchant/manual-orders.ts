@@ -4,7 +4,7 @@ import type { PlatformAppOptions } from "../../app.js";
 import {
   getOperationalCustomerEmail,
   normalizeOperationalPhone,
-} from "../../commerce/customer-identity.js";
+} from "../../modules/commerce/customer-identity.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
 const addressSchema = z.object({

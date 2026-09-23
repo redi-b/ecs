@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resolveCreatedRange } from "../adapters/medusa/order/list-query.js";
+import { resolveCreatedRange } from "./list-query.js";
 
 test("today starts at Ethiopian midnight, including before UTC midnight", () => {
   assert.deepEqual(resolveCreatedRange({ created: "today" }, new Date("2026-09-05T22:00:00Z")), {

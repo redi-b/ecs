@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createMedusaOrderService } from "./order-service.js";
+import { createMedusaOrderService } from "./service.js";
 
 test("attention queue scans past recent completed orders and paginates after action filtering", async () => {
   const offsets: number[] = [];

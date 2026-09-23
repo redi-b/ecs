@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getProductsUrl, PRODUCT_LIST_FIELDS } from "../adapters/medusa/product/urls.js";
-import { createMedusaProductService } from "./product-service.js";
+import { createMedusaProductService } from "./service.js";
+import { getProductsUrl, PRODUCT_LIST_FIELDS } from "./urls.js";
 
 describe("createMedusaProductService", () => {
   it("does not label a product query failure as a commerce outage", async () => {
@@ -761,18 +761,20 @@ describe("createMedusaProductService", () => {
 
         if (request.url.includes("/admin/inventory-items")) {
           return Response.json({
-            inventory_items: [{
-              id: "iitem_1",
-              location_levels: [
-                {
-                  location_id: "sloc_1",
-                  stocked_quantity: 12,
-                  reserved_quantity: 2,
-                  incoming_quantity: 0,
-                  available_quantity: 10,
-                },
-              ],
-            }],
+            inventory_items: [
+              {
+                id: "iitem_1",
+                location_levels: [
+                  {
+                    location_id: "sloc_1",
+                    stocked_quantity: 12,
+                    reserved_quantity: 2,
+                    incoming_quantity: 0,
+                    available_quantity: 10,
+                  },
+                ],
+              },
+            ],
           });
         }
 
@@ -1058,10 +1060,7 @@ describe("createMedusaProductService", () => {
 
     assert.equal(result.ok, true);
     assert.equal(forwardedRequests.length, 2);
-    assert.equal(
-      forwardedRequests[1]?.url,
-      "http://medusa:9000/admin/platform-products/prod_1",
-    );
+    assert.equal(forwardedRequests[1]?.url, "http://medusa:9000/admin/platform-products/prod_1");
     assert.deepEqual(await forwardedRequests[1]?.json(), {
       before_options: { add: [{ title: "Size", values: ["250g"] }] },
       update: {
@@ -1458,18 +1457,20 @@ describe("createMedusaProductService", () => {
         }
 
         return Response.json({
-          inventory_items: [{
-            id: "iitem_1",
-            location_levels: [
-              {
-                location_id: "sloc_1",
-                stocked_quantity: 12,
-                reserved_quantity: 2,
-                incoming_quantity: 0,
-                available_quantity: 10,
-              },
-            ],
-          }],
+          inventory_items: [
+            {
+              id: "iitem_1",
+              location_levels: [
+                {
+                  location_id: "sloc_1",
+                  stocked_quantity: 12,
+                  reserved_quantity: 2,
+                  incoming_quantity: 0,
+                  available_quantity: 10,
+                },
+              ],
+            },
+          ],
         });
       },
     });

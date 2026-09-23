@@ -1,8 +1,7 @@
-import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import { productListFiltersSchema } from "../../commerce/product-list-filters.js";
+import { productListFiltersSchema } from "../../modules/commerce/product-list-filters.js";
 import {
   exportProductsToCsv,
   productExportFilename,
@@ -17,6 +16,7 @@ import {
   applyBulkInventoryUpdates,
   parseBulkInventoryUpdates,
 } from "../../modules/inventory/bulk-adjustment.js";
+import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -745,7 +745,9 @@ export function registerMerchantProductRoutes(
     const mediaChanged =
       body !== null &&
       typeof body === "object" &&
-      ["imageUrls", "thumbnail", "variants", "options", "optionMediaBindings"].some((key) => key in body);
+      ["imageUrls", "thumbnail", "variants", "options", "optionMediaBindings"].some(
+        (key) => key in body,
+      );
     const mediaSyncWarning = mediaChanged
       ? await syncWrittenProductMedia(options, {
           productId: product.product.id,

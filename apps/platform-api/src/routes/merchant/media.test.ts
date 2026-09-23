@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import type { MediaAsset } from "../../app.js";
 import { createPlatformApp } from "../../app.js";
-import type { TenantResolutionResult } from "../../tenancy/tenant-resolver.js";
+import type { TenantResolutionResult } from "../../context/tenant-resolver.js";
 
 const asset: MediaAsset = {
   accessMode: "public",

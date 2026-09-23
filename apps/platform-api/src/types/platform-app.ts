@@ -1,5 +1,9 @@
-import type { ProductOptionMediaBindings, ProductOptionSwatch, SuperadminTenant } from "@ecs/contracts";
-import type { MerchantPermissionRequest } from "../auth/merchant-permissions.js";
+import type {
+  ProductOptionMediaBindings,
+  ProductOptionSwatch,
+  SuperadminTenant,
+} from "@ecs/contracts";
+import type { MerchantPermissionRequest } from "../context/merchant-permissions.js";
 import type {
   PlatformAuthorizationResult,
   PlatformPermission,
@@ -143,7 +147,7 @@ export type PlatformAppOptions = {
   dashboardPublicBaseUrl?: string;
   emailDeliveryConfigured?: boolean;
   getMerchantCapabilities?: ReturnType<
-    typeof import("../auth/merchant-authorization.js").createMerchantCapabilityLookup
+    typeof import("../context/merchant-authorization.js").createMerchantCapabilityLookup
   >;
   merchantTeamService?: ReturnType<
     typeof import("../modules/team/merchant-team-service.js").createMerchantTeamService

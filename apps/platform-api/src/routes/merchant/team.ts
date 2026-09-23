@@ -8,7 +8,7 @@ import {
   merchantPermissionStatement,
   normalizeMerchantRolePermissions,
   protectedMerchantRoleNames,
-} from "../../auth/merchant-permissions.js";
+} from "../../context/merchant-permissions.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
 const roleNameSchema = z

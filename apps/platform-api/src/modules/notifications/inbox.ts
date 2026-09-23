@@ -9,8 +9,8 @@ import {
 } from "@ecs/db";
 import { and, count, desc, eq, gt, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
-import { createMerchantPermissionLookup } from "../../auth/merchant-authorization.js";
-import type { MerchantPermissionRequest } from "../../auth/merchant-permissions.js";
+import { createMerchantPermissionLookup } from "../../context/merchant-authorization.js";
+import type { MerchantPermissionRequest } from "../../context/merchant-permissions.js";
 import type { NotificationEventType } from "../../types/index.js";
 import { getNotificationEventDefinition, NOTIFICATION_EVENT_REGISTRY } from "./event-registry.js";
 import { createCodeNotificationRenderer } from "./renderer.js";

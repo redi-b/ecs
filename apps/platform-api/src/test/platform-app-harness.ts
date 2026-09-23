@@ -57,7 +57,7 @@ import type { PlatformAppOptions } from "../types/platform-app.js";
 
 export type { MerchantOrderAction, NotificationEventType } from "../app.js";
 
-import type { TenantContext, TenantResolutionResult } from "../tenancy/tenant-resolver.js";
+import type { TenantContext, TenantResolutionResult } from "../context/tenant-resolver.js";
 
 function compactPlatformAppOptions(input: Record<string, unknown>): PlatformAppOptions {
   return Object.fromEntries(

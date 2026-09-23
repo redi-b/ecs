@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
-import { taxonomyListFiltersSchema } from "../../../commerce/taxonomy-list-filters.js";
+import { taxonomyListFiltersSchema } from "../../../modules/commerce/taxonomy-list-filters.js";
 import {
   getJsonBody,
   getOptionalBodyString,

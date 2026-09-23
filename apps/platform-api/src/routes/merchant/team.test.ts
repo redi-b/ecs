@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { createPlatformApp } from "../../app.js";
-import { builtInMerchantRolePermissions } from "../../auth/merchant-permissions.js";
-import type { TenantResolutionResult } from "../../tenancy/tenant-resolver.js";
+import { builtInMerchantRolePermissions } from "../../context/merchant-permissions.js";
+import type { TenantResolutionResult } from "../../context/tenant-resolver.js";
 import type { PlatformAppOptions } from "../../types/platform-app.js";
 
 const emptyTeam = {

@@ -22,7 +22,7 @@ import {
 } from "./adapters/medusa/update-shipping-price.js";
 import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
-import { createMerchantCapabilityLookup } from "./auth/merchant-authorization.js";
+import { createMerchantCapabilityLookup } from "./context/merchant-authorization.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDashboardAuthorizationLookup } from "./context/dashboard-authorization.js";

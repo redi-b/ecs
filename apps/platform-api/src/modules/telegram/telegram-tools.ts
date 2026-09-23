@@ -1,25 +1,25 @@
 import type { createPlatformDb } from "@ecs/db";
 import { domains, tenants } from "@ecs/db";
 import { and, eq } from "drizzle-orm";
-
+import type { ManualOrderResult } from "../../adapters/medusa/manual-order-service.js";
 import type {
   MerchantOrder,
   MerchantProduct,
-  MerchantProductsResult,
   MerchantProductStockUpdateResult,
+  MerchantProductsResult,
 } from "../../types/index.js";
-import type { ManualOrderResult } from "../../adapters/medusa/manual-order-service.js";
 import {
   getOperationalCustomerEmail,
   isSyntheticCustomerEmail,
   normalizeOperationalPhone,
-} from "../../commerce/customer-identity.js";
-import { formatMoneyAmount, formatOrderRef } from "../notifications/renderer.js";
+} from "../commerce/customer-identity.js";
 import {
   answerTelegramCallbackQuery,
   editTelegramMessageText,
   sendTelegramBotMessage,
 } from "../notifications/providers/telegram-provider.js";
+import { formatMoneyAmount, formatOrderRef } from "../notifications/renderer.js";
+import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
 import {
   clearDialog,
   getDialog,
@@ -29,15 +29,14 @@ import {
   type TelegramDialogState,
   type TelegramProductHit,
 } from "./telegram-dialog-state.js";
-import type { TelegramOperatorService } from "./telegram-operator.js";
 import {
-  MAIN_KEYBOARD_LABELS,
   cancelInline,
   cartMenuInline,
   confirmInline,
   emailPromptMarkup,
   formatCartSummary,
   itemLabel,
+  MAIN_KEYBOARD_LABELS,
   mainReplyKeyboard,
   matchesMainLabel,
   namePromptMarkup,
@@ -50,8 +49,7 @@ import {
   shopInlineKeyboard,
   unlinkConfirmInline,
 } from "./telegram-keyboards.js";
-import { buildRecentProductHits, productHitsFromCatalog } from "./telegram-recent-products.js";
-import { buildOrderActionKeyboard } from "./telegram-callback-tokens.js";
+import type { TelegramOperatorService } from "./telegram-operator.js";
 import {
   adminUrl,
   formatItemLine,
@@ -60,6 +58,7 @@ import {
   htmlLink,
   resolveDashboardAdminBase,
 } from "./telegram-presentation.js";
+import { buildRecentProductHits, productHitsFromCatalog } from "./telegram-recent-products.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -191,10 +190,7 @@ async function ensureSaleCustomer(
     tenantId: input.tenantId,
     email,
     phone: phone ? `+${phone}` : input.phone,
-    firstName:
-      input.firstName && !/^customer$/i.test(input.firstName)
-        ? input.firstName
-        : null,
+    firstName: input.firstName && !/^customer$/i.test(input.firstName) ? input.firstName : null,
     lastName: input.lastName || null,
   });
   if (ensured.ok) {
@@ -637,7 +633,9 @@ function mergeCartLine(cart: TelegramCartLine[], line: TelegramCartLine): Telegr
   return next;
 }
 
-function saleItemsFromDialog(dialog: TelegramDialogState): Array<{ quantity: number; variantId: string }> {
+function saleItemsFromDialog(
+  dialog: TelegramDialogState,
+): Array<{ quantity: number; variantId: string }> {
   const cart = cartFromDialog(dialog);
   if (cart.length > 0) {
     return cart.map((line) => ({ quantity: line.quantity, variantId: line.variantId }));
@@ -719,8 +717,7 @@ async function advanceAfterProduct(
   },
 ) {
   const previous = getDialog(input.telegramUserId, input.chatId);
-  const existingCart =
-    input.flow === "sale" && previous ? cartFromDialog(previous) : [];
+  const existingCart = input.flow === "sale" && previous ? cartFromDialog(previous) : [];
   setDialog(input.telegramUserId, input.chatId, {
     ...dialogBase(input.ctx, input.flow, "await_qty"),
     productId: input.hit.productId,
@@ -978,11 +975,7 @@ async function applySale(
   const itemsBlock =
     cart.length > 0
       ? formatCartSummary(cart)
-      : formatItemLine(
-          input.dialog.productTitle,
-          input.dialog.variantTitle,
-          input.dialog.quantity,
-        );
+      : formatItemLine(input.dialog.productTitle, input.dialog.variantTitle, input.dialog.quantity);
   await sendTelegramBotMessage({
     botToken: deps.botToken,
     chatId: input.chatId,
@@ -1078,8 +1071,7 @@ async function promptCustomerEmail(
   });
 
   const displayName = (input.name || "").trim();
-  const who =
-    displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
+  const who = displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
 
   const cart = cartFromDialog(input.dialog);
   await sendTelegramBotMessage({
@@ -1131,8 +1123,7 @@ async function showSaleConfirm(
   });
 
   const displayName = (input.dialog.customerName || "").trim();
-  const who =
-    displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
+  const who = displayName && !/^customer$/i.test(displayName) ? `${displayName} · ${phone}` : phone;
   const emailLine = isWalkInEmail(email) ? "Walk-in" : email;
   const cart = cartFromDialog(input.dialog);
 
@@ -1289,9 +1280,7 @@ export async function handleTelegramToolsCallback(
     if (
       !dialog ||
       dialog.flow !== "sale" ||
-      (dialog.step !== "cart_menu" &&
-        dialog.step !== "pick_product" &&
-        dialog.step !== "search")
+      (dialog.step !== "cart_menu" && dialog.step !== "pick_product" && dialog.step !== "search")
     ) {
       await answerTelegramCallbackQuery({
         botToken: deps.botToken,
@@ -1320,7 +1309,12 @@ export async function handleTelegramToolsCallback(
 
   if (action === "skip_name") {
     const dialog = getDialog(telegramUserId, chatId);
-    if (!dialog || dialog.flow !== "sale" || dialog.step !== "await_name" || !dialog.customerPhone) {
+    if (
+      !dialog ||
+      dialog.flow !== "sale" ||
+      dialog.step !== "await_name" ||
+      !dialog.customerPhone
+    ) {
       await answerTelegramCallbackQuery({
         botToken: deps.botToken,
         callbackQueryId: callbackId,
@@ -1451,11 +1445,7 @@ export async function handleTelegramToolsCallback(
   if (indexMatch) {
     const dialog = getDialog(telegramUserId, chatId);
     const hit = dialog?.hits?.[Number(indexMatch[1])];
-    if (
-      !dialog ||
-      !hit ||
-      (dialog.step !== "pick_product" && dialog.step !== "search")
-    ) {
+    if (!dialog || !hit || (dialog.step !== "pick_product" && dialog.step !== "search")) {
       await answerTelegramCallbackQuery({
         botToken: deps.botToken,
         callbackQueryId: callbackId,
