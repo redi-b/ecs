@@ -1,3 +1,4 @@
+import { ethiopianPhoneSchema } from "@ecs/contracts";
 import { NextResponse } from "next/server";
 
 import { getSharedAuthCookie } from "@/lib/auth-cookies";
@@ -22,10 +23,15 @@ export async function POST(request: Request) {
   const email = payload.email?.toLowerCase() ?? null;
   const password = payload.password;
   const confirmPassword = payload.confirmPassword;
+  const phoneResult = ethiopianPhoneSchema.safeParse(payload.phone);
   const nextPath = getSafeNextPath(payload.next);
 
-  if (!ownerName || !email || !password || !confirmPassword) {
+  if (!ownerName || !email || !password || !confirmPassword || !payload.phone) {
     return failSignUp(request, "missing_required_fields", payload, wantsJson);
+  }
+
+  if (!phoneResult.success) {
+    return failSignUp(request, "invalid_phone", payload, wantsJson);
   }
 
   if (password.length < 8) {
@@ -46,6 +52,7 @@ export async function POST(request: Request) {
     forwardedProto: getForwardedProto(request),
     name: ownerName,
     password,
+    phone: phoneResult.data,
   });
 
   if (!signUpResult.ok) {
@@ -124,12 +131,14 @@ async function readSignUpPayload(request: Request) {
       password?: unknown;
       confirmPassword?: unknown;
       next?: unknown;
+      phone?: unknown;
     } | null;
     return {
       email: typeof body?.email === "string" && body.email.trim() ? body.email.trim() : null,
       ownerName:
         typeof body?.ownerName === "string" && body.ownerName.trim() ? body.ownerName.trim() : null,
       password: typeof body?.password === "string" && body.password ? body.password : null,
+      phone: typeof body?.phone === "string" && body.phone.trim() ? body.phone.trim() : null,
       next: typeof body?.next === "string" ? body.next : null,
       confirmPassword:
         typeof body?.confirmPassword === "string" && body.confirmPassword
@@ -143,6 +152,7 @@ async function readSignUpPayload(request: Request) {
     email: getRequiredString(formData, "email"),
     ownerName: getRequiredString(formData, "ownerName"),
     password: getRequiredString(formData, "password"),
+    phone: getRequiredString(formData, "phone"),
     confirmPassword: getRequiredString(formData, "confirmPassword"),
     next: getRequiredString(formData, "next"),
   };
@@ -151,7 +161,12 @@ async function readSignUpPayload(request: Request) {
 function failSignUp(
   request: Request,
   error: string,
-  payload: { email: string | null; next?: string | null; ownerName: string | null },
+  payload: {
+    email: string | null;
+    next?: string | null;
+    ownerName: string | null;
+    phone: string | null;
+  },
   wantsJson: boolean,
 ) {
   if (wantsJson) {
@@ -160,6 +175,7 @@ function failSignUp(
         ? 409
         : error === "password_too_short" ||
             error === "password_mismatch" ||
+            error === "invalid_phone" ||
             error === "missing_required_fields"
           ? 400
           : 503;
@@ -175,6 +191,7 @@ async function signUpWithPlatformAuth(input: {
   forwardedProto: string;
   name: string;
   password: string;
+  phone: string;
 }): Promise<SignUpResult> {
   const response = await fetch(new URL("/platform/auth/sign-up/email", getPlatformBaseUrl()), {
     body: JSON.stringify({
@@ -182,6 +199,7 @@ async function signUpWithPlatformAuth(input: {
       callbackURL: input.callbackURL,
       name: input.name,
       password: input.password,
+      phone: input.phone,
     }),
     cache: "no-store",
     headers: {
@@ -257,13 +275,19 @@ function getSafeNextPath(value: string | null) {
 function redirectToSignUp(
   request: Request,
   error: string,
-  payload: { email: string | null; next?: string | null; ownerName: string | null },
+  payload: {
+    email: string | null;
+    next?: string | null;
+    ownerName: string | null;
+    phone: string | null;
+  },
 ) {
   const url = new URL("/sign-up", getRequestOrigin(request));
 
   url.searchParams.set("error", error);
   if (payload.ownerName) url.searchParams.set("ownerName", payload.ownerName);
   if (payload.email) url.searchParams.set("email", payload.email);
+  if (payload.phone) url.searchParams.set("phone", payload.phone);
   if (payload.next) url.searchParams.set("next", getSafeNextPath(payload.next));
 
   return NextResponse.redirect(url, { status: 303 });

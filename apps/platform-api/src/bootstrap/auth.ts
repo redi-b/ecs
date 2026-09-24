@@ -20,6 +20,8 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     cookiePrefix: options.env.BETTER_AUTH_COOKIE_PREFIX,
     dashboardPublicBaseUrl: options.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
     db: options.db,
+    googleClientId: options.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: options.env.GOOGLE_CLIENT_SECRET,
     ...(!options.emailDeliveryService && options.authEmailProvider
       ? { emailProvider: options.authEmailProvider }
       : {}),

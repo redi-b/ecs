@@ -29,7 +29,7 @@ http://*.lvh.me {
 		reverse_proxy host.docker.internal:3001
 	}
 
-	@merchantDashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation*
+	@merchantDashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation* /auth*
 	handle @merchantDashboard {
 		reverse_proxy host.docker.internal:3001
 	}

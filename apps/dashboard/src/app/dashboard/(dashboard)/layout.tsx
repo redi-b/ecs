@@ -1,3 +1,4 @@
+import type { LaunchReadiness } from "@ecs/contracts";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
@@ -13,18 +14,15 @@ import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import { DashboardRouteBoundary } from "@/components/app/dashboard-route-boundary";
 import { OnboardingWarningToast } from "@/components/app/onboarding-warning-toast";
 import { SupportAccessBanner } from "@/components/app/support-access-banner";
+import { CalendarPreferenceProvider } from "@/components/providers/calendar-preference-provider";
+import { CatalogLabelLocaleProvider } from "@/components/providers/catalog-label-locale-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MediaUploadHost } from "@/features/media/media-upload-host";
-import { CatalogLabelLocaleProvider } from "@/components/providers/catalog-label-locale-provider";
 import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import { getTranslations } from "@/i18n/server";
-import type { LaunchReadiness } from "@ecs/contracts";
 import { allows, merchantPolicies } from "@/lib/access-policy";
 import { parseCatalogLabelLocaleCookie } from "@/lib/catalog-label-locale";
-import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences";
-import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
-import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
 import {
   DASHBOARD_PATH_HEADER,
   getDashboardAuthRedirectPath,
@@ -32,7 +30,10 @@ import {
 } from "@/lib/dashboard-auth";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
+import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
+import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
+import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getCentralDashboardUrl } from "@/lib/shop-host";
 import { resolveShopDestination } from "@/lib/shop-selection";
@@ -141,49 +142,52 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     tenantId: access.access.tenant.id,
   });
   const amharicEnabled =
-    !storefrontDraft.ok ||
-    storefrontDraft.draft.languageSettings.enabledLocales.includes("am");
+    !storefrontDraft.ok || storefrontDraft.draft.languageSettings.enabledLocales.includes("am");
   const catalogLabelLocale = parseCatalogLabelLocaleCookie(
     cookieStore.get("ecs_catalog_label_locale")?.value,
   );
 
   return (
-    <TooltipProvider>
-      <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-        <ActorProvider actor={access.access.actor}>
-          <AccessProvider access={access.access}>
-            <AppSidebar
-              access={access.access}
-              centralDashboardUrl={getCentralDashboardUrl("").replace(/\/$/, "")}
-            />
-            <SidebarInset>
-              {access.access.actor.supportAccess ? (
-                <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
-              ) : null}
-              <CatalogLabelLocaleProvider
-                amharicEnabled={amharicEnabled}
-                initialMode={catalogLabelLocale}
-              >
-              <BreadcrumbLabelsProvider>
-                <AppHeader />
-                <OnboardingWarningToast />
-                <DashboardRouteBoundary>{children}</DashboardRouteBoundary>
-                <LaunchAssistant
-                  access={access.access}
-                  initialHidden={initialHidden}
-                  initialReadiness={initialReadiness}
-                />
-                <ActivityRegistryProvider>
-                  <BackgroundTaskCenter />
-                  <MediaUploadHost />
-                  <ActivityDock />
-                </ActivityRegistryProvider>
-              </BreadcrumbLabelsProvider>
-              </CatalogLabelLocaleProvider>
-            </SidebarInset>
-          </AccessProvider>
-        </ActorProvider>
-      </SidebarProvider>
-    </TooltipProvider>
+    <CalendarPreferenceProvider
+      initialPreference={access.access.actor.calendarPreference ?? "follow-language"}
+    >
+      <TooltipProvider>
+        <SidebarProvider defaultOpen={sidebarDefaultOpen}>
+          <ActorProvider actor={access.access.actor}>
+            <AccessProvider access={access.access}>
+              <AppSidebar
+                access={access.access}
+                centralDashboardUrl={getCentralDashboardUrl("").replace(/\/$/, "")}
+              />
+              <SidebarInset>
+                {access.access.actor.supportAccess ? (
+                  <SupportAccessBanner expiresAt={access.access.actor.supportAccess.expiresAt} />
+                ) : null}
+                <CatalogLabelLocaleProvider
+                  amharicEnabled={amharicEnabled}
+                  initialMode={catalogLabelLocale}
+                >
+                  <BreadcrumbLabelsProvider>
+                    <AppHeader />
+                    <OnboardingWarningToast />
+                    <DashboardRouteBoundary>{children}</DashboardRouteBoundary>
+                    <LaunchAssistant
+                      access={access.access}
+                      initialHidden={initialHidden}
+                      initialReadiness={initialReadiness}
+                    />
+                    <ActivityRegistryProvider>
+                      <BackgroundTaskCenter />
+                      <MediaUploadHost />
+                      <ActivityDock />
+                    </ActivityRegistryProvider>
+                  </BreadcrumbLabelsProvider>
+                </CatalogLabelLocaleProvider>
+              </SidebarInset>
+            </AccessProvider>
+          </ActorProvider>
+        </SidebarProvider>
+      </TooltipProvider>
+    </CalendarPreferenceProvider>
   );
 }

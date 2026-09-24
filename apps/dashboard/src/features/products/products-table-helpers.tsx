@@ -18,7 +18,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  formatProductDate,
   formatProductPriceRange,
   ProductIdentityCell,
   ProductMediaSignal,
@@ -193,6 +192,7 @@ export function getProductColumns(
   onDelete: ((productId: string) => void) | undefined,
   onStatusChange: (productIds: string[], status: ProductStatusValue) => void,
   t: Translate,
+  formatDate: (value: Date | number | string) => string,
   productDetailHref?: (product: MerchantProduct) => string,
   onSetInventory?: (product: MerchantProduct) => void,
   isLoading?: boolean,
@@ -318,7 +318,7 @@ export function getProductColumns(
       ),
       cell: ({ row }) => (
         <span className="text-muted-foreground tabular-nums">
-          {formatProductDate(row.original.updatedAt)}
+          {row.original.updatedAt ? formatDate(row.original.updatedAt) : t("products.detail.never")}
         </span>
       ),
     },

@@ -81,7 +81,7 @@ export function ProductImportDryRunDialog({
   open?: boolean;
   trigger?: ReactNode;
 }) {
-  const { t, formatNumber, locale } = useI18n();
+  const { t, formatDateTime, formatNumber, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -348,10 +348,7 @@ export function ProductImportDryRunDialog({
                   <p className="text-muted-foreground">
                     {t("products.import.reviewed", {
                       digest: report.artifact.contentDigest.slice(0, 12),
-                      expires: new Intl.DateTimeFormat(locale === "am" ? "am-ET" : "en-GB", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      }).format(new Date(report.artifact.expiresAt)),
+                      expires: formatDateTime(report.artifact.expiresAt),
                       products: formatNumber(report.artifact.summary.products),
                     })}
                   </p>

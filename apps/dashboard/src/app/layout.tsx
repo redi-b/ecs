@@ -90,9 +90,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       )}
       style={
         themePreference === "dark"
-          ? { colorScheme: "dark" }
+          ? { colorScheme: "dark", backgroundColor: "oklch(0.185 0.003 255)" }
           : themePreference === "light"
-            ? { colorScheme: "light" }
+            ? { colorScheme: "light", backgroundColor: "oklch(0.987 0.008 248)" }
             : undefined
       }
     >

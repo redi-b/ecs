@@ -275,6 +275,7 @@ export function createPlatformOnboardingStateService(options: {
         email: users.email,
         id: users.id,
         name: users.name,
+        phone: users.phone,
       })
       .from(users)
       .where(eq(users.id, input.userId))

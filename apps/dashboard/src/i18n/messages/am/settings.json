@@ -298,7 +298,9 @@
     "currencyEtb": "ምንዛሬ · ETB",
     "currencyHint": "የመደብር ዋጋዎች እና ክፍያዎች በኢትዮጵያ ብር (ETB) ናቸው። ሌሎች ምንዛሬዎች ለጊዜው አይሰሩም።",
     "fulfillmentHint": "ደሊቨሪ፣ ከሱቅ መውሰድ እና የስልክ ማረጋገጫ በደሊቨሪ ማስተካከያዎች ስር ይገኛሉ።",
-    "openFulfillment": "ደሊቨሪን ክፈት"
+    "openFulfillment": "ደሊቨሪን ክፈት",
+    "calendarSaved": "የቀን መቁጠሪያ ምርጫዎ ተቀምጧል።",
+    "calendarSaveFailed": "የቀን መቁጠሪያ ምርጫዎን ማስቀመጥ አልተቻለም።"
   },
   "fulfillment": {
     "intro": "ደንበኞች በትዕዛዝ ማጠናቀቂያ (ቼክአውት) ላይ እቃ እንዴት እንደሚረከቡ። ለውጦች ወዲያውኑ ተግባራዊ ይሆናሉ።",
@@ -603,6 +605,9 @@
     "title": "አካውንት",
     "intro": "ለዳሽቦርድ መግቢያዎ የግል መረጃ እና የደህንነት ማስተካከያዎች።",
     "addName": "ስምዎን ያስገቡ",
+    "phone": "የግል መገናኛ ስልክ",
+    "phonePlaceholder": "0912 345 678",
+    "phoneHint": "ለአካውንት እና ለአገልግሎት ግንኙነት ይጠቅማል። ደንበኞች ይህን ቁጥር አያዩትም።",
     "displayName": "የሚታይ ስም",
     "namePlaceholder": "ስምዎ",
     "nameHint": "በዳሽቦርድ ሜኑ እና በመደብሩ ውስጥ ይታያል።",
@@ -706,6 +711,7 @@
     "toast": {
       "nameMin": "ቢያንስ 2 ፊደላት ያለው ስም ያስገቡ።",
       "profileOrigin": "መረጃዎን አሁን መቀየር አልተቻለም። ቆይተው እንደገና ይሞክሩ።",
+      "phoneInvalid": "ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ።",
       "profileFailed": "መረጃዎን መቀየር አልተቻለም።",
       "profileUpdated": "የግል መረጃው ተስተካክሏል።",
       "passwordRequired": "የአሁኑን እና አዲሱን የይለፍ ቃል ያስገቡ።",
@@ -738,7 +744,42 @@
     "signOutOthersAction": "ከሌሎች ቦታዎች ውጣ",
     "signOutOthersTitle": "ከሌሎች ቦታዎች ይውጣ?",
     "signOutOthersDesc": "{count} ሌሎች ቦታዎች ይወጣሉ። አሁን የሚጠቀሙበት ቦታ እንደገባ ይቆያል።",
-    "signOutOthersConfirm": "ከሌሎቹ አውጣ"
+    "signOutOthersConfirm": "ከሌሎቹ አውጣ",
+    "calendar": {
+      "title": "የቀን አቆጣጠር",
+      "description": "ቀኖች በዳሽቦርዱ ላይ እንዴት እንደሚታዩ ይምረጡ።",
+      "follow-language": {
+        "title": "ቋንቋውን ይከተል",
+        "description": "አማርኛ የኢትዮጵያን፣ እንግሊዝኛ የግሪጎሪያንን ይጠቀማል።"
+      },
+      "ethiopian": {
+        "title": "የኢትዮጵያ",
+        "description": "በሁሉም ቋንቋ የኢትዮጵያ ቀን ያሳዩ።"
+      },
+      "gregorian": {
+        "title": "ግሪጎሪያን",
+        "description": "በሁሉም ቋንቋ የግሪጎሪያን ቀን ያሳዩ።"
+      }
+    },
+    "connections": {
+      "title": "የመግቢያ ዘዴዎች",
+      "description": "ወደ መለያዎ በደህንነት የሚገቡባቸው መንገዶች።",
+      "connected": "ተገናኝቷል",
+      "notConnected": "አልተገናኘም",
+      "connect": "አገናኝ",
+      "disconnect": "ግንኙነት አቋርጥ",
+      "unlinkFailed": "Googleን ማቋረጥ አልተቻለም።",
+      "unlinked": "Google ተቋርጧል።",
+      "linked": "Google ተገናኝቷል።",
+      "linkFailed": "Googleን ማገናኘት አልተቻለም። እንደገና ይሞክሩ።",
+      "unavailable": "በGoogle መግባት አሁን አይገኝም።",
+      "sameEmailTitle": "የትኛውን Google መለያ ልጠቀም?",
+      "sameEmailHelp": "ከዚህ ECS መለያ ጋር ተመሳሳይ ኢሜይል ያለውን Google መለያ ይምረጡ። የተለየ ኢሜይል ማገናኘት አይቻልም።",
+      "sameEmailLabel": "ስለ Google መለያ ማገናኘት መረጃ",
+      "loading": "የመግቢያ ዘዴዎች በመጫን ላይ…",
+      "passwordMissing": "አሁን በGoogle ይገባሉ። በኢሜይልም ለመግባት ከፈለጉ የይለፍ ቃል ይፍጠሩ።",
+      "createPassword": "የይለፍ ቃል ፍጠር"
+    }
   },
   "payments": {
     "intro": "ደንበኞች ከመደብርዎ ሲገዙ እንዴት እንደሚከፍሉ ይምረጡ።",

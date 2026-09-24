@@ -8,8 +8,8 @@ import { usePermission } from "@/components/app/access-context";
 import { DataTable } from "@/components/app/data-table";
 import { DataTableFilters } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
+import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -62,7 +62,7 @@ export function CustomersTable({
   initialQuery?: string | undefined;
   totalCount: number;
 }) {
-  const { t, locale } = useI18n();
+  const { formatDate, t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
@@ -226,9 +226,7 @@ export function CustomersTable({
         ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
-              new Date(row.original.createdAt),
-            )}
+            {formatDate(row.original.createdAt)}
           </span>
         ),
       },
@@ -240,7 +238,7 @@ export function CustomersTable({
         enableSorting: false,
       },
     ],
-    [customerRowActions, t, locale],
+    [customerRowActions, formatDate, t],
   );
 
   return (

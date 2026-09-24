@@ -129,5 +129,30 @@
     "openAvailablePage": "ወደሚፈቀድልዎት ገጽ ይሂዱ",
     "unavailableTitle": "ዳሽቦርዱ ለጊዜው አይገኝም",
     "unavailableDesc": "ዳሽቦርዱን መክፈት አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።"
+  },
+  "datePicker": {
+    "apply": "ተግብር",
+    "available": "የሚገኙ ቀኖች",
+    "cancel": "ተው",
+    "chooseEnd": "የመጨረሻውን ቀን ይምረጡ",
+    "chooseStart": "የመጀመሪያውን ቀን ይምረጡ",
+    "clear": "አጽዳ",
+    "date": "ቀን",
+    "end": "መጨረሻ",
+    "hour": "ሰዓት",
+    "minute": "ደቂቃ",
+    "nextMonth": "ቀጣይ ወር",
+    "nextYears": "ቀጣይ ዓመታት",
+    "notSet": "አልተመረጠም",
+    "placeholder": "ቀን ይምረጡ",
+    "previousMonth": "ቀዳሚ ወር",
+    "previousYears": "ቀዳሚ ዓመታት",
+    "selectDay": "ቀን ይምረጡ",
+    "selectDateTime": "ቀንና ሰዓት ይምረጡ",
+    "start": "መጀመሪያ",
+    "time": "ሰዓት",
+    "timeFormat": "የሰዓት አቀራረብ",
+    "today": "ዛሬ",
+    "tomorrow": "ነገ"
   }
 }

@@ -70,7 +70,7 @@ const DETAIL_PRIORITY = [
   "sent to",
 ];
 
-function formatRelativeTime(iso: string, locale: string) {
+function formatRelativeTime(iso: string, locale: string, formatDate: (value: string) => string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   const deltaSec = Math.round((date.getTime() - Date.now()) / 1000);
@@ -80,7 +80,7 @@ function formatRelativeTime(iso: string, locale: string) {
   if (abs < 3600) return rtf.format(Math.round(deltaSec / 60), "minute");
   if (abs < 86_400) return rtf.format(Math.round(deltaSec / 3600), "hour");
   if (abs < 86_400 * 7) return rtf.format(Math.round(deltaSec / 86_400), "day");
-  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
+  return formatDate(iso);
 }
 
 function badgeLabel(count: number) {
@@ -226,7 +226,7 @@ function eventAccent(eventType: string, unread: boolean) {
 }
 
 export function NotificationCenter() {
-  const { t, locale } = useI18n();
+  const { formatDate, t, locale } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -616,7 +616,7 @@ export function NotificationCenter() {
                                 "pr-8 sm:pr-0 sm:group-hover/item:opacity-0 sm:group-focus-within/item:opacity-0",
                             )}
                           >
-                            {formatRelativeTime(item.createdAt, locale)}
+                            {formatRelativeTime(item.createdAt, locale, formatDate)}
                           </span>
                         </span>
 

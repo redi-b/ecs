@@ -1,9 +1,12 @@
 "use client";
 
+import { ethiopianPhoneSchema } from "@ecs/contracts";
 import { useId, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
+import { GoogleAuthButton } from "@/components/onboarding/google-auth-button";
 import { Button } from "@/components/ui/button";
+import { EthiopianPhoneInput } from "@/components/ui/ethiopian-phone-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -17,19 +20,23 @@ import { useI18n } from "@/i18n/provider";
 export function AccountSignUpForm({
   defaultValues,
   errorMessage: initialErrorMessage,
+  googleEnabled,
   nextPath,
 }: {
   defaultValues: {
     email?: string | undefined;
     ownerName?: string | undefined;
+    phone?: string | undefined;
   };
   errorMessage: string | null;
+  googleEnabled: boolean;
   nextPath?: string;
 }) {
   const fieldId = useId();
   const { t } = useI18n();
   const [ownerName, setOwnerName] = useState(defaultValues.ownerName ?? "");
   const [email, setEmail] = useState(defaultValues.email ?? "");
+  const [phone, setPhone] = useState(defaultValues.phone ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -42,6 +49,10 @@ export function AccountSignUpForm({
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
+    if (!ethiopianPhoneSchema.safeParse(phone).success) {
+      setErrorMessage(t("signup.error.invalidPhone"));
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMessage(t("signup.error.passwordMismatch"));
       return;
@@ -51,7 +62,7 @@ export function AccountSignUpForm({
     setErrorMessage(null);
 
     const response = await fetch("/sign-up/submit", {
-      body: JSON.stringify({ confirmPassword, email, next: nextPath, ownerName, password }),
+      body: JSON.stringify({ confirmPassword, email, next: nextPath, ownerName, password, phone }),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
@@ -81,6 +92,8 @@ export function AccountSignUpForm({
           {t("auth.createAccountTitle")}
         </h1>
       </div>
+
+      {googleEnabled ? <GoogleAuthButton nextPath={nextPath ?? "/onboarding"} /> : null}
 
       <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
         <Field>
@@ -117,6 +130,16 @@ export function AccountSignUpForm({
             />
           </InputGroup>
         </Field>
+        <EthiopianPhoneInput
+          disabled={isSubmitting}
+          errorMessage={t("signup.error.invalidPhone")}
+          id={`${fieldId}-phone`}
+          label={t("auth.accountPhone")}
+          onChange={setPhone}
+          required
+          size="lg"
+          value={phone}
+        />
         <Field>
           <FieldLabel htmlFor={`${fieldId}-password`}>{t("auth.password")}</FieldLabel>
           <InputGroup className="h-11 bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
@@ -222,6 +245,8 @@ function mapSignupError(code: string | undefined, t: (key: MessageKey) => string
       return t("signup.error.emailExists");
     case "missing_required_fields":
       return t("signup.error.required");
+    case "invalid_phone":
+      return t("signup.error.invalidPhone");
     case "password_too_short":
       return t("signup.error.passwordShort");
     case "password_mismatch":

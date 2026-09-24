@@ -20,7 +20,7 @@ const state = (tenants: PlatformTenant[]): PlatformOnboardingState => ({
   latestProvisioningAttempt: null,
   primaryTenant: null,
   tenants,
-  user: { email: "merchant@example.com", id: "user_1", name: "Merchant" },
+  user: { email: "merchant@example.com", id: "user_1", name: "Merchant", phone: "+251912345678" },
 });
 
 describe("shop destination", () => {
@@ -30,7 +30,10 @@ describe("shop destination", () => {
       state: state([shop("unfinished", "draft")]),
     });
     assert.equal(getOnboardingExit(destination), "https://unfinished.lvh.me/dashboard");
-    assert.equal(getOnboardingExit({ kind: "picker", href: "/dashboard/shops" }), "/dashboard/shops");
+    assert.equal(
+      getOnboardingExit({ kind: "picker", href: "/dashboard/shops" }),
+      "/dashboard/shops",
+    );
   });
   it("sends accounts without an available shop to onboarding", () => {
     assert.deepEqual(resolveShopDestination({ protocol: "https", state: state([]) }), {

@@ -24,6 +24,7 @@ export type DashboardAuthorizationResult =
         name: string | null;
         role: DashboardActorRole;
         avatar?: ProfileAvatarPreferences | null;
+        calendarPreference?: "follow-language" | "ethiopian" | "gregorian";
         supportAccess?: {
           grantId: string;
           expiresAt: string;

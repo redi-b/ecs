@@ -5,7 +5,7 @@ import { useId, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { formatOrderReference, getDisplayOrderEmail } from "@/features/orders/order-domain";
-import { formatMoney, formatShortDate } from "@/features/overview/overview-helpers";
+import { formatMoney } from "@/features/overview/overview-helpers";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 
@@ -40,7 +40,7 @@ export function WaitingOrders({
   currencyCode: string;
   href: (value: string) => string;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const headingId = useId();
   return (
     <div className="min-w-0">
@@ -105,7 +105,7 @@ export function WaitingOrders({
                         <span className="sr-only">{formatOrderReference(order)}</span>
                         {order.createdAt ? (
                           <time className="shrink-0" dateTime={order.createdAt}>
-                            {formatShortDate(order.createdAt, locale)}
+                            {formatDate(order.createdAt)}
                           </time>
                         ) : null}
                       </span>

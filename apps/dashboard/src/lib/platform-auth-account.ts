@@ -133,15 +133,21 @@ function getSetCookieValues(headers: Headers) {
 
 export async function updateAccountProfile(
   options: AuthRequestContext & {
-    name: string;
+    name?: string;
     avatarPreferences?: string;
+    phone?: string;
+    calendarPreference?: "follow-language" | "ethiopian" | "gregorian";
   },
 ) {
   const response = await fetch(authUrl("/platform/auth/update-user", options.platformApiBaseUrl), {
     body: JSON.stringify({
-      name: options.name.trim(),
+      ...(options.name !== undefined ? { name: options.name.trim() } : {}),
       ...(options.avatarPreferences !== undefined
         ? { avatarPreferences: options.avatarPreferences }
+        : {}),
+      ...(options.phone !== undefined ? { phone: options.phone.trim() } : {}),
+      ...(options.calendarPreference !== undefined
+        ? { calendarPreference: options.calendarPreference }
         : {}),
     }),
     headers: authHeaders({ ...options, json: true }),
@@ -281,13 +287,26 @@ export async function getAccountIdentity(options: AuthRequestContext) {
   }).catch(() => null);
   if (!response?.ok) return { ok: false as const, status: response?.status ?? 503 };
   const body = (await response.json().catch(() => null)) as {
-    user?: { email?: unknown; emailVerified?: unknown };
+    user?: {
+      calendarPreference?: unknown;
+      email?: unknown;
+      emailVerified?: unknown;
+      name?: unknown;
+      phone?: unknown;
+    };
   } | null;
   const email = typeof body?.user?.email === "string" ? body.user.email : null;
   if (!email) return { ok: false as const, status: 502 };
   return {
     email,
+    calendarPreference:
+      body?.user?.calendarPreference === "ethiopian" ||
+      body?.user?.calendarPreference === "gregorian"
+        ? body.user.calendarPreference
+        : "follow-language",
     emailVerified: body?.user?.emailVerified === true,
+    name: typeof body?.user?.name === "string" ? body.user.name : null,
+    phone: typeof body?.user?.phone === "string" ? body.user.phone : null,
     ok: true as const,
   };
 }
@@ -317,6 +336,50 @@ async function postAccountAuth(
     };
   }
   return { ok: true as const };
+}
+
+export type AccountConnection = {
+  id: string;
+  providerId: string;
+  createdAt: string | null;
+};
+
+export async function listAccountConnections(options: AuthRequestContext) {
+  const response = await fetch(
+    authUrl("/platform/auth/list-accounts", options.platformApiBaseUrl),
+    {
+      headers: authHeaders(options),
+      method: "GET",
+    },
+  ).catch(() => null);
+  if (!response?.ok) {
+    return {
+      connections: [] as AccountConnection[],
+      ok: false as const,
+      status: response?.status ?? 503,
+    };
+  }
+  const body = (await response.json().catch(() => null)) as unknown;
+  const rows = Array.isArray(body) ? body : [];
+  const connections = rows.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const item = row as Record<string, unknown>;
+    if (typeof item.id !== "string" || typeof item.providerId !== "string") return [];
+    return [
+      {
+        createdAt: typeof item.createdAt === "string" ? item.createdAt : null,
+        id: item.id,
+        providerId: item.providerId,
+      },
+    ];
+  });
+  return { connections, ok: true as const };
+}
+
+export async function unlinkAccountConnection(options: AuthRequestContext & { accountId: string }) {
+  return postAccountAuth("/platform/auth/unlink-account", options, {
+    accountId: options.accountId,
+  });
 }
 
 export async function listAccountSessions(options: AuthRequestContext) {

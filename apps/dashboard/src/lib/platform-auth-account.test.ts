@@ -6,9 +6,11 @@ import {
   getAccountIdentity,
   getSafeAccountReturnPath,
   getSafeVerificationReturnPath,
+  listAccountConnections,
   preflightAccountPasswordReset,
   requestAccountPasswordReset,
   resetAccountPassword,
+  unlinkAccountConnection,
   updateAccountProfile,
   verifyAccountEmail,
 } from "./platform-auth-account.js";
@@ -25,6 +27,8 @@ test("profile updates forward avatar preferences with trusted auth headers", asy
   const result = await updateAccountProfile({
     name: " Liya ",
     avatarPreferences,
+    calendarPreference: "ethiopian",
+    phone: "0912 345 678",
     cookieHeader: "ecs.session_token=test",
     origin: "https://shop.example.com",
     platformApiBaseUrl: "https://api.example.com",
@@ -32,7 +36,12 @@ test("profile updates forward avatar preferences with trusted auth headers", asy
   assert.equal(result.ok, true);
   assert.equal(captured?.headers.get("cookie"), "ecs.session_token=test");
   assert.equal(captured?.headers.get("origin"), "https://shop.example.com");
-  assert.deepEqual(await captured?.json(), { name: "Liya", avatarPreferences });
+  assert.deepEqual(await captured?.json(), {
+    name: "Liya",
+    avatarPreferences,
+    calendarPreference: "ethiopian",
+    phone: "0912 345 678",
+  });
 });
 
 afterEach(() => {
@@ -120,10 +129,7 @@ test("account return paths remain local to dashboard routes", () => {
 });
 
 test("verification return paths preserve safe public auth destinations", () => {
-  assert.equal(
-    getSafeVerificationReturnPath("/sign-in?verified=1"),
-    "/sign-in?verified=1",
-  );
+  assert.equal(getSafeVerificationReturnPath("/sign-in?verified=1"), "/sign-in?verified=1");
   assert.equal(
     getSafeVerificationReturnPath("/accept-invitation?invitationId=invite_1"),
     "/accept-invitation?invitationId=invite_1",
@@ -179,13 +185,69 @@ test("email changes forward the current session and host-aware callback", async 
 
 test("account identity reports verification state from the current session", async () => {
   globalThis.fetch = async () =>
-    Response.json({ user: { email: "owner@example.com", emailVerified: true } });
+    Response.json({
+      user: {
+        email: "owner@example.com",
+        calendarPreference: "ethiopian",
+        emailVerified: true,
+        name: "Owner",
+        phone: "+251912345678",
+      },
+    });
 
   const identity = await getAccountIdentity({ platformApiBaseUrl: "https://api.example.com" });
 
   assert.deepEqual(identity, {
+    calendarPreference: "ethiopian",
     email: "owner@example.com",
     emailVerified: true,
+    name: "Owner",
+    phone: "+251912345678",
     ok: true,
   });
+});
+
+test("account connections expose only safe provider metadata", async () => {
+  globalThis.fetch = async () =>
+    Response.json([
+      {
+        id: "account_google",
+        providerId: "google",
+        createdAt: "2026-09-24T09:00:00.000Z",
+        accessToken: "secret",
+      },
+      { id: "account_password", providerId: "credential", createdAt: null, password: "secret" },
+    ]);
+
+  const result = await listAccountConnections({
+    cookieHeader: "ecs.session_token=session_1",
+    platformApiBaseUrl: "https://api.example.com",
+  });
+
+  assert.deepEqual(result, {
+    connections: [
+      { createdAt: "2026-09-24T09:00:00.000Z", id: "account_google", providerId: "google" },
+      { createdAt: null, id: "account_password", providerId: "credential" },
+    ],
+    ok: true,
+  });
+});
+
+test("unlinking a sign-in method delegates last-method protection to Better Auth", async () => {
+  let captured: Request | undefined;
+  globalThis.fetch = async (input, init) => {
+    captured = new Request(input, init);
+    return Response.json({ status: true });
+  };
+
+  const result = await unlinkAccountConnection({
+    accountId: "account_google",
+    cookieHeader: "ecs.session_token=session_1",
+    origin: "https://bole.example.com",
+    platformApiBaseUrl: "https://api.example.com",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(captured?.url, "https://api.example.com/platform/auth/unlink-account");
+  assert.deepEqual(await captured?.json(), { accountId: "account_google" });
 });

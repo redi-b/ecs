@@ -298,7 +298,9 @@
     "currencyEtb": "Currency · ETB",
     "currencyHint": "Storefront prices and fees use Ethiopian Birr. Multi-currency is not available yet.",
     "fulfillmentHint": "Delivery, pickup, and phone confirmation live under Fulfillment.",
-    "openFulfillment": "Open fulfillment"
+    "openFulfillment": "Open fulfillment",
+    "calendarSaved": "Calendar preference saved.",
+    "calendarSaveFailed": "Calendar preference could not be saved."
   },
   "fulfillment": {
     "intro": "How customers receive orders at checkout. Switches save immediately.",
@@ -603,6 +605,9 @@
     "title": "Account",
     "intro": "Profile and sign-in security for your dashboard login.",
     "addName": "Add your name",
+    "phone": "Private contact phone",
+    "phonePlaceholder": "0912 345 678",
+    "phoneHint": "Used for account and service contact. Customers do not see this number.",
     "displayName": "Display name",
     "namePlaceholder": "Your name",
     "nameHint": "Shown in the sidebar and across this shop.",
@@ -706,6 +711,7 @@
     "toast": {
       "nameMin": "Enter a name with at least 2 characters.",
       "profileOrigin": "Your profile could not be updated right now. Try again later.",
+      "phoneInvalid": "Enter a valid Ethiopian phone number.",
       "profileFailed": "Could not update your profile.",
       "profileUpdated": "Profile updated.",
       "passwordRequired": "Enter your current and new password.",
@@ -738,7 +744,42 @@
     "signOutOthersAction": "Sign out other devices",
     "signOutOthersTitle": "Sign out other devices?",
     "signOutOthersDesc": "{count} other session(s) will be signed out. This device stays signed in.",
-    "signOutOthersConfirm": "Sign out others"
+    "signOutOthersConfirm": "Sign out others",
+    "calendar": {
+      "title": "Calendar",
+      "description": "Choose how dates appear across your dashboard.",
+      "follow-language": {
+        "title": "Follow language",
+        "description": "Amharic uses Ethiopian dates; English uses Gregorian."
+      },
+      "ethiopian": {
+        "title": "Ethiopian",
+        "description": "Show Ethiopian dates in every dashboard language."
+      },
+      "gregorian": {
+        "title": "Gregorian",
+        "description": "Show Gregorian dates in every dashboard language."
+      }
+    },
+    "connections": {
+      "title": "Sign-in methods",
+      "description": "Ways you can securely sign in to your account.",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "unlinkFailed": "Could not disconnect Google.",
+      "unlinked": "Google disconnected.",
+      "linked": "Google connected.",
+      "linkFailed": "Could not connect Google. Try again.",
+      "unavailable": "Google sign-in is not available right now.",
+      "sameEmailTitle": "Which Google account?",
+      "sameEmailHelp": "Choose a Google account with the same email as this ECS account. A different email cannot be linked.",
+      "sameEmailLabel": "Google account linking information",
+      "loading": "Loading sign-in methods…",
+      "passwordMissing": "You currently sign in with Google. Create a password if you also want to sign in with email.",
+      "createPassword": "Create password"
+    }
   },
   "payments": {
     "intro": "Choose how customers pay when they order from your shop.",

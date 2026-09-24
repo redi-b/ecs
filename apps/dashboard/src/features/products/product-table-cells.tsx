@@ -66,9 +66,7 @@ export function ProductMediaCell({ product }: { product: MerchantProduct }) {
       }
     )?.metadata?.media_variants;
     const variantUrl =
-      rawVariants?.[thumbnail.url]?.w200 ||
-      rawVariants?.[thumbnail.url]?.w400 ||
-      thumbnail.url;
+      rawVariants?.[thumbnail.url]?.w200 || rawVariants?.[thumbnail.url]?.w400 || thumbnail.url;
 
     return (
       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border bg-muted/40 ring-1 ring-border/50">
@@ -116,17 +114,6 @@ export function ProductMediaSignal({ product }: { product: MerchantProduct }) {
         : t("products.table.noMedia")}
     </span>
   );
-}
-
-export function formatProductDate(value: string | null) {
-  if (!value) {
-    return "Never";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeZone: "UTC",
-  }).format(new Date(value));
 }
 
 export function formatProductPriceRange(product: MerchantProduct, noPriceLabel = "No price") {

@@ -5,7 +5,6 @@ import Link from "@/components/app/link";
 
 import { Badge } from "@/components/ui/badge";
 import {
-  formatOrderDateTime,
   formatOrderMoney,
   formatOrderReference,
   getDeliveryDisplayLabel,
@@ -51,9 +50,10 @@ export function OrderIdentityCell({
 }
 
 export function OrderPlacedCell({ order }: { order: MerchantOrder }) {
+  const { formatDateTime } = useI18n();
   return (
     <span className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
-      {formatOrderDateTime(order.createdAt)}
+      {order.createdAt ? formatDateTime(order.createdAt) : "—"}
     </span>
   );
 }

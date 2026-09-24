@@ -31,6 +31,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         email: users.email,
         name: users.name,
         avatarPreferences: users.avatarPreferences,
+        calendarPreference: users.calendarPreference,
         organizationId: organizationMembers.organizationId,
         role: organizationMembers.role,
       })
@@ -56,6 +57,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
           email: users.email,
           name: users.name,
           avatarPreferences: users.avatarPreferences,
+          calendarPreference: users.calendarPreference,
         })
         .from(tenantSupportAccessGrants)
         .innerJoin(
@@ -86,6 +88,7 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
           email: support.email,
           name: support.name,
           avatar: parseProfileAvatar(support.avatarPreferences),
+          calendarPreference: normalizeCalendarPreference(support.calendarPreference),
           role: "operator" as const,
           supportAccess: {
             grantId: support.grantId,
@@ -113,8 +116,13 @@ export function createDashboardAuthorizationLookup(db: PlatformDb) {
         email: row.email,
         name: row.name,
         avatar: parseProfileAvatar(row.avatarPreferences),
+        calendarPreference: normalizeCalendarPreference(row.calendarPreference),
         role: row.role,
       },
     };
   };
+}
+
+function normalizeCalendarPreference(value: string) {
+  return value === "ethiopian" || value === "gregorian" ? value : "follow-language";
 }

@@ -5,7 +5,6 @@ import type { MerchantProductCategory, MerchantProductCollection } from "@ecs/co
 import { CatalogTranslatedName } from "@/components/app/catalog-translated-name";
 import { AppIcons } from "@/components/app/icons";
 import {
-  formatTaxonomyDate,
   getCategoryDisplayName,
   getCollectionDisplayName,
 } from "@/features/catalog-taxonomy/taxonomy-table-state";
@@ -20,7 +19,12 @@ type TaxonomyIdentityCellProps = {
   onOpen?: (() => void) | undefined;
 };
 
-export function TaxonomyIdentityCell({ entity, onOpen, source, untitled }: TaxonomyIdentityCellProps) {
+export function TaxonomyIdentityCell({
+  entity,
+  onOpen,
+  source,
+  untitled,
+}: TaxonomyIdentityCellProps) {
   const media = (
     <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted">
       {entity.mediaUrl ? (
@@ -130,10 +134,10 @@ export function CategoryParentCell({
 }
 
 export function TaxonomyDateCell({ value }: { value: string | null }) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   return (
     <span className="text-muted-foreground">
-      {formatTaxonomyDate(value, t("taxonomy.cells.noDate"))}
+      {value ? formatDate(value) : t("taxonomy.cells.noDate")}
     </span>
   );
 }

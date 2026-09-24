@@ -5,14 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  addDays,
-  format,
-  fromDateValue,
-  isToday,
-  toDateValue,
-} from "@/components/ui/date-utils";
+import { addDays, fromDateValue, isToday, toDateValue } from "@/components/ui/date-utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type DatePickerProps = {
@@ -32,11 +27,14 @@ export function DatePicker({
   id,
   onChange,
   value,
-  placeholder = "Pick a date",
+  placeholder,
   disabled = false,
   closeOnSelect = true,
 }: DatePickerProps) {
+  const { calendarSystem, formatDate, formatDualDate, t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("common.datePicker.placeholder");
   const selected = useMemo(() => fromDateValue(value), [value]);
+  const dualDate = selected ? formatDualDate(selected) : null;
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date>(selected ?? new Date());
 
@@ -70,27 +68,18 @@ export function DatePicker({
           <span className="flex min-w-0 items-center gap-2">
             <AppIcons.calendar className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate">
-              {selected ? format(selected, "PP") : placeholder}
+              {selected ? formatDate(selected) : resolvedPlaceholder}
             </span>
           </span>
           {selected ? (
             <span
-              aria-label="Clear date"
               className="grid size-6 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground"
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 onChange("");
               }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onChange("");
-                }
-              }}
-              role="button"
-              tabIndex={0}
+              aria-hidden
             >
               <AppIcons.close className="size-3.5" />
             </span>
@@ -116,16 +105,18 @@ export function DatePicker({
         sticky="partial"
       >
         <div className="border-b bg-muted/25 px-4 py-3">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Date
-          </p>
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Date</p>
           <p className="mt-0.5 text-base font-semibold tracking-tight">
-            {selected ? format(selected, "PPP") : "Select a day"}
+            {selected ? formatDate(selected) : t("common.datePicker.selectDay")}
           </p>
+          {dualDate ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">{dualDate.secondaryLabel}</p>
+          ) : null}
         </div>
 
         <div className="p-3">
           <Calendar
+            calendarSystem={calendarSystem}
             month={month}
             onMonthChange={setMonth}
             onSelect={pick}
@@ -136,13 +127,16 @@ export function DatePicker({
         <div className="flex flex-wrap gap-1.5 border-t bg-muted/15 px-3 py-2.5">
           <PresetChip
             active={Boolean(selected && isToday(selected))}
-            label="Today"
+            label={t("common.datePicker.today")}
             onClick={() => pick(new Date())}
           />
-          <PresetChip label="Tomorrow" onClick={() => pick(addDays(new Date(), 1))} />
+          <PresetChip
+            label={t("common.datePicker.tomorrow")}
+            onClick={() => pick(addDays(new Date(), 1))}
+          />
           {value ? (
             <PresetChip
-              label="Clear"
+              label={t("common.datePicker.clear")}
               onClick={() => {
                 onChange("");
                 setOpen(false);

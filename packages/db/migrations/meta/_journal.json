@@ -442,6 +442,13 @@
       "when": 1789800000000,
       "tag": "0062_media_asset_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1790271153407,
+      "tag": "0063_user_calendar_preference",
+      "breakpoints": true
     }
   ]
 }
