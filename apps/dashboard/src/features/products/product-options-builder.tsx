@@ -319,7 +319,7 @@ export function ProductOptionsBuilder({
           </PopoverTrigger>
           <PopoverContent
             align="end"
-            className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
+            className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(18rem,calc(100vw-1.5rem))] flex-col gap-0 overflow-hidden p-0"
           >
             <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
               {t("products.formReview.chooseOptionType")}

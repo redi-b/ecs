@@ -715,14 +715,14 @@ export function ImageOptionTagPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden p-0"
+        className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-[min(18rem,calc(100vw-1.5rem))] flex-col gap-0 overflow-hidden p-0"
         side="bottom"
       >
         <div className="flex min-h-0 flex-col">
           <div className="flex h-10 shrink-0 items-center border-b px-3 text-sm font-medium">
             {t("media.tagAction")}
           </div>
-          <div className="min-h-0 overflow-y-auto overscroll-contain p-1.5">
+          <div className="min-h-0 overflow-y-auto overscroll-contain p-1">
             <button
               className={cn(
                 "flex min-h-9 w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted",
@@ -742,7 +742,7 @@ export function ImageOptionTagPopover({
             </button>
 
             {options.map((opt) => (
-              <div className="flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
+              <div className="mt-1 flex flex-col gap-0.5 border-t pt-1" key={opt.key ?? opt.title}>
                 <div className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
                   {opt.title}
                 </div>
