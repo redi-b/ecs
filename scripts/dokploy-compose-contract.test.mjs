@@ -41,12 +41,12 @@ test("platform-api environment wires platform billing destinations and links.et"
     compose,
     /PLATFORM_BILLING_TELEBIRR_ACCOUNT: \$\{PLATFORM_BILLING_TELEBIRR_ACCOUNT:-\}/,
   );
-  assert.match(
-    compose,
-    /PLATFORM_BILLING_CBE_ACCOUNT: \$\{PLATFORM_BILLING_CBE_ACCOUNT:-\}/,
-  );
-  assert.match(
-    compose,
-    /LINKS_ET_API_KEY: \$\{LINKS_ET_API_KEY:-\}/,
-  );
+  assert.match(compose, /PLATFORM_BILLING_CBE_ACCOUNT: \$\{PLATFORM_BILLING_CBE_ACCOUNT:-\}/);
+  assert.match(compose, /LINKS_ET_API_KEY: \$\{LINKS_ET_API_KEY:-\}/);
+});
+
+test("production deployment wires optional Google OAuth configuration", () => {
+  assert.match(compose, /GOOGLE_AUTH_ENABLED: \$\{GOOGLE_AUTH_ENABLED:-auto\}/);
+  assert.match(compose, /GOOGLE_CLIENT_ID: \$\{GOOGLE_CLIENT_ID:-\}/);
+  assert.match(compose, /GOOGLE_CLIENT_SECRET: \$\{GOOGLE_CLIENT_SECRET:-\}/);
 });

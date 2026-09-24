@@ -11,7 +11,7 @@ export function registerPlatformHealthAuthRoutes(
   options: PlatformHealthAuthDependencies,
 ) {
   app.get("/platform/auth/providers", (context) => {
-    context.header("cache-control", "public, max-age=60");
+    context.header("cache-control", "no-store");
     return context.json({ google: options.googleAuthEnabled === true });
   });
 

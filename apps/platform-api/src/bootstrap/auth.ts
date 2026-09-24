@@ -12,16 +12,51 @@ type AuthRuntimeOptions = {
   requireEmailVerification: boolean;
 };
 
+export function resolveGoogleAuthConfiguration(env: NodeJS.ProcessEnv) {
+  const setting = env.GOOGLE_AUTH_ENABLED?.trim().toLowerCase() || "auto";
+  if (setting !== "auto" && setting !== "true" && setting !== "false") {
+    throw new Error("GOOGLE_AUTH_ENABLED must be true, false, or auto");
+  }
+
+  const clientId = env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+  const hasClientId = Boolean(clientId);
+  const hasClientSecret = Boolean(clientSecret);
+
+  if (setting === "false") {
+    return { enabled: false, status: "disabled" as const };
+  }
+  if (hasClientId !== hasClientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together");
+  }
+  if (!hasClientId || !hasClientSecret) {
+    if (setting === "true") {
+      throw new Error(
+        "GOOGLE_AUTH_ENABLED is true but GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are missing",
+      );
+    }
+    return { enabled: false, status: "not_configured" as const };
+  }
+
+  return {
+    clientId: clientId as string,
+    clientSecret: clientSecret as string,
+    enabled: true,
+    status: "enabled" as const,
+  };
+}
+
 export function createAuthRuntime(options: AuthRuntimeOptions) {
   const baseUrl = options.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
+  const google = resolveGoogleAuthConfiguration(options.env);
   const auth = createPlatformAuth({
     baseUrl,
     cookieDomain: options.env.BETTER_AUTH_COOKIE_DOMAIN,
     cookiePrefix: options.env.BETTER_AUTH_COOKIE_PREFIX,
     dashboardPublicBaseUrl: options.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
     db: options.db,
-    googleClientId: options.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: options.env.GOOGLE_CLIENT_SECRET,
+    googleClientId: google.clientId,
+    googleClientSecret: google.clientSecret,
     ...(!options.emailDeliveryService && options.authEmailProvider
       ? { emailProvider: options.authEmailProvider }
       : {}),
@@ -45,6 +80,8 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
 
   return {
     auth,
+    googleAuthEnabled: google.enabled,
+    googleAuthStatus: google.status,
     merchantTeamService: createMerchantTeamService({
       authHandler: auth.handler,
       db: options.db,

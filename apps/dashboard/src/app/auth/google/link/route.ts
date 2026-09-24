@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const protocol =
     request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.slice(0, -1);
   const origin = `${protocol}://${host}`;
-  const settingsUrl = new URL("/dashboard/settings?section=account", origin);
+  const settingsUrl = new URL("/dashboard/settings?tab=account", origin);
   settingsUrl.searchParams.set("connection", "google-linked");
   const trustedDashboardHost =
     isCentralDashboardHost(host) || (await validateShopHost({ forwardedHost: host })).ok;

@@ -100,6 +100,28 @@ export function validateProductionEnvironment(environment) {
   for (const key of REQUIRED_SECRETS) validateSecret(errors, key, environment[key], true);
   for (const key of OPTIONAL_SECRETS) validateSecret(errors, key, environment[key], false);
 
+  const googleSetting = (environment.GOOGLE_AUTH_ENABLED ?? "auto").trim().toLowerCase();
+  expect(
+    errors,
+    googleSetting === "auto" || googleSetting === "true" || googleSetting === "false",
+    "GOOGLE_AUTH_ENABLED must be true, false, or auto",
+  );
+  const hasGoogleClientId = Boolean(environment.GOOGLE_CLIENT_ID);
+  const hasGoogleClientSecret = Boolean(environment.GOOGLE_CLIENT_SECRET);
+  expect(
+    errors,
+    hasGoogleClientId === hasGoogleClientSecret,
+    "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together",
+  );
+  if (googleSetting === "true") {
+    expect(errors, hasGoogleClientId, "GOOGLE_CLIENT_ID is required when Google OAuth is enabled");
+    expect(
+      errors,
+      hasGoogleClientSecret,
+      "GOOGLE_CLIENT_SECRET is required when Google OAuth is enabled",
+    );
+  }
+
   const populatedSecrets = [...REQUIRED_SECRETS, ...OPTIONAL_SECRETS]
     .map((key) => [key, environment[key]])
     .filter(([, value]) => Boolean(value));

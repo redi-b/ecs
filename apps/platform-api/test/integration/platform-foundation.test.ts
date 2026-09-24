@@ -26,7 +26,7 @@ describe("platform app foundation", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { google: true });
-    assert.equal(response.headers.get("cache-control"), "public, max-age=60");
+    assert.equal(response.headers.get("cache-control"), "no-store");
   });
 
   it("adds request ids to platform responses and platform-owned errors", async () => {
