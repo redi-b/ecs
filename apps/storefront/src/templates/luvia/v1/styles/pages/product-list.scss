@@ -1,4 +1,5 @@
 @use "../abstracts" as *;
+@use "../components/empty-state";
 
 .lv-shop {
   min-height: 100vh;
@@ -75,10 +76,10 @@
   z-index: 20;
   overflow: visible;
   padding: $space-550 $space-450 $space-450;
-  border: 1px solid var(--clr-accent);
+  border: 1px solid var(--clr-line);
   border-radius: $radius-400;
-  background: var(--clr-bg);
-  box-shadow: 1px 4px 33px alpha(var(--clr-ink), 0.09);
+  background: var(--clr-surface);
+  box-shadow: 0 18px 48px alpha(var(--clr-ink), 0.06);
 }
 
 .lv-catalog-filter header {
@@ -86,6 +87,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: $space-300;
 }
 
 .lv-catalog-filter h2 {
@@ -107,13 +109,13 @@
 
 .lv-catalog-filter__controls {
   min-height: 71px;
-  padding: $space-250 $space-350;
+  padding: $space-250;
   display: flex;
   align-items: center;
-  gap: $space-250;
+  gap: $space-150;
   border: 1px solid var(--clr-line);
-  border-radius: $radius-250;
-  background: var(--clr-white);
+  border-radius: $radius-300;
+  background: var(--clr-bg);
 }
 
 .lv-catalog-filter__search {
@@ -129,17 +131,15 @@
   border-radius: $radius-pill;
   outline: none;
   color: var(--clr-ink);
-  background: var(--clr-bg);
+  background: var(--clr-surface);
 }
 
 .lv-catalog-filter__search input:hover {
-  border-color: alpha(var(--clr-primary), 0.38);
-  background: var(--clr-white);
+  border-color: alpha(var(--clr-primary), 0.45);
 }
 
 .lv-catalog-filter__search input:focus-visible {
   border-color: var(--clr-primary);
-  background: var(--clr-bg);
   box-shadow: 0 0 0 4px alpha(var(--clr-primary), 0.14);
 }
 
@@ -273,13 +273,15 @@
 }
 
 .lv-filter-menu summary {
-  min-height: 45px;
+  min-height: 47px;
   padding: 0 $space-300;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: $space-150;
-  border: 1px solid transparent;
+  border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
+  background: var(--clr-surface);
   cursor: pointer;
   list-style: none;
 }
@@ -295,12 +297,12 @@
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   content: "";
+  flex: none;
   transform: translateY(-2px) rotate(45deg);
 }
 
 .lv-filter-menu summary:hover {
-  border-color: alpha(var(--clr-primary), 0.38);
-  background: var(--clr-soft);
+  border-color: alpha(var(--clr-primary), 0.45);
 }
 
 .lv-filter-menu summary:focus-visible {
@@ -310,8 +312,8 @@
 }
 
 .lv-filter-menu[open] summary {
-  border-color: alpha(var(--clr-primary), 0.38);
-  background: var(--clr-soft);
+  border-color: alpha(var(--clr-primary), 0.55);
+  background: alpha(var(--clr-primary), 0.08);
 }
 
 .lv-filter-menu[open] summary::after {
@@ -323,7 +325,7 @@
 }
 
 .lv-filter-menu summary>span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.55);
 }
 
 .lv-filter-menu summary>strong {
@@ -331,6 +333,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--clr-ink);
 }
 
 .lv-filter-menu>div {
@@ -344,8 +347,8 @@
   padding: $space-150;
   overflow-y: auto;
   border: 1px solid var(--clr-line);
-  border-radius: $radius-250;
-  background: var(--clr-bg);
+  border-radius: $radius-300;
+  background: var(--clr-surface);
   box-shadow: 0 18px 48px alpha(var(--clr-ink), 0.16);
 }
 
@@ -360,7 +363,7 @@
   display: flex;
   align-items: center;
   gap: $space-250;
-  border-radius: $radius-150;
+  border-radius: $radius-200;
   cursor: pointer;
 }
 
@@ -408,7 +411,7 @@
   border: 1px solid var(--clr-line);
   border-radius: $radius-pill;
   color: var(--clr-ink);
-  background: var(--clr-bg);
+  background: var(--clr-surface);
 }
 
 .lv-filter-apply {
@@ -416,14 +419,18 @@
   padding: 0 $space-450;
   border: 0;
   border-radius: $radius-pill;
-  background: var(--clr-dark);
-  color: var(--clr-white);
+  background: var(--clr-primary);
+  color: var(--clr-on-primary);
   cursor: pointer;
+}
+
+.lv-filter-apply:hover {
+  filter: brightness(0.96);
 }
 
 .lv-filter-footer {
   padding-top: $space-300;
-  background: var(--clr-bg);
+  background: var(--clr-surface);
 }
 
 .lv-filter-footer__actions {
@@ -443,7 +450,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: alpha(var(--clr-ink), 0.80);
+  color: alpha(var(--clr-ink), 0.72);
   text-decoration: underline;
   text-underline-offset: 3px;
   white-space: nowrap;
@@ -466,14 +473,19 @@
 
 .lv-catalog-filter__active a {
   min-height: 34px;
-  padding: 0 $space-250;
+  padding: 0 $space-300;
   display: inline-flex;
   align-items: center;
   gap: $space-100;
-  border: 1px solid var(--clr-line);
+  border: 1px solid alpha(var(--clr-primary), 0.35);
   border-radius: $radius-pill;
-  color: alpha(var(--clr-ink), 0.62);
+  background: alpha(var(--clr-primary), 0.1);
+  color: var(--clr-ink);
   text-decoration: none;
+}
+
+.lv-catalog-filter__active a:hover {
+  border-color: alpha(var(--clr-danger), 0.45);
 }
 
 .lv-catalog-filter__active a span {
@@ -488,11 +500,11 @@
 }
 
 .lv-catalog-filter__active>span {
-  padding: $space-100 $space-150;
+  padding: $space-100 $space-200;
   flex: none;
-  border-radius: $radius-200;
-  background: var(--clr-accent);
-  color: alpha(var(--clr-ink), 0.80);
+  border-radius: $radius-pill;
+  background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .lv-catalog-grid {
@@ -508,31 +520,6 @@
 
 .lv-catalog-state {
   margin-top: $space-700;
-  padding: $space-950 $space-600;
-  border-radius: $radius-350;
-  background: var(--clr-soft);
-  text-align: center;
-}
-
-.lv-catalog-state h2 {
-  margin: 0 0 $space-250;
-  font: 400 32px/1.05 "GC Molecule Demo", Arial, sans-serif;
-}
-
-.lv-catalog-state p {
-  margin: 0 0 $space-450;
-  color: alpha(var(--clr-ink), 0.62);
-}
-
-.lv-catalog-state a {
-  min-height: 44px;
-  padding: 0 $space-450;
-  display: inline-flex;
-  align-items: center;
-  border-radius: $radius-pill;
-  background: var(--clr-dark);
-  color: var(--clr-white);
-  text-decoration: none;
 }
 
 .lv-catalog-loading {
@@ -820,19 +807,20 @@
   .lv-filter-menu--sort {
     width: 100%;
     margin: 0;
-    border-bottom: 1px solid var(--clr-line);
   }
 
   .lv-filter-menu summary {
     min-height: 52px;
-    padding: 0 $space-150;
+    padding: 0 $space-300;
     border: 0;
+    border-bottom: 1px solid var(--clr-line);
     border-radius: 0;
+    background: transparent;
   }
 
   .lv-filter-menu summary:hover,
   .lv-filter-menu[open] summary {
-    border-color: transparent;
+    border-color: var(--clr-line);
     background: transparent;
     color: var(--clr-primary);
   }
@@ -1112,7 +1100,7 @@
     min-height: 48px;
     padding: 0 $space-300;
     justify-content: space-between;
-    border-color: var(--clr-line);
+    border: 1px solid var(--clr-line);
     background: var(--clr-surface);
   }
 

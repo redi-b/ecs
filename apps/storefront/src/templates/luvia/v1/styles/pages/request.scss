@@ -7,17 +7,12 @@
   align-items: center;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .17em;
 }
 
 .lv-request__intro h1,
 .lv-account h1,
 .lv-wishlist h1 {
   margin: $space-600 0;
-  font: 400 #{fluid(64px, 104px)}/.84 "GC Molecule Demo", Arial, sans-serif;
-  letter-spacing: -.055em;
 }
 
 @media(max-width:900px) {
@@ -40,14 +35,6 @@
       padding: $space-1050 0 $space-900;
   
       grid-template-columns: 1fr
-  
-    }
-
-  .lv-request__intro h1,
-  
-    .lv-account h1 {
-  
-      font-size: fluid(46px, 58px)
   
     }
 
@@ -74,7 +61,6 @@
   max-width: 520px;
   display: block;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 17px;
   line-height: 1.5;
 }
 
@@ -104,13 +90,11 @@
 
 .lv-request__panel h2 {
   margin: 0 0 $space-100;
-  font: 400 28px/1 "GC Molecule Demo", Arial, sans-serif;
 }
 
 .lv-request__panel header p {
   margin: 0;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 13px;
 }
 
 .lv-request form {
@@ -125,7 +109,6 @@
   flex-direction: column;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 13px;
 }
 
 .lv-request label.is-wide,
@@ -142,8 +125,6 @@
   border: 1px solid var(--clr-line);
   border-radius: $radius-200;
   outline: 0;
-  font: inherit;
-  font-size: 16px;
 }
 
 .lv-request textarea {
@@ -163,7 +144,6 @@
   border-radius: $radius-pill;
   background: var(--clr-primary);
   color: var(--clr-on-primary);
-  font-weight: 600;
   cursor: pointer;
 }
 

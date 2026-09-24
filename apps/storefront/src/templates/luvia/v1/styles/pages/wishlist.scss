@@ -1,4 +1,5 @@
 @use "../abstracts" as *;
+@use "../components/empty-state";
 
 .lv-request__intro>p,
 .lv-account section>p,
@@ -7,17 +8,12 @@
   align-items: center;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .17em;
 }
 
 .lv-request__intro h1,
 .lv-account h1,
 .lv-wishlist h1 {
   margin: $space-600 0;
-  font: 400 #{fluid(64px, 104px)}/.84 "GC Molecule Demo", Arial, sans-serif;
-  letter-spacing: -.055em;
 }
 
 @media(max-width:900px) {
@@ -40,14 +36,6 @@
       padding: $space-1050 0 $space-900;
   
       grid-template-columns: 1fr
-  
-    }
-
-  .lv-request__intro h1,
-  
-    .lv-account h1 {
-  
-      font-size: fluid(46px, 58px)
   
     }
 
@@ -97,22 +85,17 @@
   margin: auto;
 }
 
-.lv-wishlist__loading,
-.lv-wishlist__empty {
-  padding: $space-1000 $space-600;
-  border-radius: $radius-450;
-  background: var(--clr-soft);
-  color: alpha(var(--clr-ink), 0.62);
-  text-align: center;
-}
-
 .lv-wishlist__loading {
   min-height: 280px;
+  padding: $space-1000 $space-600;
   display: grid;
   place-content: center;
   justify-items: center;
   gap: $space-250;
+  border-radius: $radius-450;
   background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.62);
+  text-align: center;
   overflow: hidden;
 }
 
@@ -136,33 +119,10 @@
 
 .lv-wishlist__loading strong {
   color: var(--clr-ink);
-  font-size: 18px;
-  font-weight: 500;
 }
 
 .lv-wishlist__loading small {
-  font-size: 13px;
-}
-
-.lv-wishlist__empty h2 {
-  margin: 0 0 $space-200;
-  font: 400 38px/1 "GC Molecule Demo", Arial, sans-serif;
-  color: var(--clr-ink);
-}
-
-.lv-wishlist__empty p {
-  margin: 0 0 $space-550;
-}
-
-.lv-wishlist__empty a {
-  min-height: 50px;
-  padding: 0 $space-550;
-  display: inline-flex;
-  align-items: center;
-  border-radius: $radius-pill;
-  background: var(--clr-primary);
-  color: var(--clr-on-primary);
-  text-decoration: none;
+  color: alpha(var(--clr-ink), 0.62);
 }
 
 .lv-wishlist__grid {
@@ -202,14 +162,12 @@
 
 .lv-wishlist__grid span {
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 12px;
   text-transform: uppercase;
 }
 
 .lv-wishlist__grid a {
   margin: $space-250 0 $space-550;
   color: var(--clr-ink);
-  font: 400 28px/1 "GC Molecule Demo", Arial, sans-serif;
   text-transform: capitalize;
   text-decoration: none;
 }
@@ -247,12 +205,6 @@
   .lv-wishlist {
   
       padding: $space-1050 $space-300 $space-900
-  
-    }
-
-  .lv-wishlist h1 {
-  
-      font-size: fluid(54px, 64px);
   
     }
 }

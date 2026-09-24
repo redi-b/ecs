@@ -80,23 +80,17 @@
 .lv-confirmation__eyebrow {
   margin: $space-750 0 $space-350;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .18em;
 }
 
 .lv-confirmation h1 {
   margin: 0;
   color: var(--clr-dark);
-  font: 400 #{fluid(58px, 92px)}/.88 "GC Molecule Demo", Arial, sans-serif;
-  letter-spacing: -.05em;
 }
 
 .lv-confirmation__intro {
   max-width: 610px;
   margin: $space-600 0 $space-650;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 17px;
   line-height: 1.5;
 }
 
@@ -122,12 +116,10 @@
 
 .lv-confirmation__receipt span {
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 13px;
 }
 
 .lv-confirmation__receipt strong {
   overflow-wrap: anywhere;
-  font-size: 15px;
 }
 
 .lv-confirmation__receipt button {
@@ -144,7 +136,6 @@
   min-height: 20px;
   margin: $space-450 $space-50 0;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 13px;
 }
 
 .lv-confirmation__actions {
@@ -167,9 +158,6 @@
 .lv-confirmation__steps>p {
   margin: 0 auto auto 0;
   color: alpha(var(--clr-ink), 0.45);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .17em;
 }
 
 .lv-confirmation__steps ol {
@@ -204,7 +192,6 @@
   border: 1px solid alpha(var(--clr-primary), 0.3);
   border-radius: $radius-full;
   color: var(--clr-primary);
-  font-size: 12px;
 }
 
 .lv-confirmation__steps li div {
@@ -214,13 +201,12 @@
 }
 
 .lv-confirmation__steps strong {
-  font: 400 24px/1 "GC Molecule Demo", Arial, sans-serif;
+  color: inherit;
 }
 
 .lv-confirmation__steps small {
   max-width: 290px;
   color: alpha(var(--clr-on-dark), 0.68);
-  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -254,13 +240,8 @@
     height: 68px;
   }
 
-  .lv-confirmation h1 {
-    font-size: fluid(54px, 76px);
-  }
-
   .lv-confirmation__intro {
     margin: $space-550 0 $space-600;
-    font-size: 15px;
   }
 
   .lv-confirmation__receipt {

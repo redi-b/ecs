@@ -1,5 +1,6 @@
 @use "../abstracts" as *;
 @use "../components/discount-code";
+@use "../components/empty-state";
 
 .lv-cart-page {
   min-height: 85vh;
@@ -303,50 +304,6 @@
   text-align: center;
 }
 
-.lv-cart-page__empty {
-  padding: $space-1050 $space-600;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border-radius: $radius-450;
-  background: var(--clr-soft);
-  text-align: center;
-}
-
-.lv-cart-page__empty>span {
-  width: 72px;
-  height: 72px;
-  display: grid;
-  place-items: center;
-  border-radius: $radius-full;
-  background: var(--clr-surface);
-}
-
-.lv-cart-page__empty>span .sf-icon svg {
-  width: 28px;
-  height: 28px;
-}
-
-.lv-cart-page__empty h2 {
-  margin: $space-550 0 $space-200;
-}
-
-.lv-cart-page__empty p {
-  margin: 0 0 $space-550;
-  color: alpha(var(--clr-ink), 0.62);
-}
-
-.lv-cart-page__empty a {
-  min-height: 50px;
-  padding: 0 $space-550;
-  display: inline-flex;
-  align-items: center;
-  border-radius: $radius-pill;
-  background: var(--clr-primary);
-  color: var(--clr-on-primary);
-  text-decoration: none;
-}
-
 @media (max-width: 1050px) {
   .lv-cart-page__layout {
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -441,9 +398,5 @@
     bottom: calc(10px + env(safe-area-inset-bottom));
     left: 12px;
     box-shadow: 0 10px 30px alpha(var(--clr-ink), 0.18);
-  }
-
-  .lv-cart-page__empty {
-    padding: $space-900 $space-500;
   }
 }

@@ -102,8 +102,6 @@
 .lv-contact-info a,
 .lv-contact-info .lv-contact-socials {
   color: var(--clr-ink);
-  font-size: 14px;
-  font-weight: 400;
   text-decoration: none;
 }
 
@@ -140,7 +138,6 @@
   flex-direction: column;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
-  font-size: 14px;
 }
 
 .lv-contact-form label.is-wide {
@@ -157,8 +154,6 @@
   outline: 0;
   background: var(--clr-surface);
   color: var(--clr-dark);
-  font: inherit;
-  font-size: 16px;
 }
 
 .lv-contact-form textarea {
@@ -185,9 +180,6 @@
   border-radius: $radius-pill;
   background: var(--clr-primary);
   color: var(--clr-on-primary);
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: 0;
   cursor: pointer;
 }
 
@@ -215,10 +207,6 @@
   .lv-contact__hero {
     min-height: 280px;
     padding-top: $space-1050;
-  }
-
-  .lv-contact__hero h1 {
-    font-size: fluid(70px, 108px);
   }
 
   .lv-contact__layout {

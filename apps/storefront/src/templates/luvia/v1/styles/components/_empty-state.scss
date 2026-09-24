@@ -1,0 +1,63 @@
+@use "../abstracts" as *;
+
+.lv-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: $space-250;
+  padding: $space-650 $space-450;
+  background:
+    radial-gradient(circle at 50% 0%, alpha(var(--clr-primary), 0.14), transparent 58%),
+    var(--clr-soft);
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-450;
+
+  &__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: $space-750;
+    height: $space-750;
+    border-radius: $radius-full;
+    background: var(--clr-surface);
+    color: var(--clr-primary-dark);
+    border: 1px solid alpha(var(--clr-primary), 0.28);
+    box-shadow: 0 $space-200 $space-400 alpha(var(--clr-primary), 0.12);
+
+    .sf-icon svg {
+      width: $space-450;
+      height: $space-450;
+    }
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-150;
+  }
+
+  &__title {
+    margin: 0;
+  }
+
+  &__text {
+    max-width: 34ch;
+    margin: 0;
+    color: alpha(var(--clr-ink), 0.62);
+  }
+
+  &__action {
+    min-height: 50px;
+    margin-top: $space-150;
+    padding: 0 $space-550;
+    display: inline-flex;
+    align-items: center;
+    border-radius: $radius-pill;
+    background: var(--clr-primary);
+    color: var(--clr-on-primary);
+    text-decoration: none;
+  }
+}

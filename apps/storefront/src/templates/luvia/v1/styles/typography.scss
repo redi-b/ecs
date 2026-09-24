@@ -32,74 +32,78 @@
   font-display: swap;
 }
 
-@mixin type-token($font-family, $font-weight, $font-size, $line-height, $letter-spacing) {
+@mixin type-token($font-family, $font-weight, $font-size, $line-height, $letter-spacing, $trim: none) {
   font-family: $font-family;
   font-weight: $font-weight;
   font-size: $font-size;
   line-height: $line-height;
   letter-spacing: $letter-spacing;
+
+  @if $trim == "cap-height" {
+    text-box: trim-both cap alphabetic;
+  }
 }
 
 body.lv-body {
-  @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading);
+  @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading, "cap-height");
 
   .type-heading-1 {
-    @include type-token($ff-hero, $fw-medium, $fs-heading-1, $lh-heading-1, $ls-heading-1);
+    @include type-token($ff-hero, $fw-medium, $fs-heading-1, $lh-heading-1, $ls-heading-1, "cap-height");
   }
 
   .type-display {
-    @include type-token($ff-body, $fw-medium, $fs-display, $lh-display, $ls-display);
+    @include type-token($ff-body, $fw-medium, $fs-display, $lh-display, $ls-display, "cap-height");
   }
 
   .type-heading-2 {
-    @include type-token($ff-body, $fw-regular, $fs-heading-2, $lh-heading-2, $ls-heading);
+    @include type-token($ff-body, $fw-regular, $fs-heading-2, $lh-heading-2, $ls-heading, "cap-height");
   }
 
   .type-heading-3 {
-    @include type-token($ff-body, $fw-regular, $fs-heading-3, $lh-heading-3, $ls-heading);
+    @include type-token($ff-body, $fw-regular, $fs-heading-3, $lh-heading-3, $ls-heading, "cap-height");
   }
 
   .type-heading-4 {
-    @include type-token($ff-body, $fw-regular, $fs-heading-4, normal, $ls-none);
+    @include type-token($ff-body, $fw-regular, $fs-heading-4, normal, $ls-none, "cap-height");
   }
 
   .type-body-l-500 {
-    @include type-token($ff-body, $fw-medium, $fs-body-l, normal, $ls-none);
+    @include type-token($ff-body, $fw-medium, $fs-body-l, normal, $ls-none, "cap-height");
   }
 
   .type-body-l-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body-l, normal, $ls-none);
+    @include type-token($ff-body, $fw-regular, $fs-body-l, normal, $ls-none, "cap-height");
   }
 
   .type-body-xl {
-    @include type-token($ff-body, $fw-semi-bold, $fs-body-xl, normal, $ls-heading);
+    @include type-token($ff-body, $fw-semi-bold, $fs-body-xl, normal, $ls-heading, "cap-height");
   }
 
   .type-body-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading);
+    @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading, "cap-height");
   }
 
   .type-body-500 {
-    @include type-token($ff-body, $fw-medium, $fs-body, $lh-body, $ls-heading);
+    @include type-token($ff-body, $fw-medium, $fs-body, $lh-body, $ls-heading, "cap-height");
   }
 
   .type-body-s-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body-s, $lh-body-s, $ls-none);
+    @include type-token($ff-body, $fw-regular, $fs-body-s, $lh-body-s, $ls-none, "cap-height");
   }
 
   .type-body-s-500 {
-    @include type-token($ff-body, $fw-medium, $fs-body-s, $lh-body-s, $ls-none);
+    @include type-token($ff-body, $fw-medium, $fs-body-s, $lh-body-s, $ls-none, "cap-height");
   }
 
   .type-body-xs {
-    @include type-token($ff-body, $fw-regular, $fs-body-xs, normal, $ls-heading);
+    @include type-token($ff-body, $fw-regular, $fs-body-xs, normal, $ls-heading, "cap-height");
   }
 
   .type-promo-title {
-    @include type-token($ff-body, $fw-medium, $fs-body-xl, normal, $ls-heading);
+    @include type-token($ff-body, $fw-medium, $fs-body-xl, normal, $ls-heading, "cap-height");
   }
 
   .type-promo-price {
-    @include type-token($ff-body, $fw-semi-bold, $fs-body-l, normal, $ls-none);
+    @include type-token($ff-body, $fw-semi-bold, $fs-body-l, normal, $ls-none, "cap-height");
   }
 }

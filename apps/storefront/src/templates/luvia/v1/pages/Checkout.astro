@@ -13,6 +13,7 @@ import { formatMoney } from "../../../../lib/money";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import DiscountCode from "../components/DiscountCode.astro";
+import Icon from "../components/Icon.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
 
@@ -96,7 +97,7 @@ const clientMessages = {
     {error && <p class="lv-checkout__error container type-body-s-500" role="alert">{error}</p>}
     {shippingError && <p class="lv-checkout__error container type-body-s-500" role="alert">{m.checkout_shipping_load_error({}, { locale })}</p>}
     {priceMismatch && <p class="lv-checkout__error container type-body-s-500" role="alert">{m.checkout_delivery_price_update({}, { locale })}</p>}
-    {!items.length ? <section class="lv-checkout__empty container"><h2 class="type-heading-3">{m.cart_empty({}, { locale })}</h2><p class="type-body-400">{m.checkout_empty_help({}, { locale })}</p><a class="type-body-500" href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="lv-checkout__layout container">
+    {!items.length ? <section class="lv-checkout__empty lv-empty-state container"><span class="lv-empty-state__mark"><Icon name="bag" /></span><div class="lv-empty-state__copy"><h2 class="lv-empty-state__title type-heading-3">{m.cart_empty({}, { locale })}</h2><p class="lv-empty-state__text type-body-400">{m.checkout_empty_help({}, { locale })}</p></div><a class="lv-empty-state__action type-body-500" href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="lv-checkout__layout container">
       <section class="lv-checkout-form-wrap">
         <header><h2 class="type-heading-3">{m.checkout_payment_details({}, { locale })}</h2><p class="type-body-s-400">{m.checkout_terms_notice({}, { locale })}</p></header>
         <form method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} class="lv-checkout-form" data-checkout-form>

@@ -1,4 +1,5 @@
 @use "../abstracts" as *;
+@use "./empty-state";
 
 .lv-cart-backdrop {
   position: fixed;
@@ -217,29 +218,6 @@
 
 .lv-cart-empty {
   margin: auto;
-  padding: $space-700 $space-500;
-  text-align: center;
-}
-
-.lv-cart-empty h3 {
-  margin: 0 0 $space-200;
-}
-
-.lv-cart-empty p {
-  max-width: 280px;
-  margin: 0 auto $space-500;
-  color: alpha(var(--clr-ink), 0.62);
-}
-
-.lv-cart-empty a {
-  min-height: 48px;
-  padding: 0 $space-500;
-  display: inline-flex;
-  align-items: center;
-  border-radius: $radius-pill;
-  background: var(--clr-primary);
-  color: var(--clr-on-primary);
-  text-decoration: none;
 }
 
 .lv-cart-drawer>footer {

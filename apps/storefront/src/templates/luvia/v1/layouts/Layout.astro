@@ -283,9 +283,13 @@ const isActiveLink = (href: string) =>
         const cartItems = Array.isArray(cart?.items) ? cart.items : [];
         setCartCount(cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0));
         if (!cartItems.length) {
-          const empty = node("div", "lv-cart-empty");
-          empty.append(node("h3", "type-heading-3", messages.cartEmpty), node("p", "type-body-400", messages.cartEmptyHelp));
-          const shop = node("a", "type-body-500", messages.continueShopping); shop.href = "/products"; empty.append(shop); itemsRoot.append(empty); footer.hidden = true; return;
+          const empty = node("div", "lv-cart-empty lv-empty-state");
+          const mark = node("span", "lv-empty-state__mark");
+          mark.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
+          const copy = node("div", "lv-empty-state__copy");
+          copy.append(node("h3", "lv-empty-state__title type-heading-3", messages.cartEmpty), node("p", "lv-empty-state__text type-body-400", messages.cartEmptyHelp));
+          const shop = node("a", "lv-empty-state__action type-body-500", messages.continueShopping); shop.href = "/products";
+          empty.append(mark, copy, shop); itemsRoot.append(empty); footer.hidden = true; return;
         }
         for (const item of cartItems) {
           const article = node("article", "lv-cart-item"); article.dataset.lineItemId = item.id;
