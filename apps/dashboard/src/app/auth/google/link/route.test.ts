@@ -1,17 +1,11 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, it } from "node:test";
+import { afterEach, it } from "node:test";
 import { GET } from "./route.js";
 
 const originalFetch = globalThis.fetch;
-const originalClientId = process.env.GOOGLE_CLIENT_ID;
 
-beforeEach(() => {
-  process.env.GOOGLE_CLIENT_ID = "google-client-id";
-});
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  if (originalClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
-  else process.env.GOOGLE_CLIENT_ID = originalClientId;
 });
 
 it("starts explicit Google linking with the current session", async () => {
@@ -37,13 +31,13 @@ it("starts explicit Google linking with the current session", async () => {
   assert.match(response.headers.get("set-cookie") ?? "", /ecs.oauth_state=link_1/);
 });
 
-it("returns to account settings when Google linking is unavailable", async () => {
-  delete process.env.GOOGLE_CLIENT_ID;
+it("returns to account settings when Google linking fails", async () => {
+  globalThis.fetch = async () => Response.json({ error: "provider_unavailable" }, { status: 404 });
   const response = await GET(
     new Request("http://app.lvh.me/auth/google/link", { headers: { host: "app.lvh.me" } }),
   );
   assert.equal(
     response.headers.get("location"),
-    "http://app.lvh.me/dashboard/settings?section=account&connection=google-unavailable",
+    "http://app.lvh.me/dashboard/settings?section=account&connection=google-failed",
   );
 });

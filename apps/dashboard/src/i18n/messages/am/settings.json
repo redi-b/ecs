@@ -776,7 +776,7 @@
       "sameEmailTitle": "የትኛውን Google መለያ ልጠቀም?",
       "sameEmailHelp": "ከዚህ ECS መለያ ጋር ተመሳሳይ ኢሜይል ያለውን Google መለያ ይምረጡ። የተለየ ኢሜይል ማገናኘት አይቻልም።",
       "sameEmailLabel": "ስለ Google መለያ ማገናኘት መረጃ",
-      "loading": "የመግቢያ ዘዴዎች በመጫን ላይ…",
+      "loading": "የመግቢያ ዘዴዎች እየተዘጋጁ ነው…",
       "passwordMissing": "አሁን በGoogle ይገባሉ። በኢሜይልም ለመግባት ከፈለጉ የይለፍ ቃል ይፍጠሩ።",
       "createPassword": "የይለፍ ቃል ፍጠር"
     }

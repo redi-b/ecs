@@ -10,6 +10,7 @@ import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getCentralDashboardUrl, type ShopHostValidation, validateShopHost } from "@/lib/shop-host";
+import { getSocialAuthProviders } from "@/lib/social-auth-providers";
 
 export default async function AdminSignInPage({
   searchParams,
@@ -62,6 +63,10 @@ export default async function AdminSignInPage({
     redirect(authenticatedRedirect);
   }
 
+  const googleEnabled =
+    isCentralAccess &&
+    (await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000"))
+      .google;
   const errorMessage = getErrorMessage(params?.error, t);
   const centralSignIn = getCentralDashboardUrl("/sign-in");
   const shopName =
@@ -84,9 +89,7 @@ export default async function AdminSignInPage({
             {t("auth.recovery.resetComplete")}
           </p>
         ) : null}
-        {isCentralAccess && process.env.GOOGLE_CLIENT_ID?.trim() ? (
-          <GoogleAuthButton nextPath={nextPath} />
-        ) : null}
+        {googleEnabled ? <GoogleAuthButton nextPath={nextPath} /> : null}
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">

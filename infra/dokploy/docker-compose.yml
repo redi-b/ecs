@@ -387,7 +387,6 @@ services:
       NODE_ENV: production
       PORT: "3001"
       PLATFORM_API_BASE_URL: http://platform-api:3000
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       DASHBOARD_PUBLIC_BASE_URL: https://app.${BASE_DOMAIN}
       DASHBOARD_LEGACY_PUBLIC_BASE_URL: https://dashboard.${BASE_DOMAIN}
       SUPERADMIN_PUBLIC_BASE_URL: ${SUPERADMIN_PUBLIC_BASE_URL:-https://ops.${BASE_DOMAIN}}

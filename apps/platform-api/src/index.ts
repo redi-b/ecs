@@ -292,6 +292,9 @@ const app = createPlatformApp({
   logger,
   storefrontPreviewSecret: process.env.STOREFRONT_PREVIEW_SECRET?.trim(),
   authHandler: auth.handler,
+  googleAuthEnabled: Boolean(
+    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim(),
+  ),
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   checkTenantHandleAvailability,

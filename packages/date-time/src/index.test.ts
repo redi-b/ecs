@@ -31,6 +31,15 @@ describe("calendar foundation", () => {
     );
   });
 
+  it("uses an unambiguous Ethiopian era label in English", () => {
+    const label = formatCalendarDate("2026-09-24T09:00:00.000Z", {
+      calendar: "ethiopic",
+      locale: "en",
+    });
+    assert.equal(label, "Meskerem 14, 2019 ዓ.ም.");
+    assert.doesNotMatch(label ?? "", /\bAM\b/);
+  });
+
   it("keeps persistence values as canonical ISO instants", () => {
     assert.equal(toCanonicalIsoInstant("2026-09-24T12:00:00+03:00"), "2026-09-24T09:00:00.000Z");
     assert.equal(toCanonicalIsoInstant("not-a-date"), null);

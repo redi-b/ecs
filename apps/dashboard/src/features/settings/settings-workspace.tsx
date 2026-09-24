@@ -421,7 +421,6 @@ export function SettingsWorkspace({
               canOpenFulfillment={allows(permissions, merchantPolicies.shopSettings)}
               canShowLaunchAssistant={allows(permissions, merchantPolicies.launchSetup)}
               showLaunchAssistant={showLaunchAssistant}
-              tenantId={summary.tenant.id}
               onLaunchAssistantChange={(checked) => {
                 setLaunchAssistantHidden(summary.tenant.id, !checked);
                 setShowLaunchAssistant(checked);

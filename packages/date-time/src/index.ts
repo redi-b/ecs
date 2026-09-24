@@ -30,6 +30,18 @@ export function getCalendarLocale(locale: string, preference: CalendarPreference
   return `${language}-ET-u-ca-${resolveCalendarSystem(locale, preference)}`;
 }
 
+function formatWithEthiopianEra(
+  formatter: Intl.DateTimeFormat,
+  date: Date,
+  calendar: CalendarSystem,
+) {
+  if (calendar !== "ethiopic") return formatter.format(date);
+  return formatter
+    .formatToParts(date)
+    .map((part) => (part.type === "era" ? "ዓ.ም." : part.value))
+    .join("");
+}
+
 export function toValidDate(value: DateInput): Date | null {
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
@@ -50,10 +62,12 @@ export function formatCalendarDate(
 ) {
   const date = toValidDate(value);
   if (!date) return null;
-  return new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
+  const calendar = resolveCalendarSystem(options.locale, options.calendar);
+  const formatter = new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
     dateStyle: options.dateStyle ?? "medium",
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
-  }).format(date);
+  });
+  return formatWithEthiopianEra(formatter, date, calendar);
 }
 
 export function formatCalendarDateTime(
@@ -68,11 +82,13 @@ export function formatCalendarDateTime(
 ) {
   const date = toValidDate(value);
   if (!date) return null;
-  return new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
+  const calendar = resolveCalendarSystem(options.locale, options.calendar);
+  const formatter = new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
     dateStyle: options.dateStyle ?? "medium",
     timeStyle: options.timeStyle ?? "short",
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
-  }).format(date);
+  });
+  return formatWithEthiopianEra(formatter, date, calendar);
 }
 
 export function formatDualCalendarDate(
@@ -236,9 +252,11 @@ export function formatCalendarMonthYear(
 ) {
   const date = toValidDate(value);
   if (!date) return null;
-  return new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
+  const calendar = resolveCalendarSystem(options.locale, options.calendar);
+  const formatter = new Intl.DateTimeFormat(getCalendarLocale(options.locale, options.calendar), {
     month: "long",
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
     year: "numeric",
-  }).format(date);
+  });
+  return formatWithEthiopianEra(formatter, date, calendar);
 }

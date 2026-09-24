@@ -699,7 +699,7 @@ export function AccountSecurityPanel({
               disabled={connectionsLoading || linkingGoogle}
               onClick={() => {
                 setLinkingGoogle(true);
-                window.location.assign("/auth/google/link");
+                window.location.assign("/dashboard/account/google-link");
               }}
               size="sm"
               type="button"

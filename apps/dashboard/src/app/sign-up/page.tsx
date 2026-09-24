@@ -6,6 +6,7 @@ import { AuthShell } from "@/components/onboarding/auth-shell";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
+import { getSocialAuthProviders } from "@/lib/social-auth-providers";
 
 type SignUpPageProps = {
   searchParams?: Promise<{
@@ -40,6 +41,10 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     redirect("/sign-in");
   }
 
+  const googleEnabled = (
+    await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000")
+  ).google;
+
   const errorMessages: Record<string, string> = {
     auth_session_missing: t("signup.error.sessionMissing"),
     auth_unavailable: t("signup.error.unavailable"),
@@ -64,7 +69,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
           phone: resolvedSearchParams.phone,
         }}
         errorMessage={errorMessage}
-        googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID?.trim())}
+        googleEnabled={googleEnabled}
         nextPath={nextPath}
       />
     </AuthShell>

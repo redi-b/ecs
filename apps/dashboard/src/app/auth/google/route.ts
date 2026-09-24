@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const signInUrl = new URL("/sign-in", origin);
   signInUrl.searchParams.set("next", nextPath);
 
-  if (!isCentralDashboardHost(host) || !process.env.GOOGLE_CLIENT_ID?.trim()) {
+  if (!isCentralDashboardHost(host)) {
     signInUrl.searchParams.set("error", "social_sign_in_unavailable");
     return NextResponse.redirect(signInUrl, { status: 303 });
   }

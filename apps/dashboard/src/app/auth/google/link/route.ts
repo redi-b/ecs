@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   settingsUrl.searchParams.set("connection", "google-linked");
   const trustedDashboardHost =
     isCentralDashboardHost(host) || (await validateShopHost({ forwardedHost: host })).ok;
-  if (!trustedDashboardHost || !process.env.GOOGLE_CLIENT_ID?.trim()) {
+  if (!trustedDashboardHost) {
     settingsUrl.searchParams.set("connection", "google-unavailable");
     return NextResponse.redirect(settingsUrl, { status: 303 });
   }
