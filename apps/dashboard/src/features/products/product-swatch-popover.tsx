@@ -196,6 +196,7 @@ export function ProductColorPopover({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileDialogPendingRef = useRef(false);
+  const uploadInProgressRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
   const filtered = rankFuzzyItems(COMMON_PRODUCT_COLOR_OPTIONS, query, (item) => item.keywords);
 
@@ -214,7 +215,7 @@ export function ProductColorPopover({
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && fileDialogPendingRef.current) return;
+    if (!next && (fileDialogPendingRef.current || uploadInProgressRef.current)) return;
     setOpen(next);
     if (next) {
       const current = normalizeProductOptionSwatch(value);
@@ -252,9 +253,9 @@ export function ProductColorPopover({
     fileInputRef.current?.click();
   }
   async function handleFileUpload(files: FileList | null) {
-    fileDialogPendingRef.current = false;
     const file = files?.[0];
     if (!file) return;
+    uploadInProgressRef.current = true;
     setUploading(true);
     try {
       const url = await uploadMediaFile(file);
@@ -277,6 +278,8 @@ export function ProductColorPopover({
             : t("products.swatch.uploadError"),
       );
     } finally {
+      fileDialogPendingRef.current = false;
+      uploadInProgressRef.current = false;
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
