@@ -1,0 +1,434 @@
+name: ClickUp Notifications
+
+on:
+  push:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify:
+    name: Send ClickUp notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Pushes always notify; PRs only when they were actually merged
+    # (closed without merging produces no notification).
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    steps:
+      - name: Validate ClickUp secrets
+        id: secrets
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_WORKSPACE_ID: ${{ vars.CLICKUP_WORKSPACE_ID }}
+          CLICKUP_CHANNEL_ID: ${{ vars.CLICKUP_CHANNEL_ID }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          missing=""
+          if [ -z "$CLICKUP_API_TOKEN" ]; then missing="$missing CLICKUP_API_TOKEN"; fi
+          if [ -z "$CLICKUP_WORKSPACE_ID" ]; then missing="$missing CLICKUP_WORKSPACE_ID"; fi
+          if [ -z "$CLICKUP_CHANNEL_ID" ]; then missing="$missing CLICKUP_CHANNEL_ID"; fi
+          if [ -n "$missing" ]; then
+            # GitHub never passes Actions secrets to runs triggered by forked PRs.
+            if [ -n "$PR_HEAD_REPO" ] && [ "$PR_HEAD_REPO" != "$REPO" ]; then
+              echo "::notice::Pull request comes from a fork; GitHub withholds Actions secrets on fork PR runs. Skipping ClickUp notification."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Missing required secret(s):$missing. Add them under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Build and send notification
+        if: steps.secrets.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_WORKSPACE_ID: ${{ vars.CLICKUP_WORKSPACE_ID }}
+          CLICKUP_CHANNEL_ID: ${{ vars.CLICKUP_CHANNEL_ID }}
+        with:
+          script: |
+            const token = process.env.CLICKUP_API_TOKEN;
+            const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+            const channelId = process.env.CLICKUP_CHANNEL_ID;
+
+            if (!token || !workspaceId || !channelId) {
+              core.setFailed('ClickUp secrets are missing from the environment.');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const repoFullName =
+              (context.payload.repository && context.payload.repository.full_name) ||
+              owner + '/' + repo;
+            const repoHtmlUrl =
+              (context.payload.repository && context.payload.repository.html_url) ||
+              'https://github.com/' + owner + '/' + repo;
+
+            const MAX_TEXT = 140;
+            const MAX_STATS_COMMITS = 10;
+
+            // ---------- formatting helpers ----------
+
+            function clean(value) {
+              return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+            }
+
+            function truncate(value, max) {
+              const text = clean(value);
+              const limit = max || MAX_TEXT;
+              return text.length > limit ? text.slice(0, limit - 1) + '…' : text;
+            }
+
+            // Inline code span that stays intact even when the value contains
+            // backticks (fence length is one longer than the longest run).
+            function code(value) {
+              const text = clean(value);
+              const runs = text.match(/`+/g);
+              const fence = '`'.repeat(
+                runs ? Math.max.apply(null, runs.map((r) => r.length)) + 1 : 1
+              );
+              const pad = /^`|`$/.test(text) ? ' ' : '';
+              return fence + pad + text + pad + fence;
+            }
+
+            // Escape Markdown control characters in plain (non-code) text.
+            function md(value) {
+              return clean(value).replace(/[\\`*_~|<>\[\]]/g, (ch) => '\\' + ch);
+            }
+
+            function num(value) {
+              return Number(value || 0).toLocaleString('en-US');
+            }
+
+            function safeUrl(value) {
+              if (!value) return null;
+              try {
+                const url = new URL(value);
+                return url.protocol === 'https:' || url.protocol === 'http:'
+                  ? url.toString()
+                  : null;
+              } catch {
+                return null;
+              }
+            }
+
+            // ---------- ClickUp ----------
+
+            async function sendToClickUp(content) {
+              const url =
+                'https://api.clickup.com/api/v3/workspaces/' +
+                encodeURIComponent(workspaceId) +
+                '/chat/channels/' +
+                encodeURIComponent(channelId) +
+                '/messages';
+
+              core.info('Sending to ClickUp channel ' + channelId + ':\n' + content);
+
+              let response;
+              try {
+                response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    Authorization: token,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    type: 'message',
+                    content: content,
+                    content_format: 'text/md',
+                  }),
+                });
+              } catch (error) {
+                core.setFailed('Could not reach the ClickUp API: ' + error.message);
+                return;
+              }
+
+              const body = await response.text();
+              if (!response.ok) {
+                // Log status + response body only — never request headers or the token.
+                core.setFailed(
+                  'ClickUp API returned HTTP ' +
+                    response.status +
+                    ' ' +
+                    response.statusText +
+                    ': ' +
+                    truncate(body, 500)
+                );
+                return;
+              }
+              core.info('Notification delivered (HTTP ' + response.status + ').');
+            }
+
+            // ---------- GitHub stats ----------
+
+            function sumFiles(files) {
+              const list = files || [];
+              let additions = 0;
+              let deletions = 0;
+              for (const file of list) {
+                additions += file.additions || 0;
+                deletions += file.deletions || 0;
+              }
+              return { additions, deletions, filesChanged: list.length };
+            }
+
+            // Aggregate additions/deletions/files for the whole push:
+            // 1. compare before...head (exact, one call) when before is a real SHA
+            // 2. single-commit detail when the push is one commit (new branch, force push)
+            // 3. per-commit detail summed over the commits in the payload as last resort
+            async function resolvePushStats(event, head) {
+              const before = event.before || '';
+              if (/^[0-9a-f]{40}$/.test(before) && !/^0{40}$/.test(before)) {
+                try {
+                  const { data } = await github.rest.repos.compareCommitsWithBasehead({
+                    owner,
+                    repo,
+                    basehead: before + '...' + head.id,
+                  });
+                  if (data.files && data.files.length > 0) return sumFiles(data.files);
+                } catch (error) {
+                  core.info('Compare endpoint unavailable (' + error.message + '); using fallback.');
+                }
+              }
+
+              const pushed = (event.commits || [])
+                .map((c) => c && c.id)
+                .filter(Boolean);
+
+              if (pushed.length <= 1) {
+                try {
+                  const { data } = await github.rest.repos.getCommit({
+                    owner,
+                    repo,
+                    commit_sha: head.id,
+                  });
+                  return sumFiles(data.files);
+                } catch (error) {
+                  core.warning('Could not read commit stats: ' + error.message);
+                  return { additions: 0, deletions: 0, filesChanged: 0 };
+                }
+              }
+
+              const sample = pushed.slice(0, MAX_STATS_COMMITS);
+              if (pushed.length > sample.length) {
+                core.warning(
+                  'Push contains ' +
+                    pushed.length +
+                    ' commits; stats are approximated from the first ' +
+                    sample.length +
+                    '.'
+                );
+              }
+
+              const totals = { additions: 0, deletions: 0, filesChanged: 0 };
+              const seen = new Set();
+              for (const sha of sample) {
+                try {
+                  const { data } = await github.rest.repos.getCommit({
+                    owner,
+                    repo,
+                    commit_sha: sha,
+                  });
+                  for (const file of data.files || []) {
+                    if (!file.filename) continue;
+                    if (!seen.has(file.filename)) {
+                      seen.add(file.filename);
+                      totals.filesChanged += 1;
+                    }
+                    totals.additions += file.additions || 0;
+                    totals.deletions += file.deletions || 0;
+                  }
+                } catch (error) {
+                  core.warning('Could not read stats for ' + sha.slice(0, 7) + ': ' + error.message);
+                }
+              }
+              return totals;
+            }
+
+            // ---------- duplicate suppression ----------
+
+            // A merge produces both a pull_request(closed) event and a push to the
+            // target branch. Only the PR notification should go out, so pushes whose
+            // head commit is the result of a merged PR are skipped.
+            async function isMergedPrResult(head, branch) {
+              // Classic merge commit message.
+              if (/^Merge pull request #\d+/i.test(head.message || '')) return true;
+
+              // Which PRs does this commit belong to?
+              try {
+                const { data: prs } =
+                  await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                    owner,
+                    repo,
+                    commit_sha: head.id,
+                  });
+                if ((prs || []).some((pr) => pr.merged)) return true;
+              } catch (error) {
+                core.info('Could not check commit/PR association: ' + error.message);
+              }
+
+              // Squash merges end the commit message with "(#123)".
+              const squash = /\(#(\d+)\)\s*$/.exec(head.message || '');
+              if (squash) {
+                try {
+                  const { data: pr } = await github.rest.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: Number(squash[1]),
+                  });
+                  if (pr.merged && pr.base && pr.base.ref === branch) return true;
+                } catch (error) {
+                  core.info('Could not check PR #' + squash[1] + ': ' + error.message);
+                }
+              }
+              return false;
+            }
+
+            // ---------- event handlers ----------
+
+            async function handlePush() {
+              const event = context.payload;
+              const ref = String(event.ref || context.ref || '');
+
+              if (ref.indexOf('refs/tags/') === 0) {
+                core.info('Tag push — nothing to report.');
+                return;
+              }
+              if (event.deleted) {
+                core.info('Branch deletion — nothing to report.');
+                return;
+              }
+
+              const branch = ref.replace(/^refs\/heads\//, '');
+              const head = event.head_commit;
+              if (!head || !head.id) {
+                core.info('Push with zero commits (no head commit) — skipping.');
+                return;
+              }
+              if (await isMergedPrResult(head, branch)) {
+                core.info(
+                  'Push is the result of a merged pull request — already reported ' +
+                    'by the PR notification, skipping to avoid a duplicate.'
+                );
+                return;
+              }
+
+              const commits = Array.isArray(event.commits) ? event.commits : [];
+              const stats = await resolvePushStats(event, head);
+              const author =
+                (head.author && head.author.username) ||
+                (event.pusher && event.pusher.name) ||
+                (head.committer && head.committer.name) ||
+                'unknown';
+              const commitUrl = safeUrl(repoHtmlUrl + '/commit/' + head.id);
+
+              const lines = [
+                '🚀 **New Push — ' + code(repoFullName) + '**',
+                '',
+                '**Branch:** ' + code(branch),
+              ];
+              if (event.forced) lines.push('**Note:** Force push');
+              lines.push(
+                '**Commit:** ' + code(truncate(head.message, 120)),
+                '**Author:** ' + md(author),
+                '**Changes:** ' +
+                  code('+' + num(stats.additions)) +
+                  ' / ' +
+                  code('-' + num(stats.deletions)) +
+                  ' lines',
+                '**Files:** ' + num(stats.filesChanged) + ' changed'
+              );
+              if (commits.length > 1) {
+                lines.push('**Commits:** ' + commits.length + ' commits pushed');
+              }
+              if (commitUrl) {
+                lines.push('', '[' + code(head.id.slice(0, 7)) + '](' + commitUrl + ')');
+              }
+
+              await sendToClickUp(lines.join('\n'));
+            }
+
+            async function handleMergedPullRequest() {
+              const pr = context.payload.pull_request;
+              if (!pr) {
+                core.setFailed('pull_request payload is missing.');
+                return;
+              }
+
+              // Prefer the aggregate values GitHub already computed for the PR.
+              let additions = typeof pr.additions === 'number' ? pr.additions : null;
+              let deletions = typeof pr.deletions === 'number' ? pr.deletions : null;
+              let filesChanged =
+                typeof pr.changed_files === 'number' ? pr.changed_files : null;
+              if (additions === null || deletions === null || filesChanged === null) {
+                try {
+                  const { data } = await github.rest.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: pr.number,
+                  });
+                  additions = typeof data.additions === 'number' ? data.additions : 0;
+                  deletions = typeof data.deletions === 'number' ? data.deletions : 0;
+                  filesChanged =
+                    typeof data.changed_files === 'number' ? data.changed_files : 0;
+                } catch (error) {
+                  core.warning('Could not fetch PR stats: ' + error.message);
+                  additions = additions === null ? 0 : additions;
+                  deletions = deletions === null ? 0 : deletions;
+                  filesChanged = filesChanged === null ? 0 : filesChanged;
+                }
+              }
+
+              const mergeSha = pr.merge_commit_sha || '';
+              const prUrl = safeUrl(pr.html_url);
+
+              const lines = [
+                '🔀 **Pull Request Merged — ' + code(repoFullName) + '**',
+                '',
+                '**PR:** ' + code('#' + pr.number + ' ' + truncate(pr.title, 120)),
+                '**From:** ' + code((pr.head && pr.head.ref) || 'unknown'),
+                '**Merged into:** ' + code((pr.base && pr.base.ref) || 'unknown'),
+                '**Author:** ' + md((pr.user && pr.user.login) || 'unknown'),
+              ];
+              if (pr.merged_by && pr.merged_by.login) {
+                lines.push('**Merged by:** ' + md(pr.merged_by.login));
+              }
+              lines.push(
+                '**Changes:** ' +
+                  code('+' + num(additions)) +
+                  ' / ' +
+                  code('-' + num(deletions)) +
+                  ' lines',
+                '**Files:** ' + num(filesChanged) + ' changed'
+              );
+              if (mergeSha) {
+                lines.push('**Merge commit:** ' + code(mergeSha.slice(0, 7)));
+              }
+              if (prUrl) {
+                lines.push('', '[View Pull Request](' + prUrl + ')');
+              }
+
+              await sendToClickUp(lines.join('\n'));
+            }
+
+            // ---------- entry point ----------
+
+            try {
+              if (context.eventName === 'push') {
+                await handlePush();
+              } else if (context.eventName === 'pull_request') {
+                await handleMergedPullRequest();
+              } else {
+                core.info('Unhandled event "' + context.eventName + '" — nothing to send.');
+              }
+            } catch (error) {
+              core.setFailed(
+                'ClickUp notification failed: ' +
+                  (error && error.message ? error.message : String(error))
+              );
+            }
