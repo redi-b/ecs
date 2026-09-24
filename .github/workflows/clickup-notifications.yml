@@ -71,6 +71,8 @@ jobs:
 
             const MAX_TEXT = 140;
             const MAX_STATS_COMMITS = 10;
+            // Post subtype IDs are unique per workspace (1819086 = "Announcement").
+            const ANNOUNCEMENT_SUBTYPE_ID = '1819086';
 
             // ---------- formatting helpers ----------
 
@@ -119,7 +121,7 @@ jobs:
 
             // ---------- ClickUp ----------
 
-            async function sendToClickUp(content) {
+            async function sendToClickUp(title, content) {
               const url =
                 'https://api.clickup.com/api/v3/workspaces/' +
                 encodeURIComponent(workspaceId) +
@@ -138,9 +140,13 @@ jobs:
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    type: 'message',
+                    type: 'post',
                     content: content,
                     content_format: 'text/md',
+                    post_data: {
+                      title: title,
+                      subtype: { id: ANNOUNCEMENT_SUBTYPE_ID },
+                    },
                   }),
                 });
               } catch (error) {
@@ -328,7 +334,7 @@ jobs:
               const commitUrl = safeUrl(repoHtmlUrl + '/commit/' + head.id);
 
               const lines = [
-                '🚀 **New Push — ' + code(repoFullName) + '**',
+                '[' + code(repoFullName) + '](' + repoHtmlUrl + ')',
                 '',
                 '**Branch:** ' + code(branch),
               ];
@@ -350,7 +356,7 @@ jobs:
                 lines.push('', '[' + code(head.id.slice(0, 7)) + '](' + commitUrl + ')');
               }
 
-              await sendToClickUp(lines.join('\n'));
+              await sendToClickUp('🚀 New Push — ' + repoFullName, lines.join('\n'));
             }
 
             async function handleMergedPullRequest() {
@@ -388,7 +394,7 @@ jobs:
               const prUrl = safeUrl(pr.html_url);
 
               const lines = [
-                '🔀 **Pull Request Merged — ' + code(repoFullName) + '**',
+                '[' + code(repoFullName) + '](' + repoHtmlUrl + ')',
                 '',
                 '**PR:** ' + code('#' + pr.number + ' ' + truncate(pr.title, 120)),
                 '**From:** ' + code((pr.head && pr.head.ref) || 'unknown'),
@@ -407,13 +413,22 @@ jobs:
                 '**Files:** ' + num(filesChanged) + ' changed'
               );
               if (mergeSha) {
-                lines.push('**Merge commit:** ' + code(mergeSha.slice(0, 7)));
+                const mergeUrl = safeUrl(repoHtmlUrl + '/commit/' + mergeSha);
+                lines.push(
+                  '**Merge commit:** ' +
+                    (mergeUrl
+                      ? '[' + code(mergeSha.slice(0, 7)) + '](' + mergeUrl + ')'
+                      : code(mergeSha.slice(0, 7)))
+                );
               }
               if (prUrl) {
                 lines.push('', '[View Pull Request](' + prUrl + ')');
               }
 
-              await sendToClickUp(lines.join('\n'));
+              await sendToClickUp(
+                '🔀 Pull Request Merged — ' + repoFullName,
+                lines.join('\n')
+              );
             }
 
             // ---------- entry point ----------
