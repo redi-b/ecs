@@ -9,6 +9,7 @@ import {
 import { luviaV1Defaults, luviaV1ThemeTokens } from "./templates/luvia/v1/defaults";
 import { luviaV1DataSchema, luviaV1ThemeTokensSchema } from "./templates/luvia/v1/schema";
 import { nexahubV1DataSchema, nexahubV1ThemeTokensSchema } from "./templates/nexahub/v1/schema";
+import { afroV1DataSchema, afroV1ThemeTokensSchema } from "./templates/afro/v1/schema";
 
 const syntheticTemplate = {
   ...storefrontTemplates[0],
@@ -36,7 +37,7 @@ test("registers Luvia independently from its display name", () => {
 test("exposes only production-ready templates to merchants", () => {
   assert.deepEqual(
     selectableStorefrontTemplates.map((template) => template.templateKey),
-    ["luvia@1", "nexahub@1"],
+    ["luvia@1", "nexahub@1", "afro@1"],
   );
   assert.equal(getStorefrontTemplateDefinition("mesob@1"), undefined);
   assert.equal(getStorefrontTemplateDefinition("removed@1"), undefined);
@@ -51,6 +52,17 @@ test("registers production-ready rename-safe NexaHub contracts", () => {
   assert.equal(template.availability, "selectable");
   assert.doesNotThrow(() => nexahubV1DataSchema.parse(template.defaultData));
   assert.doesNotThrow(() => nexahubV1ThemeTokensSchema.parse(template.defaultThemeTokens));
+});
+
+test("registers production-ready rename-safe Afro contracts", () => {
+  const template = getStorefrontTemplateDefinition("afro@1");
+
+  assert.ok(template);
+  assert.equal(template.slug, "afro");
+  assert.equal(template.name, "Afro");
+  assert.equal(template.availability, "selectable");
+  assert.doesNotThrow(() => afroV1DataSchema.parse(template.defaultData));
+  assert.doesNotThrow(() => afroV1ThemeTokensSchema.parse(template.defaultThemeTokens));
 });
 
 test("synthetic definitions preserve template-agnostic contract coverage", () => {

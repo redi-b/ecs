@@ -30,6 +30,7 @@ import {
   DEMO_OWNER_PASSWORD,
   DEMO_SEED_MARKER,
   type DemoShopDefinition,
+  afroShop,
   demoProductImages,
   demoShops,
   fashionShop,
@@ -237,6 +238,10 @@ Demo shops ready (safe to re-run).
 
   Fashion shop: http://${fashionShop.tenant.handle}.${platformBaseDomain}/dashboard
   Owner:        ${fashionShop.user.email}
+  Password:     ${DEMO_OWNER_PASSWORD}
+
+  Afro shop:    http://${afroShop.tenant.handle}.${platformBaseDomain}/dashboard
+  Owner:        ${afroShop.user.email}
   Password:     ${DEMO_OWNER_PASSWORD}
 
 Reverse demo data: pnpm seed:demo:clean   (or pnpm seed:unseed)

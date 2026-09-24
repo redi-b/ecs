@@ -10,5 +10,10 @@ export * from "./templates/nexahub/v1/defaults";
 export * from "./templates/nexahub/v1/editor";
 export * from "./templates/nexahub/v1/palette";
 export * from "./templates/nexahub/v1/schema";
+export * from "./templates/afro/v1/defaults";
+export * from "./templates/afro/v1/editor";
+export * from "./templates/afro/v1/palette";
+export * from "./templates/afro/v1/schema";
 export * from "./theme/palette";
 export * from "./theme/brand-presets";
+

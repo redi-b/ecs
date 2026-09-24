@@ -1,0 +1,419 @@
+---
+import Icon from "../components/Icon.astro";
+import { contrastingInk, type AfroV1Data } from "@ecs/storefront-templates";
+import SeoHead from "../../../../components/shell/SeoHead.astro";
+import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
+import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
+import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
+import StructuredData from "../../../../components/shell/StructuredData.astro";
+import { listStoreCollections } from "../../../../lib/commerce/catalog";
+import { collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import type { StoreCollection } from "../../../../lib/commerce/types";
+import { getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import logoImg from "../assets/logo.svg";
+import Button from "../components/Button.astro";
+import CartDrawer from "../components/CartDrawer.astro";
+import { parseAfroThemeTokens } from "../lib";
+import "../styles/main.scss";
+import "../styles/components/_header.scss";
+import "../styles/components/_footer.scss";
+import "../styles/components/_cart-drawer.scss";
+import "../styles/components/_dropdown.scss";
+
+interface Props {
+  tenantName: string;
+  header: AfroV1Data["header"];
+  footer: AfroV1Data["footer"];
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
+  editorMode?: boolean;
+  themeTokens?: unknown;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+  navigationCollections?: StoreCollection[];
+  renderPath?: string;
+  title?: string;
+  description?: string;
+}
+
+const {
+  tenantName,
+  header,
+  footer,
+  cartCount = 0,
+  deferCartCount = false,
+  demoMode = false,
+  editorMode = false,
+  themeTokens,
+  seo,
+  structuredData,
+  navigationCollections: suppliedNavigationCollections,
+  renderPath,
+  title: propTitle,
+  description: propDescription,
+} = Astro.props;
+
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const collectionsResult =
+  suppliedNavigationCollections === undefined && !demoMode
+    ? await listStoreCollections({
+        platformApiBaseUrl: getPlatformApiBaseUrl(),
+        requestHost: getRequestHost(Astro.request),
+        locale: locale === "am" ? "am-ET" : "en-ET",
+        limit: 8,
+      })
+    : null;
+
+const navigationCollections =
+  suppliedNavigationCollections ??
+  (collectionsResult && "collections" in collectionsResult ? collectionsResult.collections : []);
+
+const theme = parseAfroThemeTokens(themeTokens);
+const emptyLogoUrl = header?.useShopName ? null : logoImg.src;
+const logoUrl = header?.logoAssetId ?? emptyLogoUrl;
+
+const themeStyle = [
+  `--afro-bg:${theme.colors.background}`,
+  `--afro-ink:${theme.colors.foreground}`,
+  `--afro-primary:${theme.colors.primary}`,
+  `--afro-muted:${theme.colors.muted}`,
+  `--afro-accent:${theme.colors.accent}`,
+  `--afro-on-primary:${contrastingInk(theme.colors.primary)}`,
+].join(";");
+
+const pathname = renderPath ?? Astro.url.pathname;
+const isHome = pathname === "/" || pathname === "" || pathname === "/index.html";
+const isShop = pathname.startsWith("/products") || pathname.startsWith("/shop") || pathname.startsWith("/product");
+const isWishlist = pathname.startsWith("/wishlist");
+
+const navItems = [
+  { text: "Home", href: "/", active: isHome, navId: "home" },
+  { text: "Shop", href: "/products", hasDropdown: true, active: isShop, navId: "shop" },
+  { text: "Categories", href: isHome ? "#categories" : "/#categories", navId: "categories" },
+  { text: "Collections", href: isHome ? "#collections" : "/#collections", navId: "collections" },
+];
+
+const collectionLinks = navigationCollections
+  .filter((item) => item.handle?.trim())
+  .slice(0, 8)
+  .map((item) => ({
+    text: item.title ?? "Collection",
+    href: collectionProductsHref(item),
+  }));
+
+const afroClientMessages = {
+  cartLoading: m.cart_loading({}, { locale }),
+  cartLoadFailed: m.cart_load_failed({}, { locale }),
+  cartEmpty: m.cart_empty({}, { locale }),
+  cartEmptyHelp: m.cart_empty_help({}, { locale }),
+  continueShopping: m.action_continue_shopping({}, { locale }),
+  itemCount: m.cart_item_count({ count: "__COUNT__" }, { locale }),
+  remove: m.action_remove({}, { locale }),
+  adding: m.product_adding({}, { locale }),
+  added: m.product_added_to_cart({}, { locale }),
+  addFailed: m.product_add_failed({}, { locale }),
+  contactSending: m.contact_sending({}, { locale }),
+  contactReceived: m.contact_received({}, { locale }),
+  contactFailed: m.contact_failed({}, { locale }),
+  requestSending: m.request_sending({}, { locale }),
+  requestReceived: m.request_received({}, { locale }),
+  requestFailed: m.request_failed({}, { locale }),
+};
+---
+
+<!doctype html>
+<html lang={locale} class="template-afro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content={propDescription ?? seo?.description ?? "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm."} />
+    <title>{propTitle ?? seo?.title ?? `${tenantName} | AFRO Studio`}</title>
+    <SeoHead seo={seo} />
+    <StorefrontFonts />
+  </head>
+  <body
+    class="afro-body"
+    style={themeStyle}
+    data-editor-mode={editorMode ? "true" : undefined}
+    data-demo-mode={demoMode ? "true" : undefined}
+    data-editor-theme-vars={editorMode ? JSON.stringify({ primary: "--afro-primary", background: "--afro-bg", foreground: "--afro-ink", muted: "--afro-muted", accent: "--afro-accent", onPrimary: "--afro-on-primary" }) : undefined}
+  >
+    <StructuredData value={structuredData} />
+    <div id="page-wrapper">
+      <header class="site-header">
+        {header?.promoText && (
+          <div class="site-header__promo">
+            <div class="site-header__promo-inner">
+              <span class="site-header__promo-text type-body-xs-700" data-editor-path="header.promoText" contenteditable={editorMode ? "plaintext-only" : undefined}>{header.promoText}</span>
+              {header.countdownText && (
+                <span class="site-header__promo-timer type-body-xs-700" id="header-countdown" data-editor-path="header.countdownText">
+                  {header.countdownText}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div class="site-header__main">
+          <div class="site-header__inner container">
+            <!-- Left: Pill Navigation -->
+            <nav class="site-header__nav" aria-label="Main Navigation">
+              <ul class="site-header__nav-pill">
+                {
+                  navItems.map((item) => (
+                    <li class="site-header__nav-item">
+                      <a
+                        href={item.href}
+                        class:list={[
+                          "site-header__link",
+                          item.active ? "site-header__link--active type-body-500" : "type-body-400",
+                        ]}
+                        data-nav-id={item.navId}
+                      >
+                        <span>{item.text}</span>
+                        {item.hasDropdown && (
+                          <Icon name="chevron-down" class="site-header__dropdown-icon" width={8} height={4} />
+                        )}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+            </nav>
+
+            <!-- Center: Logo -->
+            <a href="/" class="site-header__brand" aria-label={`${tenantName} Home`} data-editor-image-scope>
+              <div class="img-wrapper">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={tenantName}
+                    class="contain"
+                    loading="eager"
+                    width="111"
+                    height="40"
+                    data-editor-image-path="header.logoAssetId"
+                    data-editor-empty-src={emptyLogoUrl ?? undefined}
+                  />
+                ) : (
+                  <span class="afro-wordmark" data-editor-image-fallback>{tenantName}</span>
+                )}
+              </div>
+            </a>
+
+            <!-- Right: Action Buttons -->
+            <div class="site-header__actions">
+              <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
+
+              <form class="site-header__search" id="header-search-form" action="/products" method="get" role="search">
+                <input
+                  name="q"
+                  type="search"
+                  placeholder="Search products..."
+                  class="site-header__search-input type-body-s-400"
+                  aria-label="Search products"
+                />
+              </form>
+
+              <button
+                type="button"
+                class="site-header__action-circle site-header__search-toggle"
+                aria-label="Search"
+                id="search-toggle-btn"
+              >
+                <Icon name="search" width={20} height={20} />
+              </button>
+
+              <a
+                href="/wishlist"
+                class:list={["site-header__action-circle", isWishlist && "is-active"]}
+                aria-label="Wishlist"
+                aria-current={isWishlist ? "page" : undefined}
+                data-wishlist-indicator
+              >
+                <span class="wishlist-heart" aria-hidden="true">
+                  <Icon name="heart" width={20} height={20} />
+                  <Icon name="heart-filled" width={20} height={20} />
+                </span>
+              </a>
+
+              <button
+                type="button"
+                class="site-header__action-circle site-header__cart-toggle"
+                aria-label="Open Cart"
+                aria-expanded="false"
+                aria-controls="cart-drawer"
+                id="cart-toggle-btn"
+              >
+                <Icon name="shopping-bag" width={20} height={20} />
+                <span class="site-header__cart-badge type-caption" data-cart-count hidden={deferCartCount || cartCount === 0}>{cartCount}</span>
+              </button>
+
+              <div class="site-header__cta-group">
+                <Button text="Get in Touch" href="/contact" size="large" variant="secondary" />
+                <Button text="Shop Now" href="/products" size="large" variant="primary" />
+              </div>
+
+              <button
+                type="button"
+                class="site-header__mobile-toggle"
+                aria-label="Toggle mobile menu"
+                aria-expanded="false"
+                id="mobile-menu-toggle"
+              >
+                <span></span>
+                <span></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {demoMode && (
+        <aside class="afro-demo" role="status">
+          <strong>Template preview</strong>
+          <nav aria-label="Preview pages">
+            <a href="/demo/storefront/afro">Home</a>
+            <a href="/demo/storefront/afro/products">Shop</a>
+            <a href="/demo/storefront/afro/products/suede-zip-jacket">Product</a>
+            <a href="/demo/storefront/afro/cart">Cart</a>
+            <a href="/demo/storefront/afro/checkout">Checkout</a>
+            <a href="/demo/storefront/afro/order-confirmation">Receipt</a>
+          </nav>
+          <span>Shopping actions are disabled</span>
+        </aside>
+      )}
+
+      <slot />
+
+      <footer class="site-footer">
+        <div class="site-footer__container">
+          <div class="site-footer__inner">
+            <div class="site-footer__top">
+              <!-- Brand Column -->
+              <div class="site-footer__brand-col">
+                <a href="/" class="site-footer__logo" aria-label={`${tenantName} Home`} data-editor-image-scope>
+                  <div class="img-wrapper">
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={tenantName}
+                        class="contain"
+                        width="111"
+                        height="40"
+                        loading="lazy"
+                        data-editor-image-path="header.logoAssetId"
+                        data-editor-empty-src={emptyLogoUrl ?? undefined}
+                      />
+                    ) : (
+                      <span class="afro-wordmark afro-wordmark--footer">{tenantName}</span>
+                    )}
+                  </div>
+                </a>
+                <p class="site-footer__tagline type-body-s-400" data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>
+                  {footer?.blurb ?? "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm."}
+                </p>
+              </div>
+
+              <!-- Navigation Columns -->
+              <div class="site-footer__nav-cols">
+                <div class="site-footer__col">
+                  <h3 class="site-footer__col-title type-body-s-700">Shop</h3>
+                  <ul class="site-footer__link-list">
+                    <li><a href="/products" class="site-footer__link type-body-s-400">All Products</a></li>
+                    <li><a href="/products?category=jackets" class="site-footer__link type-body-s-400">Jackets & Coats</a></li>
+                    <li><a href="/products?category=trousers" class="site-footer__link type-body-s-400">Trousers & Denim</a></li>
+                    <li><a href="/products?category=tshirts" class="site-footer__link type-body-s-400">T-Shirts & Tops</a></li>
+                    <li><a href="/products?category=accessories" class="site-footer__link type-body-s-400">Accessories</a></li>
+                  </ul>
+                </div>
+
+                <div class="site-footer__col">
+                  <h3 class="site-footer__col-title type-body-s-700">Collections</h3>
+                  <ul class="site-footer__link-list">
+                    {collectionLinks.length > 0 ? (
+                      collectionLinks.map((link) => (
+                        <li>
+                          <a href={link.href} class="site-footer__link type-body-s-400">
+                            {link.text}
+                          </a>
+                        </li>
+                      ))
+                    ) : (
+                      <>
+                        <li><a href="/products?collection=men" class="site-footer__link type-body-s-400">Men's Collection</a></li>
+                        <li><a href="/products?collection=women" class="site-footer__link type-body-s-400">Women's Collection</a></li>
+                        <li><a href="/products?collection=kids" class="site-footer__link type-body-s-400">Kids' Collection</a></li>
+                        <li><a href="/products?collection=accessories" class="site-footer__link type-body-s-400">Accessories Collection</a></li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                <div class="site-footer__col">
+                  <h3 class="site-footer__col-title type-body-s-700">Follow Us</h3>
+                  <ul class="site-footer__link-list">
+                    <li><a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">TikTok</a></li>
+                    <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Instagram</a></li>
+                    <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Facebook</a></li>
+                    <li><a href="https://telegram.org" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Telegram</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="site-footer__bottom">
+              <p class="site-footer__copyright type-body-xs-500">
+                © {new Date().getFullYear()} {tenantName}. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <CartDrawer />
+
+    <StorefrontAnalytics disabled={demoMode || editorMode} />
+
+    <script is:inline define:vars={{ afroClientMessages }}>
+      window.__ECS_AFRO_MESSAGES__ = afroClientMessages;
+    </script>
+
+    <script is:inline>
+      if (document.body.dataset.demoMode === 'true') {
+        const prefix = '/demo/storefront/afro';
+        document.addEventListener('submit', (event) => { event.preventDefault(); });
+        document.addEventListener('click', (event) => {
+          const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+          if (!(link instanceof HTMLAnchorElement)) return;
+          const path = link.getAttribute('href') || '';
+          if (path === '/') link.href = prefix;
+          else if (path === '/products' || path.startsWith('/products/')) link.href = `${prefix}${path}`;
+          else if (['/cart','/checkout'].includes(path)) link.href = `${prefix}${path}`;
+        });
+      }
+    </script>
+
+    <script>
+      import { initAfroStorefront } from "../scripts/client";
+      initAfroStorefront();
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-header__nav .site-header__link { background-color: transparent; }
+  .site-header__search { display: none; margin-right: 0.5rem; }
+  .site-header__search.is-open { display: block; }
+  .site-header__search-input { padding: 0.35rem 0.75rem; border: 1px solid var(--afro-primary, #ff720a); border-radius: 9999px; font-size: 0.875rem; background: var(--afro-bg, #fffbf8); color: var(--afro-ink, #1c120d); outline: none; }
+  .afro-demo { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
+  .afro-demo nav { display: flex; gap: 1rem; }
+  .afro-demo nav a { color: #ff720a; text-decoration: underline; }
+  .afro-wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary, #ff720a); line-height: 1; }
+  .afro-wordmark--footer { color: inherit; font-size: 1.5rem; }
+</style>

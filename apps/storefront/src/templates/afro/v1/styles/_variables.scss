@@ -1,0 +1,108 @@
+@use './utils/functions' as *;
+
+// colors
+$clr-primary-200: #FFC599FF;
+$clr-primary-500: #FF720AFF;
+$clr-primary-800: #472E20FF;
+
+$clr-neutral-100: #FFFBF8FF;
+$clr-neutral-150: #FDFBF9FF;
+$clr-neutral-200: #FFFAF6FF;
+$clr-neutral-300: #F8F2EDFF;
+$clr-neutral-50: #FFFFFFFF;
+$clr-neutral-400: #EBEBEBFF;
+$clr-neutral-900: #1C120DFF;
+
+// font families
+$ff-header: 'Roobert TRIAL', sans-serif;
+$ff-body: 'Helvetica Now Display', sans-serif;
+
+// font weights
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-semi-bold: 600;
+$fw-bold: 700;
+
+// font sizes
+$fs-header-1: fluid(36px, 64px);
+$fs-header-2: fluid(26px, 40px);
+$fs-header-3: fluid(24px, 32px);
+$fs-header-4: fluid(22px, 28px);
+$fs-header-5: fluid(18px, 22px);
+$fs-body-xl: fluid(18px, 20px);
+$fs-body-l: fluid(16px, 18px);
+$fs-body-400: 16px;
+$fs-body-500: 16px;
+$fs-body-s-400: 14px;
+$fs-body-s-500: 14px;
+$fs-body-s-700: 14px;
+$fs-body-xs-500: 12px;
+$fs-body-xs-700: 12px;
+$fs-caption: 10px;
+
+// line heights
+$lh-header-1: fluid(34px, 59px);
+$lh-header-2: fluid(28px, 40px);
+$lh-header-3: fluid(24px, 32px);
+$lh-header-4: fluid(22px, 28px);
+$lh-header-5: fluid(18px, 22px);
+$lh-body-xl: fluid(17px, 18px);
+$lh-body-l: fluid(15px, 17px);
+$lh-body-400: 20px;
+$lh-body-500: 20px;
+$lh-body-s-400: 20px;
+$lh-body-s-500: 20px;
+$lh-body-s-700: 20px;
+$lh-body-xs-500: 11px;
+$lh-body-xs-700: 11px;
+$lh-caption: 9px;
+
+// letter spacings
+$ls-heading: -4%;
+$ls-header-5: -2%;
+$ls-body-xl: -2%;
+$ls-body-l: -2%;
+$ls-body: -1%;
+$ls-body-xs: -2%;
+$ls-caption: -2%;
+
+// border radii
+$radius-100: fluid(3px, 4px);
+$radius-150: fluid(5px, 6px);
+$radius-200: fluid(6px, 8px);
+$radius-250: fluid(8px, 10px);
+$radius-300: fluid(10px, 12px);
+$radius-350: fluid(11px, 14px);
+$radius-400: fluid(13px, 16px);
+$radius-450: fluid(14px, 18px);
+$radius-500: fluid(16px, 20px);
+$radius-550: fluid(18px, 22px);
+$radius-600: fluid(19px, 24px);
+$radius-650: fluid(22px, 28px);
+$radius-700: fluid(24px, 30px);
+$radius-800: fluid(64px, 80px);
+
+// spacing
+$space-50: 2px;
+$space-100: 4px;
+$space-150: 6px;
+$space-200: 8px;
+$space-250: fluid(8px, 10px);
+$space-300: fluid(10px, 12px);
+$space-350: fluid(11px, 14px);
+$space-400: fluid(13px, 16px);
+$space-450: fluid(14px, 18px);
+$space-500: fluid(15px, 20px);
+$space-550: fluid(19px, 26px);
+$space-600: fluid(24px, 34px);
+$space-650: fluid(26px, 38px);
+$space-700: fluid(27px, 42px);
+$space-750: fluid(33px, 56px);
+$space-800: fluid(41px, 74px);
+
+// motion
+$ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+$dur-press: 140ms;
+$dur-ui: 200ms;
+$dur-hover: 280ms;
+$dur-image: 640ms;

@@ -1,0 +1,14 @@
+---
+import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
+import { afroDemoCart } from "../../../../lib/demo/afro-fixture";
+import Cart from "../../../../templates/afro/v1/pages/Cart.astro";
+---
+
+<Cart
+  data={afroV1Defaults}
+  themeTokens={afroV1ThemeTokens}
+  tenantName="AFRO Studio"
+  cartCount={2}
+  cart={afroDemoCart}
+  demoMode
+/>

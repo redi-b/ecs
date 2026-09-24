@@ -1,0 +1,187 @@
+---
+import Icon from "./Icon.astro";
+import type { StoreProduct } from "../../../../lib/commerce/types";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { formatMoney } from "../../../../lib/money";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/components/_product-card.scss";
+
+interface Props {
+  product?: StoreProduct;
+  id?: string;
+  title?: string;
+  brand?: string;
+  price?: string;
+  originalPrice?: string;
+  image?: any;
+  badge?: string;
+  href?: string;
+  isWishlisted?: boolean;
+  category?: string;
+  collection?: string;
+  sizes?: string[];
+  colors?: { name: string; hex: string }[];
+  inStock?: boolean;
+  eager?: boolean;
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  product,
+  id: propId,
+  title: propTitle,
+  brand: propBrand,
+  price: propPrice,
+  originalPrice: propOriginalPrice,
+  image: propImage,
+  badge: propBadge,
+  href: propHref,
+  isWishlisted = false,
+  category,
+  collection,
+  sizes,
+  colors,
+  inStock: propInStock,
+  eager = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
+// Determine props from StoreProduct or explicit props
+const id = product?.id ?? propId ?? "1";
+const title = product?.title ?? propTitle ?? m.catalog_product_fallback({}, { locale });
+const href = propHref ?? (product?.handle ? `/products/${encodeURIComponent(product.handle)}` : `/products/${id}`);
+const variant = product?.variants?.find((item) => item.inStock) ?? product?.variants?.[0];
+const inStock = propInStock ?? (product ? Boolean(variant?.inStock ?? true) : true);
+
+const resolvedBadge = product && variant ? resolveProductBadge(product, variant) : null;
+const badgeLabel = propBadge ?? (
+  resolvedBadge?.kind === "out-of-stock"
+    ? m.catalog_out_of_stock({}, { locale })
+    : resolvedBadge?.kind === "promotion"
+      ? m.catalog_discount_off({ percentage: resolvedBadge.percentage }, { locale })
+      : null
+);
+
+const price = product
+  ? formatMoney(product.priceAmount, product.currencyCode, locale)
+  : (propPrice ?? "Br. 0.00");
+
+const originalPrice = propOriginalPrice;
+const brand = propBrand ?? "Oak & Stone";
+const imgSrc = product?.thumbnail ?? (typeof propImage === "string" ? propImage : propImage?.src);
+
+const sizesStr = sizes ? sizes.join(",") : "";
+const colorsStr = colors ? colors.map((c) => c.name).join(",") : "";
+const wishlistItem = JSON.stringify({
+  path: href,
+  title,
+  thumbnail: imgSrc,
+  priceAmount: product?.priceAmount ?? null,
+  currencyCode: product?.currencyCode ?? null,
+});
+---
+
+<article
+  class:list={["product-card", className]}
+  data-product-id={id}
+  data-category={category}
+  data-collection={collection}
+  data-sizes={sizesStr}
+  data-colors={colorsStr}
+  data-in-stock={inStock ? "true" : "false"}
+  {...rest}
+>
+  <div class="product-card__media">
+    <a href={href} class="product-card__img-link" tabindex="-1" aria-hidden="true">
+      <div class="img-wrapper">
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt={title}
+            class="cover"
+            width="262"
+            height="262"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+          />
+        ) : (
+          <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />
+        )}
+      </div>
+    </a>
+
+    {badgeLabel && <span class="product-card__badge type-body-s-400">{badgeLabel}</span>}
+
+    <button
+      type="button"
+      class:list={["product-card__wishlist-btn", isWishlisted && "product-card__wishlist-btn--active"]}
+      data-wishlist-id={id}
+      data-wishlist-toggle
+      data-wishlist-item={wishlistItem}
+      aria-label={`Add ${title} to wishlist`}
+      aria-pressed={isWishlisted ? "true" : "false"}
+    >
+      <span class="wishlist-heart" aria-hidden="true">
+        <Icon name="heart" width={14} height={14} />
+        <Icon name="heart-filled" width={14} height={14} />
+      </span>
+    </button>
+  </div>
+
+  <div class="product-card__content">
+    <div class="product-card__info">
+      <h3 class="product-card__title type-body-l">
+        <a href={href} class="product-card__title-link">{title}</a>
+      </h3>
+      {brand && <p class="product-card__brand type-body-s-500">{brand}</p>}
+    </div>
+
+    <div class="product-card__pricing">
+      {originalPrice && (
+        <span class="product-card__original-price type-body-xs-500">{originalPrice}</span>
+      )}
+      <span class="product-card__price type-body-xl">{price}</span>
+    </div>
+  </div>
+
+  {variant ? (
+    <form action="/actions/cart/add" method="post" data-card-add-form>
+      <input type="hidden" name="variantId" value={variant.id} />
+      <input type="hidden" name="quantity" value="1" />
+      <button
+        type="submit"
+        class="product-card__quick-add-btn"
+        aria-label={inStock ? `Add ${title} to cart` : `Out of stock`}
+        disabled={!inStock}
+        data-action="quick-add"
+      >
+        <span class="product-card__quick-glyph" aria-hidden="true">
+          <Icon name="plus" width={12} height={12} />
+          <Icon name="check" width={14} height={14} />
+        </span>
+        <span class="product-card__tip type-body-xs-500" role="tooltip">
+          {inStock ? "Add to cart" : "Out of stock"}
+        </span>
+      </button>
+    </form>
+  ) : (
+    <button
+      type="button"
+      class="product-card__quick-add-btn"
+      aria-label={`Add ${title} to cart`}
+      data-action="quick-add"
+    >
+      <span class="product-card__quick-glyph" aria-hidden="true">
+        <Icon name="plus" width={12} height={12} />
+        <Icon name="check" width={14} height={14} />
+      </span>
+      <span class="product-card__tip type-body-xs-500" role="tooltip">Add to cart</span>
+    </button>
+  )}
+</article>

@@ -1,0 +1,146 @@
+---
+import Icon from "./Icon.astro";
+import CartItem from "./CartItem.astro";
+import Button from "./Button.astro";
+import product1 from "../assets/product-1.png";
+import "../styles/components/_cart-drawer.scss";
+
+interface CartItemData {
+  id: string;
+  title: string;
+  brand?: string;
+  price: string;
+  quantity: number;
+  image: any;
+}
+
+interface Props {
+  items?: CartItemData[];
+  subtotal?: string;
+  deliveryFee?: string;
+  total?: string;
+  class?: string;
+  inline?: boolean;
+}
+
+const {
+  items = [],
+  subtotal = "Br. 0.00",
+  deliveryFee = "Br. 0.00",
+  total = "Br. 0.00",
+  class: className,
+  inline = false,
+} = Astro.props;
+---
+
+<div
+  class:list={["cart-drawer", inline && "cart-drawer--inline", className]}
+  id={inline ? undefined : "cart-drawer"}
+  data-cart-modal={inline ? undefined : "true"}
+  role={inline ? "region" : "dialog"}
+  aria-modal={inline ? undefined : "true"}
+  aria-labelledby="cart-title"
+>
+  {!inline && <div class="cart-drawer__backdrop" id="cart-backdrop" tabindex="-1" data-cart-close></div>}
+
+  <div class="cart-drawer__panel">
+    <div class="cart-drawer__top">
+      <div class="cart-drawer__header">
+        <h2 id="cart-title" class="cart-drawer__title type-header-4">Your Cart</h2>
+        <button
+          type="button"
+          class="cart-drawer__close-btn"
+          id="cart-close-btn"
+          aria-label="Close Cart"
+          data-cart-close
+        >
+          <Icon name="plus" class="cart-drawer__close-icon" width={14} height={14} />
+        </button>
+      </div>
+
+      <div class="cart-drawer__status" data-cart-status aria-live="polite"></div>
+
+      <div class="cart-drawer__empty empty-state" id="cart-empty" hidden={items.length > 0}>
+        <span class="empty-state__mark" aria-hidden="true">
+          <Icon name="shopping-bag" width={18} height={18} />
+        </span>
+        <div class="empty-state__copy">
+          <h3 class="empty-state__title type-header-5">Your cart is empty</h3>
+          <p class="empty-state__text type-body-s-400">
+            Add a piece from the shop and it will show up here, ready for checkout.
+          </p>
+        </div>
+        <Button text="Browse the shop" href="/products" variant="primary" size="small" />
+      </div>
+
+      <template id="cart-line-template">
+        <div role="listitem">
+          <CartItem
+            id="template"
+            title="Saved piece"
+            brand="Oak & Stone"
+            price=""
+            quantity={1}
+            image={product1}
+          />
+        </div>
+      </template>
+
+      <div class="cart-drawer__items" data-cart-items role="list" hidden={items.length === 0}>
+        {
+          items.map((item) => (
+            <div role="listitem">
+              <CartItem
+                id={item.id}
+                title={item.title}
+                brand={item.brand}
+                price={item.price}
+                quantity={item.quantity}
+                image={item.image}
+              />
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="cart-drawer__summary" id="cart-summary" data-cart-footer hidden={items.length === 0}>
+      <div class="cart-drawer__calc-rows">
+        <div class="cart-drawer__row cart-drawer__row--divider">
+          <span class="type-body-s-500">Subtotal</span>
+          <span class="type-body-500" data-cart-subtotal>{subtotal}</span>
+        </div>
+
+        <div class="cart-drawer__row cart-drawer__row--divider">
+          <span class="type-body-s-500">Delivery Fee</span>
+          <span class="type-body-500">{deliveryFee}</span>
+        </div>
+
+        <div class="cart-drawer__row cart-drawer__row--total">
+          <span class="type-body-s-500">Total</span>
+          <span class="type-body-xl" data-cart-total>{total}</span>
+        </div>
+      </div>
+
+      <div class="cart-drawer__actions">
+        <Button
+          text="Proceed to payment"
+          href="/checkout"
+          variant="primary"
+          size="small"
+          fullWidth={true}
+        />
+        <Button
+          text="Continue Shopping"
+          type="button"
+          variant="ghost"
+          size="small"
+          fullWidth={true}
+          id="cart-continue-btn"
+          data-cart-close
+        />
+      </div>
+    </div>
+  </div>
+</div>

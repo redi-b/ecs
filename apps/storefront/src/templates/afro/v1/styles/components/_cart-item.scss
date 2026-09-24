@@ -1,0 +1,158 @@
+.cart-item {
+  display: flex;
+  align-items: stretch;
+  gap: $space-250;
+  background-color: $clr-neutral-150;
+  border-radius: $radius-300;
+  padding: $space-250;
+  width: 100%;
+  max-width: 410px;
+  box-shadow: 0 4px 10px rgba(210, 210, 210, 0.22);
+  box-sizing: border-box;
+
+  &__thumb {
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    border-radius: $radius-200;
+    overflow: hidden;
+    background-color: $clr-neutral-200;
+  }
+
+  &__details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: $space-150;
+    min-width: 0;
+    padding-block: 2px;
+  }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $space-150;
+    width: 100%;
+  }
+
+  &__titles {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+    min-width: 0;
+  }
+
+  &__title {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+    overflow: visible;
+  }
+
+  &__brand {
+    color: rgba($clr-neutral-900, 0.6);
+    margin: 0;
+  }
+
+  &__remove-btn {
+    background: transparent;
+    border: none;
+    padding: $space-50;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba($clr-neutral-900, 0.4);
+    transition: color $dur-ui ease, transform $dur-press $ease-out;
+    flex-shrink: 0;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-500;
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+
+    [data-icon="trash"] {
+      width: 16px;
+      height: 16px;
+      color: currentColor;
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: $space-150;
+    width: 100%;
+  }
+
+  &__quantity {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    background-color: $clr-neutral-300;
+    border-radius: $radius-700;
+    padding: 3px $space-100;
+    height: 32px;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  &__qty-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: $radius-500;
+    background-color: $clr-neutral-100;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba($clr-neutral-900, 0.9);
+    transition:
+      background-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: $clr-neutral-50;
+      }
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+
+    [data-icon="minus"] {
+      width: 10px;
+      height: 2px;
+      color: currentColor;
+    }
+
+    [data-icon="plus"] {
+      width: 10px;
+      height: 10px;
+      color: currentColor;
+    }
+  }
+
+  &__qty-val {
+    color: rgba($clr-neutral-900, 0.9);
+    min-width: 12px;
+    text-align: center;
+  }
+
+  &__price {
+    color: rgba($clr-primary-800, 0.9);
+    margin: 0;
+    padding-bottom: $space-150;
+    white-space: nowrap;
+  }
+}

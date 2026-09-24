@@ -1,5 +1,6 @@
 import type { StorefrontLanguageSettings, StorefrontLocalizedContent } from "@ecs/contracts";
 import {
+  deriveAfroPalette,
   deriveLuviaPalette,
   deriveNexahubPalette,
   generateThemeFromPrimary,
@@ -457,7 +458,9 @@ export function themePalettePageProps(
       ? deriveLuviaPalette(primary)
       : templateKey === "nexahub@1"
         ? deriveNexahubPalette(primary)
-        : generateThemeFromPrimary(primary, mode, seed);
+        : templateKey === "afro@1"
+          ? deriveAfroPalette(primary)
+          : generateThemeFromPrimary(primary, mode, seed);
   return {
     surfaceMode: mode,
     autoPalette: true,

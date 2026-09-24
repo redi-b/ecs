@@ -1,0 +1,51 @@
+@use "../abstracts" as *;
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: $space-250;
+  padding: $space-650 $space-450;
+  background:
+    radial-gradient(circle at 50% 0%, rgba($clr-primary-200, 0.55), transparent 58%),
+    $clr-neutral-50;
+  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border-radius: $radius-450;
+
+  &__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: $space-750;
+    height: $space-750;
+    border-radius: $radius-700;
+    background-color: $clr-neutral-50;
+    color: $clr-primary-800;
+    border: 1px solid rgba($clr-primary-500, 0.28);
+    box-shadow: 0 $space-200 $space-400 rgba($clr-primary-500, 0.12);
+
+    [data-icon] {
+      width: $space-450;
+      height: $space-450;
+    }
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-150;
+  }
+
+  &__title,
+  &__text {
+    margin: 0;
+  }
+
+  &__text {
+    color: rgba($clr-neutral-900, 0.62);
+    max-width: 34ch;
+  }
+}

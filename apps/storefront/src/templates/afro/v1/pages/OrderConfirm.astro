@@ -1,0 +1,82 @@
+---
+import Icon from "../components/Icon.astro";
+import { formatMoney } from "../../../../lib/money";
+import { formatOrderReference } from "../../../../lib/order-reference";
+import type { LastOrderCookie } from "../../../../lib/session/cart-cookie";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  orderId: string;
+  lastOrder: LastOrderCookie | null;
+  hasCustomerSession?: boolean;
+  demoMode?: boolean;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  orderId,
+  lastOrder,
+  hasCustomerSession = false,
+  demoMode = false,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const verified = Boolean(lastOrder && lastOrder.id === orderId);
+const reference = formatOrderReference(orderId);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={`Order Confirmed — ${tenantName}`}>
+  <main class="checkout-page" id="main-content">
+    <div class="checkout-page__wrapper container" style="max-width: 800px; margin: 0 auto; padding-block: 3rem;">
+      <div style="background: #fff; border: 1px solid #f0e6dd; border-radius: 8px; padding: 3rem 2rem; text-align: center;">
+        <div style="width: 56px; height: 56px; margin: 0 auto 1.5rem; background: #ff720a; border-radius: 50%; display: grid; place-items: center; color: #fff;">
+          <Icon name="check" width={24} height={24} />
+        </div>
+
+        <h1 class="type-header-2" style="margin-bottom: 0.5rem;">Thank You for Your Order!</h1>
+        <p class="type-body-400" style="color: #784b28; margin-bottom: 2rem;">
+          {verified ? "Your order has been confirmed and is being prepared." : "Your order has been placed successfully."}
+        </p>
+
+        <div style="background: #fffbf8; border: 1px solid #f0e6dd; border-radius: 6px; padding: 1.5rem; margin-bottom: 2rem; display: inline-block; min-width: 280px;">
+          <span class="type-body-xs-500" style="text-transform: uppercase; letter-spacing: 0.05em; color: #784b28; display: block; margin-bottom: 0.25rem;">
+            Order Reference
+          </span>
+          <strong class="type-header-4" style="color: #1c120d; display: block;">{reference}</strong>
+        </div>
+
+        {verified && lastOrder?.total != null && (
+          <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; font-size: 0.95rem;">
+            <div>
+              <span style="color: #784b28; display: block;">Total Paid</span>
+              <strong>{formatMoney(lastOrder.total, lastOrder.currencyCode, locale)}</strong>
+            </div>
+            <div>
+              <span style="color: #784b28; display: block;">Shop</span>
+              <strong>{tenantName}</strong>
+            </div>
+          </div>
+        )}
+
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+          <Button text="Continue Shopping" href="/products" variant="primary" size="large" />
+          {hasCustomerSession && (
+            <Button text="View Order History" href="/account" variant="secondary" size="large" />
+          )}
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

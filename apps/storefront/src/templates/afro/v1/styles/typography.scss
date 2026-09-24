@@ -1,0 +1,247 @@
+@use 'abstracts' as *;
+
+@font-face {
+  font-family: 'Roobert TRIAL';
+  src: url('/fonts/Roobert-TRIAL-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/Helvetica-Now-Display-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/Helvetica-Now-Display-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Now Display';
+  src: url('/fonts/Helvetica-Now-Display-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@mixin type-token(
+  $font-family,
+  $font-weight,
+  $font-size,
+  $line-height,
+  $letter-spacing,
+  $text-transform: none,
+  $trim: none
+) {
+  font-family: $font-family;
+  font-weight: $font-weight;
+  font-size: $font-size;
+  line-height: $line-height;
+  letter-spacing: $letter-spacing;
+  text-transform: $text-transform;
+
+  @if $trim == 'cap-height' {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+body {
+  @include type-token(
+    $ff-body,
+    $fw-regular,
+    $fs-body-400,
+    $lh-body-400,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+  color: $clr-neutral-900;
+}
+
+.type-header-1 {
+  @include type-token(
+    $ff-header,
+    $fw-semi-bold,
+    $fs-header-1,
+    $lh-header-1,
+    $ls-heading,
+    none,
+    'cap-height'
+  );
+}
+
+.type-header-2 {
+  @include type-token(
+    $ff-header,
+    $fw-semi-bold,
+    $fs-header-2,
+    $lh-header-2,
+    $ls-heading,
+    none,
+    'cap-height'
+  );
+}
+
+.type-header-3 {
+  @include type-token(
+    $ff-header,
+    $fw-semi-bold,
+    $fs-header-3,
+    $lh-header-3,
+    $ls-heading,
+    none,
+    'cap-height'
+  );
+}
+
+.type-header-4 {
+  @include type-token(
+    $ff-header,
+    $fw-semi-bold,
+    $fs-header-4,
+    $lh-header-4,
+    $ls-heading,
+    none,
+    'cap-height'
+  );
+}
+
+.type-header-5 {
+  @include type-token(
+    $ff-body,
+    $fw-bold,
+    $fs-header-5,
+    $lh-header-5,
+    $ls-header-5,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-xl {
+  @include type-token(
+    $ff-body,
+    $fw-bold,
+    $fs-body-xl,
+    $lh-body-xl,
+    $ls-body-xl,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-l {
+  @include type-token(
+    $ff-body,
+    $fw-medium,
+    $fs-body-l,
+    $lh-body-l,
+    $ls-body-l,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-400 {
+  @include type-token(
+    $ff-body,
+    $fw-regular,
+    $fs-body-400,
+    $lh-body-400,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-500 {
+  @include type-token(
+    $ff-body,
+    $fw-medium,
+    $fs-body-500,
+    $lh-body-500,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-s-400 {
+  @include type-token(
+    $ff-body,
+    $fw-regular,
+    $fs-body-s-400,
+    $lh-body-s-400,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-s-500 {
+  @include type-token(
+    $ff-body,
+    $fw-medium,
+    $fs-body-s-500,
+    $lh-body-s-500,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-s-700 {
+  @include type-token(
+    $ff-body,
+    $fw-bold,
+    $fs-body-s-700,
+    $lh-body-s-700,
+    $ls-body,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-xs-500 {
+  @include type-token(
+    $ff-body,
+    $fw-medium,
+    $fs-body-xs-500,
+    $lh-body-xs-500,
+    $ls-body-xs,
+    none,
+    'cap-height'
+  );
+}
+
+.type-body-xs-700 {
+  @include type-token(
+    $ff-body,
+    $fw-bold,
+    $fs-body-xs-700,
+    $lh-body-xs-700,
+    $ls-body-xs,
+    none,
+    'cap-height'
+  );
+}
+
+.type-caption {
+  @include type-token(
+    $ff-body,
+    $fw-bold,
+    $fs-caption,
+    $lh-caption,
+    $ls-caption,
+    none,
+    'cap-height'
+  );
+}

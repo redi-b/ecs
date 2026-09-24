@@ -11,7 +11,7 @@ type TemplateVoiceOverrides = Partial<
   Record<TemplateVoiceMessageId, Partial<Record<StorefrontLocale, string>>>
 >;
 
-const overrides: Record<"luvia" | "nexahub", TemplateVoiceOverrides> = {
+const overrides: Record<"luvia" | "nexahub" | "afro", TemplateVoiceOverrides> = {
   luvia: {
     action_add_to_cart: {
       en: "Add to bag",
@@ -21,6 +21,7 @@ const overrides: Record<"luvia" | "nexahub", TemplateVoiceOverrides> = {
     },
   },
   nexahub: {},
+  afro: {},
 };
 
 export function resolveTemplateVoiceMessage(input: {
@@ -34,5 +35,7 @@ export function resolveTemplateVoiceMessage(input: {
 }
 
 function templateFamily(templateKey: string): keyof typeof overrides {
-  return templateKey.startsWith("luvia") ? "luvia" : "nexahub";
+  if (templateKey.startsWith("luvia")) return "luvia";
+  if (templateKey.startsWith("afro")) return "afro";
+  return "nexahub";
 }

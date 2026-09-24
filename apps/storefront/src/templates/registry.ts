@@ -10,6 +10,19 @@ import FallbackCheckoutPage from "./fallback/CheckoutPage.astro";
 import FallbackOrderConfirmPage from "./fallback/OrderConfirmPage.astro";
 import FallbackProductListPage from "./fallback/ProductListPage.astro";
 import FallbackProductPage from "./fallback/ProductPage.astro";
+import AfroV1Home from "./afro/v1/pages/index.astro";
+import AfroV1Cart from "./afro/v1/pages/Cart.astro";
+import AfroV1Checkout from "./afro/v1/pages/Checkout.astro";
+import AfroV1OrderConfirm from "./afro/v1/pages/OrderConfirm.astro";
+import AfroV1PaymentReturn from "./afro/v1/pages/PaymentReturn.astro";
+import AfroV1Contact from "./afro/v1/pages/Contact.astro";
+import AfroV1RequestItem from "./afro/v1/pages/RequestItem.astro";
+import AfroV1Wishlist from "./afro/v1/pages/Wishlist.astro";
+import AfroV1Account from "./afro/v1/pages/Account.astro";
+import AfroV1AccountOrder from "./afro/v1/pages/AccountOrder.astro";
+import AfroV1SystemState from "./afro/v1/pages/SystemState.astro";
+import AfroV1Product from "./afro/v1/pages/Product.astro";
+import AfroV1ProductList from "./afro/v1/pages/ProductList.astro";
 import NexahubV1Home from "./nexahub/v1/pages/index.astro";
 import NexahubV1Cart from "./nexahub/v1/pages/Cart.astro";
 import NexahubV1Checkout from "./nexahub/v1/pages/Checkout.astro";
@@ -47,6 +60,21 @@ const fallbacks = {
 } as const;
 
 export const storefrontRenderers = {
+  "afro@1": {
+    Home: AfroV1Home,
+    ProductList: AfroV1ProductList,
+    Product: AfroV1Product,
+    Cart: AfroV1Cart,
+    Checkout: AfroV1Checkout,
+    PaymentReturn: AfroV1PaymentReturn,
+    OrderConfirm: AfroV1OrderConfirm,
+    Contact: AfroV1Contact,
+    RequestItem: AfroV1RequestItem,
+    Wishlist: AfroV1Wishlist,
+    Account: AfroV1Account,
+    AccountOrder: AfroV1AccountOrder,
+    SystemState: AfroV1SystemState,
+  },
   "luvia@1": {
     Home: LuviaV1Home,
     ProductList: LuviaV1ProductList,

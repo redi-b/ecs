@@ -1,0 +1,163 @@
+---
+import Icon from "./Icon.astro";
+import Button from "./Button.astro";
+import type { StoreCollection, StoreCategory } from "../../../../lib/commerce/types";
+import "../styles/components/_product-filters.scss";
+
+interface Props {
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  totalCount?: number;
+  shownCount?: number;
+  class?: string;
+}
+
+const {
+  collections = [],
+  categories = [],
+  totalCount = 15,
+  shownCount = 15,
+  class: className,
+} = Astro.props;
+
+const sortOptions = [
+  { value: "featured", label: "Featured" },
+  { value: "price-low", label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "title", label: "Alphabetical (A–Z)" },
+];
+---
+
+<div class:list={["product-filters-header", className]}>
+  <div class="product-filters-header__accent"></div>
+  <div class="product-filters-header__toolbar">
+    <div class="product-filters-header__top-row">
+      <h2 class="product-filters-header__title type-header-2">
+        Your go-to clothing for every day.
+      </h2>
+      <div class="product-filters-header__meta">
+        <span class="product-filters-header__count type-body-s-500" id="home-item-count">
+          Showing {shownCount} of {totalCount} products
+        </span>
+        <div class="product-filters-header__divider" aria-hidden="true"></div>
+        <Button text="All Products" variant="primary" size="small" href="/products" />
+      </div>
+    </div>
+
+    <div class="product-filters-header__filter-box">
+      <div class="product-filters-header__box-top">
+        <div class="product-filters-header__filter-title">
+          <Icon name="filter" class="icon-filter" width={14} height={11} />
+          <span class="type-body-s-700">Filter Products</span>
+        </div>
+        <button type="button" class="product-filters-header__clear-btn" id="home-clear-filters">
+          <Icon name="plus" class="icon-clear" width={8} height={8} />
+          <span class="type-body-xs-500">Clear Filters</span>
+        </button>
+      </div>
+
+      <div class="product-filters-header__controls-row">
+        <div class="product-filters-header__controls-left">
+          <div class="product-filters-header__group">
+            <div class="dropdown dropdown--block" id="home-filter-category" data-dropdown>
+              <button type="button" class="dropdown__trigger type-body-xs-500" aria-haspopup="listbox" aria-expanded="false">
+                <span class="filter-dropdown__inner">
+                  <Icon name="grid-view" width={14} height={14} />
+                  <span data-dropdown-label>All Categories</span>
+                </span>
+                <span class="dropdown__chevron" aria-hidden="true">
+                  <Icon name="chevron-down" width={10} height={6} />
+                </span>
+              </button>
+              <ul class="dropdown__menu" role="listbox" hidden>
+                <li><button type="button" class="dropdown__option type-body-xs-500" role="option" data-value="all" aria-selected="true">All Categories</button></li>
+                {categories.map((category) => (
+                  <li><button type="button" class="dropdown__option type-body-xs-500" role="option" data-value={category.name || category.id}>{category.name || category.id}</button></li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="dropdown dropdown--block" id="home-filter-collection" data-dropdown>
+              <button type="button" class="dropdown__trigger type-body-xs-500" aria-haspopup="listbox" aria-expanded="false">
+                <span class="filter-dropdown__inner">
+                  <Icon name="layers" width={16} height={14} />
+                  <span data-dropdown-label>All Collections</span>
+                </span>
+                <span class="dropdown__chevron" aria-hidden="true">
+                  <Icon name="chevron-down" width={10} height={6} />
+                </span>
+              </button>
+              <ul class="dropdown__menu" role="listbox" hidden>
+                <li><button type="button" class="dropdown__option type-body-xs-500" role="option" data-value="all" aria-selected="true">All Collections</button></li>
+                {collections.map((collection) => (
+                  <li><button type="button" class="dropdown__option type-body-xs-500" role="option" data-value={collection.title || collection.handle || collection.id}>{collection.title || collection.handle || collection.id}</button></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div class="filter-price-range">
+            <label class="filter-input-group">
+              <Icon name="coins" width={14} height={14} />
+              <input
+                id="home-price-min"
+                class="filter-input-group__field type-body-xs-500"
+                type="number"
+                min="0"
+                max="25000"
+                step="500"
+                placeholder="Min price"
+                aria-label="Minimum price"
+              />
+            </label>
+            <span class="filter-price-separator" aria-hidden="true">
+              <Icon name="minus" width={8} height={2} />
+            </span>
+            <label class="filter-input-group">
+              <Icon name="coins" width={14} height={14} />
+              <input
+                id="home-price-max"
+                class="filter-input-group__field type-body-xs-500"
+                type="number"
+                min="0"
+                max="25000"
+                step="500"
+                placeholder="Max price"
+                aria-label="Maximum price"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div class="product-filters-header__controls-right">
+          <div class="dropdown dropdown--block" id="home-filter-sort" data-dropdown>
+            <button type="button" class="dropdown__trigger type-body-xs-500" aria-haspopup="listbox" aria-expanded="false">
+              <span class="filter-dropdown__inner">
+                <Icon name="sort" width={12} height={14} />
+                <span data-dropdown-label>Sort By</span>
+              </span>
+              <span class="dropdown__chevron" aria-hidden="true">
+                <Icon name="chevron-down" width={10} height={6} />
+              </span>
+            </button>
+            <ul class="dropdown__menu" role="listbox" hidden>
+              {sortOptions.map((option, index) => (
+                <li>
+                  <button
+                    type="button"
+                    class="dropdown__option type-body-xs-500"
+                    role="option"
+                    data-value={option.value}
+                    aria-selected={index === 0 ? "true" : "false"}
+                  >
+                    {option.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

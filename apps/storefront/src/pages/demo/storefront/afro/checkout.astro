@@ -1,0 +1,17 @@
+---
+import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
+import { afroDemoCart, afroDemoDelivery, afroDemoShippingOptions } from "../../../../lib/demo/afro-fixture";
+import Checkout from "../../../../templates/afro/v1/pages/Checkout.astro";
+---
+
+<Checkout
+  data={afroV1Defaults}
+  themeTokens={afroV1ThemeTokens}
+  tenantName="AFRO Studio"
+  cartCount={2}
+  cart={afroDemoCart}
+  delivery={afroDemoDelivery}
+  shippingOptions={afroDemoShippingOptions}
+  payment={{ cod: true, chapa: true }}
+  demoMode
+/>

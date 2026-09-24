@@ -1,0 +1,437 @@
+---
+import Icon from "../components/Icon.astro";
+import type {
+  StoreCategory,
+  StoreCollection,
+  StorefrontError,
+  StoreProduct,
+  StoreProductsResponse,
+} from "../../../../lib/commerce/types";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import Button from "../components/Button.astro";
+import CollectionCard from "../components/CollectionCard.astro";
+import ProductCard from "../components/ProductCard.astro";
+import ProductFilters from "../components/ProductFilters.astro";
+import Layout from "../layouts/Layout.astro";
+import { afroAsset, parseAfroData } from "../lib";
+
+// Default Assets
+import heroShop from "../assets/hero-shop.png";
+import bgJackets from "../assets/bg-jackets.png";
+import bgShirts from "../assets/bg-shirts.png";
+import bgTrousers from "../assets/bg-trousers.png";
+import bgAccessories from "../assets/bg-accessories.png";
+import womenCollection from "../assets/women-collection.png";
+import menCollection from "../assets/men-collection.png";
+import "../styles/pages/index.scss";
+
+interface Props {
+  data: unknown;
+  productsResult: StoreProductsResponse | StorefrontError;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  tenantName: string;
+  themeTokens: unknown;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
+  editorMode?: boolean;
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+}
+
+const {
+  data,
+  productsResult,
+  collections = [],
+  categories = [],
+  tenantName,
+  themeTokens,
+  cartCount = 0,
+  deferCartCount = false,
+  demoMode = false,
+  editorMode = false,
+  seo,
+  structuredData,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const products = "products" in productsResult ? productsResult.products : [];
+const productById = new Map(products.map((product) => [product.id, product]));
+
+const heroProductIds = template.home?.hero?.productIds ?? [];
+const heroProducts = heroProductIds.length > 0
+  ? heroProductIds.map((id) => productById.get(id)).filter((p): p is StoreProduct => Boolean(p))
+  : products.slice(0, 4);
+
+const defaultCategories = [
+  { id: "jackets", title: "Jackets", count: "19 Items", image: bgJackets.src, href: "/products?category=jackets" },
+  { id: "tshirts", title: "T-Shirts", count: "12 Items", image: bgShirts.src, href: "/products?category=tshirts" },
+  { id: "trousers", title: "Trousers", count: "8 Items", image: bgTrousers.src, href: "/products?category=trousers" },
+  { id: "accessories", title: "Accessories", count: "38 Items", image: bgAccessories.src, href: "/products?category=accessories" },
+  { id: "shirts", title: "Shirts", count: "15 Items", image: bgShirts.src, href: "/products?category=shirts" },
+];
+
+const defaultCollections = [
+  { title: "Women’s Collection", description: "Effortless pieces designed to move with you and elevate every look.", image: womenCollection.src, href: "/products?collection=women" },
+  { title: "Men’s Collection", description: "Timeless essentials and modern staples made for everyday style.", image: menCollection.src, href: "/products?collection=men" },
+  { title: "Kids’ Collection", description: "Comfortable, durable everyday clothing designed for young explorers.", image: womenCollection.src, href: "/products?collection=kids" },
+  { title: "Accessories Collection", description: "Handcrafted bags, hats, and fine accessories to complete your look.", image: menCollection.src, href: "/products?collection=accessories" },
+];
+
+const selectedCategories = categories.length > 0
+  ? categories.slice(0, 5).map((cat, idx) => ({
+      id: cat.id,
+      title: cat.name || "Category",
+      count: "Explore",
+      image: cat.mediaUrl || defaultCategories[idx % defaultCategories.length].image,
+      href: `/products?category=${encodeURIComponent(cat.name || cat.id)}`,
+    }))
+  : defaultCategories;
+
+const selectedCollections = collections.length > 0
+  ? collections.slice(0, 4).map((col, idx) => ({
+      title: col.title || "Collection",
+      description: (col as any).description || "Thoughtfully crafted essentials.",
+      image: col.mediaUrl || defaultCollections[idx % defaultCollections.length].image,
+      href: `/products?collection=${encodeURIComponent(col.handle || col.title || col.id)}`,
+    }))
+  : defaultCollections;
+---
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  navigationCollections={collections}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  editorMode={editorMode}
+  seo={seo}
+  structuredData={structuredData}
+  renderPath={editorMode || demoMode ? "/" : undefined}
+>
+  <main class="home-page" id="main-content">
+    <!-- Hero Section -->
+    {(editorMode || template.home?.hero?.enabled) && (
+      <section class="hero-section" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" hidden={!template.home?.hero?.enabled}>
+        <div class="hero-section__wrapper container">
+          <h1 class="hero-section__title type-header-1" data-editor-path="home.hero.title">
+            <span data-editor-text-target contenteditable={editorMode ? "plaintext-only" : undefined}>
+              {template.home?.hero?.title ?? "Style That Feels Good Today and Lasts for Seasons."}
+            </span>
+          </h1>
+
+          <div class="hero-section__promo-card">
+            <div class="hero-section__promo-banner">
+              <div class="img-wrapper">
+                <img
+                  src={afroAsset(template.home?.hero?.imageAssetId, heroShop.src)}
+                  alt="Storefront display"
+                  class="cover"
+                  width="744"
+                  height="363"
+                  data-editor-image-path="home.hero.imageAssetId"
+                  data-editor-empty-src={heroShop.src}
+                />
+              </div>
+            </div>
+
+            <div class="hero-section__carousel">
+              <button
+                type="button"
+                class="hero-section__carousel-btn hero-section__carousel-btn--prev"
+                aria-label="Previous products"
+                id="hero-carousel-prev"
+              >
+                <Icon name="arrow" width={13} height={10} />
+              </button>
+
+              <div class="hero-section__carousel-viewport" id="hero-carousel-viewport">
+                <div class="hero-section__carousel-track" id="hero-carousel-track">
+                  {
+                    heroProducts.map((prod) => (
+                      <ProductCard product={prod} />
+                    ))
+                  }
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="hero-section__carousel-btn hero-section__carousel-btn--next"
+                aria-label="Next products"
+                id="hero-carousel-next"
+              >
+                <Icon name="arrow" width={13} height={10} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Category Section -->
+    {(editorMode || template.home?.categories?.enabled) && (
+      <section class="category-section" id="categories" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home?.categories?.enabled}>
+        <div class="category-section__bg" aria-hidden="true"></div>
+        <div class="category-section__wrapper container">
+          <div class="category-section__header">
+            <h2 class="category-section__title type-header-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
+              {template.home?.categories?.title ?? "Find your own style with confidence."}
+            </h2>
+            <div class="category-section__nav">
+              <button
+                type="button"
+                class="category-section__arrow-btn category-section__arrow-btn--prev"
+                aria-label="Previous categories"
+                id="category-carousel-prev"
+              >
+                <Icon name="arrow" width={14} height={10} />
+              </button>
+              <button
+                type="button"
+                class="category-section__arrow-btn category-section__arrow-btn--next"
+                aria-label="Next categories"
+                id="category-carousel-next"
+              >
+                <Icon name="arrow" width={14} height={10} />
+              </button>
+            </div>
+          </div>
+
+          <div class="category-section__viewport" id="category-carousel-viewport">
+            <div class="category-section__row" id="category-carousel-track">
+              {
+                selectedCategories.map((cat, idx) => (
+                  <div
+                    class:list={[
+                      "category-card",
+                      idx === 0 ? "category-card--active" : "category-card--standard",
+                    ]}
+                    data-category={cat.id}
+                    data-href={cat.href}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`${cat.title} category`}
+                  >
+                    <div class="category-card__bg-image">
+                      <div class="img-wrapper">
+                        <img
+                          src={cat.image}
+                          alt={cat.title}
+                          class="cover"
+                          width="499"
+                          height="382"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="category-card__overlay category-card__overlay--inactive" aria-hidden="true"></div>
+                    <div class="category-card__overlay category-card__overlay--active" aria-hidden="true"></div>
+
+                    <div class="category-card__content-box">
+                      <div class="category-card__info">
+                        <h3 class="category-card__title type-header-5">{cat.title}</h3>
+                        <span class="category-card__count type-body-s-500">{cat.count}</span>
+                      </div>
+
+                      <div class="category-card__action category-card__action--active">
+                        <Button
+                          text="Browse"
+                          variant="secondary"
+                          size="small"
+                          icon="arrow"
+                          href={cat.href}
+                        />
+                      </div>
+
+                      <div class="category-card__action category-card__action--inactive">
+                        <span class="category-card__circle-btn" aria-hidden="true">
+                          <Icon name="arrow" width={12} height={10} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Product Grid Section -->
+    {(editorMode || template.home?.products?.enabled) && (
+      <section class="product-grid-section" id="products" data-editor-section="home.products" data-editor-visible-path="home.products.enabled" hidden={!template.home?.products?.enabled}>
+        <div class="product-grid-section__wrapper container">
+          <ProductFilters collections={collections} categories={categories} totalCount={products.length} shownCount={Math.min(15, products.length)} />
+
+          <div class="product-grid-section__grid" id="home-product-grid">
+            {
+              products.map((prod, index) => (
+                <ProductCard
+                  product={prod}
+                  eager={index < 4}
+                  class={index >= 15 ? "is-deferred" : undefined}
+                />
+              ))
+            }
+          </div>
+
+          <div class="product-grid-section__footer">
+            <Button text="View All Products" variant="primary" size="large" href="/products" />
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Collections Section -->
+    {(editorMode || template.home?.collections?.enabled) && (
+      <section class="collections-section" id="collections" data-editor-section="home.collections" data-editor-visible-path="home.collections.enabled" hidden={!template.home?.collections?.enabled}>
+        <div class="collections-section__wrapper container">
+          <h2 class="collections-section__title type-header-2">
+            Everything you need to dress well, feel well, and look well.
+          </h2>
+
+          <div class="collections-section__carousel-container">
+            <button
+              type="button"
+              class="collections-section__arrow-btn collections-section__arrow-btn--prev"
+              aria-label="Previous collection"
+              id="col-prev-btn"
+            >
+              <Icon name="arrow" width={17} height={13} />
+            </button>
+
+            <div class="collections-section__viewport" id="collections-carousel-viewport">
+              <div class="collections-section__cards">
+                {
+                  selectedCollections.map((col) => (
+                    <CollectionCard
+                      title={col.title}
+                      description={col.description}
+                      image={col.image}
+                      buttonText="Browse Now"
+                      href={col.href}
+                    />
+                  ))
+                }
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="collections-section__arrow-btn collections-section__arrow-btn--next"
+              aria-label="Next collection"
+              id="col-next-btn"
+            >
+              <Icon name="arrow" width={17} height={13} />
+            </button>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Contact Section -->
+    {(editorMode || template.home?.contact?.enabled) && (
+      <section class="contact-section" id="contact" data-editor-section="home.contact" data-editor-visible-path="home.contact.enabled" hidden={!template.home?.contact?.enabled}>
+        <div class="contact-section__wrapper container">
+          <div class="contact-section__form-card">
+            <h2 class="contact-section__title type-header-2" data-editor-path="home.contact.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
+              {template.home?.contact?.title ?? "Have a question or looking for something specific?"}
+            </h2>
+
+            <form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
+              <input type="hidden" name="type" value="contact" />
+              <input type="hidden" name="subject" value="Storefront contact request" />
+              <div class="contact-section__fields">
+                <div class="contact-section__row">
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Full Name*"
+                    class="contact-section__input type-body-s-400"
+                    required
+                    aria-label="Full Name"
+                  />
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone Number*"
+                    class="contact-section__input type-body-s-400"
+                    required
+                    aria-label="Phone Number"
+                  />
+                </div>
+
+                <div class="contact-section__row">
+                  <textarea
+                    name="message"
+                    placeholder="Message*"
+                    class="contact-section__textarea type-body-s-400"
+                    rows="4"
+                    required
+                    aria-label="Message"
+                  ></textarea>
+                  <div class="contact-section__upload-box">
+                    <span class="contact-section__upload-label type-body-s-500">Request an item</span>
+                    <label class="contact-section__dropzone">
+                      <input type="file" name="attachment" class="contact-section__file-input" accept="image/*" />
+                      <span class="contact-section__upload-btn type-body-xs-500">Upload Images</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="contact-section__submit-row">
+                <Button
+                  text="Send Message"
+                  variant="secondary"
+                  size="small"
+                  icon="arrow"
+                  type="submit"
+                  editorMode={editorMode}
+                />
+              </div>
+            </form>
+            <p data-inquiry-status aria-live="polite"></p>
+          </div>
+
+          <div class="contact-section__info-card">
+            <div class="contact-section__info-header">
+              <h3 class="type-header-4">Let’s keep in touch!</h3>
+              <p class="type-body-s-400">Reach out anytime or follow us online to see what we’re up to.</p>
+            </div>
+
+            <div class="contact-section__info-details">
+              <div class="contact-section__info-row">
+                <span class="type-body-xs-500">Email</span>
+                <a href={`mailto:${template.footer?.email ?? "hello@afroclothing.com"}`} class="type-body-s-500">
+                  {template.footer?.email ?? "hello@afroclothing.com"}
+                </a>
+              </div>
+              <div class="contact-section__info-row">
+                <span class="type-body-xs-500">Phone 1</span>
+                <a href={`tel:${template.footer?.phone ?? "+251 91 456 7890"}`} class="type-body-s-500">
+                  {template.footer?.phone ?? "+251 91 456 7890"}
+                </a>
+              </div>
+              {template.footer?.additionalPhones?.[0] && (
+                <div class="contact-section__info-row">
+                  <span class="type-body-xs-500">Phone 2</span>
+                  <a href={`tel:${template.footer.additionalPhones[0]}`} class="type-body-s-500">
+                    {template.footer.additionalPhones[0]}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+  </main>
+</Layout>

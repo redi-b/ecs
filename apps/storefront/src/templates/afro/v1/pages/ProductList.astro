@@ -1,0 +1,389 @@
+---
+import Icon from "../components/Icon.astro";
+import type { StoreCategory, StoreCollection, StoreProduct } from "../../../../lib/commerce/types";
+import { catalogHref, type CatalogFilters } from "../../../../lib/commerce/catalog-filters";
+import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import ProductCard from "../components/ProductCard.astro";
+import heroShop from "../assets/hero-shop.png";
+import { parseAfroData } from "../lib";
+import "../styles/pages/shop.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  products: StoreProduct[];
+  errorMessage?: string | null;
+  hasPrev: boolean;
+  hasNext: boolean;
+  prevHref?: string;
+  nextHref?: string;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  facets?: {
+    categories: Record<string, number>;
+    collections: Record<string, number>;
+    options: Array<{ name: string; values: Array<{ count: number; token: string; value: string }> }>;
+    price: { min: number; max: number } | null;
+  };
+  filters?: CatalogFilters;
+  totalCount?: number;
+  offset?: number;
+  limit?: number;
+  seo?: StorefrontSeo;
+  demoMode?: boolean;
+  editorMode?: boolean;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  deferCartCount = false,
+  products,
+  errorMessage,
+  hasPrev,
+  hasNext,
+  prevHref,
+  nextHref,
+  collections = [],
+  categories = [],
+  filters = { optionPairs: [] },
+  totalCount = products.length,
+  offset = 0,
+  limit = 24,
+  seo,
+  demoMode = false,
+  editorMode = false,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
+const activeCategory = categories.find((item) => taxonomyHandle(item) === filters.categoryId);
+
+const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);
+const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).filter(
+  (page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1,
+);
+
+function pageHref(page: number) {
+  return catalogHref(filters, (page - 1) * limit);
+}
+
+const title = filters.q
+  ? `Search: ${filters.q}`
+  : activeCollection?.title ?? activeCategory?.name ?? "All Collections";
+
+const sortOptions = [
+  { value: "featured", label: "Featured" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
+  { value: "title_asc", label: "Alphabetical (A–Z)" },
+];
+---
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  navigationCollections={collections}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  editorMode={editorMode}
+  seo={seo}
+  renderPath={editorMode ? "/products" : undefined}
+>
+  <main class="shop-page" id="main-content">
+    <!-- Hero Section -->
+    <section class="shop-hero">
+      <div class="shop-hero__wrapper container">
+        <div class="shop-hero__bg">
+          <img
+            src={heroShop.src}
+            alt="AFRO Studio shop collection overview"
+            class="cover"
+            width="1920"
+            height="600"
+          />
+        </div>
+        <div class="shop-hero__overlay" aria-hidden="true"></div>
+
+        <div class="shop-hero__content">
+          <nav class="shop-hero__breadcrumbs type-body-xs-500" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+            <span class="shop-hero__crumb-sep">/</span>
+            <span class="shop-hero__crumb-current type-body-xs-700">Shop</span>
+          </nav>
+
+          <h1 class="shop-hero__title type-header-1">
+            {title}
+          </h1>
+
+          <p class="shop-hero__description type-body-l">
+            Explore our collection of thoughtful modern apparel designed for everyday rhythm and timeless ease.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shop Layout: Sidebar + Product Grid -->
+    <section class="shop-layout">
+      <div class="container shop-layout__wrapper">
+        <!-- Sidebar Filters -->
+        <aside class="shop-sidebar" id="shop-sidebar" aria-label="Product Filters">
+          <div class="shop-sidebar__header">
+            <h2 class="shop-sidebar__header-title type-header-5">
+              <Icon name="filter" width={16} height={16} />
+              Filters
+            </h2>
+            <a href="/products" class="shop-sidebar__reset-btn type-body-xs-500" id="shop-reset-filters">
+              Reset All
+            </a>
+            <button
+              type="button"
+              class="shop-sidebar__close-btn type-body-l"
+              id="shop-sidebar-close"
+              aria-label="Close filters"
+            >
+              &times;
+            </button>
+          </div>
+
+          <!-- Category Filter Group -->
+          {categories.length > 0 && (
+            <div class="shop-sidebar__group">
+              <h3 class="shop-sidebar__group-title type-body-s-700">
+                <button
+                  type="button"
+                  class="shop-sidebar__group-toggle"
+                  aria-expanded="true"
+                  aria-controls="shop-filter-categories"
+                >
+                  <span>Categories</span>
+                  <Icon name="chevron-down" width={10} height={6} />
+                </button>
+              </h3>
+              <div class="shop-sidebar__disclosure" id="shop-filter-categories">
+                <div class="shop-sidebar__category-list" role="radiogroup" aria-label="Filter by category">
+                  <label class="shop-sidebar__category-item">
+                    <span class="shop-sidebar__category-label type-body-s-400">
+                      <input
+                        type="radio"
+                        name="shop-category"
+                        value="all"
+                        checked={!filters.categoryId}
+                        onchange="window.location.href = '/products'"
+                      />
+                      All Categories
+                    </span>
+                  </label>
+                  {categories.map((cat) => {
+                    const handle = taxonomyHandle(cat);
+                    const isChecked = filters.categoryId === handle;
+                    const nextHref = catalogHref({ ...filters, categoryId: handle ?? undefined }, 0);
+                    return (
+                      <label class="shop-sidebar__category-item">
+                        <span class="shop-sidebar__category-label type-body-s-400">
+                          <input
+                            type="radio"
+                            name="shop-category"
+                            value={handle ?? ""}
+                            checked={isChecked}
+                            onchange={`window.location.href = '${nextHref}'`}
+                          />
+                          {cat.name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- Collection Filter Group -->
+          {collections.length > 0 && (
+            <div class="shop-sidebar__group">
+              <h3 class="shop-sidebar__group-title type-body-s-700">
+                <button
+                  type="button"
+                  class="shop-sidebar__group-toggle"
+                  aria-expanded="true"
+                  aria-controls="shop-filter-collections"
+                >
+                  <span>Collections</span>
+                  <Icon name="chevron-down" width={10} height={6} />
+                </button>
+              </h3>
+              <div class="shop-sidebar__disclosure" id="shop-filter-collections">
+                <div class="shop-sidebar__category-list" role="radiogroup" aria-label="Filter by collection">
+                  <label class="shop-sidebar__category-item">
+                    <span class="shop-sidebar__category-label type-body-s-400">
+                      <input
+                        type="radio"
+                        name="shop-collection"
+                        value="all"
+                        checked={!filters.collectionId}
+                        onchange="window.location.href = '/products'"
+                      />
+                      All Collections
+                    </span>
+                  </label>
+                  {collections.map((col) => {
+                    const handle = taxonomyHandle(col);
+                    const isChecked = filters.collectionId === handle;
+                    const nextHref = catalogHref({ ...filters, collectionId: handle ?? undefined }, 0);
+                    return (
+                      <label class="shop-sidebar__category-item">
+                        <span class="shop-sidebar__category-label type-body-s-400">
+                          <input
+                            type="radio"
+                            name="shop-collection"
+                            value={handle}
+                            checked={isChecked}
+                            onchange={`window.location.href = '${nextHref}'`}
+                          />
+                          {col.title}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+
+        <!-- Main Product Area -->
+        <div class="shop-main">
+          <!-- Toolbar -->
+          <div class="shop-main__toolbar">
+            <p class="shop-main__count type-body-s-500" id="shop-item-count">
+              Showing {products.length > 0 ? `${offset + 1}–${Math.min(offset + products.length, totalCount)}` : "0"} of {totalCount} items
+            </p>
+
+            <div class="shop-main__controls">
+              <button
+                type="button"
+                class="shop-main__mobile-filter-btn type-body-s-500"
+                id="shop-mobile-filter-toggle"
+              >
+                <Icon name="filter" width={14} height={14} />
+                Filters
+              </button>
+
+              <div class="shop-main__sort-wrapper">
+                <span class="shop-main__sort-label type-body-xs-500">Sort by</span>
+                <div class="dropdown" id="shop-sort" data-dropdown>
+                  <button
+                    type="button"
+                    class="dropdown__trigger type-body-s-500"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                  >
+                    <span data-dropdown-label>Featured</span>
+                    <span class="dropdown__chevron" aria-hidden="true">
+                      <Icon name="chevron-down" width={10} height={6} />
+                    </span>
+                  </button>
+                  <ul class="dropdown__menu" role="listbox" hidden>
+                    {sortOptions.map((opt) => (
+                      <li>
+                        <button
+                          type="button"
+                          class="dropdown__option type-body-s-400"
+                          role="option"
+                          data-value={opt.value}
+                          onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value as any }, 0)}'`}
+                        >
+                          {opt.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Grid -->
+          {errorMessage ? (
+            <div class="shop-main__empty empty-state is-visible">
+              <div class="empty-state__copy">
+                <h3 class="empty-state__title type-header-4">Failed to load products</h3>
+                <p class="empty-state__text type-body-s-400">{errorMessage}</p>
+              </div>
+              <Button text="Retry" href="/products" variant="primary" size="small" />
+            </div>
+          ) : products.length > 0 ? (
+            <div class="shop-main__grid" id="shop-product-grid">
+              {products.map((prod, index) => (
+                <ProductCard product={prod} eager={index < 4} />
+              ))}
+            </div>
+          ) : (
+            <div class="shop-main__empty empty-state is-visible" id="shop-empty-state">
+              <span class="empty-state__mark" aria-hidden="true">
+                <Icon name="search" width={18} height={18} />
+              </span>
+              <div class="empty-state__copy">
+                <h3 class="empty-state__title type-header-4">No matching products</h3>
+                <p class="empty-state__text type-body-s-400">
+                  Nothing in the shop fits these filters. Clear them to see the full collection.
+                </p>
+              </div>
+              <Button text="Clear filters" variant="primary" size="small" href="/products" />
+            </div>
+          )}
+
+          <!-- Pagination -->
+          {totalPages > 1 && (
+            <nav class="shop-main__pagination" id="shop-pagination" aria-label="Product listings pagination">
+              {hasPrev ? (
+                <a href={prevHref} class="shop-main__page-btn shop-main__page-btn--prev" aria-label="Previous page">
+                  <Icon name="arrow" width={14} height={10} />
+                </a>
+              ) : (
+                <button type="button" class="shop-main__page-btn shop-main__page-btn--prev" disabled aria-label="Previous page">
+                  <Icon name="arrow" width={14} height={10} />
+                </button>
+              )}
+
+              {pageWindow.map((page) => (
+                <a
+                  href={pageHref(page)}
+                  class:list={[
+                    "shop-main__page-btn",
+                    page === currentPage ? "type-body-s-700 is-active" : "type-body-s-500",
+                  ]}
+                  aria-current={page === currentPage ? "page" : undefined}
+                >
+                  {page}
+                </a>
+              ))}
+
+              {hasNext ? (
+                <a href={nextHref} class="shop-main__page-btn shop-main__page-btn--next" aria-label="Next page">
+                  <Icon name="arrow" width={14} height={10} />
+                </a>
+              ) : (
+                <button type="button" class="shop-main__page-btn shop-main__page-btn--next" disabled aria-label="Next page">
+                  <Icon name="arrow" width={14} height={10} />
+                </button>
+              )}
+            </nav>
+          )}
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

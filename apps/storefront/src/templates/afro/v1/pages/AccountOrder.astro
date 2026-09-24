@@ -1,0 +1,126 @@
+---
+import type { StoreCustomerOrderDetail } from "../../../../lib/commerce/account";
+import { formatStorefrontDate } from "../../../../lib/date";
+import { formatMoney } from "../../../../lib/money";
+import { formatOrderReference } from "../../../../lib/order-reference";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  order: StoreCustomerOrderDetail;
+}
+
+const { data, themeTokens, tenantName, cartCount, order } = Astro.props;
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const reference = formatOrderReference(order.id, order.customDisplayId);
+const placedAt = order.createdAt
+  ? formatStorefrontDate(order.createdAt, locale, "long") ?? "Recently"
+  : "Recently";
+
+const money = (value: number | null) =>
+  value == null ? "—" : formatMoney(value, order.currencyCode, locale);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title={`Order ${reference} — ${tenantName}`}>
+  <main class="checkout-page" id="main-content">
+    <div class="checkout-page__wrapper container" style="max-width: 900px; margin: 0 auto; padding-block: 3rem;">
+      <header class="checkout-header">
+        <nav class="checkout-breadcrumbs type-body-xs-500" aria-label="Breadcrumb">
+          <a href="/account">Account</a>
+          <span class="checkout-breadcrumbs__sep">/</span>
+          <span class="checkout-breadcrumbs__current type-body-xs-700">Order {reference}</span>
+        </nav>
+
+        <h1 class="checkout-title type-header-3">Order {reference}</h1>
+        <p class="type-body-s-400" style="color: #784b28;">Placed on {placedAt} · Status: <span style="text-transform: capitalize; color: #ff720a; font-weight: 500;">{order.fulfillmentState}</span></p>
+      </header>
+
+      <div class="checkout-layout">
+        <!-- Order Items -->
+        <div class="checkout-form">
+          <div class="checkout-form__section">
+            <h2 class="type-header-5" style="margin-bottom: 1rem;">Items ({order.itemCount})</h2>
+            <div class="checkout-summary__items-list">
+              {order.items.map((item) => (
+                <div class="checkout-summary__item" style="padding: 1rem 0; border-bottom: 1px solid #f0e6dd;">
+                  <div class="checkout-summary__item-thumb">
+                    <div class="img-wrapper">
+                      {item.thumbnail ? (
+                        <img src={item.thumbnail} alt={item.title} class="cover" width="64" height="64" />
+                      ) : (
+                        <div style="width: 64px; height: 64px; background: #f8f2ed;"></div>
+                      )}
+                    </div>
+                  </div>
+                  <div class="checkout-summary__item-details">
+                    <h3 class="checkout-summary__item-title type-body-500">{item.title}</h3>
+                    <p class="checkout-summary__item-meta type-body-xs-500">
+                      {item.variantTitle && <span>Variant: {item.variantTitle}</span>}
+                      <span>Qty: {item.quantity}</span>
+                    </p>
+                  </div>
+                  <span class="checkout-summary__item-price type-body-500">
+                    {money(item.total ?? (item.unitPrice == null ? null : item.unitPrice * item.quantity))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Summary & Shipping Address -->
+        <aside class="checkout-summary">
+          <div class="checkout-summary__header">
+            <h2 class="checkout-summary__title type-header-5">Order Summary</h2>
+          </div>
+
+          <div class="checkout-summary__totals">
+            <div class="checkout-summary__totals-row type-body-s-400">
+              <span>Subtotal</span>
+              <span>{money(order.subtotal)}</span>
+            </div>
+            {Boolean(order.discountTotal && order.discountTotal > 0) && (
+              <div class="checkout-summary__totals-row checkout-summary__totals-row--discount type-body-s-400">
+                <span>Discount</span>
+                <span>−{money(order.discountTotal)}</span>
+              </div>
+            )}
+            <div class="checkout-summary__totals-row type-body-s-400">
+              <span>Delivery</span>
+              <span>{money(order.shippingTotal)}</span>
+            </div>
+            <div class="checkout-summary__totals-row checkout-summary__totals-row--final">
+              <span class="checkout-summary__total-label type-body-l">Total</span>
+              <span class="checkout-summary__total-value type-header-4">
+                {money(order.total)}
+              </span>
+            </div>
+          </div>
+
+          {order.shippingAddress && (
+            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #f0e6dd;">
+              <h3 class="type-body-s-700" style="margin-bottom: 0.5rem;">Delivery Address</h3>
+              <p class="type-body-s-400">
+                {[order.shippingAddress.firstName, order.shippingAddress.lastName].filter(Boolean).join(" ")}<br />
+                {order.shippingAddress.address1}<br />
+                {order.shippingAddress.city}
+              </p>
+            </div>
+          )}
+
+          <div style="margin-top: 1.5rem;">
+            <Button text="Back to Account" href="/account" variant="secondary" size="small" fullWidth={true} />
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</Layout>

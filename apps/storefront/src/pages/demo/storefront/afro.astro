@@ -1,0 +1,18 @@
+---
+import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
+import { afroDemoCollections, afroDemoCategories, afroDemoProducts } from "../../../lib/demo/afro-fixture";
+import Home from "../../../templates/afro/v1/pages/index.astro";
+
+const data = structuredClone(afroV1Defaults);
+---
+
+<Home
+  data={data}
+  themeTokens={afroV1ThemeTokens}
+  tenantName="AFRO Studio"
+  productsResult={{ products: afroDemoProducts, count: afroDemoProducts.length, limit: afroDemoProducts.length, offset: 0 }}
+  collections={afroDemoCollections}
+  categories={afroDemoCategories}
+  cartCount={0}
+  demoMode
+/>

@@ -1,0 +1,71 @@
+---
+import arrow from "../icons/arrow.svg?raw";
+import check from "../icons/check.svg?raw";
+import chevronDown from "../icons/chevron-down.svg?raw";
+import coins from "../icons/coins.svg?raw";
+import filter from "../icons/filter.svg?raw";
+import gridView from "../icons/grid-view.svg?raw";
+import heartFilled from "../icons/heart-filled.svg?raw";
+import heart from "../icons/heart.svg?raw";
+import layers from "../icons/layers.svg?raw";
+import minus from "../icons/minus.svg?raw";
+import plus from "../icons/plus.svg?raw";
+import search from "../icons/search.svg?raw";
+import shoppingBag from "../icons/shopping-bag.svg?raw";
+import sort from "../icons/sort.svg?raw";
+import trash from "../icons/trash.svg?raw";
+
+const icons: Record<string, string> = {
+  arrow,
+  check,
+  "chevron-down": chevronDown,
+  coins,
+  filter,
+  "grid-view": gridView,
+  "heart-filled": heartFilled,
+  heart,
+  layers,
+  minus,
+  plus,
+  search,
+  "shopping-bag": shoppingBag,
+  sort,
+  trash,
+};
+
+interface Props extends astroHTML.JSX.HTMLAttributes {
+  name: string;
+  width?: number | string;
+  height?: number | string;
+}
+
+const { name, width, height, class: className, ...rest } = Astro.props;
+let svg = icons[name] || "";
+
+if (svg && (width || height)) {
+  // Inject width and height and ensure data-icon is on svg
+  svg = svg.replace(/<svg\b([^>]*)>/, (_match, attrs) => {
+    let newAttrs = attrs;
+    if (!newAttrs.includes("data-icon")) {
+      newAttrs += ` data-icon="${name}"`;
+    }
+    if (width) {
+      if (/width="[^"]*"/.test(newAttrs)) {
+        newAttrs = newAttrs.replace(/width="[^"]*"/, `width="${width}"`);
+      } else {
+        newAttrs += ` width="${width}"`;
+      }
+    }
+    if (height) {
+      if (/height="[^"]*"/.test(newAttrs)) {
+        newAttrs = newAttrs.replace(/height="[^"]*"/, `height="${height}"`);
+      } else {
+        newAttrs += ` height="${height}"`;
+      }
+    }
+    return `<svg${newAttrs}>`;
+  });
+}
+---
+
+<span class:list={["sf-icon", className]} aria-hidden="true" set:html={svg} {...rest} />

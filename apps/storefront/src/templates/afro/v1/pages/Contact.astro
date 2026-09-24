@@ -1,0 +1,122 @@
+---
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/index.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  deferCartCount?: boolean;
+}
+
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const template = parseAfroData(data);
+const { email, phone, additionalPhones } = template.footer;
+---
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  deferCartCount={deferCartCount}
+  title={`Contact Us — ${tenantName}`}
+>
+  <main class="home-page" id="main-content">
+    <section class="contact-section" style="padding-top: 4rem;">
+      <div class="contact-section__wrapper container">
+        <div class="contact-section__form-card">
+          <h1 class="contact-section__title type-header-2">
+            Have a question or looking for something specific?
+          </h1>
+
+          <form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
+            <input type="hidden" name="type" value="contact" />
+            <input type="hidden" name="subject" value="Storefront contact request" />
+            <div class="contact-section__fields">
+              <div class="contact-section__row">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Full Name*"
+                  class="contact-section__input type-body-s-400"
+                  required
+                  aria-label="Full Name"
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone Number*"
+                  class="contact-section__input type-body-s-400"
+                  required
+                  aria-label="Phone Number"
+                />
+              </div>
+
+              <div class="contact-section__row">
+                <textarea
+                  name="message"
+                  placeholder="Message*"
+                  class="contact-section__textarea type-body-s-400"
+                  rows="4"
+                  required
+                  aria-label="Message"
+                ></textarea>
+                <div class="contact-section__upload-box">
+                  <span class="contact-section__upload-label type-body-s-500">Request an item</span>
+                  <label class="contact-section__dropzone">
+                    <input type="file" name="attachment" class="contact-section__file-input" accept="image/*" />
+                    <span class="contact-section__upload-btn type-body-xs-500">Upload Images</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="contact-section__submit-row">
+              <Button
+                text="Send Message"
+                variant="secondary"
+                size="small"
+                icon="arrow"
+                type="submit"
+              />
+            </div>
+          </form>
+          <p data-inquiry-status aria-live="polite"></p>
+        </div>
+
+        <div class="contact-section__info-card">
+          <div class="contact-section__info-header">
+            <h3 class="type-header-4">Let’s keep in touch!</h3>
+            <p class="type-body-s-400">Reach out anytime or follow us online to see what we’re up to.</p>
+          </div>
+
+          <div class="contact-section__info-details">
+            <div class="contact-section__info-row">
+              <span class="type-body-xs-500">Email</span>
+              <a href={`mailto:${email ?? "hello@afroclothing.com"}`} class="type-body-s-500">
+                {email ?? "hello@afroclothing.com"}
+              </a>
+            </div>
+            <div class="contact-section__info-row">
+              <span class="type-body-xs-500">Phone 1</span>
+              <a href={`tel:${phone ?? "+251 91 456 7890"}`} class="type-body-s-500">
+                {phone ?? "+251 91 456 7890"}
+              </a>
+            </div>
+            {additionalPhones?.[0] && (
+              <div class="contact-section__info-row">
+                <span class="type-body-xs-500">Phone 2</span>
+                <a href={`tel:${additionalPhones[0]}`} class="type-body-s-500">
+                  {additionalPhones[0]}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

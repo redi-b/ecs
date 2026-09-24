@@ -1,0 +1,163 @@
+.site-footer {
+  width: 100%;
+  margin-top: auto;
+  padding: 0 $space-400 $space-400;
+
+  &__container {
+    max-width: 1480px;
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  &__inner {
+    background-color: $clr-neutral-900;
+    border-radius: $radius-500;
+    padding: $space-700 $space-700 $space-550;
+    color: $clr-neutral-50;
+    display: flex;
+    flex-direction: column;
+    gap: $space-500;
+  }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $space-400;
+    padding-bottom: $space-550;
+    border-bottom: 1px solid rgba($clr-neutral-50, 0.3);
+  }
+
+  &__brand-col {
+    display: flex;
+    flex-direction: column;
+    gap: $space-400;
+    max-width: 320px;
+  }
+
+  &__logo {
+    display: inline-flex;
+    width: fit-content;
+
+    .img-wrapper {
+      max-width: 111px;
+      height: 40px;
+    }
+  }
+
+  &__tagline {
+    color: rgba($clr-neutral-50, 0.7);
+    margin: 0;
+    max-width: 40ch;
+  }
+
+  &__nav-cols {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 592px;
+    justify-content: space-between;
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: $space-350;
+    min-width: 80px;
+  }
+
+  &__col-title {
+    color: rgba($clr-neutral-100, 0.9);
+    margin: 0;
+  }
+
+  &__link-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-400;
+  }
+
+  &__link {
+    color: rgba($clr-neutral-50, 0.7);
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1px;
+    transition:
+      color $dur-ui ease,
+      background-size $dur-hover $ease-out;
+    width: fit-content;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-200;
+        background-size: 100% 1px;
+      }
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  &__copyright {
+    color: rgba($clr-neutral-100, 0.5);
+    margin: 0;
+  }
+
+  // Responsive Styles for Footer Component
+  @media (max-width: 900px) {
+    &__top {
+      flex-direction: column;
+      gap: $space-600;
+    }
+
+    &__brand-col {
+      max-width: 100%;
+    }
+
+    &__nav-cols {
+      width: 100%;
+      max-width: 100%;
+      flex-wrap: wrap;
+      gap: $space-600;
+    }
+  }
+
+  @media (max-width: 600px) {
+    &__inner {
+      padding: $space-600 $space-500 $space-500;
+      gap: $space-500;
+    }
+
+    &__top {
+      gap: $space-600;
+      padding-bottom: $space-600;
+    }
+
+    &__nav-cols {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: $space-650 $space-450;
+    }
+
+    &__col {
+      gap: $space-300;
+    }
+
+    &__link-list {
+      gap: $space-300;
+    }
+
+    &__bottom {
+      text-align: center;
+    }
+  }
+}
+

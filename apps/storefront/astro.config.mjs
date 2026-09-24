@@ -67,11 +67,23 @@ export default defineConfig({
       },
       preprocessorOptions: {
         scss: {
-          loadPaths: [fileURLToPath(new URL("./src/templates/nexahub/v1/styles", import.meta.url))],
+          loadPaths: [fileURLToPath(new URL("./", import.meta.url))],
           additionalData: (source, filename) => {
             const normalized = filename.replaceAll("\\", "/");
-            if (!normalized.includes("/templates/nexahub/")) return source;
-            return `@use "abstracts" as *;\n${source}`;
+            if (
+              normalized.includes("/_abstracts.scss") ||
+              normalized.includes("/_variables.scss") ||
+              normalized.includes("/_functions.scss")
+            ) {
+              return source;
+            }
+            if (normalized.includes("/templates/nexahub/")) {
+              return `@use "src/templates/nexahub/v1/styles/abstracts" as *;\n${source}`;
+            }
+            if (normalized.includes("/templates/afro/")) {
+              return `@use "src/templates/afro/v1/styles/abstracts" as *;\n${source}`;
+            }
+            return source;
           },
         },
       },

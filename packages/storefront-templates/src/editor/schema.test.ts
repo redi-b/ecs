@@ -6,6 +6,9 @@ import { luviaV1DataSchema } from "../templates/luvia/v1/schema";
 import { nexahubV1Defaults } from "../templates/nexahub/v1/defaults";
 import { nexahubV1EditorSchema } from "../templates/nexahub/v1/editor";
 import { nexahubV1DataSchema } from "../templates/nexahub/v1/schema";
+import { afroV1Defaults } from "../templates/afro/v1/defaults";
+import { afroV1EditorSchema } from "../templates/afro/v1/editor";
+import { afroV1DataSchema } from "../templates/afro/v1/schema";
 import { storefrontEditorManifestSchema } from "./schema";
 
 const syntheticEditorManifest = {
@@ -117,4 +120,27 @@ test("NexaHub declares listing preview through the generic page contract", () =>
   for (const section of manifest.sections) {
     if (section.previewPage) assert.ok(pageIds.has(section.previewPage));
   }
+});
+
+test("Afro exposes a clean editor schema and valid default contracts", () => {
+  const manifest = storefrontEditorManifestSchema.parse(afroV1EditorSchema);
+  const fields = manifest.sections.flatMap((section) => section.fields);
+  const defaults = afroV1DataSchema.parse(afroV1Defaults);
+
+  assert.equal(manifest.theme?.allowSurfaceMode, false);
+  assert.deepEqual(manifest.theme?.editableColors, ["primary"]);
+  assert.deepEqual(defaults.home.products.productIds, []);
+  assert.deepEqual(defaults.home.categories.collectionIds, []);
+  assert.deepEqual(
+    manifest.sections.find((section) => section.id === "footer-credit")?.fields.map((field) => field.path),
+    ["footer.credit.enabled"],
+  );
+  assert.equal(new Set(fields.map((field) => field.prop)).size, fields.length);
+  assert.equal(fields.find((field) => field.path === "header.navigation")?.preview?.strategy, "preserve-structure");
+  assert.deepEqual(fields.find((field) => field.path === "home.categories.collectionIds")?.preview, {
+    strategy: "variant-options",
+    variants: ["active", "standard"],
+  });
+  assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.preview?.strategy, "list-items");
+  assert.equal(manifest.sections.find((section) => section.id === "listing")?.previewPage, "products");
 });

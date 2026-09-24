@@ -2,6 +2,8 @@ import { luviaV1Defaults, luviaV1ThemeTokens } from "./templates/luvia/v1/defaul
 import { luviaV1DataSchema, luviaV1ThemeTokensSchema } from "./templates/luvia/v1/schema";
 import { nexahubV1Defaults, nexahubV1ThemeTokens } from "./templates/nexahub/v1/defaults";
 import { nexahubV1DataSchema, nexahubV1ThemeTokensSchema } from "./templates/nexahub/v1/schema";
+import { afroV1Defaults, afroV1ThemeTokens } from "./templates/afro/v1/defaults";
+import { afroV1DataSchema, afroV1ThemeTokensSchema } from "./templates/afro/v1/schema";
 
 export const storefrontTemplates = [
   {
@@ -57,6 +59,36 @@ export const storefrontTemplates = [
     themeSchema: nexahubV1ThemeTokensSchema,
     defaultData: nexahubV1Defaults,
     defaultThemeTokens: nexahubV1ThemeTokens,
+  },
+  {
+    availability: "selectable",
+    id: "00000000-0000-4000-8000-000000000009",
+    versionId: "00000000-0000-4000-8000-00000000000a",
+    slug: "afro",
+    name: "Afro",
+    description: "A modern apparel and essentials storefront designed for everyday rhythm.",
+    recommendedCategories: [
+      "Fashion",
+      "Apparel",
+      "Footwear",
+      "Accessories",
+    ],
+    version: 1,
+    templateKey: "afro@1",
+    componentRegistryVersion: "built-in-v1",
+    sourceHash: "7b4c9e10826da45281ef19c32f8b50e649a152d1",
+    homeCatalog: {
+      featuredProductsPath: "home.products",
+      catalogProductsPath: "home.products",
+      heroProductIdPaths: ["home.hero.productIds"],
+      categoriesPath: "home.categories",
+      featuredCollectionPath: "home.collections",
+      allowUnselectedProductFallback: true,
+    },
+    schema: afroV1DataSchema,
+    themeSchema: afroV1ThemeTokensSchema,
+    defaultData: afroV1Defaults,
+    defaultThemeTokens: afroV1ThemeTokens,
   },
 ] as const;
 

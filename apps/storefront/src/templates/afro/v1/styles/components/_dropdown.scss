@@ -1,0 +1,128 @@
+@use "../abstracts" as *;
+
+.dropdown {
+  position: relative;
+  width: fit-content;
+
+  &--block {
+    width: 100%;
+  }
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    width: 100%;
+    min-height: 40px;
+    padding: $space-150 $space-300 $space-150 $space-250;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border-radius: $radius-200;
+    background-color: $clr-neutral-50;
+    color: $clr-neutral-900;
+    cursor: pointer;
+    transition:
+      border-color $dur-ui ease,
+      background-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    &:hover {
+      border-color: rgba($clr-neutral-900, 0.28);
+      background-color: rgba($clr-primary-200, 0.28);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    &[aria-expanded="true"] {
+      border-color: $clr-primary-500;
+      background-color: $clr-neutral-50;
+
+      .dropdown__chevron {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  &__chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-inline-start: $space-150;
+    color: rgba($clr-neutral-900, 0.55);
+    transition: transform $dur-ui $ease-out;
+
+    [data-icon="chevron-down"] {
+      width: 10px;
+      height: $space-150;
+    }
+  }
+
+  &__menu {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + #{$space-100});
+    right: 0;
+    left: auto;
+    min-width: 100%;
+    width: max-content;
+    max-width: 280px;
+    margin: 0;
+    padding: $space-100;
+    list-style: none;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border-radius: $radius-250;
+    box-shadow: 0 $space-200 $space-500 rgba($clr-neutral-900, 0.08);
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  &--block &__menu {
+    left: 0;
+    right: auto;
+    width: 100%;
+    max-width: none;
+  }
+
+  &__option {
+    display: flex;
+    width: 100%;
+    text-align: left;
+    padding: $space-150 $space-200;
+    border: none;
+    border-radius: $radius-150;
+    background-color: transparent;
+    color: rgba($clr-neutral-900, 0.8);
+    cursor: pointer;
+    transition:
+      background-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    &:hover {
+      background-color: rgba($clr-primary-500, 0.08);
+      color: $clr-neutral-900;
+    }
+
+    &:active {
+      background-color: rgba($clr-primary-500, 0.16);
+      transform: scale(0.98);
+    }
+
+    &[aria-selected="true"] {
+      background-color: rgba($clr-primary-500, 0.12);
+      color: $clr-primary-800;
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: 1px;
+    }
+  }
+}

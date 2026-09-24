@@ -1,0 +1,129 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-200;
+  width: fit-content;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color $dur-ui ease,
+    border-color $dur-ui ease,
+    color $dur-ui ease,
+    transform $dur-press $ease-out;
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  // Sizes
+  &--large {
+    min-height: 52px;
+    padding: $space-400 $space-500;
+    border-radius: $radius-800;
+  }
+
+  &--small {
+    min-height: 40px;
+    padding: $space-100 $space-350;
+    border-radius: $radius-700;
+  }
+
+  // With icon variant (e.g. Browse with circular orange arrow badge)
+  &--with-icon {
+    padding: $space-100 $space-100 $space-100 $space-350;
+    gap: $space-200;
+
+    .btn__icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: $radius-700;
+      background-color: $clr-primary-500;
+      color: $clr-neutral-50;
+      flex-shrink: 0;
+      transition: transform $dur-press $ease-out;
+
+      [data-icon="arrow"] {
+        width: 13px;
+        height: 10px;
+        color: $clr-neutral-50;
+        transition: transform $dur-ui $ease-out;
+      }
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &--with-icon:hover:not(:disabled) .btn__icon-badge [data-icon="arrow"] {
+      transform: translateX($space-100);
+    }
+  }
+
+  // Variants
+  &--primary {
+    background-color: $clr-primary-500;
+    color: $clr-neutral-100;
+    border-color: transparent;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled) {
+        background-color: color-mix(in srgb, $clr-primary-500 86%, black);
+      }
+    }
+  }
+
+  &--secondary {
+    background-color: $clr-primary-800;
+    color: $clr-neutral-100;
+    border-color: transparent;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled) {
+        background-color: color-mix(in srgb, $clr-primary-800 82%, white);
+      }
+    }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    border-color: rgba($clr-primary-800, 0.4);
+    color: rgba($clr-primary-800, 0.9);
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled) {
+        background-color: rgba($clr-primary-800, 0.06);
+        border-color: rgba($clr-primary-800, 0.7);
+      }
+    }
+  }
+
+  // Full width
+  &--full-width {
+    width: 100%;
+  }
+
+  // When ghost is fullwidth, Figma design has 80px radius
+  &--full-width.btn--ghost {
+    border-radius: $radius-800;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $clr-primary-500;
+    outline-offset: 2px;
+  }
+
+  &.is-added,
+  &.is-added:hover {
+    background-color: $clr-primary-800;
+  }
+}

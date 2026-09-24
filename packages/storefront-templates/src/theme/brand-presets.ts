@@ -20,9 +20,19 @@ const nexahub: readonly BrandPreset[] = [
   { id: "violet", colors: { background: "#faf8fc", foreground: "#30243e", primary: "#bca1f2", muted: "#eee8f5", accent: "#d9c7fa" } },
   { id: "teal", colors: { background: "#f6faf9", foreground: "#18382f", primary: "#7bd4b3", muted: "#e6f0eb", accent: "#b6e7d2" } },
 ];
+const afro: readonly BrandPreset[] = [
+  { id: "original", colors: { background: "#fffbf8", foreground: "#1c120d", primary: "#ff720a", muted: "#f8f2ed", accent: "#ffc599" } },
+  { id: "blue", colors: { background: "#fbfcff", foreground: "#10151d", primary: "#2563eb", muted: "#f1f3f9", accent: "#c5d0ff" } },
+  { id: "rose", colors: { background: "#fffbfa", foreground: "#1d1111", primary: "#e11d48", muted: "#f9f1ef", accent: "#ffc1b7" } },
+  { id: "amber", colors: { background: "#fefbf7", foreground: "#1b130c", primary: "#d97706", muted: "#f7f2ed", accent: "#f9c993" } },
+  { id: "violet", colors: { background: "#fdfbff", foreground: "#15131d", primary: "#7c3aed", muted: "#f5f2f8", accent: "#dec6ff" } },
+  { id: "teal", colors: { background: "#f7fdfd", foreground: "#0a1816", primary: "#0d9488", muted: "#edf5f5", accent: "#89e5e6" } },
+];
 
 export function getBrandPresets(templateKey: string): readonly BrandPreset[] {
-  return templateKey === "nexahub@1" ? nexahub : luvia;
+  if (templateKey === "nexahub@1") return nexahub;
+  if (templateKey === "afro@1") return afro;
+  return luvia;
 }
 
 export function getStartingBrandTokens(templateKey: string, tokens: unknown, brand?: { presetId: BrandPresetId; customPrimary?: string | undefined }): unknown {

@@ -33,6 +33,18 @@ const DEMO_PRODUCT_PHOTO_IDS: Record<string, readonly number[]> = {
   "demo-fashion-blazer": [4964992, 19380820],
   "demo-fashion-denim-jacket": [1082529, 7679720],
   "demo-fashion-gift-box": [264985, 1666065],
+  "demo-afro-suede-zip-jacket": [1082529, 7679720],
+  "demo-afro-relaxed-wool-trousers": [1598507, 2983464],
+  "demo-afro-heavyweight-box-tee": [996329, 8532616],
+  "demo-afro-structured-overshirt": [4964992, 19380820],
+  "demo-afro-tailored-linen-shirt": [994523, 1462637],
+  "demo-afro-leather-crossbody-bag": [1152077, 1936848],
+  "demo-afro-wool-blend-cardigan": [985635, 1755428],
+  "demo-afro-pleated-wide-trousers": [904350, 2905238],
+  "demo-afro-minimalist-leather-belt": [264985, 1666065],
+  "demo-afro-everyday-cotton-crewneck": [8532616, 996329],
+  "demo-afro-chelsea-leather-boots": [267242, 1464625],
+  "demo-afro-merino-wool-scarf": [45982, 45055],
 };
 
 export function demoProductImages(productHandle: string): readonly DemoProductImage[] {

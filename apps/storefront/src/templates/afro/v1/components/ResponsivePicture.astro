@@ -1,0 +1,51 @@
+---
+interface SourceEntry {
+  media: string;
+  src: any;
+  width?: number;
+  height?: number;
+  sizes?: string;
+}
+
+interface Props {
+  sources: SourceEntry[];
+  alt: string;
+  class?: string;
+  pictureClass?: string;
+  loading?: "eager" | "lazy";
+  decoding?: "async" | "auto" | "sync";
+}
+
+const {
+  sources = [],
+  alt,
+  class: className,
+  pictureClass = "responsive-img",
+  loading = "lazy",
+  decoding = "async",
+  ...rest
+} = Astro.props;
+
+const fallbackSource = sources[sources.length - 1] ?? { src: "" };
+const fallbackSrc = typeof fallbackSource.src === "string" ? fallbackSource.src : fallbackSource.src?.src;
+---
+
+<picture class={pictureClass}>
+  {
+    sources.slice(0, -1).map((source) => {
+      const src = typeof source.src === "string" ? source.src : source.src?.src;
+      return <source media={source.media} srcset={src} sizes={source.sizes} />;
+    })
+  }
+
+  <img
+    class:list={[className]}
+    src={fallbackSrc}
+    alt={alt}
+    width={fallbackSource.width}
+    height={fallbackSource.height}
+    loading={loading}
+    decoding={decoding}
+    {...rest}
+  />
+</picture>

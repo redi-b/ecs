@@ -1,0 +1,59 @@
+---
+import OfflineStateEnhancer from "../../../../components/shell/OfflineStateEnhancer.astro";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  actionHref?: string;
+  actionLabel?: string;
+  code?: string;
+  statusLabel?: string;
+  recoveryLabel?: string;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+  code,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}>
+  <main class="checkout-page" id="main-content" data-storefront-state>
+    <div class="container" style="min-height: 50vh; display: grid; place-content: center; text-align: center; padding: 4rem 1rem;">
+      {code && <p class="type-body-xs-500" style="color: #784b28; margin-bottom: 0.5rem;">{code}</p>}
+      <h1 class="type-header-2" style="margin-bottom: 1rem;" data-state-copy data-offline-copy={m.status_offline_title({}, { locale })}>
+        {title}
+      </h1>
+      <p class="type-body-400" style="max-width: 500px; margin: 0 auto 2rem; color: #784b28;" data-state-copy data-offline-copy={m.status_offline_help({}, { locale })}>
+        {description}
+      </p>
+      {actionHref && actionLabel && (
+        <div>
+          <Button text={actionLabel} href={actionHref} variant="primary" />
+        </div>
+      )}
+    </div>
+  </main>
+  <OfflineStateEnhancer />
+</Layout>

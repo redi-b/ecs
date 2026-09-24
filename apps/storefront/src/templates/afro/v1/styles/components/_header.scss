@@ -1,0 +1,316 @@
+.site-header {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: rgba($clr-neutral-100, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background-color $dur-ui ease, box-shadow $dur-ui ease;
+
+  // Top Promo Banner
+  &__promo {
+    background-color: $clr-primary-500;
+    padding: $space-100 0;
+    min-height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__promo-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-100;
+  }
+
+  &__promo-text {
+    color: $clr-neutral-50;
+  }
+
+  &__promo-timer {
+    background-color: $clr-neutral-100;
+    color: rgba($clr-neutral-900, 0.9);
+    padding: $space-100;
+    border-radius: $radius-150;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Main Header Bar
+  &__main {
+    padding: $space-300 0;
+    background-color: transparent;
+  }
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-400;
+  }
+
+  // Left Nav Pill
+  &__nav {
+    display: flex;
+    align-items: center;
+  }
+
+  &__nav-pill {
+    display: inline-flex;
+    align-items: center;
+    list-style: none;
+    padding: $space-100;
+    border: 1px solid rgba($clr-primary-800, 0.2);
+    border-radius: $radius-700;
+    gap: 0;
+    margin: 0;
+    background-color: transparent;
+  }
+
+  &__nav-item {
+    display: flex;
+    align-items: center;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-200;
+    padding: $space-300 $space-350;
+    min-height: 44px;
+    border-radius: $radius-700;
+    border: 1px solid transparent;
+    color: rgba($clr-neutral-900, 0.9);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color $dur-ui ease,
+      color $dur-ui ease,
+      border-color $dur-ui ease,
+      box-shadow $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(&--active) {
+        background-color: rgba($clr-neutral-50, 0.86);
+        color: $clr-primary-800;
+      }
+    }
+
+    &:active:not(&--active) {
+      transform: scale(0.98);
+    }
+
+    &--active {
+      background:
+        linear-gradient($clr-neutral-50, $clr-neutral-50) padding-box,
+        linear-gradient(180deg, rgba($clr-primary-500, 0.05) 0%, rgba($clr-primary-500, 0.25) 100%) border-box;
+      border: 1px solid transparent;
+      color: rgba($clr-neutral-900, 0.9);
+      box-shadow: 0 4px 13px rgba($clr-primary-200, 0.33);
+    }
+  }
+
+  &__dropdown-icon {
+    flex-shrink: 0;
+    color: currentColor;
+
+    &[data-icon="chevron-down"] {
+      width: 8px;
+      height: 4px;
+    }
+  }
+
+  // Center Brand Logo
+  &__brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-decoration: none;
+
+    .img-wrapper {
+      max-width: 111px;
+      height: 40px;
+    }
+  }
+
+  // Right Actions
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  &__action-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: $radius-700;
+    border: 1px solid rgba($clr-primary-800, 0.2);
+    background-color: transparent;
+    color: $clr-primary-800;
+    text-decoration: none;
+    position: relative;
+    cursor: pointer;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    [data-icon="search"],
+    [data-icon="heart"],
+    [data-icon="heart-filled"],
+    [data-icon="shopping-bag"] {
+      width: 20px;
+      height: 20px;
+      color: $clr-primary-800;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-500, 0.1);
+        border-color: rgba($clr-primary-500, 0.45);
+      }
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+
+    &.is-active {
+      background-color: rgba($clr-primary-500, 0.12);
+      border-color: rgba($clr-primary-500, 0.45);
+
+      [data-icon="heart"],
+      [data-icon="heart-filled"] {
+        color: $clr-primary-500;
+      }
+    }
+  }
+
+  &__cart-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    min-width: 15px;
+    height: 16px;
+    padding: $space-100;
+    border-radius: $radius-500;
+    background-color: $clr-primary-200;
+    color: $clr-primary-800;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__cta-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  &__mobile-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: $radius-700;
+    background-color: $clr-neutral-900;
+    cursor: pointer;
+    padding: 0;
+    gap: $space-150;
+    transition: background-color $dur-ui ease, transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: $clr-primary-800;
+      }
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+
+    span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background-color: $clr-neutral-50;
+      border-radius: $radius-100;
+      transition: transform $dur-ui $ease-out, opacity $dur-ui ease;
+    }
+  }
+
+  // Responsive Styles for Header Component
+  @media (max-width: 1024px) {
+    &__nav {
+      position: fixed;
+      top: 90px;
+      left: 0;
+      right: 0;
+      background-color: $clr-neutral-50;
+      padding: $space-400 $space-300;
+      box-shadow: 0 10px 30px rgba(28, 18, 13, 0.1);
+      display: none;
+      justify-content: center;
+      z-index: 99;
+
+      &--open {
+        display: flex;
+      }
+    }
+
+    &__nav-pill {
+      flex-direction: column;
+      width: 100%;
+      max-width: 400px;
+      border: none;
+      padding: 0;
+      gap: $space-150;
+    }
+
+    &__nav-item {
+      width: 100%;
+    }
+
+    &__link {
+      width: 100%;
+      justify-content: center;
+    }
+
+    &__cta-group {
+      display: none;
+    }
+
+    &__mobile-toggle {
+      display: flex;
+    }
+  }
+
+  @media (max-width: 480px) {
+    &__action-circle {
+      width: 40px;
+      height: 40px;
+
+      [data-icon] {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    &__brand .img-wrapper {
+      max-width: 85px;
+      height: 32px;
+    }
+  }
+}
+

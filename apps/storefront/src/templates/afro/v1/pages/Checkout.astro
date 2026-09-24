@@ -1,0 +1,410 @@
+---
+import Icon from "../components/Icon.astro";
+import type { StoreCustomer, StoreCustomerAddress } from "../../../../lib/commerce/account";
+import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
+import { resolveStoreFulfillmentOptions } from "../../../../lib/commerce/fulfillment";
+import type {
+  StoreCart,
+  StoreDeliveryOptions,
+  StorePaymentOptions,
+  StoreShippingOption,
+} from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  delivery: StoreDeliveryOptions | null;
+  payment: StorePaymentOptions;
+  shippingOptions: StoreShippingOption[];
+  shippingError?: string | null;
+  error?: string | null;
+  customer?: StoreCustomer | null;
+  customerAddresses?: StoreCustomerAddress[];
+  demoMode?: boolean;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  cart,
+  delivery,
+  payment,
+  shippingOptions,
+  shippingError,
+  error,
+  customer = null,
+  customerAddresses = [],
+  demoMode = false,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const items = cart?.items ?? [];
+const deliveryEnabled = delivery?.deliveryEnabled !== false;
+const pickupEnabled = delivery?.pickupEnabled === true;
+const fulfillmentAvailable = deliveryEnabled || pickupEnabled;
+const defaultChoice = deliveryEnabled ? "delivery" : pickupEnabled ? "pickup" : "delivery";
+
+const { deliveryOptions, pickupOption, priceMismatch } = resolveStoreFulfillmentOptions(
+  shippingOptions,
+  delivery,
+);
+
+const canSubmit =
+  items.length > 0 &&
+  fulfillmentAvailable &&
+  !priceMismatch &&
+  (defaultChoice === "pickup" ? Boolean(pickupOption) : deliveryOptions.length > 0 || shippingOptions.length > 0);
+
+const initialShippingAmount =
+  defaultChoice === "pickup" ? (pickupOption?.amount ?? 0) : (deliveryOptions[0]?.amount ?? 0);
+
+const baseTotal = (cart?.total ?? cart?.itemTotal ?? 0) - (cart?.shippingTotal ?? 0);
+const summary = resolveStoreCartSummary(cart);
+const defaultPayment = payment.cod ? "cod" : payment.chapa ? "chapa" : null;
+const defaultAddress =
+  customerAddresses.find((address) => address.isDefaultShipping) ?? customerAddresses[0] ?? null;
+
+const CITIES = [
+  "Addis Ababa",
+  "Hawassa",
+  "Bahir Dar",
+  "Adama (Nazret)",
+  "Dire Dawa",
+  "Mekelle",
+  "Gondar",
+  "Jimma",
+  "Dessie",
+  "Bishoftu",
+];
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={`Checkout — ${tenantName}`}>
+  <main class="checkout-page" id="main-content">
+    <div class="checkout-page__wrapper container">
+      <!-- Breadcrumbs & Page Heading -->
+      <header class="checkout-header">
+        <nav class="checkout-breadcrumbs type-body-xs-500" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span class="checkout-breadcrumbs__sep">/</span>
+          <a href="/products">Shop</a>
+          <span class="checkout-breadcrumbs__sep">/</span>
+          <span class="checkout-breadcrumbs__current type-body-xs-700">Checkout</span>
+        </nav>
+
+        <h1 class="checkout-title type-header-3">Checkout</h1>
+      </header>
+
+      {error && (
+        <div style="padding: 1rem; margin-bottom: 1.5rem; background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322;" role="alert">
+          <strong>Could not continue</strong>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {shippingError && (
+        <div style="padding: 1rem; margin-bottom: 1.5rem; background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322;" role="alert">
+          <strong>Shipping options unavailable</strong>
+          <p>Please refresh or contact support.</p>
+        </div>
+      )}
+
+      {!items.length ? (
+        <div class="empty-state" style="padding: 4rem 1rem; text-align: center;">
+          <span class="empty-state__mark" aria-hidden="true">
+            <Icon name="shopping-bag" width={24} height={24} />
+          </span>
+          <div class="empty-state__copy">
+            <h2 class="empty-state__title type-header-4">Your cart is empty</h2>
+            <p class="empty-state__text type-body-s-400">
+              Add products before proceeding to checkout.
+            </p>
+          </div>
+          <Button text="Browse the shop" href="/products" variant="primary" size="large" />
+        </div>
+      ) : (
+        <div class="checkout-layout">
+          <!-- Left: Form Sections -->
+          <form class="checkout-form" id="checkout-main-form" method="post" action={defaultPayment === "chapa" ? "/actions/checkout/chapa" : "/actions/checkout/cod"} data-checkout-form>
+            <!-- 1. Delivery Information -->
+            <div class="checkout-form__section">
+              <div class="checkout-form__section-header">
+                <h2 class="checkout-form__section-title type-header-5">Delivery</h2>
+              </div>
+
+              <div class="checkout-form__fields-grid">
+                <!-- First & Last Name -->
+                <div class="checkout-form__row">
+                  <div class="checkout-form__field-group">
+                    <label for="first-name" class="checkout-form__label type-body-s-500">
+                      First Name <span class="required-star type-body-s-700">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="first-name"
+                      name="firstName"
+                      value={defaultAddress?.firstName || customer?.firstName || ""}
+                      placeholder="Enter first name"
+                      required
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+
+                  <div class="checkout-form__field-group">
+                    <label for="last-name" class="checkout-form__label type-body-s-500">
+                      Last Name <span class="required-star type-body-s-700">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="last-name"
+                      name="lastName"
+                      value={defaultAddress?.lastName || customer?.lastName || ""}
+                      placeholder="Enter last name"
+                      required
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+                </div>
+
+                <!-- Phone Number & City -->
+                <div class="checkout-form__row">
+                  <div class="checkout-form__field-group">
+                    <label for="phone-number" class="checkout-form__label type-body-s-500">
+                      Phone Number <span class="required-star type-body-s-700">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone-number"
+                      name="phone"
+                      value={defaultAddress?.phone || customer?.phone || ""}
+                      placeholder="+251 9__ __ __"
+                      required
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+
+                  <div class="checkout-form__field-group">
+                    <label for="city" class="checkout-form__label type-body-s-500">
+                      City <span class="required-star type-body-s-700">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={defaultAddress?.city || "Addis Ababa"}
+                      required
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+                </div>
+
+                <!-- Email & Street Address -->
+                <div class="checkout-form__row">
+                  <div class="checkout-form__field-group">
+                    <label for="email" class="checkout-form__label type-body-s-500">
+                      Email Address <span class="type-body-xs-400">({defaultPayment === "chapa" ? "Required for online pay" : "Optional"})</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={customer?.email || ""}
+                      required={defaultPayment === "chapa"}
+                      placeholder="email@example.com"
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+
+                  <div class="checkout-form__field-group">
+                    <label for="street-address" class="checkout-form__label type-body-s-500">
+                      Street Address <span class="required-star type-body-s-700">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="street-address"
+                      name="address1"
+                      value={defaultAddress?.address1 || ""}
+                      placeholder="Bole Sub City, Kebele 03, House No. 240"
+                      required
+                      class="checkout-form__input type-body-s-400"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Shipping Options -->
+            {deliveryOptions.length > 0 && (
+              <div class="checkout-form__section">
+                <div class="checkout-form__section-header">
+                  <h2 class="checkout-form__section-title type-header-5">Shipping Method</h2>
+                </div>
+
+                <div class="checkout-form__payment-cards">
+                  {deliveryOptions.map((opt, idx) => (
+                    <label class:list={["checkout-form__payment-card", idx === 0 && "is-selected"]} style="cursor: pointer;">
+                      <input
+                        type="radio"
+                        name="shippingOptionId"
+                        value={opt.id}
+                        checked={idx === 0}
+                        style="margin-right: 0.75rem;"
+                      />
+                      <div class="checkout-form__payment-details">
+                        <span class="checkout-form__payment-title type-body-500">{opt.name || "Standard Delivery"}</span>
+                        <span class="checkout-form__payment-sub type-body-xs-500">
+                          {opt.amount === 0 ? "Free" : formatMoney(opt.amount, cart?.currencyCode, locale)}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <!-- 3. Payment Options -->
+            <div class="checkout-form__section">
+              <div class="checkout-form__section-header">
+                <h2 class="checkout-form__section-title type-header-5">Payment Method</h2>
+              </div>
+
+              <div class="checkout-form__payment-cards" role="radiogroup">
+                {payment.cod && (
+                  <label
+                    class:list={["checkout-form__payment-card", defaultPayment === "cod" && "is-selected"]}
+                    style="cursor: pointer;"
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cod"
+                      checked={defaultPayment === "cod"}
+                      onchange="document.getElementById('checkout-main-form').action = '/actions/checkout/cod'; document.getElementById('email').required = false;"
+                      style="margin-right: 0.75rem;"
+                    />
+                    <div class="checkout-form__payment-details">
+                      <span class="checkout-form__payment-title type-body-500">Cash on Delivery</span>
+                      <span class="checkout-form__payment-sub type-body-xs-500">
+                        Pay when you receive your order
+                      </span>
+                    </div>
+                  </label>
+                )}
+
+                {payment.chapa && (
+                  <label
+                    class:list={["checkout-form__payment-card", defaultPayment === "chapa" && "is-selected"]}
+                    style="cursor: pointer;"
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="chapa"
+                      checked={defaultPayment === "chapa"}
+                      onchange="document.getElementById('checkout-main-form').action = '/actions/checkout/chapa'; document.getElementById('email').required = true;"
+                      style="margin-right: 0.75rem;"
+                    />
+                    <div class="checkout-form__payment-details">
+                      <span class="checkout-form__payment-title type-body-500">Telebirr / Chapa</span>
+                      <span class="checkout-form__payment-sub type-body-xs-500">
+                        Instant online payment
+                      </span>
+                    </div>
+                  </label>
+                )}
+              </div>
+            </div>
+          </form>
+
+          <!-- Right: Sticky Order Summary -->
+          <aside class="checkout-summary" aria-label="Order Summary">
+            <div class="checkout-summary__header">
+              <h2 class="checkout-summary__title type-header-5">Your order</h2>
+              <span class="checkout-summary__items-count type-body-s-500">
+                {summary.itemCount} items
+              </span>
+            </div>
+
+            <!-- Items List -->
+            <div class="checkout-summary__items-list">
+              {items.map((item) => (
+                <div class="checkout-summary__item">
+                  <div class="checkout-summary__item-thumb">
+                    <div class="img-wrapper">
+                      {item.thumbnail ? (
+                        <img src={item.thumbnail} alt={item.title || ""} class="cover" width="64" height="64" />
+                      ) : (
+                        <div style="width: 64px; height: 64px; background: #f8f2ed;"></div>
+                      )}
+                    </div>
+                  </div>
+                  <div class="checkout-summary__item-details">
+                    <h3 class="checkout-summary__item-title type-body-500">{item.title ?? "Piece"}</h3>
+                    <p class="checkout-summary__item-meta type-body-xs-500">
+                      {item.variantTitle && <span>Variant: {item.variantTitle}</span>}
+                      <span>Qty: {item.quantity}</span>
+                    </p>
+                  </div>
+                  <span class="checkout-summary__item-price type-body-500">
+                    {formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <!-- Totals Breakdown -->
+            <div class="checkout-summary__totals">
+              <div class="checkout-summary__totals-row type-body-s-400">
+                <span>Subtotal</span>
+                <span>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</span>
+              </div>
+              {(summary.savingsTotal ?? 0) > 0 && (
+                <div class="checkout-summary__totals-row checkout-summary__totals-row--discount type-body-s-400">
+                  <span>Discount</span>
+                  <span>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</span>
+                </div>
+              )}
+              <div class="checkout-summary__totals-row type-body-s-400">
+                <span>Delivery Fee</span>
+                <span>{initialShippingAmount === 0 ? "Free" : formatMoney(initialShippingAmount, cart?.currencyCode, locale)}</span>
+              </div>
+              <div class="checkout-summary__totals-row checkout-summary__totals-row--final">
+                <span class="checkout-summary__total-label type-body-l">Total</span>
+                <span class="checkout-summary__total-value type-header-4">
+                  {formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode, locale)}
+                </span>
+              </div>
+            </div>
+
+            <!-- Submit CTA -->
+            <Button
+              text={defaultPayment === "chapa" ? `Pay with Telebirr / Chapa (${formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode, locale)})` : `Place Order (${formatMoney(baseTotal + initialShippingAmount, cart?.currencyCode, locale)})`}
+              variant="primary"
+              size="large"
+              fullWidth={true}
+              type="submit"
+              id="checkout-submit-btn"
+              form="checkout-main-form"
+              disabled={!canSubmit || !defaultPayment}
+            />
+
+            <p class="checkout-summary__trust type-body-xs-500">
+              Secure payment · Fast delivery
+            </p>
+          </aside>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

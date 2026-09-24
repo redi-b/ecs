@@ -1,0 +1,111 @@
+---
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/index.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  deferCartCount?: boolean;
+}
+
+const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const template = parseAfroData(data);
+---
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  deferCartCount={deferCartCount}
+  title={`Request an Item — ${tenantName}`}
+>
+  <main class="home-page" id="main-content">
+    <section class="contact-section" style="padding-top: 4rem;">
+      <div class="contact-section__wrapper container">
+        <div class="contact-section__form-card" style="max-width: 720px; margin: 0 auto; width: 100%;">
+          <h1 class="contact-section__title type-header-2">
+            Looking for something specific?
+          </h1>
+          <p class="type-body-s-400" style="margin-bottom: 2rem;">
+            Tell us what piece, style, or garment you need and we will source or craft it for you.
+          </p>
+
+          <form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
+            <input type="hidden" name="type" value="product_request" />
+            <input type="hidden" name="subject" value="Custom item request" />
+            <div class="contact-section__fields">
+              <div class="contact-section__row">
+                <input
+                  type="text"
+                  name="productName"
+                  placeholder="Piece / Item Name*"
+                  class="contact-section__input type-body-s-400"
+                  required
+                  aria-label="Item Name"
+                />
+                <input
+                  type="text"
+                  name="brand"
+                  placeholder="Brand / Style Reference"
+                  class="contact-section__input type-body-s-400"
+                  aria-label="Brand"
+                />
+              </div>
+
+              <div class="contact-section__row">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Your Full Name*"
+                  class="contact-section__input type-body-s-400"
+                  required
+                  aria-label="Your Name"
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone Number / Telegram*"
+                  class="contact-section__input type-body-s-400"
+                  required
+                  aria-label="Phone Number"
+                />
+              </div>
+
+              <div class="contact-section__row">
+                <textarea
+                  name="message"
+                  placeholder="Details, size preference, color notes..."
+                  class="contact-section__textarea type-body-s-400"
+                  rows="4"
+                  aria-label="Details"
+                ></textarea>
+                <div class="contact-section__upload-box">
+                  <span class="contact-section__upload-label type-body-s-500">Reference photo</span>
+                  <label class="contact-section__dropzone">
+                    <input type="file" name="attachment" class="contact-section__file-input" accept="image/*" />
+                    <span class="contact-section__upload-btn type-body-xs-500">Upload Photo</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="contact-section__submit-row">
+              <Button
+                text="Submit Request"
+                variant="primary"
+                size="large"
+                icon="arrow"
+                type="submit"
+              />
+            </div>
+          </form>
+          <p data-inquiry-status aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

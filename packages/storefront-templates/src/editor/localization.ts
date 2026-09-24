@@ -51,6 +51,42 @@ const amharicDefaults: Record<string, Record<string, StorefrontTemplateTranslati
     "listing.eyebrow": { source: "Our catalog", value: "የምርቶች ካታሎግ" },
     "listing.title": { source: "Products", value: "ምርቶች" },
   },
+  "afro@1": {
+    "header.navigation.0.label": { source: "Home", value: "ዋና ገጽ" },
+    "header.navigation.1.label": { source: "Shop", value: "ምርቶች" },
+    "header.navigation.2.label": { source: "Categories", value: "ምድቦች" },
+    "header.navigation.3.label": { source: "Collections", value: "ስብስቦች" },
+    "footer.quickLinks.0.label": { source: "All Products", value: "ሁሉም ምርቶች" },
+    "footer.quickLinks.1.label": { source: "Jackets & Coats", value: "ጃኬቶች እና ኮቶች" },
+    "footer.quickLinks.2.label": { source: "Trousers & Denim", value: "ሱሪዎች እና ጂንስ" },
+    "footer.quickLinks.3.label": { source: "T-Shirts & Tops", value: "ቲሸርቶች እና ሸሚዞች" },
+    "footer.quickLinks.4.label": { source: "Accessories", value: "መለዋወጫዎች" },
+    "home.hero.title": {
+      source: "Style That Feels Good Today and Lasts for Seasons.",
+      value: "ዛሬም የሚመች፣ ለብዙ ጊዜ የሚቆይ ውብ አለባበስ።",
+    },
+    "home.categories.title": {
+      source: "Find your own style with confidence.",
+      value: "በራስ መተማመን የራስዎን ዘይቤ ያግኙ።",
+    },
+    "home.products.title": {
+      source: "Your go-to clothing for every day.",
+      value: "ለዕለት ተዕለት ኑሮዎ ተስማሚ አልባሳት።",
+    },
+    "home.collections.title": {
+      source: "Everything you need to dress well, feel well, and look well.",
+      value: "ጥሩ ለመልበስ፣ ጥሩ ስሜት እንዲሰማዎትና ውብ ሆነው ለመታየት የሚያስፈልጉዎ ነገሮች።",
+    },
+    "home.contact.title": {
+      source: "Have a question or looking for something specific?",
+      value: "ጥያቄ አለዎት ወይም የተለየ ነገር ይፈልጋሉ?",
+    },
+    "home.contact.infoTitle": {
+      source: "Let’s keep in touch!",
+      value: "እንደተገናኘን እንቆይ!",
+    },
+    "listing.title": { source: "All Collections", value: "ሁሉም ስብስቦች" },
+  },
 };
 
 export function getStorefrontTemplateTranslationDefaults(templateKey: string, locale: "am") {

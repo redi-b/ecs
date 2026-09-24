@@ -1,0 +1,165 @@
+---
+import Icon from "../components/Icon.astro";
+import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
+import type { StoreCart } from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  cart: StoreCart | null;
+  error?: string | null;
+  discountError?: string | null;
+  demoMode?: boolean;
+}
+
+const { data, themeTokens, tenantName, cartCount, cart, error, discountError, demoMode = false } = Astro.props;
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const items = cart?.items ?? [];
+const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+const summary = resolveStoreCartSummary(cart);
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={`Your Cart — ${tenantName}`}>
+  <main class="checkout-page" id="main-content" data-cart-page>
+    <div class="checkout-page__wrapper container">
+      <header class="checkout-header">
+        <nav class="checkout-breadcrumbs type-body-xs-500" aria-label="Breadcrumb">
+          <a href="/">Home</a>
+          <span class="checkout-breadcrumbs__sep">/</span>
+          <span class="checkout-breadcrumbs__current type-body-xs-700">Cart</span>
+        </nav>
+
+        <h1 class="checkout-title type-header-3">Shopping Cart ({itemCount})</h1>
+      </header>
+
+      {error && (
+        <div style="padding: 1rem; margin-bottom: 1.5rem; background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322;" role="alert">
+          <strong>Cart unavailable</strong>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {!items.length ? (
+        <div class="empty-state" style="padding: 4rem 1rem; text-align: center;">
+          <span class="empty-state__mark" aria-hidden="true">
+            <Icon name="shopping-bag" width={24} height={24} />
+          </span>
+          <div class="empty-state__copy">
+            <h2 class="empty-state__title type-header-4">Your cart is empty</h2>
+            <p class="empty-state__text type-body-s-400">
+              Add a piece from the shop and it will show up here, ready for checkout.
+            </p>
+          </div>
+          <Button text="Browse the shop" href="/products" variant="primary" size="large" />
+        </div>
+      ) : (
+        <div class="checkout-layout">
+          <!-- Left: Cart Items -->
+          <div class="checkout-form">
+            <div class="checkout-form__section">
+              <div class="checkout-summary__items-list" style="margin-top: 0;">
+                {items.map((item) => (
+                  <div class="checkout-summary__item" data-cart-line={item.id} style="padding: 1.25rem 0; border-bottom: 1px solid #f0e6dd;">
+                    <div class="checkout-summary__item-thumb" style="width: 80px; height: 80px;">
+                      <div class="img-wrapper">
+                        {item.thumbnail ? (
+                          <img src={item.thumbnail} alt={item.title || ""} class="cover" width="80" height="80" />
+                        ) : (
+                          <div style="width: 80px; height: 80px; background: #f8f2ed;"></div>
+                        )}
+                      </div>
+                    </div>
+                    <div class="checkout-summary__item-details" style="flex: 1; margin-left: 1rem;">
+                      <h3 class="checkout-summary__item-title type-body-500">
+                        <a href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>
+                          {item.title ?? "Piece"}
+                        </a>
+                      </h3>
+                      {item.variantTitle && (
+                        <p class="checkout-summary__item-meta type-body-xs-500">{item.variantTitle}</p>
+                      )}
+                      <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem;">
+                        <form method="post" action="/actions/cart/update" data-cart-page-form style="display: inline-flex; align-items: center;">
+                          <input type="hidden" name="lineItemId" value={item.id} />
+                          <input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} />
+                          <button type="submit" disabled={item.quantity <= 1} style="padding: 0.25rem 0.5rem; cursor: pointer; border: 1px solid #e2d2c1; background: #fff;">
+                            <Icon name="minus" width={10} height={2} />
+                          </button>
+                        </form>
+                        <span style="font-weight: 500;">{item.quantity}</span>
+                        <form method="post" action="/actions/cart/update" data-cart-page-form style="display: inline-flex; align-items: center;">
+                          <input type="hidden" name="lineItemId" value={item.id} />
+                          <input type="hidden" name="quantity" value={item.quantity + 1} />
+                          <button type="submit" style="padding: 0.25rem 0.5rem; cursor: pointer; border: 1px solid #e2d2c1; background: #fff;">
+                            <Icon name="plus" width={10} height={10} />
+                          </button>
+                        </form>
+                        <form method="post" action="/actions/cart/remove" data-cart-page-form style="margin-left: auto;">
+                          <input type="hidden" name="lineItemId" value={item.id} />
+                          <button type="submit" style="background: none; border: none; color: #a14b30; cursor: pointer; text-decoration: underline; font-size: 0.875rem;">
+                            Remove
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                    <span class="checkout-summary__item-price type-body-500" style="align-self: flex-start;">
+                      {formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Summary -->
+          <aside class="checkout-summary" aria-label="Order Summary">
+            <div class="checkout-summary__header">
+              <h2 class="checkout-summary__title type-header-5">Order Summary</h2>
+              <span class="checkout-summary__items-count type-body-s-500">{itemCount} items</span>
+            </div>
+
+            <div class="checkout-summary__totals">
+              <div class="checkout-summary__totals-row type-body-s-400">
+                <span>Subtotal</span>
+                <span>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</span>
+              </div>
+              {(summary.savingsTotal ?? 0) > 0 && (
+                <div class="checkout-summary__totals-row checkout-summary__totals-row--discount type-body-s-400">
+                  <span>Discount</span>
+                  <span>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</span>
+                </div>
+              )}
+              <div class="checkout-summary__totals-row type-body-s-400">
+                <span>Delivery</span>
+                <span>{summary.shippingTotal ? formatMoney(summary.shippingTotal, cart?.currencyCode, locale) : "Calculated at checkout"}</span>
+              </div>
+              <div class="checkout-summary__totals-row checkout-summary__totals-row--final">
+                <span class="checkout-summary__total-label type-body-l">Total</span>
+                <span class="checkout-summary__total-value type-header-4">
+                  {formatMoney(summary.total, cart?.currencyCode, locale)}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              text={`Proceed to Checkout (${formatMoney(summary.total, cart?.currencyCode, locale)})`}
+              variant="primary"
+              size="large"
+              fullWidth={true}
+              href="/checkout"
+            />
+          </aside>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

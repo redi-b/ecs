@@ -1,0 +1,940 @@
+@use "../abstracts" as *;
+@use "../components/dropdown";
+@use "../components/empty-state";
+
+// Shop Page Styles
+.shop-page {
+  display: flex;
+  flex-direction: column;
+  background-color: $clr-neutral-50;
+  overflow-x: clip;
+  min-height: 100vh;
+}
+
+// 1. Shop Hero Section
+.shop-hero {
+  width: 100%;
+  margin-block-start: $space-300;
+  margin-block-end: $space-650;
+
+  &__wrapper {
+    position: relative;
+    border-radius: $radius-600;
+    overflow: hidden;
+    min-height: 360px;
+    height: 42dvh;
+    max-height: 460px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba($clr-neutral-900, 0.06);
+  }
+
+  &__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // Multi-stop Dark & Primary-500 Radiant Gradient Overlay for Maximum Text Contrast
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      180deg,
+      rgba($clr-neutral-900, 0.75) 0%,
+      rgba($clr-neutral-900, 0.55) 45%,
+      rgba($clr-primary-500, 0.6) 90%,
+      rgba($clr-primary-500, 0.8) 100%
+    );
+    pointer-events: none;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: $space-400;
+    box-sizing: border-box;
+  }
+
+  &__breadcrumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-150;
+    color: rgba($clr-neutral-50, 0.85);
+
+    a {
+      color: rgba($clr-neutral-50, 0.85);
+      text-decoration: none;
+      background-image: linear-gradient(currentColor, currentColor);
+      background-repeat: no-repeat;
+      background-position: 0 100%;
+      background-size: 0 1px;
+      transition:
+        color $dur-ui ease,
+        background-size $dur-hover $ease-out;
+
+      @media (hover: hover) and (pointer: fine) {
+        &:hover {
+          color: $clr-neutral-50;
+          background-size: 100% 1px;
+        }
+      }
+    }
+
+    .shop-hero__crumb-sep {
+      opacity: 0.5;
+    }
+
+    .shop-hero__crumb-current {
+      color: $clr-primary-200;
+    }
+  }
+
+  &__title {
+    color: $clr-neutral-50;
+    max-width: 18ch;
+    margin: 0;
+    text-shadow: 0 2px 16px rgba($clr-neutral-900, 0.4);
+    letter-spacing: -0.02em;
+  }
+
+  &__description {
+    color: rgba($clr-neutral-50, 0.75);
+    max-width: 41ch;
+    margin: 0;
+    text-shadow: 0 1px 8px rgba($clr-neutral-900, 0.35);
+  }
+}
+
+// 2. Shop Layout & Grid
+.shop-layout {
+  width: 100%;
+  margin-block-end: $space-800;
+
+  &__wrapper {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: $space-500;
+    align-items: start;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 240px 1fr;
+      gap: $space-350;
+    }
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+      gap: $space-350;
+    }
+  }
+}
+
+// 3. Shop Sidebar Filter
+.shop-sidebar {
+  background-color: $clr-neutral-100;
+  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border-radius: $radius-400;
+  padding: $space-400;
+  position: sticky;
+  top: 110px;
+  max-height: calc(100dvh - 130px);
+  overflow-y: auto;
+  overscroll-behavior: auto;
+
+  &::-webkit-scrollbar {
+    width: $space-200;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba($clr-neutral-900, 0.35);
+    border-radius: $radius-800;
+    border: calc((#{$space-200} - #{$space-50}) / 2) solid transparent;
+    background-clip: padding-box;
+  }
+
+  &:hover::-webkit-scrollbar-thumb,
+  &::-webkit-scrollbar-thumb:hover {
+    border-width: $space-50;
+    background-color: rgba($clr-neutral-900, 0.55);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: rgba($clr-neutral-900, 0.35) transparent;
+  }
+  display: flex;
+  flex-direction: column;
+  gap: $space-400;
+  box-sizing: border-box;
+
+  @media (max-width: 860px) {
+    display: none;
+    position: fixed;
+    inset: 0;
+    top: 0;
+    max-height: none;
+    overscroll-behavior: contain;
+    z-index: 1100;
+    border-radius: 0;
+    overflow-y: auto;
+    background-color: $clr-neutral-100;
+    padding: $space-500 $space-400;
+
+    &.is-open {
+      display: flex;
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    padding-block-end: $space-300;
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+  }
+
+  &__header-title {
+    display: flex;
+    align-items: center;
+    gap: $space-150;
+    color: $clr-neutral-900;
+    margin: 0;
+
+    [data-icon="filter"] {
+      width: 16px;
+      height: 16px;
+      color: $clr-primary-500;
+    }
+  }
+
+  &__reset-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border-radius: $radius-800;
+    color: rgba($clr-neutral-900, 0.7);
+    cursor: pointer;
+    padding: $space-100 $space-250;
+    text-decoration: none;
+    transition:
+      color $dur-ui ease,
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-800;
+        background-color: rgba($clr-primary-500, 0.08);
+        border-color: rgba($clr-primary-500, 0.4);
+      }
+    }
+
+    &:active {
+      transform: scale(0.97);
+      background-color: rgba($clr-primary-500, 0.16);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+  }
+
+  &__close-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: $radius-700;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    background-color: $clr-neutral-50;
+    color: $clr-neutral-900;
+    cursor: pointer;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-500, 0.1);
+        border-color: rgba($clr-primary-500, 0.4);
+      }
+    }
+
+    &:active {
+      transform: scale(0.94);
+      background-color: rgba($clr-primary-500, 0.18);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    @media (max-width: 860px) {
+      display: flex;
+    }
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+    padding-block-end: $space-300;
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+
+    &:last-child {
+      border-bottom: none;
+      padding-block-end: 0;
+    }
+  }
+
+  &__group-title {
+    color: rgba($clr-neutral-900, 0.72);
+    margin: 0;
+  }
+
+  &__group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    [data-icon="chevron-down"] {
+      width: 10px;
+      height: $space-150;
+      flex-shrink: 0;
+      color: rgba($clr-neutral-900, 0.55);
+      transition: transform $dur-ui $ease-out;
+    }
+
+    &[aria-expanded="false"] [data-icon="chevron-down"] {
+      transform: rotate(-90deg);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-800;
+      }
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+  }
+
+  &__disclosure {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows $dur-hover $ease-out;
+
+    .shop-sidebar__group.is-collapsed & {
+      grid-template-rows: 0fr;
+    }
+
+    > .shop-sidebar__category-list {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+
+  &__group.is-collapsed {
+    gap: 0;
+  }
+
+  &__category-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-50;
+  }
+
+  &__category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    cursor: pointer;
+    padding: $space-150 $space-200;
+    border-radius: $radius-200;
+    border: 1px solid transparent;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-200, 0.35);
+      }
+    }
+
+    &:active {
+      background-color: rgba($clr-primary-500, 0.1);
+    }
+
+    &:has(input:checked) {
+      background-color: rgba($clr-primary-500, 0.1);
+      border-color: rgba($clr-primary-500, 0.28);
+
+      .shop-sidebar__category-label {
+        color: $clr-neutral-900;
+      }
+
+      .shop-sidebar__category-count {
+        background-color: rgba($clr-primary-500, 0.16);
+        color: $clr-primary-800;
+      }
+
+      input[type="radio"] {
+        border-color: $clr-primary-500;
+
+        &::after {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+    }
+
+    &:has(input:focus-visible) {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    input[type="radio"] {
+      appearance: none;
+      width: $space-350;
+      height: $space-350;
+      margin: 0;
+      border: 1px solid rgba($clr-neutral-900, 0.28);
+      border-radius: $radius-700;
+      background-color: $clr-neutral-50;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: border-color $dur-ui ease;
+
+      &::after {
+        content: "";
+        width: $space-150;
+        height: $space-150;
+        border-radius: $radius-700;
+        background-color: $clr-primary-500;
+        transform: scale(0.4);
+        opacity: 0;
+        transition: transform $dur-ui $ease-out, opacity $dur-ui ease;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        &:hover {
+          border-color: $clr-primary-500;
+        }
+      }
+    }
+  }
+
+  &__category-label {
+    display: flex;
+    align-items: center;
+    gap: $space-200;
+    min-width: 0;
+    color: rgba($clr-neutral-900, 0.78);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &__category-count {
+    flex-shrink: 0;
+    min-width: $space-500;
+    padding: $space-50 $space-150;
+    border-radius: $radius-800;
+    background-color: rgba($clr-neutral-900, 0.05);
+    color: rgba($clr-neutral-900, 0.5);
+    text-align: center;
+  }
+
+  &__price-range {
+    display: flex;
+    flex-direction: column;
+    gap: $space-250;
+  }
+
+  &__price-inputs {
+    display: flex;
+    align-items: center;
+    gap: $space-150;
+  }
+
+  &__price-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $space-100;
+
+    .type-caption {
+      color: rgba($clr-neutral-900, 0.5);
+    }
+  }
+
+  &__price-field {
+    width: 100%;
+    height: 40px;
+    padding: 0 $space-200;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border-radius: $radius-200;
+    color: $clr-neutral-900;
+    outline: none;
+    box-sizing: border-box;
+    transition:
+      border-color $dur-ui ease,
+      box-shadow $dur-ui ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        border-color: rgba($clr-primary-500, 0.45);
+      }
+    }
+
+    &:focus {
+      border-color: $clr-primary-500;
+      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.14);
+    }
+  }
+
+  &__range {
+    position: relative;
+    height: $space-500;
+  }
+
+  &__range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: $space-100;
+    transform: translateY(-50%);
+    border-radius: $radius-800;
+    background-color: rgba($clr-neutral-900, 0.12);
+    pointer-events: none;
+  }
+
+  &__range-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: inherit;
+    background-color: $clr-primary-500;
+  }
+
+  &__range-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: none;
+    pointer-events: none;
+    appearance: none;
+
+    &::-webkit-slider-runnable-track {
+      height: $space-100;
+      background: transparent;
+      border: none;
+    }
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      pointer-events: auto;
+      width: $space-400;
+      height: $space-400;
+      margin-top: calc(($space-100 - $space-400) / 2);
+      border-radius: $radius-700;
+      border: $space-50 solid $clr-neutral-50;
+      background-color: $clr-primary-500;
+      box-shadow: 0 0 0 1px rgba($clr-primary-500, 0.35);
+      cursor: grab;
+    }
+
+    &::-moz-range-track {
+      height: $space-100;
+      background: transparent;
+      border: none;
+    }
+
+    &::-moz-range-thumb {
+      pointer-events: auto;
+      width: $space-400;
+      height: $space-400;
+      border-radius: $radius-700;
+      border: $space-50 solid $clr-neutral-50;
+      background-color: $clr-primary-500;
+      cursor: grab;
+    }
+
+    &:hover::-webkit-slider-thumb,
+    &:hover::-moz-range-thumb,
+    &:active::-webkit-slider-thumb,
+    &:active::-moz-range-thumb {
+      background-color: $clr-primary-800;
+    }
+
+    &:focus-visible::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.28);
+    }
+  }
+
+  &__toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-200;
+    cursor: pointer;
+    padding: $space-150 $space-200;
+    border-radius: $radius-200;
+    border: 1px solid transparent;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-200, 0.35);
+      }
+    }
+
+    &:has(input:checked) {
+      background-color: rgba($clr-primary-500, 0.1);
+      border-color: rgba($clr-primary-500, 0.28);
+    }
+
+    &:has(input:focus-visible) {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+  }
+
+  &__stock-checkbox {
+    appearance: none;
+    width: 36px;
+    height: 20px;
+    margin: 0;
+    border-radius: $radius-800;
+    background-color: rgba($clr-neutral-900, 0.16);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color $dur-ui $ease-out;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: $space-50;
+      left: $space-50;
+      width: 16px;
+      height: 16px;
+      border-radius: $radius-700;
+      background-color: $clr-neutral-50;
+      transition: transform $dur-ui $ease-out;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-neutral-900, 0.28);
+      }
+    }
+
+    &:checked {
+      background-color: $clr-primary-500;
+
+      &::after {
+        transform: translateX(16px);
+      }
+    }
+
+    &:checked:hover {
+      background-color: $clr-primary-800;
+    }
+  }
+}
+
+// 4. Shop Main Area
+.shop-main {
+  display: flex;
+  flex-direction: column;
+  gap: $space-200;
+  min-width: 0;
+
+  // Toolbar
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $space-200 $space-300;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border-radius: $radius-300;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: $space-250;
+  }
+
+  &__count {
+    color: rgba($clr-neutral-900, 0.7);
+    margin: 0;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: $space-300;
+  }
+
+  &__mobile-filter-btn {
+    display: none;
+    align-items: center;
+    gap: $space-100;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border-radius: $radius-800;
+    padding: $space-150 $space-250;
+    cursor: pointer;
+    color: $clr-neutral-900;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-500, 0.08);
+        border-color: rgba($clr-primary-500, 0.4);
+        color: $clr-primary-800;
+      }
+    }
+
+    &:active {
+      transform: scale(0.97);
+      background-color: rgba($clr-primary-500, 0.16);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    @media (max-width: 860px) {
+      display: flex;
+    }
+  }
+
+  &__sort-wrapper {
+    display: flex;
+    align-items: center;
+    gap: $space-150;
+  }
+
+  &__sort-label {
+    color: rgba($clr-neutral-900, 0.6);
+    margin: 0;
+  }
+
+  &__sort-wrapper .dropdown__trigger {
+    width: auto;
+  }
+
+  &__active-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-150;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  &__tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-150;
+    padding: $space-100 $space-100 $space-100 $space-250;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border-radius: $radius-800;
+    color: $clr-neutral-900;
+    cursor: pointer;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      color $dur-ui ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-200, 0.45);
+        border-color: rgba($clr-primary-500, 0.4);
+        color: $clr-primary-800;
+      }
+    }
+
+    &:active {
+      background-color: rgba($clr-primary-500, 0.16);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    .shop-main__tag-remove {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: $space-450;
+      height: $space-450;
+      border-radius: $radius-700;
+      background-color: rgba($clr-neutral-900, 0.06);
+      color: rgba($clr-neutral-900, 0.7);
+      transition:
+        background-color $dur-ui ease,
+        color $dur-ui ease,
+        transform $dur-press $ease-out;
+    }
+
+    &:hover .shop-main__tag-remove,
+    &:focus-visible .shop-main__tag-remove {
+      background-color: $clr-primary-500;
+      color: $clr-neutral-50;
+      transform: rotate(90deg);
+    }
+  }
+
+  // Products Grid (4 columns desktop x 3 rows = 12 items)
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $space-300;
+    width: 100%;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Empty State
+  &__empty {
+    display: none;
+
+    &.is-visible {
+      display: flex;
+    }
+  }
+
+  // 5. Pagination Bar
+  &__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-200;
+    margin-block-start: $space-400;
+    padding-block-start: $space-400;
+    border-top: 1px solid rgba($clr-neutral-900, 0.08);
+  }
+
+  &__page-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 $space-150;
+    border-radius: $radius-200;
+    border: 1px solid rgba($clr-neutral-900, 0.12);
+    background-color: $clr-neutral-50;
+    color: $clr-neutral-900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(:disabled):not(.is-active) {
+        background-color: rgba($clr-primary-500, 0.08);
+        border-color: rgba($clr-primary-500, 0.35);
+        color: $clr-primary-800;
+      }
+    }
+
+    &:active:not(:disabled):not(.is-active) {
+      background-color: rgba($clr-primary-500, 0.16);
+      transform: scale(0.96);
+    }
+
+    &.is-active {
+      background-color: $clr-neutral-900;
+      color: $clr-neutral-50;
+      border-color: $clr-neutral-900;
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    [data-icon="arrow"] {
+      width: 14px;
+      height: 10px;
+    }
+
+    &--prev [data-icon="arrow"] {
+      transform: rotate(180deg);
+    }
+  }
+}

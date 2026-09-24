@@ -1,0 +1,526 @@
+// Product Detail Page Styles
+.pdp-page {
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+}
+
+// 1. Product Showcase Section
+.product-showcase-section {
+  margin-block-start: $space-600;
+  margin-block-end: $space-800;
+  width: 100%;
+
+  &__wrapper {
+    max-width: 1178px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: $space-500;
+  }
+
+  // Responsive Styles for Product Showcase Section
+  @media (max-width: 1080px) {
+    .product-layout {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .product-gallery {
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .product-details {
+      max-width: 600px;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .product-gallery {
+      &__thumbnails {
+        gap: $space-150;
+      }
+    }
+
+    .product-details {
+      &__actions {
+        flex-wrap: wrap;
+        gap: $space-150;
+      }
+
+      &__cta {
+        order: 3;
+        flex: 0 0 100%;
+      }
+
+      &__quantity {
+        flex: 1;
+      }
+    }
+  }
+}
+
+// Breadcrumbs
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $space-200;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-200;
+    color: rgba($clr-neutral-900, 0.4);
+  }
+
+  &__link {
+    color: rgba($clr-neutral-900, 0.4);
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1px;
+    transition:
+      color $dur-ui ease,
+      background-size $dur-hover $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-800;
+        background-size: 100% 1px;
+      }
+    }
+  }
+
+  &__separator {
+    color: rgba($clr-neutral-900, 0.3);
+    user-select: none;
+  }
+
+  &__current {
+    color: rgba($clr-neutral-900, 0.9);
+  }
+}
+
+// Product Grid Layout (Gallery + Details)
+.product-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-650;
+  width: 100%;
+}
+
+// Gallery Column
+.product-gallery {
+  flex: 1 1 500px;
+  max-width: 600px;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $space-400;
+
+  &__main {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 600 / 580;
+    border-radius: $radius-500;
+    overflow: hidden;
+    background-color: $clr-neutral-200;
+
+    .img-wrapper {
+      border-radius: $radius-500;
+    }
+  }
+
+  &__badge {
+    position: absolute;
+    top: $space-500;
+    left: $space-500;
+    background-color: $clr-neutral-50;
+    color: rgba($clr-neutral-900, 0.9);
+    padding: $space-200 $space-250;
+    border-radius: $radius-550;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  &__thumbnails {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $space-300;
+    width: 100%;
+  }
+
+  &__thumb-btn {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 141 / 104;
+    border-radius: $radius-350;
+    overflow: hidden;
+    padding: 0;
+    border: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    transition: border-color $dur-ui ease, transform $dur-press $ease-out;
+
+    .img-wrapper {
+      border-radius: $radius-350;
+    }
+
+    img {
+      transition: transform $dur-image $ease-out;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        border-color: rgba($clr-primary-500, 0.7);
+
+        img {
+          transform: scale(1.06);
+        }
+      }
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &--active {
+      border-color: $clr-primary-200;
+    }
+  }
+}
+
+// Product Details Column
+.product-details {
+  flex: 1 1 450px;
+  max-width: 540px;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $space-400;
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: $space-150;
+  }
+
+  &__badge-discount {
+    background-color: rgba($clr-primary-200, 0.5);
+    color: $clr-primary-800;
+    padding: $space-200 $space-250;
+    border-radius: $radius-500;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  &__badge-stock {
+    // Orphan colors from .agents/node-style-mappings.md
+    background-color: #11ba3326;
+    color: #084214cc;
+    padding: $space-200 $space-250;
+    border-radius: $radius-500;
+    line-height: 1;
+  }
+
+  &__title {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+    max-width: 25ch;
+  }
+
+  &__pricing {
+    display: flex;
+    flex-direction: column;
+    gap: $space-250;
+  }
+
+  &__original-price {
+    color: rgba($clr-neutral-900, 0.6);
+    text-decoration: line-through;
+    margin: 0;
+  }
+
+  &__price {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+  }
+
+  &__description {
+    color: rgba($clr-neutral-900, 0.8);
+    max-width: 55ch;
+    margin: 0;
+  }
+
+  &__divider {
+    width: 100%;
+    height: 1px;
+    background-color: rgba($clr-neutral-900, 0.2);
+    margin: 0;
+  }
+
+  &__option-group {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+  }
+
+  &__option-label {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+  }
+
+  &__swatches {
+    display: flex;
+    align-items: center;
+    gap: $space-100;
+  }
+
+  &__swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-700;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 0;
+    transition: box-shadow $dur-ui $ease-out, transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(&--active) {
+        box-shadow: 0 0 0 $space-50 $clr-neutral-50, 0 0 0 $space-100 rgba($clr-neutral-900, 0.45);
+      }
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    &--active {
+      box-shadow: inset 0 0 0 1.5px $clr-primary-500;
+    }
+  }
+
+  &__sizes {
+    display: flex;
+    align-items: center;
+    gap: $space-150;
+    flex-wrap: wrap;
+  }
+
+  &__size-btn {
+    width: 56px;
+    height: 38px;
+    border-radius: $radius-250;
+    border: none;
+    background-color: $clr-neutral-300;
+    color: rgba($clr-neutral-900, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover:not(&--active) {
+        background-color: $clr-primary-200;
+      }
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+
+    &--active {
+      background-color: rgba($clr-neutral-900, 0.9);
+      color: $clr-neutral-100;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $space-100;
+    margin-top: $space-200;
+  }
+
+  &__quantity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 110px;
+    height: 52px;
+    background-color: $clr-neutral-300;
+    border-radius: $radius-700;
+    padding: 0 $space-200;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  &__qty-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: $radius-500;
+    border: none;
+    background-color: $clr-neutral-100;
+    color: rgba($clr-neutral-900, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color $dur-ui ease, transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: $clr-neutral-50;
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+
+    [data-icon] {
+      width: 12px;
+      height: 12px;
+      color: currentColor;
+    }
+  }
+
+  &__qty-value {
+    color: rgba($clr-neutral-900, 0.9);
+    user-select: none;
+  }
+
+  &__cta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__wishlist-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: $radius-700;
+    border: 1px solid rgba($clr-primary-800, 0.2);
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: $clr-primary-800;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-primary-500, 0.1);
+        border-color: rgba($clr-primary-500, 0.45);
+        color: $clr-primary-500;
+      }
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    &.is-pop {
+      animation: save-ring 480ms $ease-out;
+
+      .wishlist-heart {
+        animation: heart-pop 420ms $ease-out;
+      }
+    }
+
+    &--active {
+      background-color: rgba($clr-primary-500, 0.1);
+      color: $clr-primary-500;
+      border-color: $clr-primary-500;
+    }
+
+    [data-icon="heart"],
+    [data-icon="heart-filled"] {
+      width: 21px;
+      height: 20px;
+      color: currentColor;
+    }
+  }
+}
+
+// 2. Similar Items Section
+.similar-items-section {
+  margin-block-start: 0;
+  margin-block-end: $space-800;
+  width: 100%;
+
+  &__wrapper {
+    max-width: 1400px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: $space-650;
+  }
+
+  &__title {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+    max-width: 20ch;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: $space-300;
+    width: 100%;
+
+    .product-card {
+      max-width: 100%;
+    }
+  }
+
+  // Responsive Styles for Similar Items Section
+  @media (max-width: 1200px) {
+    &__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 992px) {
+    &__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    &__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 540px) {
+    &__grid {
+      grid-template-columns: 1fr;
+      justify-items: center;
+
+      .product-card {
+        max-width: 360px;
+        width: 100%;
+      }
+    }
+  }
+}

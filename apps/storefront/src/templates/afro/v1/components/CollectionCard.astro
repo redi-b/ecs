@@ -1,0 +1,65 @@
+---
+import Button from "./Button.astro";
+import type { StoreCollection, StoreCategory } from "../../../../lib/commerce/types";
+import { collectionProductsHref, categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import "../styles/components/_collection-card.scss";
+
+interface Props {
+  item?: StoreCollection | StoreCategory;
+  kind?: "collection" | "category";
+  title?: string;
+  description?: string;
+  image?: any;
+  href?: string;
+  buttonText?: string;
+  reversed?: boolean;
+  class?: string;
+  variant?: "standard" | "featured";
+}
+
+const {
+  item,
+  kind = "collection",
+  title: propTitle,
+  description: propDescription,
+  image: propImage,
+  href: propHref,
+  buttonText = "Browse Now",
+  reversed = false,
+  class: className,
+} = Astro.props;
+
+const title = propTitle ?? (item && "title" in item ? item.title : item && "name" in item ? item.name : "Collection");
+const description = propDescription ?? (item as any)?.description ?? "Discover our carefully curated pieces.";
+const href = propHref ?? (
+  item
+    ? (kind === "collection"
+        ? collectionProductsHref(item as StoreCollection)
+        : categoryProductsHref(item as StoreCategory))
+    : "/shop"
+);
+const imgSrc = propImage?.src ?? (typeof propImage === "string" ? propImage : (item?.mediaUrl ?? ""));
+---
+
+<article class:list={["collection-card", reversed && "collection-card--reversed", className]}>
+  <div class="collection-card__media">
+    <div class="img-wrapper">
+      {imgSrc && (
+        <img
+          src={imgSrc}
+          alt={title}
+          class="cover"
+          width="397"
+          height="282"
+          loading="lazy"
+        />
+      )}
+    </div>
+  </div>
+
+  <div class="collection-card__content">
+    <h2 class="collection-card__title type-header-3">{title}</h2>
+    <p class="collection-card__desc type-body-400">{description}</p>
+    <Button text={buttonText} href={href} variant="ghost" size="small" />
+  </div>
+</article>

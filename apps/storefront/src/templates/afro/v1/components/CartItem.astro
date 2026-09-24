@@ -1,0 +1,90 @@
+---
+import Icon from "./Icon.astro";
+import "../styles/components/_cart-item.scss";
+
+interface Props {
+  id?: string;
+  title: string;
+  brand?: string;
+  price: string;
+  quantity?: number;
+  image?: any;
+  class?: string;
+}
+
+const {
+  id,
+  title,
+  brand = "Oak & Stone",
+  price,
+  quantity = 1,
+  image,
+  class: className,
+} = Astro.props;
+
+const imgSrc = typeof image === "string" ? image : image?.src;
+---
+
+<div class:list={["cart-item", className]} data-item-id={id}>
+  <div class="cart-item__thumb">
+    <div class="img-wrapper">
+      {imgSrc && (
+        <img
+          src={imgSrc}
+          alt={title}
+          class="cover"
+          width="84"
+          height="84"
+          loading="lazy"
+        />
+      )}
+    </div>
+  </div>
+
+  <div class="cart-item__details">
+    <div class="cart-item__top">
+      <div class="cart-item__titles">
+        <h4 class="cart-item__title type-body-500">{title}</h4>
+        {brand && <p class="cart-item__brand type-body-s-400">{brand}</p>}
+      </div>
+
+      <button
+        type="button"
+        class="cart-item__remove-btn"
+        aria-label="Remove item"
+        data-action="remove"
+        data-cart-remove
+      >
+        <Icon name="trash" width={16} height={16} />
+      </button>
+    </div>
+
+    <div class="cart-item__bottom">
+      <div class="cart-item__quantity" aria-label="Quantity selector">
+        <button
+          type="button"
+          class="cart-item__qty-btn cart-item__qty-btn--minus"
+          aria-label="Decrease quantity"
+          data-action="decrease"
+          data-cart-quantity={String(Math.max(1, quantity - 1))}
+        >
+          <Icon name="minus" width={10} height={2} />
+        </button>
+
+        <span class="cart-item__qty-val type-body-400">{quantity}</span>
+
+        <button
+          type="button"
+          class="cart-item__qty-btn cart-item__qty-btn--plus"
+          aria-label="Increase quantity"
+          data-action="increase"
+          data-cart-quantity={String(quantity + 1)}
+        >
+          <Icon name="plus" width={10} height={10} />
+        </button>
+      </div>
+
+      <span class="cart-item__price type-body-500">{price}</span>
+    </div>
+  </div>
+</div>

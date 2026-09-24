@@ -1,0 +1,54 @@
+---
+import Button from "../components/Button.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import Layout from "../layouts/Layout.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/checkout.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount: number;
+  error?: string | null;
+  redirectLabel?: string;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount,
+  error,
+  redirectLabel,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const progressLabel = redirectLabel ?? m.payment_verify_progress({}, { locale });
+---
+
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount}>
+  <main class="checkout-page" id="main-content">
+    <div class="checkout-page__wrapper container" style="max-width: 680px; margin: 4rem auto; text-align: center;">
+      <h1 class="type-header-2" style="margin-bottom: 1rem;">
+        {error ? "Payment Verification Failed" : "Confirming Payment..."}
+      </h1>
+      <p class="type-body-400" style="margin-bottom: 2rem;">
+        {error ? error : progressLabel}
+      </p>
+
+      {error ? (
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+          <Button text="Try Again" href="/checkout" variant="primary" />
+          <Button text="Return to Cart" href="/cart" variant="ghost" />
+        </div>
+      ) : (
+        <div style="padding: 2rem; background: #fffbf8; border: 1px solid #f0e6dd; border-radius: 8px;">
+          <p class="type-body-s-500">Please keep this window open while we confirm your payment status.</p>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

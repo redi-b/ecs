@@ -1,0 +1,293 @@
+.product-card {
+  display: flex;
+  flex-direction: column;
+  background-color: $clr-neutral-50;
+  border-radius: $radius-300;
+  padding: $space-100 $space-100 $space-300 $space-100;
+  gap: $space-250;
+  width: 100%;
+  max-width: 270px;
+  position: relative;
+  box-shadow: 0 $space-100 9px rgba($clr-neutral-400, 0.7);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover &__media img {
+      transform: scale(1.06);
+    }
+  }
+
+  &__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: $radius-200;
+    overflow: hidden;
+    background-color: $clr-neutral-100;
+  }
+
+  &__img-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    img {
+      transition: transform $dur-image $ease-out;
+    }
+  }
+
+  &__badge {
+    position: absolute;
+    top: $space-250;
+    left: $space-250;
+    padding: $space-200 $space-250;
+    border-radius: $radius-550;
+    background-color: $clr-neutral-50;
+    color: rgba($clr-neutral-900, 0.9);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &__wishlist-btn {
+    position: absolute;
+    top: $space-250;
+    right: $space-250;
+    width: 29px;
+    height: 29px;
+    border-radius: $radius-550;
+    background-color: $clr-neutral-50;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 $space-50 $space-200 rgba($clr-neutral-900, 0.08);
+    color: rgba($clr-neutral-900, 0.9);
+    transition:
+      background-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    [data-icon="heart"],
+    [data-icon="heart-filled"] {
+      width: 14px;
+      height: 14px;
+      color: currentColor;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: $clr-neutral-100;
+        color: $clr-primary-500;
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+
+    &--active {
+      color: $clr-primary-500;
+    }
+
+    &.is-pop {
+      animation: save-ring 480ms $ease-out;
+
+      .wishlist-heart {
+        animation: heart-pop 420ms $ease-out;
+      }
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: $space-350;
+    padding-inline: $space-250;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+  }
+
+  &__title {
+    color: rgba($clr-neutral-900, 0.9);
+    margin: 0;
+  }
+
+  &__title-link {
+    color: inherit;
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1px;
+    transition: background-size $dur-hover $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-size: 100% 1px;
+      }
+    }
+  }
+
+  &__brand {
+    color: rgba($clr-neutral-900, 0.6);
+    margin: 0;
+  }
+
+  &__pricing {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+  }
+
+  &__original-price {
+    color: rgba($clr-neutral-900, 0.6);
+    text-decoration: line-through;
+  }
+
+  &__price {
+    color: rgba($clr-neutral-900, 0.9);
+  }
+
+  &__quick-add-btn {
+    position: absolute;
+    bottom: $space-100;
+    right: $space-100;
+    --quick-add-size: 38px;
+    width: var(--quick-add-size);
+    height: var(--quick-add-size);
+    border-radius: $radius-300;
+    background-color: $clr-primary-800;
+    color: $clr-neutral-50;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition:
+      background-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: $clr-primary-500;
+      }
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-200;
+      outline-offset: $space-50;
+    }
+
+    &.is-added {
+      background-color: $clr-primary-500;
+
+      [data-icon="plus"] {
+        opacity: 0;
+        transform: scale(0.7) rotate(90deg);
+      }
+
+      [data-icon="check"] {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  }
+
+  &__quick-glyph {
+    position: relative;
+    width: 14px;
+    height: 14px;
+
+    [data-icon] {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      color: currentColor;
+      transition:
+        opacity $dur-ui ease,
+        transform $dur-ui $ease-out;
+    }
+
+    [data-icon="plus"] {
+      width: 12px;
+      height: 12px;
+    }
+
+    [data-icon="check"] {
+      width: 14px;
+      height: 14px;
+      opacity: 0;
+      transform: scale(0.7);
+    }
+  }
+
+  &__tip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + #{$space-200});
+    padding: $space-150 $space-250;
+    border-radius: $radius-150;
+    border: 1px solid rgba($clr-neutral-900, 0.1);
+    background-color: $clr-neutral-50;
+    color: $clr-primary-800;
+    box-shadow: 0 $space-100 $space-300 rgba($clr-neutral-900, 0.08);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY($space-100) scale(0.96);
+    transform-origin: calc(100% - var(--quick-add-size) / 2) 100%;
+    transition:
+      opacity $dur-ui $ease-out,
+      transform $dur-ui $ease-out;
+    z-index: 3;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: calc(100% - 1px);
+      right: calc(var(--quick-add-size) / 2);
+      transform: translateX(50%);
+      border-right: $space-150 solid transparent;
+      border-left: $space-150 solid transparent;
+      border-bottom: 0;
+    }
+
+    &::before {
+      border-top: $space-200 solid rgba($clr-neutral-900, 0.1);
+    }
+
+    &::after {
+      border-top: $space-150 solid $clr-neutral-50;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .product-card__quick-add-btn:hover & {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        transition-delay: 180ms;
+      }
+    }
+
+    .product-card__quick-add-btn:focus-visible & {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition-delay: 0ms;
+    }
+
+    .product-card__quick-add-btn.is-added & {
+      opacity: 0;
+      transition-delay: 0ms;
+    }
+  }
+}

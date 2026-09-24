@@ -1,0 +1,595 @@
+@use "../abstracts" as *;
+@use "../components/dropdown";
+
+// Checkout Page Styles
+.checkout-page {
+  display: flex;
+  flex-direction: column;
+  background-color: $clr-neutral-200;
+  min-height: 100vh;
+  padding-block-start: $space-500;
+  padding-block-end: $space-800;
+
+  &__wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: $space-450;
+  }
+}
+
+.checkout-header {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: $space-150;
+  color: rgba($clr-neutral-900, 0.6);
+
+  a {
+    color: rgba($clr-neutral-900, 0.6);
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0 1px;
+    transition:
+      color $dur-ui ease,
+      background-size $dur-hover $ease-out;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: $clr-primary-800;
+        background-size: 100% 1px;
+      }
+    }
+  }
+
+  &__sep {
+    opacity: 0.4;
+  }
+
+  &__current {
+    color: $clr-neutral-900;
+  }
+}
+
+.checkout-title {
+  color: $clr-neutral-900;
+  margin: $space-250 0 0;
+}
+
+// Main 2-Column Checkout Layout
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: $space-500;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: $space-400;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: $space-450;
+  }
+}
+
+// Left Column: Checkout Form
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-550;
+  background-color: $clr-neutral-50;
+  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border-radius: $radius-450;
+  padding: $space-550;
+  box-sizing: border-box;
+
+  @media (max-width: 600px) {
+    padding: $space-400;
+    gap: $space-450;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $space-350;
+    padding-block-end: $space-550;
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+
+    &:last-child {
+      padding-block-end: 0;
+      border-bottom: none;
+    }
+  }
+
+  &__section-header {
+    display: flex;
+    align-items: center;
+  }
+
+  &__section-title {
+    color: $clr-neutral-900;
+    margin: 0 0 $space-300;
+  }
+
+  // Form Fields Grid
+  &__fields-grid {
+    display: flex;
+    flex-direction: column;
+    gap: $space-300;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-300;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+
+    &--full {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__field-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__label {
+    color: rgba($clr-neutral-900, 0.85);
+    display: flex;
+    align-items: center;
+    margin-bottom: $space-200;
+
+    .required-star {
+      color: $clr-primary-500;
+      margin-inline-start: $space-150;
+    }
+  }
+
+  &__input,
+  &__select {
+    width: 100%;
+    height: 48px;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.15);
+    border-radius: $radius-200;
+    padding: 0 $space-250;
+    color: $clr-neutral-900;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color $dur-ui ease, box-shadow $dur-ui ease;
+
+    &::placeholder {
+      color: rgba($clr-neutral-900, 0.35);
+    }
+
+    &:hover {
+      border-color: rgba($clr-neutral-900, 0.28);
+    }
+
+    &:focus {
+      border-color: $clr-primary-500;
+      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+    }
+  }
+
+  .dropdown {
+    width: 100%;
+
+    &__trigger {
+      height: 48px;
+      min-height: 48px;
+      border: 1px solid rgba($clr-neutral-900, 0.15);
+      border-radius: $radius-200;
+      padding: 0 $space-250;
+      box-sizing: border-box;
+      background-color: $clr-neutral-50;
+
+      &:focus-visible,
+      &[aria-expanded="true"] {
+        border-color: $clr-primary-500;
+        box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+        outline: none;
+      }
+    }
+
+    &__menu {
+      max-height: 250px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+  }
+
+  // Checkbox Option
+  &__checkbox-row {
+    display: flex;
+    align-items: center;
+    margin-top: $space-300;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &__checkbox-box {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba($clr-neutral-900, 0.28);
+    border-radius: $radius-100;
+    background-color: $clr-neutral-50;
+    color: $clr-neutral-50;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    [data-icon="check"] {
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity $dur-ui ease, transform $dur-ui $ease-out;
+    }
+
+    &:has(input:checked) {
+      background-color: $clr-primary-500;
+      border-color: $clr-primary-500;
+
+      [data-icon="check"] {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    &:has(input:focus-visible) {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    &:hover {
+      border-color: $clr-primary-500;
+    }
+  }
+
+  &__checkbox {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &__checkbox-label {
+    color: rgba($clr-neutral-900, 0.75);
+    margin-inline-start: $space-200;
+  }
+
+  // Payment Options Cards (Telebirr & Local Bank Only)
+  &__payment-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-100;
+    padding: $space-100;
+    background-color: rgba($clr-neutral-900, 0.04);
+    border-radius: $radius-300;
+
+    @media (max-width: 580px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__payment-card {
+    position: relative;
+    border: 1px solid transparent;
+    background-color: transparent;
+    border-radius: $radius-250;
+    padding: $space-250 $space-300;
+    display: flex;
+    align-items: center;
+    gap: $space-200;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    &:hover:not(.is-selected) {
+      background-color: rgba($clr-neutral-50, 0.72);
+    }
+
+    &:active:not(.is-selected) {
+      background-color: rgba($clr-primary-500, 0.1);
+      transform: scale(0.98);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    &.is-selected {
+      background-color: $clr-neutral-50;
+      border-color: rgba($clr-primary-500, 0.4);
+    }
+  }
+
+  &__radio-dot {
+    display: none;
+  }
+
+  &__payment-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__payment-title {
+    color: $clr-neutral-900;
+    margin: 0 0 $space-150;
+  }
+
+  &__payment-sub {
+    color: rgba($clr-neutral-900, 0.55);
+    margin: 0;
+  }
+
+  // Payment Instructions Box
+  &__payment-info-box {
+    display: flex;
+    flex-direction: column;
+    gap: $space-100;
+    padding-inline: $space-100;
+
+    &.is-hidden {
+      display: none;
+    }
+
+    p {
+      margin: 0 0 $space-150;
+      color: rgba($clr-neutral-900, 0.65);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &__payment-note {
+    color: rgba($clr-neutral-900, 0.5);
+  }
+}
+
+// Right Column: Order Summary
+.checkout-summary {
+  position: sticky;
+  top: 90px;
+  background-color: $clr-neutral-50;
+  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border-radius: $radius-450;
+  padding: $space-500;
+  display: flex;
+  flex-direction: column;
+  gap: $space-350;
+  box-sizing: border-box;
+
+  @media (max-width: 600px) {
+    padding: $space-350;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-300;
+    padding-block-end: $space-300;
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+    box-sizing: border-box;
+  }
+
+  &__title {
+    color: $clr-neutral-900;
+    margin: 0;
+  }
+
+  &__items-count {
+    color: rgba($clr-neutral-900, 0.5);
+    margin-inline-start: $space-300;
+  }
+
+  // Items List
+  &__items-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-200;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $space-250;
+    padding-block-end: $space-200;
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+
+    &:last-child {
+      border-bottom: none;
+      padding-block-end: 0;
+    }
+  }
+
+  &__item-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: $radius-200;
+    overflow: hidden;
+    background-color: $clr-neutral-300;
+    flex-shrink: 0;
+
+    .img-wrapper {
+      width: 100%;
+      height: 100%;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__item-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item-title {
+    color: $clr-neutral-900;
+    margin: 0 0 $space-200;
+    overflow: visible;
+  }
+
+  &__item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    color: rgba($clr-neutral-900, 0.5);
+    margin: 0;
+
+    span + span {
+      margin-inline-start: $space-300;
+    }
+  }
+
+  &__item-price {
+    color: $clr-neutral-900;
+    flex-shrink: 0;
+    margin-inline-start: $space-250;
+  }
+
+  // Coupon Field
+  &__coupon-row {
+    display: flex;
+    gap: $space-150;
+  }
+
+  &__coupon-input {
+    flex: 1;
+    height: 42px;
+    background-color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-900, 0.15);
+    border-radius: $radius-200;
+    padding: 0 $space-200;
+    color: $clr-neutral-900;
+    outline: none;
+
+    &::placeholder {
+      color: rgba($clr-neutral-900, 0.35);
+    }
+
+    &:hover {
+      border-color: rgba($clr-neutral-900, 0.28);
+    }
+
+    &:focus {
+      border-color: $clr-primary-500;
+      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+    }
+  }
+
+  &__coupon-btn {
+    height: 42px;
+    padding: 0 $space-300;
+    background-color: transparent;
+    color: $clr-neutral-900;
+    border: 1px solid rgba($clr-neutral-900, 0.16);
+    border-radius: $radius-200;
+    cursor: pointer;
+    transition:
+      background-color $dur-ui ease,
+      border-color $dur-ui ease,
+      color $dur-ui ease,
+      transform $dur-press $ease-out;
+
+    &:hover {
+      background-color: rgba($clr-neutral-900, 0.04);
+      border-color: rgba($clr-neutral-900, 0.32);
+    }
+
+    &:active {
+      background-color: rgba($clr-primary-500, 0.12);
+      transform: scale(0.97);
+    }
+
+    &:focus-visible {
+      outline: $space-50 solid $clr-primary-500;
+      outline-offset: $space-50;
+    }
+
+    &.is-applied {
+      background-color: rgba($clr-primary-500, 0.12);
+      color: $clr-primary-800;
+      border-color: transparent;
+    }
+  }
+
+  // Totals Breakdown
+  &__totals {
+    display: flex;
+    flex-direction: column;
+    gap: $space-150;
+    padding-block: $space-250;
+    border-top: 1px solid rgba($clr-neutral-900, 0.06);
+    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+  }
+
+  &__totals-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba($clr-neutral-900, 0.7);
+
+    &--discount {
+      display: none;
+      color: $clr-primary-500;
+
+      &.is-visible {
+        display: flex;
+      }
+    }
+
+    &--final {
+      color: $clr-neutral-900;
+      margin-top: $space-150;
+      padding-top: $space-250;
+      border-top: 1px solid rgba($clr-neutral-900, 0.08);
+
+      .checkout-summary__total-value {
+        color: $clr-primary-800;
+      }
+    }
+  }
+
+  &__free-tag {
+    color: $clr-primary-800;
+  }
+
+  &__trust {
+    margin: 0;
+    color: rgba($clr-neutral-900, 0.5);
+    text-align: center;
+  }
+}

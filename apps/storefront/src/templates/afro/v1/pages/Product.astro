@@ -1,0 +1,316 @@
+---
+import Icon from "../components/Icon.astro";
+import type { StoreProduct, StoreProductVariant } from "../../../../lib/commerce/types";
+import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { formatMoney } from "../../../../lib/money";
+import type { StorefrontSeo } from "../../../../lib/seo";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import Button from "../components/Button.astro";
+import Layout from "../layouts/Layout.astro";
+import ProductCard from "../components/ProductCard.astro";
+import { parseAfroData } from "../lib";
+import "../styles/pages/product-detail.scss";
+
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  cartCount?: number;
+  deferCartCount?: boolean;
+  product: StoreProduct | null;
+  handle: string;
+  notice?: string | null;
+  error?: string | null;
+  relatedProducts?: StoreProduct[];
+  seo?: StorefrontSeo;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
+  demoMode?: boolean;
+}
+
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  deferCartCount = false,
+  product,
+  relatedProducts = [],
+  seo,
+  structuredData,
+  demoMode = false,
+} = Astro.props;
+
+const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
+const defaultVariant: StoreProductVariant | null =
+  product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+
+const gallery = product
+  ? [...new Set([...(product.images ?? []), ...(product.thumbnail ? [product.thumbnail] : [])])]
+  : [];
+
+const badge = product ? resolveProductBadge(product, defaultVariant) : null;
+const currentPrice = formatMoney(
+  defaultVariant?.priceAmount ?? product?.priceAmount,
+  defaultVariant?.currencyCode ?? product?.currencyCode,
+  locale,
+);
+
+const sizes = ["S", "M", "L", "XL"];
+const colors = [
+  { name: "Brown", hex: "#784b28" },
+  { name: "Black", hex: "#1c120d" },
+  { name: "Beige", hex: "#e2d2c1" },
+];
+---
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  seo={seo}
+  structuredData={structuredData}
+  title={product ? `${product.title} — ${tenantName}` : `Product — ${tenantName}`}
+>
+  {!product ? (
+    <main id="main-content" class="container" style="min-height: 50vh; padding: 4rem 1rem; text-align: center;">
+      <h1 class="type-header-3">{m.product_not_found({}, { locale })}</h1>
+      <p class="type-body-s-400">{m.product_unavailable({}, { locale })}</p>
+      <div style="margin-top: 2rem;">
+        <Button text={m.action_back_to_products({}, { locale })} href="/products" variant="primary" />
+      </div>
+    </main>
+  ) : (
+    <main class="pdp-page" id="main-content" data-product-detail>
+      <section class="product-showcase-section">
+        <div class="product-showcase-section__wrapper container">
+          <!-- Breadcrumbs -->
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumbs">
+              <li class="breadcrumbs__item">
+                <a href="/" class="breadcrumbs__link type-body-s-500">Home</a>
+                <span class="breadcrumbs__separator type-body-s-400" aria-hidden="true">/</span>
+              </li>
+              <li class="breadcrumbs__item">
+                <a href="/products" class="breadcrumbs__link type-body-s-500">Shop</a>
+                <span class="breadcrumbs__separator type-body-s-400" aria-hidden="true">/</span>
+              </li>
+              {product.collectionTitle && (
+                <li class="breadcrumbs__item">
+                  <a href={`/products?collection=${encodeURIComponent(product.collectionTitle)}`} class="breadcrumbs__link type-body-s-500">
+                    {product.collectionTitle}
+                  </a>
+                  <span class="breadcrumbs__separator type-body-s-400" aria-hidden="true">/</span>
+                </li>
+              )}
+              <li class="breadcrumbs__item">
+                <span class="breadcrumbs__current type-body-s-500" aria-current="page">{product.title}</span>
+              </li>
+            </ol>
+          </nav>
+
+          <!-- Product Main Showcase -->
+          <div class="product-layout">
+            <!-- Left: Gallery Column -->
+            <div class="product-gallery">
+              <div class="product-gallery__main">
+                <div class="img-wrapper">
+                  {gallery[0] ? (
+                    <img
+                      src={gallery[0]}
+                      alt={product.title}
+                      class="cover"
+                      width="600"
+                      height="580"
+                    />
+                  ) : (
+                    <div style="height: 580px; background: #f8f2ed;"></div>
+                  )}
+                </div>
+                {badge && (
+                  <span class="product-gallery__badge type-body-s-400">{badge.label}</span>
+                )}
+              </div>
+
+              {gallery.length > 1 && (
+                <div class="product-gallery__thumbnails">
+                  {gallery.map((thumb, idx) => (
+                    <button
+                      type="button"
+                      class:list={[
+                        "product-gallery__thumb-btn",
+                        idx === 0 && "product-gallery__thumb-btn--active",
+                      ]}
+                      aria-label={`View image ${idx + 1}`}
+                      data-gallery-thumb={thumb}
+                    >
+                      <div class="img-wrapper">
+                        <img
+                          src={thumb}
+                          alt={`${product.title} thumbnail ${idx + 1}`}
+                          class="cover"
+                          width="141"
+                          height="104"
+                          loading="lazy"
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <!-- Right: Details Column -->
+            <div class="product-details">
+              <!-- Badges -->
+              <div class="product-details__badges">
+                {badge && (
+                  <span class="product-details__badge-discount type-body-xs-500">
+                    {badge.label}
+                  </span>
+                )}
+                <span class="product-details__badge-stock type-body-xs-500">
+                  {defaultVariant?.inStock ? "In Stock" : "Out of Stock"}
+                </span>
+              </div>
+
+              <!-- Title -->
+              <h1 class="product-details__title type-header-3">{product.title}</h1>
+
+              <!-- Pricing -->
+              <div class="product-details__pricing">
+                <span class="product-details__price type-header-5">{currentPrice}</span>
+              </div>
+
+              <!-- Description -->
+              {product.description && (
+                <p class="product-details__description type-body-s-400">
+                  {product.description}
+                </p>
+              )}
+
+              <div class="product-details__divider" aria-hidden="true"></div>
+
+              <!-- Color Selector -->
+              <div class="product-details__option-group">
+                <span class="product-details__option-label type-body-s-500">Color</span>
+                <div class="product-details__swatches" role="radiogroup" aria-label="Select Color">
+                  {colors.map((color, idx) => (
+                    <button
+                      type="button"
+                      class:list={[
+                        "product-details__swatch",
+                        idx === 0 && "product-details__swatch--active",
+                      ]}
+                      style={`background-color: ${color.hex};`}
+                      aria-label={color.name}
+                      role="radio"
+                      aria-checked={idx === 0 ? "true" : "false"}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <!-- Size Selector -->
+              <div class="product-details__option-group">
+                <span class="product-details__option-label type-body-s-500">Select Size</span>
+                <div class="product-details__sizes" role="radiogroup" aria-label="Select Size">
+                  {sizes.map((size) => (
+                    <button
+                      type="button"
+                      class:list={[
+                        "product-details__size-btn",
+                        "type-body-s-500",
+                        size === "M" && "product-details__size-btn--active",
+                      ]}
+                      role="radio"
+                      aria-checked={size === "M" ? "true" : "false"}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <!-- Actions Form -->
+              <form action="/actions/cart/add" method="post" data-add-form class="product-details__form">
+                <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} />
+                <input type="hidden" name="quantity" value="1" id="pdp-quantity-input" />
+
+                <div class="product-details__actions">
+                  <div class="product-details__quantity">
+                    <button
+                      type="button"
+                      class="product-details__qty-btn product-details__qty-btn--minus"
+                      aria-label="Decrease quantity"
+                      onclick="(() => { const v = document.getElementById('pdp-qty-val'); const q = document.getElementById('pdp-quantity-input'); if(v && q) { const n = Math.max(1, parseInt(v.textContent || '1') - 1); v.textContent = String(n); q.setAttribute('value', String(n)); } })()"
+                    >
+                      <Icon name="minus" width={12} height={2} />
+                    </button>
+                    <span class="product-details__qty-value type-body-400" id="pdp-qty-val">1</span>
+                    <button
+                      type="button"
+                      class="product-details__qty-btn product-details__qty-btn--plus"
+                      aria-label="Increase quantity"
+                      onclick="(() => { const v = document.getElementById('pdp-qty-val'); const q = document.getElementById('pdp-quantity-input'); if(v && q) { const n = parseInt(v.textContent || '1') + 1; v.textContent = String(n); q.setAttribute('value', String(n)); } })()"
+                    >
+                      <Icon name="plus" width={12} height={12} />
+                    </button>
+                  </div>
+
+                  <div class="product-details__cta">
+                    <Button
+                      text={defaultVariant?.inStock ? "Add to Cart" : "Out of Stock"}
+                      variant="primary"
+                      size="large"
+                      fullWidth={true}
+                      type="submit"
+                      disabled={!defaultVariant?.inStock}
+                      data-action="open-cart"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    class="product-details__wishlist-btn"
+                    data-wishlist-id={product.id}
+                    data-wishlist-toggle
+                    aria-label={`Add ${product.title} to wishlist`}
+                  >
+                    <span class="wishlist-heart" aria-hidden="true">
+                      <Icon name="heart" width={21} height={20} />
+                      <Icon name="heart-filled" width={21} height={20} />
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Similar Items Section -->
+      {relatedProducts.length > 0 && (
+        <section class="similar-items-section">
+          <div class="similar-items-section__wrapper container">
+            <h2 class="similar-items-section__title type-header-2">
+              Similar Items You Might Like
+            </h2>
+
+            <div class="similar-items-section__grid">
+              {relatedProducts.map((item) => (
+                <ProductCard product={item} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
+  )}
+</Layout>

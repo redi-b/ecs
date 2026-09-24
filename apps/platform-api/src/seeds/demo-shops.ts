@@ -1,3 +1,4 @@
+export { afroShop } from "./demo/afro-shop.js";
 export { fashionShop } from "./demo/fashion-shop.js";
 export { demoProductImages } from "./demo/product-images.js";
 export { techShop } from "./demo/tech-shop.js";
@@ -11,6 +12,7 @@ export type {
   DemoShopDefinition,
 } from "./demo/types.js";
 
+import { afroShop } from "./demo/afro-shop.js";
 import { fashionShop } from "./demo/fashion-shop.js";
 import { techShop } from "./demo/tech-shop.js";
 
@@ -34,4 +36,4 @@ export const DEMO_OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? "password1
 export const LEGACY_DEMO_HANDLES = ["addis-tech", "bole-style"] as const;
 export const LEGACY_DEMO_EMAILS = ["owner@addis-tech.local"] as const;
 
-export const demoShops = [techShop, fashionShop] as const;
+export const demoShops = [techShop, fashionShop, afroShop] as const;
