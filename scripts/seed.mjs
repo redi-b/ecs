@@ -42,7 +42,13 @@ success("Medusa secret API key created");
 
 blank();
 info("[2/2] Sync storefront templates");
-run("pnpm", ["--filter", "@ecs/platform-api", "exec", "tsx", "src/sync-storefront-templates.ts"]);
+run("pnpm", [
+  "--filter",
+  "@ecs/platform-api",
+  "exec",
+  "tsx",
+  "src/scripts/sync-storefront-templates.ts",
+]);
 success("Templates synchronized");
 
 if (writeEnv) {

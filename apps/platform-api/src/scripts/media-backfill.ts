@@ -1,17 +1,8 @@
 import { createHash } from "node:crypto";
-import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+import { type createPlatformDb, mediaAssets } from "@ecs/db";
 import { eq } from "drizzle-orm";
-
-import {
-  createPlatformDb,
-  mediaAssets,
-  tenants,
-} from "@ecs/db";
-import {
-  createMediaStorageFromEnv,
-  type StorageAdapter,
-} from "../adapters/storage/index.js";
+import sharp from "sharp";
+import type { StorageAdapter } from "../adapters/storage/index.js";
 import {
   MEDIA_VARIANT_CACHE_CONTROL,
   MEDIA_VARIANT_QUALITY,
@@ -22,9 +13,6 @@ import {
   sanitizeFilename,
   variantObjectKey,
 } from "../modules/media/variants.js";
-import { createMedusaProductService } from "../adapters/medusa/product/service.js";
-import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
-import { loadPlatformApiEnvFiles } from "../config/env.js";
 
 export const REQUIRED_VARIANT_KEYS = ["w200", "w400", "w800", "w1200"] as const;
 
@@ -49,11 +37,7 @@ export type BackfillCliOptions = {
 
 export type BackfillDependencies = {
   db?: PlatformDb;
-  listProducts: (options: {
-    limit?: number;
-    offset?: number;
-    tenantId?: string;
-  }) => Promise<{
+  listProducts: (options: { limit?: number; offset?: number; tenantId?: string }) => Promise<{
     count: number;
     products: MedusaProductForBackfill[];
   }>;
@@ -255,11 +239,7 @@ export function parseImageKeys(
   };
 }
 
-export function getObjectKeyFromUrl(
-  imageUrl: string,
-  tenantId?: string,
-  bucket?: string,
-): string {
+export function getObjectKeyFromUrl(imageUrl: string, tenantId?: string, bucket?: string): string {
   return parseImageKeys(imageUrl, tenantId, bucket).canonicalKey;
 }
 
@@ -269,7 +249,7 @@ export function resolveVariantUrlFromSource(
   bucket?: string,
   publicBaseUrl?: string,
 ): string {
-  if (publicBaseUrl && publicBaseUrl.trim()) {
+  if (publicBaseUrl?.trim()) {
     return `${publicBaseUrl.trim().replace(/\/+$/, "")}/${variantKey.replace(/^\/+/, "")}`;
   }
   try {
@@ -426,9 +406,11 @@ export async function runBackfill(input: {
   const { options, dependencies } = input;
   const limiter = createConcurrencyLimiter(options.concurrency);
   const logger = dependencies.logger ?? {
-    error: (msg: string, ...args: unknown[]) => console.error(`[media:backfill] ERROR: ${msg}`, ...args),
+    error: (msg: string, ...args: unknown[]) =>
+      console.error(`[media:backfill] ERROR: ${msg}`, ...args),
     info: (msg: string, ...args: unknown[]) => console.log(`[media:backfill] ${msg}`, ...args),
-    warn: (msg: string, ...args: unknown[]) => console.warn(`[media:backfill] WARN: ${msg}`, ...args),
+    warn: (msg: string, ...args: unknown[]) =>
+      console.warn(`[media:backfill] WARN: ${msg}`, ...args),
   };
 
   let productsScanned = 0;
@@ -485,13 +467,15 @@ export async function runBackfill(input: {
         limiter(async () => {
           try {
             if (dependencies.processImage) {
-              const processInput: { imageUrl: string; storage: StorageAdapter; tenantId?: string } = {
-                imageUrl: url,
-                storage: dependencies.storage,
-              };
+              const processInput: { imageUrl: string; storage: StorageAdapter; tenantId?: string } =
+                {
+                  imageUrl: url,
+                  storage: dependencies.storage,
+                };
               if (effectiveTenantId) processInput.tenantId = effectiveTenantId;
               const res = await dependencies.processImage(processInput);
-              if (!res) return { newMasterUrl: url, url, variantRecords: undefined, variantUrls: null };
+              if (!res)
+                return { newMasterUrl: url, url, variantRecords: undefined, variantUrls: null };
               const variantUrls =
                 "variantUrls" in res
                   ? (res.variantUrls as Record<string, string>)
@@ -529,10 +513,10 @@ export async function runBackfill(input: {
                   ext === "jpg" || ext === "jpeg"
                     ? "image/jpeg"
                     : ext === "webp"
-                    ? "image/webp"
-                    : ext === "gif"
-                    ? "image/gif"
-                    : "image/png";
+                      ? "image/webp"
+                      : ext === "gif"
+                        ? "image/gif"
+                        : "image/png";
 
                 await dependencies.storage.putObject({
                   body: buffer,
@@ -541,7 +525,10 @@ export async function runBackfill(input: {
                   objectKey: canonicalKey,
                 });
               } catch (copyErr) {
-                logger.warn(`Could not copy master image to canonical key ${canonicalKey}:`, copyErr);
+                logger.warn(
+                  `Could not copy master image to canonical key ${canonicalKey}:`,
+                  copyErr,
+                );
               }
             }
 
@@ -586,8 +573,7 @@ export async function runBackfill(input: {
 
     if (Object.keys(productNewVariants).length > 0) {
       const existingVariants =
-        product.metadata?.media_variants &&
-        typeof product.metadata.media_variants === "object"
+        product.metadata?.media_variants && typeof product.metadata.media_variants === "object"
           ? (product.metadata.media_variants as Record<string, Record<string, string>>)
           : {};
 
@@ -596,19 +582,20 @@ export async function runBackfill(input: {
         ...productNewVariants,
       };
 
-      let updatedThumbnail: string | null | undefined = undefined;
+      let updatedThumbnail: string | null | undefined;
       if (product.thumbnail && urlReplacements.has(product.thumbnail)) {
         updatedThumbnail = urlReplacements.get(product.thumbnail);
       }
 
-      let updatedImages: Array<{ url: string }> | undefined = undefined;
+      let updatedImages: Array<{ url: string }> | undefined;
       if (Array.isArray(product.images) && product.images.length > 0) {
         let changed = false;
         const newImages = product.images.map((img) => {
           const rawUrl = typeof img === "string" ? img : img?.url;
-          if (rawUrl && urlReplacements.has(rawUrl)) {
+          const replacementUrl = rawUrl ? urlReplacements.get(rawUrl) : undefined;
+          if (replacementUrl) {
             changed = true;
-            return { url: urlReplacements.get(rawUrl)! };
+            return { url: replacementUrl };
           }
           return typeof img === "string" ? { url: img } : { url: img?.url ?? "" };
         });
@@ -695,9 +682,7 @@ export async function fetchMedusaCatalogProducts(input: {
 
   while (true) {
     const url = new URL("/admin/products", input.medusaInternalUrl);
-    const fetchLimit = input.limit
-      ? Math.min(pageSize, input.limit - products.length)
-      : pageSize;
+    const fetchLimit = input.limit ? Math.min(pageSize, input.limit - products.length) : pageSize;
     if (fetchLimit <= 0) break;
 
     url.searchParams.set("limit", String(fetchLimit));
@@ -752,9 +737,7 @@ export async function fetchMedusaCatalogProducts(input: {
 
       const productItem: MedusaProductForBackfill = {
         id,
-        images: Array.isArray(p.images)
-          ? (p.images as Array<{ url: string }>)
-          : [],
+        images: Array.isArray(p.images) ? (p.images as Array<{ url: string }>) : [],
         metadata:
           p.metadata && typeof p.metadata === "object"
             ? (p.metadata as Record<string, unknown>)
@@ -781,106 +764,4 @@ export async function fetchMedusaCatalogProducts(input: {
   }
 
   return { count: totalCount || products.length, products };
-}
-
-export async function main() {
-  loadPlatformApiEnvFiles();
-  const options = parseBackfillArgs(process.argv.slice(2));
-
-  const connectionString = process.env.PLATFORM_DATABASE_URL?.trim();
-  if (!connectionString) {
-    throw new Error("PLATFORM_DATABASE_URL is required");
-  }
-  const { db, pool } = createPlatformDb({ connectionString, max: 2 });
-
-  try {
-    const storage = createMediaStorageFromEnv();
-    const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
-
-    const adminTokenResult = await resolveMedusaAdminToken({
-      db,
-      envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
-      internalApiToken:
-        process.env.PLATFORM_INTERNAL_API_TOKEN ??
-        (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token"),
-      medusaInternalUrl,
-    });
-
-    if (!adminTokenResult.ok) {
-      throw new Error(`Medusa admin token unavailable: ${adminTokenResult.error}`);
-    }
-
-    const productService = createMedusaProductService({
-      adminApiToken: adminTokenResult.token,
-      medusaInternalUrl,
-    });
-
-    let salesChannelId: string | undefined;
-    if (options.tenantId) {
-      const [tenantRow] = await db
-        .select({ id: tenants.id, medusaSalesChannelId: tenants.medusaSalesChannelId })
-        .from(tenants)
-        .where(eq(tenants.id, options.tenantId))
-        .limit(1);
-      salesChannelId = tenantRow?.medusaSalesChannelId ?? undefined;
-    }
-
-    const listProducts = async (queryOpts: {
-      limit?: number;
-      offset?: number;
-      tenantId?: string;
-    }) => {
-      const fetchInput: {
-        adminApiToken: string;
-        limit?: number;
-        medusaInternalUrl: string;
-        salesChannelId?: string;
-      } = {
-        adminApiToken: adminTokenResult.token,
-        medusaInternalUrl,
-      };
-      if (queryOpts.limit !== undefined) fetchInput.limit = queryOpts.limit;
-      if (salesChannelId !== undefined) fetchInput.salesChannelId = salesChannelId;
-
-      return fetchMedusaCatalogProducts(fetchInput);
-    };
-
-    const updateProductMediaVariants = async (inputPayload: {
-      images?: Array<{ url: string }>;
-      mediaVariants: Record<string, Record<string, string>>;
-      productId: string;
-      tenantId?: string;
-      thumbnail?: string | null;
-    }) => {
-      return productService.updateProductMediaVariants(inputPayload);
-    };
-
-    await runBackfill({
-      dependencies: {
-        db,
-        listProducts,
-        ...(process.env.MEDIA_S3_PUBLIC_BASE_URL?.trim() ? { publicBaseUrl: process.env.MEDIA_S3_PUBLIC_BASE_URL.trim() } : {}),
-        storage,
-        updateProductMediaVariants,
-      },
-      options,
-    });
-  } finally {
-    await pool.end();
-  }
-}
-
-const isMainModule = Boolean(
-  process.argv[1] &&
-    (process.argv[1] === fileURLToPath(import.meta.url) ||
-      process.argv[1].endsWith("/media-backfill.ts") ||
-      process.argv[1].endsWith("/media-backfill.js") ||
-      process.argv[1].endsWith("media-backfill")),
-);
-
-if (isMainModule) {
-  main().catch((err) => {
-    console.error("[media:backfill] Fatal error:", err);
-    process.exit(1);
-  });
 }

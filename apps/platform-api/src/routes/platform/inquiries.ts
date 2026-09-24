@@ -2,6 +2,16 @@ import type { Context, Hono } from "hono";
 import { z } from "zod";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type PlatformInquiryRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "authorizeDashboardForTenant"
+  | "getSession"
+  | "getStorefrontInquiry"
+  | "listStorefrontInquiries"
+  | "updateStorefrontInquiryStatus"
+>;
+
 import { inquiryListFiltersSchema } from "../../modules/storefront/inquiry-list-query.js";
 import { getPaginationValue } from "../shared.js";
 
@@ -9,7 +19,7 @@ const inquiryStatusSchema = z.enum(["new", "read", "resolved", "archived"]);
 
 async function authorize(
   context: Context<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformInquiryRouteDependencies,
   action: "read" | "update",
 ) {
   const session = await options.getSession?.(context.req.raw.headers);
@@ -30,7 +40,7 @@ async function authorize(
 
 export function registerPlatformInquiryRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformInquiryRouteDependencies,
 ) {
   app.get("/platform/tenants/:tenantId/inquiries", async (context) => {
     const access = await authorize(context, options, "read");

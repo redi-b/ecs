@@ -2,12 +2,17 @@ import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 
+type TelegramWebhookDependencies = Pick<
+  PlatformAppOptions,
+  "handleTelegramWebhook" | "telegramWebhookSecret"
+>;
+
 /**
  * Telegram Bot API webhook. Secret token header must match TELEGRAM_WEBHOOK_SECRET when set.
  */
 export function registerTelegramWebhookRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: TelegramWebhookDependencies,
 ) {
   app.post("/platform/webhooks/telegram", async (context) => {
     if (!options.handleTelegramWebhook) {

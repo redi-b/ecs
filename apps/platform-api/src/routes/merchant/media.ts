@@ -1,8 +1,19 @@
-import { getProductMediaReferences } from "../../modules/media/product-references.js";
 import { z } from "zod";
-
 import { getMediaLimitsConfig } from "../../adapters/storage/env.js";
 import type { PlatformAppOptions } from "../../app.js";
+import { getProductMediaReferences } from "../../modules/media/product-references.js";
+
+type MerchantMediaRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "completeMediaUpload"
+  | "createMediaUpload"
+  | "deleteMediaAsset"
+  | "getMerchantProduct"
+  | "listMediaAssets"
+  | "syncProductMedia"
+  | "updateMediaMetadata"
+>;
+
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
 const createUploadSchema = z.object({
@@ -33,7 +44,7 @@ const syncProductMediaSchema = z.object({
 
 export function registerMerchantMediaRoutes(
   app: MerchantRouteApp,
-  options: PlatformAppOptions,
+  options: MerchantMediaRouteDependencies,
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/media/config", async (context) => {

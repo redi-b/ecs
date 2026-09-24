@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { appWithResolution, resolvedTenantContext } from "../../test/platform-app-harness.js";
+import { appWithResolution, resolvedTenantContext } from "../../../test/support/platform-app-harness.js";
 
 describe("storefront inquiries", () => {
   it("validates and creates a tenant-scoped contact inquiry", async () => {

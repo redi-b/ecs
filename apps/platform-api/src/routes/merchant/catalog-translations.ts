@@ -7,12 +7,22 @@ import {
 } from "@ecs/contracts";
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type MerchantCatalogTranslationRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "getMerchantCatalogTranslation"
+  | "getMerchantCatalogTranslations"
+  | "listMerchantCatalogTranslationReadiness"
+  | "updateMerchantCatalogTranslation"
+  | "updateMerchantCatalogTranslations"
+>;
+
 import { getJsonBody } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
 export function registerMerchantCatalogTranslationRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: MerchantCatalogTranslationRouteDependencies,
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/storefront/translations/catalog/readiness", async (context) => {

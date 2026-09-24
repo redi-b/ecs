@@ -1,14 +1,32 @@
-import type { Hono } from "hono";
 import { shopDetailsSchema } from "@ecs/contracts";
+import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+
+type TenantSettingsRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "authorizeDashboardForTenant"
+  | "getSession"
+  | "getTenantDashboardSummary"
+  | "getTenantMembershipSummary"
+  | "requestInsightsRefresh"
+  | "resolveTenantForHost"
+  | "getBillingStatus"
+  | "getDashboardMetrics"
+  | "getStorefrontInsights"
+  | "getTenantInsightsSummary"
+  | "listMerchantOrders"
+  | "listMerchantProducts"
+  | "updateTenantShopSettings"
+>;
+
 import { createMerchantRouteHelpers } from "../../merchant/context.js";
 import { createMerchantDashboardSummary } from "../../merchant/dashboard-summary.js";
 import { getJsonBody, getRequiredBodyString } from "../../shared.js";
 
 export function registerPlatformTenantSettingsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: TenantSettingsRouteDependencies,
 ) {
   const { getResolvedCommerce } = createMerchantRouteHelpers(options);
   const { getMerchantDashboardPayload } = createMerchantDashboardSummary(
@@ -154,7 +172,8 @@ export function registerPlatformTenantSettingsRoutes(
     const body = await getJsonBody(context.req.raw);
     const name = getRequiredBodyString(body, "name");
     const handle = getRequiredBodyString(body, "handle");
-    const details = body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
+    const details =
+      body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
     if (details && !details.success) {
       return context.json({ error: "invalid_shop_details", issues: details.error.issues }, 400);
     }

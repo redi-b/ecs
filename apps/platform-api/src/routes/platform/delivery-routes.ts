@@ -1,6 +1,16 @@
 import type { Context, Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type PlatformDeliveryRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "authorizeDashboardForTenant"
+  | "getDeliverySettings"
+  | "getSession"
+  | "syncDeliveryShippingPrice"
+  | "updateDeliverySettings"
+>;
+
 import { getJsonBody, getRequiredBodyString } from "../shared.js";
 
 function getRequiredBodyBoolean(body: unknown, key: string) {
@@ -48,7 +58,7 @@ function getRequiredBodyArray(body: unknown, key: string) {
 
 export function registerDeliveryRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformDeliveryRouteDependencies,
 ) {
   app.get("/platform/tenants/:tenantId/delivery", async (context) => {
     if (!options.getDeliverySettings) {

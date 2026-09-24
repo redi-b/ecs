@@ -5,7 +5,11 @@ The source tree is organized by runtime responsibility and domain boundary.
 ```text
 src/
   app.ts                 # Hono app factory (thin)
-  index.ts               # process wiring / DI composition
+  index.ts               # HTTP executable composition root
+  worker.ts              # background worker composition + lifecycle
+  bootstrap/             # runtime-specific dependency bundles
+  scripts/               # one-shot maintenance executables
+  seeds/                 # demo and reference-data seeding
   types/                 # shared domain & option types
   context/               # auth + tenant resolution implementations
     platform-auth.ts
@@ -29,7 +33,8 @@ src/
       commerce-provisioning.ts
     chapa/
   config/                # env + hosts
-  test/                  # shared test harness
+  test/                  # cross-module and HTTP integration tests
+  **/*.test.ts           # focused tests colocated with their module
 ```
 
 ## Rules
@@ -37,6 +42,8 @@ src/
 - **Routes** validate request/auth/context and call modules (or injected `PlatformAppOptions`).
 - **Modules** own domain behavior and factories used by composition.
 - **Adapters** talk to Medusa, Chapa, and other providers.
+- **index.ts** and **worker.ts** are the only long-running executable composition roots; bootstrap modules group cohesive runtime wiring.
+- **scripts/** and **seeds/** contain one-shot executables and their reusable helpers.
 - **types/** holds `PlatformAppOptions` and merchant/commerce result types.
 - Import implementations from their canonical `context/`, `modules/`, or `adapters/` path; compatibility re-export folders are intentionally not maintained.
 - Prefer new post-MVP resources under:

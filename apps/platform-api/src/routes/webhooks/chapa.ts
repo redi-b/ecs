@@ -1,12 +1,15 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type ChapaWebhookDependencies = Pick<PlatformAppOptions, "handleChapaPaymentCallback">;
+
 import { getRequestValue } from "../platform/helpers.js";
 import { getJsonBody } from "../shared.js";
 
 export function registerChapaWebhookRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: ChapaWebhookDependencies,
 ) {
   app.on(["GET", "POST"], "/platform/payments/chapa/callback", async (context) => {
     if (!options.handleChapaPaymentCallback) {

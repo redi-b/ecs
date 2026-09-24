@@ -8,7 +8,7 @@ import {
   users,
 } from "@ecs/db";
 import { eq } from "drizzle-orm";
-import { appWithResolution } from "../test/platform-app-harness.js";
+import { appWithResolution } from "../../test/support/platform-app-harness.js";
 import { createPlatformAuth } from "./platform-auth.js";
 import { createPlatformPermissionAuthorization } from "./platform-authorization.js";
 

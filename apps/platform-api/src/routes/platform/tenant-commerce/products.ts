@@ -1,6 +1,27 @@
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+
+type TenantProductRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "createMerchantProduct"
+  | "createMerchantProductOptionSet"
+  | "deleteMerchantProduct"
+  | "deleteMerchantProductOptionSet"
+  | "deleteMerchantProductsBatch"
+  | "getMerchantProduct"
+  | "getMerchantProductStock"
+  | "getMerchantProductVariantStock"
+  | "getSession"
+  | "getTenantCommerceContext"
+  | "listMerchantProductOptionSets"
+  | "listMerchantProducts"
+  | "updateMerchantProduct"
+  | "updateMerchantProductOptionSet"
+  | "updateMerchantProductStock"
+  | "updateMerchantProductVariantStock"
+>;
+
 import { productListFiltersSchema } from "../../../modules/commerce/product-list-filters.js";
 import {
   exportProductsToCsv,
@@ -22,7 +43,7 @@ import {
 
 export function registerPlatformTenantProductsRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: TenantProductRouteDependencies,
 ) {
   app.get("/platform/tenants/:tenantId/products", async (context) => {
     if (!options.getTenantCommerceContext || !options.listMerchantProducts) {

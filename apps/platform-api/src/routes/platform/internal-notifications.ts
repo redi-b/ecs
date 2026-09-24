@@ -1,6 +1,12 @@
 import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type PlatformInternalNotificationDependencies = Pick<
+  PlatformAppOptions,
+  "internalApiToken" | "recordNotificationEvent" | "resolveTenantIdByMedusaSalesChannelId"
+>;
+
 import { validateNotificationEventPayload } from "../../modules/notifications/event-registry.js";
 import { isAllowedNotificationEventType } from "../../modules/notifications/service.js";
 import type { NotificationEventType } from "../../types/index.js";
@@ -26,7 +32,7 @@ function readOptionalString(record: Record<string, unknown>, key: string): strin
  */
 export function registerPlatformInternalNotificationRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformInternalNotificationDependencies,
 ) {
   app.post("/platform/internal/notifications/events", async (context) => {
     const expected = options.internalApiToken?.trim();

@@ -1,10 +1,20 @@
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type PlatformOnboardingRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "checkTenantHandleAvailability"
+  | "getOnboardingState"
+  | "getSession"
+  | "getTenantForUser"
+  | "listTenantsForUser"
+>;
+
 import { getPaginationValue } from "../shared.js";
 
 export function registerPlatformOnboardingRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformOnboardingRouteDependencies,
 ) {
   app.get("/platform/onboarding/state", async (context) => {
     if (!options.getOnboardingState) {

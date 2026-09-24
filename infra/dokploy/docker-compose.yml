@@ -254,7 +254,7 @@ services:
       - "180"
       - sh
       - -c
-      - node --import tsx node_modules/@ecs/db/src/migrations.ts && node --import tsx src/sync-storefront-templates.ts
+      - node --import tsx node_modules/@ecs/db/src/migrations.ts && node --import tsx src/scripts/sync-storefront-templates.ts
     depends_on:
       postgres:
         condition: service_healthy

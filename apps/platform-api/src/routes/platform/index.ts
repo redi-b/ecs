@@ -8,7 +8,10 @@ import { registerPlatformInquiryRoutes } from "./inquiries.js";
 import { registerPlatformInternalNotificationRoutes } from "./internal-notifications.js";
 import { registerLaunchReadinessRoutes } from "./launch-readiness.js";
 import { registerPlatformOnboardingRoutes } from "./onboarding.js";
-import { registerPlatformOperatorRoutes } from "./operator.js";
+import { registerPlatformOperatorBillingRoutes } from "./operator-billing.js";
+import { registerPlatformOperatorContentRoutes } from "./operator-content.js";
+import { registerPlatformOperatorOperationsRoutes } from "./operator-operations.js";
+import { registerPlatformOperatorTenantRoutes } from "./operator-tenants.js";
 import { registerPlatformStorefrontRoutes } from "./storefront.js";
 import { registerPlatformTenantCommerceRoutes } from "./tenant-commerce/index.js";
 import { registerPlatformTenantOpsRoutes } from "./tenant-ops.js";
@@ -28,6 +31,9 @@ export function registerPlatformRoutes(
   registerPlatformInquiryRoutes(app, options);
   registerPlatformStorefrontRoutes(app, options);
   registerPlatformTenantOpsRoutes(app, options);
-  registerPlatformOperatorRoutes(app, options);
+  registerPlatformOperatorContentRoutes(app, options);
+  registerPlatformOperatorOperationsRoutes(app, options);
+  registerPlatformOperatorBillingRoutes(app, options);
+  registerPlatformOperatorTenantRoutes(app, options);
   registerDeliveryRoutes(app, options);
 }

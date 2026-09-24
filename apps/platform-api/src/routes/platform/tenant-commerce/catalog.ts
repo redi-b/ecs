@@ -1,5 +1,25 @@
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../../app.js";
+
+type TenantCatalogRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "createMerchantProductCategory"
+  | "createMerchantProductCollection"
+  | "deleteMerchantProductCategoriesBatch"
+  | "deleteMerchantProductCategory"
+  | "deleteMerchantProductCollection"
+  | "deleteMerchantProductCollectionsBatch"
+  | "getSession"
+  | "getTenantCommerceContext"
+  | "listMerchantCollectionProducts"
+  | "listMerchantProductCategories"
+  | "listMerchantProductCollections"
+  | "reorderMerchantProductCategories"
+  | "updateMerchantCollectionProducts"
+  | "updateMerchantProductCategory"
+  | "updateMerchantProductCollection"
+>;
+
 import { taxonomyListFiltersSchema } from "../../../modules/commerce/taxonomy-list-filters.js";
 import {
   getJsonBody,
@@ -11,7 +31,7 @@ import {
 
 export function registerPlatformTenantCatalogRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: TenantCatalogRouteDependencies,
 ) {
   app.get("/platform/tenants/:tenantId/product-categories", async (context) => {
     if (!options.getTenantCommerceContext || !options.listMerchantProductCategories) {

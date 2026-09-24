@@ -51,13 +51,13 @@ import type {
   TenantShopProvisioningResult,
   TenantShopSettingsUpdateResult,
   TenantStatusUpdateResult,
-} from "../app.js";
-import { createPlatformApp } from "../app.js";
-import type { PlatformAppOptions } from "../types/platform-app.js";
+} from "../../src/app.js";
+import { createPlatformApp } from "../../src/app.js";
+import type { PlatformAppOptions } from "../../src/types/platform-app.js";
 
-export type { MerchantOrderAction, NotificationEventType } from "../app.js";
+export type { MerchantOrderAction, NotificationEventType } from "../../src/app.js";
 
-import type { TenantContext, TenantResolutionResult } from "../context/tenant-resolver.js";
+import type { TenantContext, TenantResolutionResult } from "../../src/context/tenant-resolver.js";
 
 function compactPlatformAppOptions(input: Record<string, unknown>): PlatformAppOptions {
   return Object.fromEntries(
@@ -90,44 +90,44 @@ export function appWithResolution(
   result: TenantResolutionResult,
   options?: {
     landingPublicOrigins?: string[];
-    createStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["createStorefrontInquiry"];
-    createReviewedProductImportArtifact?: import("../types/platform-app.js").PlatformAppOptions["createReviewedProductImportArtifact"];
-    requestProductImportApply?: import("../types/platform-app.js").PlatformAppOptions["requestProductImportApply"];
-    getProductImportExecution?: import("../types/platform-app.js").PlatformAppOptions["getProductImportExecution"];
-    listStorefrontInquiries?: import("../types/platform-app.js").PlatformAppOptions["listStorefrontInquiries"];
-    getStorefrontInquiry?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
-    updateStorefrontInquiryStatus?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
+    createStorefrontInquiry?: import("../../src/types/platform-app.js").PlatformAppOptions["createStorefrontInquiry"];
+    createReviewedProductImportArtifact?: import("../../src/types/platform-app.js").PlatformAppOptions["createReviewedProductImportArtifact"];
+    requestProductImportApply?: import("../../src/types/platform-app.js").PlatformAppOptions["requestProductImportApply"];
+    getProductImportExecution?: import("../../src/types/platform-app.js").PlatformAppOptions["getProductImportExecution"];
+    listStorefrontInquiries?: import("../../src/types/platform-app.js").PlatformAppOptions["listStorefrontInquiries"];
+    getStorefrontInquiry?: import("../../src/types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
+    updateStorefrontInquiryStatus?: import("../../src/types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
     authHandler?: (request: Request) => Promise<Response>;
     authorizeDashboardForTenant?: PlatformAppOptions["authorizeDashboardForTenant"];
     getInsightsSales?: PlatformAppOptions["getInsightsSales"];
     getInsightsProducts?: PlatformAppOptions["getInsightsProducts"];
     getInsightsDemand?: PlatformAppOptions["getInsightsDemand"];
     getInsightsStorefront?: PlatformAppOptions["getInsightsStorefront"];
-    authorizePlatformPermission?: import("../types/platform-app.js").PlatformAppOptions["authorizePlatformPermission"];
-    getPlatformPrincipalAccess?: import("../types/platform-app.js").PlatformAppOptions["getPlatformPrincipalAccess"];
-    getSuperadminOverview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminOverview"];
-    listSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminWork"];
-    listSuperadminAudit?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminAudit"];
-    getSuperadminCommerceReview?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminCommerceReview"];
-    listPlatformOperators?: import("../types/platform-app.js").PlatformAppOptions["listPlatformOperators"];
-    getPlatformHealth?: import("../types/platform-app.js").PlatformAppOptions["getPlatformHealth"];
-    getJobOperations?: import("../types/platform-app.js").PlatformAppOptions["getJobOperations"];
-    retryFailedJob?: import("../types/platform-app.js").PlatformAppOptions["retryFailedJob"];
-    cancelQueuedJob?: import("../types/platform-app.js").PlatformAppOptions["cancelQueuedJob"];
-    recoverSuperadminWork?: import("../types/platform-app.js").PlatformAppOptions["recoverSuperadminWork"];
-    listSuperadminTenants?: import("../types/platform-app.js").PlatformAppOptions["listSuperadminTenants"];
-    getSuperadminTenant?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminTenant"];
-    getPlanAdministrationCatalog?: import("../types/platform-app.js").PlatformAppOptions["getPlanAdministrationCatalog"];
-    savePlanDraft?: import("../types/platform-app.js").PlatformAppOptions["savePlanDraft"];
-    publishPlanDraft?: import("../types/platform-app.js").PlatformAppOptions["publishPlanDraft"];
-    migrateSubscriptionPlanVersion?: import("../types/platform-app.js").PlatformAppOptions["migrateSubscriptionPlanVersion"];
+    authorizePlatformPermission?: import("../../src/types/platform-app.js").PlatformAppOptions["authorizePlatformPermission"];
+    getPlatformPrincipalAccess?: import("../../src/types/platform-app.js").PlatformAppOptions["getPlatformPrincipalAccess"];
+    getSuperadminOverview?: import("../../src/types/platform-app.js").PlatformAppOptions["getSuperadminOverview"];
+    listSuperadminWork?: import("../../src/types/platform-app.js").PlatformAppOptions["listSuperadminWork"];
+    listSuperadminAudit?: import("../../src/types/platform-app.js").PlatformAppOptions["listSuperadminAudit"];
+    getSuperadminCommerceReview?: import("../../src/types/platform-app.js").PlatformAppOptions["getSuperadminCommerceReview"];
+    listPlatformOperators?: import("../../src/types/platform-app.js").PlatformAppOptions["listPlatformOperators"];
+    getPlatformHealth?: import("../../src/types/platform-app.js").PlatformAppOptions["getPlatformHealth"];
+    getJobOperations?: import("../../src/types/platform-app.js").PlatformAppOptions["getJobOperations"];
+    retryFailedJob?: import("../../src/types/platform-app.js").PlatformAppOptions["retryFailedJob"];
+    cancelQueuedJob?: import("../../src/types/platform-app.js").PlatformAppOptions["cancelQueuedJob"];
+    recoverSuperadminWork?: import("../../src/types/platform-app.js").PlatformAppOptions["recoverSuperadminWork"];
+    listSuperadminTenants?: import("../../src/types/platform-app.js").PlatformAppOptions["listSuperadminTenants"];
+    getSuperadminTenant?: import("../../src/types/platform-app.js").PlatformAppOptions["getSuperadminTenant"];
+    getPlanAdministrationCatalog?: import("../../src/types/platform-app.js").PlatformAppOptions["getPlanAdministrationCatalog"];
+    savePlanDraft?: import("../../src/types/platform-app.js").PlatformAppOptions["savePlanDraft"];
+    publishPlanDraft?: import("../../src/types/platform-app.js").PlatformAppOptions["publishPlanDraft"];
+    migrateSubscriptionPlanVersion?: import("../../src/types/platform-app.js").PlatformAppOptions["migrateSubscriptionPlanVersion"];
     resolveTenantForHost?: (host?: string) => Promise<TenantResolutionResult>;
     getPublishedStorefrontConfig?: (input: {
       publishedRevisionId: string;
       tenantId: string;
     }) => Promise<PublishedStorefrontConfigResult>;
-    getStorefrontSeoSettings?: import("../types/platform-app.js").PlatformAppOptions["getStorefrontSeoSettings"];
-    updateStorefrontSeoSettings?: import("../types/platform-app.js").PlatformAppOptions["updateStorefrontSeoSettings"];
+    getStorefrontSeoSettings?: import("../../src/types/platform-app.js").PlatformAppOptions["getStorefrontSeoSettings"];
+    updateStorefrontSeoSettings?: import("../../src/types/platform-app.js").PlatformAppOptions["updateStorefrontSeoSettings"];
     handleChapaPaymentCallback?: (input: {
       providerReference?: string | null | undefined;
       reportedStatus?: string | null | undefined;
@@ -226,9 +226,9 @@ export function appWithResolution(
           status: 400 | 404;
         }
     >;
-    getEntitlementSummary?: import("../types/platform-app.js").PlatformAppOptions["getEntitlementSummary"];
-    getSuperadminOperationalSummary?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminOperationalSummary"];
-    getSuperadminDiagnostics?: import("../types/platform-app.js").PlatformAppOptions["getSuperadminDiagnostics"];
+    getEntitlementSummary?: import("../../src/types/platform-app.js").PlatformAppOptions["getEntitlementSummary"];
+    getSuperadminOperationalSummary?: import("../../src/types/platform-app.js").PlatformAppOptions["getSuperadminOperationalSummary"];
+    getSuperadminDiagnostics?: import("../../src/types/platform-app.js").PlatformAppOptions["getSuperadminDiagnostics"];
     revokeEntitlementOverride?: (input: {
       operatorUserId: string;
       overrideId: string;
@@ -334,7 +334,7 @@ export function appWithResolution(
     getTenantDashboardSummary?: (input: {
       tenantId: string;
     }) => Promise<TenantDashboardSummaryResult>;
-    requestInsightsRefresh?: import("../types/platform-app.js").PlatformAppOptions["requestInsightsRefresh"];
+    requestInsightsRefresh?: import("../../src/types/platform-app.js").PlatformAppOptions["requestInsightsRefresh"];
     getTenantReadiness?: (input: { tenantId: string }) => Promise<TenantReadinessResult>;
     getOnboardingState?: (input: { userId: string }) => Promise<PlatformOnboardingStateResult>;
     listTenantsForUser?: (input: {
@@ -342,7 +342,7 @@ export function appWithResolution(
       offset: number;
       userId: string;
     }) => Promise<TenantListResult>;
-    getTenantMembershipSummary?: import("../types/platform-app.js").PlatformAppOptions["getTenantMembershipSummary"];
+    getTenantMembershipSummary?: import("../../src/types/platform-app.js").PlatformAppOptions["getTenantMembershipSummary"];
     listTenantProvisioningAttempts?: (input: {
       limit: number;
       offset: number;
@@ -356,9 +356,9 @@ export function appWithResolution(
       limit: number;
       tenantId: string;
     }) => Promise<SupportHistoryResult>;
-    listSupportAccessGrants?: import("../types/platform-app.js").PlatformAppOptions["listSupportAccessGrants"];
-    createSupportAccessGrant?: import("../types/platform-app.js").PlatformAppOptions["createSupportAccessGrant"];
-    revokeSupportAccessGrant?: import("../types/platform-app.js").PlatformAppOptions["revokeSupportAccessGrant"];
+    listSupportAccessGrants?: import("../../src/types/platform-app.js").PlatformAppOptions["listSupportAccessGrants"];
+    createSupportAccessGrant?: import("../../src/types/platform-app.js").PlatformAppOptions["createSupportAccessGrant"];
+    revokeSupportAccessGrant?: import("../../src/types/platform-app.js").PlatformAppOptions["revokeSupportAccessGrant"];
     getStorefrontDraft?: (input: { tenantId: string }) => Promise<StorefrontDraftResult>;
     storefrontPreviewSecret?: string;
     updateStorefrontDraft?: (input: {
@@ -371,7 +371,7 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<StorefrontPublishResult>;
-    unpublishStorefront?: import("../types/platform-app.js").PlatformAppOptions["unpublishStorefront"];
+    unpublishStorefront?: import("../../src/types/platform-app.js").PlatformAppOptions["unpublishStorefront"];
     createOperatorSupportNote?: (input: {
       body: string;
       operatorUserId: string;
@@ -399,7 +399,7 @@ export function appWithResolution(
       tenantId: string;
       userId: string;
     }) => Promise<TenantDomainVerificationResult>;
-    getDashboardMetrics?: import("../types/platform-app.js").PlatformAppOptions["getDashboardMetrics"];
+    getDashboardMetrics?: import("../../src/types/platform-app.js").PlatformAppOptions["getDashboardMetrics"];
     listMerchantProducts?: (input: {
       status?: string | undefined;
       limit: number;
@@ -417,9 +417,9 @@ export function appWithResolution(
       tenantId: string;
     }) => Promise<MerchantProductCollectionsResult>;
     listMerchantOrders?: (
-      input: import("../types/merchant-order.js").MerchantOrderListQuery,
+      input: import("../../src/types/merchant-order.js").MerchantOrderListQuery,
     ) => Promise<MerchantOrdersResult>;
-    recordMerchantDataExport?: import("../types/platform-app.js").PlatformAppOptions["recordMerchantDataExport"];
+    recordMerchantDataExport?: import("../../src/types/platform-app.js").PlatformAppOptions["recordMerchantDataExport"];
     listNotificationPreferences?: (input: {
       tenantId: string;
     }) => Promise<NotificationPreferenceListResult>;

@@ -2,10 +2,12 @@ import type { Hono } from "hono";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 
+type PlatformBillingCatalogDependencies = Pick<PlatformAppOptions, "getPublicPlanCatalog">;
+
 /** Marketing-safe billing catalog. No session, internal ids, or entitlement machinery. */
 export function registerPlatformBillingCatalogRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformBillingCatalogDependencies,
 ) {
   app.get("/platform/billing/plans", async (context) => {
     if (!options.getPublicPlanCatalog) {

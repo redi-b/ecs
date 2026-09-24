@@ -9,10 +9,10 @@ import {
 } from "@ecs/jobs";
 import { createLogger } from "@ecs/logger";
 import { createChapaPaymentService } from "./adapters/chapa/payment-service.js";
-import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
-import { createMedusaOrderService } from "./adapters/medusa/order/service.js";
-import { createMedusaProductService } from "./adapters/medusa/product/service.js";
 import { createMediaStorageFromEnv } from "./adapters/storage/env.js";
+import { createWorkerCommerceRuntime } from "./bootstrap/worker-commerce.js";
+import { createWorkerNotificationRuntime } from "./bootstrap/worker-notifications.js";
+import { startWorkerScheduling } from "./bootstrap/worker-scheduling.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
@@ -27,27 +27,7 @@ import {
 } from "./jobs/handlers/product-import-apply.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
 import { platformJobRegistry } from "./jobs/registry.js";
-import {
-  DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
-  registerAnalyticsRepeatableJobs,
-} from "./jobs/schedule-analytics-jobs.js";
-import {
-  parseBillingIntervalMs,
-  registerBillingRepeatableJobs,
-} from "./jobs/schedule-billing-jobs.js";
-import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
-import { createCustomerOrderEmailDispatcher } from "./modules/email/customer-order-dispatcher.js";
-import { createEmailDeliveryService } from "./modules/email/delivery-service.js";
 import { createMediaService } from "./modules/media/index.js";
-import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
-import { createLogNotificationProvider } from "./modules/notifications/providers/log-provider.js";
-import { createProviderRegistry } from "./modules/notifications/providers/registry.js";
-import { createTelegramNotificationProvider } from "./modules/notifications/providers/telegram-provider.js";
-import { createCodeNotificationRenderer } from "./modules/notifications/renderer.js";
-import { createNotificationService } from "./modules/notifications/service.js";
-import { resolveTelegramCallbackSecret } from "./modules/telegram/telegram-actions.js";
-import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
-import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
 
 loadPlatformApiEnvFiles();
 
@@ -77,90 +57,12 @@ const platformDb = createPlatformDb({
   ),
 });
 
-const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
-const medusaAdminToken = await resolveMedusaAdminToken({
-  db: platformDb.db,
-  envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
-  internalApiToken:
-    process.env.PLATFORM_INTERNAL_API_TOKEN ??
-    (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token"),
-  logger,
-  medusaInternalUrl,
-});
-if (!medusaAdminToken.ok) {
-  logger.error({ error: medusaAdminToken.error }, "analytics rollup Medusa token unavailable");
-  process.exit(1);
-}
-const orderService = createMedusaOrderService({
-  adminApiToken: medusaAdminToken.token,
-  medusaInternalUrl,
-});
-const productService = createMedusaProductService({
-  adminApiToken: medusaAdminToken.token,
-  medusaInternalUrl,
-});
-const resolveTenantIdBySalesChannel = createResolveTenantIdByMedusaSalesChannel(platformDb.db);
-const createCapacityLimitedProduct = createProductCapacityWriter({
-  createProduct: productService.createMerchantProduct,
-  db: platformDb.db,
-  listProducts: productService.listMerchantProducts,
-  resolveTenantId: resolveTenantIdBySalesChannel,
-});
-
-const logProvider = (channel: string) =>
-  createLogNotificationProvider(channel, {
-    log: (fields, message) => {
-      logger.info(fields, message);
-    },
+const { createCapacityLimitedProduct, medusaInternalUrl, orderService, productService } =
+  await createWorkerCommerceRuntime({
+    db: platformDb.db,
+    env: process.env,
+    logger,
   });
-
-const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
-const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME?.trim() || "";
-const telegramProvider = telegramBotToken
-  ? createTelegramNotificationProvider({ botToken: telegramBotToken })
-  : logProvider("telegram");
-
-if (telegramBotToken) {
-  logger.info("Telegram notification provider enabled");
-} else {
-  logger.warn("TELEGRAM_BOT_TOKEN not set; telegram deliveries use log provider");
-}
-
-const telegramOperatorService =
-  telegramBotToken && telegramBotUsername
-    ? createTelegramOperatorService(platformDb.db, {
-        botToken: telegramBotToken,
-        botUsername: telegramBotUsername,
-      })
-    : null;
-const telegramCallbackSecret = resolveTelegramCallbackSecret();
-
-const emailFrom = process.env.EMAIL_FROM?.trim() || "";
-const emailProviderResolution = createEmailNotificationProviderFromEnv(process.env);
-const emailProvider = emailProviderResolution.provider ?? logProvider("email");
-const accountEmailProvider = emailProviderResolution.provider ?? {
-  channel: "email" as const,
-  async send() {
-    throw new Error("email_provider_unavailable");
-  },
-};
-const emailEncryptionKey =
-  process.env.EMAIL_DELIVERY_ENCRYPTION_KEY?.trim() ||
-  process.env.PLATFORM_SECRETS_ENCRYPTION_KEY?.trim() ||
-  process.env.BETTER_AUTH_SECRET?.trim() ||
-  "development-ecs-auth-secret-change-before-production";
-
-if (emailProviderResolution.configured) {
-  logger.info(
-    { from: emailFrom, provider: emailProviderResolution.name },
-    "Email notification provider enabled",
-  );
-} else {
-  logger.warn("No email provider configured; email deliveries use the log provider");
-}
-
-const notificationProviders = createProviderRegistry([emailProvider, telegramProvider]);
-const notificationRenderer = createCodeNotificationRenderer();
 
 const jobsClient = createJobsClient({
   redisUrl,
@@ -168,22 +70,20 @@ const jobsClient = createJobsClient({
   logger,
   registry: platformJobRegistry,
 });
-const emailDeliveryService = emailProviderResolution.configured
-  ? createEmailDeliveryService({
-      db: platformDb.db,
-      encryptionKey: emailEncryptionKey,
-      enqueueJob: (input) => jobsClient.enqueueJob(input),
-    })
-  : null;
-const dispatchCustomerOrderEmail = emailDeliveryService
-  ? createCustomerOrderEmailDispatcher({
-      db: platformDb.db,
-      enqueueEmail: emailDeliveryService.enqueue,
-    })
-  : null;
-
-const notificationService = createNotificationService(platformDb.db, {
-  enqueueJob: (input) => jobsClient.enqueueJob(input),
+const {
+  accountEmailProvider,
+  dispatchCustomerOrderEmail,
+  emailEncryptionKey,
+  notificationProviders,
+  notificationRenderer,
+  notificationService,
+  telegramCallbackSecret,
+  telegramOperatorService,
+} = createWorkerNotificationRuntime({
+  db: platformDb.db,
+  env: process.env,
+  jobsClient,
+  logger,
 });
 
 // Chapa verify for billing reconcile (same secret as HTTP API).
@@ -270,120 +170,13 @@ const worker = startPlatformWorkers({
   logger,
 });
 
-void registerBillingRepeatableJobs({
+const scheduling = startWorkerScheduling({
+  buildVersion: workerBuildVersion,
+  env: process.env,
   jobsClient,
   logger,
-  reconcileIntervalMs: parseBillingIntervalMs(
-    process.env.BILLING_RECONCILE_INTERVAL_MS,
-    5 * 60 * 1000,
-  ),
-  lifecycleIntervalMs: parseBillingIntervalMs(
-    process.env.BILLING_LIFECYCLE_INTERVAL_MS,
-    60 * 60 * 1000,
-  ),
-}).catch((error) => {
-  logger.warn(
-    { err: error instanceof Error ? error.message : String(error) },
-    "failed to register billing BullMQ repeatables",
-  );
-});
-
-const analyticsStartupController = new AbortController();
-const reconciliationIntervalMs = Math.max(
-  5_000,
-  Number.parseInt(process.env.JOB_RECONCILE_INTERVAL_MS ?? "30000", 10) || 30_000,
-);
-const recoverInboxEvents = async () => {
-  const events = await notificationService.inbox.listRecoverableEvents(100);
-  let queued = 0;
-  let failed = 0;
-  for (const event of events) {
-    try {
-      await jobsClient.enqueueJob({
-        idempotencyKey: `notifications.in-app.materialize:${event.id}:${event.attempts}`,
-        name: "notifications.in-app.materialize",
-        payload: { eventId: event.id },
-        tenantId: event.tenantId,
-      });
-      queued += 1;
-    } catch {
-      failed += 1;
-    }
-  }
-  if (queued || failed) logger.info({ failed, queued }, "Inbox event recovery scan completed");
-};
-const reconcileQueued = () =>
-  jobsClient.reconcileQueued().then(async (summary) => {
-    await recoverInboxEvents();
-    await jobsClient.recordSchedulerHeartbeat({
-      buildVersion: workerBuildVersion,
-      ttlMs: reconciliationIntervalMs * 3,
-    });
-    if (summary.recovered || summary.rejected) {
-      logger.info(summary, "Queued job reconciliation completed");
-    }
-  });
-void reconcileQueued().catch((error) => {
-  logger.warn(
-    { err: error instanceof Error ? error.message : String(error) },
-    "Queued job reconciliation failed",
-  );
-});
-const reconciliationTimer = setInterval(() => {
-  void reconcileQueued().catch((error) => {
-    logger.warn(
-      { err: error instanceof Error ? error.message : String(error) },
-      "Queued job reconciliation failed",
-    );
-  });
-}, reconciliationIntervalMs);
-reconciliationTimer.unref();
-
-const retentionIntervalMs = Math.max(
-  60_000,
-  Number.parseInt(process.env.JOB_RETENTION_INTERVAL_MS ?? "3600000", 10) || 3_600_000,
-);
-const cleanupExpiredRuns = () =>
-  Promise.all([jobsClient.cleanupExpiredRuns(), notificationService.inbox.deleteExpired()]).then(
-    ([jobs, inbox]) => {
-      if (jobs.deleted) logger.info({ deleted: jobs.deleted }, "Expired job records removed");
-      if (inbox.deleted) logger.info({ deleted: inbox.deleted }, "Expired inbox items removed");
-    },
-  );
-void cleanupExpiredRuns().catch((error) => {
-  logger.warn(
-    { err: error instanceof Error ? error.message : String(error) },
-    "Job record retention cleanup failed",
-  );
-});
-const retentionTimer = setInterval(() => {
-  void cleanupExpiredRuns().catch((error) => {
-    logger.warn(
-      { err: error instanceof Error ? error.message : String(error) },
-      "Job record retention cleanup failed",
-    );
-  });
-}, retentionIntervalMs);
-retentionTimer.unref();
-
-void registerAnalyticsRepeatableJobs({
-  jobsClient,
-  isCommerceReady: async () => {
-    const response = await fetch(new URL("/health", medusaInternalUrl), {
-      signal: AbortSignal.timeout(1_000),
-    }).catch(() => null);
-    return response?.ok ?? false;
-  },
-  intervalMs: parseBillingIntervalMs(
-    process.env.ANALYTICS_ROLLUP_INTERVAL_MS,
-    DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
-  ),
-  signal: analyticsStartupController.signal,
-}).catch((error) => {
-  logger.warn(
-    { err: error instanceof Error ? error.message : String(error) },
-    "failed to register analytics BullMQ repeatable",
-  );
+  medusaInternalUrl,
+  notificationService,
 });
 
 logger.info(
@@ -409,9 +202,7 @@ const shutdownController = createShutdownController({
     {
       name: "scheduling",
       run: () => {
-        analyticsStartupController.abort();
-        clearInterval(reconciliationTimer);
-        clearInterval(retentionTimer);
+        scheduling.stop();
       },
     },
     { name: "worker", run: () => worker.close() },

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { appWithResolution, resolvedTenantContext } from "../../test/platform-app-harness.js";
+import { appWithResolution, resolvedTenantContext } from "../../../test/support/platform-app-harness.js";
 import { createInsightsSalesService } from "../../modules/analytics/insights-sales.js";
 import { createInsightsProductsService } from "../../modules/analytics/insights-products.js";
 import { createInsightsStorefrontService } from "../../modules/analytics/insights-storefront.js";

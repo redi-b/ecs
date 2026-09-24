@@ -2,6 +2,12 @@ import type { Hono } from "hono";
 import { z } from "zod";
 
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type MerchantInquiryRouteDependencies = Pick<
+  PlatformAppOptions,
+  "getStorefrontInquiry" | "listStorefrontInquiries" | "updateStorefrontInquiryStatus"
+>;
+
 import { inquiryListFiltersSchema } from "../../modules/storefront/inquiry-list-query.js";
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
@@ -10,7 +16,7 @@ const inquiryStatusSchema = z.enum(["new", "read", "resolved", "archived"]);
 
 export function registerMerchantInquiryRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: MerchantInquiryRouteDependencies,
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/inquiries", async (context) => {

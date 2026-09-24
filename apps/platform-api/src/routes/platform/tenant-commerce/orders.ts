@@ -5,13 +5,25 @@ import type {
   PlatformAppOptions,
   PlatformAppVariables,
 } from "../../../app.js";
-import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
+
+type TenantOrderRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "authorizeDashboardForTenant"
+  | "getMerchantOrder"
+  | "getSession"
+  | "getTenantCommerceContext"
+  | "listMerchantOrders"
+  | "mutateMerchantOrder"
+  | "recheckMerchantOrderPayment"
+>;
+
 import { parseOrderRefundInput } from "../../../lib/order-refund-input.js";
+import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: TenantOrderRouteDependencies,
 ) {
   app.get("/platform/tenants/:tenantId/orders", async (context) => {
     if (!options.getTenantCommerceContext || !options.listMerchantOrders) {

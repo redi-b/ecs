@@ -1,8 +1,8 @@
 import { loadServiceEnv } from "@ecs/config";
 import { createPlatformDb } from "@ecs/db";
 
-import { loadPlatformApiEnvFiles } from "./config/env.js";
-import { syncStorefrontTemplateRegistry } from "./modules/storefront/template-registry-sync.js";
+import { loadPlatformApiEnvFiles } from "../config/env.js";
+import { syncStorefrontTemplateRegistry } from "../modules/storefront/template-registry-sync.js";
 
 loadPlatformApiEnvFiles();
 

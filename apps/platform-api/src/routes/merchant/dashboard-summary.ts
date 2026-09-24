@@ -4,6 +4,16 @@ import type { BillingStatus, DashboardMetricsResult, PlatformAppOptions } from "
 import type { DashboardActorRole } from "../../types/session.js";
 import type { ResolvedMerchantCommerceContext } from "./context.js";
 
+export type MerchantDashboardSummaryDependencies = Pick<
+  PlatformAppOptions,
+  | "getBillingStatus"
+  | "getDashboardMetrics"
+  | "getStorefrontInsights"
+  | "getTenantInsightsSummary"
+  | "listMerchantOrders"
+  | "listMerchantProducts"
+>;
+
 type MerchantDashboardBase = {
   actor: {
     id: string;
@@ -42,7 +52,7 @@ type MerchantDashboardBase = {
 };
 
 export function createMerchantDashboardSummary(
-  options: PlatformAppOptions,
+  options: MerchantDashboardSummaryDependencies,
   getResolvedCommerce: (
     context: {
       medusaStoreId: string | null;

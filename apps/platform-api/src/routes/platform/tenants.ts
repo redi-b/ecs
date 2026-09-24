@@ -1,11 +1,17 @@
-import type { Hono } from "hono";
 import { shopDetailsSchema } from "@ecs/contracts";
+import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+
+type PlatformTenantRouteDependencies = Pick<
+  PlatformAppOptions,
+  "createTenantShop" | "getSession" | "getTenantMembershipSummary"
+>;
+
 import { getJsonBody, getOptionalBodyString, getRequiredBodyString } from "../shared.js";
 
 export function registerPlatformTenantRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformTenantRouteDependencies,
 ) {
   app.post("/platform/tenants", async (context) => {
     if (!options.createTenantShop) {
@@ -29,7 +35,8 @@ export function registerPlatformTenantRoutes(
     const handle = getRequiredBodyString(body, "handle");
     const templateId = getOptionalBodyString(body, "templateId");
     const templateKey = getOptionalBodyString(body, "templateKey");
-    const details = body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
+    const details =
+      body?.shopDetails === undefined ? null : shopDetailsSchema.safeParse(body.shopDetails);
     if (details && !details.success) {
       return context.json({ error: "invalid_shop_details", issues: details.error.issues }, 400);
     }

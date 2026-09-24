@@ -1,140 +1,36 @@
-import { resolveTxt as resolveDnsTxt } from "node:dns/promises";
 import { loadServiceEnv } from "@ecs/config";
-import { createPlatformDb, tenants } from "@ecs/db";
-import { createJobsClient } from "@ecs/jobs";
+import { createPlatformDb } from "@ecs/db";
 import { createLogger } from "@ecs/logger";
-import { serve } from "@hono/node-server";
-import { eq } from "drizzle-orm";
-import {
-  createChapaPaymentService,
-  resolveChapaPayerEmail,
-} from "./adapters/chapa/payment-service.js";
-import { resolveMedusaAdminToken } from "./adapters/medusa/admin-token.js";
-import { createMedusaCommerceProvisioningClient } from "./adapters/medusa/commerce-provisioning.js";
-import { createMedusaCustomerService } from "./adapters/medusa/customer-service.js";
-import { createMedusaManualOrderService } from "./adapters/medusa/manual-order-service.js";
-import { createMedusaCatalogTranslationService } from "./adapters/medusa/catalog-translation-service.js";
-import { attachCatalogNameTranslations } from "./lib/attach-catalog-name-translations.js";
-import { createMedusaPromotionService } from "./adapters/medusa/promotion-service.js";
-import {
-  createMedusaEnsurePickupOptionClient,
-  createMedusaShippingPriceClient,
-} from "./adapters/medusa/update-shipping-price.js";
-import { createMediaStorageFromEnv } from "./adapters/storage/index.js";
 import { createPlatformApp } from "./app.js";
-import { createMerchantCapabilityLookup } from "./context/merchant-authorization.js";
+import { createAnalyticsRuntime } from "./bootstrap/analytics.js";
+import { createAuthRuntime } from "./bootstrap/auth.js";
+import { createBillingRuntime } from "./bootstrap/billing.js";
+import { createBillingAppOptions } from "./bootstrap/billing-app-options.js";
+import { createCommerceRuntime } from "./bootstrap/commerce.js";
+import { createCommerceAppOptions } from "./bootstrap/commerce-app-options.js";
+import { createDeliveryRuntime } from "./bootstrap/delivery.js";
+import { createEmailRuntime } from "./bootstrap/email.js";
+import { createJobsRuntime } from "./bootstrap/jobs.js";
+import { createMediaRuntime } from "./bootstrap/media.js";
+import { createMediaAppOptions } from "./bootstrap/media-app-options.js";
+import { createPaymentRuntime } from "./bootstrap/payments.js";
+import { createPlatformOperationsRuntime } from "./bootstrap/platform-operations.js";
+import { createPlatformOperationsAppOptions } from "./bootstrap/platform-operations-app-options.js";
+import { startPlatformServer } from "./bootstrap/server-lifecycle.js";
+import { createTelegramRuntime } from "./bootstrap/telegram.js";
+import { createTenantRuntime } from "./bootstrap/tenant.js";
+import { createTenantManagementRuntime } from "./bootstrap/tenant-management.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
 import { getSystemHosts } from "./config/hosts.js";
-import { createDashboardAuthorizationLookup } from "./context/dashboard-authorization.js";
 import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
-import { createPlatformAuth, parseTrustedOrigins } from "./context/platform-auth.js";
-import {
-  createPlatformPermissionAuthorization,
-  createPlatformPrincipalAccessLookup,
-} from "./context/platform-authorization.js";
+import { parseTrustedOrigins } from "./context/platform-auth.js";
 import { resolveTenantFromHost } from "./context/tenant-resolver.js";
-import { platformJobRegistry } from "./jobs/registry.js";
-import {
-  createAnalyticsInsightsService,
-  createAnalyticsService,
-  createDrizzleAnalyticsEventStore,
-  createDrizzleAnalyticsInsightsStore,
-} from "./modules/analytics/analytics-service.js";
-import { createDashboardMetricsService } from "./modules/analytics/dashboard-metrics-service.js";
-import { createInsightsSalesService } from "./modules/analytics/insights-sales.js";
-import { createSalesSourceReader } from "./modules/analytics/insights-sales-repository.js";
-import { createInsightsProductsService } from "./modules/analytics/insights-products.js";
-import { createInsightsDemandService } from "./modules/analytics/insights-demand.js";
-import { createProductDemandReader } from "./modules/analytics/insights-demand-repository.js";
-import { createInsightsTrafficReader } from "./modules/analytics/insights-traffic.js";
-import { createInsightsStorefrontService } from "./modules/analytics/insights-storefront.js";
-import { createStorefrontReportReader } from "./modules/analytics/insights-storefront-repository.js";
-import { createProductContributionReader } from "./modules/analytics/insights-products-repository.js";
-import {
-  createStorefrontAnalyticsBridge,
-  createStorefrontInsightsService,
-  createUmamiAnalyticsProvider,
-} from "./modules/analytics/index.js";
-import { createInsightsRefreshService } from "./modules/analytics/refresh-service.js";
-import { createPlanAdministrationService } from "./modules/billing/plan-administration.js";
-import { createLinksEtBillingPaymentVerifier } from "./modules/billing/links-et-payment-verifier.js";
-import { createBillingPaymentVerificationChain } from "./modules/billing/payment-verification.js";
-import { createProductCapacityWriter } from "./modules/billing/product-capacity.js";
-import { createBillingProviderEventInbox } from "./modules/billing/provider-event-inbox.js";
-import { reconcileChapaBillingPayments } from "./modules/billing/reconcile-payments.js";
-import { createBillingService, isPlatformBillingTxRef } from "./modules/billing/service.js";
-import { createMedusaOrderService } from "./modules/commerce/order-management.js";
-import { createMedusaProductService } from "./modules/commerce/product-catalog.js";
-import { createProductOptionSetService } from "./modules/commerce/product-option-sets.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
 import { createProductImportArtifactService } from "./modules/data-transfer/product-import-artifact.js";
-import { createProductImportExecutionService } from "./modules/data-transfer/product-import-execution.js";
-import { createDeliverySettingsService } from "./modules/delivery/service.js";
-import { createDomainManagementService } from "./modules/domains/service.js";
-import { createEmailDeliveryService } from "./modules/email/delivery-service.js";
-import { createEmailTemplateService } from "./modules/email/template-service.js";
-import { createEntitlementService } from "./modules/entitlements/service.js";
-import { createMediaService } from "./modules/media/index.js";
-import { withPaymentNotificationProjection } from "./modules/notifications/payment-aware-order-management.js";
-import { createEmailNotificationProviderFromEnv } from "./modules/notifications/providers/email-provider-factory.js";
-import { createNotificationService } from "./modules/notifications/service.js";
-import { createTenantOnboardingService } from "./modules/onboarding/service.js";
-import { createPaymentOnboardingService } from "./modules/payments/payment-onboarding-service.js";
-import { createReceivingAccountsService } from "./modules/payments/receiving-accounts-service.js";
-import { wrapProductServiceWithStorefrontPurge } from "./modules/storefront/catalog-cache-invalidation.js";
+import { createLaunchReadinessService } from "./modules/onboarding/launch-readiness.js";
 import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
 import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
-import { createPlatformTemplateAssetService } from "./modules/storefront/platform-template-assets.js";
-import { getTemplateDemoBaseUrl } from "./modules/storefront/template-demo-url.js";
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
-import { createLaunchReadinessService } from "./modules/onboarding/launch-readiness.js";
-import { createSuperadminCommerceReviewService } from "./modules/superadmin/commerce-review-service.js";
-import { createSuperadminConsoleReadService } from "./modules/superadmin/console-read-service.js";
-import {
-  createDependencyHealthService,
-  createHttpHealthCheck,
-} from "./modules/superadmin/dependency-health-service.js";
-import { createSuperadminDiagnosticsService } from "./modules/superadmin/diagnostics-service.js";
-import { createSuperadminOperationalSummaryService } from "./modules/superadmin/operational-summary-service.js";
-import { createSuperadminOverviewService } from "./modules/superadmin/overview-service.js";
-import { createSuperadminTenantProjectionService } from "./modules/superadmin/tenant-projection-service.js";
-import { createSuperadminWorkRecoveryService } from "./modules/superadmin/work-recovery-service.js";
-import { createSupportAccessService } from "./modules/support/access-service.js";
-import { createSupportService } from "./modules/support/service.js";
-import { createMerchantTeamService } from "./modules/team/merchant-team-service.js";
-import {
-  handleTelegramCallbackQuery,
-  resolveTelegramCallbackSecret,
-} from "./modules/telegram/telegram-actions.js";
-import { setDefaultBotCommands } from "./modules/telegram/telegram-bot-commands.js";
-import { createTelegramConnectService } from "./modules/telegram/telegram-connect.js";
-import { createTelegramOperatorService } from "./modules/telegram/telegram-operator.js";
-import { startTelegramPolling } from "./modules/telegram/telegram-polling.js";
-import {
-  handleTelegramToolsCallback,
-  handleTelegramToolsMessage,
-  type TelegramToolsDeps,
-} from "./modules/telegram/telegram-tools.js";
-import { ensureTelegramWebhookIfConfigured } from "./modules/telegram/telegram-webhook.js";
-import {
-  createTenantCommerceContextService,
-  createTenantDashboardSummaryService,
-} from "./modules/tenants/commerce-context-service.js";
-import {
-  createPlatformOnboardingStateService,
-  createTenantDetailService,
-  createTenantHandleAvailabilityService,
-  createTenantListService,
-  createTenantMembershipSummaryService,
-  createTenantShopSettingsService,
-} from "./modules/tenants/list-service.js";
-import { createResolveTenantIdByMedusaSalesChannel } from "./modules/tenants/resolve-by-medusa-sales-channel.js";
-import {
-  createTenantProvisioningAttemptListService,
-  createTenantShopProvisioningRetryServiceFromDb,
-  createTenantShopProvisioningService,
-} from "./modules/tenants/shop-provisioning.js";
-import { createTenantStatusService } from "./modules/tenants/status-service.js";
 
 loadPlatformApiEnvFiles();
 
@@ -158,678 +54,212 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
-const platformBillingPaymentDestinations = [
-  {
-    provider: "telebirr",
-    label: "Telebirr",
-    accountName: process.env.PLATFORM_BILLING_TELEBIRR_NAME?.trim() ?? "",
-    accountNumber: process.env.PLATFORM_BILLING_TELEBIRR_ACCOUNT?.trim() ?? "",
-  },
-  {
-    provider: "cbe",
-    label: "CBE",
-    accountName: process.env.PLATFORM_BILLING_CBE_NAME?.trim() ?? "",
-    accountNumber: process.env.PLATFORM_BILLING_CBE_ACCOUNT?.trim() ?? "",
-  },
-].filter((destination) => destination.accountName && destination.accountNumber);
-const linksEtApiKey = process.env.LINKS_ET_API_KEY?.trim() ?? "";
-logger.info(
-  {
-    configured: Boolean(linksEtApiKey),
-    paymentDestinations: platformBillingPaymentDestinations.map((item) => item.provider),
-  },
-  "Platform billing payment verification configured.",
-);
-const billingService = createBillingService(platformDb.db, {
-  paymentDestinations: platformBillingPaymentDestinations,
-  onPaymentVerification: (result) =>
-    logger.info(result, "Platform billing payment evidence checked."),
-  verifyPaymentEvidence: createBillingPaymentVerificationChain(
-    linksEtApiKey
-      ? [createLinksEtBillingPaymentVerifier({ apiKey: linksEtApiKey })]
-      : [],
-  ),
-});
-const planAdministrationService = createPlanAdministrationService(platformDb.db);
-const billingProviderEventInbox = createBillingProviderEventInbox(
-  platformDb.db,
-  billingService.completeChapaInvoicePayment,
-);
+const billingRuntime = createBillingRuntime({ db: platformDb.db, env: process.env, logger });
+const { billingProviderEventInbox, billingService } = billingRuntime;
 const recordMerchantDataExport = createDataExportAuditRecorder(platformDb.db);
 const productImportArtifactService = createProductImportArtifactService(platformDb.db);
-const deliverySettingsService = createDeliverySettingsService(platformDb.db);
 const storefrontInquiryService = createStorefrontInquiryService(platformDb.db);
 const customerCommerceService = createCustomerCommerceService(platformDb.db);
-const entitlementService = createEntitlementService(platformDb.db);
-const domainManagementService = createDomainManagementService(platformDb.db, {
-  evaluateEntitlement: entitlementService.evaluate,
-  resolveTxt: resolveDnsTxt,
-});
-const mediaStorage = createMediaStorageFromEnv();
-if (mediaStorage.provider === "unconfigured") {
-  logger.warn("Media storage is not configured; upload routes will return 503.");
-} else {
-  logger.info(
-    { bucket: mediaStorage.bucket, provider: mediaStorage.provider },
-    "Media storage configured.",
-  );
-}
-let updateProductMediaVariantsFn:
-  | ((input: {
-      mediaVariants: Record<string, Record<string, string>>;
-      productId: string;
-      tenantId: string;
-    }) => Promise<unknown>)
-  | undefined;
-
-const mediaService = createMediaService(platformDb.db, mediaStorage, {
-  updateProductMediaVariants: async (input) => {
-    if (updateProductMediaVariantsFn) {
-      return updateProductMediaVariantsFn(input);
-    }
-  },
-});
-const storefrontDemoBaseUrl = getTemplateDemoBaseUrl(
-  process.env.STOREFRONT_DEMO_HOST ?? "demo.lvh.me",
-);
-const platformTemplateAssetService = createPlatformTemplateAssetService(
-  platformDb.db,
-  mediaStorage,
-  {
-    demoBaseUrl: storefrontDemoBaseUrl,
-  },
-);
-
-const redisUrl = process.env.REDIS_URL?.trim();
-const jobsClient = redisUrl
-  ? createJobsClient({
-      redisUrl,
-      db: platformDb.db,
-      logger,
-      registry: platformJobRegistry,
-    })
-  : null;
-if (!jobsClient) {
-  logger.warn("REDIS_URL is not set; notification delivery jobs will not be enqueued.");
-}
-const requestInsightsRefresh = jobsClient
-  ? createInsightsRefreshService({
-      enqueueJob: (input) => jobsClient.enqueueJob(input),
-    })
-  : undefined;
-const productImportExecutionService = jobsClient
-  ? createProductImportExecutionService(platformDb.db, {
-      enqueue: (input) => jobsClient.enqueueJob(input),
-    })
-  : null;
-
-const notificationService = createNotificationService(platformDb.db, {
-  ...(jobsClient
-    ? {
-        enqueueJob: (input) => jobsClient.enqueueJob(input),
-      }
-    : {}),
-});
-
-const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
-const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME?.trim() || "";
-const telegramWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || "";
-const telegramBotConfig =
-  telegramBotToken && telegramBotUsername
-    ? { botToken: telegramBotToken, botUsername: telegramBotUsername }
-    : null;
-const telegramOperatorService = createTelegramOperatorService(platformDb.db, telegramBotConfig);
-const telegramCallbackSecret = resolveTelegramCallbackSecret();
-/** Set after `orderService` is created. */
-const telegramOrderBridge: {
-  mutateMerchantOrder:
-    | null
-    | ((input: {
-        action: "mark-paid" | "fulfill" | "cancel";
-        orderId: string;
-        salesChannelId: string;
-        settlement?: import("./lib/settlement.js").OrderSettlementInput | null | undefined;
-        source?: "telegram" | undefined;
-      }) => ReturnType<ReturnType<typeof createMedusaOrderService>["mutateMerchantOrder"]>);
-  getMerchantOrder:
-    | null
-    | ((input: {
-        orderId: string;
-        salesChannelId: string;
-      }) => ReturnType<ReturnType<typeof createMedusaOrderService>["getMerchantOrder"]>);
-} = { mutateMerchantOrder: null, getMerchantOrder: null };
-
-/** Filled after commerce services are ready. */
-const telegramToolsBridge: { deps: TelegramToolsDeps | null } = { deps: null };
-
-const telegramConnectService = createTelegramConnectService(platformDb.db, telegramBotConfig, {
-  consumeOperatorStart: (input) => telegramOperatorService.consumeOperatorStart(input),
-  handleCallbackQuery: async (update) => {
-    if (!telegramBotToken) {
-      return { handled: true, reason: "actions_unavailable" };
-    }
-    // Tools menu callbacks first (t:*)
-    if (telegramToolsBridge.deps) {
-      const tools = await handleTelegramToolsCallback(telegramToolsBridge.deps, update);
-      if (tools.handled) return tools;
-    }
-    const mutateMerchantOrder = telegramOrderBridge.mutateMerchantOrder;
-    if (!mutateMerchantOrder) {
-      return { handled: true, reason: "actions_unavailable" };
-    }
-    return handleTelegramCallbackQuery(
-      {
-        db: platformDb.db,
-        botToken: telegramBotToken,
-        operatorService: telegramOperatorService,
-        mutateMerchantOrder: (input) =>
-          mutateMerchantOrder({
-            action: input.action as "mark-paid" | "fulfill" | "cancel",
-            orderId: input.orderId,
-            salesChannelId: input.salesChannelId,
-            settlement: input.settlement,
-            source: input.source,
-          }),
-        ...(telegramOrderBridge.getMerchantOrder
-          ? { getMerchantOrder: telegramOrderBridge.getMerchantOrder }
-          : {}),
-        secret: telegramCallbackSecret,
-      },
-      update,
-    );
-  },
-  handleToolsMessage: async (input) => {
-    if (!telegramToolsBridge.deps) {
-      return { handled: false, reason: "tools_unavailable" };
-    }
-    return handleTelegramToolsMessage(telegramToolsBridge.deps, input);
-  },
-});
-const telegramPollingEnabled =
-  process.env.TELEGRAM_POLLING === "1" ||
-  process.env.TELEGRAM_POLLING?.toLowerCase() === "true" ||
-  (process.env.NODE_ENV === "development" &&
-    process.env.TELEGRAM_POLLING !== "0" &&
-    process.env.TELEGRAM_POLLING?.toLowerCase() !== "false");
-
-if (telegramConnectService.isConfigured()) {
-  logger.info(
-    { bot: telegramBotUsername, polling: telegramPollingEnabled },
-    "Telegram bot configured for notifications and shop tools.",
-  );
-  if (telegramBotToken) {
-    void setDefaultBotCommands({ botToken: telegramBotToken }).catch((err) => {
-      logger.warn({ err }, "Telegram default bot commands could not be registered");
-    });
-    // Production (and any non-polling host): keep webhook pointed at this API.
-    void ensureTelegramWebhookIfConfigured({
-      botToken: telegramBotToken,
-      pollingEnabled: telegramPollingEnabled,
-      env: {
-        TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
-        PLATFORM_PUBLIC_BASE_URL: process.env.PLATFORM_PUBLIC_BASE_URL,
-        TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
-      },
-      logger,
-    }).then((result) => {
-      if ("skipped" in result && result.skipped) {
-        if (result.reason === "webhook_url_unconfigured" && !telegramPollingEnabled) {
-          logger.warn(
-            "Telegram webhook URL not set (TELEGRAM_WEBHOOK_URL or PLATFORM_PUBLIC_BASE_URL). " +
-              "Connect will fail until the webhook points at this process.",
-          );
-        }
-        return;
-      }
-      if ("ok" in result && !result.ok) {
-        logger.warn({ error: result.error }, "Telegram webhook registration failed");
-      }
-    });
-  }
-  if (telegramPollingEnabled) {
-    logger.info(
-      "TELEGRAM_POLLING on: local long-polling will receive /start connect updates (webhook cleared).",
-    );
-  }
-} else {
-  logger.warn("TELEGRAM_BOT_TOKEN/USERNAME not set; Telegram connect stays unavailable.");
-}
-
-const emailProviderResolution = createEmailNotificationProviderFromEnv(process.env);
-const emailDeliveryConfigured = emailProviderResolution.configured;
-const requireEmailVerification = process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === "true";
-const authEmailProvider = emailProviderResolution.provider;
-const emailEncryptionKey =
-  process.env.EMAIL_DELIVERY_ENCRYPTION_KEY?.trim() ||
-  process.env.PLATFORM_SECRETS_ENCRYPTION_KEY?.trim() ||
-  process.env.BETTER_AUTH_SECRET?.trim() ||
-  "development-ecs-auth-secret-change-before-production";
-const emailDeliveryService =
-  jobsClient && authEmailProvider
-    ? createEmailDeliveryService({
-        db: platformDb.db,
-        encryptionKey: emailEncryptionKey,
-        enqueueJob: (input) => jobsClient.enqueueJob(input),
-      })
-    : null;
-const emailTemplateService = createEmailTemplateService({
-  db: platformDb.db,
-  emailProvider: authEmailProvider,
-});
-if (requireEmailVerification && !emailDeliveryService) {
-  throw new Error(
-    "AUTH_REQUIRE_EMAIL_VERIFICATION requires EMAIL_PROVIDER and REDIS_URL for durable delivery",
-  );
-}
-if (emailDeliveryConfigured) {
-  logger.info(
-    { from: process.env.EMAIL_FROM?.trim(), provider: emailProviderResolution.name },
-    "Email delivery configured.",
-  );
-} else {
-  logger.warn("No email provider configured; email delivery stays unavailable in the dashboard.");
-}
-
-const notificationChannelAvailability = {
-  email: emailDeliveryConfigured,
-  telegram: telegramConnectService.isConfigured(),
-};
-const analyticsService = createAnalyticsService(createDrizzleAnalyticsEventStore(platformDb.db));
-const localUmamiDefaults =
-  process.env.NODE_ENV === "development"
-    ? { baseUrl: "http://localhost:3003", password: "umami", username: "admin" }
-    : null;
-const umamiBaseUrl = process.env.UMAMI_BASE_URL?.trim() || localUmamiDefaults?.baseUrl;
-const umamiUsername = process.env.UMAMI_USERNAME?.trim() || localUmamiDefaults?.username;
-const umamiPassword = process.env.UMAMI_PASSWORD?.trim() || localUmamiDefaults?.password;
-const hasPartialUmamiConfig = Boolean(umamiBaseUrl || umamiUsername || umamiPassword);
-const umamiConfigured = Boolean(umamiBaseUrl && umamiUsername && umamiPassword);
-if (hasPartialUmamiConfig && !umamiConfigured) {
-  logger.warn(
-    "Umami analytics is only partially configured; storefront behavior delivery is disabled.",
-  );
-}
-const umamiProvider = umamiConfigured
-  ? createUmamiAnalyticsProvider({
-      baseUrl: umamiBaseUrl as string,
-      password: umamiPassword as string,
-      username: umamiUsername as string,
-    })
-  : null;
-const storefrontAnalyticsBridge = umamiProvider
-  ? createStorefrontAnalyticsBridge({ logger, provider: umamiProvider })
-  : null;
-const getStorefrontInsights = umamiProvider
-  ? createStorefrontInsightsService({ logger, provider: umamiProvider })
-  : null;
-if (storefrontAnalyticsBridge) {
-  logger.info("Umami storefront analytics delivery configured.");
-}
-const analyticsInsightsService = createAnalyticsInsightsService(
-  createDrizzleAnalyticsInsightsStore(platformDb.db),
-);
-const dashboardMetricsService = createDashboardMetricsService(platformDb.db);
-const authorizeDashboardForTenant = createDashboardAuthorizationLookup(platformDb.db);
-const getMerchantCapabilities = createMerchantCapabilityLookup(platformDb.db);
-const authorizePlatformPermission = createPlatformPermissionAuthorization(platformDb.db);
-const getPlatformPrincipalAccess = createPlatformPrincipalAccessLookup(platformDb.db);
-const superadminTenantProjectionService = createSuperadminTenantProjectionService(platformDb.db);
-const getSuperadminOverview = createSuperadminOverviewService(platformDb.db);
-const getSuperadminDiagnostics = createSuperadminDiagnosticsService(platformDb.db);
-const storefrontTemplateService = createStorefrontTemplateService(platformDb.db, {
+const mediaRuntime = createMediaRuntime({ db: platformDb.db, env: process.env, logger });
+const {
   demoBaseUrl: storefrontDemoBaseUrl,
-  getLaunchReadiness: (input) => launchReadinessService.getLaunchReadiness(input),
+  platformTemplateAssetService,
+  setUpdateProductMediaVariants,
+  storage: mediaStorage,
+} = mediaRuntime;
+
+const {
+  enqueueJob,
+  jobsClient,
+  notificationService,
+  productImportExecutionService,
+  requestInsightsRefresh,
+} = createJobsRuntime({ db: platformDb.db, env: process.env, logger });
+const mediaAppOptions = createMediaAppOptions({ jobsClient, runtime: mediaRuntime });
+
+const telegramRuntime = createTelegramRuntime({
+  db: platformDb.db,
+  env: process.env,
+  logger,
 });
-const supportService = createSupportService(platformDb.db);
-const supportAccessService = createSupportAccessService(platformDb.db);
-const tenantOnboardingService = createTenantOnboardingService(platformDb.db);
-const getTenantCommerceContext = createTenantCommerceContextService(platformDb.db);
-const getTenantDashboardSummary = createTenantDashboardSummaryService(platformDb.db);
-const getTenantForUser = createTenantDetailService(platformDb.db);
-const listTenantsForUser = createTenantListService(platformDb.db);
-const getTenantMembershipSummary = createTenantMembershipSummaryService(platformDb.db);
-const tenantStatusService = createTenantStatusService(platformDb.db);
-const paymentOnboardingService = createPaymentOnboardingService(platformDb.db, {
-  paymentsCredentialsEncryptionKey:
-    process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
+const telegramConnectService = telegramRuntime.connectService;
+
+const {
+  appOptions: emailAppOptions,
+  emailDeliveryService,
+  emailProvider: authEmailProvider,
+  requireEmailVerification,
+} = createEmailRuntime({
+  db: platformDb.db,
+  enqueueJob,
+  env: process.env,
+  logger,
+  telegramConfigured: telegramConnectService.isConfigured(),
 });
-const getSuperadminOperationalSummary = createSuperadminOperationalSummaryService({
-  getBillingStatus: billingService.getBillingStatus,
-  getTenantReadiness: tenantStatusService.getTenantReadiness,
-  listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
-  listTenantDomains: domainManagementService.listTenantDomains,
+const {
+  analyticsInsightsService,
+  analyticsService,
+  dashboardMetricsService,
+  getInsightsDemand,
+  getInsightsProducts,
+  getInsightsSales,
+  getInsightsStorefront,
+  getStorefrontInsights,
+  storefrontAnalyticsBridge,
+} = createAnalyticsRuntime({ db: platformDb.db, env: process.env, logger });
+const {
+  domainManagementService,
+  entitlementService,
+  getTenantCommerceContext,
+  getTenantDashboardSummary,
+  getTenantForUser,
+  getTenantMembershipSummary,
+  listTenantsForUser,
+  paymentOnboardingService,
+  receivingAccountsService,
+  tenantOnboardingService,
+  tenantStatusService,
+} = createTenantManagementRuntime({ db: platformDb.db, env: process.env });
+const platformOperationsRuntime = createPlatformOperationsRuntime({
+  billingService,
+  db: platformDb.db,
+  domainManagementService,
+  env: process.env,
+  jobsClient,
+  mediaStorage,
+  paymentOnboardingService,
+  tenantStatusService,
 });
-const getSuperadminCommerceReview = createSuperadminCommerceReviewService({
-  getBillingStatus: billingService.getBillingStatus,
-  listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
-});
-const receivingAccountsService = createReceivingAccountsService(platformDb.db, {
-  encryptionKey: process.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? process.env.CHAPA_SECRET_KEY,
-});
-const productOptionSetService = createProductOptionSetService(platformDb.db);
-const medusaInternalUrl = process.env.MEDUSA_INTERNAL_URL ?? "http://localhost:9000";
-const storefrontInternalBaseUrl =
-  process.env.STOREFRONT_INTERNAL_BASE_URL ?? "http://localhost:4321";
-const getDependencyHealth = createDependencyHealthService({
-  checks: {
-    commerce_backend: createHttpHealthCheck(new URL("/health", medusaInternalUrl).toString()),
-    storefront_runtime: createHttpHealthCheck(new URL("/", storefrontInternalBaseUrl).toString(), {
-      acceptAnyResponse: true,
-    }),
-    job_queue: jobsClient ? () => jobsClient.ping() : null,
-    media_storage:
-      mediaStorage.provider === "unconfigured" ? null : () => mediaStorage.checkHealth(),
-  },
-});
-const superadminConsoleReadService = createSuperadminConsoleReadService(platformDb.db, {
-  getDependencies: getDependencyHealth,
-});
+const { medusaInternalUrl } = platformOperationsRuntime;
 const platformInternalApiToken =
   process.env.PLATFORM_INTERNAL_API_TOKEN ??
   (process.env.NODE_ENV === "production" ? undefined : "development-platform-internal-token");
 
-const medusaAdminTokenResult = await resolveMedusaAdminToken({
-  db: platformDb.db,
-  medusaInternalUrl,
-  internalApiToken: platformInternalApiToken,
-  envToken: process.env.MEDUSA_ADMIN_API_TOKEN,
-  logger,
-});
-if (!medusaAdminTokenResult.ok) {
-  logger.error(
-    { error: medusaAdminTokenResult.error },
-    "medusa_admin_token_unavailable — catalog and shop provisioning will fail until bootstrap succeeds",
-  );
-  if (process.env.NODE_ENV === "production") {
-    process.exit(1);
-  }
-}
-const medusaAdminApiToken = medusaAdminTokenResult.ok
-  ? medusaAdminTokenResult.token
-  : (process.env.MEDUSA_ADMIN_API_TOKEN ?? "");
-if (medusaAdminTokenResult.ok) {
-  logger.info(
-    { source: medusaAdminTokenResult.source, fingerprint: medusaAdminApiToken.slice(-4) },
-    "medusa_admin_token_ready",
-  );
-}
-
-const customerService = createMedusaCustomerService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
-});
-const promotionService = createMedusaPromotionService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
-});
 const platformPublicBaseUrl =
   process.env.PLATFORM_PUBLIC_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
 const platformBaseDomain = process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me";
-const updateTenantShopSettings = createTenantShopSettingsService({
+const {
+  checkTenantHandleAvailability,
+  createTenantShop,
+  ensureTenantPickupOption,
+  getOnboardingState,
+  listTenantProvisioningAttempts,
+  recoverSuperadminWork,
+  resolveTenantIdByMedusaSalesChannelId,
+  retryTenantShopProvisioningAttempt,
+  updateTenantShippingPrice,
+  updateTenantShopSettings,
+} = createTenantRuntime({
   db: platformDb.db,
-  platformBaseDomain,
-});
-const checkTenantHandleAvailability = createTenantHandleAvailabilityService({
-  db: platformDb.db,
-  platformBaseDomain,
-});
-const getOnboardingState = createPlatformOnboardingStateService({
-  db: platformDb.db,
+  internalApiToken: platformInternalApiToken,
   listTenantsForUser,
-});
-const provisionCommerceResources = createMedusaCommerceProvisioningClient({
-  internalApiToken: platformInternalApiToken,
   medusaInternalUrl,
-});
-const updateTenantShippingPrice = createMedusaShippingPriceClient({
-  internalApiToken: platformInternalApiToken,
-  medusaInternalUrl,
-});
-const ensureTenantPickupOption = createMedusaEnsurePickupOptionClient({
-  internalApiToken: platformInternalApiToken,
-  medusaInternalUrl,
-});
-const createTenantShop = createTenantShopProvisioningService({
-  db: platformDb.db,
   platformBaseDomain,
-  provisionCommerceResources,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
 });
-const recoverSuperadminWork = createSuperadminWorkRecoveryService({
-  createTenantShop,
+const deliveryAppOptions = createDeliveryRuntime({
   db: platformDb.db,
+  ensureTenantPickupOption,
+  getTenantCommerceContext,
+  logger,
+  updateTenantShippingPrice,
 });
-const retryTenantShopProvisioningAttempt = createTenantShopProvisioningRetryServiceFromDb({
-  createTenantShop,
+const platformOperationsAppOptions = createPlatformOperationsAppOptions({
+  entitlementService,
+  jobsClient,
+  recoverSuperadminWork,
+  runtime: platformOperationsRuntime,
+});
+const commerceRuntime = await createCommerceRuntime({
   db: platformDb.db,
-});
-const listTenantProvisioningAttempts = createTenantProvisioningAttemptListService(platformDb.db);
-const resolveTenantIdByMedusaSalesChannelId = createResolveTenantIdByMedusaSalesChannel(
-  platformDb.db,
-);
-const baseOrderService = createMedusaOrderService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
-});
-const orderService = withPaymentNotificationProjection(baseOrderService, {
+  env: process.env,
+  logger,
   recordNotificationEvent: notificationService.recordNotificationEvent,
   resolveTenantIdBySalesChannelId: resolveTenantIdByMedusaSalesChannelId,
 });
-telegramOrderBridge.mutateMerchantOrder = (input) =>
-  orderService.mutateMerchantOrder({
-    action: input.action as "mark-paid" | "fulfill" | "cancel",
-    orderId: input.orderId,
-    salesChannelId: input.salesChannelId,
-    settlement: input.settlement,
-    source: input.source ?? (input.action === "mark-paid" ? "telegram" : undefined),
-  });
-telegramOrderBridge.getMerchantOrder = (input) =>
-  orderService.getMerchantOrder({
-    orderId: input.orderId,
-    salesChannelId: input.salesChannelId,
-  });
-const manualOrderService = createMedusaManualOrderService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
-});
-const productService = wrapProductServiceWithStorefrontPurge(
-  createMedusaProductService({
-    adminApiToken: medusaAdminApiToken,
-    medusaInternalUrl,
-  }),
-  {
-    resolveTenantIdBySalesChannelId: resolveTenantIdByMedusaSalesChannelId,
-    logger,
-  },
-);
-updateProductMediaVariantsFn = (input) => productService.updateProductMediaVariants(input);
-const createCapacityLimitedProduct = createProductCapacityWriter({
-  createProduct: productService.createMerchantProduct,
+const { customerService, manualOrderService, orderService, productService } = commerceRuntime;
+const commerceAppOptions = createCommerceAppOptions({
   db: platformDb.db,
+  resolveTenantIdByMedusaSalesChannelId,
+  runtime: commerceRuntime,
+});
+telegramRuntime.setOrderHandlers({
+  mutateMerchantOrder: (input) =>
+    orderService.mutateMerchantOrder({
+      ...input,
+      source: input.source ?? (input.action === "mark-paid" ? "telegram" : undefined),
+    }),
+  getMerchantOrder: (input) => orderService.getMerchantOrder(input),
+});
+setUpdateProductMediaVariants((input) => productService.updateProductMediaVariants(input));
+const launchReadinessService = createLaunchReadinessService(platformDb.db, {
   listProducts: productService.listMerchantProducts,
-  resolveTenantId: resolveTenantIdByMedusaSalesChannelId,
 });
-const launchReadinessService = createLaunchReadinessService(platformDb.db, { listProducts: productService.listMerchantProducts });
-const catalogTranslationService = createMedusaCatalogTranslationService({
-  adminApiToken: medusaAdminApiToken,
-  medusaInternalUrl,
+const storefrontTemplateService = createStorefrontTemplateService(platformDb.db, {
+  demoBaseUrl: storefrontDemoBaseUrl,
+  getLaunchReadiness: launchReadinessService.getLaunchReadiness,
 });
-if (telegramBotToken) {
-  telegramToolsBridge.deps = {
-    db: platformDb.db,
-    botToken: telegramBotToken,
-    callbackSecret: telegramCallbackSecret,
-    dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? null,
-    operatorService: telegramOperatorService,
-    listMerchantOrders: async (input) => {
-      const result = await orderService.listMerchantOrders({
-        limit: input.limit,
-        offset: input.offset,
-        salesChannelId: input.salesChannelId,
-      });
-      if (!result.ok) return result;
-      return { ok: true, orders: result.orders, count: result.count };
-    },
-    listMerchantProducts: (input) => productService.listMerchantProducts(input),
-    updateMerchantProductVariantStock: (input) =>
-      productService.updateMerchantProductVariantStock(input),
-    createManualOrder: (input) =>
-      manualOrderService.createManualOrder({
-        ...input,
-        note: input.note ?? null,
-        shippingOptionId: input.shippingOptionId ?? null,
-        customerId: input.customerId ?? null,
-      }),
-    ensureMerchantCustomer: async (input) => {
-      const result = await customerService.ensureCustomer({
-        email: input.email,
-        firstName: input.firstName ?? null,
-        lastName: input.lastName ?? null,
-        phone: input.phone ?? null,
-        tenantId: input.tenantId,
-      });
-      if (!result.ok) return result;
-      return {
-        ok: true as const,
-        customer: {
-          id: result.customer.id,
-          email: result.customer.email,
-        },
-      };
-    },
-  };
-}
-
-async function resolveTenantSalesChannelId(tenantId: string) {
-  const [row] = await platformDb.db
-    .select({ medusaSalesChannelId: tenants.medusaSalesChannelId })
-    .from(tenants)
-    .where(eq(tenants.id, tenantId))
-    .limit(1);
-  return row?.medusaSalesChannelId?.trim() || null;
-}
-
-const chapaPaymentService = createChapaPaymentService({
-  apiUrl: process.env.CHAPA_API_URL,
-  onVerifiedSuccess: async ({ providerReference, tenantId, txRef }) => {
-    // Platform subscription invoices use ecs_bill_* tx_refs (never Medusa order refs).
-    if (isPlatformBillingTxRef(txRef)) {
-      await billingProviderEventInbox.recordAndProcessVerifiedPayment({
-        providerReference: providerReference ?? null,
-        tenantId,
-        txRef,
-      });
-      return;
-    }
-
-    const salesChannelId = await resolveTenantSalesChannelId(tenantId);
-    if (!salesChannelId) {
-      return;
-    }
-    await orderService.capturePaymentByTxRef({
-      salesChannelId,
-      source: "chapa_webhook",
-      txRef,
+telegramRuntime.setCommerceTools({
+  listMerchantOrders: async (input) => {
+    const result = await orderService.listMerchantOrders({
+      limit: input.limit,
+      offset: input.offset,
+      salesChannelId: input.salesChannelId,
     });
+    if (!result.ok) return result;
+    return { ok: true, orders: result.orders, count: result.count };
   },
+  listMerchantProducts: (input) => productService.listMerchantProducts(input),
+  updateMerchantProductVariantStock: (input) =>
+    productService.updateMerchantProductVariantStock(input),
+  createManualOrder: (input) =>
+    manualOrderService.createManualOrder({
+      ...input,
+      note: input.note ?? null,
+      shippingOptionId: input.shippingOptionId ?? null,
+      customerId: input.customerId ?? null,
+    }),
+  ensureMerchantCustomer: async (input) => {
+    const result = await customerService.ensureCustomer({
+      email: input.email,
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      phone: input.phone ?? null,
+      tenantId: input.tenantId,
+    });
+    if (!result.ok) return result;
+    return {
+      ok: true as const,
+      customer: {
+        id: result.customer.id,
+        email: result.customer.email,
+      },
+    };
+  },
+});
+
+const { chapaPaymentService, recheckMerchantOrderPayment } = createPaymentRuntime({
+  billingProviderEventInbox,
+  db: platformDb.db,
+  env: process.env,
+  orderService,
   recordAnalyticsEvent: analyticsService.recordAnalyticsEvent,
   recordNotificationEvent: notificationService.recordNotificationEvent,
-  secretKey: process.env.CHAPA_SECRET_KEY,
 });
 
-async function recheckMerchantOrderPayment(input: {
-  orderId: string;
-  salesChannelId: string;
-  tenantId: string;
-}) {
-  const existing = await orderService.getMerchantOrder({
-    orderId: input.orderId,
-    salesChannelId: input.salesChannelId,
-  });
-  if (!existing.ok) {
-    return existing;
-  }
+const billingAppOptions = createBillingAppOptions({
+  billingRuntime,
+  chapaPaymentService,
+  env: process.env,
+  logger,
+});
 
-  const txRef = existing.order.paymentReference?.trim();
-  if (!txRef) {
-    return {
-      ok: false as const,
-      error: "order_not_fulfillable" as const,
-      status: 409 as const,
-    };
-  }
-
-  let verification: Awaited<ReturnType<typeof chapaPaymentService.verifyPayment>>;
-  try {
-    verification = await chapaPaymentService.verifyPayment(txRef);
-  } catch {
-    return {
-      ok: false as const,
-      error: "commerce_backend_unavailable" as const,
-      status: 503 as const,
-    };
-  }
-
-  if (!verification) {
-    return {
-      ok: false as const,
-      error: "order_not_found" as const,
-      status: 404 as const,
-    };
-  }
-
-  const status = (
-    typeof verification.data?.status === "string"
-      ? verification.data.status
-      : typeof verification.status === "string"
-        ? verification.status
-        : ""
-  )
-    .trim()
-    .toLowerCase();
-
-  if (status !== "success") {
-    return {
-      ok: false as const,
-      error: "order_not_fulfillable" as const,
-      status: 409 as const,
-    };
-  }
-
-  return orderService.markMerchantOrderPaid({
-    orderId: input.orderId,
-    paymentReference: txRef,
-    salesChannelId: input.salesChannelId,
-    source: "chapa_recheck",
-  });
-}
-const auth = createPlatformAuth({
-  baseUrl: process.env.BETTER_AUTH_URL ?? "http://api.lvh.me",
-  cookieDomain: process.env.BETTER_AUTH_COOKIE_DOMAIN,
-  // Brand cookies as ecs.* unless overridden (see @ecs/config getAuthCookiePrefix).
-  cookiePrefix: process.env.BETTER_AUTH_COOKIE_PREFIX,
-  dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
+const { auth, merchantTeamService } = createAuthRuntime({
+  authEmailProvider,
   db: platformDb.db,
-  ...(!emailDeliveryService && authEmailProvider ? { emailProvider: authEmailProvider } : {}),
-  ...(emailDeliveryService ? { enqueueAccountEmail: emailDeliveryService.enqueue } : {}),
+  emailDeliveryService,
+  env: process.env,
   requireEmailVerification,
-  secret: process.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
-  trustedOrigins: parseTrustedOrigins(process.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
-    "http://api.lvh.me",
-    "http://app.lvh.me",
-    "http://dashboard.lvh.me",
-    // Tenant dashboards (shop subdomains) call /platform/auth from the browser origin.
-    "http://*.lvh.me",
-    "http://*.lvh.me:3001",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-  ],
-  useSecureCookies: (process.env.BETTER_AUTH_URL ?? "http://api.lvh.me").startsWith("https://"),
-});
-
-const merchantTeamService = createMerchantTeamService({
-  authHandler: auth.handler,
-  db: platformDb.db,
 });
 
 const app = createPlatformApp({
@@ -839,7 +269,12 @@ const app = createPlatformApp({
     "http://127.0.0.1:4322",
   ],
   dashboardPublicBaseUrl: process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me",
-  emailDeliveryConfigured,
+  ...emailAppOptions,
+  ...mediaAppOptions,
+  ...platformOperationsAppOptions,
+  ...commerceAppOptions,
+  ...deliveryAppOptions,
+  ...telegramRuntime.appOptions,
   merchantTeamService,
   createReviewedProductImportArtifact: productImportArtifactService.createReviewedArtifact,
   ...(productImportExecutionService
@@ -856,233 +291,21 @@ const app = createPlatformApp({
   updateStorefrontInquiryStatus: storefrontInquiryService.updateInquiryStatus,
   logger,
   storefrontPreviewSecret: process.env.STOREFRONT_PREVIEW_SECRET?.trim(),
-  createMerchantPromotion: promotionService.createPromotion,
   authHandler: auth.handler,
-  authorizeDashboardForTenant,
-  getMerchantCapabilities,
-  authorizePlatformPermission,
-  getPlatformPrincipalAccess,
-  getSuperadminOverview,
-  getSuperadminCommerceReview,
-  listSuperadminWork: superadminConsoleReadService.listWork,
-  listSuperadminAudit: superadminConsoleReadService.listAudit,
-  listPlatformOperators: superadminConsoleReadService.listOperators,
-  getPlatformHealth: superadminConsoleReadService.getHealth,
-  ...(jobsClient
-    ? {
-        getJobOperations: async () => ({
-          runs: await jobsClient.listOperationalJobs({ limit: 30 }),
-          queues: await jobsClient.getQueueHealth(),
-          scheduler: await jobsClient.getSchedulerHealth(),
-        }),
-        retryFailedJob: (id: string) => jobsClient.retryFailedJob(id),
-        cancelQueuedJob: (id: string) => jobsClient.cancelQueuedJob(id),
-      }
-    : {}),
-  recoverSuperadminWork,
-  getSuperadminTenant: superadminTenantProjectionService.get,
-  getSuperadminOperationalSummary,
-  getSuperadminDiagnostics,
-  getEntitlementSummary: entitlementService.getSummary,
-  listSuperadminTenants: superadminTenantProjectionService.list,
-  createOperatorSupportNote: supportService.createOperatorSupportNote,
-  createSupportAccessGrant: supportAccessService.create,
-  createEntitlementOverride: entitlementService.createOverride,
-  createMerchantProduct: createCapacityLimitedProduct,
-  createMerchantProductCategory: productService.createMerchantProductCategory,
-  createMerchantProductCollection: productService.createMerchantProductCollection,
-  createMediaUpload: mediaService.createUpload,
-  createMerchantCustomer: customerService.createCustomer,
-  ensureMerchantCustomer: customerService.ensureCustomer,
-  createMerchantCustomerAddress: customerService.createCustomerAddress,
-  deleteMerchantCustomerAddress: customerService.deleteCustomerAddress,
-  deleteMerchantPromotion: promotionService.deletePromotion,
-  completeMediaUpload: async (input) => {
-    const result = await mediaService.completeUpload(input);
-    if (result.ok && jobsClient) {
-      await jobsClient.enqueueJob({
-        idempotencyKey: `media.process:${result.asset.id}`,
-        name: "media.process",
-        payload: { assetId: result.asset.id },
-        tenantId: input.tenantId,
-      });
-    }
-    return result;
-  },
-  deleteMediaAsset: mediaService.deleteMedia,
-  deleteMerchantProduct: productService.deleteMerchantProduct,
-  deleteMerchantProductsBatch: productService.deleteMerchantProductsBatch,
-  deleteMerchantProductCategory: productService.deleteMerchantProductCategory,
-  deleteMerchantProductCategoriesBatch: productService.deleteMerchantProductCategoriesBatch,
-  deleteMerchantProductCollection: productService.deleteMerchantProductCollection,
-  deleteMerchantProductCollectionsBatch: productService.deleteMerchantProductCollectionsBatch,
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   checkTenantHandleAvailability,
-  getBillingStatus: billingService.getBillingStatus,
-  createPlanUpgradeInvoice: billingService.createPlanUpgradeInvoice,
-  getPublicPlanCatalog: billingService.getPublicPlanCatalog,
-  startPlanTrial: billingService.startPlanTrial,
-  schedulePlanDowngrade: billingService.schedulePlanDowngrade,
-  cancelScheduledPlanDowngrade: billingService.cancelScheduledPlanDowngrade,
-  submitBillingPaymentEvidence: billingService.submitBillingPaymentEvidence,
-  confirmBillingPayments: async (input) => {
-    const pending = await billingService.listPendingChapaInvoiceTxRefs(input);
-    const result = await reconcileChapaBillingPayments({
-      items: pending,
-      verifyPayment: (txRef) => chapaPaymentService.verifyPayment(txRef),
-      completePayment: (payload) => billingService.completeChapaInvoicePayment(payload),
-    });
-    return { ok: true as const, confirmed: result.confirmed, checked: result.checked };
-  },
-  initializeBillingInvoicePayment: async (input) => {
-    if (!process.env.CHAPA_SECRET_KEY?.trim()) {
-      return {
-        ok: false as const,
-        error: "billing_chapa_unavailable" as const,
-        status: 503 as const,
-      };
-    }
-    // Demo shop emails are often *.local — Chapa rejects those (validation.email).
-    const email = resolveChapaPayerEmail(
-      input.payerEmail,
-      process.env.CHAPA_FALLBACK_EMAIL ?? process.env.EMAIL_FROM,
-    );
-    if (!email) {
-      return {
-        ok: false as const,
-        error: "billing_payer_email_required" as const,
-        status: 400 as const,
-        message:
-          "A valid email is required for Chapa. Set CHAPA_FALLBACK_EMAIL (e.g. you@gmail.com) in platform-api/.env for local demo accounts.",
-      };
-    }
-
-    // If a prior Chapa attempt already succeeded but callback never applied, complete it.
-    const pendingRefs = await billingService.listPendingChapaInvoiceTxRefs({
-      tenantId: input.tenantId,
-    });
-    const prior = pendingRefs.find((row) => row.invoiceId === input.invoiceId);
-    if (prior) {
-      try {
-        const verification = await chapaPaymentService.verifyPayment(prior.txRef);
-        const status = String(verification?.data?.status ?? verification?.status ?? "")
-          .trim()
-          .toLowerCase();
-        if (status === "success") {
-          await billingService.completeChapaInvoicePayment({
-            tenantId: input.tenantId,
-            txRef: prior.txRef,
-            providerReference:
-              (typeof verification?.data?.ref_id === "string" && verification.data.ref_id) ||
-              (typeof verification?.data?.reference === "string" && verification.data.reference) ||
-              prior.txRef,
-          });
-          const statusResult = await billingService.getBillingStatus({
-            tenantId: input.tenantId,
-          });
-          const paidInvoice = statusResult.ok
-            ? statusResult.billing.invoices.find((inv) => inv.id === input.invoiceId)
-            : null;
-          return {
-            ok: true as const,
-            // No new checkout — payment already captured; client should refresh.
-            checkoutUrl: input.returnUrl,
-            txRef: prior.txRef,
-            invoice: paidInvoice ?? {
-              id: input.invoiceId,
-              amount: "0",
-              currency: "ETB",
-              status: "paid",
-              dueAt: null,
-              paidAt: new Date().toISOString(),
-              provider: "chapa",
-              providerReference: prior.txRef,
-              createdAt: new Date().toISOString(),
-            },
-            alreadyPaid: true as const,
-          };
-        }
-      } catch {
-        // Fall through to a new initialize with a fresh tx_ref.
-      }
-    }
-
-    const prepared = await billingService.prepareInvoiceForChapaPayment({
-      invoiceId: input.invoiceId,
-      tenantId: input.tenantId,
-    });
-    if (!prepared.ok) {
-      return prepared;
-    }
-
-    const platformPublic =
-      process.env.PLATFORM_PUBLIC_BASE_URL?.trim() ||
-      process.env.BETTER_AUTH_URL?.trim() ||
-      "http://api.lvh.me";
-    const callbackUrl = new URL("/platform/payments/chapa/callback", platformPublic);
-    callbackUrl.searchParams.set("tenant_id", input.tenantId);
-    callbackUrl.searchParams.set("tx_ref", prepared.txRef);
-
-    try {
-      const init = await chapaPaymentService.initializePayment({
-        amount: prepared.amount,
-        callbackUrl: callbackUrl.toString(),
-        currency: prepared.currency,
-        description: "Growth plan",
-        email,
-        returnUrl: input.returnUrl,
-        title: "ECS Billing",
-        txRef: prepared.txRef,
-      });
-
-      return {
-        ok: true as const,
-        checkoutUrl: init.checkoutUrl,
-        txRef: init.txRef,
-        invoice: prepared.invoice,
-      };
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : "Chapa payment initialization failed.";
-      logger.warn(
-        {
-          err: message,
-          invoiceId: input.invoiceId,
-          tenantId: input.tenantId,
-        },
-        "billing_chapa_init_failed",
-      );
-      return {
-        ok: false as const,
-        error: "billing_chapa_init_failed" as const,
-        status: 502 as const,
-        message,
-      };
-    }
-  },
+  ...billingAppOptions,
   getDashboardMetrics: dashboardMetricsService,
-  getInsightsSales: createInsightsSalesService(createSalesSourceReader(platformDb.db)),
-  getInsightsProducts: createInsightsProductsService(createProductContributionReader(platformDb.db)),
-  getInsightsDemand: createInsightsDemandService(createProductDemandReader(platformDb.db)),
-  getInsightsStorefront: createInsightsStorefrontService(createStorefrontReportReader(platformDb.db), undefined, createInsightsTrafficReader(umamiProvider, logger)),
+  getInsightsSales,
+  getInsightsProducts,
+  getInsightsDemand,
+  getInsightsStorefront,
   listPlatformStorefrontTemplates: platformTemplateAssetService.listTemplates,
-  listEmailTemplates: emailTemplateService.list,
-  getEmailTemplate: emailTemplateService.get,
-  saveEmailTemplateDraft: emailTemplateService.saveDraft,
-  publishEmailTemplate: emailTemplateService.publish,
-  restoreEmailTemplateVersion: emailTemplateService.restore,
-  previewEmailTemplate: emailTemplateService.preview,
-  sendEmailTemplateTest: emailTemplateService.sendTest,
   createPlatformTemplatePreviewUpload: platformTemplateAssetService.createUpload,
   completePlatformTemplatePreviewUpload: platformTemplateAssetService.completeUpload,
   updatePlatformStorefrontTemplate: platformTemplateAssetService.updateTemplatePresentation,
   requestInsightsRefresh,
-  getDeliverySettings: deliverySettingsService.getDeliverySettings,
   getMerchantChapaCredentials: paymentOnboardingService.getMerchantChapaCredentials,
   isMerchantChapaConfigured: paymentOnboardingService.isMerchantChapaConfigured,
   getMerchantStorePaymentStatus: paymentOnboardingService.getMerchantStorePaymentStatus,
@@ -1090,14 +313,6 @@ const app = createPlatformApp({
   setMerchantChapaOnlineEnabled: paymentOnboardingService.setMerchantChapaOnlineEnabled,
   clearMerchantChapaSecret: paymentOnboardingService.clearMerchantChapaSecret,
   handleChapaPaymentCallback: chapaPaymentService.handleChapaPaymentCallback,
-  getPlanAdministrationCatalog: planAdministrationService.getCatalog,
-  createPlan: planAdministrationService.createPlan,
-  savePlanPresentation: planAdministrationService.savePresentation,
-  savePlanDraft: planAdministrationService.saveDraft,
-  publishPlanDraft: planAdministrationService.publishDraft,
-  migrateSubscriptionPlanVersion: planAdministrationService.migrateSubscriptionNow,
-  getOperatorSupportHistory: supportService.getOperatorSupportHistory,
-  listSupportAccessGrants: supportAccessService.list,
   getOnboardingState,
   getPublishedStorefrontConfig: storefrontTemplateService.getPublishedStorefrontConfig,
   getStorefrontDraft: storefrontTemplateService.getStorefrontDraft,
@@ -1109,74 +324,8 @@ const app = createPlatformApp({
   ...(getStorefrontInsights ? { getStorefrontInsights } : {}),
   getTenantOnboarding: tenantOnboardingService.getTenantOnboarding,
   getTenantReadiness: tenantStatusService.getTenantReadiness,
-  getMerchantOrder: orderService.getMerchantOrder,
-  createMerchantManualOrder: manualOrderService.createManualOrder,
-  getMerchantCustomer: customerService.getCustomer,
-  getMerchantProduct: async (input) => {
-    const result = await productService.getMerchantProduct(input);
-    if (!result.ok) return result;
-    const [product] = await attachCatalogNameTranslations({
-      items: [result.product],
-      resourceType: "product",
-      summarizeNames: catalogTranslationService.summarizeNames,
-    });
-    return product ? { ...result, product } : result;
-  },
-  getMerchantProductStock: productService.getMerchantProductStock,
-  getMerchantProductVariantStock: productService.getMerchantProductVariantStock,
   getSession: (headers) => auth.api.getSession({ headers }),
-  listMerchantOrders: orderService.listMerchantOrders,
   recordMerchantDataExport,
-  listMerchantCustomers: customerService.listCustomers,
-  listMerchantPromotions: promotionService.listPromotions,
-  listMerchantCustomerGroups: customerService.listGroups,
-  listMerchantProducts: async (input) => {
-    const result = await productService.listMerchantProducts(input);
-    if (!result.ok) return result;
-    return {
-      ...result,
-      products: await attachCatalogNameTranslations({
-        items: result.products,
-        resourceType: "product",
-        summarizeNames: catalogTranslationService.summarizeNames,
-      }),
-    };
-  },
-  listMerchantProductOptionSets: productOptionSetService.list,
-  createMerchantProductOptionSet: productOptionSetService.create,
-  updateMerchantProductOptionSet: productOptionSetService.update,
-  deleteMerchantProductOptionSet: productOptionSetService.remove,
-  listMerchantProductCategories: async (input) => {
-    const result = await productService.listMerchantProductCategories(input);
-    if (!result.ok) return result;
-    return {
-      ...result,
-      categories: await attachCatalogNameTranslations({
-        items: result.categories,
-        resourceType: "product_category",
-        summarizeNames: catalogTranslationService.summarizeNames,
-      }),
-    };
-  },
-  listMerchantProductCollections: async (input) => {
-    const result = await productService.listMerchantProductCollections(input);
-    if (!result.ok) return result;
-    return {
-      ...result,
-      collections: await attachCatalogNameTranslations({
-        items: result.collections,
-        resourceType: "product_collection",
-        summarizeNames: catalogTranslationService.summarizeNames,
-      }),
-    };
-  },
-  getMerchantCatalogTranslation: catalogTranslationService.read,
-  getMerchantCatalogTranslations: catalogTranslationService.readMany,
-  listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,
-  updateMerchantCatalogTranslation: catalogTranslationService.write,
-  updateMerchantCatalogTranslations: catalogTranslationService.writeMany,
-  listMediaAssets: mediaService.listMedia,
-  syncProductMedia: mediaService.syncProductMedia,
   listNotificationPreferences: notificationService.listNotificationPreferences,
   listInAppNotifications: notificationService.inbox.list,
   countInAppNotificationUnread: notificationService.inbox.unreadCount,
@@ -1184,22 +333,18 @@ const app = createPlatformApp({
   archiveInAppNotification: notificationService.inbox.archive,
   markAllInAppNotificationsRead: notificationService.inbox.markAllRead,
   markInAppNotificationsSeen: notificationService.inbox.markSeen,
-  notificationChannelAvailability,
   listTenantsForUser,
   getTenantMembershipSummary,
   listTenantProvisioningAttempts,
   listPaymentOnboarding: paymentOnboardingService.listPaymentOnboarding,
   listTenantDomains: domainManagementService.listTenantDomains,
   listStorefrontTemplates: storefrontTemplateService.listStorefrontTemplates,
-  mutateMerchantOrder: orderService.mutateMerchantOrder,
-  updateMerchantOrderSettlement: orderService.updateMerchantOrderSettlement,
   listMerchantReceivingAccounts: receivingAccountsService.listAccounts,
   createMerchantReceivingAccount: receivingAccountsService.createAccount,
   updateMerchantReceivingAccount: receivingAccountsService.updateAccount,
   deleteMerchantReceivingAccount: receivingAccountsService.deleteAccount,
   listMerchantPaymentBanks: receivingAccountsService.listBanks,
   recheckMerchantOrderPayment,
-  captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
   publishStorefrontDraft: storefrontTemplateService.publishStorefrontDraft,
   getLaunchReadiness: launchReadinessService.getLaunchReadiness,
   confirmStorefrontReview: launchReadinessService.confirmStorefrontReview,
@@ -1211,94 +356,13 @@ const app = createPlatformApp({
   recordNotificationEvent: notificationService.recordNotificationEvent,
   resolveTenantIdByMedusaSalesChannelId,
   sendTestNotification: notificationService.sendTestNotification,
-  listTelegramDestinations: telegramConnectService.listDestinations,
-  createTelegramConnectSession: telegramConnectService.createConnectSession,
-  getTelegramConnectSession: telegramConnectService.getConnectSession,
-  cancelTelegramConnectSession: telegramConnectService.cancelConnectSession,
-  removeTelegramDestination: telegramConnectService.removeDestination,
-  setTelegramDestinationEnabled: telegramConnectService.setDestinationEnabled,
-  setTelegramSharedEvents: telegramConnectService.setSharedEvents,
-  listTelegramOperatorBindings: telegramOperatorService.listBindings,
-  createTelegramOperatorLinkSession: telegramOperatorService.createLinkSession,
-  getTelegramOperatorLinkSession: telegramOperatorService.getLinkSession,
-  cancelTelegramOperatorLinkSession: telegramOperatorService.cancelLinkSession,
-  removeTelegramOperatorBinding: telegramOperatorService.removeBinding,
-  setTelegramOperatorBindingEnabled: telegramOperatorService.setBindingEnabled,
-  isTelegramOperatorChatForActions: telegramOperatorService.isOperatorChatForActions,
-  handleTelegramWebhook: telegramConnectService.handleWebhookUpdate,
-  telegramWebhookSecret: telegramWebhookSecret || undefined,
   reviewPaymentOnboarding: paymentOnboardingService.reviewPaymentOnboarding,
   retryTenantShopProvisioningAttempt,
-  revokeEntitlementOverride: entitlementService.revokeOverride,
-  revokeSupportAccessGrant: supportAccessService.revoke,
   verifyTenantDomainOwnership: domainManagementService.verifyTenantDomainOwnership,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
-  updateBillingInvoiceStatus: billingService.updateBillingInvoiceStatus,
-  listBillingPaymentReviews: billingService.listBillingPaymentReviews,
-  updateDeliverySettings: deliverySettingsService.updateDeliverySettings,
-  ensurePickupOption: async (input) => {
-    const result = await ensureTenantPickupOption(input);
-    if (!result.ok) return { ok: false as const };
-    return {
-      ok: true as const,
-      pickupOptionId: result.pickupOptionId,
-      created: result.created,
-    };
-  },
-  syncDeliveryShippingPrice: async (input) => {
-    const commerce = await getTenantCommerceContext({
-      tenantId: input.tenantId,
-      userId: input.userId,
-    });
-    if (!commerce.ok || !commerce.context.medusaShippingOptionId) {
-      logger.warn(
-        { tenantId: input.tenantId },
-        "delivery_fee_sync_skipped_missing_shipping_option",
-      );
-      return {
-        ok: false as const,
-        error: "delivery_shipping_option_unavailable" as const,
-      };
-    }
-
-    const result = await updateTenantShippingPrice({
-      amount: input.amount,
-      currencyCode: input.currencyCode,
-      shippingOptionId: commerce.context.medusaShippingOptionId,
-    });
-
-    if (!result.ok) {
-      logger.warn({ tenantId: input.tenantId, error: result.error }, "delivery_fee_sync_failed");
-      return { ok: false as const, error: "commerce_backend_unavailable" as const };
-    }
-
-    // Pickup is free: ensure a zero-amount Store Pickup option exists for older shops.
-    const pickup = await ensureTenantPickupOption({
-      currencyCode: input.currencyCode,
-      deliveryShippingOptionId: commerce.context.medusaShippingOptionId,
-    });
-    if (!pickup.ok) {
-      logger.warn({ tenantId: input.tenantId, error: pickup.error }, "pickup_option_ensure_failed");
-      return { ok: false as const, error: "pickup_option_sync_failed" as const };
-    }
-
-    return { ok: true as const };
-  },
   updateTenantShopSettings,
-  updateMerchantProduct: productService.updateMerchantProduct,
-  listMerchantCollectionProducts: productService.listMerchantCollectionProducts,
-  reorderMerchantProductCategories: productService.reorderMerchantProductCategories,
-  updateMerchantCollectionProducts: productService.updateMerchantCollectionProducts,
-  updateMerchantProductCategory: productService.updateMerchantProductCategory,
-  updateMerchantProductCollection: productService.updateMerchantProductCollection,
-  updateMerchantCustomer: customerService.updateCustomer,
-  updateMerchantCustomerAddress: customerService.updateCustomerAddress,
-  updateMerchantPromotion: promotionService.updatePromotion,
-  updateMerchantProductStock: productService.updateMerchantProductStock,
-  updateMerchantProductVariantStock: productService.updateMerchantProductVariantStock,
-  updateMediaMetadata: mediaService.updateMetadata,
   upsertNotificationPreference: notificationService.upsertNotificationPreference,
   updateStorefrontDraft: storefrontTemplateService.updateStorefrontDraft,
   updateStorefrontSeoSettings: storefrontTemplateService.updateStorefrontSeoSettings,
@@ -1318,45 +382,15 @@ const app = createPlatformApp({
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 
-async function shutdown(signal: string) {
-  logger.info({ signal }, "platform api shutting down");
-  telegramPollingAbort.abort();
-  try {
-    if (jobsClient) {
-      await jobsClient.close();
-    }
-    await platformDb.pool.end();
-  } catch (error) {
-    logger.error({ err: error }, "error during platform api shutdown");
-    process.exit(1);
-  }
-  process.exit(0);
-}
-
-process.on("SIGINT", () => {
-  void shutdown("SIGINT");
-});
-process.on("SIGTERM", () => {
-  void shutdown("SIGTERM");
-});
-
 const telegramPollingAbort = new AbortController();
 
-if (telegramConnectService.isConfigured() && telegramPollingEnabled && telegramBotToken) {
-  void startTelegramPolling({
-    botToken: telegramBotToken,
-    handleUpdate: (update) => telegramConnectService.handleWebhookUpdate(update),
-    logger,
-    signal: telegramPollingAbort.signal,
-  });
-}
+telegramRuntime.startPolling(telegramPollingAbort.signal);
 
-serve(
-  {
-    fetch: app.fetch,
-    port,
-  },
-  (info) => {
-    logger.info({ port: info.port }, "platform api listening");
-  },
-);
+startPlatformServer({
+  fetch: app.fetch,
+  jobsClient,
+  logger,
+  onBeforeClose: () => telegramPollingAbort.abort(),
+  platformDbPool: platformDb.pool,
+  port,
+});

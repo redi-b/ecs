@@ -1,5 +1,18 @@
 import { z } from "zod";
 import type { PlatformAppOptions } from "../../app.js";
+
+type MerchantCustomerRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "createMerchantCustomer"
+  | "createMerchantCustomerAddress"
+  | "deleteMerchantCustomerAddress"
+  | "getMerchantCustomer"
+  | "listMerchantCustomerGroups"
+  | "listMerchantCustomers"
+  | "updateMerchantCustomer"
+  | "updateMerchantCustomerAddress"
+>;
+
 import {
   getOperationalCustomerEmail,
   normalizeOperationalPhone,
@@ -38,7 +51,7 @@ const addressSchema = z.object({
 
 export function registerMerchantCustomerRoutes(
   app: MerchantRouteApp,
-  options: PlatformAppOptions,
+  options: MerchantCustomerRouteDependencies,
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/customers", async (context) => {

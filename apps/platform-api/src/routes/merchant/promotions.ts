@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { commerceErrorStatus } from "../../adapters/medusa/map-medusa-failure.js";
 import type { PlatformAppOptions } from "../../app.js";
+
+type MerchantPromotionRouteDependencies = Pick<
+  PlatformAppOptions,
+  | "createMerchantPromotion"
+  | "deleteMerchantPromotion"
+  | "listMerchantPromotions"
+  | "updateMerchantPromotion"
+>;
+
 import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
 
@@ -30,7 +39,7 @@ const promotionSchema = z.object({
 
 export function registerMerchantPromotionRoutes(
   app: MerchantRouteApp,
-  options: PlatformAppOptions,
+  options: MerchantPromotionRouteDependencies,
   helpers: MerchantRouteHelpers,
 ) {
   app.get("/platform/merchant/promotions", async (context) => {
@@ -75,7 +84,9 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      promotions: ["manage"],
+    });
     if (!merchant.ok) return merchant.response;
     const parsed = promotionSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_promotion" }, 400);
@@ -90,7 +101,9 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.post("/platform/merchant/promotions/:promotionId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      promotions: ["manage"],
+    });
     if (!merchant.ok) return merchant.response;
     const parsed = promotionSchema.safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) return context.json({ error: "invalid_promotion" }, 400);
@@ -106,7 +119,9 @@ export function registerMerchantPromotionRoutes(
       : context.json({ error: result.error }, commerceErrorStatus(result.status));
   });
   app.delete("/platform/merchant/promotions/:promotionId", async (context) => {
-    const merchant = await helpers.getAuthorizedMerchantContext(context, { promotions: ["manage"] });
+    const merchant = await helpers.getAuthorizedMerchantContext(context, {
+      promotions: ["manage"],
+    });
     if (!merchant.ok) return merchant.response;
     if (!options.deleteMerchantPromotion)
       return context.json({ error: "commerce_backend_unavailable" }, 503);

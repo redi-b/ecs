@@ -1,9 +1,14 @@
 import type { Hono } from "hono";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 
+type PlatformHealthAuthDependencies = Pick<
+  PlatformAppOptions,
+  "authHandler" | "getSession" | "landingPublicOrigins" | "serviceName"
+>;
+
 export function registerPlatformHealthAuthRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
-  options: PlatformAppOptions,
+  options: PlatformHealthAuthDependencies,
 ) {
   if (options.authHandler) {
     const authHandler = options.authHandler;

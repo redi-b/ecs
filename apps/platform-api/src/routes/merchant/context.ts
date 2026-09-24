@@ -7,6 +7,11 @@ import { getRequestHost, storeErrorStatus } from "../shared.js";
 
 export type MerchantRouteApp = Hono<{ Variables: PlatformAppVariables }>;
 
+export type MerchantRouteContextDependencies = Pick<
+  PlatformAppOptions,
+  "authorizeDashboardForTenant" | "getSession" | "resolveTenantForHost"
+>;
+
 export type ResolvedMerchantCommerceContext = {
   medusaStoreId: string;
   medusaSalesChannelId: string;
@@ -28,7 +33,7 @@ export type AuthorizedMerchantContext =
       response: Response;
     };
 
-export function createMerchantRouteHelpers(options: PlatformAppOptions) {
+export function createMerchantRouteHelpers(options: MerchantRouteContextDependencies) {
   async function getAuthorizedMerchantContext(
     context: Context<{ Variables: PlatformAppVariables }>,
     permission?: MerchantPermissionRequest,
