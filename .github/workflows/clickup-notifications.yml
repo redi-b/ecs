@@ -172,53 +172,18 @@ jobs:
 
             // ---------- GitHub stats ----------
 
-            function sumFiles(files) {
-              const list = files || [];
-              let additions = 0;
-              let deletions = 0;
-              for (const file of list) {
-                additions += file.additions || 0;
-                deletions += file.deletions || 0;
-              }
-              return { additions, deletions, filesChanged: list.length };
-            }
-
-            // Aggregate additions/deletions/files for the whole push:
-            // 1. compare before...head (exact, one call) when before is a real SHA
-            // 2. single-commit detail when the push is one commit (new branch, force push)
-            // 3. per-commit detail summed over the commits in the payload as last resort
+            // Line totals come from each commit's `stats`, which cover the whole
+            // commit. The `files` array is capped at 300 entries by the API, so
+            // it only feeds the file count (reported as "300+" when capped).
+            // Summing across commits counts churn, not net diff.
             async function resolvePushStats(event, head) {
-              const before = event.before || '';
-              if (/^[0-9a-f]{40}$/.test(before) && !/^0{40}$/.test(before)) {
-                try {
-                  const { data } = await github.rest.repos.compareCommitsWithBasehead({
-                    owner,
-                    repo,
-                    basehead: before + '...' + head.id,
-                  });
-                  if (data.files && data.files.length > 0) return sumFiles(data.files);
-                } catch (error) {
-                  core.info('Compare endpoint unavailable (' + error.message + '); using fallback.');
+              const pushed = [];
+              for (const commit of event.commits || []) {
+                if (commit && commit.id && pushed.indexOf(commit.id) === -1) {
+                  pushed.push(commit.id);
                 }
               }
-
-              const pushed = (event.commits || [])
-                .map((c) => c && c.id)
-                .filter(Boolean);
-
-              if (pushed.length <= 1) {
-                try {
-                  const { data } = await github.rest.repos.getCommit({
-                    owner,
-                    repo,
-                    commit_sha: head.id,
-                  });
-                  return sumFiles(data.files);
-                } catch (error) {
-                  core.warning('Could not read commit stats: ' + error.message);
-                  return { additions: 0, deletions: 0, filesChanged: 0 };
-                }
-              }
+              if (pushed.indexOf(head.id) === -1) pushed.push(head.id);
 
               const sample = pushed.slice(0, MAX_STATS_COMMITS);
               if (pushed.length > sample.length) {
@@ -231,8 +196,14 @@ jobs:
                 );
               }
 
-              const totals = { additions: 0, deletions: 0, filesChanged: 0 };
+              const totals = {
+                additions: 0,
+                deletions: 0,
+                filesChanged: 0,
+                filesCapped: false,
+              };
               const seen = new Set();
+              let failures = 0;
               for (const sha of sample) {
                 try {
                   const { data } = await github.rest.repos.getCommit({
@@ -240,18 +211,27 @@ jobs:
                     repo,
                     commit_sha: sha,
                   });
-                  for (const file of data.files || []) {
-                    if (!file.filename) continue;
-                    if (!seen.has(file.filename)) {
+                  if (data.stats) {
+                    totals.additions += data.stats.additions || 0;
+                    totals.deletions += data.stats.deletions || 0;
+                  }
+                  const files = data.files || [];
+                  if (files.length >= 300) totals.filesCapped = true;
+                  for (const file of files) {
+                    if (file.filename && !seen.has(file.filename)) {
                       seen.add(file.filename);
                       totals.filesChanged += 1;
                     }
-                    totals.additions += file.additions || 0;
-                    totals.deletions += file.deletions || 0;
                   }
                 } catch (error) {
-                  core.warning('Could not read stats for ' + sha.slice(0, 7) + ': ' + error.message);
+                  failures += 1;
+                  core.warning(
+                    'Could not read stats for ' + sha.slice(0, 7) + ': ' + error.message
+                  );
                 }
+              }
+              if (failures === sample.length) {
+                return { additions: 0, deletions: 0, filesChanged: 0, filesCapped: false };
               }
               return totals;
             }
@@ -347,7 +327,10 @@ jobs:
                   ' / ' +
                   code('-' + num(stats.deletions)) +
                   ' lines',
-                '**Files:** ' + num(stats.filesChanged) + ' changed'
+                '**Files:** ' +
+                  num(stats.filesChanged) +
+                  (stats.filesCapped ? '+' : '') +
+                  ' changed'
               );
               if (commits.length > 1) {
                 lines.push('**Commits:** ' + commits.length + ' commits pushed');
