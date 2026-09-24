@@ -93,32 +93,36 @@
     border: none;
     outline: none;
     z-index: 10;
+    color: $clr-primary-800;
     transition:
       background-color $dur-ui ease,
+      color $dur-ui ease,
+      opacity $dur-ui ease,
       transform $dur-press $ease-out;
 
     @media (hover: hover) and (pointer: fine) {
-      &:hover {
-        background-color: $clr-neutral-50;
+      &:hover:not(:disabled) {
+        background-color: $clr-primary-800;
+        color: $clr-neutral-50;
       }
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     &--prev {
       left: 0;
       transform: translate(-50%, -50%);
 
-      &:active {
+      &:active:not(:disabled) {
         transform: translate(-50%, -50%) scale(0.94);
       }
 
       [data-icon="arrow"] {
         transform: rotate(180deg);
-      }
-
-      @media (hover: hover) and (pointer: fine) {
-        &:hover [data-icon="arrow"] {
-          transform: rotate(180deg) translateX($space-50);
-        }
       }
     }
 
@@ -126,22 +130,15 @@
       right: 0;
       transform: translate(50%, -50%);
 
-      &:active {
+      &:active:not(:disabled) {
         transform: translate(50%, -50%) scale(0.94);
-      }
-
-      @media (hover: hover) and (pointer: fine) {
-        &:hover [data-icon="arrow"] {
-          transform: translateX($space-50);
-        }
       }
     }
 
     [data-icon="arrow"] {
       width: 13px;
       height: 10px;
-      color: $clr-primary-800;
-      transition: transform $dur-ui $ease-out;
+      color: inherit;
     }
   }
 

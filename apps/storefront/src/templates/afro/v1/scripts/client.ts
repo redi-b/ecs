@@ -1,10 +1,26 @@
 import EmblaCarousel, { type EmblaCarouselType } from "embla-carousel";
-import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
-import { initWishlistController } from "../../../../lib/browser/wishlist";
+import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
+import {
+  $cart,
+  $cartDrawerOpen,
+  initCartStore,
+  fetchCart,
+  addToCart,
+  updateCartItemQuantity,
+  removeCartItem,
+} from "../../../../lib/stores/cart";
+import {
+  $wishlist,
+  initWishlistStore,
+} from "../../../../lib/stores/wishlist";
+import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
 
 export function initAfroStorefront() {
-  const readOnly = document.body.dataset.editorMode === "true" || document.body.dataset.demoMode === "true";
-  const messages = (window as Window & { __ECS_AFRO_MESSAGES__?: Record<string, string> }).__ECS_AFRO_MESSAGES__ ?? {};
+  const readOnly =
+    document.body.dataset.editorMode === "true" || document.body.dataset.demoMode === "true";
+  const messages =
+    (window as Window & { __ECS_AFRO_MESSAGES__?: Record<string, string> }).__ECS_AFRO_MESSAGES__ ??
+    {};
   const clientMessage = (key: string, fallback = "") => messages[key] || fallback;
   const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
 
@@ -20,20 +36,98 @@ export function initAfroStorefront() {
     });
   }
 
-  // --- Search Bar Toggle ---
-  const searchToggleBtn = document.getElementById("search-toggle-btn");
-  const searchForm = document.getElementById("header-search-form");
-  if (searchToggleBtn && searchForm) {
-    searchToggleBtn.addEventListener("click", () => {
-      searchForm.classList.toggle("is-open");
-      const input = searchForm.querySelector<HTMLInputElement>("input[type='search']");
-      if (searchForm.classList.contains("is-open")) {
-        input?.focus();
-      }
-    });
+  // --- Search Modal ---
+  initSearchModal();
+
+  // --- Live Search Suggestions ---
+  const searchForms = document.querySelectorAll<HTMLFormElement>("[data-product-search-suggestions]");
+  searchForms.forEach((form) => initProductSearchSuggestions(form));
+
+  // --- Header Nav Links & Scrollspy ---
+  initHeaderNavigation();
+
+  // --- Dropdowns ---
+  initDropdowns();
+
+  // --- Category Carousel ---
+  initCategoryCarousel();
+
+  // --- Hero Carousel ---
+  initHeroCarousel();
+
+  // --- Collections Carousel ---
+  initCollectionsCarousel();
+
+  // --- Home Filters ---
+  initHomeFilters();
+
+  // --- Shop Sidebar Filters & Accordions ---
+  initShopFilters();
+
+  // --- Product Detail Controls ---
+  initProductDetail();
+
+  // --- Cart Drawer ---
+  initCartDrawerRuntime({ readOnly, clientMessage, locale });
+
+  // --- Inquiries Form ---
+  initInquiryForms({ readOnly, clientMessage });
+
+  if (!readOnly) {
+    initCartStore();
+    void initWishlistStore();
+  }
+}
+
+export function initSearchModal() {
+  const modal = document.getElementById("search-modal");
+  const openBtns = document.querySelectorAll("#search-toggle-btn, [data-search-open], .site-header__search-toggle");
+  const closeBtn = document.getElementById("search-modal-close");
+  const backdrop = document.getElementById("search-modal-backdrop");
+  const input = document.getElementById("search-modal-input") as HTMLInputElement | null;
+
+  if (!modal) return;
+
+  function open() {
+    modal?.classList.add("is-open", "search-modal--open");
+    modal?.setAttribute("aria-hidden", "false");
+    document.body.classList.add("no-scroll");
+    window.setTimeout(() => {
+      input?.focus();
+    }, 50);
   }
 
+  function close() {
+    modal?.classList.remove("is-open", "search-modal--open");
+    modal?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("no-scroll");
+  }
+
+  openBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      open();
+    });
+  });
+
+  closeBtn?.addEventListener("click", close);
+  backdrop?.addEventListener("click", close);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && (modal.classList.contains("is-open") || modal.classList.contains("search-modal--open"))) {
+      close();
+    }
+  });
+}
+
+export function initHeaderNavigation() {
   const navLinks = document.querySelectorAll<HTMLAnchorElement>(".site-header__link");
+  const pathname = window.location.pathname;
+  const isHome = pathname === "/" || pathname === "" || pathname === "/index.html";
+  const isShop =
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/shop") ||
+    pathname.startsWith("/product");
 
   function setActiveNav(targetId: string | null) {
     navLinks.forEach((link) => {
@@ -49,11 +143,7 @@ export function initAfroStorefront() {
   }
 
   function syncNavWithLocation() {
-    const pathname = window.location.pathname;
     const hash = window.location.hash.toLowerCase();
-    const isHome = pathname === "/" || pathname === "" || pathname === "/index.html";
-    const isShop = pathname.startsWith("/products") || pathname.startsWith("/shop") || pathname.startsWith("/product");
-
     if (isHome) {
       if (hash === "#categories") {
         setActiveNav("categories");
@@ -82,13 +172,20 @@ export function initAfroStorefront() {
         const targetId = hash.substring(1);
         const targetEl = document.getElementById(targetId);
 
-        if (targetEl && (window.location.pathname === "/" || window.location.pathname === "" || href.startsWith("#"))) {
+        if (
+          targetEl &&
+          (window.location.pathname === "/" ||
+            window.location.pathname === "" ||
+            href.startsWith("#"))
+        ) {
           e.preventDefault();
           if (navId) setActiveNav(navId);
           targetEl.scrollIntoView({ behavior: "smooth" });
           history.pushState(null, "", hash);
         }
 
+        const nav = document.querySelector(".site-header__nav");
+        const toggleBtn = document.getElementById("mobile-menu-toggle");
         if (nav && nav.classList.contains("site-header__nav--open")) {
           nav.classList.remove("site-header__nav--open");
           toggleBtn?.setAttribute("aria-expanded", "false");
@@ -97,33 +194,37 @@ export function initAfroStorefront() {
     });
   });
 
-  // --- Dropdowns ---
-  initDropdowns();
+  // Scrollspy for Homepage
+  if (isHome) {
+    const categoriesSection = document.getElementById("categories");
+    const collectionsSection = document.getElementById("collections");
 
-  // --- Category Carousel ---
-  initCategoryCarousel();
+    const onScroll = () => {
+      if (window.scrollY < 200) {
+        setActiveNav("home");
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-  // --- Hero Carousel ---
-  initHeroCarousel();
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              if (entry.target.id === "categories") {
+                setActiveNav("categories");
+              } else if (entry.target.id === "collections") {
+                setActiveNav("collections");
+              }
+            }
+          });
+        },
+        { threshold: 0.35, rootMargin: "-80px 0px -40% 0px" },
+      );
 
-  // --- Collections Carousel ---
-  initCollectionsCarousel();
-
-  // --- Home Filters ---
-  initHomeFilters();
-
-  // --- Product Detail Controls ---
-  initProductDetail();
-
-  // --- Cart Drawer ---
-  initCartDrawerRuntime({ readOnly, clientMessage, locale });
-
-  // --- Inquiries Form ---
-  initInquiryForms({ readOnly, clientMessage });
-
-  if (!readOnly) {
-    void loadAndSyncCartCount();
-    initWishlistController();
+      if (categoriesSection) observer.observe(categoriesSection);
+      if (collectionsSection) observer.observe(collectionsSection);
+    }
   }
 }
 
@@ -141,7 +242,8 @@ export function initDropdowns(root: ParentNode = document) {
     const hiddenInput = dropdown.querySelector<HTMLInputElement>("input[type='hidden']");
     if (!trigger || !menu || options.length === 0) return;
 
-    const selected = options.find((option) => option.getAttribute("aria-selected") === "true") ?? options[0];
+    const selected =
+      options.find((option) => option.getAttribute("aria-selected") === "true") ?? options[0];
     dropdown.dataset.value = selected.dataset.value ?? "";
     if (label) label.textContent = selected.textContent?.trim() ?? "";
     if (hiddenInput) hiddenInput.value = selected.dataset.value ?? "";
@@ -173,7 +275,9 @@ export function initDropdowns(root: ParentNode = document) {
         option.setAttribute("aria-selected", String(option.dataset.value === value));
       });
       if (!silent) {
-        dropdown.dispatchEvent(new CustomEvent("dropdown:change", { bubbles: true, detail: { value } }));
+        dropdown.dispatchEvent(
+          new CustomEvent("dropdown:change", { bubbles: true, detail: { value } }),
+        );
       }
     }
 
@@ -314,13 +418,34 @@ export function initCollectionsCarousel(): EmblaCarouselType | undefined {
 
 export function initHeroCarousel(): EmblaCarouselType | undefined {
   const viewportNode = document.getElementById("hero-carousel-viewport");
-  const prevBtn = document.getElementById("hero-carousel-prev");
-  const nextBtn = document.getElementById("hero-carousel-next");
+  const prevBtn = document.getElementById("hero-carousel-prev") as HTMLButtonElement | null;
+  const nextBtn = document.getElementById("hero-carousel-next") as HTMLButtonElement | null;
   if (!viewportNode) return undefined;
 
-  const emblaApi = EmblaCarousel(viewportNode, { align: "start", loop: true, skipSnaps: false, dragFree: false });
+  const emblaApi = EmblaCarousel(viewportNode, {
+    align: "start",
+    loop: false,
+    skipSnaps: false,
+    dragFree: false,
+  });
+
+  const syncButtons = () => {
+    if (!emblaApi) return;
+    if (prevBtn) {
+      prevBtn.disabled = !emblaApi.canScrollPrev();
+    }
+    if (nextBtn) {
+      nextBtn.disabled = !emblaApi.canScrollNext();
+    }
+  };
+
   prevBtn?.addEventListener("click", () => emblaApi.scrollPrev());
   nextBtn?.addEventListener("click", () => emblaApi.scrollNext());
+
+  emblaApi.on("select", syncButtons);
+  emblaApi.on("init", syncButtons);
+  syncButtons();
+
   return emblaApi;
 }
 
@@ -351,15 +476,23 @@ export function initHomeFilters() {
   }
 
   function isDefault() {
-    return state.category === "all" && state.collection === "all" && state.sort === "featured" && state.min <= 0 && state.max >= 25000;
+    return (
+      state.category === "all" &&
+      state.collection === "all" &&
+      state.sort === "featured" &&
+      state.min <= 0 &&
+      state.max >= 25000
+    );
   }
 
   function apply() {
     let matches = cards.filter((card) => {
       const category = (card.dataset.category || "").toLowerCase();
       const collection = (card.dataset.collection || "").toLowerCase();
-      if (state.category !== "all" && !category.includes(state.category.toLowerCase())) return false;
-      if (state.collection !== "all" && !collection.includes(state.collection.toLowerCase())) return false;
+      if (state.category !== "all" && !category.includes(state.category.toLowerCase()))
+        return false;
+      if (state.collection !== "all" && !collection.includes(state.collection.toLowerCase()))
+        return false;
       const price = parsePrice(card);
       if (price < state.min || price > state.max) return false;
       return true;
@@ -370,11 +503,17 @@ export function initHomeFilters() {
     } else if (state.sort === "price-low") matches.sort((a, b) => parsePrice(a) - parsePrice(b));
     else if (state.sort === "price-high") matches.sort((a, b) => parsePrice(b) - parsePrice(a));
     else if (state.sort === "title") {
-      matches.sort((a, b) => (a.querySelector(".product-card__title")?.textContent || "").localeCompare(b.querySelector(".product-card__title")?.textContent || ""));
+      matches.sort((a, b) =>
+        (a.querySelector(".product-card__title")?.textContent || "").localeCompare(
+          b.querySelector(".product-card__title")?.textContent || "",
+        ),
+      );
     }
 
     const visible = isDefault() ? matches.slice(0, 15) : matches;
-    cards.forEach((card) => card.classList.add("is-deferred"));
+    cards.forEach((card) => {
+      card.classList.add("is-deferred");
+    });
     if (grid) {
       visible.forEach((card) => {
         card.classList.remove("is-deferred");
@@ -431,6 +570,106 @@ export function initHomeFilters() {
   });
 }
 
+export function initShopFilters() {
+  const sidebar = document.getElementById("shop-sidebar");
+  const mobileToggle = document.getElementById("shop-mobile-filter-toggle");
+  const closeBtn = document.getElementById("shop-sidebar-close");
+
+  // Mobile sidebar drawer
+  mobileToggle?.addEventListener("click", () => {
+    sidebar?.classList.add("is-open");
+    document.body.classList.add("no-scroll");
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    sidebar?.classList.remove("is-open");
+    document.body.classList.remove("no-scroll");
+  });
+
+  // Collapsible Accordion Groups
+  const groupToggles = document.querySelectorAll<HTMLButtonElement>(".shop-sidebar__group-toggle");
+  groupToggles.forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const group = toggle.closest<HTMLElement>(".shop-sidebar__group");
+      if (!group) return;
+      const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!isExpanded));
+      group.classList.toggle("is-collapsed", isExpanded);
+    });
+  });
+
+  // Price Slider & Inputs on Shop page
+  const minInput = document.getElementById("shop-price-min") as HTMLInputElement | null;
+  const maxInput = document.getElementById("shop-price-max") as HTMLInputElement | null;
+  const minSlider = document.getElementById("shop-price-min-slider") as HTMLInputElement | null;
+  const maxSlider = document.getElementById("shop-price-slider") as HTMLInputElement | null;
+  const fill = document.getElementById("shop-price-fill");
+
+  function updateFill() {
+    if (!minSlider || !maxSlider || !fill) return;
+    const minVal = Number(minSlider.value);
+    const maxVal = Number(maxSlider.value);
+    const minPercent = (minVal / 25000) * 100;
+    const maxPercent = (maxVal / 25000) * 100;
+    fill.style.left = `${minPercent}%`;
+    fill.style.right = `${100 - maxPercent}%`;
+  }
+
+  function commitPriceFilter() {
+    const min = minInput ? Number(minInput.value) : 0;
+    const max = maxInput ? Number(maxInput.value) : 25000;
+    const url = new URL(window.location.href);
+    if (min > 0) url.searchParams.set("price_min", String(min));
+    else url.searchParams.delete("price_min");
+    if (max < 25000) url.searchParams.set("price_max", String(max));
+    else url.searchParams.delete("price_max");
+    url.searchParams.delete("offset");
+    url.hash = "shop-products";
+    window.location.href = url.toString();
+  }
+
+  minSlider?.addEventListener("input", () => {
+    if (!minSlider || !maxSlider || !minInput) return;
+    if (Number(minSlider.value) > Number(maxSlider.value)) {
+      minSlider.value = maxSlider.value;
+    }
+    minInput.value = minSlider.value;
+    updateFill();
+  });
+
+  maxSlider?.addEventListener("input", () => {
+    if (!minSlider || !maxSlider || !maxInput) return;
+    if (Number(maxSlider.value) < Number(minSlider.value)) {
+      maxSlider.value = minSlider.value;
+    }
+    maxInput.value = maxSlider.value;
+    updateFill();
+  });
+
+  minSlider?.addEventListener("change", commitPriceFilter);
+  maxSlider?.addEventListener("change", commitPriceFilter);
+
+  minInput?.addEventListener("change", () => {
+    if (!minSlider || !minInput) return;
+    minSlider.value = minInput.value;
+    updateFill();
+    commitPriceFilter();
+  });
+
+  maxInput?.addEventListener("change", () => {
+    if (!maxSlider || !maxInput) return;
+    maxSlider.value = maxInput.value;
+    updateFill();
+    commitPriceFilter();
+  });
+}
+
+function replay(el: Element, className: string) {
+  el.classList.remove(className);
+  void (el as HTMLElement).offsetWidth;
+  el.classList.add(className);
+}
+
 export function initProductDetail() {
   const mainImage = document.querySelector<HTMLImageElement>(".product-gallery__main img");
   const thumbBtns = document.querySelectorAll<HTMLButtonElement>(".product-gallery__thumb-btn");
@@ -442,7 +681,9 @@ export function initProductDetail() {
         mainImage.src = thumbImg.src;
         mainImage.srcset = thumbImg.srcset || "";
       }
-      thumbBtns.forEach((b) => b.classList.remove("product-gallery__thumb-btn--active"));
+      thumbBtns.forEach((b) => {
+        b.classList.remove("product-gallery__thumb-btn--active");
+      });
       btn.classList.add("product-gallery__thumb-btn--active");
     });
   });
@@ -450,7 +691,9 @@ export function initProductDetail() {
   const swatches = document.querySelectorAll<HTMLButtonElement>(".product-details__swatch");
   swatches.forEach((swatch) => {
     swatch.addEventListener("click", () => {
-      swatches.forEach((s) => s.classList.remove("product-details__swatch--active"));
+      swatches.forEach((s) => {
+        s.classList.remove("product-details__swatch--active");
+      });
       swatch.classList.add("product-details__swatch--active");
     });
   });
@@ -458,7 +701,9 @@ export function initProductDetail() {
   const sizeBtns = document.querySelectorAll<HTMLButtonElement>(".product-details__size-btn");
   sizeBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
-      sizeBtns.forEach((b) => b.classList.remove("product-details__size-btn--active"));
+      sizeBtns.forEach((b) => {
+        b.classList.remove("product-details__size-btn--active");
+      });
       btn.classList.add("product-details__size-btn--active");
     });
   });
@@ -466,46 +711,76 @@ export function initProductDetail() {
   const qtyMinus = document.querySelector<HTMLButtonElement>(".product-details__qty-btn--minus");
   const qtyPlus = document.querySelector<HTMLButtonElement>(".product-details__qty-btn--plus");
   const qtyValue = document.querySelector<HTMLSpanElement>(".product-details__qty-value");
+  const qtyInput = document.getElementById("pdp-quantity-input") as HTMLInputElement | null;
 
   if (qtyMinus && qtyPlus && qtyValue) {
     qtyMinus.addEventListener("click", () => {
       const count = parseInt(qtyValue.textContent || "1", 10);
       if (count > 1) {
         qtyValue.textContent = (count - 1).toString();
+        if (qtyInput) qtyInput.value = (count - 1).toString();
+        replay(qtyValue, "is-tick");
       }
     });
 
     qtyPlus.addEventListener("click", () => {
       const count = parseInt(qtyValue.textContent || "1", 10);
       qtyValue.textContent = (count + 1).toString();
+      if (qtyInput) qtyInput.value = (count + 1).toString();
+      replay(qtyValue, "is-tick");
     });
   }
 }
 
-function initInquiryForms({ readOnly, clientMessage }: { readOnly: boolean; clientMessage: (k: string, f?: string) => string }) {
+function initInquiryForms({
+  readOnly,
+  clientMessage,
+}: {
+  readOnly: boolean;
+  clientMessage: (k: string, f?: string) => string;
+}) {
   document.querySelectorAll<HTMLFormElement>("[data-inquiry-form]").forEach((form) => {
     form.addEventListener("submit", async (event) => {
       if (readOnly || !form.reportValidity()) return;
       event.preventDefault();
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-      const message = form.querySelector<HTMLElement>("[data-inquiry-status]") ?? form.parentElement?.querySelector<HTMLElement>("[data-inquiry-status]");
-      const isRequest = form.querySelector<HTMLInputElement>('input[name="type"]')?.value === "product_request";
+      const message =
+        form.querySelector<HTMLElement>("[data-inquiry-status]") ??
+        form.parentElement?.querySelector<HTMLElement>("[data-inquiry-status]");
+      const isRequest =
+        form.querySelector<HTMLInputElement>('input[name="type"]')?.value === "product_request";
 
       if (button) {
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
       }
       form.setAttribute("aria-busy", "true");
-      if (message) message.textContent = isRequest ? clientMessage("requestSending", "Sending...") : clientMessage("contactSending", "Sending...");
+      if (message)
+        message.textContent = isRequest
+          ? clientMessage("requestSending", "Sending...")
+          : clientMessage("contactSending", "Sending...");
 
       try {
-        const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } });
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { Accept: "application/json" },
+        });
         await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(isRequest ? clientMessage("requestFailed", "Request failed") : clientMessage("contactFailed", "Sending failed"));
+        if (!response.ok)
+          throw new Error(
+            isRequest
+              ? clientMessage("requestFailed", "Request failed")
+              : clientMessage("contactFailed", "Sending failed"),
+          );
         form.reset();
-        if (message) message.textContent = isRequest ? clientMessage("requestReceived", "Request received! We'll be in touch.") : clientMessage("contactReceived", "Message sent! Thank you.");
+        if (message)
+          message.textContent = isRequest
+            ? clientMessage("requestReceived", "Request received! We'll be in touch.")
+            : clientMessage("contactReceived", "Message sent! Thank you.");
       } catch (cause) {
-        if (message) message.textContent = cause instanceof Error ? cause.message : "Error submitting inquiry";
+        if (message)
+          message.textContent = cause instanceof Error ? cause.message : "Error submitting inquiry";
       } finally {
         if (button) {
           button.disabled = false;
@@ -532,7 +807,6 @@ function initCartDrawerRuntime({
   const continueBtn = document.getElementById("cart-continue-btn");
   const cartToggleBtn = document.getElementById("cart-toggle-btn");
   const itemsRoot = drawer?.querySelector<HTMLElement>("[data-cart-items]");
-  const status = drawer?.querySelector<HTMLElement>("[data-cart-status]");
   const summary = drawer?.querySelector<HTMLElement>("[data-cart-footer]");
   const empty = document.getElementById("cart-empty");
 
@@ -541,7 +815,11 @@ function initCartDrawerRuntime({
       drawer.classList.add("cart-drawer--open");
       document.body.classList.add("no-scroll");
       if (cart) renderCart(cart);
-      else void loadCart();
+      else {
+        const current = $cart.get();
+        if (current) renderCart(current);
+        else void fetchCart();
+      }
     }
   }
 
@@ -549,12 +827,13 @@ function initCartDrawerRuntime({
     if (drawer) {
       drawer.classList.remove("cart-drawer--open");
       document.body.classList.remove("no-scroll");
+      $cartDrawerOpen.set(false);
     }
   }
 
   if (cartToggleBtn) {
     cartToggleBtn.addEventListener("click", () => {
-      openDrawer();
+      if (!readOnly) openDrawer();
     });
   }
 
@@ -565,7 +844,10 @@ function initCartDrawerRuntime({
   const money = (amount: number | null, currency: string | null) => {
     if (amount == null) return "—";
     try {
-      return new Intl.NumberFormat(locale, { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount);
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: (currency || "ETB").toUpperCase(),
+      }).format(amount);
     } catch {
       return `Br. ${amount.toFixed(2)}`;
     }
@@ -573,6 +855,11 @@ function initCartDrawerRuntime({
 
   const renderCart = (cart: any) => {
     if (!itemsRoot || !summary) return;
+    const priorIds = new Set(
+      Array.from(itemsRoot.querySelectorAll<HTMLElement>(".cart-item")).map(
+        (el) => el.dataset.itemId,
+      ),
+    );
     itemsRoot.replaceChildren();
     const items = Array.isArray(cart?.items) ? cart.items : [];
     const count = items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
@@ -586,20 +873,23 @@ function initCartDrawerRuntime({
       const line = document.createElement("div");
       line.setAttribute("role", "listitem");
       line.className = "cart-item";
+      if (!priorIds.has(item.id)) {
+        line.classList.add("is-entering");
+      }
       line.dataset.itemId = item.id;
       line.dataset.lineItemId = item.id;
 
       line.innerHTML = `
         <div class="cart-item__thumb">
           <div class="img-wrapper">
-            ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title || ''}" class="cover" width="84" height="84" />` : ''}
+            ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title || ""}" class="cover" width="84" height="84" />` : ""}
           </div>
         </div>
         <div class="cart-item__details">
           <div class="cart-item__top">
             <div class="cart-item__titles">
-              <h4 class="cart-item__title type-body-500">${item.title || 'Piece'}</h4>
-              ${item.variantTitle ? `<p class="cart-item__brand type-body-s-400">${item.variantTitle}</p>` : ''}
+              <h4 class="cart-item__title type-body-500">${item.title || "Piece"}</h4>
+              ${item.variantTitle ? `<p class="cart-item__brand type-body-s-400">${item.variantTitle}</p>` : ""}
             </div>
             <button type="button" class="cart-item__remove-btn" aria-label="Remove item" data-cart-remove data-line-item-id="${item.id}">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" data-icon="trash"><path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -607,7 +897,7 @@ function initCartDrawerRuntime({
           </div>
           <div class="cart-item__bottom">
             <div class="cart-item__quantity" aria-label="Quantity selector">
-              <button type="button" class="cart-item__qty-btn cart-item__qty-btn--minus" aria-label="Decrease quantity" data-cart-quantity="${Math.max(1, Number(item.quantity) - 1)}" data-line-item-id="${item.id}" ${Number(item.quantity) <= 1 ? 'disabled' : ''}>
+              <button type="button" class="cart-item__qty-btn cart-item__qty-btn--minus" aria-label="Decrease quantity" data-cart-quantity="${Math.max(1, Number(item.quantity) - 1)}" data-line-item-id="${item.id}" ${Number(item.quantity) <= 1 ? "disabled" : ""}>
                 <svg width="10" height="2" viewBox="0 0 10 2" fill="none" data-icon="minus"><path d="M1 1h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               </button>
               <span class="cart-item__qty-val type-body-400">${item.quantity}</span>
@@ -628,21 +918,7 @@ function initCartDrawerRuntime({
     if (totalEl) totalEl.textContent = money(cart.total, cart.currencyCode);
   };
 
-  const loadCart = async () => {
-    if (readOnly) return;
-    if (status) status.textContent = clientMessage("cartLoading", "Loading cart...");
-    try {
-      const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(clientMessage("cartLoadFailed", "Failed to load cart"));
-      renderCart(result.cart);
-      if (status) status.textContent = "";
-    } catch (cause) {
-      if (status) status.textContent = cause instanceof Error ? cause.message : "Failed to load cart";
-    }
-  };
-
-  // Cart item actions (increase / decrease / remove)
+  // Cart item actions (increase / decrease / remove) with Nanostores optimistic update
   drawer?.addEventListener("click", async (event) => {
     if (readOnly) return;
     const target = event.target instanceof Element ? event.target : null;
@@ -653,59 +929,54 @@ function initCartDrawerRuntime({
     const lineItemId = quantityBtn?.dataset.lineItemId || removeBtn?.dataset.lineItemId;
     if (!lineItemId) return;
 
-    const body = new FormData();
-    body.set("lineItemId", lineItemId);
-    if (quantityBtn) body.set("quantity", quantityBtn.dataset.cartQuantity || "1");
-
-    try {
-      const response = await fetch(quantityBtn ? "/actions/cart/update" : "/actions/cart/remove", {
-        method: "POST",
-        body,
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-      });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.message || "Failed to update cart");
-      renderCart(result.cart);
-      window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result }));
-    } catch (cause) {
-      if (status) status.textContent = cause instanceof Error ? cause.message : "Cart error";
+    if (quantityBtn) {
+      const valEl = quantityBtn
+        .closest(".cart-item__quantity")
+        ?.querySelector(".cart-item__qty-val");
+      if (valEl) replay(valEl, "is-tick");
+      const qty = Number(quantityBtn.dataset.cartQuantity || "1");
+      await updateCartItemQuantity(lineItemId, qty);
+    } else if (removeBtn) {
+      await removeCartItem(lineItemId);
     }
   });
 
-  // Handle Add-to-cart form submissions
+  // Subscribe to $cart nanostore
+  $cart.subscribe((cart) => {
+    if (!readOnly && cart) {
+      renderCart(cart);
+    }
+  });
+
+  // Subscribe to $cartDrawerOpen nanostore
+  $cartDrawerOpen.subscribe((isOpen) => {
+    if (isOpen && !drawer?.classList.contains("cart-drawer--open")) {
+      openDrawer();
+    } else if (!isOpen && drawer?.classList.contains("cart-drawer--open")) {
+      closeDrawer();
+    }
+  });
+
+  // Handle Add-to-cart form submissions with Nanostores optimistic update
   document.addEventListener("submit", async (event) => {
     const form = event.target instanceof HTMLFormElement ? event.target : null;
     if (!form?.matches("[data-card-add-form], [data-add-form]") || readOnly) return;
     event.preventDefault();
 
     const submitBtn = form.querySelector<HTMLButtonElement>("button[type=submit]");
-    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      replay(submitBtn, "is-added");
+    }
 
-    try {
-      const response = await fetch(form.action, {
-        method: "POST",
-        body: new FormData(form),
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-      });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.message || "Failed to add to cart");
-      window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
-    } catch (cause) {
-      console.error(cause);
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
+    const cartToggle = document.getElementById("cart-toggle-btn");
+    if (cartToggle) replay(cartToggle, "is-bump");
+
+    await addToCart({ form, openDrawer: true });
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      window.setTimeout(() => submitBtn.classList.remove("is-added"), 1200);
     }
   });
-
-  window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => {
-    if (readOnly) return;
-    const detail = event.detail;
-    if (detail?.count != null) syncCartCount(detail.count);
-    if (detail?.cart) {
-      renderCart(detail.cart);
-      if (detail.openDrawer) openDrawer(detail.cart);
-    }
-  }) as EventListener);
 }

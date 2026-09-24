@@ -5,7 +5,13 @@ export const setCartCount = (count: number, root: ParentNode = document) => {
   root.querySelectorAll<HTMLElement>("[data-cart-count]").forEach((element) => {
     element.textContent = safeCount > 0 ? String(safeCount) : "";
     element.toggleAttribute("hidden", safeCount <= 0);
+    element.setAttribute("data-count", String(safeCount));
     element.setAttribute("aria-label", `${safeCount} cart item${safeCount === 1 ? "" : "s"}`);
+    if (safeCount > 0) {
+      element.classList.remove("is-bump");
+      void element.offsetWidth;
+      element.classList.add("is-bump");
+    }
   });
   root.querySelectorAll<HTMLElement>("[data-cart-count-label]").forEach((element) => {
     element.textContent = safeCount > 0 ? ` (${safeCount})` : "";

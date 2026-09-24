@@ -86,7 +86,8 @@
       transform: scale(0.92);
     }
 
-    &--active {
+    &--active,
+    &[aria-pressed="true"] {
       color: $clr-primary-500;
     }
 

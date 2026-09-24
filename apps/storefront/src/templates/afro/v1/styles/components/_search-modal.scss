@@ -1,0 +1,284 @@
+@use "../abstracts" as *;
+
+.search-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: min(15vh, 120px);
+  padding-inline: $space-300;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0.3s ease;
+
+  &.is-open,
+  &--open {
+    visibility: visible;
+    pointer-events: auto;
+
+    .search-modal__backdrop {
+      opacity: 1;
+    }
+
+    .search-modal__dialog {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba($clr-neutral-900, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+
+  &__dialog {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: $space-300;
+    opacity: 0;
+    transform: translateY(calc(-1 * #{$space-400})) scale(0.96);
+    transition:
+      transform 0.3s $ease-out,
+      opacity 0.3s ease;
+  }
+
+  &__form {
+    width: 100%;
+  }
+
+  &__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: $clr-neutral-50;
+    border-radius: $radius-550;
+    padding: $space-100 $space-100 $space-100 $space-400;
+    box-shadow: 0 $space-300 $space-600 rgba($clr-neutral-900, 0.25);
+    border: 1px solid rgba($clr-neutral-900, 0.08);
+  }
+
+  &__input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: $clr-neutral-900;
+    padding-right: $space-200;
+    outline: none;
+    width: 100%;
+
+    &::placeholder {
+      color: rgba($clr-neutral-900, 0.4);
+    }
+  }
+
+  &__btn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: $radius-550;
+    background-color: $clr-primary-500;
+    color: $clr-neutral-50;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 $space-100 $space-250 rgba($clr-primary-500, 0.35);
+    transition:
+      background-color $dur-hover ease,
+      transform $dur-press $ease-out,
+      box-shadow $dur-hover ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: #ff852e;
+        transform: scale(1.05);
+        box-shadow: 0 $space-150 $space-350 rgba($clr-primary-500, 0.45);
+      }
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      color: currentColor;
+    }
+  }
+
+  &__close {
+    position: absolute;
+    top: calc(-1 * #{$space-600});
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-550;
+    background-color: rgba($clr-neutral-50, 0.15);
+    color: $clr-neutral-50;
+    border: 1px solid rgba($clr-neutral-50, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      background-color $dur-hover ease,
+      transform $dur-press ease;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background-color: rgba($clr-neutral-50, 0.3);
+        transform: scale(1.08);
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space-150;
+    color: rgba($clr-neutral-50, 0.75);
+    padding-inline: $space-200;
+
+    span {
+      color: rgba($clr-neutral-50, 0.5);
+    }
+
+    a {
+      color: $clr-neutral-50;
+      text-decoration: none;
+      background-color: rgba($clr-neutral-50, 0.12);
+      padding: $space-50 $space-200;
+      border-radius: $radius-550;
+      transition:
+        background-color $dur-hover ease,
+        color $dur-hover ease;
+
+      @media (hover: hover) and (pointer: fine) {
+        &:hover {
+          background-color: $clr-primary-500;
+          color: $clr-neutral-50;
+        }
+      }
+    }
+  }
+
+  .product-search-suggestions {
+    position: absolute;
+    top: calc(100% + #{$space-150});
+    left: 0;
+    right: 0;
+    z-index: 100;
+    width: 100%;
+    padding: $space-150;
+    overflow: hidden;
+    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border-radius: $radius-300;
+    background-color: $clr-neutral-50;
+    box-shadow: 0 16px 40px rgba($clr-neutral-900, 0.16);
+
+    &[hidden] {
+      display: none;
+    }
+
+    &__item {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: $space-250;
+      min-height: 54px;
+      padding: $space-150;
+      border-radius: $radius-200;
+      color: $clr-neutral-900;
+      text-decoration: none;
+      transition: background-color $dur-hover ease;
+
+      &:hover,
+      &[data-active] {
+        background-color: rgba($clr-primary-500, 0.08);
+      }
+    }
+
+    &__media {
+      width: 48px;
+      height: 48px;
+      overflow: hidden;
+      border-radius: $radius-150;
+      background-color: $clr-neutral-200;
+      flex-shrink: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    &__copy {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+
+      strong {
+        font-size: $fs-body-s-500;
+        font-weight: 600;
+        color: $clr-neutral-900;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      small {
+        font-size: $fs-caption;
+        color: rgba($clr-neutral-900, 0.55);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    &__item b {
+      font-size: $fs-body-s-700;
+      font-weight: 700;
+      color: $clr-primary-500;
+      white-space: nowrap;
+    }
+
+    &__all {
+      display: block;
+      margin-top: $space-100;
+      padding: $space-200 $space-250;
+      border-top: 1px solid rgba($clr-neutral-900, 0.06);
+      color: $clr-primary-500;
+      font-size: $fs-body-s-500;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: center;
+      border-radius: $radius-150;
+      transition: background-color $dur-hover ease, color $dur-hover ease;
+
+      &:hover {
+        background-color: rgba($clr-primary-500, 0.08);
+        color: $clr-primary-800;
+      }
+    }
+  }
+}

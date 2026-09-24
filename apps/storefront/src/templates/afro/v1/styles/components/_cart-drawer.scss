@@ -148,31 +148,26 @@
     border-radius: $radius-300;
     background-color: rgba($clr-neutral-900, 0.04);
 
+    scrollbar-width: thin;
+    scrollbar-color: rgba($clr-neutral-900, 0.22) transparent;
+
     &::-webkit-scrollbar {
-      width: $space-200;
+      width: 2.5px;
     }
 
     &::-webkit-scrollbar-track {
-      background-color: rgba($clr-neutral-900, 0.06);
-      border-radius: $radius-800;
+      background-color: transparent;
     }
 
     &::-webkit-scrollbar-thumb {
-      background-color: rgba($clr-neutral-900, 0.35);
+      background-color: rgba($clr-neutral-900, 0.22);
       border-radius: $radius-800;
-      border: calc((#{$space-200} - #{$space-50}) / 2) solid transparent;
-      background-clip: padding-box;
+      transition: background-color $dur-ui ease;
     }
 
     &:hover::-webkit-scrollbar-thumb,
     &::-webkit-scrollbar-thumb:hover {
-      border-width: $space-50;
-      background-color: rgba($clr-neutral-900, 0.55);
-    }
-
-    @supports not selector(::-webkit-scrollbar) {
-      scrollbar-width: thin;
-      scrollbar-color: rgba($clr-neutral-900, 0.35) transparent;
+      background-color: rgba($clr-neutral-900, 0.45);
     }
   }
 

@@ -105,7 +105,7 @@ test("NexaHub owns account, wishlist, and inquiry surfaces", () => {
 
 test("NexaHub renderer map has no borrowed fallback presentation", () => {
   const registry = read("templates/registry.ts");
-  const block = registry.match(/"nexahub@1"\s*:\s*\{([\s\S]*?)\n\s*},\n}/)?.[1] ?? "";
+  const block = registry.match(/"nexahub@1"\s*:\s*\{([\s\S]*?)\n\s*},/)?.[1] ?? "";
   assert.ok(block, "NexaHub registry block was not found");
   assert.doesNotMatch(block, /Fallback[A-Z]/);
   for (const slot of ["Home", "ProductList", "Product", "Cart", "Checkout", "PaymentReturn", "OrderConfirm", "Contact", "RequestItem", "Wishlist", "Account", "AccountOrder", "SystemState"]) assert.match(block, new RegExp(`${slot}:\\s*NexahubV1`), `${slot} is not owned`);
@@ -161,8 +161,8 @@ test("NexaHub shell owns the reference dropdown, cart drawer, and wishlist contr
   for (const marker of ["data-header-dropdown-menu", "data-cart-overlay", "data-cart-items", "data-wishlist-indicator"]) {
     assert.ok(layout.includes(marker), `shell is missing ${marker}`);
   }
-  assert.ok(client.includes("initWishlistController()"));
-  assert.ok(client.includes('fetch("/cart-data"'));
+  assert.ok(client.includes("initWishlistStore()"));
+  assert.ok(client.includes("$cart"));
 });
 
 test("NexaHub exposes cart mutation failures visibly and keeps mobile product details content-sized", () => {
@@ -204,7 +204,7 @@ test("NexaHub keeps labels centered and uses the reference carousel icons", () =
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
 
   assert.doesNotMatch(button, /data-text-anim="linkAnimation"/, "button labels must not be hidden without the reference animation bootstrap");
-  assert.match(home, /arrow-right-icon\.svg\?raw/);
+  assert.match(home, /Icon name="arrow-right"/);
   assert.doesNotMatch(home, />←<|>→</, "category controls must use the reference SVG, not text glyphs");
   assert.match(headerStyles, /\[data-cart-count\]\s*\{[\s\S]*?position:\s*absolute/);
   const buttonStyles = read("templates/nexahub/v1/styles/components/_button.scss");

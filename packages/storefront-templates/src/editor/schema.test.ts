@@ -141,6 +141,5 @@ test("Afro exposes a clean editor schema and valid default contracts", () => {
     strategy: "variant-options",
     variants: ["active", "standard"],
   });
-  assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.preview?.strategy, "list-items");
   assert.equal(manifest.sections.find((section) => section.id === "listing")?.previewPage, "products");
 });

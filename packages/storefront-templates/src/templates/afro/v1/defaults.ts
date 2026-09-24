@@ -50,13 +50,7 @@ export const afroV1Defaults: AfroV1Data = {
     phone: "+251 91 456 7890",
     phone2: "+251 91 456 7890",
     email: "hello@afroclothing.com",
-    quickLinks: [
-      { label: "All Products", href: "/products" },
-      { label: "Jackets & Coats", href: "/products?category=jackets" },
-      { label: "Trousers & Denim", href: "/products?category=trousers" },
-      { label: "T-Shirts & Tops", href: "/products?category=tops" },
-      { label: "Accessories", href: "/products?category=accessories" },
-    ],
+    quickLinks: [],
     socialLinks: [
       { label: "TikTok", href: "https://tiktok.com" },
       { label: "Instagram", href: "https://instagram.com" },

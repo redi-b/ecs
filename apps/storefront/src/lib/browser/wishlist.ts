@@ -233,6 +233,11 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
       return false;
     }
   };
+  const replayAnimation = (el: Element, className: string) => {
+    el.classList.remove(className);
+    void (el as HTMLElement).offsetWidth;
+    el.classList.add(className);
+  };
   const onClick = (event: MouseEvent) => {
     const target =
       event.target instanceof Element
@@ -243,10 +248,19 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     event.stopPropagation();
     const entry = parseToggleEntry(target);
     if (!entry) return;
-    const next = currentItems.some((item) => item.path === entry.path)
+    const isSaved = currentItems.some((item) => item.path === entry.path);
+    const next = isSaved
       ? currentItems.filter((item) => item.path !== entry.path)
       : [...currentItems, entry];
     publish(next);
+    if (!isSaved) {
+      replayAnimation(target, "is-pop");
+      documentRef
+        .querySelectorAll<HTMLElement>("[data-wishlist-indicator]")
+        .forEach((indicator) => {
+          replayAnimation(indicator, "is-bump");
+        });
+    }
   };
   const onUpdate = (event: Event) => {
     const detail = (event as CustomEvent<{ items?: WishlistEntry[]; origin?: string }>).detail;
@@ -256,12 +270,13 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     if (detail?.origin !== "controller" && authenticated === true) void persist(saved);
   };
   const onRequest = () => {
-    if (authenticated !== null) announce();
+    announce();
   };
   documentRef.addEventListener("click", onClick);
   windowRef.addEventListener(WISHLIST_UPDATED_EVENT, onUpdate);
   windowRef.addEventListener(WISHLIST_REQUEST_EVENT, onRequest);
   sync(currentItems);
+  announce();
   const ready = hydrateAccount();
   return {
     ready,

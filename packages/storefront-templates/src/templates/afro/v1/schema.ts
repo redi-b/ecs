@@ -57,7 +57,7 @@ export const afroV1DataSchema = z.object({
     phone: z.string().optional(),
     phone2: z.string().optional(),
     email: z.string().optional(),
-    quickLinks: z.array(navigationItemSchema),
+    quickLinks: z.array(navigationItemSchema).optional().default([]),
     socialLinks: z.array(navigationItemSchema),
     credit: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
   }),

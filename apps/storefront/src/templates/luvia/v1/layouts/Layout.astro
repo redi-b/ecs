@@ -181,7 +181,16 @@ const isActiveLink = (href: string) =>
     <script>
       import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
       import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
-      import { initWishlistController } from "../../../../lib/browser/wishlist";
+      import {
+        $cart,
+        $cartDrawerOpen,
+        initCartStore,
+        fetchCart,
+        addToCart,
+        updateCartItemQuantity,
+        removeCartItem,
+      } from "../../../../lib/stores/cart";
+      import { initWishlistStore } from "../../../../lib/stores/wishlist";
 
       const editorPreview = document.body.dataset.editorMode === "true";
       const demoPreview = document.body.dataset.demoMode === "true";
@@ -252,8 +261,6 @@ const isActiveLink = (href: string) =>
         setHeaderSurface(null, true);
       });
       window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => { if (event.matches) setHeaderSurface(null); });
-      const badge = document.querySelector<HTMLElement>("[data-cart-count]");
-      if (!readOnlyPreview && badge?.hidden) void loadAndSyncCartCount();
 
       const trigger = document.querySelector<HTMLAnchorElement>("[data-cart-trigger]");
       const drawer = document.querySelector<HTMLElement>("[data-cart-drawer]");
@@ -262,7 +269,6 @@ const isActiveLink = (href: string) =>
       const continueButton = drawer?.querySelector<HTMLButtonElement>("[data-cart-continue]");
       const itemsRoot = drawer?.querySelector<HTMLElement>("[data-cart-items]");
       const drawerCount = drawer?.querySelector<HTMLElement>("[data-cart-drawer-count]");
-      const status = drawer?.querySelector<HTMLElement>("[data-cart-status]");
       const footer = drawer?.querySelector<HTMLElement>("[data-cart-footer]");
       let lastFocused: HTMLElement | null = null;
       const formatCartMoney = (amount: number | null, currency: string | null) => {
@@ -310,28 +316,102 @@ const isActiveLink = (href: string) =>
         const subtotal = footer.querySelector<HTMLElement>("[data-cart-subtotal]"); const total = footer.querySelector<HTMLElement>("[data-cart-total]");
         if (subtotal) subtotal.textContent = formatCartMoney(cart.itemTotal, cart.currencyCode); if (total) total.textContent = formatCartMoney(cart.total, cart.currencyCode);
       };
-      const loadCart = async () => {
-        if (status) { status.textContent = messages.cartLoading; status.classList.remove("is-error"); }
-        try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(messages.cartLoadFailed); renderCart(result.cart); if (status) status.textContent = ""; }
-        catch (cause) { if (status) { status.textContent = cause instanceof Error ? cause.message : messages.cartLoadFailed; status.classList.add("is-error"); } }
-      };
+
       const openCart = async (cart?: any) => {
-        if (!drawer || !backdrop) return; setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger; drawer.hidden = false; backdrop.hidden = false; requestAnimationFrame(() => { drawer.dataset.open = ""; backdrop.dataset.open = ""; }); document.body.dataset.cartOpen = ""; syncPageScrollLock(); if (cart) renderCart(cart); else await loadCart(); closeButton?.focus();
+        if (!drawer || !backdrop) return;
+        setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
+        drawer.hidden = false;
+        backdrop.hidden = false;
+        requestAnimationFrame(() => {
+          drawer.dataset.open = "";
+          backdrop.dataset.open = "";
+        });
+        document.body.dataset.cartOpen = "";
+        syncPageScrollLock();
+        if (cart) {
+          renderCart(cart);
+        } else {
+          const current = $cart.get();
+          if (current) renderCart(current);
+          else void fetchCart();
+        }
+        closeButton?.focus();
       };
-      const closeCart = () => { if (!drawer || !backdrop) return; delete drawer.dataset.open; delete backdrop.dataset.open; delete document.body.dataset.cartOpen; syncPageScrollLock(); setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 260); lastFocused?.focus(); };
-      trigger?.addEventListener("click", (event) => { if (readOnlyPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void openCart(); });
-      closeButton?.addEventListener("click", closeCart); continueButton?.addEventListener("click", closeCart); backdrop?.addEventListener("click", closeCart);
+
+      const closeCart = () => {
+        if (!drawer || !backdrop) return;
+        delete drawer.dataset.open;
+        delete backdrop.dataset.open;
+        delete document.body.dataset.cartOpen;
+        $cartDrawerOpen.set(false);
+        syncPageScrollLock();
+        setTimeout(() => {
+          drawer.hidden = true;
+          backdrop.hidden = true;
+        }, 260);
+        lastFocused?.focus();
+      };
+
+      trigger?.addEventListener("click", (event) => {
+        if (readOnlyPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        void openCart();
+      });
+      closeButton?.addEventListener("click", closeCart);
+      continueButton?.addEventListener("click", closeCart);
+      backdrop?.addEventListener("click", closeCart);
+
       drawer?.addEventListener("click", async (event) => {
         if (readOnlyPreview) return;
-        const target = event.target instanceof Element ? event.target : null; const item = target?.closest<HTMLElement>("[data-line-item-id]"); if (!item) return;
-        const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantityButton && !removeButton) return;
-        const body = new FormData(); body.set("lineItemId", item.dataset.lineItemId || ""); if (quantityButton) body.set("quantity", quantityButton.dataset.cartQuantity || "1");
-        item.dataset.updating = ""; if (status) { status.textContent = quantityButton ? messages.cartUpdating : messages.removingItem; status.classList.remove("is-error"); }
-        try { const response = await fetch(quantityButton ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(messages.cartUpdateFailed); renderCart(result.cart); if (status) status.textContent = ""; window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); }
-        catch (cause) { delete item.dataset.updating; if (status) { status.textContent = cause instanceof Error ? cause.message : messages.cartUpdateFailed; status.classList.add("is-error"); } }
+        const target = event.target instanceof Element ? event.target : null;
+        const item = target?.closest<HTMLElement>("[data-line-item-id]");
+        if (!item) return;
+        const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]");
+        const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]");
+        if (!quantityButton && !removeButton) return;
+
+        const lineItemId = item.dataset.lineItemId || "";
+        if (!lineItemId) return;
+
+        if (quantityButton) {
+          const qty = Number(quantityButton.dataset.cartQuantity || "1");
+          await updateCartItemQuantity(lineItemId, qty);
+        } else if (removeButton) {
+          await removeCartItem(lineItemId);
+        }
       });
-      drawer?.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); closeCart(); return; } if (event.key !== "Tab") return; const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]; if (!focusable.length) return; const first = focusable[0]; const last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } });
-      window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (readOnlyPreview) return; const detail = event.detail; if (detail?.count != null) setCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer === true && !drawer?.hasAttribute("data-open")) void openCart(detail.cart); } }) as EventListener);
+
+      drawer?.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeCart();
+          return;
+        }
+        if (event.key !== "Tab") return;
+        const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      });
+
+      $cart.subscribe((cart) => {
+        if (!readOnlyPreview && cart) {
+          renderCart(cart);
+        }
+      });
+
+      $cartDrawerOpen.subscribe((isOpen) => {
+        if (isOpen && !drawer?.hasAttribute("data-open")) {
+          void openCart();
+        }
+      });
 
       if (demoPreview) {
         const containPreviewNavigation = (event: Event) => {
@@ -376,28 +456,24 @@ const isActiveLink = (href: string) =>
         const originalLabel = label?.textContent ?? messages.addToCart;
         button.disabled = true;
         if (label) label.textContent = messages.adding;
-        try {
-          const response = await fetch(form.action, {
-            method: "POST",
-            body: new FormData(form),
-            credentials: "same-origin",
-            headers: { Accept: "application/json" },
-          });
-          const result = await response.json();
-          if (!response.ok || !result.ok) throw new Error(messages.addFailed);
+
+        const result = await addToCart({ form, openDrawer: true });
+        if (result.ok) {
           if (label) label.textContent = messages.added;
-          window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
-        } catch {
+        } else {
           if (label) label.textContent = messages.retry;
-        } finally {
-          window.setTimeout(() => {
-            button.disabled = false;
-            if (label) label.textContent = originalLabel;
-          }, 1200);
         }
+
+        window.setTimeout(() => {
+          button.disabled = false;
+          if (label) label.textContent = originalLabel;
+        }, 1200);
       });
 
-      initWishlistController({ disabled: readOnlyPreview });
+      if (!readOnlyPreview) {
+        initCartStore();
+        void initWishlistStore();
+      }
     </script>
     </body>
 </html>

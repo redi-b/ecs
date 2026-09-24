@@ -6,9 +6,9 @@ import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytic
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
 import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
-import { listStoreCollections } from "../../../../lib/commerce/catalog";
-import { collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
-import type { StoreCollection } from "../../../../lib/commerce/types";
+import { listStoreCategories, listStoreCollections } from "../../../../lib/commerce/catalog";
+import { categoryProductsHref, collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -16,7 +16,9 @@ import * as m from "../../../../paraglide/messages.js";
 import logoImg from "../assets/logo.svg";
 import Button from "../components/Button.astro";
 import CartDrawer from "../components/CartDrawer.astro";
+import SearchModal from "../components/SearchModal.astro";
 import { parseAfroThemeTokens } from "../lib";
+import { afroDemoCategories, afroDemoCollections } from "../../../../lib/demo/afro-fixture";
 import "../styles/main.scss";
 import "../styles/components/_header.scss";
 import "../styles/components/_footer.scss";
@@ -35,6 +37,7 @@ interface Props {
   seo?: StorefrontSeo;
   structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
   navigationCollections?: StoreCollection[];
+  navigationCategories?: StoreCategory[];
   renderPath?: string;
   title?: string;
   description?: string;
@@ -52,25 +55,54 @@ const {
   seo,
   structuredData,
   navigationCollections: suppliedNavigationCollections,
+  navigationCategories: suppliedNavigationCategories,
   renderPath,
   title: propTitle,
   description: propDescription,
 } = Astro.props;
 
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
-const collectionsResult =
-  suppliedNavigationCollections === undefined && !demoMode
-    ? await listStoreCollections({
+
+const shouldFetchCollections = suppliedNavigationCollections === undefined && !demoMode;
+const shouldFetchCategories = suppliedNavigationCategories === undefined && !demoMode;
+
+const [collectionsResult, categoriesResult] = await Promise.all([
+  shouldFetchCollections
+    ? listStoreCollections({
         platformApiBaseUrl: getPlatformApiBaseUrl(),
         requestHost: getRequestHost(Astro.request),
         locale: locale === "am" ? "am-ET" : "en-ET",
         limit: 8,
       })
-    : null;
+    : null,
+  shouldFetchCategories
+    ? listStoreCategories({
+        platformApiBaseUrl: getPlatformApiBaseUrl(),
+        requestHost: getRequestHost(Astro.request),
+        locale: locale === "am" ? "am-ET" : "en-ET",
+        limit: 8,
+      })
+    : null,
+]);
 
-const navigationCollections =
+const rawCollections =
   suppliedNavigationCollections ??
-  (collectionsResult && "collections" in collectionsResult ? collectionsResult.collections : []);
+  (collectionsResult && "collections" in collectionsResult
+    ? collectionsResult.collections
+    : demoMode
+      ? afroDemoCollections
+      : []);
+
+const rawCategories =
+  suppliedNavigationCategories ??
+  (categoriesResult && "categories" in categoriesResult
+    ? categoriesResult.categories
+    : demoMode
+      ? afroDemoCategories
+      : []);
+
+const navigationCollections = rawCollections.length > 0 ? rawCollections : (demoMode ? afroDemoCollections : []);
+const navigationCategories = rawCategories.length > 0 ? rawCategories : (demoMode ? afroDemoCategories : []);
 
 const theme = parseAfroThemeTokens(themeTokens);
 const emptyLogoUrl = header?.useShopName ? null : logoImg.src;
@@ -90,20 +122,46 @@ const isHome = pathname === "/" || pathname === "" || pathname === "/index.html"
 const isShop = pathname.startsWith("/products") || pathname.startsWith("/shop") || pathname.startsWith("/product");
 const isWishlist = pathname.startsWith("/wishlist");
 
-const navItems = [
-  { text: "Home", href: "/", active: isHome, navId: "home" },
-  { text: "Shop", href: "/products", hasDropdown: true, active: isShop, navId: "shop" },
-  { text: "Categories", href: isHome ? "#categories" : "/#categories", navId: "categories" },
-  { text: "Collections", href: isHome ? "#collections" : "/#collections", navId: "collections" },
-];
+const categoryLinks = navigationCategories
+  .filter((item) => item.handle?.trim() || item.name?.trim())
+  .slice(0, 8)
+  .map((item) => ({
+    text: item.name ?? "Category",
+    href: categoryProductsHref(item),
+  }));
 
 const collectionLinks = navigationCollections
-  .filter((item) => item.handle?.trim())
+  .filter((item) => item.handle?.trim() || item.title?.trim())
   .slice(0, 8)
   .map((item) => ({
     text: item.title ?? "Collection",
     href: collectionProductsHref(item),
   }));
+
+const navItems = [
+  { text: "Home", href: "/", active: isHome, navId: "home", hasDropdown: false },
+  { text: "Shop", href: "/products", active: isShop, navId: "shop", hasDropdown: false },
+  {
+    text: "Categories",
+    href: isHome ? "#categories" : "/#categories",
+    navId: "categories",
+    hasDropdown: true,
+    dropdownItems: [
+      { text: "All Categories", href: "/products" },
+      ...categoryLinks,
+    ],
+  },
+  {
+    text: "Collections",
+    href: isHome ? "#collections" : "/#collections",
+    navId: "collections",
+    hasDropdown: true,
+    dropdownItems: [
+      { text: "All Collections", href: "/products" },
+      ...collectionLinks,
+    ],
+  },
+];
 
 const afroClientMessages = {
   cartLoading: m.cart_loading({}, { locale }),
@@ -165,7 +223,7 @@ const afroClientMessages = {
               <ul class="site-header__nav-pill">
                 {
                   navItems.map((item) => (
-                    <li class="site-header__nav-item">
+                    <li class:list={["site-header__nav-item", item.hasDropdown && "site-header__nav-item--dropdown"]}>
                       <a
                         href={item.href}
                         class:list={[
@@ -179,6 +237,15 @@ const afroClientMessages = {
                           <Icon name="chevron-down" class="site-header__dropdown-icon" width={8} height={4} />
                         )}
                       </a>
+                      {item.hasDropdown && item.dropdownItems && (
+                        <ul class="site-header__dropdown-menu">
+                          {item.dropdownItems.map((dropdownItem) => (
+                            <li>
+                              <a href={dropdownItem.href} class="type-body-s-400">{dropdownItem.text}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   ))
                 }
@@ -209,20 +276,11 @@ const afroClientMessages = {
             <div class="site-header__actions">
               <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
 
-              <form class="site-header__search" id="header-search-form" action="/products" method="get" role="search">
-                <input
-                  name="q"
-                  type="search"
-                  placeholder="Search products..."
-                  class="site-header__search-input type-body-s-400"
-                  aria-label="Search products"
-                />
-              </form>
-
               <button
                 type="button"
                 class="site-header__action-circle site-header__search-toggle"
-                aria-label="Search"
+                aria-label="Open Search"
+                aria-haspopup="dialog"
                 id="search-toggle-btn"
               >
                 <Icon name="search" width={20} height={20} />
@@ -239,6 +297,7 @@ const afroClientMessages = {
                   <Icon name="heart" width={20} height={20} />
                   <Icon name="heart-filled" width={20} height={20} />
                 </span>
+                <span class="site-header__wishlist-dot" aria-hidden="true"></span>
               </a>
 
               <button
@@ -325,32 +384,26 @@ const afroClientMessages = {
                   <h3 class="site-footer__col-title type-body-s-700">Shop</h3>
                   <ul class="site-footer__link-list">
                     <li><a href="/products" class="site-footer__link type-body-s-400">All Products</a></li>
-                    <li><a href="/products?category=jackets" class="site-footer__link type-body-s-400">Jackets & Coats</a></li>
-                    <li><a href="/products?category=trousers" class="site-footer__link type-body-s-400">Trousers & Denim</a></li>
-                    <li><a href="/products?category=tshirts" class="site-footer__link type-body-s-400">T-Shirts & Tops</a></li>
-                    <li><a href="/products?category=accessories" class="site-footer__link type-body-s-400">Accessories</a></li>
+                    {categoryLinks.slice(0, 5).map((link) => (
+                      <li>
+                        <a href={link.href} class="site-footer__link type-body-s-400">
+                          {link.text}
+                        </a>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
                 <div class="site-footer__col">
                   <h3 class="site-footer__col-title type-body-s-700">Collections</h3>
                   <ul class="site-footer__link-list">
-                    {collectionLinks.length > 0 ? (
-                      collectionLinks.map((link) => (
-                        <li>
-                          <a href={link.href} class="site-footer__link type-body-s-400">
-                            {link.text}
-                          </a>
-                        </li>
-                      ))
-                    ) : (
-                      <>
-                        <li><a href="/products?collection=men" class="site-footer__link type-body-s-400">Men's Collection</a></li>
-                        <li><a href="/products?collection=women" class="site-footer__link type-body-s-400">Women's Collection</a></li>
-                        <li><a href="/products?collection=kids" class="site-footer__link type-body-s-400">Kids' Collection</a></li>
-                        <li><a href="/products?collection=accessories" class="site-footer__link type-body-s-400">Accessories Collection</a></li>
-                      </>
-                    )}
+                    {collectionLinks.slice(0, 5).map((link) => (
+                      <li>
+                        <a href={link.href} class="site-footer__link type-body-s-400">
+                          {link.text}
+                        </a>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
@@ -377,6 +430,7 @@ const afroClientMessages = {
     </div>
 
     <CartDrawer />
+    <SearchModal />
 
     <StorefrontAnalytics disabled={demoMode || editorMode} />
 
@@ -407,10 +461,6 @@ const afroClientMessages = {
 </html>
 
 <style>
-  .site-header__nav .site-header__link { background-color: transparent; }
-  .site-header__search { display: none; margin-right: 0.5rem; }
-  .site-header__search.is-open { display: block; }
-  .site-header__search-input { padding: 0.35rem 0.75rem; border: 1px solid var(--afro-primary, #ff720a); border-radius: 9999px; font-size: 0.875rem; background: var(--afro-bg, #fffbf8); color: var(--afro-ink, #1c120d); outline: none; }
   .afro-demo { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
   .afro-demo nav { display: flex; gap: 1rem; }
   .afro-demo nav a { color: #ff720a; text-decoration: underline; }

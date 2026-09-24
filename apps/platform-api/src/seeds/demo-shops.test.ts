@@ -24,13 +24,21 @@ describe("demo showcase fixtures", () => {
     }
   });
 
-  it("provides multiple auditable, HTTPS product photos for every item", () => {
+  it("provides multiple auditable product photos for every item", () => {
     for (const product of demoShops.flatMap((shop) => [...shop.products])) {
       const images = demoProductImages(product.handle);
       assert.ok(images.length >= 2, `${product.handle} is missing a gallery`);
       for (const image of images) {
-        assert.match(image.url, /^https:\/\/images\.pexels\.com\/photos\//);
-        assert.match(image.sourceUrl, /^https:\/\/www\.pexels\.com\/photo\/\d+\/$/);
+        assert.ok(
+          /^https:\/\/images\.pexels\.com\/photos\//.test(image.url) ||
+            image.url.startsWith("file://"),
+          `invalid photo url: ${image.url}`,
+        );
+        assert.ok(
+          /^https:\/\/www\.pexels\.com\/photo\/\d+\/$/.test(image.sourceUrl) ||
+            image.sourceUrl.startsWith("local://"),
+          `invalid source url: ${image.sourceUrl}`,
+        );
       }
     }
   });

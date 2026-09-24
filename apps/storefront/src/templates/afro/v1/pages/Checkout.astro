@@ -195,17 +195,41 @@ const CITIES = [
                   </div>
 
                   <div class="checkout-form__field-group">
-                    <label for="city" class="checkout-form__label type-body-s-500">
+                    <label for="city-trigger" class="checkout-form__label type-body-s-500">
                       City <span class="required-star type-body-s-700">*</span>
                     </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={defaultAddress?.city || "Addis Ababa"}
-                      required
-                      class="checkout-form__input type-body-s-400"
-                    />
+                    <div class="dropdown dropdown--block" id="checkout-city-dropdown" data-dropdown>
+                      <button
+                        type="button"
+                        id="city-trigger"
+                        class="dropdown__trigger type-body-s-400"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                      >
+                        <span data-dropdown-label>{defaultAddress?.city || CITIES[0]}</span>
+                        <span class="dropdown__chevron" aria-hidden="true">
+                          <Icon name="chevron-down" width={10} height={6} />
+                        </span>
+                      </button>
+                      <input type="hidden" name="city" value={defaultAddress?.city || CITIES[0]} />
+                      <ul class="dropdown__menu" role="listbox" hidden>
+                        {
+                          CITIES.map((city) => (
+                            <li>
+                              <button
+                                type="button"
+                                class="dropdown__option type-body-s-400"
+                                role="option"
+                                data-value={city}
+                                aria-selected={city === (defaultAddress?.city || CITIES[0]) ? "true" : "false"}
+                              >
+                                {city}
+                              </button>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                    </div>
                   </div>
                 </div>
 

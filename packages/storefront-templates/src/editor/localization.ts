@@ -52,40 +52,55 @@ const amharicDefaults: Record<string, Record<string, StorefrontTemplateTranslati
     "listing.title": { source: "Products", value: "ምርቶች" },
   },
   "afro@1": {
+    "header.promoText": {
+      source: "SUMMER SALE · 20% OFF DISCOUNT · ENDS IN",
+      value: "የወቅቱ ልዩ ቅናሽ · የ20% ቅናሽ · ሊጠናቀቅ የቀረው ጊዜ",
+    },
     "header.navigation.0.label": { source: "Home", value: "ዋና ገጽ" },
     "header.navigation.1.label": { source: "Shop", value: "ምርቶች" },
     "header.navigation.2.label": { source: "Categories", value: "ምድቦች" },
     "header.navigation.3.label": { source: "Collections", value: "ስብስቦች" },
-    "footer.quickLinks.0.label": { source: "All Products", value: "ሁሉም ምርቶች" },
-    "footer.quickLinks.1.label": { source: "Jackets & Coats", value: "ጃኬቶች እና ኮቶች" },
-    "footer.quickLinks.2.label": { source: "Trousers & Denim", value: "ሱሪዎች እና ጂንስ" },
-    "footer.quickLinks.3.label": { source: "T-Shirts & Tops", value: "ቲሸርቶች እና ሸሚዞች" },
-    "footer.quickLinks.4.label": { source: "Accessories", value: "መለዋወጫዎች" },
     "home.hero.title": {
       source: "Style That Feels Good Today and Lasts for Seasons.",
-      value: "ዛሬም የሚመች፣ ለብዙ ጊዜ የሚቆይ ውብ አለባበስ።",
+      value: "ዛሬም የሚመች፣ ከወቅት ወቅት የሚሻገር ዘይቤ።",
     },
     "home.categories.title": {
       source: "Find your own style with confidence.",
-      value: "በራስ መተማመን የራስዎን ዘይቤ ያግኙ።",
+      value: "ለእርስዎ የሚስማማውን ለየት ያለ ዘይቤ ይምረጡ።",
     },
     "home.products.title": {
       source: "Your go-to clothing for every day.",
-      value: "ለዕለት ተዕለት ኑሮዎ ተስማሚ አልባሳት።",
+      value: "ለሁልጊዜ ተመራጭ የሆኑ የዕለት ተዕለት አልባሳት።",
     },
     "home.collections.title": {
       source: "Everything you need to dress well, feel well, and look well.",
-      value: "ጥሩ ለመልበስ፣ ጥሩ ስሜት እንዲሰማዎትና ውብ ሆነው ለመታየት የሚያስፈልጉዎ ነገሮች።",
+      value: "በተሟላ ውበት እና ምቾት ለመታየት የሚያስፈልጉዎት ሁሉ በአንድ ላይ።",
     },
     "home.contact.title": {
       source: "Have a question or looking for something specific?",
-      value: "ጥያቄ አለዎት ወይም የተለየ ነገር ይፈልጋሉ?",
+      value: "የሚጠይቁት ጥያቄ አለዎት? ወይም የሚፈልጉት የተለየ ምርት አለ?",
     },
     "home.contact.infoTitle": {
       source: "Let’s keep in touch!",
-      value: "እንደተገናኘን እንቆይ!",
+      value: "ያግኙን",
+    },
+    "home.contact.infoBody": {
+      source: "Reach out anytime or follow us online to see what we’re up to.",
+      value: "በማንኛውም ጊዜ ያነጋግሩን ወይም በማህበራዊ ገጾቻችን አዳዲስ መረጃዎችን ይከታተሉ።",
     },
     "listing.title": { source: "All Collections", value: "ሁሉም ስብስቦች" },
+    "listing.body": {
+      source:
+        "Explore our collection of thoughtful modern apparel designed for everyday rhythm and timeless ease.",
+      value:
+        "ለዕለት ተዕለት ምቾት እና ለዘመናዊ ውበት በጥንቃቄ የተዘጋጁ ጥራት ያላቸው አልባሳት ስብስቦቻችንን ያስሱ።",
+    },
+    "footer.blurb": {
+      source:
+        "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm.",
+      value:
+        "ዛሬም የሚመች፣ ከወቅት ወቅት የሚሻገር ዘይቤ። ለዕለት ተዕለት ኑሮዎ በጥራት እና በጥንቃቄ የተሰሩ ምርቶች።",
+    },
   },
 };
 

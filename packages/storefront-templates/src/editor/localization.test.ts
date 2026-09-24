@@ -71,5 +71,27 @@ test("provides conservative Amharic defaults for stock template labels", () => {
     value: "አሁኑኑ ይግዙ",
   });
 
+  const afroDefaults = getStorefrontTemplateTranslationDefaults("afro@1", "am");
+  assert.deepEqual(afroDefaults["header.navigation.0.label"], {
+    source: "Home",
+    value: "ዋና ገጽ",
+  });
+  assert.deepEqual(afroDefaults["header.promoText"], {
+    source: "SUMMER SALE · 20% OFF DISCOUNT · ENDS IN",
+    value: "የወቅቱ ልዩ ቅናሽ · የ20% ቅናሽ · ሊጠናቀቅ የቀረው ጊዜ",
+  });
+  assert.deepEqual(afroDefaults["home.hero.title"], {
+    source: "Style That Feels Good Today and Lasts for Seasons.",
+    value: "ዛሬም የሚመች፣ ከወቅት ወቅት የሚሻገር ዘይቤ።",
+  });
+  assert.deepEqual(afroDefaults["home.contact.infoTitle"], {
+    source: "Let’s keep in touch!",
+    value: "ያግኙን",
+  });
+  assert.deepEqual(afroDefaults["listing.title"], {
+    source: "All Collections",
+    value: "ሁሉም ስብስቦች",
+  });
+
   assert.deepEqual(getStorefrontTemplateTranslationDefaults("unknown@1", "am"), {});
 });

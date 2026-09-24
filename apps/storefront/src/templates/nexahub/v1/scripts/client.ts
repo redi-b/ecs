@@ -1,5 +1,14 @@
-import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
-import { initWishlistController } from "../../../../lib/browser/wishlist";
+import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
+import {
+  $cart,
+  $cartDrawerOpen,
+  initCartStore,
+  fetchCart,
+  addToCart,
+  updateCartItemQuantity,
+  removeCartItem,
+} from "../../../../lib/stores/cart";
+import { initWishlistStore } from "../../../../lib/stores/wishlist";
 import EmblaCarousel from "embla-carousel";
 
 export function initNexahubStorefront() {
@@ -272,44 +281,106 @@ export function initNexahubStorefront() {
     footer.hidden = false;
     const total = footer.querySelector<HTMLElement>("[data-cart-total]"); if (total) total.textContent = money(cart.total, cart.currencyCode);
   };
-  const loadCart = async () => {
-    itemsRoot?.setAttribute("aria-busy", "true");
-    if (itemsRoot) {
-      const skeletons = Array.from({ length: 3 }, () => {
-        const skeleton = element("div", "cart-drawer__skeleton");
-        skeleton.setAttribute("aria-hidden", "true");
-        skeleton.append(element("span"), element("span"), element("span"));
-        return skeleton;
-      });
-      itemsRoot.replaceChildren(...skeletons);
+
+  const openCart = async (cart?: any) => {
+    if (!overlay) return;
+    setNavigation(false);
+    lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    overlay.classList.add("is-visible");
+    overlay.setAttribute("aria-hidden", "false");
+    syncScrollLock();
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      drawer?.classList.add("is-open");
+      drawer?.querySelector<HTMLButtonElement>("[data-cart-close]")?.focus();
+    }));
+    if (cart) {
+      renderCart(cart);
+    } else {
+      const current = $cart.get();
+      if (current) renderCart(current);
+      else void fetchCart();
     }
-    if (status) status.textContent = clientMessage("cartLoading");
-    try { const response = await fetch("/cart-data", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(clientMessage("cartLoadFailed")); renderCart(result.cart); if (status) status.textContent = ""; }
-    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : clientMessage("cartLoadFailed"); announce(clientMessage("cartLoadFailed")); }
-    finally { itemsRoot?.removeAttribute("aria-busy"); }
   };
-  const openCart = async (cart?: any) => { if (!overlay) return; setNavigation(false); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null; overlay.classList.add("is-visible"); overlay.setAttribute("aria-hidden", "false"); syncScrollLock(); window.requestAnimationFrame(() => window.requestAnimationFrame(() => { drawer?.classList.add("is-open"); drawer?.querySelector<HTMLButtonElement>("[data-cart-close]")?.focus(); })); if (cart) renderCart(cart); else await loadCart(); };
-  const closeCart = () => { drawer?.classList.remove("is-open"); overlay?.classList.remove("is-visible"); overlay?.setAttribute("aria-hidden", "true"); syncScrollLock(); lastFocused?.focus(); };
-  document.querySelector("[data-cart-open]")?.addEventListener("click", () => { if (!readOnly) void openCart(); });
+
+  const closeCart = () => {
+    drawer?.classList.remove("is-open");
+    overlay?.classList.remove("is-visible");
+    overlay?.setAttribute("aria-hidden", "true");
+    $cartDrawerOpen.set(false);
+    syncScrollLock();
+    lastFocused?.focus();
+  };
+
+  document.querySelector("[data-cart-open]")?.addEventListener("click", () => {
+    if (!readOnly) void openCart();
+  });
   drawer?.querySelector("[data-cart-close]")?.addEventListener("click", closeCart);
   overlay?.addEventListener("click", (event) => { if (event.target === overlay) closeCart(); });
+
   drawer?.addEventListener("click", async (event) => {
-    if (readOnly) return; const target = event.target instanceof Element ? event.target : null; const row = target?.closest<HTMLElement>("[data-line-item-id]"); if (!row) return;
-    const quantity = target?.closest<HTMLButtonElement>("[data-cart-quantity]"); const remove = target?.closest<HTMLButtonElement>("[data-cart-remove]"); if (!quantity && !remove) return;
-    const action = quantity ?? remove; setBusy(action, true); row.setAttribute("aria-busy", "true");
-    const body = new FormData(); body.set("lineItemId", row.dataset.lineItemId || ""); if (quantity) body.set("quantity", quantity.dataset.cartQuantity || "1");
-    try { const response = await fetch(quantity ? "/actions/cart/update" : "/actions/cart/remove", { method: "POST", body, credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || clientMessage("cartUpdated")); renderCart(result.cart); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: result })); announce(clientMessage("cartUpdated")); }
-    catch (cause) { if (status) status.textContent = cause instanceof Error ? cause.message : clientMessage("cartUpdated"); announce(clientMessage("cartUpdated")); }
-    finally { setBusy(action, false); row.removeAttribute("aria-busy"); }
+    if (readOnly) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const row = target?.closest<HTMLElement>("[data-line-item-id]");
+    if (!row) return;
+    const quantity = target?.closest<HTMLButtonElement>("[data-cart-quantity]");
+    const remove = target?.closest<HTMLButtonElement>("[data-cart-remove]");
+    if (!quantity && !remove) return;
+    const lineItemId = row.dataset.lineItemId || "";
+    if (!lineItemId) return;
+
+    if (quantity) {
+      const qty = Number(quantity.dataset.cartQuantity || "1");
+      await updateCartItemQuantity(lineItemId, qty);
+    } else if (remove) {
+      await removeCartItem(lineItemId);
+    }
   });
+
+  $cart.subscribe((cart) => {
+    if (!readOnly && cart) {
+      renderCart(cart);
+    }
+  });
+
+  $cartDrawerOpen.subscribe((isOpen) => {
+    if (isOpen && !drawer?.classList.contains("is-open")) {
+      void openCart();
+    }
+  });
+
   document.addEventListener("submit", async (event) => {
-    const form = event.target instanceof HTMLFormElement ? event.target : null; if (!form?.matches("[data-card-add-form], [data-add-form]") || readOnly) return;
-    event.preventDefault(); const buttons = [...form.querySelectorAll<HTMLButtonElement>("button[type=submit]")]; const disabledState = new Map(buttons.map((button) => [button, button.disabled])); const cardLabelButton = form.matches("[data-card-add-form]") ? form.querySelector<HTMLButtonElement>(".product-card__add-btn") : null; if (cardLabelButton) setBusy(cardLabelButton, true, clientMessage("adding")); else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], true, clientMessage("adding")); buttons.forEach((button) => { button.disabled = true; }); form.setAttribute("aria-busy", "true"); announce(clientMessage("adding"));
-    try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers: { Accept: "application/json" } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.message || clientMessage("addFailed")); announce(clientMessage("added")); window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } })); }
-    catch (cause) { const failureMessage = cause instanceof Error ? cause.message : clientMessage("addFailed"); announce(failureMessage); showToast(failureMessage); const localStatus = form.closest("[data-product-detail]")?.querySelector<HTMLElement>(".nexa-product-notice"); if (localStatus) { localStatus.textContent = failureMessage; localStatus.hidden = false; } }
-    finally { if (cardLabelButton) setBusy(cardLabelButton, false); else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], false); buttons.forEach((button) => { button.disabled = disabledState.get(button) ?? false; }); form.removeAttribute("aria-busy"); }
+    const form = event.target instanceof HTMLFormElement ? event.target : null;
+    if (!form?.matches("[data-card-add-form], [data-add-form]") || readOnly) return;
+    event.preventDefault();
+    const buttons = [...form.querySelectorAll<HTMLButtonElement>("button[type=submit]")];
+    const disabledState = new Map(buttons.map((button) => [button, button.disabled]));
+    const cardLabelButton = form.matches("[data-card-add-form]") ? form.querySelector<HTMLButtonElement>(".product-card__add-btn") : null;
+    if (cardLabelButton) setBusy(cardLabelButton, true, clientMessage("adding"));
+    else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], true, clientMessage("adding"));
+    buttons.forEach((button) => { button.disabled = true; });
+    form.setAttribute("aria-busy", "true");
+    announce(clientMessage("adding"));
+
+    const result = await addToCart({ form, openDrawer: true });
+    if (result.ok) {
+      announce(clientMessage("added"));
+    } else {
+      const failureMessage = result.error || clientMessage("addFailed");
+      announce(failureMessage);
+      showToast(failureMessage);
+      const localStatus = form.closest("[data-product-detail]")?.querySelector<HTMLElement>(".nexa-product-notice");
+      if (localStatus) {
+        localStatus.textContent = failureMessage;
+        localStatus.hidden = false;
+      }
+    }
+
+    if (cardLabelButton) setBusy(cardLabelButton, false);
+    else setBusy(event.submitter instanceof HTMLButtonElement ? event.submitter : buttons[0], false);
+    buttons.forEach((button) => { button.disabled = disabledState.get(button) ?? false; });
+    form.removeAttribute("aria-busy");
   });
-  window.addEventListener("ecs:cart-updated", ((event: CustomEvent) => { if (readOnly) return; const detail = event.detail; if (detail?.count != null) syncCartCount(detail.count); if (detail?.cart) { renderCart(detail.cart); if (detail.openDrawer) void openCart(detail.cart); } }) as EventListener);
+
   document.addEventListener("submit", (event) => {
     if (event.defaultPrevented || readOnly) return;
     const form = event.target instanceof HTMLFormElement ? event.target : null;
@@ -340,5 +411,8 @@ export function initNexahubStorefront() {
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }
   });
-  if (!readOnly) { void loadAndSyncCartCount(); initWishlistController(); }
+  if (!readOnly) {
+    initCartStore();
+    void initWishlistStore();
+  }
 }

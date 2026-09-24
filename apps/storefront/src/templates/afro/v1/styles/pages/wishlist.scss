@@ -45,15 +45,16 @@
   &__header {
     display: flex;
     flex-direction: column;
-    gap: $space-150;
+    gap: $space-300;
   }
 
-  &__title,
+  &__title {
+    margin-top: $space-300;
+    margin-bottom: 0;
+  }
+
   &__count {
     margin: 0;
-  }
-
-  &__count {
     color: rgba($clr-neutral-900, 0.6);
   }
 
@@ -66,17 +67,13 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: $space-300;
 
-    &:not(:has(.is-saved)) {
+    &[hidden] {
       display: none;
     }
 
     .product-card {
-      display: none;
+      display: flex;
       max-width: none;
-
-      &.is-saved {
-        display: flex;
-      }
     }
 
     @media (max-width: 1100px) {

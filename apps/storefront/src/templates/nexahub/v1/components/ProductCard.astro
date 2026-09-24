@@ -36,7 +36,7 @@ const badgeLabel = badge?.kind === "out-of-stock"
     {variant ? <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>
       <input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" />
       <button class="product-card__add-btn" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? m.product_add_named({ product: title }, { locale }) : m.product_out_of_stock_named({ product: title }, { locale })}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></button>
-      <button class="product-card__cart" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? m.product_add_named({ product: title }, { locale }) : m.product_out_of_stock_named({ product: title }, { locale })}><Icon name="add-to-cart" /></button>
+      <button class="product-card__cart" type="submit" disabled={!variant.inStock} aria-label={variant.inStock ? m.product_add_named({ product: title }, { locale }) : m.product_out_of_stock_named({ product: title }, { locale })}><Icon name="add-to-cart" class="add-to-cart-icon" /></button>
     </form> : null}
   </div>
   <div class="product-card__footer">

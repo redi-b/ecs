@@ -205,13 +205,6 @@ export const afroV1EditorSchema = {
           kind: "textarea",
         },
         {
-          path: "footer.quickLinks",
-          prop: "afroFooterLinks",
-          label: "Quick links",
-          kind: "links",
-          preview: { strategy: "list-items" },
-        },
-        {
           path: "footer.socialLinks",
           prop: "afroSocialLinks",
           label: "Social links",

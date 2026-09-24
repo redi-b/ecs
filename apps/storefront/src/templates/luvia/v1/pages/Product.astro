@@ -472,33 +472,28 @@ const wishlistItem = product
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!(form instanceof HTMLFormElement) || !(addButton instanceof HTMLButtonElement) || addButton.disabled) return;
-      const badge = document.querySelector("[data-cart-count]");
-      const previousCount = Number(badge?.textContent || 0);
       updateButtons(true, clientMessages.adding);
       if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
-      if (badge) { badge.textContent = String(previousCount + 1); badge.hidden = false; }
-      try {
-        const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" }, credentials: "same-origin" });
-        const result = await response.json();
-        if (!response.ok || !result.ok) throw new Error(clientMessages.addFailed);
-        if (badge) { badge.textContent = String(result.count); badge.hidden = result.count <= 0; }
+      
+      const { addToCart } = await import("../../../../lib/stores/cart");
+      const result = await addToCart({ form, openDrawer: true });
+
+      if (result.ok) {
         updateButtons(true, clientMessages.added);
         if (feedback) feedback.textContent = clientMessages.addedHelp;
-        window.dispatchEvent(new CustomEvent("ecs:cart-updated", { detail: { ...result, openDrawer: true } }));
         setTimeout(() => { updateButtons(!selectedVariant()?.inStock, selectedVariant()?.inStock ? clientMessages.addToCart : clientMessages.outOfStock); }, 1400);
-      } catch (cause) {
-        if (badge) { badge.textContent = previousCount ? String(previousCount) : ""; badge.hidden = previousCount <= 0; }
+      } else {
         updateButtons(!selectedVariant()?.inStock, clientMessages.addToCart);
-        if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : clientMessages.addFailed; feedback.classList.add("is-error"); }
-      } finally {
-        const inStock = Boolean(selectedVariant()?.inStock);
-        [addButton, stickyAdd].forEach((btn) => {
-          if (btn instanceof HTMLButtonElement) {
-            btn.disabled = !inStock;
-            delete btn.dataset.loading;
-          }
-        });
+        if (feedback) { feedback.textContent = result.error || clientMessages.addFailed; feedback.classList.add("is-error"); }
       }
+
+      const inStock = Boolean(selectedVariant()?.inStock);
+      [addButton, stickyAdd].forEach((btn) => {
+        if (btn instanceof HTMLButtonElement) {
+          btn.disabled = !inStock;
+          delete btn.dataset.loading;
+        }
+      });
     });
     stickyAdd?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
     const rail = document.querySelector("[data-related-rail]");

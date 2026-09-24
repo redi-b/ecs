@@ -64,6 +64,17 @@ const colors = [
   { name: "Black", hex: "#1c120d" },
   { name: "Beige", hex: "#e2d2c1" },
 ];
+
+const href = product?.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
+const wishlistItem = product
+  ? JSON.stringify({
+      path: href,
+      title: product.title,
+      thumbnail: gallery[0] ?? product.thumbnail ?? null,
+      priceAmount: defaultVariant?.priceAmount ?? product.priceAmount ?? null,
+      currencyCode: defaultVariant?.currencyCode ?? product.currencyCode ?? "ETB",
+    })
+  : "";
 ---
 
 <Layout
@@ -281,6 +292,7 @@ const colors = [
                     class="product-details__wishlist-btn"
                     data-wishlist-id={product.id}
                     data-wishlist-toggle
+                    data-wishlist-item={wishlistItem}
                     aria-label={`Add ${product.title} to wishlist`}
                   >
                     <span class="wishlist-heart" aria-hidden="true">

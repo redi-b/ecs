@@ -502,17 +502,12 @@ async function seedShop(
   // Publish demo storefront draft so the live storefront is immediately reachable
   const storefrontTemplateService = createStorefrontTemplateService(platformDb.db);
   if (shop.templateKey) {
-    const currentDraft = await storefrontTemplateService.getStorefrontDraft({
+    await storefrontTemplateService.selectStorefrontTemplate({
       tenantId: provisioned.tenant.id,
+      templateKey: shop.templateKey,
+      mode: "clean",
+      userId,
     });
-    if (currentDraft.ok && currentDraft.draft.templateKey !== shop.templateKey) {
-      await storefrontTemplateService.selectStorefrontTemplate({
-        tenantId: provisioned.tenant.id,
-        templateKey: shop.templateKey,
-        mode: "clean",
-        userId,
-      });
-    }
   }
   await storefrontTemplateService.publishStorefrontDraft({
     tenantId: provisioned.tenant.id,

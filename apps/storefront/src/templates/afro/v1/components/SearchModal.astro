@@ -1,0 +1,46 @@
+---
+import Icon from "./Icon.astro";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
+import "../styles/components/_search-modal.scss";
+
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+---
+
+<div class="search-modal" id="search-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Search Catalog">
+  <div class="search-modal__backdrop" id="search-modal-backdrop"></div>
+  <div class="search-modal__dialog" data-search-suggestions-anchor>
+    <form
+      class="search-modal__form"
+      action="/products"
+      method="get"
+      role="search"
+      id="search-modal-form"
+      data-product-search-suggestions
+      data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })}
+      data-search-for={m.search_for({ query: "{query}" }, { locale })}
+    >
+      <div class="search-modal__input-wrap">
+        <input
+          type="search"
+          name="q"
+          class="search-modal__input type-body-l"
+          placeholder="Search pieces, categories, styles..."
+          aria-label="Search pieces, categories, styles"
+          id="search-modal-input"
+          autocomplete="off"
+        />
+        <button type="submit" class="search-modal__btn" aria-label="Submit search">
+          <Icon name="search" width={20} height={20} />
+        </button>
+      </div>
+    </form>
+    <div class="search-modal__tags type-body-s-400">
+      <span>Popular:</span>
+      <a href="/products?category=jackets">Jackets</a>
+      <a href="/products?category=trousers">Trousers</a>
+      <a href="/products?collection=men">Men</a>
+      <a href="/products?collection=women">Women</a>
+    </div>
+  </div>
+</div>

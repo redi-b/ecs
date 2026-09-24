@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { type createPlatformDb, mediaAssets, mediaUsages } from "@ecs/db";
 import { eq } from "drizzle-orm";
@@ -94,6 +95,22 @@ export function createDemoMediaSeeder(options: DemoMediaSeederOptions) {
 
   async function fetchImage(url: string) {
     try {
+      if (url.startsWith("file://") || url.startsWith("/")) {
+        const filePath = url.startsWith("file://") ? new URL(url).pathname : url;
+        if (existsSync(filePath)) {
+          const bytes = readFileSync(filePath);
+          const ext = filePath.split(".").pop()?.toLowerCase();
+          const mimeType =
+            ext === "png"
+              ? "image/png"
+              : ext === "svg"
+                ? "image/svg+xml"
+                : ext === "webp"
+                  ? "image/webp"
+                  : "image/jpeg";
+          return { bytes, mimeType };
+        }
+      }
       const response = await fetch(url, {
         redirect: "follow",
         signal: AbortSignal.timeout(20_000),

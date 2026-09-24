@@ -58,7 +58,11 @@ const template = parseAfroData(data);
 </Layout>
 
 <script>
-  import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../../lib/browser/wishlist";
+  import {
+    $wishlist,
+    initWishlistStore,
+    removeWishlistItem,
+  } from "../../../../lib/stores/wishlist";
   import { localizeBrowserPath } from "../../../../lib/browser/localized-path";
 
   (() => {
@@ -67,12 +71,13 @@ const template = parseAfroData(data);
     const count = document.getElementById("wishlist-count");
     if (!grid) return;
 
-    let items: WishlistEntry[] = [];
+    void initWishlistStore();
 
+    const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
     const money = (amount: number | null, currency: string | null) => {
       if (typeof amount !== "number") return "";
       try {
-        return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", {
+        return new Intl.NumberFormat(locale, {
           style: "currency",
           currency: (currency || "ETB").toUpperCase(),
         }).format(amount);
@@ -81,14 +86,18 @@ const template = parseAfroData(data);
       }
     };
 
-    const render = () => {
+    const render = (items: readonly any[]) => {
       grid.replaceChildren();
-      if (empty) empty.hidden = items.length > 0;
+      const hasItems = items && items.length > 0;
+      if (empty) empty.hidden = hasItems;
+      grid.hidden = !hasItems;
       if (count) {
-        count.textContent = items.length === 0
+        count.textContent = !hasItems
           ? "Saved pieces stay on this device."
-          : `${items.length} ${items.length === 1 ? "piece" : "pieces"} saved on this device.`;
+          : `${items.length} ${items.length === 1 ? "piece" : "pieces"} saved.`;
       }
+
+      if (!hasItems) return;
 
       items.forEach((item) => {
         const card = document.createElement("article");
@@ -99,10 +108,10 @@ const template = parseAfroData(data);
           <div class="product-card__media">
             <a href="${itemPath}" class="product-card__img-link" tabindex="-1">
               <div class="img-wrapper">
-                ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" class="cover" width="262" height="262" />` : ''}
+                ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" class="cover" width="262" height="262" />` : ""}
               </div>
             </a>
-            <button type="button" class="product-card__wishlist-btn product-card__wishlist-btn--active" aria-label="Remove from wishlist">
+            <button type="button" class="product-card__wishlist-btn product-card__wishlist-btn--active" aria-label="Remove from wishlist" aria-pressed="true">
               <span class="wishlist-heart" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14.25l-1.15-1.04C2.76 9.45 0 6.94 0 3.82 0 1.25 2.02 0 4.6 0c1.45 0 2.85.67 3.4 1.74C8.55.67 9.95 0 11.4 0 13.98 0 16 1.25 16 3.82c0 3.12-2.76 5.63-6.85 9.39L8 14.25z"/></svg>
               </span>
@@ -120,25 +129,16 @@ const template = parseAfroData(data);
           </div>
         `;
 
-        card.querySelector(".product-card__wishlist-btn")?.addEventListener("click", () => {
-          window.dispatchEvent(
-            new CustomEvent(WISHLIST_UPDATED_EVENT, {
-              detail: { items: items.filter((saved) => saved.path !== item.path), origin: "page" },
-            }),
-          );
+        card.querySelector(".product-card__wishlist-btn")?.addEventListener("click", async () => {
+          await removeWishlistItem(item.path);
         });
 
         grid.appendChild(card);
       });
     };
 
-    window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
-      const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail?.items;
-      if (!Array.isArray(next)) return;
-      items = next;
-      render();
+    $wishlist.subscribe((items) => {
+      render(items);
     });
-
-    window.dispatchEvent(new CustomEvent(WISHLIST_REQUEST_EVENT));
   })();
 </script>

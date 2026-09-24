@@ -9,6 +9,8 @@ import Layout from "../layouts/Layout.astro";
 import ProductCard from "../components/ProductCard.astro";
 import heroShop from "../assets/hero-shop.png";
 import { parseAfroData } from "../lib";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import * as m from "../../../../paraglide/messages.js";
 import "../styles/pages/shop.scss";
 
 interface Props {
@@ -64,6 +66,7 @@ const {
 } = Astro.props;
 
 const template = parseAfroData(data);
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
 const activeCategory = categories.find((item) => taxonomyHandle(item) === filters.categoryId);
 
@@ -74,7 +77,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 );
 
 function pageHref(page: number) {
-  return catalogHref(filters, (page - 1) * limit);
+  return `${catalogHref(filters, (page - 1) * limit)}#shop-products`;
 }
 
 const title = filters.q
@@ -87,6 +90,66 @@ const sortOptions = [
   { value: "price_desc", label: "Price: High to Low" },
   { value: "title_asc", label: "Alphabetical (A–Z)" },
 ];
+
+interface ActiveFilterPill {
+  id: string;
+  label: string;
+  href: string;
+}
+
+const activeFilterPills: ActiveFilterPill[] = [];
+
+if (filters.categoryId) {
+  const cat = categories.find((c) => taxonomyHandle(c) === filters.categoryId);
+  activeFilterPills.push({
+    id: `cat-${filters.categoryId}`,
+    label: cat?.name ?? filters.categoryId,
+    href: `${catalogHref({ ...filters, categoryId: undefined }, 0)}#shop-products`,
+  });
+}
+
+if (filters.collectionId) {
+  const col = collections.find((c) => taxonomyHandle(c) === filters.collectionId);
+  activeFilterPills.push({
+    id: `col-${filters.collectionId}`,
+    label: col?.title ?? filters.collectionId,
+    href: `${catalogHref({ ...filters, collectionId: undefined }, 0)}#shop-products`,
+  });
+}
+
+if (filters.q?.trim()) {
+  activeFilterPills.push({
+    id: `q-${filters.q}`,
+    label: `Search: "${filters.q}"`,
+    href: `${catalogHref({ ...filters, q: undefined }, 0)}#shop-products`,
+  });
+}
+
+if (filters.priceMin !== undefined && filters.priceMin > 0) {
+  activeFilterPills.push({
+    id: "price-min",
+    label: `Min: Br. ${filters.priceMin.toLocaleString()}`,
+    href: `${catalogHref({ ...filters, priceMin: undefined }, 0)}#shop-products`,
+  });
+}
+
+if (filters.priceMax !== undefined && filters.priceMax < 25000) {
+  activeFilterPills.push({
+    id: "price-max",
+    label: `Max: Br. ${filters.priceMax.toLocaleString()}`,
+    href: `${catalogHref({ ...filters, priceMax: undefined }, 0)}#shop-products`,
+  });
+}
+
+if (filters.optionPairs && filters.optionPairs.length > 0) {
+  filters.optionPairs.forEach((pair, idx) => {
+    activeFilterPills.push({
+      id: `opt-${pair.name}-${pair.value}`,
+      label: `${pair.name}: ${pair.value}`,
+      href: `${catalogHref({ ...filters, optionPairs: filters.optionPairs?.filter((_, i) => i !== idx) }, 0)}#shop-products`,
+    });
+  });
+}
 ---
 
 <Layout
@@ -94,6 +157,7 @@ const sortOptions = [
   header={template.header}
   footer={template.footer}
   navigationCollections={collections}
+  navigationCategories={categories}
   themeTokens={themeTokens}
   cartCount={cartCount}
   deferCartCount={deferCartCount}
@@ -115,7 +179,6 @@ const sortOptions = [
             height="600"
           />
         </div>
-        <div class="shop-hero__overlay" aria-hidden="true"></div>
 
         <div class="shop-hero__content">
           <nav class="shop-hero__breadcrumbs type-body-xs-500" aria-label="Breadcrumb">
@@ -136,7 +199,7 @@ const sortOptions = [
     </section>
 
     <!-- Shop Layout: Sidebar + Product Grid -->
-    <section class="shop-layout">
+    <section class="shop-layout" id="shop-products">
       <div class="container shop-layout__wrapper">
         <!-- Sidebar Filters -->
         <aside class="shop-sidebar" id="shop-sidebar" aria-label="Product Filters">
@@ -145,7 +208,7 @@ const sortOptions = [
               <Icon name="filter" width={16} height={16} />
               Filters
             </h2>
-            <a href="/products" class="shop-sidebar__reset-btn type-body-xs-500" id="shop-reset-filters">
+            <a href="/products#shop-products" class="shop-sidebar__reset-btn type-body-xs-500" id="shop-reset-filters">
               Reset All
             </a>
             <button
@@ -157,6 +220,38 @@ const sortOptions = [
               &times;
             </button>
           </div>
+
+          <!-- Search in Sidebar -->
+          <form
+            class="shop-sidebar__search"
+            action="/products"
+            method="get"
+            role="search"
+            data-product-search-suggestions
+            data-search-suggestions-anchor
+            data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })}
+            data-search-for={m.search_for({ query: "{query}" }, { locale })}
+          >
+            {filters.categoryId && <input type="hidden" name="category" value={filters.categoryId} />}
+            {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
+            {filters.priceMin !== undefined && <input type="hidden" name="price_min" value={filters.priceMin} />}
+            {filters.priceMax !== undefined && <input type="hidden" name="price_max" value={filters.priceMax} />}
+            {filters.order && <input type="hidden" name="order" value={filters.order} />}
+            <div class="shop-sidebar__search-input-wrap">
+              <input
+                type="search"
+                name="q"
+                value={filters.q ?? ""}
+                placeholder={m.search_products_placeholder({}, { locale })}
+                class="shop-sidebar__search-input type-body-s-400"
+                aria-label={m.search_products_label({}, { locale })}
+                autocomplete="off"
+              />
+              <button type="submit" class="shop-sidebar__search-btn" aria-label={m.action_search({}, { locale })}>
+                <Icon name="search" width={16} height={16} />
+              </button>
+            </div>
+          </form>
 
           <!-- Category Filter Group -->
           {categories.length > 0 && (
@@ -181,7 +276,7 @@ const sortOptions = [
                         name="shop-category"
                         value="all"
                         checked={!filters.categoryId}
-                        onchange="window.location.href = '/products'"
+                        onchange="window.location.href = '/products#shop-products'"
                       />
                       All Categories
                     </span>
@@ -198,7 +293,7 @@ const sortOptions = [
                             name="shop-category"
                             value={handle ?? ""}
                             checked={isChecked}
-                            onchange={`window.location.href = '${nextHref}'`}
+                            onchange={`window.location.href = '${nextHref}#shop-products'`}
                           />
                           {cat.name}
                         </span>
@@ -233,7 +328,7 @@ const sortOptions = [
                         name="shop-collection"
                         value="all"
                         checked={!filters.collectionId}
-                        onchange="window.location.href = '/products'"
+                        onchange="window.location.href = '/products#shop-products'"
                       />
                       All Collections
                     </span>
@@ -250,7 +345,7 @@ const sortOptions = [
                             name="shop-collection"
                             value={handle}
                             checked={isChecked}
-                            onchange={`window.location.href = '${nextHref}'`}
+                            onchange={`window.location.href = '${nextHref}#shop-products'`}
                           />
                           {col.title}
                         </span>
@@ -261,6 +356,78 @@ const sortOptions = [
               </div>
             </div>
           )}
+
+          <!-- Price Range Filter Group -->
+          <div class="shop-sidebar__group">
+            <h3 class="shop-sidebar__group-title type-body-s-700">
+              <button
+                type="button"
+                class="shop-sidebar__group-toggle"
+                aria-expanded="true"
+                aria-controls="shop-filter-price"
+              >
+                <span>Price Range</span>
+                <Icon name="chevron-down" width={10} height={6} />
+              </button>
+            </h3>
+            <div class="shop-sidebar__disclosure" id="shop-filter-price">
+              <div class="shop-sidebar__price-range">
+                <div class="shop-sidebar__price-inputs">
+                  <label class="shop-sidebar__price-box">
+                    <span class="type-caption">Min</span>
+                    <input
+                      type="number"
+                      id="shop-price-min"
+                      value={filters.priceMin ?? 0}
+                      min="0"
+                      max="25000"
+                      step="500"
+                      class="shop-sidebar__price-field type-body-s-400"
+                      aria-label="Minimum price"
+                    />
+                  </label>
+                  <label class="shop-sidebar__price-box">
+                    <span class="type-caption">Max</span>
+                    <input
+                      type="number"
+                      id="shop-price-max"
+                      value={filters.priceMax ?? 25000}
+                      min="0"
+                      max="25000"
+                      step="500"
+                      class="shop-sidebar__price-field type-body-s-400"
+                      aria-label="Maximum price"
+                    />
+                  </label>
+                </div>
+                <div class="shop-sidebar__range">
+                  <div class="shop-sidebar__range-track" aria-hidden="true">
+                    <div class="shop-sidebar__range-fill" id="shop-price-fill" style={`left: ${((filters.priceMin ?? 0) / 25000) * 100}%; right: ${100 - ((filters.priceMax ?? 25000) / 25000) * 100}%`}></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="shop-price-min-slider"
+                    min="0"
+                    max="25000"
+                    step="500"
+                    value={filters.priceMin ?? 0}
+                    class="shop-sidebar__range-input"
+                    aria-label="Minimum price"
+                  />
+                  <input
+                    type="range"
+                    id="shop-price-slider"
+                    min="0"
+                    max="25000"
+                    step="500"
+                    value={filters.priceMax ?? 25000}
+                    class="shop-sidebar__range-input"
+                    aria-label="Maximum price"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </aside>
 
         <!-- Main Product Area -->
@@ -303,7 +470,7 @@ const sortOptions = [
                           class="dropdown__option type-body-s-400"
                           role="option"
                           data-value={opt.value}
-                          onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value as any }, 0)}'`}
+                          onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value as any }, 0)}#shop-products'`}
                         >
                           {opt.label}
                         </button>
@@ -315,6 +482,25 @@ const sortOptions = [
             </div>
           </div>
 
+          <!-- Active Filter Tags -->
+          {activeFilterPills.length > 0 && (
+            <div class="shop-main__active-tags" id="shop-active-tags">
+              {activeFilterPills.map((pill) => (
+                <a
+                  href={pill.href}
+                  class="shop-main__tag-pill type-body-xs-500"
+                  aria-label={`Remove filter: ${pill.label}`}
+                >
+                  <span class="shop-main__tag-label">{pill.label}</span>
+                  <span class="shop-main__tag-remove type-body-xs-700" aria-hidden="true">&times;</span>
+                </a>
+              ))}
+              <a href="/products#shop-products" class="shop-main__clear-all type-body-xs-500">
+                Clear all
+              </a>
+            </div>
+          )}
+
           <!-- Product Grid -->
           {errorMessage ? (
             <div class="shop-main__empty empty-state is-visible">
@@ -322,7 +508,7 @@ const sortOptions = [
                 <h3 class="empty-state__title type-header-4">Failed to load products</h3>
                 <p class="empty-state__text type-body-s-400">{errorMessage}</p>
               </div>
-              <Button text="Retry" href="/products" variant="primary" size="small" />
+              <Button text="Retry" href="/products#shop-products" variant="primary" size="small" />
             </div>
           ) : products.length > 0 ? (
             <div class="shop-main__grid" id="shop-product-grid">
@@ -341,7 +527,7 @@ const sortOptions = [
                   Nothing in the shop fits these filters. Clear them to see the full collection.
                 </p>
               </div>
-              <Button text="Clear filters" variant="primary" size="small" href="/products" />
+              <Button text="Clear filters" variant="primary" size="small" href="/products#shop-products" />
             </div>
           )}
 
@@ -349,7 +535,7 @@ const sortOptions = [
           {totalPages > 1 && (
             <nav class="shop-main__pagination" id="shop-pagination" aria-label="Product listings pagination">
               {hasPrev ? (
-                <a href={prevHref} class="shop-main__page-btn shop-main__page-btn--prev" aria-label="Previous page">
+                <a href={`${prevHref}#shop-products`} class="shop-main__page-btn shop-main__page-btn--prev" aria-label="Previous page">
                   <Icon name="arrow" width={14} height={10} />
                 </a>
               ) : (
@@ -372,7 +558,7 @@ const sortOptions = [
               ))}
 
               {hasNext ? (
-                <a href={nextHref} class="shop-main__page-btn shop-main__page-btn--next" aria-label="Next page">
+                <a href={`${nextHref}#shop-products`} class="shop-main__page-btn shop-main__page-btn--next" aria-label="Next page">
                   <Icon name="arrow" width={14} height={10} />
                 </a>
               ) : (

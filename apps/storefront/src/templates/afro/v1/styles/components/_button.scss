@@ -12,6 +12,7 @@
     background-color $dur-ui ease,
     border-color $dur-ui ease,
     color $dur-ui ease,
+    box-shadow $dur-ui ease,
     transform $dur-press $ease-out;
 
   &:active:not(:disabled) {
@@ -64,8 +65,12 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    &--with-icon:hover:not(:disabled) .btn__icon-badge [data-icon="arrow"] {
-      transform: translateX($space-100);
+    &--with-icon:hover:not(:disabled) {
+      box-shadow: 0 4px 14px rgba($clr-primary-800, 0.16);
+
+      .btn__icon-badge [data-icon="arrow"] {
+        transform: translateX($space-100);
+      }
     }
   }
 
@@ -78,6 +83,7 @@
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled) {
         background-color: color-mix(in srgb, $clr-primary-500 86%, black);
+        box-shadow: 0 4px 14px rgba($clr-primary-500, 0.28);
       }
     }
   }
@@ -90,6 +96,7 @@
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled) {
         background-color: color-mix(in srgb, $clr-primary-800 82%, white);
+        box-shadow: 0 4px 14px rgba($clr-primary-800, 0.22);
       }
     }
   }
