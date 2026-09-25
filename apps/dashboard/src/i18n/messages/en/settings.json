@@ -549,6 +549,12 @@
       "disconnectDesc": "This account will stop receiving shop event alerts.",
       "disconnecting": "Disconnecting…",
       "disconnect": "Disconnect",
+      "connectTitle": "Connect Google?",
+      "connectDescription": "You’ll continue to Google. Choose the account with the same email as this ECS account.",
+      "connectConfirm": "Continue to Google",
+      "disconnectTitle": "Disconnect Google?",
+      "disconnectDescription": "You won’t be able to sign in with Google until you connect it again.",
+      "disconnectConfirm": "Disconnect",
       "emptyTitle": "No accounts connected",
       "emptyDescription": "Link a Telegram account to get alerts for orders, payments, and more."
     }

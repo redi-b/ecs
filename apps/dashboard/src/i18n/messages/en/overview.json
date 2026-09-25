@@ -52,7 +52,7 @@
   "billing": {
     "openBilling": "Open billing",
     "paymentOverdue": "Payment overdue",
-    "paymentOverdueDesc": "A plan payment was due {date}. Open Billing to finish payment.",
+    "paymentOverdueDesc": "A plan payment due {date} is waiting. Open Billing to finish payment.",
     "paymentDue": "Payment due",
     "paymentDueDesc": "A plan payment is due {date}. Open Billing to pay.",
     "paymentDueNoDate": "You have an open plan payment. Open Billing to pay.",
