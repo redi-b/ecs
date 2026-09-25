@@ -76,8 +76,6 @@ jobs:
               'https://github.com/' + owner + '/' + repo;
 
             const MAX_TEXT = 140;
-            // Post subtype IDs are unique per workspace (1819086 = "Announcement").
-            const ANNOUNCEMENT_SUBTYPE_ID = '1819086';
 
             // ---------- formatting helpers ----------
 
@@ -127,6 +125,9 @@ jobs:
             // ---------- ClickUp ----------
 
             async function sendToClickUp(title, content) {
+              // ClickUp posts render as collapsed cards and the API does not expose
+              // an initial expansion state. A regular message keeps the update visible.
+              const message = '**' + md(title) + '**\n\n' + content;
               const url =
                 'https://api.clickup.com/api/v3/workspaces/' +
                 encodeURIComponent(workspaceId) +
@@ -134,7 +135,7 @@ jobs:
                 encodeURIComponent(channelId) +
                 '/messages';
 
-              core.info('Sending to ClickUp channel ' + channelId + ':\n' + content);
+              core.info('Sending to ClickUp channel ' + channelId + ':\n' + message);
 
               let response;
               try {
@@ -145,13 +146,9 @@ jobs:
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    type: 'post',
-                    content: content,
+                    type: 'message',
+                    content: message,
                     content_format: 'text/md',
-                    post_data: {
-                      title: title,
-                      subtype: { id: ANNOUNCEMENT_SUBTYPE_ID },
-                    },
                   }),
                 });
               } catch (error) {
