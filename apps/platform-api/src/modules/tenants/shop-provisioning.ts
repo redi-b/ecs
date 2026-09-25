@@ -19,6 +19,7 @@ import {
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import type {
   CommerceProvisioningInput,
+  CommerceProvisioningResources,
   CommerceProvisioningResult,
 } from "../../adapters/medusa/commerce-provisioning.js";
 import type {
@@ -67,17 +68,7 @@ type TenantShopProvisionerOptions = {
   createTenantShopRecord: (input: {
     shopDetails?: ShopDetails;
     activeTemplate: ActiveStorefrontTemplate;
-    commerceResources: {
-      storeId: string;
-      salesChannelId: string;
-      stockLocationId: string;
-      publishableKeyId: string;
-      regionId: string;
-      shippingProfileId: string;
-      fulfillmentSetId: string;
-      serviceZoneId: string;
-      shippingOptionId: string;
-    };
+    commerceResources: CommerceProvisioningResources;
     handle: string;
     hostname: string;
     name: string;
@@ -108,6 +99,7 @@ type TenantShopProvisionerOptions = {
     tenantId: string;
   }) => Promise<{ ok: boolean }>;
   recordProvisioningAttempt?: (input: {
+    commerceResources?: CommerceProvisioningResources;
     shopDetails?: ShopDetails;
     error?: string | null | undefined;
     handle: string;
@@ -135,6 +127,7 @@ type TenantShopProvisioningOptions = {
 type TenantShopProvisioningRetryOptions = {
   createTenantShop: (input: {
     shopDetails?: ShopDetails;
+    commerceResources?: CommerceProvisioningResources;
     handle: string;
     name: string;
     ownerUserId: string;
@@ -182,6 +175,8 @@ function requireRow<T>(value: T | undefined, message: string): T {
 async function recordProvisioningAttempt(
   recorder: TenantShopProvisionerOptions["recordProvisioningAttempt"],
   input: {
+    commerceResources?: CommerceProvisioningResources;
+    shopDetails?: ShopDetails;
     error?: string | null | undefined;
     handle: string;
     ownerUserId: string;
@@ -212,6 +207,7 @@ export function buildInitialTenantOnboardingState() {
 export function createTenantShopProvisioner(options: TenantShopProvisionerOptions) {
   return async function createTenantShop(input: {
     shopDetails?: ShopDetails;
+    commerceResources?: CommerceProvisioningResources;
     handle: string;
     name: string;
     ownerUserId: string;
@@ -280,12 +276,14 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
     }
 
     const tenantId = input.platformTenantId ?? crypto.randomUUID();
-    const commerceResources = await options.provisionCommerceResources({
-      handle,
-      name,
-      platformTenantId: tenantId,
-      requestedByUserId: input.ownerUserId,
-    });
+    const commerceResources: CommerceProvisioningResult = input.commerceResources
+      ? { ok: true, resources: input.commerceResources }
+      : await options.provisionCommerceResources({
+          handle,
+          name,
+          platformTenantId: tenantId,
+          requestedByUserId: input.ownerUserId,
+        });
 
     if (!commerceResources.ok) {
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
@@ -309,6 +307,20 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       };
     }
 
+    await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+      commerceResources: commerceResources.resources,
+      ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
+      handle,
+      name,
+      ownerUserId: input.ownerUserId,
+      platformTenantId: tenantId,
+      status: "in_progress",
+      step: "commerce_resources",
+      ...(input.templateId ? { templateId: input.templateId } : {}),
+      ...(input.templateKey ? { templateKey: input.templateKey } : {}),
+      tenantId: null,
+    });
+
     const activeTemplate = await options.findActiveStorefrontTemplate({
       ...(input.templateId ? { templateId: input.templateId } : {}),
       ...(input.templateKey ? { templateKey: input.templateKey } : {}),
@@ -316,6 +328,7 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
 
     if (!activeTemplate) {
       await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+        commerceResources: commerceResources.resources,
         error: "storefront_template_unavailable",
         ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
         handle,
@@ -339,16 +352,41 @@ export function createTenantShopProvisioner(options: TenantShopProvisionerOption
       };
     }
 
-    const tenant = await options.createTenantShopRecord({
-      ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
-      activeTemplate,
-      commerceResources: commerceResources.resources,
-      handle,
-      hostname,
-      name,
-      ownerUserId: input.ownerUserId,
-      tenantId,
-    });
+    let tenant: CreatedTenantShop;
+
+    try {
+      tenant = await options.createTenantShopRecord({
+        ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
+        activeTemplate,
+        commerceResources: commerceResources.resources,
+        handle,
+        hostname,
+        name,
+        ownerUserId: input.ownerUserId,
+        tenantId,
+      });
+    } catch {
+      await recordProvisioningAttempt(options.recordProvisioningAttempt, {
+        commerceResources: commerceResources.resources,
+        error: "tenant_shop_creation_failed",
+        ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
+        handle,
+        name,
+        ownerUserId: input.ownerUserId,
+        platformTenantId: tenantId,
+        status: "failed",
+        step: "tenant_shop",
+        ...(input.templateId ? { templateId: input.templateId } : {}),
+        ...(input.templateKey ? { templateKey: input.templateKey } : {}),
+        tenantId: null,
+      });
+
+      return {
+        ok: false,
+        error: "tenant_provisioning_failed",
+        status: 503,
+      };
+    }
 
     await recordProvisioningAttempt(options.recordProvisioningAttempt, {
       ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
@@ -482,7 +520,11 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
           draftTemplateId: activeTemplate.templateId,
           draftTemplateVersion: activeTemplate.templateVersion,
           draftData: createBrandedShopData(activeTemplate.defaultData, name, shopDetails),
-          draftThemeTokens: getStartingBrandTokens(activeTemplate.templateKey ?? "luvia@1", activeTemplate.defaultThemeTokens, shopDetails?.brand),
+          draftThemeTokens: getStartingBrandTokens(
+            activeTemplate.templateKey ?? "luvia@1",
+            activeTemplate.defaultThemeTokens,
+            shopDetails?.brand,
+          ),
           seoSettings: {
             title: null,
             description: shopDetails?.description?.trim().slice(0, 160) || null,
@@ -650,12 +692,13 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
         status: input.status,
         error: input.error ?? null,
         metadata: {
+          ...(input.commerceResources ? { commerceResources: input.commerceResources } : {}),
           name: input.name ?? null,
           ...(input.shopDetails ? { shopDetails: input.shopDetails } : {}),
           templateId: "templateId" in input ? (input.templateId ?? null) : null,
           templateKey: "templateKey" in input ? (input.templateKey ?? null) : null,
         },
-        completedAt: new Date(),
+        completedAt: input.status === "in_progress" ? null : new Date(),
       });
     },
   };
@@ -698,7 +741,12 @@ export function createTenantShopProvisioningRetryService(
 
     const templateId = getRetryAttemptTemplateId(attempt.metadata);
     const templateKey = getRetryAttemptTemplateKey(attempt.metadata);
-    const details = shopDetailsSchema.safeParse(attempt.metadata && typeof attempt.metadata === "object" && "shopDetails" in attempt.metadata ? attempt.metadata.shopDetails : undefined);
+    const details = shopDetailsSchema.safeParse(
+      attempt.metadata && typeof attempt.metadata === "object" && "shopDetails" in attempt.metadata
+        ? attempt.metadata.shopDetails
+        : undefined,
+    );
+    const commerceResources = getRetryAttemptCommerceResources(attempt.metadata);
 
     return options.createTenantShop({
       ...(details.success ? { shopDetails: details.data } : {}),
@@ -706,10 +754,39 @@ export function createTenantShopProvisioningRetryService(
       name: attempt.name,
       ownerUserId: input.userId,
       platformTenantId: attempt.platformTenantId,
+      ...(commerceResources ? { commerceResources } : {}),
       ...(templateId ? { templateId } : {}),
       ...(templateKey ? { templateKey } : {}),
     });
   };
+}
+
+function getRetryAttemptCommerceResources(
+  metadata: unknown,
+): CommerceProvisioningResources | undefined {
+  if (typeof metadata !== "object" || metadata === null || !("commerceResources" in metadata)) {
+    return undefined;
+  }
+
+  const resources = metadata.commerceResources as Record<string, unknown>;
+
+  if (
+    typeof resources !== "object" ||
+    resources === null ||
+    typeof resources.storeId !== "string" ||
+    typeof resources.salesChannelId !== "string" ||
+    typeof resources.stockLocationId !== "string" ||
+    typeof resources.publishableKeyId !== "string" ||
+    typeof resources.regionId !== "string" ||
+    typeof resources.shippingProfileId !== "string" ||
+    typeof resources.fulfillmentSetId !== "string" ||
+    typeof resources.serviceZoneId !== "string" ||
+    typeof resources.shippingOptionId !== "string"
+  ) {
+    return undefined;
+  }
+
+  return resources as CommerceProvisioningResources;
 }
 
 function getRetryAttemptName(metadata: unknown, handle: string) {
