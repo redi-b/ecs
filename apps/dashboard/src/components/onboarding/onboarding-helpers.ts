@@ -57,19 +57,19 @@ export function getRecommendedTemplateKey(
   const selected = new Set(categories.map((category) => category.toLocaleLowerCase()));
   if (!selected.size) return null;
 
-  return templates.find((template) =>
-    getRawTemplateTags(template).some((tag) => {
-      const category = tag.startsWith("category:") ? tag.slice("category:".length) : "";
-      return selected.has(category.toLocaleLowerCase());
-    }),
-  )?.version.templateKey ?? null;
+  return (
+    templates.find((template) =>
+      getRawTemplateTags(template).some((tag) => {
+        const category = tag.startsWith("category:") ? tag.slice("category:".length) : "";
+        return selected.has(category.toLocaleLowerCase());
+      }),
+    )?.version.templateKey ?? null
+  );
 }
 
 function getRawTemplateTags(template: StorefrontTemplateCatalogItem | null | undefined) {
   const tags = template?.tags;
-  return Array.isArray(tags)
-    ? tags.filter((tag): tag is string => typeof tag === "string")
-    : [];
+  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
 }
 
 /** Preserve a trailing hyphen while typing; canonical slugging happens on blur. */
@@ -108,6 +108,7 @@ export function mapOnboardingError(code: string | undefined, t: (key: MessageKey
     template_unavailable: "onboarding.error.templateUnavailable",
     tenant_handle_taken: "onboarding.error.handleTaken",
     tenant_provisioning_failed: "onboarding.error.provisioningFailed",
+    tenant_provisioning_in_progress: "onboarding.error.provisioningInProgress",
     tenant_provisioning_unavailable: "onboarding.error.provisioningUnavailable",
     shop_owner_limit_reached: "onboarding.error.ownerLimit",
   };

@@ -1,6 +1,5 @@
+import { type ShopDetails, shopDetailsSchema } from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
-import { shopDetailsSchema, type ShopDetails } from "@ecs/contracts";
-import { getStartingBrandTokens } from "@ecs/storefront-templates";
 import {
   auditLogs,
   domains,
@@ -16,6 +15,7 @@ import {
   tenantProvisioningAttempts,
   tenants,
 } from "@ecs/db";
+import { getStartingBrandTokens } from "@ecs/storefront-templates";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import type {
   CommerceProvisioningInput,
@@ -29,6 +29,10 @@ import type {
 import { DEFAULT_PLAN_CATALOG } from "../billing/plan-catalog.js";
 import { createBillingService } from "../billing/service.js";
 import { createBrandedShopData } from "../storefront/shop-details.js";
+import {
+  createTenantProvisioningClaimStore,
+  runWithTenantProvisioningClaim,
+} from "./provisioning-claim.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
@@ -711,7 +715,56 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
     provisionerOptions.recordProvisioningAttempt = options.recordProvisioningAttempt;
   }
 
-  return createTenantShopProvisioner(provisionerOptions);
+  const provisionTenantShop = createTenantShopProvisioner(provisionerOptions);
+  const claimStore = createTenantProvisioningClaimStore(options.db);
+
+  return async function createClaimedTenantShop(
+    input: Parameters<typeof provisionTenantShop>[0],
+  ): Promise<TenantShopProvisioningResult> {
+    const handle = normalizeHandle(input.handle);
+    if (!handlePattern.test(handle)) {
+      return provisionTenantShop(input);
+    }
+
+    const existing = await provisionerOptions.findExistingTenantByHandle(handle, input.ownerUserId);
+
+    if (existing) {
+      return provisionTenantShop(input);
+    }
+
+    let claimed: { acquired: false } | { acquired: true; value: TenantShopProvisioningResult };
+    try {
+      claimed = await runWithTenantProvisioningClaim(
+        claimStore,
+        {
+          handle,
+          ownerUserId: input.ownerUserId,
+          preferredPlatformTenantId: input.platformTenantId ?? crypto.randomUUID(),
+        },
+        (platformTenantId) =>
+          provisionTenantShop({
+            ...input,
+            platformTenantId,
+          }),
+      );
+    } catch {
+      return {
+        ok: false,
+        error: "tenant_provisioning_unavailable",
+        status: 503,
+      };
+    }
+
+    if (!claimed.acquired) {
+      return {
+        ok: false,
+        error: "tenant_provisioning_in_progress",
+        status: 409,
+      };
+    }
+
+    return claimed.value;
+  };
 }
 
 export function createTenantShopProvisioningRetryService(

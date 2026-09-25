@@ -168,6 +168,7 @@
     "provisioningUnavailable": "Shop setup is temporarily unavailable. Please try again later.",
     "ownerLimit": "This account already owns a shop.",
     "commerceCredentials": "We couldn’t finish creating your shop. Please try again later or contact support.",
-    "failed": "Something went wrong. Please try again."
+    "failed": "Something went wrong. Please try again.",
+    "provisioningInProgress": "Your shop is already being created. Please wait a moment."
   }
 }
