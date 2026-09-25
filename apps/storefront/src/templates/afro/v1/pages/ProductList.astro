@@ -1,7 +1,11 @@
 ---
 import Icon from "../components/Icon.astro";
 import type { StoreCategory, StoreCollection, StoreProduct } from "../../../../lib/commerce/types";
-import { catalogHref, type CatalogFilters } from "../../../../lib/commerce/catalog-filters";
+import {
+  catalogHref,
+  type CatalogFilters,
+  parseOptionPair,
+} from "../../../../lib/commerce/catalog-filters";
 import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import Button from "../components/Button.astro";
@@ -142,7 +146,9 @@ if (filters.priceMax !== undefined && filters.priceMax < 25000) {
 }
 
 if (filters.optionPairs && filters.optionPairs.length > 0) {
-  filters.optionPairs.forEach((pair, idx) => {
+  filters.optionPairs.forEach((token, idx) => {
+    const pair = parseOptionPair(token);
+    if (!pair) return;
     activeFilterPills.push({
       id: `opt-${pair.name}-${pair.value}`,
       label: `${pair.name}: ${pair.value}`,

@@ -22,7 +22,7 @@ export function isItemWishlisted(path: string): boolean {
   return $wishlist.get().some((item) => item.path === path);
 }
 
-function syncDOMWishlistBadges(items: WishlistEntry[]) {
+function syncDOMWishlistBadges(items: readonly WishlistEntry[]) {
   if (typeof document === "undefined") return;
   const paths = new Set(items.map((entry) => entry.path));
 
@@ -84,9 +84,7 @@ export async function toggleWishlist(
   const current = $wishlist.get();
   const snapshot = [...current];
   const isSaved = current.some((item) => item.path === entry.path);
-  const next = isSaved
-    ? current.filter((item) => item.path !== entry.path)
-    : [...current, entry];
+  const next = isSaved ? current.filter((item) => item.path !== entry.path) : [...current, entry];
 
   // Optimistic update
   setWishlist(next, true);
