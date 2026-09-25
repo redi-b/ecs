@@ -45,8 +45,6 @@ import {
   compactMoney,
   formatMoney,
   formatNumber,
-  formatReadableDate,
-  formatShortDate,
   getDemandRhythmRows,
   StatusDonutChart,
 } from "@/features/overview/overview-helpers";
@@ -89,7 +87,7 @@ const BILLING_REMINDER_WINDOW_DAYS = 7;
 function getBillingNotice(
   summary: MerchantDashboardSummary,
   t: (key: MessageKey, values?: Record<string, string | number | Date>) => string,
-  locale: string,
+  formatDate: (value: Date | number | string) => string,
 ): BillingNotice | null {
   const billing = summary.billing;
   if (!billing || billing.unavailable || !billing.plan || !billing.subscription) {
@@ -126,7 +124,7 @@ function getBillingNotice(
       tone: "warning",
       title: t("overview.billing.paymentOverdue"),
       description: t("overview.billing.paymentOverdueDesc", {
-        date: formatReadableDate(openInvoice.dueAt!, locale),
+        date: formatDate(openInvoice.dueAt!),
       }),
     };
   }
@@ -137,7 +135,7 @@ function getBillingNotice(
       title: t("overview.billing.paymentDue"),
       description: openInvoice.dueAt
         ? t("overview.billing.paymentDueDesc", {
-            date: formatReadableDate(openInvoice.dueAt, locale),
+            date: formatDate(openInvoice.dueAt),
           })
         : t("overview.billing.paymentDueNoDate"),
     };
@@ -173,7 +171,7 @@ function getBillingNotice(
       tone: "reminder",
       title: t("overview.billing.periodEnding"),
       description: t("overview.billing.periodEndingDesc", {
-        date: formatReadableDate(billing.subscription.currentPeriodEnd!, locale),
+        date: formatDate(billing.subscription.currentPeriodEnd!),
       }),
     };
   }
@@ -182,7 +180,7 @@ function getBillingNotice(
 }
 
 export function MerchantOverview({ demoMode = false, summary }: MerchantOverviewProps) {
-  const { t, locale } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
   const revenueFillId = `revenue-fill-${useId().replace(/:/g, "")}`;
   const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
@@ -244,8 +242,8 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
   const rangeLabel =
     rangePreset === "custom" && selectedRange
       ? t("overview.trading.customRangeLabel", {
-          end: formatReadableDate(selectedRange.end, locale),
-          start: formatReadableDate(selectedRange.start, locale),
+          end: formatDate(selectedRange.end),
+          start: formatDate(selectedRange.start),
         })
       : t(`overview.trading.range.${rangePreset}` as MessageKey);
   const currencyCode = operations?.totals.currencyCode?.toUpperCase() ?? "ETB";
@@ -335,7 +333,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
     },
   ];
   const activeMix = mixViews.find((view) => view.id === mixView) ?? mixViews[0]!;
-  const billingNotice = getBillingNotice(summary, t, locale);
+  const billingNotice = getBillingNotice(summary, t, formatDate);
 
   return (
     <section className="flex flex-col gap-4" aria-label={t("overview.aria.section")}>
@@ -345,7 +343,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           <AlertDescription>
             {t("overview.freshness.staleDescription", {
               date: operations.quality.lastSuccessfulAt
-                ? formatReadableDate(operations.quality.lastSuccessfulAt, locale)
+                ? formatDate(operations.quality.lastSuccessfulAt)
                 : t("overview.helpers.unavailable"),
             })}
           </AlertDescription>
@@ -610,7 +608,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                       axisLine={false}
                       tickMargin={8}
                       minTickGap={28}
-                      tickFormatter={(v) => formatShortDate(String(v), locale)}
+                      tickFormatter={(v) => formatDate(String(v))}
                     />
                     <YAxis
                       yAxisId="value"
@@ -627,7 +625,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     <ChartTooltip
                       content={
                         <ChartTooltipContent
-                          labelFormatter={(value) => formatReadableDate(String(value), locale)}
+                          labelFormatter={(value) => formatDate(String(value))}
                           formatter={(value, name) => (
                             <>
                               <span className="text-muted-foreground">
@@ -711,7 +709,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                     axisLine={false}
                     tickMargin={8}
                     minTickGap={28}
-                    tickFormatter={(v) => formatShortDate(String(v), locale)}
+                    tickFormatter={(v) => formatDate(String(v))}
                   />
                   <YAxis
                     yAxisId="money"
@@ -724,9 +722,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   <YAxis yAxisId="orders" orientation="right" hide />
                   <ChartTooltip
                     content={
-                      <ChartTooltipContent
-                        labelFormatter={(value) => formatReadableDate(String(value), locale)}
-                      />
+                      <ChartTooltipContent labelFormatter={(value) => formatDate(String(value))} />
                     }
                   />
                   <ChartLegend content={<ChartLegendContent />} />

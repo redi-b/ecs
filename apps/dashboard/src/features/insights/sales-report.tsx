@@ -44,7 +44,7 @@ export function SalesReport({
   report: InsightsSalesReport;
   children?: ReactNode;
 }) {
-  const { locale, t } = useI18n();
+  const { formatDate, locale, t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -60,13 +60,7 @@ export function SalesReport({
   const buckets = salesBuckets(report, measure, interval);
   const selectedIndex = Math.min(selected ?? buckets.length - 1, buckets.length - 1);
   const inspected = buckets[selectedIndex];
-  const date = (day: string) =>
-    new Intl.DateTimeFormat(`${locale}-u-ca-gregory`, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(`${day}T12:00:00Z`));
+  const date = (day: string) => formatDate(new Date(day + "T12:00:00Z"));
   const amount = (value: number | null) =>
     value === null
       ? t("insights.salesWorkspace.notAvailable")

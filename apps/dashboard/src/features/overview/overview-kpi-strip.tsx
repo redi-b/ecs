@@ -3,7 +3,7 @@
 import type { MerchantDashboardSummary } from "@ecs/contracts";
 import Link from "@/components/app/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatMoney, formatNumber, formatShortDate } from "./overview-helpers";
+import { formatMoney, formatNumber } from "./overview-helpers";
 import { metricIntervals, metricSplit, type MetricDay } from "./metric-insights";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -142,7 +142,7 @@ export function OverviewKpiStrip({
   currencyCode: string;
   previewHref: (href: string) => string;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const reported = (operations?.series.length ?? 0) > 0;
   const number = (value: number | null | undefined) => formatNumber(value, locale);
   const money = (value: number | null | undefined) => formatMoney(value, currencyCode, locale);
@@ -165,8 +165,8 @@ export function OverviewKpiStrip({
   const orders = metricIntervals(rows, range, "orders", 24, coverage);
   const intervalLabel = (interval: { start: string; end: string }) =>
     interval.start === interval.end
-      ? formatShortDate(interval.start, locale)
-      : `${formatShortDate(interval.start, locale)} – ${formatShortDate(interval.end, locale)}`;
+      ? formatDate(interval.start)
+      : `${formatDate(interval.start)} – ${formatDate(interval.end)}`;
   const strongest = revenue.reduce<(typeof revenue)[number] | null>(
     (best, item) => (item.value != null && item.value > (best?.value ?? 0) ? item : best),
     null,

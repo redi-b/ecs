@@ -34,12 +34,12 @@ export function NotificationHistory({
   query: string;
   unreadOnly: boolean;
 }) {
-  const { locale, t } = useI18n();
+  const { formatDate, locale, t } = useI18n();
   const router = useRouter();
   const [items, setItems] = useState(initialResult.ok ? initialResult.items : []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isNavigating, startNavigation] = useTransition();
-  const groups = useMemo(() => groupByDate(items, locale), [items, locale]);
+  const groups = useMemo(() => groupByDate(items, formatDate), [formatDate, items]);
 
   useEffect(() => {
     setItems(initialResult.ok ? initialResult.items : []);
@@ -282,11 +282,10 @@ export function NotificationHistory({
   );
 }
 
-function groupByDate(items: InAppNotificationItem[], locale: string) {
+function groupByDate(items: InAppNotificationItem[], formatDate: (value: string) => string) {
   const groups = new Map<string, InAppNotificationItem[]>();
   for (const item of items) {
-    const date = new Date(item.createdAt);
-    const key = date.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
+    const key = formatDate(item.createdAt);
     groups.set(key, [...(groups.get(key) ?? []), item]);
   }
   return [...groups].map(([label, groupedItems]) => ({ items: groupedItems, label }));

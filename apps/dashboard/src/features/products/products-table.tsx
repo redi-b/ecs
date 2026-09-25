@@ -94,7 +94,7 @@ export function ProductsTable({
   totalCount,
   translationsEnabled = false,
 }: ProductsTableProps) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const canUpdate = usePermission("products.update") && !readOnly;
   const canDelete = usePermission("products.delete") && !readOnly;
   const canPublish = usePermission("products.publish") && !readOnly;
@@ -227,6 +227,7 @@ export function ProductsTable({
       canDelete ? (id) => setDeleteProductId(id) : undefined,
       handleStatusChange,
       t,
+      formatDate,
       productDetailHrefBase
         ? (product) => `${productDetailHrefBase}/${encodeURIComponent(product.id)}`
         : undefined,
@@ -246,6 +247,7 @@ export function ProductsTable({
     canUpdate,
     categories,
     collections,
+    formatDate,
     handleStatusChange,
     productDetailHrefBase,
     t,

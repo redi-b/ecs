@@ -8,7 +8,7 @@ function resolveTheme(cookie = "", prefersDark?: boolean, stored: string | null 
   let dark = false;
   const root = {
     classList: { toggle: (_name: string, value: boolean) => { dark = value; } },
-    style: { colorScheme: "" },
+    style: { colorScheme: "", backgroundColor: "" },
   };
   runInNewContext(getThemeBootstrapScript(), {
     document: { cookie, documentElement: root },
@@ -17,13 +17,18 @@ function resolveTheme(cookie = "", prefersDark?: boolean, stored: string | null 
       matchMedia: () => ({ matches: prefersDark }),
     },
   });
-  return { dark, colorScheme: root.style.colorScheme };
+  return { dark, colorScheme: root.style.colorScheme, backgroundColor: root.style.backgroundColor };
 }
 
 test("new visitors follow device preference with dark as the unavailable-preference fallback", () => {
   assert.equal(resolveTheme("", true).dark, true);
   assert.equal(resolveTheme("", false).dark, false);
-  assert.deepEqual(resolveTheme(), { dark: true, colorScheme: "dark" });
+  assert.deepEqual(resolveTheme(), {
+    dark: true,
+    colorScheme: "dark",
+    backgroundColor: "oklch(0.185 0.003 255)",
+  });
+  assert.equal(resolveTheme("ecs-theme=light", true).backgroundColor, "oklch(0.987 0.008 248)");
 });
 
 test("saved theme takes precedence over device preference", () => {

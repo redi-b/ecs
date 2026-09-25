@@ -4,11 +4,13 @@ import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import Link from "@/components/app/link";
 import { SignInForm } from "@/components/app/sign-in-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
+import { GoogleAuthButton } from "@/components/onboarding/google-auth-button";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
 import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getCentralDashboardUrl, type ShopHostValidation, validateShopHost } from "@/lib/shop-host";
+import { getSocialAuthProviders } from "@/lib/social-auth-providers";
 
 export default async function AdminSignInPage({
   searchParams,
@@ -49,17 +51,22 @@ export default async function AdminSignInPage({
     }
   }
 
+  const nextPath = getSafeNextPath(params?.next);
   const authenticatedRedirect = await getAuthenticatedDashboardRedirect({
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
     requestHost,
+    nextPath,
   });
 
   if (authenticatedRedirect) {
     redirect(authenticatedRedirect);
   }
 
-  const nextPath = getSafeNextPath(params?.next);
+  const googleEnabled =
+    isCentralAccess &&
+    (await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000"))
+      .google;
   const errorMessage = getErrorMessage(params?.error, t);
   const centralSignIn = getCentralDashboardUrl("/sign-in");
   const shopName =
@@ -82,6 +89,7 @@ export default async function AdminSignInPage({
             {t("auth.recovery.resetComplete")}
           </p>
         ) : null}
+        {googleEnabled ? <GoogleAuthButton nextPath={nextPath} /> : null}
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">
@@ -130,6 +138,17 @@ function getErrorMessage(value: string | undefined, t: (key: MessageKey) => stri
       return t("auth.error.invalidCredentials");
     case "email_not_verified":
       return t("auth.error.emailNotVerified");
+    case "access_denied":
+    case "oauth_access_denied":
+      return t("auth.error.socialSignInCancelled");
+    case "account_not_linked":
+    case "account_already_linked_to_different_user":
+    case "unable_to_link_account":
+      return t("auth.error.socialAccountConflict");
+    case "social_sign_in_failed":
+      return t("auth.error.socialSignInFailed");
+    case "social_sign_in_unavailable":
+      return t("auth.error.socialSignInUnavailable");
     case "auth_unavailable":
       return t("auth.error.unavailable");
     case "shop_not_found":

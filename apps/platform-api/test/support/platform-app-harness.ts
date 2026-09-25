@@ -98,6 +98,7 @@ export function appWithResolution(
     getStorefrontInquiry?: import("../../src/types/platform-app.js").PlatformAppOptions["getStorefrontInquiry"];
     updateStorefrontInquiryStatus?: import("../../src/types/platform-app.js").PlatformAppOptions["updateStorefrontInquiryStatus"];
     authHandler?: (request: Request) => Promise<Response>;
+    googleAuthEnabled?: boolean;
     authorizeDashboardForTenant?: PlatformAppOptions["authorizeDashboardForTenant"];
     getInsightsSales?: PlatformAppOptions["getInsightsSales"];
     getInsightsProducts?: PlatformAppOptions["getInsightsProducts"];
@@ -575,6 +576,7 @@ export function appWithResolution(
       updateStorefrontInquiryStatus: options?.updateStorefrontInquiryStatus,
       storefrontPreviewSecret: options?.storefrontPreviewSecret,
       authHandler: options?.authHandler,
+      googleAuthEnabled: options?.googleAuthEnabled,
       authorizeDashboardForTenant: options?.authorizeDashboardForTenant,
       authorizePlatformPermission: options?.authorizePlatformPermission,
       getPlatformPrincipalAccess: options?.getPlatformPrincipalAccess,

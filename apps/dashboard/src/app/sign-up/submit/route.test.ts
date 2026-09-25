@@ -51,6 +51,7 @@ test("POST /sign-up/submit creates an account and redirects to onboarding", asyn
 
   const body = new FormData();
   body.set("ownerName", "Mahi Bekele");
+  body.set("phone", "0912 345 678");
   body.set("email", " MAHI@EXAMPLE.COM ");
   body.set("password", "password1234");
   body.set("confirmPassword", "password1234");
@@ -78,6 +79,7 @@ test("POST /sign-up/submit creates an account and redirects to onboarding", asyn
     email: "mahi@example.com",
     name: "Mahi Bekele",
     password: "password1234",
+    phone: "+251912345678",
   });
   assert.equal(forwardedRequest?.headers.get("origin"), "http://app.lvh.me");
 });
@@ -105,6 +107,7 @@ test("POST /sign-up/submit asks the user to verify email when verification is re
         email: "mahi@example.com",
         ownerName: "Mahi Bekele",
         password: "password1234",
+        phone: "0912 345 678",
       }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -116,7 +119,10 @@ test("POST /sign-up/submit asks the user to verify email when verification is re
     ok: true,
     redirectTo: "http://app.lvh.me/check-email",
   });
-  assert.match(response.headers.get("set-cookie") ?? "", /ecs\.verification_email=mahi%40example\.com/);
+  assert.match(
+    response.headers.get("set-cookie") ?? "",
+    /ecs\.verification_email=mahi%40example\.com/,
+  );
   assert.deepEqual(requests, [
     {
       body: {
@@ -124,6 +130,7 @@ test("POST /sign-up/submit asks the user to verify email when verification is re
         email: "mahi@example.com",
         name: "Mahi Bekele",
         password: "password1234",
+        phone: "+251912345678",
       },
       url: "http://platform.test/platform/auth/sign-up/email",
     },
@@ -154,6 +161,7 @@ test("POST /sign-up/submit reports a failed initial verification delivery withou
         email: "mahi@example.com",
         ownerName: "Mahi Bekele",
         password: "password1234",
+        phone: "0912 345 678",
       }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -190,6 +198,7 @@ test("POST /sign-up/submit preserves a safe invitation continuation", async () =
         next,
         ownerName: "New Member",
         password: "password1234",
+        phone: "0912 345 678",
       }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
@@ -220,6 +229,7 @@ test("POST /sign-up/submit redirects back when platform auth does not return a s
 
   const body = new FormData();
   body.set("ownerName", "Mahi Bekele");
+  body.set("phone", "0912 345 678");
   body.set("email", "mahi@example.com");
   body.set("password", "password1234");
   body.set("confirmPassword", "password1234");
@@ -234,7 +244,7 @@ test("POST /sign-up/submit redirects back when platform auth does not return a s
   assert.equal(response.status, 303);
   assert.equal(
     response.headers.get("location"),
-    "http://app.lvh.me/sign-up?error=auth_session_missing&ownerName=Mahi+Bekele&email=mahi%40example.com",
+    "http://app.lvh.me/sign-up?error=auth_session_missing&ownerName=Mahi+Bekele&email=mahi%40example.com&phone=0912+345+678",
   );
 });
 
@@ -253,6 +263,7 @@ test("POST /sign-up/submit rejects mismatched passwords before account creation"
         email: "mahi@example.com",
         ownerName: "Mahi Bekele",
         password: "password1234",
+        phone: "0912 345 678",
       }),
       headers: {
         accept: "application/json",
@@ -264,5 +275,56 @@ test("POST /sign-up/submit rejects mismatched passwords before account creation"
 
   assert.equal(response.status, 400);
   assert.deepEqual(await response.json(), { error: "password_mismatch", ok: false });
+  assert.equal(requestedUpstream, false);
+});
+
+test("POST /sign-up/submit requires a private account phone", async () => {
+  let requestedUpstream = false;
+  globalThis.fetch = async () => {
+    requestedUpstream = true;
+    return new Response(null, { status: 500 });
+  };
+
+  const response = await POST(
+    new Request("http://app.lvh.me/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "password1234",
+        email: "mahi@example.com",
+        ownerName: "Mahi Bekele",
+        password: "password1234",
+      }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "missing_required_fields", ok: false });
+  assert.equal(requestedUpstream, false);
+});
+
+test("POST /sign-up/submit rejects an invalid Ethiopian account phone", async () => {
+  let requestedUpstream = false;
+  globalThis.fetch = async () => {
+    requestedUpstream = true;
+    return new Response(null, { status: 500 });
+  };
+
+  const response = await POST(
+    new Request("http://app.lvh.me/sign-up/submit", {
+      body: JSON.stringify({
+        confirmPassword: "password1234",
+        email: "mahi@example.com",
+        ownerName: "Mahi Bekele",
+        password: "password1234",
+        phone: "123",
+      }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "POST",
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "invalid_phone", ok: false });
   assert.equal(requestedUpstream, false);
 });

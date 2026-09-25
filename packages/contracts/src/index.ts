@@ -24,6 +24,9 @@ export function normalizeEthiopianPhone(value: string): string {
   return /^[1-9]\d{8}$/.test(digits) ? `+251${digits}` : compact;
 }
 
+export const userCalendarPreferenceSchema = z.enum(["follow-language", "ethiopian", "gregorian"]);
+export type UserCalendarPreference = z.infer<typeof userCalendarPreferenceSchema>;
+
 export const ethiopianPhoneSchema = z
   .string()
   .transform(normalizeEthiopianPhone)
@@ -349,6 +352,7 @@ export const platformOnboardingStateSchema = z.object({
     id: z.string().min(1),
     email: z.string().min(1),
     name: z.string().min(1).nullable(),
+    phone: z.string().min(1).nullable().optional().default(null),
   }),
   tenants: z.array(platformTenantSchema),
   primaryTenant: z
@@ -1757,6 +1761,7 @@ export const merchantDashboardSummarySchema = z.object({
     name: z.string().min(1).nullable(),
     role: merchantRoleNameSchema,
     avatar: profileAvatarSchema.nullable().optional(),
+    calendarPreference: userCalendarPreferenceSchema.optional(),
     supportAccess: z
       .object({ grantId: z.string().min(1), expiresAt: z.string().min(1) })
       .optional(),

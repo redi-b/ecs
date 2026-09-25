@@ -16,6 +16,19 @@ describe("platform app foundation", () => {
     });
   });
 
+  it("reports configured social sign-in providers", async () => {
+    const app = appWithResolution(
+      { ok: false, error: "shop_context_required" },
+      { googleAuthEnabled: true },
+    );
+
+    const response = await app.request("/platform/auth/providers");
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { google: true });
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  });
+
   it("adds request ids to platform responses and platform-owned errors", async () => {
     const app = appWithResolution({ ok: false, error: "shop_context_required" });
 

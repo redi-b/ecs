@@ -66,6 +66,10 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     redirect("/sign-in?next=%2Fadmin%2Fonboarding");
   }
 
+  if (onboardingResult.ok && !onboardingResult.state.user.phone) {
+    redirect("/complete-account?next=%2Fonboarding");
+  }
+
   if (onboardingResult.ok && onboardingResult.state.tenants.length > 0) {
     const destination = resolveShopDestination({
       lastShopId: cookieStore.get("ecs_last_shop")?.value ?? null,

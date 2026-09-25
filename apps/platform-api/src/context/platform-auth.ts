@@ -1,5 +1,9 @@
 import { getAuthCookiePrefix } from "@ecs/config";
-import { serializedProfileAvatarSchema } from "@ecs/contracts";
+import {
+  ethiopianPhoneSchema,
+  serializedProfileAvatarSchema,
+  userCalendarPreferenceSchema,
+} from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
 import * as schema from "@ecs/db";
 import { betterAuth } from "better-auth";
@@ -120,6 +124,8 @@ export function createPlatformAuth(options: {
   dashboardPublicBaseUrl?: string | undefined;
   db: PlatformDb;
   emailProvider?: NotificationProvider | undefined;
+  googleClientId?: string | undefined;
+  googleClientSecret?: string | undefined;
   enqueueAccountEmail?:
     | ((input: {
         idempotencySource: string;
@@ -248,6 +254,17 @@ export function createPlatformAuth(options: {
           },
         }
       : {}),
+    ...(options.googleClientId?.trim() && options.googleClientSecret?.trim()
+      ? {
+          socialProviders: {
+            google: {
+              clientId: options.googleClientId.trim(),
+              clientSecret: options.googleClientSecret.trim(),
+              requireEmailVerification: true,
+            },
+          },
+        }
+      : {}),
     secret: options.secret,
     ...(options.trustedOrigins?.length ? { trustedOrigins: options.trustedOrigins } : {}),
     rateLimit: {
@@ -364,6 +381,19 @@ export function createPlatformAuth(options: {
           input: true,
           validator: { input: serializedProfileAvatarSchema },
         },
+        phone: {
+          input: true,
+          required: false,
+          type: "string",
+          validator: { input: ethiopianPhoneSchema },
+        },
+        calendarPreference: {
+          defaultValue: "follow-language",
+          input: true,
+          required: true,
+          type: "string",
+          validator: { input: userCalendarPreferenceSchema },
+        },
       },
       ...(enqueueAccountEmail
         ? {
@@ -399,6 +429,12 @@ export function createPlatformAuth(options: {
       modelName: "sessions",
     },
     account: {
+      accountLinking: {
+        allowDifferentEmails: false,
+        disableImplicitLinking: true,
+        enabled: true,
+        requireLocalEmailVerified: true,
+      },
       modelName: "accounts",
     },
     verification: {

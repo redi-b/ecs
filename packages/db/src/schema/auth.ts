@@ -15,18 +15,28 @@ import {
 import { membershipRole } from "./enums.js";
 import { organizations, tenants } from "./tenants.js";
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").notNull().default(false),
-  image: text("image"),
-  avatarPreferences: text("avatar_preferences"),
-  phone: text("phone"),
-  status: text("status").notNull().default("active"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    emailVerified: boolean("email_verified").notNull().default(false),
+    image: text("image"),
+    avatarPreferences: text("avatar_preferences"),
+    phone: text("phone"),
+    calendarPreference: text("calendar_preference").notNull().default("follow-language"),
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "users_calendar_preference_check",
+      sql`${table.calendarPreference} in ('follow-language', 'ethiopian', 'gregorian')`,
+    ),
+  ],
+);
 
 export const sessions = pgTable(
   "sessions",

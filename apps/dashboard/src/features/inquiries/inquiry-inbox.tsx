@@ -5,8 +5,8 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { DataTableFilters } from "@/components/app/data-table-filters";
-import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
+import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export function InquiryInbox({
   tenantId?: string;
 }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { formatDate, formatDateTime, t } = useI18n();
   const searchParams = useSearchParams();
   const [selected, setSelected] = useState<StorefrontInquiry | null>(null);
   const [updating, startTransition] = useTransition();
@@ -86,7 +86,9 @@ export function InquiryInbox({
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        toast.error(typeof data.error === "string" ? data.error : t("inquiries.toast.updateFailed"));
+        toast.error(
+          typeof data.error === "string" ? data.error : t("inquiries.toast.updateFailed"),
+        );
         return;
       }
       setSelected(data.inquiry as StorefrontInquiry);
@@ -207,7 +209,7 @@ export function InquiryInbox({
                     className="whitespace-nowrap text-xs text-muted-foreground"
                     dateTime={inquiry.createdAt}
                   >
-                    {relativeDate(inquiry.createdAt)}
+                    {relativeDate(inquiry.createdAt, formatDate)}
                   </time>
                   <AppIcons.arrowRight className="size-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
                 </span>
@@ -253,7 +255,7 @@ export function InquiryInbox({
             <SheetDescription>
               {selected
                 ? t("inquiries.detail.received", {
-                    date: new Date(selected.createdAt).toLocaleString(),
+                    date: formatDateTime(selected.createdAt),
                   })
                 : ""}
             </SheetDescription>
@@ -365,11 +367,11 @@ function Detail({
 function formatKey(value: string) {
   return value.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
 }
-function relativeDate(value: string) {
+function relativeDate(value: string, formatDate: (value: string) => string) {
   const time = new Date(value).getTime();
   const diff = Date.now() - time;
   if (diff < 60_000) return "Now";
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h`;
-  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDate(value);
 }

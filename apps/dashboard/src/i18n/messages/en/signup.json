@@ -4,6 +4,7 @@
     "unavailable": "Signup is temporarily unavailable.",
     "emailExists": "An account with that email already exists.",
     "required": "Complete the required fields.",
+    "invalidPhone": "Enter a valid Ethiopian phone number.",
     "passwordShort": "Use at least 8 characters for the password.",
     "passwordMismatch": "Passwords do not match.",
     "failed": "Signup could not be completed."

@@ -67,25 +67,15 @@ export function getTaxonomyTableCounts(input: {
   };
 }
 
-export function formatTaxonomyDate(value: string | null, noDateLabel = "No date") {
-  if (!value) {
-    return noDateLabel;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return noDateLabel;
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeZone: "UTC",
-  }).format(date);
-}
-
 export function getCollectionDisplayName(collection: MerchantProductCollection) {
   return getFirstDisplayValue([collection.title, collection.handle, collection.id]);
+}
+
+export function formatTaxonomyDate(value: string | null, noDateLabel = "No date") {
+  if (!value) return noDateLabel;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return noDateLabel;
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(date);
 }
 
 export function getCategoryDisplayName(category: MerchantProductCategory) {

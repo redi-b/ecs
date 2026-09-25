@@ -129,5 +129,30 @@
     "openAvailablePage": "Go to an available page",
     "unavailableTitle": "Dashboard temporarily unavailable",
     "unavailableDesc": "We could not load this dashboard. Try again in a moment."
+  },
+  "datePicker": {
+    "apply": "Apply",
+    "available": "Available dates",
+    "cancel": "Cancel",
+    "chooseEnd": "Choose the end date",
+    "chooseStart": "Choose the start date",
+    "clear": "Clear",
+    "date": "Date",
+    "end": "End",
+    "hour": "Hour",
+    "minute": "Min",
+    "nextMonth": "Next month",
+    "nextYears": "Next years",
+    "notSet": "Not set",
+    "placeholder": "Pick a date",
+    "previousMonth": "Previous month",
+    "previousYears": "Previous years",
+    "selectDay": "Select a day",
+    "selectDateTime": "Select date and time",
+    "start": "Start",
+    "time": "Time",
+    "timeFormat": "Time format",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   }
 }

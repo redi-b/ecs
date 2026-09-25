@@ -98,6 +98,7 @@ export function SettingsWorkspace({
   const [savingFee, setSavingFee] = useState(false);
   const [storefrontLanguageDirty, setStorefrontLanguageDirty] = useState(false);
   const [accountChanges, setAccountChanges] = useState<readonly string[]>([]);
+  const [preferenceChanges, setPreferenceChanges] = useState<readonly string[]>([]);
   const nameId = useId();
   const handleId = useId();
   const deliveryFeeId = useId();
@@ -129,20 +130,25 @@ export function SettingsWorkspace({
     return changes;
   }, [detailsDirty, handleChanged, nameChanged, t]);
   const pendingChanges =
-    section === "shop"
-      ? shopChanges
-      : section === "storefront" && storefrontLanguageDirty
-        ? [t("settings.storefront.languagesTitle")]
-        : section === "account"
-          ? accountChanges
-          : [];
+    section === "preferences"
+      ? preferenceChanges
+      : section === "shop"
+        ? shopChanges
+        : section === "storefront" && storefrontLanguageDirty
+          ? [t("settings.storefront.languagesTitle")]
+          : section === "account"
+            ? accountChanges
+            : [];
   const canSaveShop =
     name.trim().length >= 2 &&
     normalizedHandle.length >= 3 &&
     (!detailsDirty || parsedDetails.success) &&
     (!handleChanged || handleAvailability.status === "available");
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
-    shopDirty || storefrontLanguageDirty || accountChanges.length > 0,
+    shopDirty ||
+      storefrontLanguageDirty ||
+      accountChanges.length > 0 ||
+      preferenceChanges.length > 0,
   );
   const visibleSections = (
     [
@@ -411,10 +417,10 @@ export function SettingsWorkspace({
 
           {section === "preferences" ? (
             <PreferencesSection
+              onDirtyChange={setPreferenceChanges}
               canOpenFulfillment={allows(permissions, merchantPolicies.shopSettings)}
               canShowLaunchAssistant={allows(permissions, merchantPolicies.launchSetup)}
               showLaunchAssistant={showLaunchAssistant}
-              tenantId={summary.tenant.id}
               onLaunchAssistantChange={(checked) => {
                 setLaunchAssistantHidden(summary.tenant.id, !checked);
                 setShowLaunchAssistant(checked);

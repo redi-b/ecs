@@ -66,7 +66,7 @@ export function ProductDetail({
   translationOpen = false,
   translationQueueNavigation,
 }: ProductDetailProps) {
-  const { t } = useI18n();
+  const { formatDateTime, t } = useI18n();
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -360,11 +360,15 @@ export function ProductDetail({
               />
               <DetailField
                 label={t("products.detail.created")}
-                value={formatDateTime(product.createdAt, t)}
+                value={
+                  product.createdAt ? formatDateTime(product.createdAt) : t("products.detail.never")
+                }
               />
               <DetailField
                 label={t("products.detail.updated")}
-                value={formatDateTime(product.updatedAt, t)}
+                value={
+                  product.updatedAt ? formatDateTime(product.updatedAt) : t("products.detail.never")
+                }
               />
             </DetailFieldGrid>
           </DetailSection>
@@ -639,24 +643,6 @@ function formatFirstPrice(product: MerchantProduct, t: (key: any) => string) {
   }
 
   return `${price.currencyCode.toUpperCase()} ${price.amount}`;
-}
-
-function formatDateTime(value: string | null, t: (key: any) => string) {
-  if (!value) {
-    return t("products.detail.never");
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return t("products.detail.unknown");
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(date);
 }
 
 function getDeletionErrorMessage(

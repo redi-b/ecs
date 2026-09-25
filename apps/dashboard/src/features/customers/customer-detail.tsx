@@ -15,7 +15,6 @@ import {
 } from "@/features/customers/customer-address-dialog";
 import { CustomerFormDialog } from "@/features/customers/customer-form-dialog";
 import {
-  formatOrderDateTime,
   formatOrderMoney,
   formatOrderReference,
   getOrderProgress,
@@ -76,12 +75,10 @@ export function CustomerDetail({
   orders,
   ordersTotalCount,
 }: CustomerDetailProps) {
-  const { t, locale } = useI18n();
+  const { formatDate, t } = useI18n();
   const canUpdate = usePermission("customers.update");
   const groups = customer.groups;
-  const memberSince = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
-    new Date(customer.createdAt),
-  );
+  const memberSince = formatDate(customer.createdAt);
   const ordersHref = `${dashboardRoutes.orders}?customerId=${encodeURIComponent(customer.id)}`;
   const isWalkIn = isWalkInCustomerEmail(customer.email);
   const displayEmail = getDisplayCustomerEmail(customer.email);
@@ -216,7 +213,7 @@ export function CustomerDetail({
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {formatOrderDateTime(order.createdAt)}
+                          {order.createdAt ? formatDate(order.createdAt) : "—"}
                         </p>
                       </div>
                       <span className="shrink-0 text-sm font-medium tabular-nums">

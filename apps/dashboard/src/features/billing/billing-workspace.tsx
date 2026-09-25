@@ -10,11 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -92,7 +88,7 @@ export function BillingWorkspace({
   billingPath?: string;
 }) {
   const router = useRouter();
-  const { t, locale, formatNumber } = useI18n();
+  const { t, locale, formatDate, formatNumber } = useI18n();
   const [isPending, startTransition] = useTransition();
   const busy = isPending;
   const paymentDestinations = billing.paymentDestinations ?? [];
@@ -238,7 +234,7 @@ export function BillingWorkspace({
           toast.success(
             data.effectiveAt
               ? t("billing.toast.switchesOn", {
-                  date: formatBillingDate(String(data.effectiveAt), locale),
+                  date: formatDate(String(data.effectiveAt)),
                 })
               : t("billing.toast.planChangeScheduled"),
           );
@@ -362,7 +358,7 @@ export function BillingWorkspace({
       }
       return periodStillActive && subscription.currentPeriodEnd
         ? t("billing.primary.switchAfter", {
-            date: formatBillingDate(subscription.currentPeriodEnd, locale),
+            date: formatDate(subscription.currentPeriodEnd),
           })
         : t("billing.primary.switchTo", { name: chosenPlan.name });
     }
@@ -414,13 +410,13 @@ export function BillingWorkspace({
         <p className="text-sm text-muted-foreground">
           {isTrialing && subscription.trialEndsAt
             ? t("billing.plan.trialEnds", {
-                date: formatBillingDate(subscription.trialEndsAt, locale),
+                date: formatDate(subscription.trialEndsAt),
               })
             : isCurrentFree
               ? t("billing.plan.noPaymentRequired")
               : subscription.currentPeriodEnd
                 ? t("billing.plan.paidThrough", {
-                    date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                    date: formatDate(subscription.currentPeriodEnd),
                     price: formatPlanPrice(activePlan.price, t, formatNumber),
                     cycle: formatCycle(subscription.billingCycle, t),
                   })
@@ -433,7 +429,7 @@ export function BillingWorkspace({
           <p className="text-sm text-muted-foreground">
             {t("billing.plan.scheduledChange", {
               name: scheduledPlanName ?? theFreePlanLabel,
-              date: formatBillingDate(scheduledEffectiveAt, locale),
+              date: formatDate(scheduledEffectiveAt),
             })}
           </p>
         ) : null}
@@ -479,7 +475,7 @@ export function BillingWorkspace({
             <CardDescription>
               {subscription.currentPeriodEnd
                 ? t("billing.payment.receivedThrough", {
-                    date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                    date: formatDate(subscription.currentPeriodEnd),
                   })
                 : t("billing.payment.receivedActive")}
             </CardDescription>
@@ -505,7 +501,7 @@ export function BillingWorkspace({
                 {formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
                 {openInvoice.dueAt
                   ? ` · ${t("billing.payment.due", {
-                      date: formatBillingDate(openInvoice.dueAt, locale),
+                      date: formatDate(openInvoice.dueAt),
                     })}`
                   : ""}
               </p>
@@ -652,15 +648,12 @@ export function BillingWorkspace({
                 ? selectedIsScheduledTarget
                   ? t("billing.hint.alreadyScheduled", {
                       current: activePlan.name,
-                      date: formatBillingDate(
-                        scheduledEffectiveAt || subscription.currentPeriodEnd || "",
-                        locale,
-                      ),
+                      date: formatDate(scheduledEffectiveAt || subscription.currentPeriodEnd || ""),
                     })
                   : periodStillActive && subscription.currentPeriodEnd
                     ? t("billing.hint.noRefundKeepUntil", {
                         current: activePlan.name,
-                        date: formatBillingDate(subscription.currentPeriodEnd, locale),
+                        date: formatDate(subscription.currentPeriodEnd),
                         next: chosenPlan.name,
                       })
                     : t("billing.hint.switchNowPeriodEnded", { name: chosenPlan.name })
@@ -711,8 +704,7 @@ export function BillingWorkspace({
           <ul
             className={cn(
               "flex flex-col gap-2",
-              history.length > 6 &&
-                "max-h-[min(22rem,45vh)] overflow-y-auto pr-0.5",
+              history.length > 6 && "max-h-[min(22rem,45vh)] overflow-y-auto pr-0.5",
             )}
           >
             {history.map((invoice) => (
@@ -725,10 +717,10 @@ export function BillingWorkspace({
                   <p className="text-xs text-muted-foreground">
                     {invoice.paidAt
                       ? t("billing.payment.paidOn", {
-                          date: formatBillingDate(invoice.paidAt, locale),
+                          date: formatDate(invoice.paidAt),
                         })
                       : t("billing.payment.createdOn", {
-                          date: formatBillingDate(invoice.createdAt, locale),
+                          date: formatDate(invoice.createdAt),
                         })}
                   </p>
                 </div>
@@ -850,7 +842,11 @@ function PaymentEvidenceDialog({
           <DialogDescription>{t("billing.transfer.description")}</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-5">
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t("billing.transfer.provider")}>
+          <div
+            className="grid grid-cols-2 gap-2"
+            role="radiogroup"
+            aria-label={t("billing.transfer.provider")}
+          >
             {paymentDestinations.map((item) => {
               const selected = item.provider === provider;
               const ProviderIcon = item.provider === "telebirr" ? AppIcons.wallet : AppIcons.bank;
@@ -880,18 +876,30 @@ function PaymentEvidenceDialog({
             <section className="overflow-hidden rounded-2xl border bg-muted/25">
               <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">{t("billing.transfer.amount")}</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("billing.transfer.amount")}
+                  </p>
                   <p className="mt-0.5 text-xl font-semibold tabular-nums">{amount}</p>
                 </div>
-                <CopyPaymentValue label={t("billing.transfer.copyAmount")} value={amount.replace(/[^0-9.]/g, "")} />
+                <CopyPaymentValue
+                  label={t("billing.transfer.copyAmount")}
+                  value={amount.replace(/[^0-9.]/g, "")}
+                />
               </div>
               <div className="grid gap-3 px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-muted-foreground">{t("billing.transfer.sendTo")}</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("billing.transfer.sendTo")}
+                  </p>
                   <p className="mt-1 truncate font-medium">{destination.accountName}</p>
-                  <p className="select-all font-mono text-sm tabular-nums">{destination.accountNumber}</p>
+                  <p className="select-all font-mono text-sm tabular-nums">
+                    {destination.accountNumber}
+                  </p>
                 </div>
-                <CopyPaymentValue label={t("billing.transfer.copyAccount")} value={destination.accountNumber} />
+                <CopyPaymentValue
+                  label={t("billing.transfer.copyAccount")}
+                  value={destination.accountNumber}
+                />
               </div>
             </section>
           ) : null}
@@ -924,7 +932,11 @@ function PaymentEvidenceDialog({
               <AppIcons.arrowDown className="size-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-2 text-muted-foreground">
-              {t(provider === "telebirr" ? "billing.transfer.telebirrHelp" : "billing.transfer.cbeHelp")}
+              {t(
+                provider === "telebirr"
+                  ? "billing.transfer.telebirrHelp"
+                  : "billing.transfer.cbeHelp",
+              )}
             </CollapsibleContent>
           </Collapsible>
           <Field>
@@ -937,7 +949,13 @@ function PaymentEvidenceDialog({
               placeholder={t("billing.transfer.referencePlaceholder")}
               value={reference}
             />
-            <FieldDescription>{t(provider === "cbe" ? "billing.transfer.cbeReferenceHelp" : "billing.transfer.referenceHelp")}</FieldDescription>
+            <FieldDescription>
+              {t(
+                provider === "cbe"
+                  ? "billing.transfer.cbeReferenceHelp"
+                  : "billing.transfer.referenceHelp",
+              )}
+            </FieldDescription>
           </Field>
           <Alert>
             <AppIcons.time />
@@ -986,7 +1004,13 @@ function CopyPaymentValue({ label, value }: { label: string; value: string }) {
     }
   }
   return (
-    <Button className="shrink-0" onClick={() => void copy()} size="sm" type="button" variant="outline">
+    <Button
+      className="shrink-0"
+      onClick={() => void copy()}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
       <AppIcons.copy data-icon="inline-start" />
       {label}
     </Button>
@@ -1005,15 +1029,6 @@ function formatStatus(status: string, t: Translate) {
   if (status === "past_due") return t("billing.status.pastDue");
   if (status === "canceled" || status === "cancelled") return t("billing.status.cancelled");
   return status;
-}
-
-function formatBillingDate(value: string, locale: string) {
-  if (!value) return value;
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function formatPlanPrice(

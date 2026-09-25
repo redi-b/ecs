@@ -76,15 +76,6 @@ function formatTarget(item: MerchantPromotion, t: Translate) {
   return t("promotions.format.order");
 }
 
-/** Fixed locale so SSR and the browser always render the same string. */
-function formatScheduleDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 function statusBadgeVariant(status: MerchantPromotion["status"]) {
   if (status === "active") return "default" as const;
   if (status === "draft") return "outline" as const;
@@ -110,7 +101,7 @@ export function PromotionsManager({
   promotions: MerchantPromotion[];
   totalCount: number;
 }) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const canManage = usePermission("promotions.manage");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -407,14 +398,14 @@ export function PromotionsManager({
           if (item.endsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                {t("promotions.schedule.ends", { date: formatScheduleDate(item.endsAt) })}
+                {t("promotions.schedule.ends", { date: formatDate(item.endsAt) })}
               </span>
             );
           }
           if (item.startsAt) {
             return (
               <span className="text-sm text-muted-foreground">
-                {t("promotions.schedule.starts", { date: formatScheduleDate(item.startsAt) })}
+                {t("promotions.schedule.starts", { date: formatDate(item.startsAt) })}
               </span>
             );
           }

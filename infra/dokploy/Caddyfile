@@ -115,7 +115,7 @@
 			reverse_proxy ecs-dashboard:3001
 		}
 
-		@merchant_dashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation*
+		@merchant_dashboard path /dashboard* /onboarding* /sign-in* /sign-up* /sign-out* /session* /check-email* /verify-email* /forgot-password* /reset-password* /accept-invitation* /auth*
 		handle @merchant_dashboard {
 			reverse_proxy ecs-dashboard:3001
 		}

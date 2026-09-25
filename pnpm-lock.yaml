@@ -60,6 +60,9 @@ importers:
       '@ecs/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ecs/date-time':
+        specifier: workspace:*
+        version: link:../../packages/date-time
       '@ecs/storefront-templates':
         specifier: workspace:*
         version: link:../../packages/storefront-templates
@@ -478,6 +481,15 @@ importers:
     devDependencies:
       tsx:
         specifier: ^4.21.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/date-time:
+    devDependencies:
+      tsx:
+        specifier: ^4.20.0
         version: 4.22.4
       typescript:
         specifier: ^5.9.0

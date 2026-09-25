@@ -2,18 +2,18 @@
 
 import type { InsightsProductsReport } from "@ecs/contracts";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { HelpTip } from "@/components/app/help-tip";
 import { InlineDefinition } from "@/components/app/inline-definition";
-import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
+import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { PaginationBar } from "@/components/app/pagination-bar";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useI18n } from "@/i18n/provider";
 import { ProductQuantityRow } from "./product-quantity-row";
 import { ProductVariantsPanel, type VariantProduct } from "./product-variants-panel";
 import { ReportExportLink } from "./report-export-link";
-import { useI18n } from "@/i18n/provider";
 
 export function SalesProductContributions({
   report,
@@ -22,21 +22,16 @@ export function SalesProductContributions({
   report: InsightsProductsReport | null;
   failed: boolean;
 }) {
-  const { locale, t } = useI18n();
+  const { formatDate, locale, t } = useI18n();
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const titleId = useId();
   const [variantProduct, setVariantProduct] = useState<VariantProduct | null>(null);
   const number = (value: number) =>
     new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
-  const date = (value: string) =>
-    new Intl.DateTimeFormat(`${locale}-u-ca-gregory`, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(`${value}T12:00:00Z`));
+  const date = (value: string) => formatDate(new Date(value + "T12:00:00Z"));
   function navigate(values: Record<string, string>) {
     const next = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(values)) {
@@ -51,13 +46,9 @@ export function SalesProductContributions({
     ...(report?.rows.flatMap((row) => [row.units, row.previousUnits ?? 0]) ?? []),
   );
   return (
-    <section
-      className="flex min-w-0 flex-col gap-4"
-      aria-labelledby="product-contributions-title"
-      aria-busy={pending}
-    >
+    <section className="flex min-w-0 flex-col gap-4" aria-labelledby={titleId} aria-busy={pending}>
       <div className="flex items-center gap-2">
-        <h2 className="type-section-title" id="product-contributions-title">
+        <h2 className="type-section-title" id={titleId}>
           {t("insights.contributions.title")}
         </h2>
         <HelpTip
@@ -69,7 +60,13 @@ export function SalesProductContributions({
             <p>{t("insights.contributions.definition")}</p>
           </div>
         </HelpTip>
-        {report ? <ReportExportLink report="products" range={report.range} disabled={failed || !report.available} /> : null}
+        {report ? (
+          <ReportExportLink
+            report="products"
+            range={report.range}
+            disabled={failed || !report.available}
+          />
+        ) : null}
       </div>
       {report?.available ? (
         <div className="overflow-hidden rounded-2xl border bg-card">
@@ -127,7 +124,9 @@ export function SalesProductContributions({
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <span className="inline-flex items-center gap-2">
                     <span aria-hidden className="h-1.5 w-5 rounded-full bg-primary" />
-                    <InlineDefinition content={`${date(report.range.from)} – ${date(report.range.to)}`}>
+                    <InlineDefinition
+                      content={`${date(report.range.from)} – ${date(report.range.to)}`}
+                    >
                       {t("insights.contributions.thisPeriod")}
                     </InlineDefinition>
                   </span>
@@ -137,7 +136,9 @@ export function SalesProductContributions({
                         aria-hidden
                         className="h-1.5 w-5 rounded-full border border-muted-foreground/60"
                       />
-                      <InlineDefinition content={`${date(report.previousRange!.from)} – ${date(report.previousRange!.to)}`}>
+                      <InlineDefinition
+                        content={`${date(report.previousRange!.from)} – ${date(report.previousRange!.to)}`}
+                      >
                         {t("insights.contributions.previous")}
                       </InlineDefinition>
                     </span>
@@ -154,10 +155,15 @@ export function SalesProductContributions({
                       row={row}
                       comparing={comparing}
                       scale={quantityScale}
-                      onOpenVariants={pathname.startsWith("/demo/") ? undefined : (id) => setVariantProduct({
-                        id,
-                        title: row.title ?? t("insights.contributions.unnamed"),
-                      })}
+                      onOpenVariants={
+                        pathname.startsWith("/demo/")
+                          ? undefined
+                          : (id) =>
+                              setVariantProduct({
+                                id,
+                                title: row.title ?? t("insights.contributions.unnamed"),
+                              })
+                      }
                     />
                   </li>
                 ))}

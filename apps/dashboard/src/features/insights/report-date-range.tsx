@@ -16,7 +16,7 @@ export function ReportDateRange({
   pending: boolean;
   onChange: (range: { from: string; to: string }) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { formatDate, t } = useI18n();
   const yesterday = defaultSalesRange(new Date(report.generatedAt)).to;
   const choices = [7, 30, 90].map((days) => ({
     value: String(days),
@@ -39,13 +39,7 @@ export function ReportDateRange({
       showBounds={false}
       maxDays={366}
       value={{ start: report.range.from, end: report.range.to }}
-      formatDate={(date) =>
-        new Intl.DateTimeFormat(`${locale}-u-ca-gregory`, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }).format(date)
-      }
+      formatDate={formatDate}
       onChange={({ start, end }) => onChange({ from: start, to: end })}
       labels={{
         apply: t("insights.range.apply"),

@@ -231,20 +231,6 @@ export function compactMoney(value: number, currencyCode: string, locale = "en")
   }).format(value);
 }
 
-export function formatShortDate(value: string, locale = "en") {
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(
-    new Date(value),
-  );
-}
-
-export function formatReadableDate(value: string, locale = "en") {
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
 export function humanizeEvent(value: string) {
   return value.replaceAll(".", " ").replaceAll("_", " ");
 }

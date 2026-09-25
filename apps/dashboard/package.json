@@ -20,6 +20,7 @@
     "@ecs/config": "workspace:*",
     "@ecs/content": "workspace:*",
     "@ecs/contracts": "workspace:*",
+    "@ecs/date-time": "workspace:*",
     "@ecs/storefront-templates": "workspace:*",
     "@remixicon/react": "^4.9.0",
     "@tanstack/react-form": "^1.33.0",

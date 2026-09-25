@@ -1,11 +1,12 @@
 "use client";
 
+import { type CalendarSystem, formatDualCalendarDate } from "@ecs/date-time";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { format, fromDateValue, toDateValue } from "@/components/ui/date-utils";
+import { fromDateValue, toDateValue } from "@/components/ui/date-utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
@@ -15,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export type DateRangeValue = { start: string; end: string };
@@ -32,25 +34,15 @@ export type DateRangePickerLabels = {
   invalidRange?: string;
 };
 
-const defaultLabels: DateRangePickerLabels = {
-  apply: "Apply range",
-  available: "Available data",
-  cancel: "Cancel",
-  chooseEnd: "Choose the end date",
-  chooseStart: "Choose the start date",
-  clear: "Clear",
-  end: "End",
-  start: "Start",
-};
-
 export function DateRangePicker({
   className,
+  calendarSystem: calendarSystemProp,
   disabled = false,
   showBounds = true,
   maxDays,
-  formatDate = (date: Date) => format(date, "PP"),
+  formatDate: formatDateProp,
   id,
-  labels = defaultLabels,
+  labels: labelsProp,
   max,
   min,
   onChange,
@@ -63,6 +55,7 @@ export function DateRangePicker({
   value,
 }: {
   className?: string;
+  calendarSystem?: CalendarSystem;
   disabled?: boolean;
   showBounds?: boolean;
   maxDays?: number;
@@ -85,6 +78,25 @@ export function DateRangePicker({
   placeholder?: string;
   value: DateRangeValue;
 }) {
+  const {
+    calendarSystem: preferredCalendarSystem,
+    formatDate: formatPreferredDate,
+    locale,
+    t,
+  } = useI18n();
+  const labels: DateRangePickerLabels = labelsProp ?? {
+    apply: t("common.datePicker.apply"),
+    available: t("common.datePicker.available"),
+    cancel: t("common.datePicker.cancel"),
+    chooseEnd: t("common.datePicker.chooseEnd"),
+    chooseStart: t("common.datePicker.chooseStart"),
+    clear: t("common.datePicker.clear"),
+    end: t("common.datePicker.end"),
+    notSet: t("common.datePicker.notSet"),
+    start: t("common.datePicker.start"),
+  };
+  const calendarSystem = calendarSystemProp ?? preferredCalendarSystem;
+  const formatDate = formatDateProp ?? formatPreferredDate;
   const minDate = useMemo(() => fromDateValue(min ?? ""), [min]);
   const maxDate = useMemo(() => fromDateValue(max ?? ""), [max]);
   const [internalOpen, setInternalOpen] = useState(false);
@@ -99,6 +111,12 @@ export function DateRangePicker({
   const draftEnd = useMemo(() => fromDateValue(draft.end), [draft.end]);
   const selectedStart = useMemo(() => fromDateValue(value.start), [value.start]);
   const selectedEnd = useMemo(() => fromDateValue(value.end), [value.end]);
+  const dualStart = draftStart
+    ? formatDualCalendarDate(draftStart, { locale, primary: calendarSystem })
+    : null;
+  const dualEnd = draftEnd
+    ? formatDualCalendarDate(draftEnd, { locale, primary: calendarSystem })
+    : null;
   const [month, setMonth] = useState<Date>(selectedStart ?? maxDate ?? new Date());
   const validDraft =
     !!draftStart &&
@@ -202,12 +220,14 @@ export function DateRangePicker({
               active={activeEndpoint === "start"}
               label={labels.start}
               onClick={() => chooseEndpoint("start")}
+              secondaryValue={dualStart?.secondaryLabel}
               value={draftStart ? formatDate(draftStart) : (labels.notSet ?? "Not set")}
             />
             <EndpointButton
               active={activeEndpoint === "end"}
               label={labels.end}
               onClick={() => chooseEndpoint("end")}
+              secondaryValue={dualEnd?.secondaryLabel}
               value={draftEnd ? formatDate(draftEnd) : (labels.notSet ?? "Not set")}
             />
           </div>
@@ -223,6 +243,7 @@ export function DateRangePicker({
         </div>
         <div className="p-3">
           <Calendar
+            calendarSystem={calendarSystem}
             maxDate={maxDate}
             minDate={minDate}
             month={month}
@@ -278,11 +299,13 @@ function EndpointButton({
   label,
   onClick,
   value,
+  secondaryValue,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
   value: string;
+  secondaryValue?: string | undefined;
 }) {
   return (
     <button
@@ -299,6 +322,9 @@ function EndpointButton({
     >
       <span className="block text-[11px] font-medium text-muted-foreground">{label}</span>
       <span className="mt-0.5 block text-sm font-medium text-foreground">{value}</span>
+      {secondaryValue ? (
+        <span className="mt-0.5 block text-[11px] text-muted-foreground">{secondaryValue}</span>
+      ) : null}
     </button>
   );
 }

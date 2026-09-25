@@ -254,13 +254,17 @@ const billingAppOptions = createBillingAppOptions({
   logger,
 });
 
-const { auth, merchantTeamService } = createAuthRuntime({
+const { auth, googleAuthEnabled, googleAuthStatus, merchantTeamService } = createAuthRuntime({
   authEmailProvider,
   db: platformDb.db,
   emailDeliveryService,
   env: process.env,
   requireEmailVerification,
 });
+logger.info(
+  { enabled: googleAuthEnabled, status: googleAuthStatus },
+  "Google OAuth configuration resolved",
+);
 
 const app = createPlatformApp({
   landingPublicOrigins: parseTrustedOrigins(process.env.LANDING_PUBLIC_ORIGINS) ?? [
@@ -292,6 +296,7 @@ const app = createPlatformApp({
   logger,
   storefrontPreviewSecret: process.env.STOREFRONT_PREVIEW_SECRET?.trim(),
   authHandler: auth.handler,
+  googleAuthEnabled,
   createTenantDomain: domainManagementService.createTenantDomain,
   createTenantShop,
   checkTenantHandleAvailability,

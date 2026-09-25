@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "calendar_preference" text DEFAULT 'follow-language' NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_calendar_preference_check" CHECK ("users"."calendar_preference" in ('follow-language', 'ethiopian', 'gregorian'));

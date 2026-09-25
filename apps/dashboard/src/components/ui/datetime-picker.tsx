@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/date-utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 const TIME_FORMAT_KEY = "ecs.datetime-picker.time-format";
@@ -44,9 +45,11 @@ export function DateTimePicker({
   id,
   onChange,
   value,
-  placeholder = "Pick date and time",
+  placeholder,
   disabled = false,
 }: DateTimePickerProps) {
+  const { calendarSystem, formatDate, formatDualDate, t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t("common.datePicker.selectDateTime");
   const selected = useMemo(() => fromDateTimeLocalValue(value), [value]);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date>(selected ?? new Date());
@@ -113,10 +116,9 @@ export function DateTimePicker({
       : `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
 
   const triggerLabel = selected
-    ? timeFormat === "24h"
-      ? `${format(selected, "PP")} · ${format(selected, "HH:mm")}`
-      : format(selected, "PP p")
-    : placeholder;
+    ? `${formatDate(selected)} · ${timeFormat === "24h" ? format(selected, "HH:mm") : displayTime}`
+    : resolvedPlaceholder;
+  const dualDate = draftDate ? formatDualDate(draftDate) : null;
 
   const hourDisplay = timeFormat === "24h" ? hour : hour12;
   const hourMax = timeFormat === "24h" ? 23 : 12;
@@ -170,22 +172,13 @@ export function DateTimePicker({
           </span>
           {selected ? (
             <span
-              aria-label="Clear date and time"
               className="grid size-6 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground"
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 onChange("");
               }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onChange("");
-                }
-              }}
-              role="button"
-              tabIndex={0}
+              aria-hidden
             >
               <AppIcons.close className="size-3.5" />
             </span>
@@ -215,12 +208,15 @@ export function DateTimePicker({
         <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3.5 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium tracking-tight">
-              {draftDate ? format(draftDate, "PPP") : "Select date & time"}
+              {draftDate ? formatDate(draftDate) : t("common.datePicker.selectDateTime")}
             </p>
-            <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{displayTime}</p>
+            <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+              {dualDate ? `${dualDate.secondaryLabel} · ` : ""}
+              {displayTime}
+            </p>
           </div>
           <SegmentedControl
-            ariaLabel="Time format"
+            ariaLabel={t("common.datePicker.timeFormat")}
             className="w-[5.25rem] shrink-0"
             fullWidth
             onChange={setFormat}
@@ -236,6 +232,7 @@ export function DateTimePicker({
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
           <div className="px-2.5 pt-2.5 pb-1">
             <Calendar
+              calendarSystem={calendarSystem}
               month={month}
               onMonthChange={setMonth}
               onSelect={pickDate}
@@ -245,23 +242,23 @@ export function DateTimePicker({
 
           <div className="border-t bg-muted/15 px-3.5 py-3">
             <p className="mb-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-              Time
+              {t("common.datePicker.time")}
             </p>
 
             <div className="mx-auto flex w-fit flex-col gap-1.5">
               <div className="flex items-center justify-center gap-2">
                 <span className="w-12 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Hour
+                  {t("common.datePicker.hour")}
                 </span>
                 <span className="w-3" aria-hidden />
                 <span className="w-12 text-center text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Min
+                  {t("common.datePicker.minute")}
                 </span>
               </div>
 
               <div className="flex items-center justify-center gap-2">
                 <TimeStep
-                  ariaLabel="Hour"
+                  ariaLabel={t("common.datePicker.hour")}
                   max={hourMax}
                   min={hourMin}
                   onChange={setHourFace}
@@ -276,7 +273,7 @@ export function DateTimePicker({
                   :
                 </span>
                 <TimeStep
-                  ariaLabel="Minute"
+                  ariaLabel={t("common.datePicker.minute")}
                   max={59}
                   min={0}
                   onChange={setMinuteFace}
@@ -327,10 +324,13 @@ export function DateTimePicker({
           <div className="flex flex-wrap gap-1">
             <PresetChip
               active={Boolean(draftDate && isToday(draftDate))}
-              label="Today"
+              label={t("common.datePicker.today")}
               onClick={() => pickDate(new Date())}
             />
-            <PresetChip label="Tomorrow" onClick={() => pickDate(addDays(new Date(), 1))} />
+            <PresetChip
+              label={t("common.datePicker.tomorrow")}
+              onClick={() => pickDate(addDays(new Date(), 1))}
+            />
           </div>
           <div className="flex shrink-0 gap-1">
             {value ? (

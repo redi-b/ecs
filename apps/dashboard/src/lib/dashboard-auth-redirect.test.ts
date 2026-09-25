@@ -27,6 +27,7 @@ describe("getAuthenticatedDashboardRedirect", () => {
             id: "user_1",
             email: "owner@example.com",
             name: "Mahi Bekele",
+            phone: "+251912345678",
           },
           tenants: [
             {
@@ -58,6 +59,29 @@ describe("getAuthenticatedDashboardRedirect", () => {
       assert.equal(redirect, "http://addis-pantry.lvh.me/dashboard");
     });
   }
+
+  it("routes central dashboard users with an incomplete account to phone completion", async () => {
+    globalThis.fetch = async () =>
+      Response.json({
+        user: {
+          id: "user_1",
+          email: "owner@example.com",
+          name: "Mahi Bekele",
+          phone: null,
+        },
+        tenants: [],
+        primaryTenant: null,
+        latestProvisioningAttempt: null,
+      });
+
+    const redirect = await getAuthenticatedDashboardRedirect({
+      cookieHeader: "better-auth.session_token=session_1",
+      platformApiBaseUrl: "http://platform.local",
+      requestHost: "app.lvh.me",
+    });
+
+    assert.equal(redirect, "/complete-account?next=%2Fdashboard");
+  });
 
   it("routes an existing Operations session away from merchant onboarding", async () => {
     globalThis.fetch = async () =>

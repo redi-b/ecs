@@ -1,12 +1,17 @@
 "use client";
 
-import { defaultProfileAvatar, type ProfileAvatarPreferences } from "@ecs/contracts";
+import {
+  defaultProfileAvatar,
+  ethiopianPhoneSchema,
+  type ProfileAvatarPreferences,
+} from "@ecs/contracts";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { ProfileAvatar } from "@/components/app/profile-avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -22,12 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EthiopianPhoneInput } from "@/components/ui/ethiopian-phone-input";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  formatDateTime,
   formatSessionIp,
   PasswordField,
   parseUserAgent,
@@ -60,7 +65,7 @@ export function AccountSecurityPanel({
   initialName: string | null;
   onDirtyChange?: (changes: readonly string[]) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { formatDateTime, t } = useI18n();
   const router = useRouter();
   const { actor, setActorName, setActorAvatar } = useActorOrFallback({
     email,
@@ -69,12 +74,21 @@ export function AccountSecurityPanel({
     role: "owner",
   });
   const nameId = useId();
+  const phoneId = useId();
   const currentPasswordId = useId();
   const newPasswordId = useId();
   const confirmPasswordId = useId();
   const emailId = useId();
 
   const [name, setName] = useState(initialName ?? "");
+  const [phone, setPhone] = useState("");
+  const [savedPhone, setSavedPhone] = useState("");
+  const [connections, setConnections] = useState<Array<{ id: string; providerId: string }>>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(true);
+  const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [avatar, setAvatar] = useState<ProfileAvatarPreferences>(
     actor.avatar ?? defaultProfileAvatar,
   );
@@ -116,10 +130,15 @@ export function AccountSecurityPanel({
 
   const accountDirty = useMemo(() => {
     const nameDirty = name.trim() !== (initialName ?? "").trim();
+    const phoneDirty = phone.trim() !== savedPhone;
     const passwordDirty =
       currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
     return (
-      nameDirty || avatarDirty || passwordDirty || (editingEmail && newEmail.trim().length > 0)
+      nameDirty ||
+      phoneDirty ||
+      avatarDirty ||
+      passwordDirty ||
+      (editingEmail && newEmail.trim().length > 0)
     );
   }, [
     avatarDirty,
@@ -128,6 +147,8 @@ export function AccountSecurityPanel({
     editingEmail,
     initialName,
     name,
+    phone,
+    savedPhone,
     newEmail,
     newPassword,
   ]);
@@ -137,6 +158,7 @@ export function AccountSecurityPanel({
     if (name.trim() !== (initialName ?? "").trim()) {
       changes.push(t("settings.accountSecurity.displayName"));
     }
+    if (phone.trim() !== savedPhone) changes.push(t("settings.accountSecurity.phone"));
     if (avatarDirty) changes.push(t("settings.accountSecurity.avatar.title"));
     if (editingEmail && newEmail.trim().length > 0) {
       changes.push(t("settings.accountSecurity.emailTitle"));
@@ -152,6 +174,8 @@ export function AccountSecurityPanel({
     editingEmail,
     initialName,
     name,
+    phone,
+    savedPhone,
     newEmail,
     newPassword,
     t,
@@ -213,17 +237,63 @@ export function AccountSecurityPanel({
   }, [initialName]);
 
   useEffect(() => {
+    let active = true;
+    void fetch("/dashboard/account/profile", { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as {
+          phone?: string | null;
+        } | null;
+        if (!active) return;
+        if (response.ok) {
+          const nextPhone = data?.phone ?? "";
+          setPhone(nextPhone);
+          setSavedPhone(nextPhone);
+        }
+        setProfileLoading(false);
+      })
+      .catch(() => {
+        if (active) setProfileLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void fetch("/dashboard/account/connections", { headers: { accept: "application/json" } })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => null)) as {
+          connections?: Array<{ id: string; providerId: string }>;
+        } | null;
+        if (response.ok) setConnections(data?.connections ?? []);
+      })
+      .finally(() => setConnectionsLoading(false));
+  }, []);
+
+  useEffect(() => {
     const url = new URL(window.location.href);
     const verified = url.searchParams.get("verified") === "1";
     const emailChanged = url.searchParams.get("emailChanged") === "1";
-    if (!verified && !emailChanged) return;
-    toast.success(
-      verified
-        ? t("settings.accountSecurity.toast.emailVerified")
-        : t("settings.accountSecurity.toast.emailChanged"),
-    );
+    const connection = url.searchParams.get("connection");
+    if (!verified && !emailChanged && !connection) return;
+    if (verified || emailChanged) {
+      toast.success(
+        verified
+          ? t("settings.accountSecurity.toast.emailVerified")
+          : t("settings.accountSecurity.toast.emailChanged"),
+      );
+    }
+    if (connection === "google-linked") {
+      toast.success(t("settings.accountSecurity.connections.linked"));
+    } else if (connection === "google-unavailable") {
+      setConnectionError("unavailable");
+    } else if (connection === "google-failed") {
+      setConnectionError(url.searchParams.get("error") ?? "link_failed");
+    }
     url.searchParams.delete("verified");
     url.searchParams.delete("emailChanged");
+    url.searchParams.delete("connection");
+    url.searchParams.delete("error");
     const query = url.searchParams.toString();
     router.replace(query ? `${url.pathname}?${query}` : url.pathname, { scroll: false });
   }, [router, t]);
@@ -302,9 +372,13 @@ export function AccountSecurityPanel({
       toast.error(t("settings.accountSecurity.toast.nameMin"));
       return;
     }
+    if (!ethiopianPhoneSchema.safeParse(phone).success) {
+      toast.error(t("settings.accountSecurity.toast.phoneInvalid"));
+      return;
+    }
     setSavingProfile(true);
     const response = await fetch("/dashboard/account/profile", {
-      body: JSON.stringify({ name: trimmed, avatar }),
+      body: JSON.stringify({ name: trimmed, avatar, phone }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     }).catch(() => null);
@@ -313,14 +387,17 @@ export function AccountSecurityPanel({
     if (!response?.ok) {
       const data = (await response?.json().catch(() => null)) as { error?: string } | null;
       toast.error(
-        data?.error === "auth_origin_rejected"
-          ? t("settings.accountSecurity.toast.profileOrigin")
-          : t("settings.accountSecurity.toast.profileFailed"),
+        data?.error === "invalid_phone"
+          ? t("settings.accountSecurity.toast.phoneInvalid")
+          : data?.error === "auth_origin_rejected"
+            ? t("settings.accountSecurity.toast.profileOrigin")
+            : t("settings.accountSecurity.toast.profileFailed"),
       );
       return;
     }
 
     setActorName(trimmed);
+    setSavedPhone(phone.trim());
     setSavedAvatar(avatar);
     setActorAvatar(avatar);
     toast.success(t("settings.accountSecurity.toast.profileUpdated"));
@@ -437,6 +514,8 @@ export function AccountSecurityPanel({
   const otherSessionCount = sessions.filter((session) => !session.isCurrent).length;
 
   const nameDirty = name.trim() !== (initialName ?? "").trim();
+  const phoneDirty = phone.trim() !== savedPhone;
+  const hasPasswordConnection = connections.some((item) => item.providerId === "credential");
   const passwordReady =
     currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
 
@@ -529,22 +608,33 @@ export function AccountSecurityPanel({
             />
             <FieldDescription>{t("settings.accountSecurity.nameHint")}</FieldDescription>
           </Field>
+          <EthiopianPhoneInput
+            disabled={savingProfile || profileLoading}
+            errorMessage={t("settings.accountSecurity.toast.phoneInvalid")}
+            help={t("settings.accountSecurity.phoneHint")}
+            id={phoneId}
+            label={t("settings.accountSecurity.phone")}
+            onChange={setPhone}
+            required
+            value={phone}
+          />
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
               size="sm"
               type="button"
-              disabled={savingProfile || (!nameDirty && !avatarDirty)}
+              disabled={savingProfile || (!nameDirty && !phoneDirty && !avatarDirty)}
               onClick={() => {
                 setName(initialName ?? "");
                 setAvatar(savedAvatar);
+                setPhone(savedPhone);
               }}
             >
               {t("common.cancel")}
             </Button>
             <Button
               className="w-full rounded-full sm:w-auto"
-              disabled={savingProfile || (!nameDirty && !avatarDirty)}
+              disabled={savingProfile || (!nameDirty && !phoneDirty && !avatarDirty)}
               onClick={() => void saveProfile()}
               size="sm"
               type="button"
@@ -552,6 +642,93 @@ export function AccountSecurityPanel({
               {savingProfile ? t("common.saving") : t("settings.accountSecurity.saveName")}
             </Button>
           </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+        <div className="border-b border-border/60 px-4 py-3.5">
+          <h3 className="text-sm font-medium tracking-tight">
+            {t("settings.accountSecurity.connections.title")}
+          </h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("settings.accountSecurity.connections.description")}
+          </p>
+        </div>
+        {connectionError ? (
+          <Alert className="mx-4 mt-3 w-auto" variant="destructive">
+            <AppIcons.error aria-hidden="true" />
+            <AlertTitle>{t("settings.accountSecurity.connections.linkErrorTitle")}</AlertTitle>
+            <AlertDescription>
+              {connectionError === "access_denied"
+                ? t("settings.accountSecurity.connections.cancelled")
+                : connectionError === "email_doesn't_match"
+                  ? t("settings.accountSecurity.connections.emailMismatch")
+                  : connectionError === "account_already_linked_to_different_user"
+                    ? t("settings.accountSecurity.connections.alreadyLinked")
+                    : connectionError === "unavailable"
+                      ? t("settings.accountSecurity.connections.unavailable")
+                      : t("settings.accountSecurity.connections.linkFailed")}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium">Google</p>
+              <HelpTip
+                label={t("settings.accountSecurity.connections.sameEmailLabel")}
+                summary={t("settings.accountSecurity.connections.sameEmailHelp")}
+                title={t("settings.accountSecurity.connections.sameEmailTitle")}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {connections.some((item) => item.providerId === "google")
+                ? t("settings.accountSecurity.connections.connected")
+                : t("settings.accountSecurity.connections.notConnected")}
+            </p>
+          </div>
+          {connections.some((item) => item.providerId === "google") ? (
+            <Button
+              disabled={connectionsLoading || unlinkingGoogle || connections.length <= 1}
+              onClick={async () => {
+                const google = connections.find((item) => item.providerId === "google");
+                if (!google) return;
+                setUnlinkingGoogle(true);
+                const response = await fetch("/dashboard/account/connections", {
+                  body: JSON.stringify({ providerId: google.providerId }),
+                  headers: { "content-type": "application/json" },
+                  method: "DELETE",
+                }).catch(() => null);
+                setUnlinkingGoogle(false);
+                if (!response?.ok)
+                  return toast.error(t("settings.accountSecurity.connections.unlinkFailed"));
+                setConnections((items) => items.filter((item) => item.id !== google.id));
+                toast.success(t("settings.accountSecurity.connections.unlinked"));
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {unlinkingGoogle
+                ? t("common.saving")
+                : t("settings.accountSecurity.connections.disconnect")}
+            </Button>
+          ) : (
+            <Button
+              disabled={connectionsLoading || linkingGoogle}
+              onClick={() => {
+                setLinkingGoogle(true);
+                window.location.assign("/dashboard/account/google-link");
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {linkingGoogle
+                ? t("common.loading")
+                : t("settings.accountSecurity.connections.connect")}
+            </Button>
+          )}
         </div>
       </section>
 
@@ -660,62 +837,79 @@ export function AccountSecurityPanel({
             {t("settings.accountSecurity.passwordHint", { email })}
           </p>
         </div>
-        <div className="flex flex-col gap-4 px-4 py-3.5 sm:px-4">
-          <FieldGroup>
-            <PasswordField
-              autoComplete="current-password"
-              id={currentPasswordId}
-              label={t("settings.accountSecurity.currentPassword")}
-              onChange={setCurrentPassword}
-              onToggle={() => setShowCurrent((v) => !v)}
-              value={currentPassword}
-              visible={showCurrent}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <PasswordField
-                autoComplete="new-password"
-                description={t("settings.accountSecurity.passwordMin")}
-                id={newPasswordId}
-                label={t("settings.accountSecurity.newPassword")}
-                onChange={setNewPassword}
-                onToggle={() => setShowNew((v) => !v)}
-                value={newPassword}
-                visible={showNew}
-              />
-              <PasswordField
-                autoComplete="new-password"
-                id={confirmPasswordId}
-                label={t("settings.accountSecurity.confirmPassword")}
-                onChange={setConfirmPassword}
-                onToggle={() => setShowConfirm((v) => !v)}
-                value={confirmPassword}
-                visible={showConfirm}
-              />
-            </div>
-          </FieldGroup>
-          <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/15 px-3 py-3">
-            <div className="min-w-0 space-y-0.5">
-              <p className="text-sm font-medium">{t("settings.accountSecurity.signOutOthers")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("settings.accountSecurity.signOutOthersHint")}
-              </p>
-            </div>
-            <Switch checked={revokeOtherSessions} onCheckedChange={setRevokeOtherSessions} />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              className="w-full rounded-full sm:w-auto"
-              disabled={savingPassword || !passwordReady}
-              onClick={() => void savePassword()}
-              size="sm"
-              type="button"
-            >
-              {savingPassword
-                ? t("settings.accountSecurity.updating")
-                : t("settings.accountSecurity.updatePassword")}
+        {connectionsLoading ? (
+          <p className="px-4 py-4 text-sm text-muted-foreground">
+            {t("settings.accountSecurity.connections.loading")}
+          </p>
+        ) : !hasPasswordConnection ? (
+          <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {t("settings.accountSecurity.connections.passwordMissing")}
+            </p>
+            <Button asChild className="shrink-0" size="sm" variant="outline">
+              <a href="/forgot-password">
+                {t("settings.accountSecurity.connections.createPassword")}
+              </a>
             </Button>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-4 px-4 py-3.5 sm:px-4">
+            <FieldGroup>
+              <PasswordField
+                autoComplete="current-password"
+                id={currentPasswordId}
+                label={t("settings.accountSecurity.currentPassword")}
+                onChange={setCurrentPassword}
+                onToggle={() => setShowCurrent((v) => !v)}
+                value={currentPassword}
+                visible={showCurrent}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <PasswordField
+                  autoComplete="new-password"
+                  description={t("settings.accountSecurity.passwordMin")}
+                  id={newPasswordId}
+                  label={t("settings.accountSecurity.newPassword")}
+                  onChange={setNewPassword}
+                  onToggle={() => setShowNew((v) => !v)}
+                  value={newPassword}
+                  visible={showNew}
+                />
+                <PasswordField
+                  autoComplete="new-password"
+                  id={confirmPasswordId}
+                  label={t("settings.accountSecurity.confirmPassword")}
+                  onChange={setConfirmPassword}
+                  onToggle={() => setShowConfirm((v) => !v)}
+                  value={confirmPassword}
+                  visible={showConfirm}
+                />
+              </div>
+            </FieldGroup>
+            <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/15 px-3 py-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-sm font-medium">{t("settings.accountSecurity.signOutOthers")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.accountSecurity.signOutOthersHint")}
+                </p>
+              </div>
+              <Switch checked={revokeOtherSessions} onCheckedChange={setRevokeOtherSessions} />
+            </div>
+            <div className="flex justify-end">
+              <Button
+                className="w-full rounded-full sm:w-auto"
+                disabled={savingPassword || !passwordReady}
+                onClick={() => void savePassword()}
+                size="sm"
+                type="button"
+              >
+                {savingPassword
+                  ? t("settings.accountSecurity.updating")
+                  : t("settings.accountSecurity.updatePassword")}
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
@@ -836,7 +1030,7 @@ export function AccountSecurityPanel({
                                 <span>
                                   {t("settings.accountSecurity.lastActive")}{" "}
                                   <span className="font-medium text-foreground/80">
-                                    {formatDateTime(session.updatedAt, locale)}
+                                    {formatDateTime(session.updatedAt)}
                                   </span>
                                 </span>
                               </p>
@@ -845,7 +1039,7 @@ export function AccountSecurityPanel({
                                 <span>
                                   {t("settings.accountSecurity.signedIn")}{" "}
                                   <span className="font-medium text-foreground/80">
-                                    {formatDateTime(session.createdAt, locale)}
+                                    {formatDateTime(session.createdAt)}
                                   </span>
                                 </span>
                               </p>

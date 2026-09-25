@@ -15,6 +15,9 @@ const validEnvironment = () => ({
   MEDUSA_DATABASE_URL: `postgres://ecs:${secret("postgres")}@postgres:5432/medusa_db`,
   PLATFORM_INTERNAL_API_TOKEN: secret("internal"),
   BETTER_AUTH_SECRET: secret("auth"),
+  GOOGLE_AUTH_ENABLED: "true",
+  GOOGLE_CLIENT_ID: "google-client.apps.googleusercontent.com",
+  GOOGLE_CLIENT_SECRET: secret("google"),
   STOREFRONT_CACHE_PURGE_SECRET: secret("purge"),
   STOREFRONT_PREVIEW_SECRET: secret("preview"),
   MEDUSA_JWT_SECRET: secret("jwt"),
@@ -58,6 +61,25 @@ test("rejects an email provider without an installed adapter", () => {
 
   const { errors } = validateProductionEnvironment(environment);
   assert.ok(errors.some((error) => error.includes("has no installed adapter")));
+});
+
+test("rejects missing Google OAuth credentials when enabled", () => {
+  const environment = validEnvironment();
+  environment.GOOGLE_CLIENT_ID = "";
+  environment.GOOGLE_CLIENT_SECRET = "";
+
+  const { errors } = validateProductionEnvironment(environment);
+  assert.ok(errors.some((error) => error.includes("GOOGLE_CLIENT_ID")));
+  assert.ok(errors.some((error) => error.includes("GOOGLE_CLIENT_SECRET")));
+});
+
+test("allows Google OAuth to be explicitly disabled", () => {
+  const environment = validEnvironment();
+  environment.GOOGLE_AUTH_ENABLED = "false";
+  environment.GOOGLE_CLIENT_ID = "";
+  environment.GOOGLE_CLIENT_SECRET = "";
+
+  assert.deepEqual(validateProductionEnvironment(environment), { errors: [], warnings: [] });
 });
 
 test("warns when the deployment uses a mutable image tag", () => {

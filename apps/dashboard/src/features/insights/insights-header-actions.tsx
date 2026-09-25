@@ -20,7 +20,7 @@ export function InsightsHeaderActions(
     | { summary: MerchantDashboardSummary; report?: never }
     | { report: InsightsSalesReport; summary?: never },
 ) {
-  const { locale, t } = useI18n();
+  const { formatDateTime, locale, t } = useI18n();
   const router = useRouter();
   const [requesting, setRequesting] = useState(false);
   const [state, setState] = useState<InsightsRefreshState>(EMPTY_INSIGHTS_REFRESH_STATE);
@@ -126,7 +126,7 @@ export function InsightsHeaderActions(
         <p className="text-xs font-medium">{qualityLabel(qualityStatus, t)}</p>
         <p className="text-xs text-muted-foreground">
           {lastSuccessfulAt
-            ? t("insights.freshness.updated", { date: shortDate(lastSuccessfulAt, locale) })
+            ? t("insights.freshness.updated", { date: formatDateTime(lastSuccessfulAt) })
             : t("insights.freshness.notYetUpdated")}
         </p>
       </div>
@@ -154,12 +154,6 @@ function qualityLabel(status: string | undefined, t: ReturnType<typeof useI18n>[
   if (status === "fresh") return t("insights.freshness.current");
   if (status === "stale") return t("insights.freshness.delayed");
   return t("insights.freshness.preparing");
-}
-
-function shortDate(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(value),
-  );
 }
 
 function shortTime(value: string, locale: string) {

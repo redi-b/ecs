@@ -3,13 +3,18 @@ import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 
 type PlatformHealthAuthDependencies = Pick<
   PlatformAppOptions,
-  "authHandler" | "getSession" | "landingPublicOrigins" | "serviceName"
+  "authHandler" | "getSession" | "googleAuthEnabled" | "landingPublicOrigins" | "serviceName"
 >;
 
 export function registerPlatformHealthAuthRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformHealthAuthDependencies,
 ) {
+  app.get("/platform/auth/providers", (context) => {
+    context.header("cache-control", "no-store");
+    return context.json({ google: options.googleAuthEnabled === true });
+  });
+
   if (options.authHandler) {
     const authHandler = options.authHandler;
 

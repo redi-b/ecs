@@ -1,3 +1,5 @@
+"use client";
+
 import type { MerchantOrder } from "@ecs/contracts";
 import {
   DetailActivityList,
@@ -20,7 +22,6 @@ import {
 } from "@/components/ui/table";
 import { OrderActions } from "@/features/orders/order-actions";
 import {
-  formatOrderDateTime,
   formatOrderMoney,
   formatOrderReference,
   getDeliveryDisplayLabel,
@@ -37,7 +38,7 @@ import {
 } from "@/features/orders/order-domain";
 import { OrderPaymentCell } from "@/features/orders/order-table-cells";
 import type { MessageKey } from "@/i18n/messages";
-import { getTranslations } from "@/i18n/server";
+import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
@@ -134,13 +135,13 @@ function buildActivity(order: MerchantOrder, t: Translate) {
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
-export async function OrderDetail({
+export function OrderDetail({
   action,
   customerProfileAvailable = false,
   order,
   tenantId,
 }: OrderDetailProps) {
-  const t = await getTranslations();
+  const { formatDateTime, t } = useI18n();
   const customerName = getOrderCustomerName(order, t);
   const customerPhone = getOrderCustomerPhone(order);
   const items = order.items ?? [];
@@ -250,7 +251,7 @@ export async function OrderDetail({
             />
             <DetailHeroStat
               label={t("orders.detail.placed")}
-              value={formatOrderDateTime(order.createdAt)}
+              value={order.createdAt ? formatDateTime(order.createdAt) : "—"}
             />
           </div>
 
@@ -405,7 +406,7 @@ export async function OrderDetail({
               empty={t("orders.detail.noActivity")}
               items={activity.map((event) => ({
                 label: event.label,
-                at: formatOrderDateTime(event.at),
+                at: formatDateTime(event.at),
               }))}
             />
           </DetailSection>

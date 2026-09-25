@@ -162,7 +162,7 @@ async function getPostSignInRedirectPath(input: {
   previousCookieHeader?: string | null;
   protocol: string;
 }) {
-  if (!isCentralDashboardHost(input.forwardedHost) || input.nextPath !== "/dashboard") {
+  if (!isCentralDashboardHost(input.forwardedHost)) {
     return input.nextPath;
   }
 
@@ -187,6 +187,13 @@ async function getPostSignInRedirectPath(input: {
   const body = (await response.json().catch(() => null)) as unknown;
   const parsed = platformOnboardingStateSchema.safeParse(body);
   if (!parsed.success) return "/onboarding";
+
+  if (!parsed.data.user.phone) {
+    const params = new URLSearchParams({ next: input.nextPath });
+    return "/complete-account?" + params.toString();
+  }
+
+  if (input.nextPath !== "/dashboard") return input.nextPath;
 
   return resolveShopDestination({
     lastShopId: getLastShopId(input.previousCookieHeader),

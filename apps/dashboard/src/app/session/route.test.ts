@@ -30,7 +30,10 @@ test("POST /session signs in through the Better Auth email endpoint and forwards
   globalThis.fetch = async (input, init) => {
     const request = new Request(input, init);
 
-    if (request.url === "http://platform.test/platform/merchant/host") {
+    if (
+      request.url === "http://platform.test/platform/merchant/host" ||
+      request.url === "http://platform.test/platform/merchant/dashboard/access"
+    ) {
       return new Response(JSON.stringify({ tenant: { id: "tenant_1" } }), {
         headers: {
           "content-type": "application/json",
@@ -66,7 +69,7 @@ test("POST /session signs in through the Better Auth email endpoint and forwards
         "user-agent":
           "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
         "x-forwarded-for": "203.0.113.50",
-        "x-forwarded-host": "app.lvh.me",
+        "x-forwarded-host": "abebe.lvh.me",
         "x-forwarded-proto": "http",
       },
       method: "POST",
@@ -74,7 +77,7 @@ test("POST /session signs in through the Better Auth email endpoint and forwards
   );
 
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), "http://app.lvh.me/dashboard/products");
+  assert.equal(response.headers.get("location"), "http://abebe.lvh.me/dashboard/products");
   assert.equal(
     response.headers.get("set-cookie"),
     "better-auth.session_token=session_1; HttpOnly; SameSite=Lax; Domain=.lvh.me; Path=/",
@@ -85,8 +88,8 @@ test("POST /session signs in through the Better Auth email endpoint and forwards
     password: "password1234",
     rememberMe: true,
   });
-  assert.equal(forwardedRequest?.headers.get("origin"), "http://app.lvh.me");
-  assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "app.lvh.me");
+  assert.equal(forwardedRequest?.headers.get("origin"), "http://abebe.lvh.me");
+  assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-proto"), "http");
   assert.equal(forwardedRequest?.headers.get("x-forwarded-for"), "203.0.113.50");
   assert.equal(forwardedRequest?.headers.get("x-real-ip"), "203.0.113.50");
@@ -185,6 +188,7 @@ test("POST /session routes central dashboard sign-in to the user's primary shop"
           id: "user_1",
           email: "owner@example.com",
           name: "Mahi Bekele",
+          phone: "+251912345678",
         },
         tenants: [
           {
