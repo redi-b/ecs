@@ -19,11 +19,17 @@
   padding: $space-150 $space-250;
   display: flex;
   align-items: center;
-  gap: $space-600;
+  justify-content: space-between;
   transform: translateX(-50%);
   border-radius: $radius-pill;
   background: var(--clr-white);
   box-shadow: 0 0 26px alpha(var(--clr-primary), 0.22);
+}
+
+.lv-header__start {
+  display: flex;
+  align-items: center;
+  gap: $space-350;
 }
 
 .lv-logo {
@@ -74,7 +80,6 @@
 
 .lv-actions {
   min-width: 0;
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: $space-150;
@@ -292,6 +297,10 @@
       height: 58px;
       padding: $space-100 $space-150;
       gap: $space-200;
+    }
+
+  .lv-header__start {
+      gap: $space-150;
     }
 
   .lv-logo {

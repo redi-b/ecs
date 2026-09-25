@@ -351,11 +351,12 @@
   background: var(--clr-primary);
 }
 .lv-section {
-  width: calc(100% - 120px);
-  margin: 0 auto $space-950;
+  margin-bottom: $space-950;
 }
 
-.lv-section>header {
+.lv-section header,
+.lv-section>header,
+.lv-section__wrapper>header {
   margin-bottom: $space-600;
   display: flex;
   align-items: center;
@@ -673,17 +674,6 @@
   height: 18px;
 }
 
-.lv-categories div>img {
-  position: absolute;
-  right: 15%;
-  bottom: 12%;
-  width: 189px;
-  height: 241px;
-  border-radius: $radius-300;
-  object-fit: cover;
-  transform: rotate(4deg);
-}
-
 .lv-cta {
   position: relative;
   width: calc(100% - 310px);
@@ -691,6 +681,15 @@
   margin: 0 auto $space-950;
   overflow: hidden;
   border-radius: $radius-450;
+}
+
+.lv-cta::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(180deg, alpha(var(--clr-dark), 0.20) 0%, alpha(var(--clr-dark), 0.78) 100%);
 }
 
 .lv-cta>img {
@@ -701,6 +700,7 @@
 
 .lv-cta>div {
   position: absolute;
+  z-index: 2;
   inset: auto 0 40px;
   text-align: center;
 }
@@ -725,12 +725,6 @@
 
   .lv-promo {
     right: 24px;
-  }
-
-  .lv-section {
-    width: calc(100% - 64px);
-    padding-left: 0;
-    padding-right: 0;
   }
 
   .lv-product-grid {
@@ -873,12 +867,6 @@
 
   .lv-categories h2 {
     max-width: 480px;
-  }
-
-  .lv-categories div>img {
-    width: 130px;
-    height: 170px;
-    right: 12%;
   }
 
   .lv-cta {

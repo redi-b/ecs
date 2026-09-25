@@ -53,7 +53,6 @@ export const luviaV1EditorSchema = {
         { path: "home.categories.title", prop: "categoriesTitle", label: "Title", kind: "text" },
         { path: "home.categories.collectionIds", prop: "categoryCollectionIds", label: "Collections", kind: "collections", helpText: "Choose and order the real catalog collections customers can explore here." },
         { path: "home.categories.imageAssetId", prop: "categoriesImageAssetId", label: "Feature image", kind: "image" },
-        { path: "home.categories.previewAssetId", prop: "categoriesPreviewAssetId", label: "Product preview image", kind: "image" },
       ],
     },
     {

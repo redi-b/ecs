@@ -13,7 +13,6 @@ import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import ActionButton from "../components/ActionButton.astro";
 import categoryImage from "../assets/categories-hero-image.webp";
-import categoryPreview from "../assets/category-preview-image.webp";
 import ctaImage from "../assets/cta-layer-image.webp";
 import heroBg from "../assets/hero-bg-alt-image.webp";
 import heroPortrait from "../assets/hero-portrait-image.webp";
@@ -119,11 +118,47 @@ const homeFilterCollections = collections.slice(0, 4);
       </div>
     </section>}
 
-    {(editorMode || template.home.featuredProducts.enabled) && <section class="lv-section lv-top-picks" data-editor-section="home.featuredProducts" data-editor-visible-path="home.featuredProducts.enabled" hidden={!template.home.featuredProducts.enabled}><header><h2 class="type-heading-3" data-editor-path="home.featuredProducts.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.featuredProducts.title}</h2><div class="lv-rail-controls"><button type="button" data-product-rail-prev aria-label={m.home_previous_products({}, { locale })}>←</button><button type="button" data-product-rail-next aria-label={m.home_next_products({}, { locale })}>→</button></div></header>{hasError ? <p class="lv-state">{m.catalog_load_error({}, { locale })}</p> : topPicks.length ? <div class="lv-product-rail" data-product-rail role="region" aria-label={m.home_top_picks({}, { locale })} tabindex="0">{topPicks.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : <p class="lv-state">{m.home_products_coming({}, { locale })}</p>}</section>}
+    {(editorMode || template.home.featuredProducts.enabled) && (
+      <section class="lv-section lv-top-picks" data-editor-section="home.featuredProducts" data-editor-visible-path="home.featuredProducts.enabled" hidden={!template.home.featuredProducts.enabled}>
+        <div class="lv-section__wrapper container">
+          <header>
+            <h2 class="type-heading-3" data-editor-path="home.featuredProducts.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.featuredProducts.title}</h2>
+            <div class="lv-rail-controls">
+              <button type="button" data-product-rail-prev aria-label={m.home_previous_products({}, { locale })}>←</button>
+              <button type="button" data-product-rail-next aria-label={m.home_next_products({}, { locale })}>→</button>
+            </div>
+          </header>
+          {hasError ? <p class="lv-state">{m.catalog_load_error({}, { locale })}</p> : topPicks.length ? <div class="lv-product-rail" data-product-rail role="region" aria-label={m.home_top_picks({}, { locale })} tabindex="0">{topPicks.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div> : <p class="lv-state">{m.home_products_coming({}, { locale })}</p>}
+        </div>
+      </section>
+    )}
 
-    {(editorMode || template.home.products.enabled) && <section class="lv-section lv-products" data-editor-section="home.products" data-editor-visible-path="home.products.enabled" hidden={!template.home.products.enabled}><header><h2 class="type-heading-3" data-editor-path="home.products.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.products.title}</h2><ActionButton href="/products" icon="diagonal-arrow" iconSize="small" tone="secondary" size="small">{m.home_full_shop({}, { locale })}</ActionButton></header><nav class="lv-filter" aria-label={m.home_product_filters({}, { locale })}><a class="is-active type-body-400" href="/products">{m.catalog_all_products({}, { locale })}</a>{homeFilterCollections.map((collection) => <a class="type-body-400" href={collectionHref(collection)}>{collection.title ?? m.catalog_collection_fallback({}, { locale })}</a>)}<span aria-hidden="true"></span><a class="type-body-400" href="/products?order=created_at">{m.catalog_newest({}, { locale })}</a><a class="type-body-400" href="/products?order=title">{m.home_a_to_z({}, { locale })}</a></nav>{listing.length ? <div class="lv-product-grid">{listing.map((product) => <ProductCard product={product} />)}</div> : <p class="lv-state">{m.catalog_empty({}, { locale })}</p>}{listing.length > 0 && <div class:list={["lv-load-more", { "is-overflowing": listing.length > 8 }]}><p class="type-body-400">{m.catalog_result_count({ count: listing.length }, { locale })}</p><ActionButton href="/products" icon="diagonal-arrow" iconSize="small" tone="secondary" size="small">{m.home_explore_full_collection({}, { locale })}</ActionButton></div>}</section>}
+    {(editorMode || template.home.products.enabled) && (
+      <section class="lv-section lv-products" data-editor-section="home.products" data-editor-visible-path="home.products.enabled" hidden={!template.home.products.enabled}>
+        <div class="lv-section__wrapper container">
+          <header>
+            <h2 class="type-heading-3" data-editor-path="home.products.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.products.title}</h2>
+            <ActionButton href="/products" icon="diagonal-arrow" iconSize="small" tone="secondary" size="small">{m.home_full_shop({}, { locale })}</ActionButton>
+          </header>
+          <nav class="lv-filter" aria-label={m.home_product_filters({}, { locale })}>
+            <a class="is-active type-body-400" href="/products">{m.catalog_all_products({}, { locale })}</a>
+            {homeFilterCollections.map((collection) => <a class="type-body-400" href={collectionHref(collection)}>{collection.title ?? m.catalog_collection_fallback({}, { locale })}</a>)}
+            <span aria-hidden="true"></span>
+            <a class="type-body-400" href="/products?order=created_at">{m.catalog_newest({}, { locale })}</a>
+            <a class="type-body-400" href="/products?order=title">{m.home_a_to_z({}, { locale })}</a>
+          </nav>
+          {listing.length ? <div class="lv-product-grid">{listing.map((product) => <ProductCard product={product} />)}</div> : <p class="lv-state">{m.catalog_empty({}, { locale })}</p>}
+          {listing.length > 0 && (
+            <div class:list={["lv-load-more", { "is-overflowing": listing.length > 8 }]}>
+              <p class="type-body-400">{m.catalog_result_count({ count: listing.length }, { locale })}</p>
+              <ActionButton href="/products" icon="diagonal-arrow" iconSize="small" tone="secondary" size="small">{m.home_explore_full_collection({}, { locale })}</ActionButton>
+            </div>
+          )}
+        </div>
+      </section>
+    )}
 
-    {(editorMode || template.home.categories.enabled) && <section class="lv-categories" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}><TemplateImage src={storefrontAsset(template.home.categories.imageAssetId, categoryImage.src)} fallback={categoryImage} alt={m.home_category_image_alt({}, { locale })} widths={[480, 768, 1024]} sizes="(max-width: 900px) 100vw, 50vw" data-editor-image-path="home.categories.imageAssetId" /><div><h2 class="type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2><nav data-editor-collections-path="home.categories.collectionIds">{categoryCollections.length ? categoryCollections.map((collection, index) => <a class="type-heading-4" href={collectionHref(collection)}><span>{index + 1}/ {collection.title ?? m.catalog_collection_fallback({}, { locale })}</span><Icon name="diagonal-arrow" /></a>) : <a class="type-heading-4" href="/products"><span>{m.catalog_view_all_products({}, { locale })}</span><Icon name="diagonal-arrow" /></a>}</nav><TemplateImage src={storefrontAsset(template.home.categories.previewAssetId, categoryPreview.src)} fallback={categoryPreview} alt={m.home_category_preview_alt({}, { locale })} widths={[128, 256, 384]} sizes="189px" data-editor-image-path="home.categories.previewAssetId" /></div></section>}
+    {(editorMode || template.home.categories.enabled) && <section class="lv-categories" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}><TemplateImage src={storefrontAsset(template.home.categories.imageAssetId, categoryImage.src)} fallback={categoryImage} alt={m.home_category_image_alt({}, { locale })} widths={[480, 768, 1024]} sizes="(max-width: 900px) 100vw, 50vw" data-editor-image-path="home.categories.imageAssetId" /><div><h2 class="type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2><nav data-editor-collections-path="home.categories.collectionIds">{categoryCollections.length ? categoryCollections.map((collection, index) => <a class="type-heading-4" href={collectionHref(collection)}><span>{index + 1}/ {collection.title ?? m.catalog_collection_fallback({}, { locale })}</span><Icon name="diagonal-arrow" /></a>) : <a class="type-heading-4" href="/products"><span>{m.catalog_view_all_products({}, { locale })}</span><Icon name="diagonal-arrow" /></a>}</nav></div></section>}
 
     {(editorMode || template.home.cta.enabled) && <section class="lv-cta" data-editor-section="home.cta" data-editor-visible-path="home.cta.enabled" hidden={!template.home.cta.enabled}><TemplateImage src={storefrontAsset(template.home.cta.imageAssetId, ctaImage.src)} fallback={ctaImage} alt="Cosmetics store" widths={[480, 768, 1024, 1440, 1920]} sizes="(max-width: 900px) calc(100vw - 40px), calc(100vw - 310px)" data-editor-image-path="home.cta.imageAssetId" /><div><h2 class="type-heading-2" data-editor-path="home.cta.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.cta.title}</h2><p>{template.home.cta.primary.enabled && <ActionButton href={template.home.cta.primary.href} icon="bag" size="small" editorPath="home.cta.primary.label" editorRelatedPaths={["home.cta.primary.href"]} editorMode={editorMode}>{template.home.cta.primary.label}</ActionButton>}{template.home.cta.secondary.enabled && <ActionButton href={template.home.cta.secondary.href} icon="chat" tone="light" size="small" editorPath="home.cta.secondary.label" editorRelatedPaths={["home.cta.secondary.href"]} editorMode={editorMode}>{template.home.cta.secondary.label}</ActionButton>}</p></div></section>}
 

@@ -23,11 +23,11 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: $space-200;
+  gap: $space-350;
 }
 
 .lv-footer strong {
-  margin-bottom: $space-100;
+  margin-bottom: 0;
   color: var(--clr-ink);
 }
 
@@ -44,11 +44,22 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: $space-200;
+  gap: $space-350;
 }
 
 .lv-footer__intro {
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
+  align-items: flex-start;
+  height: 100%;
+}
+
+.lv-footer__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-350;
 }
 
 .lv-footer__intro p {
@@ -58,7 +69,6 @@
 .lv-footer__intro img {
   width: 80px;
   height: 41px;
-  margin-top: $space-500;
   object-fit: contain;
   object-position: left center;
 }

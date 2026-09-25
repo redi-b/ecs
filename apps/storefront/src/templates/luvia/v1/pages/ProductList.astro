@@ -104,9 +104,11 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
   <main class="lv-shop">
     <section class="lv-shop-hero">
       <TemplateImage class="lv-shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
-      <div class="lv-shop-hero__content">
-        <nav aria-label={m.breadcrumb_label({}, { locale })} class="type-body-s-400"><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.nav_shop({}, { locale })}</span></nav>
-        <h1 class="type-heading-1">{m.catalog_listing_title({}, { locale })}</h1>
+      <div class="lv-shop-hero__wrapper container">
+        <div class="lv-shop-hero__content">
+          <nav aria-label={m.breadcrumb_label({}, { locale })} class="type-body-s-400"><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.nav_shop({}, { locale })}</span></nav>
+          <h1 class="type-heading-1">{m.catalog_listing_title({}, { locale })}</h1>
+        </div>
       </div>
     </section>
 
