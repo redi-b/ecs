@@ -21,7 +21,8 @@ import {
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import {
-  ENTITLEMENT_CATALOG,
+  BILLING_CAPABILITY_CATALOG,
+  composePlanCapabilities,
   ENTITLEMENT_KEYS,
   type PlanEntitlements,
 } from "../entitlements/catalog.js";
@@ -660,14 +661,14 @@ export function createPlanAdministrationService(db: PlatformDb) {
           .where(eq(planVersions.planId, input.planId))
           .orderBy(desc(planVersions.version))
           .limit(1);
-        const latest: PublishedPlanVersion<typeof ENTITLEMENT_CATALOG> | null = latestRow
+        const latest: PublishedPlanVersion<typeof BILLING_CAPABILITY_CATALOG> | null = latestRow
           ? {
               fingerprint: latestRow.fingerprint,
               id: latestRow.id as PlanVersionId,
               planId: latestRow.planId as PlanId,
               publishedAt: latestRow.publishedAt,
               terms: {
-                capabilities: latestRow.features as PlanEntitlements,
+                capabilities: composePlanCapabilities(latestRow.features, latestRow.limits),
                 currency: latestRow.currency,
                 interval:
                   latestRow.billingInterval === "day" ||
@@ -682,7 +683,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
             }
           : null;
         const publication = await publishPlanVersion({
-          catalog: ENTITLEMENT_CATALOG,
+          catalog: BILLING_CAPABILITY_CATALOG,
           fingerprint: {
             digest: async (canonicalTerms) =>
               createHash("sha256").update(canonicalTerms).digest("hex"),
@@ -692,7 +693,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
           now: new Date(),
           planId: input.planId as PlanId,
           terms: {
-            capabilities: draft.features,
+            capabilities: composePlanCapabilities(draft.features, draft.limits),
             currency: draft.currency,
             interval: draft.billingInterval,
             priceMinor: draft.priceMinor,

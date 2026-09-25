@@ -1,4 +1,13 @@
-import { parseTrialPolicy } from "@ecs/billing";
+import {
+  addBillingInterval,
+  BILLING_RENEWAL_LEAD_DAYS,
+  type BillingInterval,
+  encodeScheduledDowngrade,
+  MS_PER_DAY,
+  parseScheduledDowngradePlanId,
+  parseTrialPolicy,
+  planBillingLifecycle,
+} from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import {
   billingOutboxEvents,
@@ -14,20 +23,12 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { BillingStatus } from "../../types/index.js";
 import {
-  addBillingMonths,
   type BillingServicePaymentOptions,
   createBillingInvoiceService,
   isFreePlanPrice,
   selectInvoiceFields,
   serializeDate,
 } from "./invoice-service.js";
-import {
-  BILLING_RENEWAL_LEAD_DAYS,
-  encodeScheduledDowngrade,
-  MS_PER_DAY,
-  parseScheduledDowngradePlanId,
-  planBillingLifecycle,
-} from "./lifecycle.js";
 import { createBillingLifecycleRunner } from "./lifecycle-runner.js";
 import { DEFAULT_PLAN_CATALOG, DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 import { createBillingPlanService } from "./plan-service.js";
@@ -44,7 +45,7 @@ export {
   parseScheduledDowngradePlanId,
   planBillingLifecycle,
   SCHEDULED_DOWNGRADE_PREFIX,
-} from "./lifecycle.js";
+} from "@ecs/billing";
 export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -137,7 +138,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             .update(subscriptions)
             .set({
               status: "active",
-              currentPeriodEnd: addBillingMonths(new Date(), 1),
+              currentPeriodEnd: addBillingInterval(new Date(), "month"),
               currentPeriodStart: new Date(),
               manualPaymentState: "none",
               ...(pinnedVersion ? { planVersionId: pinnedVersion.id } : {}),
@@ -165,7 +166,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: now,
-          currentPeriodEnd: addBillingMonths(now, 1),
+          currentPeriodEnd: addBillingInterval(now, starterVersion.terms.interval),
           manualPaymentState: "none",
         })
         .onConflictDoNothing({ target: subscriptions.tenantId })
@@ -235,6 +236,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             planVersionId: subscriptions.planVersionId,
             status: subscriptions.status,
             planId: plans.id,
+            planBillingInterval: sql<string>`coalesce(, 'month')`,
             planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
             planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
             currentPeriodEnd: subscriptions.currentPeriodEnd,
@@ -268,6 +270,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           if (row.renewalPlanVersionId) {
             const [renewal] = await transaction
               .select({
+                billingInterval: planVersions.billingInterval,
                 id: planVersions.id,
                 planId: planVersions.planId,
                 name: planVersions.name,
@@ -285,7 +288,10 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
                   renewalPlanVersionId: null,
                   renewalEffectiveAt: null,
                   currentPeriodStart: now,
-                  currentPeriodEnd: addBillingMonths(now, 1),
+                  currentPeriodEnd: addBillingInterval(
+                    now,
+                    renewal.billingInterval as BillingInterval,
+                  ),
                 })
                 .where(eq(subscriptions.id, row.subscriptionId));
               return { trialExpired: false, renewed: true, pastDue: false, scheduled: null };
@@ -338,7 +344,13 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           } else {
             await transaction
               .update(subscriptions)
-              .set({ currentPeriodStart: now, currentPeriodEnd: addBillingMonths(now, 1) })
+              .set({
+                currentPeriodStart: now,
+                currentPeriodEnd: addBillingInterval(
+                  now,
+                  row.planBillingInterval as BillingInterval,
+                ),
+              })
               .where(eq(subscriptions.id, row.subscriptionId));
           }
           return { trialExpired: false, renewed: false, pastDue: false, scheduled: null };
@@ -355,7 +367,12 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             throw new Error(`Trial subscription ${row.subscriptionId} has no fallback version.`);
           }
           const [fallback] = await transaction
-            .select({ id: planVersions.id, planId: planVersions.planId, price: planVersions.price })
+            .select({
+              billingInterval: planVersions.billingInterval,
+              id: planVersions.id,
+              planId: planVersions.planId,
+              price: planVersions.price,
+            })
             .from(planVersions)
             .where(eq(planVersions.id, row.trialFallbackPlanVersionId))
             .limit(1);
@@ -365,7 +382,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             .update(subscriptions)
             .set({
               currentPeriodEnd: isFreePlanPrice(fallback.price)
-                ? addBillingMonths(endedAt, 1)
+                ? addBillingInterval(endedAt, fallback.billingInterval as BillingInterval)
                 : endedAt,
               currentPeriodStart: endedAt,
               manualPaymentState: isFreePlanPrice(fallback.price) ? "none" : "pending",
@@ -717,8 +734,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           planVersionId: version.id,
           status: "active",
           currentPeriodStart: now,
-          // Free forever has no period end pressure.
-          currentPeriodEnd: isFreePlanPrice(plan.price) ? null : addBillingMonths(now, 1),
+          currentPeriodEnd: addBillingInterval(now, version.terms.interval),
           manualPaymentState: isFreePlanPrice(plan.price) ? "none" : "paid",
         })
         .where(

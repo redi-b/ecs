@@ -11,11 +11,7 @@ import type { createPlatformDb } from "@ecs/db";
 import { planPresentations, plans, planVersions } from "@ecs/db";
 import { and, desc, eq, isNull, or } from "drizzle-orm";
 
-import {
-  ENTITLEMENT_CATALOG,
-  type PlanEntitlements,
-  parsePlanEntitlements,
-} from "../entitlements/catalog.js";
+import { BILLING_CAPABILITY_CATALOG, composePlanCapabilities } from "../entitlements/catalog.js";
 import { isFreePlanPrice } from "./invoice-service.js";
 import { DEFAULT_PLANS, getDefaultPlanPresentation } from "./plan-catalog.js";
 
@@ -24,12 +20,13 @@ type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 export function createBillingPlanService(db: PlatformDb) {
   const latestPlanVersion = async (
     planId: string,
-  ): Promise<PublishedPlanVersion<typeof ENTITLEMENT_CATALOG> | null> => {
+  ): Promise<PublishedPlanVersion<typeof BILLING_CAPABILITY_CATALOG> | null> => {
     const [row] = await db
       .select({
         billingInterval: planVersions.billingInterval,
         currency: planVersions.currency,
         features: planVersions.features,
+        limits: planVersions.limits,
         fingerprint: planVersions.fingerprint,
         id: planVersions.id,
         planId: planVersions.planId,
@@ -49,7 +46,7 @@ export function createBillingPlanService(db: PlatformDb) {
       planId: row.planId as PlanId,
       publishedAt: row.publishedAt,
       terms: {
-        capabilities: parsePlanEntitlements(row.features),
+        capabilities: composePlanCapabilities(row.features, row.limits),
         currency: row.currency,
         interval:
           row.billingInterval === "day" ||
@@ -67,7 +64,7 @@ export function createBillingPlanService(db: PlatformDb) {
   const ensurePublishedPlanVersion = async (plan: (typeof DEFAULT_PLANS)[number]) => {
     const latest = await latestPlanVersion(plan.id);
     const publication = await publishPlanVersion({
-      catalog: ENTITLEMENT_CATALOG,
+      catalog: BILLING_CAPABILITY_CATALOG,
       fingerprint: {
         digest: async (canonicalTerms) => createHash("sha256").update(canonicalTerms).digest("hex"),
       },
@@ -76,7 +73,7 @@ export function createBillingPlanService(db: PlatformDb) {
       now: new Date(),
       planId: plan.id as PlanId,
       terms: {
-        capabilities: plan.features as PlanEntitlements,
+        capabilities: composePlanCapabilities(plan.features, plan.limits),
         currency: "ETB",
         interval: "month",
         priceMinor: Math.round(Number(plan.price) * 100),
@@ -96,7 +93,7 @@ export function createBillingPlanService(db: PlatformDb) {
           currency: publication.version.terms.currency,
           billingInterval: publication.version.terms.interval,
           limits: plan.limits,
-          features: publication.version.terms.capabilities,
+          features: plan.features,
           trialPolicy: publication.version.terms.trialPolicy,
           publishedAt: publication.version.publishedAt,
         })

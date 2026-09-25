@@ -1,7 +1,28 @@
+import type { BillingInterval } from "./domain.js";
+
 /** Issue renewal invoices this many days before period end. */
 export const BILLING_RENEWAL_LEAD_DAYS = 7;
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export function addBillingInterval(from: Date, interval: BillingInterval, count = 1): Date {
+  if (!Number.isSafeInteger(count) || count < 1 || Number.isNaN(from.getTime())) {
+    throw new Error("A billing period requires a valid date and positive interval count.");
+  }
+  const next = new Date(from);
+  if (interval === "day" || interval === "week") {
+    next.setUTCDate(next.getUTCDate() + count * (interval === "week" ? 7 : 1));
+    return next;
+  }
+
+  const monthOffset = count * (interval === "year" ? 12 : 1);
+  const targetMonth = next.getUTCMonth() + monthOffset;
+  const targetYear = next.getUTCFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+  next.setUTCFullYear(targetYear, normalizedMonth, Math.min(next.getUTCDate(), lastDay));
+  return next;
+}
 
 /**
  * Encoded in subscriptions.manual_payment_state when a free-plan downgrade

@@ -1,3 +1,4 @@
+import { addBillingInterval, type BillingInterval } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
@@ -12,11 +13,7 @@ import {
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { BillingInvoice, BillingInvoiceUpdateResult } from "../../types/index.js";
-import {
-  BILLING_RENEWAL_LEAD_DAYS,
-  MS_PER_DAY,
-  parseScheduledDowngradePlanId,
-} from "./lifecycle.js";
+import { BILLING_RENEWAL_LEAD_DAYS, MS_PER_DAY, parseScheduledDowngradePlanId } from "@ecs/billing";
 import { isAcceptedLinksEtReference } from "./links-et-payment-verifier.js";
 import {
   type BillingPaymentVerificationInput,
@@ -142,12 +139,6 @@ export function serializePaymentEvidence(evidence: {
   };
 }
 
-export function addBillingMonths(from: Date, months: number) {
-  const next = new Date(from);
-  next.setUTCMonth(next.getUTCMonth() + months);
-  return next;
-}
-
 function planPriceNumber(price: string) {
   const value = Number(price);
   return Number.isFinite(value) ? value : NaN;
@@ -220,7 +211,6 @@ export function createBillingInvoiceService(input: BillingInvoiceServiceOptions)
 
       const [sub] = await transaction
         .select({
-          billingCycle: subscriptions.billingCycle,
           renewalPlanVersionId: subscriptions.renewalPlanVersionId,
           renewalEffectiveAt: subscriptions.renewalEffectiveAt,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
@@ -242,17 +232,31 @@ export function createBillingInvoiceService(input: BillingInvoiceServiceOptions)
         sub?.status !== "trialing" && sub?.currentPeriodEnd && sub.currentPeriodEnd > now
           ? sub.currentPeriodEnd
           : now;
-      const nextEnd = addBillingMonths(base, sub?.billingCycle === "yearly" ? 12 : 1);
-      const nextPlanId = planIdFromInvoice ?? sub?.planId ?? DEFAULT_PLAN_IDS.growth;
+      const requestedPlanId = planIdFromInvoice ?? sub?.planId ?? DEFAULT_PLAN_IDS.growth;
       const [nextPlanVersion] = paid.planVersionId
-        ? [{ id: paid.planVersionId }]
-        : await transaction
-            .select({ id: planVersions.id })
+        ? await transaction
+            .select({
+              billingInterval: planVersions.billingInterval,
+              id: planVersions.id,
+              planId: planVersions.planId,
+            })
             .from(planVersions)
-            .where(eq(planVersions.planId, nextPlanId))
+            .where(eq(planVersions.id, paid.planVersionId))
+            .limit(1)
+        : await transaction
+            .select({
+              billingInterval: planVersions.billingInterval,
+              id: planVersions.id,
+              planId: planVersions.planId,
+            })
+            .from(planVersions)
+            .where(eq(planVersions.planId, requestedPlanId))
             .orderBy(desc(planVersions.version))
             .limit(1);
+      const nextPlanId = nextPlanVersion?.planId ?? requestedPlanId;
       const nextPlanVersionId = nextPlanVersion?.id ?? sub?.planVersionId;
+      const interval = (nextPlanVersion?.billingInterval ?? "month") as BillingInterval;
+      const nextEnd = addBillingInterval(base, interval);
       if (!nextPlanVersionId) throw new Error("billing_plan_version_not_found");
       const consumedRenewal = sub?.renewalPlanVersionId === nextPlanVersionId;
 

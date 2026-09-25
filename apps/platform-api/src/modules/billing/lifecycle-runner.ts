@@ -1,9 +1,9 @@
+import { MS_PER_DAY } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import { billingOutboxEvents, invoices, plans, planVersions, subscriptions } from "@ecs/db";
 import { and, eq, lte, sql } from "drizzle-orm";
 
 import { isFreePlanPrice } from "./invoice-service.js";
-import { MS_PER_DAY } from "./lifecycle.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 

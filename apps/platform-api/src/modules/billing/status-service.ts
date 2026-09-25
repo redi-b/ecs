@@ -12,7 +12,7 @@ import {
   serializeInvoice,
   serializePaymentEvidence,
 } from "./invoice-service.js";
-import { parseScheduledDowngradePlanId } from "./lifecycle.js";
+import { parseScheduledDowngradePlanId } from "@ecs/billing";
 import type { createBillingPlanService } from "./plan-service.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
