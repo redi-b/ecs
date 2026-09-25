@@ -5,8 +5,7 @@ const { parseShortStat, resolvePushStats } = require("./clickup-push-stats.cjs")
 
 const BEFORE = "1".repeat(40);
 const AFTER = "2".repeat(40);
-const FIRST = "3".repeat(40);
-const PARENT = "4".repeat(40);
+const PARENT = "3".repeat(40);
 
 describe("ClickUp push stats", () => {
   it("parses Git shortstat output", () => {
@@ -23,16 +22,17 @@ describe("ClickUp push stats", () => {
     assert.deepEqual(parseShortStat(""), { additions: 0, deletions: 0, filesChanged: 0 });
   });
 
-  it("calculates one net diff for the entire push instead of summing commit churn", async () => {
+  it("matches the linked commit's first-parent diff", async () => {
     const calls = [];
     const exec = {
       async getExecOutput(command, args) {
         calls.push([command, args]);
+        if (args[0] === "rev-parse") return { exitCode: 0, stdout: `${PARENT}\n` };
         return { exitCode: 0, stdout: " 2 files changed, 8 insertions(+), 3 deletions(-)" };
       },
     };
     const result = await resolvePushStats(
-      { after: AFTER, before: BEFORE, commits: [{ id: FIRST }, { id: AFTER }] },
+      { after: AFTER, before: BEFORE, commits: [{ id: AFTER }] },
       { id: AFTER },
       exec,
       { warning() {} },
@@ -44,37 +44,46 @@ describe("ClickUp push stats", () => {
       filesChanged: 2,
     });
     assert.deepEqual(calls, [
-      ["git", ["diff", "--shortstat", "--find-renames", BEFORE, AFTER, "--"]],
+      ["git", ["rev-parse", `${AFTER}^1`]],
+      ["git", ["diff", "--shortstat", "--find-renames", PARENT, AFTER, "--"]],
     ]);
   });
 
-  it("uses the oldest pushed commit's parent for a new branch", async () => {
+  it("uses the empty tree for a root commit", async () => {
     const calls = [];
     const exec = {
       async getExecOutput(command, args) {
         calls.push([command, args]);
-        if (args[0] === "rev-parse") return { exitCode: 0, stdout: `${PARENT}\n` };
+        if (args[0] === "rev-parse") return { exitCode: 128, stdout: "" };
         return { exitCode: 0, stdout: " 1 file changed, 2 insertions(+)" };
       },
     };
     const result = await resolvePushStats(
-      { after: AFTER, before: "0".repeat(40), commits: [{ id: FIRST }, { id: AFTER }] },
+      { after: AFTER, before: "0".repeat(40), commits: [{ id: AFTER }] },
       { id: AFTER },
       exec,
       { warning() {} },
     );
     assert.equal(result.available, true);
-    assert.deepEqual(calls[0], ["git", ["rev-parse", `${FIRST}^`]]);
+    assert.deepEqual(calls[0], ["git", ["rev-parse", `${AFTER}^1`]]);
     assert.deepEqual(calls[1], [
       "git",
-      ["diff", "--shortstat", "--find-renames", PARENT, AFTER, "--"],
+      [
+        "diff",
+        "--shortstat",
+        "--find-renames",
+        "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+        AFTER,
+        "--",
+      ],
     ]);
   });
 
   it("reports unavailable stats instead of misleading zeroes after a failed diff", async () => {
     const warnings = [];
     const exec = {
-      async getExecOutput() {
+      async getExecOutput(_command, args) {
+        if (args[0] === "rev-parse") return { exitCode: 0, stdout: `${PARENT}\n` };
         return { exitCode: 1, stdout: "" };
       },
     };

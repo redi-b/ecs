@@ -177,8 +177,7 @@ jobs:
 
             // ---------- GitHub stats ----------
 
-            // Compute a single before..after diff so lines changed repeatedly by
-            // several commits are counted once in the final push result.
+            // Match the linked commit page by comparing the head to its first parent.
             const { resolvePushStats } = require('./.github/scripts/clickup-push-stats.cjs');
 
             // ---------- duplicate suppression ----------
@@ -270,7 +269,7 @@ jobs:
               );
               if (stats.available) {
                 lines.push(
-                  '**Changes:** ' +
+                  '**Commit changes:** ' +
                     code('+' + num(stats.additions)) +
                     ' / ' +
                     code('-' + num(stats.deletions)) +
@@ -278,7 +277,7 @@ jobs:
                   '**Files:** ' + num(stats.filesChanged) + ' changed'
                 );
               } else {
-                lines.push('**Changes:** unavailable');
+                lines.push('**Commit changes:** unavailable');
               }
               if (commits.length > 1) {
                 lines.push('**Commits:** ' + commits.length + ' commits pushed');

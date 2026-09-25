@@ -1,6 +1,5 @@
 const EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 const FULL_SHA = /^[0-9a-f]{40}$/i;
-const ZERO_SHA = /^0{40}$/;
 
 function parseShortStat(output) {
   const text = String(output || "").trim();
@@ -12,10 +11,8 @@ function parseShortStat(output) {
   };
 }
 
-async function resolveNewBranchBase(event, head, exec) {
-  const firstPushed = (event.commits || []).find((commit) => FULL_SHA.test(commit?.id || ""));
-  const oldestPushedSha = firstPushed?.id || head.id;
-  const parent = await exec.getExecOutput("git", ["rev-parse", `${oldestPushedSha}^`], {
+async function resolveFirstParent(after, exec) {
+  const parent = await exec.getExecOutput("git", ["rev-parse", `${after}^1`], {
     ignoreReturnCode: true,
     silent: true,
   });
@@ -39,21 +36,11 @@ async function resolvePushStats(event, head, exec, core) {
     return { available: false, additions: 0, deletions: 0, filesChanged: 0 };
   }
 
-  const before =
-    FULL_SHA.test(event.before || "") && !ZERO_SHA.test(event.before)
-      ? event.before
-      : await resolveNewBranchBase(event, head, exec);
-  let result = await runNetDiff(before, after, exec);
-
-  // A force push can leave the previous tip unreachable from the checked-out
-  // branch. Fetch that exact object once, then retry the net diff.
-  if (result.exitCode !== 0 && before !== EMPTY_TREE_SHA) {
-    await exec.getExecOutput("git", ["fetch", "--no-tags", "--depth=1", "origin", before], {
-      ignoreReturnCode: true,
-      silent: true,
-    });
-    result = await runNetDiff(before, after, exec);
-  }
+  // GitHub's commit page compares a commit to its first parent. Matching that
+  // range keeps the notification totals identical to the commit we link to,
+  // including merge commits. Root commits are compared with the empty tree.
+  const before = await resolveFirstParent(after, exec);
+  const result = await runNetDiff(before, after, exec);
 
   if (result.exitCode !== 0) {
     core.warning(
