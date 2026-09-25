@@ -7,10 +7,23 @@
  *   pnpm dev:apps --split-medusa
  */
 import { spawn, spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 import { blank, box, color, heading, info, kv, success } from "./lib/cli.mjs";
 import { fitWidth, formatDevLogLine, wrapLine } from "./lib/dev-log.mjs";
 
+function loadPostgresHostPort() {
+  if (process.env.POSTGRES_HOST_PORT) return;
+
+  try {
+    const match = readFileSync(".env", "utf8").match(/^POSTGRES_HOST_PORT\s*=\s*(\d+)/m);
+    if (match?.[1]) process.env.POSTGRES_HOST_PORT = match[1];
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
+loadPostgresHostPort();
 process.env.NODE_ENV = "development";
 // Children are piped (non-TTY). Emit JSON and recolor/format in this supervisor.
 // Standalone app `dev` still uses pino-pretty (LOG_PRETTY unset there).

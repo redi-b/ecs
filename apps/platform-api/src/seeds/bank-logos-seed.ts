@@ -26,10 +26,7 @@ import {
 loadPlatformApiEnvFiles();
 
 const forceFetch = process.argv.includes("--fetch");
-const assetsDir = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../assets/bank-logos",
-);
+const assetsDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../assets/bank-logos");
 
 function resolveMediaS3ApiEndpoint() {
   const internal = process.env.MEDIA_S3_INTERNAL_ENDPOINT?.trim();
@@ -121,9 +118,7 @@ async function ensureCatalogRows(
         name: entry.name,
         kind: entry.kind,
         logoUrl:
-          publicBaseUrl && entry.logoSource
-            ? bankLogoPublicUrl(publicBaseUrl, entry.code)
-            : null,
+          publicBaseUrl && entry.logoSource ? bankLogoPublicUrl(publicBaseUrl, entry.code) : null,
         sortOrder: entry.sortOrder,
         isActive: true,
       })),
@@ -150,7 +145,8 @@ async function main() {
 
   const platformDb = createPlatformDb({
     connectionString:
-      process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5433/platform_db",
+      process.env.PLATFORM_DATABASE_URL ??
+      `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/platform_db`,
     max: Number.parseInt(process.env.PLATFORM_DATABASE_POOL_MAX ?? "5", 10),
     idleTimeoutMillis: Number.parseInt(
       process.env.PLATFORM_DATABASE_POOL_IDLE_TIMEOUT_MS ?? "30000",

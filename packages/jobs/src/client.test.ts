@@ -13,7 +13,8 @@ import type { PlatformDb } from "./types.js";
 import { startPlatformWorker } from "./worker.js";
 
 const databaseUrl =
-  process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5432/platform_db";
+  process.env.PLATFORM_DATABASE_URL ??
+  `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/platform_db`;
 const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
 
 const dbHandle = createPlatformDb({ connectionString: databaseUrl });
@@ -372,13 +373,20 @@ describe("createJobsClient", () => {
     ]);
     const queueName = `platform-jobs-isolation-${crypto.randomUUID()}`;
     let releaseBulk = () => {};
-    const bulkGate = new Promise<void>((resolve) => { releaseBulk = resolve; });
+    const bulkGate = new Promise<void>((resolve) => {
+      releaseBulk = resolve;
+    });
     let bulkStarted = false;
     const shared = { db, heartbeatMs: 1_000, prefix: "ecs-test", redisUrl, registry };
     const bulkWorker = startPlatformWorker({
       ...shared,
       concurrency: 1,
-      handlers: { "test.acceptance.bulk": async () => { bulkStarted = true; await bulkGate; } },
+      handlers: {
+        "test.acceptance.bulk": async () => {
+          bulkStarted = true;
+          await bulkGate;
+        },
+      },
       queueName: `${queueName}-bulk`,
     });
     const criticalWorker = startPlatformWorker({
@@ -403,7 +411,9 @@ describe("createJobsClient", () => {
         payload: { key: "critical" },
       });
       trackId(critical.jobRunId);
-      await waitUntil(async () => (await client.getJobRun(critical.jobRunId))?.status === "completed");
+      await waitUntil(
+        async () => (await client.getJobRun(critical.jobRunId))?.status === "completed",
+      );
       assert.equal((await client.getJobRun(bulk.jobRunId))?.status, "active");
     } finally {
       releaseBulk();

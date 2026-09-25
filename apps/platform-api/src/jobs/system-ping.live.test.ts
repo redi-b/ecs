@@ -4,12 +4,7 @@ import net from "node:net";
 import { after, before, describe, it } from "node:test";
 
 import { createPlatformDb, jobRuns } from "@ecs/db";
-import {
-  createJobsClient,
-  startPlatformWorker,
-  type JobsClient,
-  type JobHandler,
-} from "@ecs/jobs";
+import { createJobsClient, startPlatformWorker, type JobsClient, type JobHandler } from "@ecs/jobs";
 import { eq } from "drizzle-orm";
 // @ts-ignore
 import pg from "pg";
@@ -18,7 +13,8 @@ import { systemPingHandler } from "./handlers/system-ping.js";
 
 const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
 const dbUrl =
-  process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5432/platform_db";
+  process.env.PLATFORM_DATABASE_URL ??
+  `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/platform_db`;
 
 const POLL_INTERVAL_MS = 100;
 const POLL_TIMEOUT_MS = 15_000;
