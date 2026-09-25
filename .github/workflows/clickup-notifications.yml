@@ -43,6 +43,12 @@ jobs:
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
+      - name: Check out repository history
+        if: steps.secrets.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Build and send notification
         if: steps.secrets.outputs.skip != 'true'
         uses: actions/github-script@v7
@@ -70,7 +76,6 @@ jobs:
               'https://github.com/' + owner + '/' + repo;
 
             const MAX_TEXT = 140;
-            const MAX_STATS_COMMITS = 10;
             // Post subtype IDs are unique per workspace (1819086 = "Announcement").
             const ANNOUNCEMENT_SUBTYPE_ID = '1819086';
 
@@ -172,69 +177,9 @@ jobs:
 
             // ---------- GitHub stats ----------
 
-            // Line totals come from each commit's `stats`, which cover the whole
-            // commit. The `files` array is capped at 300 entries by the API, so
-            // it only feeds the file count (reported as "300+" when capped).
-            // Summing across commits counts churn, not net diff.
-            async function resolvePushStats(event, head) {
-              const pushed = [];
-              for (const commit of event.commits || []) {
-                if (commit && commit.id && pushed.indexOf(commit.id) === -1) {
-                  pushed.push(commit.id);
-                }
-              }
-              if (pushed.indexOf(head.id) === -1) pushed.push(head.id);
-
-              const sample = pushed.slice(0, MAX_STATS_COMMITS);
-              if (pushed.length > sample.length) {
-                core.warning(
-                  'Push contains ' +
-                    pushed.length +
-                    ' commits; stats are approximated from the first ' +
-                    sample.length +
-                    '.'
-                );
-              }
-
-              const totals = {
-                additions: 0,
-                deletions: 0,
-                filesChanged: 0,
-                filesCapped: false,
-              };
-              const seen = new Set();
-              let failures = 0;
-              for (const sha of sample) {
-                try {
-                  const { data } = await github.rest.repos.getCommit({
-                    owner,
-                    repo,
-                    commit_sha: sha,
-                  });
-                  if (data.stats) {
-                    totals.additions += data.stats.additions || 0;
-                    totals.deletions += data.stats.deletions || 0;
-                  }
-                  const files = data.files || [];
-                  if (files.length >= 300) totals.filesCapped = true;
-                  for (const file of files) {
-                    if (file.filename && !seen.has(file.filename)) {
-                      seen.add(file.filename);
-                      totals.filesChanged += 1;
-                    }
-                  }
-                } catch (error) {
-                  failures += 1;
-                  core.warning(
-                    'Could not read stats for ' + sha.slice(0, 7) + ': ' + error.message
-                  );
-                }
-              }
-              if (failures === sample.length) {
-                return { additions: 0, deletions: 0, filesChanged: 0, filesCapped: false };
-              }
-              return totals;
-            }
+            // Compute a single before..after diff so lines changed repeatedly by
+            // several commits are counted once in the final push result.
+            const { resolvePushStats } = require('./.github/scripts/clickup-push-stats.cjs');
 
             // ---------- duplicate suppression ----------
 
@@ -305,7 +250,7 @@ jobs:
               }
 
               const commits = Array.isArray(event.commits) ? event.commits : [];
-              const stats = await resolvePushStats(event, head);
+              const stats = await resolvePushStats(event, head, exec, core);
               const author =
                 (head.author && head.author.username) ||
                 (event.pusher && event.pusher.name) ||
@@ -321,17 +266,20 @@ jobs:
               if (event.forced) lines.push('**Note:** Force push');
               lines.push(
                 '**Commit:** ' + code(truncate(head.message, 120)),
-                '**Author:** ' + md(author),
-                '**Changes:** ' +
-                  code('+' + num(stats.additions)) +
-                  ' / ' +
-                  code('-' + num(stats.deletions)) +
-                  ' lines',
-                '**Files:** ' +
-                  num(stats.filesChanged) +
-                  (stats.filesCapped ? '+' : '') +
-                  ' changed'
+                '**Author:** ' + md(author)
               );
+              if (stats.available) {
+                lines.push(
+                  '**Changes:** ' +
+                    code('+' + num(stats.additions)) +
+                    ' / ' +
+                    code('-' + num(stats.deletions)) +
+                    ' lines',
+                  '**Files:** ' + num(stats.filesChanged) + ' changed'
+                );
+              } else {
+                lines.push('**Changes:** unavailable');
+              }
               if (commits.length > 1) {
                 lines.push('**Commits:** ' + commits.length + ' commits pushed');
               }
