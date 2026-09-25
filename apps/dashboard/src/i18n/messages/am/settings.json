@@ -376,16 +376,16 @@
     "continueDraft": "የተቀመጠውን ስራ ቀጥል",
     "continueDraftDescription": "ከመጨረሻው ከተቀመጠው ለውጥ ይቀጥሉ።",
     "startClean": "በመጀመሪያው ዲዛይን ጀምር",
-    "startCleanDescription": "የተቀመጡ ለውጦችን ይተዉ እና ከመጀመሪያው ዲዛይን ይጀምሩ። የቀጥታ ሱቁ አይቀየርም።",
+    "startCleanDescription": "የተቀመጡ ለውጦችን ይተዉ እና ከመጀመሪያው ዲዛይን ይጀምሩ። አሁን በስራ ላይ ያለው መደብርዎ አይቀየርም።",
     "savedDraftRestored": "የተቀመጠው የዲዛይን ስራ ዝግጁ ነው።",
     "preview": "የ{name} ዲዛይን",
-    "pauseShop": "ሱቁን አቁም",
+    "pauseShop": "መደብሩን አቁም",
     "pauseShopTitle": "መደብሩ ለጊዜው ይቁም?",
-    "pauseShopDescription": "ደንበኞች ሱቁ እንደማይገኝ ያያሉ። ያዘጋጁት ስራ እንደተጠበቀ ይቆያል፤ በማንኛውም ጊዜ መልሰው ለደንበኞች መክፈት ይችላሉ።",
-    "pauseShopConfirm": "ሱቁን አቁም",
+    "pauseShopDescription": "ደንበኞች መደብሩ እንደማይገኝ ያያሉ። ያዘጋጁት ስራ እንደተጠበቀ ይቆያል፤ በማንኛውም ጊዜ መልሰው ለደንበኞች መክፈት ይችላሉ።",
+    "pauseShopConfirm": "መደብሩን አቁም",
     "pauseShopPending": "እየቆመ ነው…",
-    "pauseShopSuccess": "ሱቁ ለጊዜው ተዘግቷል። ደንበኞች አሁን መደብርዎን ማየት አይችሉም።",
-    "pauseShopFailed": "ሱቁን ማቆም አልተቻለም። እንደገና ይሞክሩ።",
+    "pauseShopSuccess": "መደብሩ ለጊዜው ተዘግቷል። ደንበኞች አሁን መደብርዎን ማየት አይችሉም።",
+    "pauseShopFailed": "መደብሩን ማቆም አልተቻለም። እንደገና ይሞክሩ።",
     "paused": "መደብሩ ቆሟል",
     "publishHint": "ደንበኞች እንደገና እንዲገዙ ሲዘጋጁ ለደንበኞች ይክፈቱ።",
     "publishShop": "ለደንበኞች ክፈት",
@@ -753,12 +753,12 @@
         "description": "አማርኛ የኢትዮጵያን፣ እንግሊዝኛ የግሪጎሪያንን ይጠቀማል።"
       },
       "ethiopian": {
-        "title": "የኢትዮጵያ",
-        "description": "በሁሉም ቋንቋ የኢትዮጵያ ቀን ያሳዩ።"
+        "title": "የኢትዮጵያ የቀን አቆጣጠር",
+        "description": "በሁሉም ቋንቋዎች የኢትዮጵያን የቀን አቆጣጠር ተጠቀም።"
       },
       "gregorian": {
-        "title": "ግሪጎሪያን",
-        "description": "በሁሉም ቋንቋ የግሪጎሪያን ቀን ያሳዩ።"
+        "title": "የግሪጎሪያን የቀን አቆጣጠር",
+        "description": "በሁሉም ቋንቋዎች የግሪጎሪያንን የቀን አቆጣጠር ተጠቀም።"
       }
     },
     "connections": {

@@ -50,18 +50,18 @@
     "metricView": "{label}"
   },
   "billing": {
-    "openBilling": "ክፍያ ክፈት",
+    "openBilling": "የክፍያ ገጹን ክፈት",
     "paymentOverdue": "ክፍያ ጊዜው አልፏል",
-    "paymentOverdueDesc": "የዕቅድ ክፍያ በ{date} መከፈል ነበረበት። ለመጨረስ ክፍያን ይክፈቱ።",
+    "paymentOverdueDesc": "የዕቅድ ክፍያ በ{date} መከፈል ነበረበት። ለመጨረስ የክፍያ ገጹን ይክፈቱ።",
     "paymentDue": "ክፍያ ያስፈልጋል",
-    "paymentDueDesc": "የዕቅድ ክፍያ በ{date} ይከፈላል። ለመክፈል ክፍያን ይክፈቱ።",
+    "paymentDueDesc": "የዕቅድ ክፍያ እስከ {date} ድረስ መከፈል አለበት። ለመክፈል የክፍያ ገጹን ይክፈቱ።",
     "paymentDueNoDate": "ያልተከፈለ የዕቅድ ክፍያ አለዎት። ለመክፈል የክፍያ ገጹን ይክፈቱ።",
     "paymentPastDue": "የተከፈለ ጊዜ አልቋል",
-    "paymentPastDueDesc": "የሚከፈል ዕቅድ ጊዜዎ አልቋል። ለመቀጠል ክፍያን ይክፈቱ።",
+    "paymentPastDueDesc": "የሚከፈል ዕቅድ ጊዜዎ አልቋል። ለመቀጠል የክፍያ ገጹን ይክፈቱ።",
     "subscriptionCancelled": "ምዝገባ ተሰርዟል",
-    "subscriptionCancelledDesc": "ይህ ሱቅ በሚከፈል ዕቅድ ላይ አይደለም። ዕቅድ ለመምረጥ ክፍያን ይክፈቱ።",
+    "subscriptionCancelledDesc": "ይህ መደብር በሚከፈል ዕቅድ ላይ አይደለም። ዕቅድ ለመምረጥ የክፍያ ገጹን ይክፈቱ።",
     "periodEnding": "የዕቅድ ጊዜ በቅርብ ያበቃል",
-    "periodEndingDesc": "የተከፈለበት ጊዜዎ በ{date} ያበቃል። ዕቅዱን ለማደስ ክፍያን ይክፈቱ።"
+    "periodEndingDesc": "የተከፈለበት ጊዜዎ በ{date} ያበቃል። ዕቅዱን ለማደስ የክፍያ ገጹን ይክፈቱ።"
   },
   "attention": {
     "toPack": "ለማሸግ",

@@ -27,7 +27,12 @@ export function useI18n() {
   const { preference: calendarPreference } = useCalendarPreference();
   const resolvedCalendarPreference = resolveUserCalendarPreference(calendarPreference);
   const calendarSystem = resolveCalendarSystem(locale, resolvedCalendarPreference);
-  const router = useRouter();
+  let router: ReturnType<typeof useRouter> | null = null;
+  try {
+    router = useRouter();
+  } catch {
+    // Resilient in unit test or non-router environments
+  }
   const [isFetchPending, setIsFetchPending] = useState(false);
   const [isTransitionPending, startTransition] = useTransition();
 
@@ -55,7 +60,7 @@ export function useI18n() {
         if (!response?.ok) return false;
 
         startTransition(() => {
-          router.refresh();
+          router?.refresh();
         });
         return true;
       } finally {

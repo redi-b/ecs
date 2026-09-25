@@ -16,7 +16,7 @@
     "showOutlines": "የማስተካከያ መስመሮችን አሳይ",
     "exitFullscreen": "ከሙሉ ዕይታ ውጣ",
     "fullscreen": "ሙሉ ዕይታ",
-    "openLive": "ቀጥታ መደብሩን ክፈት",
+    "openLive": "መደብሩን ክፈት",
     "more": "ተጨማሪ አማራጮች",
     "hideSettings": "ማስተካከያዎችን ደብቅ",
     "showSettings": "ማስተካከያዎችን አሳይ",
@@ -98,7 +98,7 @@
   "theme": {
     "appearance": "ገጽታ",
     "appearanceHelp": "የገጹ እና የብራንድ ቀለም ተስማሚ የቀለም ምርጫዎችን በራሳቸው ያዘጋጃሉ። ቀለሞቹን እንደፈለጉ መቀየር ወይም ወደ መጀመሪያው መመለስ ይችላሉ።",
-    "autoPalette": "ራስ-ሰር የቀለም ስብስብ",
+    "autoPalette": "ተስማሚ የቀለም ስብስብ",
     "autoPaletteOn": "የብራንድ እና የገጹ ቀለም ስብስቡን በራሳቸው ያስተካክላሉ።",
     "autoPaletteOff": "ቀለሞችን በእጅ ለመምረጥ። ከብራንድ ቀለም እንደገና ማዘጋጀት ይችላሉ።",
     "surface": "የገጹ ቀለም",
@@ -149,7 +149,7 @@
     "newestProduct": "አዲስ ምርት",
     "selectedCount": "በማስተካከያዎች ውስጥ {count} ምርቶች ተመርጠዋል።",
     "selectedCountOne": "በማስተካከያዎች ውስጥ 1 ምርት ተመርጧል።",
-    "noManualPick": "በእጅ የተመረጠ የለም። በቀጥታ መደብሩ ላይ አዳዲስ ምርቶች ይታያሉ።"
+    "noManualPick": "በእጅ የተመረጠ የለም። በመደብሩ ላይ አዳዲስ ምርቶች ይታያሉ።"
   },
   "translations": {
     "title": "ትርጉሞች",
