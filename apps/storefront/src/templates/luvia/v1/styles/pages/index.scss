@@ -48,7 +48,7 @@
   position: relative;
   z-index: 3;
   height: 100%;
-  padding: $space-1100 $space-900 $space-700;
+  padding: $space-1150 $space-900 $space-700;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -84,7 +84,7 @@
 }
 
 .hero__copy h1 {
-  max-width: 1039px;
+  max-width: 17.6ch;
   margin: 0;
   text-shadow: 0 4px 6px alpha(var(--clr-accent), 0.42);
   animation: hero-fade-up 0.8s cubic-bezier(.22, 1, .36, 1) 0.04s backwards;
@@ -149,11 +149,10 @@
 
 .hero__scroll {
   position: absolute;
-  top: 580px;
-  left: -35px;
-  width: 70px;
-  height: 70px;
-  object-fit: contain;
+  bottom: 10%;
+  left: 0;
+  width: 120px;
+  transform: translateX(-50%);
 }
 
 .promo {
@@ -164,7 +163,6 @@
   width: 375px;
   height: 178px;
   padding: $space-200;
-  overflow: hidden;
   border: 6px solid alpha(var(--clr-ink), 0.14);
   border-radius: $radius-450;
   background: var(--clr-bg);
@@ -241,8 +239,8 @@
 
 .promo__media button {
   position: absolute;
-  left: 8px;
-  bottom: 8px;
+  right: 8px;
+  top: 8px;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -288,7 +286,8 @@
 }
 
 .promo__copy>b {
-  color: var(--clr-primary);
+  margin-top: $space-50;
+  color: var(--clr-on-primary);
 }
 
 .promo__actions {
@@ -303,66 +302,60 @@
   padding-inline: 16px;
 }
 
-.promo__dots {
-  position: absolute;
-  z-index: 2;
-  left: 173px;
-  bottom: 58px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.promo__dots[hidden] {
-  display: none;
-}
-
-.promo__dots button {
-  position: relative;
-  width: 9px;
-  height: 14px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.promo__dots button::before {
+.promo__nav {
   position: absolute;
   top: 50%;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  content: "";
-  transform: translate(-50%, -50%);
-  border-radius: $radius-pill;
-  background: alpha(var(--clr-ink), 0.24);
-  transition: width 140ms ease, background-color 140ms ease, transform 140ms ease;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid alpha(var(--clr-ink), 0.08);
+  border-radius: $radius-full;
+  background: #ffffff;
+  color: var(--clr-ink);
+  box-shadow: 0 2px 8px alpha(var(--clr-ink), 0.16);
+  cursor: pointer;
+  transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out);
+
+  &[hidden] {
+    display: none;
+  }
+
+  &:hover {
+    transform: translateY(-50%) scale(1.08);
+    box-shadow: 0 4px 12px alpha(var(--clr-ink), 0.24);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
 }
 
-.promo__dots button:hover::before {
-  transform: translate(-50%, -50%) scale(1.2);
-  background: alpha(var(--clr-ink), 0.42);
+.promo__nav--prev {
+  left: -16px;
+
+  svg,
+  .sf-icon {
+    transform: rotate(180deg);
+  }
 }
 
-.promo__dots button:active::before {
-  transform: translate(-50%, -50%) scale(.82);
+.promo__nav--next {
+  right: -16px;
 }
 
-.promo__dots button:focus-visible {
-  outline: 2px solid var(--clr-primary);
-  outline-offset: 0;
-  border-radius: $radius-pill;
-}
-
-.promo__dots button[aria-current="true"] {
-  width: 17px;
-}
-
-.promo__dots button[aria-current="true"]::before {
-  width: 13px;
-  background: var(--clr-primary);
+.promo__nav svg {
+  width: 6px;
+  height: 10px;
+  display: block;
 }
 
 .section {
@@ -734,10 +727,6 @@
 }
 
 @media (max-width: 1100px) {
-  .hero__copy {
-    padding-left: $space-650;
-  }
-
   .promo {
     right: 24px;
   }
@@ -769,7 +758,6 @@
   }
 
   .hero__copy {
-    width: 100%;
     min-height: 560px;
     padding: $space-1050 $space-500 $space-600;
   }
@@ -816,9 +804,17 @@
     height: 126px;
   }
 
-  .promo__dots {
-    left: 136px;
-    bottom: 52px;
+  .promo__nav {
+    width: 26px;
+    height: 26px;
+  }
+
+  .promo__nav--prev {
+    left: 6px;
+  }
+
+  .promo__nav--next {
+    right: 6px;
   }
 
   .section {

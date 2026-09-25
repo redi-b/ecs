@@ -10,7 +10,6 @@ import {
   removeCartItem,
 } from "../../../../lib/stores/cart";
 import {
-  $wishlist,
   initWishlistStore,
 } from "../../../../lib/stores/wishlist";
 import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
@@ -68,7 +67,7 @@ export function initAfroStorefront() {
   initProductDetail();
 
   // --- Cart Drawer ---
-  initCartDrawerRuntime({ readOnly, clientMessage, locale });
+  initCartDrawerRuntime({ readOnly, locale });
 
   // --- Inquiries Form ---
   initInquiryForms({ readOnly, clientMessage });
@@ -794,11 +793,9 @@ function initInquiryForms({
 
 function initCartDrawerRuntime({
   readOnly,
-  clientMessage,
   locale,
 }: {
   readOnly: boolean;
-  clientMessage: (k: string, f?: string) => string;
   locale: string;
 }) {
   const drawer = document.getElementById("cart-drawer");

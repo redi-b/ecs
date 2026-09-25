@@ -1,0 +1,141 @@
+---
+import type { LuviaV1Data } from "@ecs/storefront-templates";
+import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
+import * as m from "../../../../paraglide/messages.js";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  tenantName: string;
+  header: LuviaV1Data["header"];
+  cartCount?: number;
+  deferCartCount?: boolean;
+  demoMode?: boolean;
+  editorMode?: boolean;
+  locale: "am" | "en";
+  logoUrl?: string | null;
+  emptyLogoUrl?: string | null;
+}
+
+const {
+  tenantName,
+  header,
+  cartCount = 0,
+  deferCartCount = false,
+  demoMode = false,
+  editorMode = false,
+  locale,
+  logoUrl,
+  emptyLogoUrl,
+} = Astro.props;
+
+const pathname = Astro.url.pathname;
+const isActiveLink = (href: string) =>
+  href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+---
+
+<header class="header">
+  <div class="header__start">
+    <a
+      class="logo"
+      href="/"
+      aria-label={m.a11y_shop_home({ shop: tenantName }, { locale })}
+      data-editor-image-scope
+    >
+      <img
+        src={logoUrl ?? undefined}
+        alt={tenantName}
+        data-editor-image-path="header.logoAssetId"
+        data-editor-empty-src={emptyLogoUrl ?? undefined}
+        hidden={!logoUrl}
+      />
+    </a>
+    <button class="menu" type="button" aria-expanded="false" aria-controls="navigation">
+      <span></span><span></span><span></span>
+      <span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span>
+    </button>
+    <nav class="nav" id="navigation" aria-label={m.a11y_store_navigation({}, { locale })} data-editor-links-path="header.navigation">
+      {
+        header.navigation.map((item, index) => (
+          <a
+            class:list={[
+              "type-body-400",
+              { "is-active": isActiveLink(item.href), "type-body-500": isActiveLink(item.href) },
+            ]}
+            href={item.href}
+            aria-current={isActiveLink(item.href) ? "page" : undefined}
+            data-editor-path={`header.navigation.${index}.label`}
+            contenteditable={editorMode ? "plaintext-only" : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <span class="nav__customer" aria-label={m.a11y_customer_links({}, { locale })}>
+        <a class="type-body-400" href="/wishlist">{m.nav_wishlist({}, { locale })}</a>
+        <a class="type-body-400" href="/account">{m.nav_account({}, { locale })}</a>
+      </span>
+    </nav>
+  </div>
+  <div class="actions">
+    <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
+    <form
+      class="search"
+      action="/products"
+      method="get"
+      role="search"
+      data-product-search-suggestions
+      data-search-suggestions-anchor
+      data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })}
+      data-search-for={m.search_for({ query: "{query}" }, { locale })}
+    >
+      <label class="sr-only" for="search-input">{m.search_products_label({}, { locale })}</label>
+      <input
+        id="search-input"
+        class="type-body-400"
+        name="q"
+        type="search"
+        placeholder={m.search_products_placeholder({}, { locale })}
+      />
+      <button
+        type="submit"
+        aria-label={m.action_search({}, { locale })}
+        aria-controls="search-input"
+        aria-expanded="false"
+      >
+        <Icon name="search" />
+      </button>
+    </form>
+    <a
+      class="action action--wishlist"
+      href="/wishlist"
+      aria-label={m.nav_wishlist({}, { locale })}
+      data-wishlist-indicator
+    >
+      <Icon name="wishlist" />
+    </a>
+    <a
+      class="action"
+      href="/cart"
+      aria-label={m.nav_cart({}, { locale })}
+      data-cart-trigger
+    >
+      <Icon name="cart" />
+      <span
+        class="count type-body-xs"
+        data-cart-count
+        aria-live="polite"
+        hidden={deferCartCount ? true : cartCount <= 0}
+      >
+        {deferCartCount ? "" : cartCount}
+      </span>
+    </a>
+    <a
+      class="action action--account"
+      href="/account"
+      aria-label={m.nav_account({}, { locale })}
+    >
+      <Icon name="user" />
+    </a>
+  </div>
+</header>
+<button class="header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>

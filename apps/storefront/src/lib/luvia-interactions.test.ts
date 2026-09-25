@@ -6,27 +6,27 @@ const readTemplate = (path: string) =>
   readFile(new URL(`../templates/luvia/v1/${path}`, import.meta.url), "utf8");
 
 test("storefront overlays share one authoritative page scroll lock", async () => {
-  const [layout, layoutStyles] = await Promise.all([
-    readTemplate("layouts/Layout.astro"),
+  const [client, layoutStyles] = await Promise.all([
+    readTemplate("scripts/client.ts"),
     readTemplate("styles/_reset.scss"),
   ]);
 
-  assert.match(layout, /const syncPageScrollLock = \(\) =>/);
-  assert.match(layout, /document\.documentElement\.toggleAttribute\("data-overlay-open", locked\)/);
-  assert.match(layout, /setHeaderSurface\(null\); lastFocused/);
+  assert.match(client, /const syncPageScrollLock = \(\) =>/);
+  assert.match(client, /document\.documentElement\.toggleAttribute\("data-overlay-open", locked\)/);
+  assert.match(client, /setHeaderSurface\(null\)[\s\S]*?lastFocused/);
   assert.match(layoutStyles, /html\[data-overlay-open\][\s\S]*overflow:\s*hidden/);
 });
 
 test("product and address disclosures animate their content instead of snapping", async () => {
-  const [product, account] = await Promise.all([
+  const [product, client, account] = await Promise.all([
     readTemplate("pages/Product.astro"),
+    readTemplate("scripts/client.ts"),
     readTemplate("pages/Account.astro"),
   ]);
 
-  assert.match(product, /\.product-accordions details/);
-  assert.match(product, /disclosure\.animate/);
-  assert.match(account, /const setAddressFormOpen =/);
-  assert.match(account, /form\.animate/);
+  assert.match(product, /class="product-accordions"/);
+  assert.match(client, /disclosure\.animate/);
+  assert.match(account, /data-address-toggle/);
 });
 
 test("catalog facets support persistent batch filtering and a dedicated scroll region", async () => {

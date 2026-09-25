@@ -1,5 +1,5 @@
 ---
-import Icon from "../components/Icon.astro";
+import { Icon } from "astro-icon/components";
 import { contrastingInk, type NexahubV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
@@ -16,7 +16,6 @@ import * as m from "../../../../paraglide/messages.js";
 import logo from "../assets/nexahub-logo.svg";
 import Button from "../components/Button.astro";
 import { parseNexahubThemeTokens } from "../lib";
-import SaveIcon from "../components/SaveIcon.astro";
 import "../styles/main.scss";
 import "../styles/components/_header.scss";
 import "../styles/components/_footer.scss";
@@ -148,7 +147,7 @@ const nexahubClientMessages = {
         <div class="site-header__right">
           <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
           <form class="site-header__search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}><Icon name="search" /><label class="nexa-sr-only" for="nexa-search">{m.search_products_label({}, { locale })}</label><input id="nexa-search" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} class="site-header__search-input type-body-s-400" /></form>
-          <a class="site-header__icon" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><SaveIcon /></a>
+          <a class="site-header__icon" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><Icon name="save" /></a>
           <button class="site-header__icon" type="button" aria-label={`${m.nav_cart({}, { locale })}: ${m.cart_item_count({ count: cartCount }, { locale })}`} data-cart-open><Icon name="shopping-cart" /><span data-cart-count aria-live="polite" hidden={deferCartCount || cartCount === 0}>{cartCount}</span></button>
           <a class="site-header__icon" href="/account" aria-label={m.nav_account({}, { locale })}><Icon name="profile" /></a>
           <Button text={m.action_shop_now({}, { locale })} href="/products" size="small" variant="secondary" />
@@ -203,5 +202,6 @@ const nexahubClientMessages = {
 <style>
   .site-header__brand:has(.nexa-wordmark) { width: auto; min-width: 94px; max-width: 220px; }
   .nexa-wordmark { display: block; max-width: 18rem; color: var(--nexa-on-primary); font-family: "Space Grotesk", "Noto Sans Ethiopic", sans-serif; font-size: clamp(.95rem, 1.6vw, 1.25rem); font-weight: 700; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.04em; }
+  .nexa-wordmark[hidden] { display: none !important; }
   .site-footer__logo .nexa-wordmark { color: inherit; font-size: clamp(1.3rem, 2vw, 2rem); white-space: normal; }
 </style>

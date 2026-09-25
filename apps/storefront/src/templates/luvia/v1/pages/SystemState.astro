@@ -1,11 +1,11 @@
 ---
 import "../styles/pages/system-state.scss";
-import ActionButton from "../components/ActionButton.astro";
 import OfflineStateEnhancer from "../../../../components/shell/OfflineStateEnhancer.astro";
-import Layout from "../layouts/Layout.astro";
-import { parseLuviaData } from "../lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
+import ActionButton from "../components/ActionButton.astro";
+import Layout from "../layouts/Layout.astro";
+import { parseLuviaData } from "../lib";
 
 interface Props {
   data: unknown;
@@ -22,17 +22,59 @@ interface Props {
   recoveryLabel?: string;
 }
 
-const { data, themeTokens, tenantName, cartCount = 0, title, description, actionHref, actionLabel, code } = Astro.props;
+const {
+  data,
+  themeTokens,
+  tenantName,
+  cartCount = 0,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+  code,
+} = Astro.props;
 const template = parseLuviaData(data);
-const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const locale =
+  Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}>
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  seo={{
+    canonicalUrl: Astro.url.href,
+    description,
+    noindex: true,
+    title: `${title} · ${tenantName}`,
+  }}
+>
   <main class="system" id="main-content" data-storefront-state>
     <div class="system__copy">
       {code ? <p class="type-body-s-500">{code}</p> : null}
-      <h1 class="type-display" data-state-copy data-offline-copy={m.status_offline_title({}, { locale })}>{title}</h1>
-      <div class="system__description type-body-400" data-state-copy data-offline-copy={m.status_offline_help({}, { locale })}>{description}</div>
-      {actionHref && actionLabel ? <ActionButton href={actionHref} tone="primary">{actionLabel}</ActionButton> : null}
+      <h1
+        class="type-display"
+        data-state-copy
+        data-offline-copy={m.status_offline_title({}, { locale })}
+      >
+        {title}
+      </h1>
+      <div
+        class="system__description type-body-400"
+        data-state-copy
+        data-offline-copy={m.status_offline_help({}, { locale })}
+      >
+        {description}
+      </div>
+      {
+        actionHref && actionLabel ? (
+          <ActionButton href={actionHref} tone="primary">
+            {actionLabel}
+          </ActionButton>
+        ) : null
+      }
     </div>
   </main>
   <OfflineStateEnhancer />

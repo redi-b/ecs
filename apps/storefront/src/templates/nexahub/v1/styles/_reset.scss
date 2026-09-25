@@ -1,64 +1,75 @@
 @use 'variables' as *;
 
-html.template-nexahub {
-  height: 100%;
+// box sizing rules
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// Remove default margin
+* {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+.sf-icon {
+  display: contents;
+}
+
+.sf-icon svg {
+  display: block;
+}
+
+// Set core root defaults
+html:focus-within {
   scroll-behavior: smooth;
+}
 
-  &:focus-within {
-    scroll-behavior: smooth;
-  }
+html {
+  height: 100%;
+}
 
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font: inherit;
-  }
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+  text-rendering: optimizeSpeed;
+}
 
-  ul,
-  ol {
-    list-style: none;
-  }
+main {
+  height: auto;
+}
 
-  .sf-icon {
-    display: contents;
-  }
+// A elements that don't have a class get default styles
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
 
-  .sf-icon svg {
-    display: block;
-  }
+// Make images easier to work with
+img,
+picture {
+  max-width: 100%;
+  display: block;
+  height: 100%;
+}
 
-  body {
-    min-height: 100%;
-    overflow-x: hidden;
-    text-rendering: optimizeSpeed;
-  }
+a {
+  text-decoration: none;
+  color: inherit;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+}
 
-  main {
-    height: auto;
-  }
-
-  a:not([class]) {
-    text-decoration-skip-ink: auto;
-  }
-
-  img,
-  picture {
-    max-width: 100%;
-    display: block;
-    height: 100%;
-  }
-
-  a {
-    text-decoration: none;
-    color: inherit;
-    background-color: transparent;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    user-select: none;
-    pointer-events: auto;
-  }
+[hidden] {
+  display: none !important;
 }

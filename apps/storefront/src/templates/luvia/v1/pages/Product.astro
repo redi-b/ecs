@@ -1,6 +1,6 @@
 ---
 import "../styles/pages/product-detail.scss";
-import Icon from "../components/Icon.astro";
+import { Icon } from "astro-icon/components";
 import { sanitizeProductDescription } from "@ecs/content";
 import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
 import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
@@ -53,49 +53,47 @@ const {
   structuredData,
   demoMode = false,
 } = Astro.props;
+
 const template = parseLuviaData(data);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
 const addToCartLabel = resolveTemplateVoiceMessage({
   fallback: m.action_add_to_cart({}, { locale }),
   locale,
   messageId: "action_add_to_cart",
   templateKey: "luvia.v1",
 });
-const clientMessages = {
-  addFailed: m.product_add_failed({}, { locale }),
-  added: m.product_added({}, { locale }),
-  addedHelp: m.product_added_help({}, { locale }),
-  adding: m.product_adding({}, { locale }),
-  addToCart: addToCartLabel,
-  discountOff: m.catalog_discount_off({ percentage: "__PERCENTAGE__" }, { locale }),
-  inStock: m.catalog_in_stock({}, { locale }),
-  outOfStock: m.catalog_out_of_stock({}, { locale }),
-};
+
 const defaultVariant: StoreProductVariant | null =
   product?.variants.find((variant) => variant.inStock) ?? product?.variants[0] ?? null;
+
 const descriptionHtml =
   sanitizeProductDescription(product?.description) ??
   `<p>${m.product_description_fallback({}, { locale })}</p>`;
+
 const optionAxes: StoreProductOption[] = product?.options?.length
   ? product.options
   : (() => {
       const axes = new Map<string, Set<string>>();
-      for (const variant of product?.variants ?? [])
+      for (const variant of product?.variants ?? []) {
         for (const option of variant.optionValues) {
           if (!axes.has(option.optionTitle)) axes.set(option.optionTitle, new Set());
           axes.get(option.optionTitle)?.add(option.value);
         }
+      }
       return [...axes.entries()].map(([title, values], index) => ({
         id: `axis-${index}`,
         title,
         values: [...values],
       }));
     })();
+
 const gallery: StoreProductImage[] = product?.gallery?.length
   ? product.gallery
   : product?.thumbnail
     ? [{ url: product.thumbnail, variants: product.thumbnailVariants }]
     : [];
+
 const variantsPayload = (product?.variants ?? []).map((variant) => ({
   id: variant.id,
   inStock: variant.inStock,
@@ -106,10 +104,11 @@ const variantsPayload = (product?.variants ?? []).map((variant) => ({
   sku: variant.sku,
   imageUrl: variant.imageUrl ?? null,
   imageVariants: variant.imageVariants ?? null,
-  optionValues: Object.fromEntries(
+  options: Object.fromEntries(
     variant.optionValues.map((option) => [option.optionTitle, option.value]),
   ),
 }));
+
 const brand = product?.collectionTitle?.toUpperCase() || tenantName.toUpperCase();
 const currentPrice = formatMoney(
   defaultVariant?.priceAmount ?? product?.priceAmount,
@@ -118,12 +117,14 @@ const currentPrice = formatMoney(
 );
 const originalPrice = defaultVariant?.originalPriceAmount ?? product?.originalPriceAmount ?? null;
 const badge = product ? resolveProductBadge(product, defaultVariant) : null;
+
 const initialHeroImage = defaultVariant?.imageUrl
   ? (gallery.find((img) => img.url === defaultVariant.imageUrl) ?? {
       url: defaultVariant.imageUrl,
       variants: defaultVariant.imageVariants ?? undefined,
     })
   : (gallery[0] ?? null);
+
 const wishlistItem = product
   ? JSON.stringify({
       path: `/products/${encodeURIComponent(handle)}`,
@@ -135,379 +136,312 @@ const wishlistItem = product
   : "";
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={product?.title ?? m.product_not_found({}, { locale })} seo={seo} structuredData={structuredData}>
-  {!product ? <main class="product-missing"><h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1><p class="type-body-400">{m.product_unavailable({}, { locale })}</p><a class="type-body-500" href="/products">{m.action_back_to_products({}, { locale })}</a></main> : <main class="product-page" data-product-detail>
-    <nav class="product-breadcrumb container type-body-s-400" aria-label={m.breadcrumb_label({}, { locale })}><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.catalog_products({}, { locale })}</span></nav>
-    {(notice === "added" || error) && <p class:list={["product-server-notice container type-body-s-400", { "is-error": error }]} role={error ? "alert" : "status"}>{error ?? m.product_added_to_cart({}, { locale })}</p>}
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  title={product?.title ?? m.product_not_found({}, { locale })}
+  seo={seo}
+  structuredData={structuredData}
+>
+  {
+    !product ? (
+      <main class="product-missing">
+        <h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1>
+        <p class="type-body-400">{m.product_unavailable({}, { locale })}</p>
+        <a class="type-body-500" href="/products">
+          {m.action_back_to_products({}, { locale })}
+        </a>
+      </main>
+    ) : (
+      <main class="product-page" data-product-root data-product-detail>
+        <nav
+          class="product-breadcrumb container type-body-s-400"
+          aria-label={m.breadcrumb_label({}, { locale })}
+        >
+          <a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a>
+          <Icon name="chevron" />
+          <a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a>
+          <Icon name="chevron" />
+          <span class="type-body-s-400">{m.catalog_products({}, { locale })}</span>
+        </nav>
 
-    <section class="product-detail container">
-      <div class="product-gallery">
-        {gallery.length > 1 && (
-          <div class="product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>
-            {gallery.map((img, index) => {
-              const thumbSrc = resolveProductImage(img.variants, "w200", img.url);
-              const mainSrc = resolveProductImage(img.variants, "w1200", resolveProductImage(img.variants, "w800", img.url));
-              const mainSrcset = buildProductImageSrcset(img.variants);
-              const isInitialActive = initialHeroImage ? img.url === initialHeroImage.url : index === 0;
-              return (
-                <button
-                  type="button"
-                  data-gallery-thumb={mainSrc}
-                  data-gallery-thumb-srcset={mainSrcset ?? undefined}
-                  data-image-url={img.url}
-                  aria-current={isInitialActive ? "true" : undefined}
-                  aria-label={m.product_view_image({ number: index + 1 }, { locale })}
-                >
-                  <img src={thumbSrc} alt="" width="96" height="96" loading="lazy" decoding="async" />
-                </button>
-              );
-            })}
+        {
+          (notice === "added" || error) && (
+            <p
+              class:list={["product-server-notice container type-body-s-400", { "is-error": error }]}
+              role={error ? "alert" : "status"}
+            >
+              {error ?? m.product_added_to_cart({}, { locale })}
+            </p>
+          )
+        }
+
+        <section class="product-detail container">
+          <div class="product-gallery">
+            {gallery.length > 1 && (
+              <div class="product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>
+                {gallery.map((img, index) => {
+                  const thumbSrc = resolveProductImage(img.variants, "w200", img.url);
+                  const mainSrc = resolveProductImage(
+                    img.variants,
+                    "w1200",
+                    resolveProductImage(img.variants, "w800", img.url),
+                  );
+                  const mainSrcset = buildProductImageSrcset(img.variants);
+                  const isInitialActive = initialHeroImage
+                    ? img.url === initialHeroImage.url
+                    : index === 0;
+                  return (
+                    <button
+                      type="button"
+                      data-gallery-thumb={mainSrc}
+                      data-gallery-thumb-srcset={mainSrcset ?? undefined}
+                      data-image-url={img.url}
+                      aria-current={isInitialActive ? "true" : undefined}
+                      aria-label={m.product_view_image({ number: index + 1 }, { locale })}
+                    >
+                      <img src={thumbSrc} alt="" width="96" height="96" loading="lazy" decoding="async" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div class="product-gallery__main" data-gallery-main>
+              {initialHeroImage ? (
+                <img
+                  src={resolveProductImage(
+                    initialHeroImage.variants,
+                    "w1200",
+                    resolveProductImage(initialHeroImage.variants, "w800", initialHeroImage.url),
+                  )}
+                  srcset={buildProductImageSrcset(initialHeroImage.variants) ?? undefined}
+                  alt={product.title ?? m.catalog_product_fallback({}, { locale })}
+                  width="1200"
+                  height="1200"
+                  decoding="async"
+                />
+              ) : (
+                <ProductMediaPlaceholder
+                  label={m.product_no_image(
+                    { product: product.title ?? m.catalog_product_fallback({}, { locale }) },
+                    { locale },
+                  )}
+                />
+              )}
+              <span
+                class:list={["product-gallery__badge type-body-xs", badge ? `is-${badge.kind}` : null]}
+                data-product-badge
+                hidden={!badge}
+              >
+                {badge?.kind === "promotion" && <Icon name="star" data-product-badge-icon />}
+                <span>{badge?.label ?? ""}</span>
+              </span>
+            </div>
           </div>
-        )}
-        <div class="product-gallery__main" data-gallery-main>
-          {initialHeroImage ? (
-            <img
-              src={resolveProductImage(initialHeroImage.variants, "w1200", resolveProductImage(initialHeroImage.variants, "w800", initialHeroImage.url))}
-              srcset={buildProductImageSrcset(initialHeroImage.variants) ?? undefined}
-              alt={product.title ?? m.catalog_product_fallback({}, { locale })}
-              width="1200"
-              height="1200"
-              decoding="async"
-            />
-          ) : (
-            <ProductMediaPlaceholder label={m.product_no_image({ product: product.title ?? m.catalog_product_fallback({}, { locale }) }, { locale })} />
-          )}
-          <span class:list={["product-gallery__badge type-body-xs", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}>
-            <Icon name="star" data-product-badge-icon hidden={badge?.kind !== "promotion"} />
-            <span>{badge?.label ?? ""}</span>
-          </span>
-        </div>
-      </div>
 
-      <div class="product-buy">
-        <div class="product-title"><span class="type-body-xs">{brand}</span><h1 class="type-heading-3">{product.title}</h1><p class="product-price type-body-xl"><strong data-product-price class="type-body-xl">{currentPrice}</strong><del data-product-original-price class="type-body-s-400" hidden={!originalPrice}>{originalPrice ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode, locale) : ""}</del></p><small data-product-stock class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}>{defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
-        <form method="post" action="/actions/cart/add" data-add-form>
-          <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
-          <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
-          <input type="hidden" name="quantity" value="1" />
-          {optionAxes.map((axis) => {
-            const isColorAxis = isColorOptionTitle(axis.title);
-            const hasSwatches = Boolean(axis.optionSwatches && Object.keys(axis.optionSwatches).length);
-            const showSwatches = axis.displayMode === "swatch" || (axis.displayMode !== "text" && (isColorAxis || hasSwatches));
-            return (
-              <fieldset data-option-axis={axis.title}>
-                <legend class="type-body-s-400">{m.product_select_option({ option: axis.title }, { locale })}</legend>
+          <div class="product-buy">
+            <div class="product-title">
+              <span class="type-body-xs">{brand}</span>
+              <h1 class="type-heading-3">{product.title}</h1>
+              <p class="product-price type-body-xl">
+                <strong data-product-price class="type-body-xl">{currentPrice}</strong>
+                <del data-product-original-price class="type-body-s-400" hidden={!originalPrice}>
+                  {originalPrice
+                    ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode, locale)
+                    : ""}
+                </del>
+              </p>
+              <small
+                data-product-stock
+                class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}
+              >
+                {defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}
+                {defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}
+              </small>
+            </div>
+
+            <form method="post" action="/actions/cart/add" data-add-form>
+              <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
+              <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
+              <input type="hidden" name="quantity" value="1" />
+              {optionAxes.map((axis) => {
+                const isColorAxis = isColorOptionTitle(axis.title);
+                const hasSwatches = Boolean(axis.optionSwatches && Object.keys(axis.optionSwatches).length);
+                const showSwatches =
+                  axis.displayMode === "swatch" ||
+                  (axis.displayMode !== "text" && (isColorAxis || hasSwatches));
+                return (
+                  <fieldset data-option-axis={axis.title}>
+                    <legend class="type-body-s-400">
+                      {m.product_select_option({ option: axis.title }, { locale })}
+                    </legend>
+                    <div>
+                      {axis.values.map((value) => {
+                        const selected = defaultVariant?.optionValues.some(
+                          (option) => option.optionTitle === axis.title && option.value === value,
+                        );
+                        const richSwatch = showSwatches ? axis.optionSwatches?.[value] : undefined;
+                        const colorSwatch =
+                          richSwatch?.kind === "color"
+                            ? richSwatch.value
+                            : showSwatches && isColorAxis
+                              ? resolveColorSwatch(value, axis.swatches?.[value])
+                              : null;
+                        const imageSwatch = richSwatch?.kind === "image" ? richSwatch.url : null;
+
+                        if (imageSwatch) {
+                          return (
+                            <button
+                              class="product-swatch product-swatch--image"
+                              type="button"
+                              data-option-title={axis.title}
+                              data-option-value={value}
+                              aria-pressed={selected ? "true" : "false"}
+                              aria-label={m.product_select_option({ option: value }, { locale })}
+                              title={value}
+                            >
+                              <img
+                                src={imageSwatch}
+                                alt=""
+                                width="28"
+                                height="28"
+                                loading="lazy"
+                                aria-hidden="true"
+                              />
+                            </button>
+                          );
+                        }
+
+                        if (colorSwatch) {
+                          return (
+                            <button
+                              class="product-swatch"
+                              type="button"
+                              data-option-title={axis.title}
+                              data-option-value={value}
+                              aria-pressed={selected ? "true" : "false"}
+                              aria-label={m.product_select_option({ option: value }, { locale })}
+                              title={value}
+                            >
+                              <span style={`background-color:${colorSwatch}`} aria-hidden="true" />
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            class="type-body-s-500"
+                            type="button"
+                            data-option-title={axis.title}
+                            data-option-value={value}
+                            aria-pressed={selected ? "true" : "false"}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                );
+              })}
+              <div class="product-cart-row">
+                <button
+                  class="product-add type-body-l-500"
+                  type="submit"
+                  data-add-button
+                  disabled={!defaultVariant?.inStock}
+                >
+                  <span data-add-label class="type-body-l-500">
+                    {defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}
+                  </span>
+                  <span class="product-spinner" aria-hidden="true" />
+                </button>
+                <button
+                  class="product-wishlist"
+                  type="button"
+                  data-wishlist-toggle
+                  data-wishlist-item={wishlistItem}
+                  aria-pressed="false"
+                  aria-label={m.action_add_to_wishlist({}, { locale })}
+                >
+                  <Icon name="wishlist" />
+                </button>
+              </div>
+              <p class="product-feedback type-body-xs" data-add-feedback aria-live="polite" />
+            </form>
+
+            <div class="product-accordions">
+              <details open>
+                <summary class="type-body-l-500">
+                  {m.product_description({}, { locale })} <Icon name="chevron" />
+                </summary>
+                <div class="rich-text type-body-400" set:html={descriptionHtml} />
+              </details>
+              <details>
+                <summary class="type-body-l-500">
+                  {m.product_delivery_details({}, { locale })} <Icon name="chevron" />
+                </summary>
                 <div>
-                  {axis.values.map((value) => {
-                    const selected = defaultVariant?.optionValues.some((option) => option.optionTitle === axis.title && option.value === value);
-                    const richSwatch = showSwatches ? axis.optionSwatches?.[value] : undefined;
-                    const colorSwatch = richSwatch?.kind === "color"
-                      ? richSwatch.value
-                      : showSwatches && isColorAxis
-                        ? resolveColorSwatch(value, axis.swatches?.[value])
-                        : null;
-                    const imageSwatch = richSwatch?.kind === "image" ? richSwatch.url : null;
-
-                    if (imageSwatch) {
-                      return (
-                        <button
-                          class="product-swatch product-swatch--image"
-                          type="button"
-                          data-option-title={axis.title}
-                          data-option-value={value}
-                          aria-pressed={selected ? "true" : "false"}
-                          aria-label={m.product_select_option({ option: value }, { locale })}
-                          title={value}
-                        >
-                          <img
-                            src={imageSwatch}
-                            alt=""
-                            width="28"
-                            height="28"
-                            loading="lazy"
-                            aria-hidden="true"
-                            onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden')"
-                          />
-                          <span class="hidden text-xs">{value}</span>
-                        </button>
-                      );
-                    }
-
-                    if (colorSwatch) {
-                      return (
-                        <button
-                          class="product-swatch"
-                          type="button"
-                          data-option-title={axis.title}
-                          data-option-value={value}
-                          aria-pressed={selected ? "true" : "false"}
-                          aria-label={m.product_select_option({ option: value }, { locale })}
-                          title={value}
-                        >
-                          <span style={`background-color:${colorSwatch}`} aria-hidden="true"></span>
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <button
-                        class="type-body-s-500"
-                        type="button"
-                        data-option-title={axis.title}
-                        data-option-value={value}
-                        aria-pressed={selected ? "true" : "false"}
-                      >
-                        {value}
-                      </button>
-                    );
-                  })}
+                  <p class="type-body-400">{m.product_delivery_help({}, { locale })}</p>
                 </div>
-              </fieldset>
-            );
-          })}
-          <div class="product-cart-row"><button class="product-add type-body-l-500" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-l-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="product-spinner" aria-hidden="true"></span></button><button class="product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button></div>
-          <p class="product-feedback type-body-xs" data-add-feedback aria-live="polite"></p>
-        </form>
+              </details>
+            </div>
+          </div>
+        </section>
 
-        <div class="product-accordions">
-          <details open><summary class="type-body-l-500">{m.product_description({}, { locale })} <Icon name="chevron" /></summary><div class="rich-text type-body-400" set:html={descriptionHtml} /></details>
-          <details><summary class="type-body-l-500">{m.product_delivery_details({}, { locale })} <Icon name="chevron" /></summary><div><p class="type-body-400">{m.product_delivery_help({}, { locale })}</p></div></details>
+        {relatedProducts.length > 0 && (
+          <section class="related container" aria-labelledby="related-products-title">
+            <header>
+              <h2 id="related-products-title" class="type-heading-3">
+                {m.product_related({}, { locale })}
+              </h2>
+              <div class="rail-controls">
+                <button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>
+                  ←
+                </button>
+                <button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>
+                  →
+                </button>
+              </div>
+            </header>
+            <div class="related__rail" data-related-rail role="region" aria-label={m.product_related({}, { locale })}>
+              {relatedProducts.map((item) => (
+                <ProductCard product={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div class="sticky-product" data-sticky-product>
+          <div>
+            <strong class="type-body-s-500">{product.title}</strong>
+            <span data-sticky-price class="type-body-500">{currentPrice}</span>
+          </div>
+          <button type="button" data-sticky-add class="type-body-500" disabled={!defaultVariant?.inStock}>
+            <span data-add-label class="type-body-500">
+              {defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}
+            </span>
+            <span class="product-spinner" aria-hidden="true" />
+          </button>
         </div>
-      </div>
-    </section>
 
-    {relatedProducts.length > 0 && <section class="related container" aria-labelledby="related-products-title"><header><h2 id="related-products-title" class="type-heading-3">{m.product_related({}, { locale })}</h2><div class="rail-controls"><button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>←</button><button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>→</button></div></header><div class="related__rail" data-related-rail role="region" aria-label={m.product_related({}, { locale })}>{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
-
-    <div class="sticky-product" data-sticky-product><div><strong class="type-body-s-500">{product.title}</strong><span data-sticky-price class="type-body-500">{currentPrice}</span></div><button type="button" data-sticky-add class="type-body-500" disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="product-spinner" aria-hidden="true"></span></button></div>
-    <script is:inline type="application/json" id="luvia-product-variants" set:html={serializeJsonForScript(variantsPayload)} />
-    <script is:inline type="application/json" id="luvia-option-media-bindings" set:html={serializeJsonForScript(product?.optionMediaBindings ?? null)} />
-  </main>}
+        <script
+          is:inline
+          type="application/json"
+          data-variants-data
+          set:html={serializeJsonForScript(variantsPayload)}
+        />
+      </main>
+    )
+  }
 </Layout>
 
-<script is:inline define:vars={{ clientMessages }}>
-  (() => {
-    const root = document.querySelector("[data-product-detail]");
-    if (!root) return;
-    const variants = JSON.parse(document.getElementById("luvia-product-variants")?.textContent || "[]");
-    const optionMediaBindings = JSON.parse(document.getElementById("luvia-option-media-bindings")?.textContent || "null");
-    const selected = {};
-    root.querySelectorAll("[data-option-axis]").forEach((axis) => {
-      const title = axis.getAttribute("data-option-axis");
-      const pressed = axis.querySelector('[aria-pressed="true"]');
-      if (title && pressed) selected[title] = pressed.getAttribute("data-option-value") || "";
-    });
-    const money = (amount, currency) => { try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); } catch { return String(amount ?? ""); } };
-    const selectedVariant = () => variants.find((variant) => { const entries = Object.entries(variant.optionValues || {}); return entries.length ? entries.every(([title, value]) => selected[title] === value) : variants.length === 1; });
-    const refresh = () => {
-      const variant = selectedVariant();
-      const id = root.querySelector("[data-variant-id]");
-      const price = root.querySelector("[data-product-price]");
-      const originalPrice = root.querySelector("[data-product-original-price]");
-      const badge = root.querySelector("[data-product-badge]");
-      const stickyPrice = root.querySelector("[data-sticky-price]");
-      const stock = root.querySelector("[data-product-stock]");
-      const add = root.querySelector("[data-add-button]");
-      const stickyAdd = root.querySelector("[data-sticky-add]");
-      if (id) id.value = variant?.id || "";
-      if (variant?.priceAmount != null) { const value = money(variant.priceAmount, variant.currencyCode); if (price) price.textContent = value; if (stickyPrice) stickyPrice.textContent = value; }
-      if (originalPrice) { const original = variant?.originalPriceAmount; originalPrice.textContent = original != null ? money(original, variant?.currencyCode) : ""; originalPrice.toggleAttribute("hidden", original == null); }
-      if (badge) {
-        const percentage = Number(variant?.discountPercentage || 0);
-        const originalAmount = Number(variant?.originalPriceAmount ?? 0);
-        const currentAmount = Number(variant?.priceAmount ?? 0);
-        const hasPromotion = percentage > 0 && originalAmount > currentAmount;
-        const soldOut = Boolean(variant && !variant.inStock);
-        const shouldShow = soldOut || hasPromotion;
-        const label = badge.querySelector("span");
-        const icon = badge.querySelector("[data-product-badge-icon]");
-        badge.hidden = !shouldShow;
-        badge.toggleAttribute("hidden", !shouldShow);
-        badge.classList.toggle("is-out-of-stock", soldOut);
-        badge.classList.toggle("is-promotion", !soldOut && hasPromotion);
-        if (icon instanceof HTMLElement) {
-          icon.hidden = !hasPromotion || soldOut;
-          icon.toggleAttribute("hidden", !hasPromotion || soldOut);
-        }
-        if (label) label.textContent = soldOut ? clientMessages.outOfStock : hasPromotion ? clientMessages.discountOff.replace("__PERCENTAGE__", String(percentage)) : "";
-      }
-      if (stock) { stock.textContent = variant?.inStock ? `${clientMessages.inStock}${variant.sku ? ` · SKU ${variant.sku}` : ""}` : clientMessages.outOfStock; stock.classList.toggle("is-out", !variant?.inStock); }
-      [add, stickyAdd].forEach((button) => {
-        if (button instanceof HTMLButtonElement) {
-          button.disabled = !variant?.inStock;
-          const label = button.querySelector("[data-add-label]");
-          if (label) label.textContent = variant?.inStock ? clientMessages.addToCart : clientMessages.outOfStock;
-        }
-      });
-      root.querySelectorAll("[data-option-title]").forEach((node) => { if (!(node instanceof HTMLButtonElement)) return; const title = node.dataset.optionTitle; const value = node.dataset.optionValue; const probe = { ...selected, [title]: value }; const possible = variants.some((variant) => variant.inStock && Object.entries(probe).every(([key, expected]) => !variant.optionValues[key] || variant.optionValues[key] === expected)); node.disabled = !possible; node.setAttribute("aria-pressed", selected[title] === value ? "true" : "false"); });
-
-      const thumbButtons = Array.from(root.querySelectorAll("[data-gallery-thumb]"));
-      if (optionMediaBindings && optionMediaBindings.mappings && optionMediaBindings.optionTitle) {
-        const boundTitle = optionMediaBindings.optionTitle.trim().toLowerCase();
-        const selectedKey = Object.keys(selected).find((k) => k.trim().toLowerCase() === boundTitle);
-        const selectedVal = selectedKey ? selected[selectedKey]?.trim() : "";
-        const mappingKey = selectedVal
-          ? Object.keys(optionMediaBindings.mappings).find((k) => k.trim().toLowerCase() === selectedVal.toLowerCase())
-          : null;
-
-        if (mappingKey) {
-          const tagged = new Set(optionMediaBindings.mappings[mappingKey] || []);
-          const allTagged = new Set(Object.values(optionMediaBindings.mappings).flat());
-          let visibleCount = 0;
-          thumbButtons.forEach((btn) => {
-            const url = btn.getAttribute("data-image-url") || "";
-            const visible = tagged.has(url) || !allTagged.has(url) || url === variant?.imageUrl;
-            btn.hidden = !visible;
-            btn.toggleAttribute("hidden", !visible);
-            if (visible) visibleCount++;
-          });
-          if (visibleCount === 0) {
-            thumbButtons.forEach((btn) => {
-              btn.hidden = false;
-              btn.removeAttribute("hidden");
-            });
-          }
-        } else {
-          thumbButtons.forEach((btn) => {
-            btn.hidden = false;
-            btn.removeAttribute("hidden");
-          });
-        }
-      }
-
-      const main = root.querySelector("[data-gallery-main] > img");
-      if (variant && variant.imageUrl && main) {
-        const matchingThumb = thumbButtons.find((btn) => !btn.hidden && btn.getAttribute("data-image-url") === variant.imageUrl);
-        if (matchingThumb) {
-          main.setAttribute("src", matchingThumb.dataset.galleryThumb || variant.imageUrl);
-          if (matchingThumb.dataset.galleryThumbSrcset) {
-            main.setAttribute("srcset", matchingThumb.dataset.galleryThumbSrcset);
-          } else {
-            main.removeAttribute("srcset");
-          }
-          thumbButtons.forEach((item) => item.removeAttribute("aria-current"));
-          matchingThumb.setAttribute("aria-current", "true");
-        } else {
-          main.setAttribute("src", variant.imageVariants?.w1200 || variant.imageVariants?.w800 || variant.imageUrl);
-          thumbButtons.forEach((item) => item.removeAttribute("aria-current"));
-          main.removeAttribute("srcset");
-        }
-      } else if (main && thumbButtons.length) {
-        const currentThumb = thumbButtons.find((btn) => btn.getAttribute("aria-current") === "true");
-        if (!currentThumb || currentThumb.hidden) {
-          const firstVisible = thumbButtons.find((btn) => !btn.hidden);
-          if (firstVisible) {
-            main.setAttribute("src", firstVisible.dataset.galleryThumb || "");
-            if (firstVisible.dataset.galleryThumbSrcset) {
-              main.setAttribute("srcset", firstVisible.dataset.galleryThumbSrcset);
-            } else {
-              main.removeAttribute("srcset");
-            }
-            thumbButtons.forEach((item) => item.removeAttribute("aria-current"));
-            firstVisible.setAttribute("aria-current", "true");
-          }
-        }
-      }
-    };
-    root.addEventListener("click", (event) => {
-      const target = event.target instanceof Element ? event.target : null;
-      const option = target?.closest("[data-option-title]");
-      if (option instanceof HTMLButtonElement && !option.disabled) { selected[option.dataset.optionTitle] = option.dataset.optionValue; refresh(); }
-      const thumb = target?.closest("[data-gallery-thumb]");
-      if (thumb instanceof HTMLButtonElement) { const main = root.querySelector("[data-gallery-main] > img"); if (main && thumb.dataset.galleryThumb) { main.setAttribute("src", thumb.dataset.galleryThumb); if (thumb.dataset.galleryThumbSrcset) { main.setAttribute("srcset", thumb.dataset.galleryThumbSrcset); } else { main.removeAttribute("srcset"); } } root.querySelectorAll("[data-gallery-thumb]").forEach((item) => item.removeAttribute("aria-current")); thumb.setAttribute("aria-current", "true"); }
-    });
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    root.querySelectorAll(".product-accordions details").forEach((disclosure) => {
-      if (!(disclosure instanceof HTMLDetailsElement)) return;
-      const summary = disclosure.querySelector("summary");
-      if (!summary) return;
-      let animation;
-      summary.addEventListener("click", (event) => {
-        event.preventDefault();
-        animation?.cancel();
-        if (reducedMotion.matches) { disclosure.open = !disclosure.open; return; }
-        const opening = !disclosure.open;
-        const startHeight = disclosure.offsetHeight;
-        disclosure.style.overflow = "hidden";
-        if (opening) disclosure.open = true;
-        const styles = getComputedStyle(disclosure);
-        const collapsedHeight = summary.offsetHeight
-          + Number.parseFloat(styles.paddingTop)
-          + Number.parseFloat(styles.paddingBottom)
-          + Number.parseFloat(styles.borderTopWidth)
-          + Number.parseFloat(styles.borderBottomWidth);
-        const endHeight = opening ? disclosure.scrollHeight : collapsedHeight;
-        animation = disclosure.animate(
-          { height: [`${startHeight}px`, `${endHeight}px`] },
-          { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" },
-        );
-        const content = disclosure.querySelector(":scope > div");
-        if (opening) content?.animate(
-          { opacity: [0, 1], transform: ["translateY(-5px)", "translateY(0)"] },
-          { duration: 180, easing: "cubic-bezier(.22,1,.36,1)" },
-        );
-        animation.addEventListener("finish", () => {
-          if (!opening) disclosure.open = false;
-          disclosure.style.removeProperty("overflow");
-          animation = undefined;
-        }, { once: true });
-        animation.addEventListener("cancel", () => {
-          disclosure.style.removeProperty("overflow");
-          animation = undefined;
-        }, { once: true });
-      });
-    });
-    const form = root.querySelector("[data-add-form]");
-    const addButton = root.querySelector("[data-add-button]");
-    const stickyAdd = root.querySelector("[data-sticky-add]");
-    const feedback = root.querySelector("[data-add-feedback]");
-    const updateButtons = (loading, text) => {
-      [addButton, stickyAdd].forEach((btn) => {
-        if (!(btn instanceof HTMLButtonElement)) return;
-        btn.disabled = loading;
-        btn.dataset.loading = loading ? "true" : "false";
-        const label = btn.querySelector("[data-add-label]");
-        if (label) label.textContent = text;
-      });
-    };
-    form?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (!(form instanceof HTMLFormElement) || !(addButton instanceof HTMLButtonElement) || addButton.disabled) return;
-      updateButtons(true, clientMessages.adding);
-      if (feedback) { feedback.textContent = ""; feedback.classList.remove("is-error"); }
-      
-      const { addToCart } = await import("../../../../lib/stores/cart");
-      const result = await addToCart({ form, openDrawer: true });
-
-      if (result.ok) {
-        updateButtons(true, clientMessages.added);
-        if (feedback) feedback.textContent = clientMessages.addedHelp;
-        setTimeout(() => { updateButtons(!selectedVariant()?.inStock, selectedVariant()?.inStock ? clientMessages.addToCart : clientMessages.outOfStock); }, 1400);
-      } else {
-        updateButtons(!selectedVariant()?.inStock, clientMessages.addToCart);
-        if (feedback) { feedback.textContent = result.error || clientMessages.addFailed; feedback.classList.add("is-error"); }
-      }
-
-      const inStock = Boolean(selectedVariant()?.inStock);
-      [addButton, stickyAdd].forEach((btn) => {
-        if (btn instanceof HTMLButtonElement) {
-          btn.disabled = !inStock;
-          delete btn.dataset.loading;
-        }
-      });
-    });
-    stickyAdd?.addEventListener("click", () => { if (form instanceof HTMLFormElement) form.requestSubmit(); });
-    const rail = document.querySelector("[data-related-rail]");
-    document.querySelector("[data-related-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
-    document.querySelector("[data-related-next]")?.addEventListener("click", () => rail?.scrollBy({ left: Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
-    const stickyProduct = root.querySelector("[data-sticky-product]");
-    const inquiry = document.querySelector(".inquiry");
-    if (stickyProduct instanceof HTMLElement && inquiry instanceof HTMLElement && "IntersectionObserver" in window) {
-      const inquiryObserver = new IntersectionObserver(([entry]) => {
-        stickyProduct.toggleAttribute("data-hidden", Boolean(entry?.isIntersecting));
-      }, { threshold: 0.05 });
-      inquiryObserver.observe(inquiry);
-    }
-    refresh();
-  })();
+<script>
+  import { initLuviaProductPage } from "../scripts/client";
+  initLuviaProductPage();
 </script>
-

@@ -1,5 +1,5 @@
 ---
-import Icon from "../components/Icon.astro";
+import { Icon } from "astro-icon/components";
 import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
 import type { StoreCart } from "../../../../lib/commerce/types";
 import { formatMoney } from "../../../../lib/money";
@@ -20,7 +20,7 @@ interface Props {
   demoMode?: boolean;
 }
 
-const { data, themeTokens, tenantName, cartCount, cart, error, discountError, demoMode = false } = Astro.props;
+const { data, themeTokens, tenantName, cartCount, cart, error, demoMode = false } = Astro.props;
 const template = parseAfroData(data);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const items = cart?.items ?? [];

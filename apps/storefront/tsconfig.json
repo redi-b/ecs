@@ -1,11 +1,13 @@
 {
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
       "@ecs/contracts": ["../../packages/contracts/src/index.ts"],
       "@ecs/storefront-templates": ["../../packages/storefront-templates/src/index.ts"]
     }
   },
-  "include": ["src", "astro.config.mjs"]
+  "include": [".astro/types.d.ts", "src/**/*", "astro.config.mjs"]
 }

@@ -50,34 +50,43 @@ if (!ctx.ok) {
 }
 ---
 
-<html lang={locale}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>{ctx.ok ? (ctx.config.storefront.seo.title ?? ctx.config.tenant.name) : m.status_shop_unavailable_page_title({}, { locale })}</title>
-  </head>
-  <body>
-    {
-      !ctx.ok ? (
+{
+  !ctx.ok ? (
+    <html lang={locale}>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>{m.status_shop_unavailable_page_title({}, { locale })}</title>
+      </head>
+      <body>
         <StorefrontFailure actionHref="/" actionLabel={m.action_retry({}, { locale })} description={m.status_generic_error({}, { locale })} eyebrow={m.status_shop_paused({}, { locale })} title={m.status_shop_unavailable_title({}, { locale })} />
-      ) : Home ? (
-        <Home
-          data={ctx.config.storefront.data}
-          productsResult={homeModel?.productsResult ?? { products: [] }}
-          collectionProducts={homeModel?.collectionProducts ?? []}
-          collections={homeModel?.collections ?? []}
-          categories={homeModel?.categories ?? []}
-          tenantName={ctx.config.tenant.name}
-          themeTokens={ctx.config.storefront.themeTokens}
-          platformApiBaseUrl={ctx.platformApiBaseUrl}
-          requestHost={ctx.requestHost}
-          deferCartCount={true}
-          seo={seo}
-          structuredData={structuredData}
-        />
-      ) : (
+      </body>
+    </html>
+  ) : Home ? (
+    <Home
+      data={ctx.config.storefront.data}
+      productsResult={homeModel?.productsResult ?? { products: [] }}
+      collectionProducts={homeModel?.collectionProducts ?? []}
+      collections={homeModel?.collections ?? []}
+      categories={homeModel?.categories ?? []}
+      tenantName={ctx.config.tenant.name}
+      themeTokens={ctx.config.storefront.themeTokens}
+      platformApiBaseUrl={ctx.platformApiBaseUrl}
+      requestHost={ctx.requestHost}
+      deferCartCount={true}
+      seo={seo}
+      structuredData={structuredData}
+    />
+  ) : (
+    <html lang={locale}>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>{m.status_shop_unavailable_page_title({}, { locale })}</title>
+      </head>
+      <body>
         <StorefrontFailure actionHref="/" actionLabel={m.action_retry({}, { locale })} description={m.status_shop_load_failed({}, { locale })} eyebrow={m.status_shop_paused({}, { locale })} title={m.status_shop_unavailable_title({}, { locale })} />
-      )
-    }
-  </body>
-</html>
+      </body>
+    </html>
+  )
+}

@@ -5,20 +5,20 @@ import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
 import "../styles/components/_rail.scss";
 import "../styles/components/_demo-banner.scss";
-import Icon from "../components/Icon.astro";
 import { contrastingInk, contrastRatio, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
-import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import { resolveTemplateVoiceMessage } from "../../../../lib/template-voice";
 import * as m from "../../../../paraglide/messages.js";
-import ActionButton from "../components/ActionButton.astro";
 import logo from "../assets/luvia-logo.svg";
 import { parseLuviaThemeTokens } from "../lib";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import CartDrawer from "../components/CartDrawer.astro";
 
 interface Props {
   tenantName: string;
@@ -47,22 +47,26 @@ const {
   seo,
   structuredData,
 } = Astro.props;
+
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
 const theme = parseLuviaThemeTokens(themeTokens);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
 const addToCartLabel = resolveTemplateVoiceMessage({
   fallback: m.action_add_to_cart({}, { locale }),
   locale,
   messageId: "action_add_to_cart",
   templateKey: "luvia.v1",
 });
+
 const continueShoppingLabel = resolveTemplateVoiceMessage({
   fallback: m.action_continue_shopping({}, { locale }),
   locale,
   messageId: "action_continue_shopping",
   templateKey: "luvia.v1",
 });
+
 const clientMessages = {
   addFailed: m.product_add_failed({}, { locale }),
   added: m.product_added({}, { locale }),
@@ -84,6 +88,7 @@ const clientMessages = {
   removingItem: m.cart_item_removing({}, { locale }),
   retry: m.action_retry({}, { locale }),
 };
+
 const themeStyle = [
   `--clr-bg:${theme.colors.background}`,
   `--clr-ink:${theme.colors.foreground}`,
@@ -99,9 +104,6 @@ const themeStyle = [
   `--clr-primary-dark:color-mix(in srgb, var(--clr-primary), #000 65%)`,
   `--clr-line:rgb(from var(--clr-ink) r g b / 0.14)`,
 ].join(";");
-const pathname = Astro.url.pathname;
-const isActiveLink = (href: string) =>
-  href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 ---
 
 <!doctype html>
@@ -136,354 +138,54 @@ const isActiveLink = (href: string) =>
     }) : undefined}
     style={themeStyle}
   >
-    {demoMode ? <div class="demo-banner type-body-xs" role="status"><strong>Template preview</strong><nav aria-label="Preview pages"><a href="/demo/storefront/luvia">Home</a><a href="/demo/storefront/luvia/products">Shop</a><a href="/demo/storefront/luvia/products/radiance-serum">Product</a><a href="/demo/storefront/luvia/cart">Cart</a><a href="/demo/storefront/luvia/checkout">Checkout</a><a href="/demo/storefront/luvia/order-confirmation">Receipt</a></nav><span>Shopping actions are disabled</span></div> : null}
-    <header class="header">
-      <div class="header__start">
-        <a class="logo" href="/" aria-label={m.a11y_shop_home({ shop: tenantName }, { locale })} data-editor-image-scope><img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="wordmark type-promo-title" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></a>
-        <button class="menu" type="button" aria-expanded="false" aria-controls="navigation"><span></span><span></span><span></span><span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span></button>
-        <nav class="nav" id="navigation" aria-label={m.a11y_store_navigation({}, { locale })} data-editor-links-path="header.navigation">
-          {header.navigation.map((item, index) => <a class:list={["type-body-400", { "is-active": isActiveLink(item.href), "type-body-500": isActiveLink(item.href) }]} href={item.href} aria-current={isActiveLink(item.href) ? "page" : undefined} data-editor-path={`header.navigation.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}
-          <span class="nav__customer" aria-label={m.a11y_customer_links({}, { locale })}>
-            <a class="type-body-400" href="/wishlist">{m.nav_wishlist({}, { locale })}</a>
-            <a class="type-body-400" href="/account">{m.nav_account({}, { locale })}</a>
-          </span>
+    {demoMode ? (
+      <div class="demo-banner type-body-xs" role="status">
+        <strong>Template preview</strong>
+        <nav aria-label="Preview pages">
+          <a href="/demo/storefront/luvia">Home</a>
+          <a href="/demo/storefront/luvia/products">Shop</a>
+          <a href="/demo/storefront/luvia/products/radiance-serum">Product</a>
+          <a href="/demo/storefront/luvia/cart">Cart</a>
+          <a href="/demo/storefront/luvia/checkout">Checkout</a>
+          <a href="/demo/storefront/luvia/order-confirmation">Receipt</a>
         </nav>
+        <span>Shopping actions are disabled</span>
       </div>
-      <div class="actions">
-        <StorefrontLanguageSwitcher hidden={demoMode || editorMode} />
-        <form class="search" action="/products" method="get" role="search" data-product-search-suggestions data-search-suggestions-anchor data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
-          <label class="sr-only" for="search-input">{m.search_products_label({}, { locale })}</label>
-          <input id="search-input" class="type-body-400" name="q" type="search" placeholder={m.search_products_placeholder({}, { locale })} />
-          <button type="submit" aria-label={m.action_search({}, { locale })} aria-controls="search-input" aria-expanded="false"><Icon name="search" /></button>
-        </form>
-        <a class="action action--wishlist" href="/wishlist" aria-label={m.nav_wishlist({}, { locale })} data-wishlist-indicator><Icon name="wishlist" /></a>
-        <a class="action" href="/cart" aria-label={m.nav_cart({}, { locale })} data-cart-trigger><Icon name="cart" /><span class="count type-body-xs" data-cart-count aria-live="polite" hidden={deferCartCount ? true : cartCount <= 0}>{deferCartCount ? "" : cartCount}</span></a>
-        <a class="action action--account" href="/account" aria-label={m.nav_account({}, { locale })}><Icon name="user" /></a>
-      </div>
-    </header>
-    <button class="header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>
+    ) : null}
+
+    <Header
+      tenantName={tenantName}
+      header={header}
+      cartCount={cartCount}
+      deferCartCount={deferCartCount}
+      demoMode={demoMode}
+      editorMode={editorMode}
+      locale={locale}
+      logoUrl={logoUrl}
+      emptyLogoUrl={emptyLogoUrl}
+    />
+
     <slot />
-    <footer class="footer">
-      <div class="footer__intro" data-editor-image-scope>
-        <div class="footer__brand">
-          <img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} />
-          <span class="wordmark type-promo-title" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span>
-          <p class="type-body-s-400" data-editor-path={!footer.managedContact ? "footer.blurb" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.blurb}</p>
-        </div>
-        {(editorMode || footer.credit.enabled) && <a href="https://eclipticcreative.com" rel="noreferrer" target="_blank" data-editor-section="footer.credit" data-editor-visible-path="footer.credit.enabled" hidden={!footer.credit.enabled} class="type-body-xs">{m.footer_web_design_by({ studio: "Eclipticcreative" }, { locale })}</a>}
-      </div>
-      <div class="type-body-s-400"><strong class="type-body-s-500">{m.footer_quick_links({}, { locale })}</strong><span class="footer__links" data-editor-links-path="footer.quickLinks" data-editor-empty-label="Add quick links">{footer.quickLinks.map((item, index) => <a class="type-body-s-400" href={item.href} data-editor-path={`footer.quickLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
-      <div class="type-body-s-400"><strong class="type-body-s-500">{m.nav_shop({}, { locale })}</strong><span class="footer__links" data-editor-links-path="footer.shopLinks" data-editor-empty-label="Add shop links">{footer.shopLinks.map((item, index) => <a class="type-body-s-400" href={item.href} data-editor-path={`footer.shopLinks.${index}.label`} contenteditable={editorMode ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>
-      {(footer.socialLinks.length > 0 || (editorMode && !footer.managedContact)) && <div class="type-body-s-400"><strong class="type-body-s-500">{m.contact_socials({}, { locale })}</strong><span class="footer__links" data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined} data-editor-empty-label={!footer.managedContact ? "Add social links" : undefined}>{footer.socialLinks.map((item, index) => <a class="type-body-s-400" href={item.href} target="_blank" rel="noopener noreferrer" data-editor-path={!footer.managedContact ? `footer.socialLinks.${index}.label` : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{item.label}</a>)}</span></div>}
-      <div class="type-body-s-400"><strong class="type-body-s-500">{m.contact_information({}, { locale })}</strong><span class="footer__links">{[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <a class="type-body-s-400" href={`tel:${phone}`} data-editor-path={!footer.managedContact ? "footer.phone" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{phone}</a>)}{(footer.email || (editorMode && !footer.managedContact)) && <a class="type-body-s-400" href={`mailto:${footer.email ?? ""}`} data-editor-path={!footer.managedContact ? "footer.email" : undefined} data-editor-empty-label={!footer.managedContact ? "Add email" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.email}</a>}{(footer.address || (editorMode && !footer.managedContact)) && <p class="type-body-s-400" data-editor-path={!footer.managedContact ? "footer.address" : undefined} data-editor-empty-label={!footer.managedContact ? "Add address" : undefined} contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}>{footer.address}</p>}</span></div>
-      <small class="type-body-s-400">© {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}</small>
-    </footer>
-    <aside class="inquiry" data-editor-section="footer.inquiry"><p class="type-heading-3" data-editor-path="footer.inquiry.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{footer.inquiry.title}</p><ActionButton href={footer.inquiry.ctaHref} icon="chat" tone="secondary" size="small" editorPath="footer.inquiry.ctaLabel" editorRelatedPaths={["footer.inquiry.ctaHref"]} editorMode={editorMode}>{footer.inquiry.ctaLabel}</ActionButton></aside>
-    <button class="cart-backdrop" type="button" data-cart-backdrop aria-label={m.cart_close({}, { locale })} hidden></button>
-    <aside class="cart-drawer" data-cart-drawer role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden>
-      <header><div><h2 id="cart-title" class="type-heading-4">{m.cart_title({}, { locale })}</h2><span data-cart-drawer-count class="type-body-s-400">{m.cart_item_count({ count: 0 }, { locale })}</span></div><button type="button" data-cart-close aria-label={m.cart_close({}, { locale })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg></button></header>
-      <div class="cart-drawer__status type-body-s-400" data-cart-status aria-live="polite"></div>
-      <div class="cart-drawer__items" data-cart-items></div>
-      <footer data-cart-footer hidden><dl><div class="type-body-s-400"><dt class="type-body-s-400">{m.cart_subtotal({}, { locale })}</dt><dd data-cart-subtotal class="type-body-s-500"></dd></div><div class="type-body-s-400"><dt class="type-body-s-400">{m.cart_delivery({}, { locale })}</dt><dd class="type-body-s-400">{m.cart_delivery_at_checkout({}, { locale })}</dd></div><div class="type-body-400"><dt class="type-body-500">{m.cart_total({}, { locale })}</dt><dd data-cart-total class="type-body-500"></dd></div></dl><a class="cart-checkout type-body-500" href="/checkout">{m.action_checkout({}, { locale })}</a><a class="cart-view type-body-s-500" href="/cart">{m.cart_view({}, { locale })}</a><button type="button" data-cart-continue class="type-body-s-500">{continueShoppingLabel}</button></footer>
-    </aside>
+
+    <Footer
+      tenantName={tenantName}
+      footer={footer}
+      editorMode={editorMode}
+      locale={locale}
+      logoUrl={logoUrl}
+      emptyLogoUrl={emptyLogoUrl}
+    />
+
+    <CartDrawer
+      locale={locale}
+      continueShoppingLabel={continueShoppingLabel}
+    />
+
     <StorefrontAnalytics disabled={demoMode || editorMode} />
+
     <script>
-      import { loadAndSyncCartCount, setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
-      import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
-      import {
-        $cart,
-        $cartDrawerOpen,
-        initCartStore,
-        fetchCart,
-        addToCart,
-        updateCartItemQuantity,
-        removeCartItem,
-      } from "../../../../lib/stores/cart";
-      import { initWishlistStore } from "../../../../lib/stores/wishlist";
-
-      const editorPreview = document.body.dataset.editorMode === "true";
-      const demoPreview = document.body.dataset.demoMode === "true";
-      const readOnlyPreview = editorPreview || demoPreview;
-      const messages: Record<string, string> = JSON.parse(
-        document.body.dataset.clientMessages || "{}",
-      );
-      const menu = document.querySelector<HTMLButtonElement>(".menu");
-      const nav = document.querySelector<HTMLElement>(".nav");
-      const headerBackdrop = document.querySelector<HTMLButtonElement>("[data-header-backdrop]");
-      const searchForm = document.querySelector<HTMLFormElement>(".search");
-      const searchInput = searchForm?.querySelector<HTMLInputElement>('input[type="search"]');
-      const searchButton = searchForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
-      if (!readOnlyPreview) initProductSearchSuggestions(searchForm ?? null);
-      let headerSurface: "menu" | "search" | null = null;
-      let headerCloseTimer = 0;
-      const syncPageScrollLock = () => {
-        const locked = headerSurface !== null || document.body.hasAttribute("data-cart-open");
-        document.documentElement.toggleAttribute("data-overlay-open", locked);
-        document.body.toggleAttribute("data-overlay-open", locked);
-        window.dispatchEvent(new CustomEvent("ecs:overlay-lock-change", { detail: { locked } }));
-      };
-      const setHeaderSurface = (surface: "menu" | "search" | null, restoreFocus = false) => {
-        window.clearTimeout(headerCloseTimer);
-        const previous = headerSurface;
-        headerSurface = surface;
-        const menuOpen = surface === "menu";
-        const searchOpen = surface === "search";
-        menu?.setAttribute("aria-expanded", String(menuOpen));
-        searchButton?.setAttribute("aria-expanded", String(searchOpen));
-        nav?.toggleAttribute("data-open", menuOpen);
-        searchForm?.toggleAttribute("data-open", searchOpen);
-        if (searchInput) searchInput.toggleAttribute("data-open", searchOpen);
-        document.body.toggleAttribute("data-header-open", surface !== null);
-        syncPageScrollLock();
-        if (surface && headerBackdrop) {
-          headerBackdrop.hidden = false;
-          headerBackdrop.setAttribute("aria-label", surface === "menu" ? "Close navigation" : "Close search");
-          requestAnimationFrame(() => headerBackdrop.toggleAttribute("data-open", true));
-        } else if (headerBackdrop) {
-          headerBackdrop.removeAttribute("data-open");
-          headerCloseTimer = window.setTimeout(() => { headerBackdrop.hidden = true; }, 220);
-        }
-        if (searchOpen) requestAnimationFrame(() => searchInput?.focus());
-        if (!surface && restoreFocus) (previous === "menu" ? menu : searchButton)?.focus();
-      };
-      menu?.addEventListener("click", () => setHeaderSurface(headerSurface === "menu" ? null : "menu"));
-      nav?.addEventListener("click", (event) => {
-        if (!(event.target instanceof Element) || !event.target.closest("a")) return;
-        setHeaderSurface(null);
-      });
-      headerBackdrop?.addEventListener("click", () => setHeaderSurface(null, true));
-      searchButton?.addEventListener("click", (event) => {
-        if (window.matchMedia("(max-width: 760px)").matches && headerSurface !== "search") {
-          event.preventDefault();
-          setHeaderSurface("search");
-        }
-      });
-      searchForm?.addEventListener("submit", (event) => {
-        if (searchInput?.value.trim()) return;
-        event.preventDefault();
-        if (window.matchMedia("(max-width: 760px)").matches) setHeaderSurface("search");
-        searchInput?.focus();
-      });
-      document.addEventListener("keydown", (event) => {
-        if (event.key !== "Escape" || !headerSurface) return;
-        event.preventDefault();
-        setHeaderSurface(null, true);
-      });
-      window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => { if (event.matches) setHeaderSurface(null); });
-
-      const trigger = document.querySelector<HTMLAnchorElement>("[data-cart-trigger]");
-      const drawer = document.querySelector<HTMLElement>("[data-cart-drawer]");
-      const backdrop = document.querySelector<HTMLButtonElement>("[data-cart-backdrop]");
-      const closeButton = drawer?.querySelector<HTMLButtonElement>("[data-cart-close]");
-      const continueButton = drawer?.querySelector<HTMLButtonElement>("[data-cart-continue]");
-      const itemsRoot = drawer?.querySelector<HTMLElement>("[data-cart-items]");
-      const drawerCount = drawer?.querySelector<HTMLElement>("[data-cart-drawer-count]");
-      const footer = drawer?.querySelector<HTMLElement>("[data-cart-footer]");
-      let lastFocused: HTMLElement | null = null;
-      const formatCartMoney = (amount: number | null, currency: string | null) => {
-        if (amount == null) return "—";
-        try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
-        catch { return String(amount); }
-      };
-      const setCartCount = (count: number) => {
-        syncCartCount(count);
-        if (drawerCount) drawerCount.textContent = messages.cartItemCount.replace("__COUNT__", String(count));
-      };
-      const node = <K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string) => {
-        const element = document.createElement(tag); if (className) element.className = className; if (text != null) element.textContent = text; return element;
-      };
-      const renderCart = (cart: any) => {
-        if (!itemsRoot || !footer) return;
-        itemsRoot.replaceChildren();
-        const cartItems = Array.isArray(cart?.items) ? cart.items : [];
-        setCartCount(cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0));
-        if (!cartItems.length) {
-          const empty = node("div", "cart-empty empty-state");
-          const mark = node("span", "empty-state__mark");
-          mark.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
-          const copy = node("div", "empty-state__copy");
-          copy.append(node("h3", "empty-state__title type-heading-3", messages.cartEmpty), node("p", "empty-state__text type-body-400", messages.cartEmptyHelp));
-          const shop = node("a", "empty-state__action type-body-500", messages.continueShopping); shop.href = "/products";
-          empty.append(mark, copy, shop); itemsRoot.append(empty); footer.hidden = true; return;
-        }
-        for (const item of cartItems) {
-          const article = node("article", "cart-item"); article.dataset.lineItemId = item.id;
-          const media = node("a", "cart-item__media") as HTMLAnchorElement; media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
-          const itemMedia = item.imageUrl || item.thumbnail;
-          if (itemMedia) { const image = node("img") as HTMLImageElement; image.src = itemMedia; image.alt = ""; media.append(image); }
-          const copy = node("div", "cart-item__copy"); copy.append(node("strong", "type-body-s-500", item.title || messages.product)); if (item.variantTitle) copy.append(node("span", "type-body-xs", item.variantTitle)); copy.append(node("b", "type-body-s-500", formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode)));
-          const controls = node("div", "cart-item__actions");
-          const quantity = node("div", "cart-quantity");
-          const minus = node("button", "type-body-s-500", "−") as HTMLButtonElement; minus.type = "button"; minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1)); minus.setAttribute("aria-label", `${messages.decreaseQuantity}: ${item.title || messages.product}`); minus.disabled = Number(item.quantity) <= 1;
-          const amount = node("span", "type-body-s-500", String(item.quantity));
-          const plus = node("button", "type-body-s-500", "+") as HTMLButtonElement; plus.type = "button"; plus.dataset.cartQuantity = String(Number(item.quantity) + 1); plus.setAttribute("aria-label", `${messages.increaseQuantity}: ${item.title || messages.product}`);
-          quantity.append(minus, amount, plus);
-          const remove = node("button", "cart-remove type-body-xs", messages.remove) as HTMLButtonElement; remove.type = "button"; remove.dataset.cartRemove = ""; remove.setAttribute("aria-label", `${messages.remove}: ${item.title || messages.product}`);
-          controls.append(quantity, remove); article.append(media, copy, controls); itemsRoot.append(article);
-        }
-        footer.hidden = false;
-        const subtotal = footer.querySelector<HTMLElement>("[data-cart-subtotal]"); const total = footer.querySelector<HTMLElement>("[data-cart-total]");
-        if (subtotal) subtotal.textContent = formatCartMoney(cart.itemTotal, cart.currencyCode); if (total) total.textContent = formatCartMoney(cart.total, cart.currencyCode);
-      };
-
-      const openCart = async (cart?: any) => {
-        if (!drawer || !backdrop) return;
-        setHeaderSurface(null); lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
-        drawer.hidden = false;
-        backdrop.hidden = false;
-        requestAnimationFrame(() => {
-          drawer.dataset.open = "";
-          backdrop.dataset.open = "";
-        });
-        document.body.dataset.cartOpen = "";
-        syncPageScrollLock();
-        if (cart) {
-          renderCart(cart);
-        } else {
-          const current = $cart.get();
-          if (current) renderCart(current);
-          else void fetchCart();
-        }
-        closeButton?.focus();
-      };
-
-      const closeCart = () => {
-        if (!drawer || !backdrop) return;
-        delete drawer.dataset.open;
-        delete backdrop.dataset.open;
-        delete document.body.dataset.cartOpen;
-        $cartDrawerOpen.set(false);
-        syncPageScrollLock();
-        setTimeout(() => {
-          drawer.hidden = true;
-          backdrop.hidden = true;
-        }, 260);
-        lastFocused?.focus();
-      };
-
-      trigger?.addEventListener("click", (event) => {
-        if (readOnlyPreview || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        event.preventDefault();
-        void openCart();
-      });
-      closeButton?.addEventListener("click", closeCart);
-      continueButton?.addEventListener("click", closeCart);
-      backdrop?.addEventListener("click", closeCart);
-
-      drawer?.addEventListener("click", async (event) => {
-        if (readOnlyPreview) return;
-        const target = event.target instanceof Element ? event.target : null;
-        const item = target?.closest<HTMLElement>("[data-line-item-id]");
-        if (!item) return;
-        const quantityButton = target?.closest<HTMLButtonElement>("[data-cart-quantity]");
-        const removeButton = target?.closest<HTMLButtonElement>("[data-cart-remove]");
-        if (!quantityButton && !removeButton) return;
-
-        const lineItemId = item.dataset.lineItemId || "";
-        if (!lineItemId) return;
-
-        if (quantityButton) {
-          const qty = Number(quantityButton.dataset.cartQuantity || "1");
-          await updateCartItemQuantity(lineItemId, qty);
-        } else if (removeButton) {
-          await removeCartItem(lineItemId);
-        }
-      });
-
-      drawer?.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          closeCart();
-          return;
-        }
-        if (event.key !== "Tab") return;
-        const focusable = [...drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable.at(-1);
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      });
-
-      $cart.subscribe((cart) => {
-        if (!readOnlyPreview && cart) {
-          renderCart(cart);
-        }
-      });
-
-      $cartDrawerOpen.subscribe((isOpen) => {
-        if (isOpen && !drawer?.hasAttribute("data-open")) {
-          void openCart();
-        }
-      });
-
-      if (demoPreview) {
-        const containPreviewNavigation = (event: Event) => {
-          const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a") : null;
-          if (!anchor) return;
-          const url = new URL(anchor.href, window.location.href);
-          if (url.origin !== window.location.origin) return;
-          event.preventDefault();
-          const internalDemoRoot = "/demo/storefront/luvia";
-          const demoRoot = window.location.pathname === "/luvia" || window.location.pathname.startsWith("/luvia/")
-            ? "/luvia"
-            : internalDemoRoot;
-          const route = url.pathname.startsWith(internalDemoRoot)
-            ? `${demoRoot}${url.pathname.slice(internalDemoRoot.length)}${url.search}`
-            : demoRoot === "/luvia" && (url.pathname === "/luvia" || url.pathname.startsWith("/luvia/"))
-              ? `${url.pathname}${url.search}`
-            : url.pathname === "/"
-            ? demoRoot
-            : url.pathname === "/products"
-              ? `${demoRoot}/products${url.search}`
-              : url.pathname.startsWith("/products/")
-                ? `${demoRoot}${url.pathname}`
-                : url.pathname === "/cart" || url.pathname === "/checkout"
-                  ? `${demoRoot}${url.pathname}`
-                  : null;
-          if (route) window.location.assign(route);
-        };
-        document.addEventListener("click", containPreviewNavigation, { capture: true });
-        document.addEventListener("auxclick", containPreviewNavigation, { capture: true });
-        document.addEventListener("submit", (event) => event.preventDefault(), { capture: true });
-      }
-
-      document.addEventListener("submit", async (event) => {
-        const form = event.target instanceof HTMLFormElement
-          ? event.target.closest<HTMLFormElement>("[data-card-add-form]")
-          : null;
-        if (!form || event.defaultPrevented || readOnlyPreview) return;
-        event.preventDefault();
-        const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-        const label = form.querySelector<HTMLElement>("[data-card-add-label]");
-        if (!button || button.disabled) return;
-        const originalLabel = label?.textContent ?? messages.addToCart;
-        button.disabled = true;
-        if (label) label.textContent = messages.adding;
-
-        const result = await addToCart({ form, openDrawer: true });
-        if (result.ok) {
-          if (label) label.textContent = messages.added;
-        } else {
-          if (label) label.textContent = messages.retry;
-        }
-
-        window.setTimeout(() => {
-          button.disabled = false;
-          if (label) label.textContent = originalLabel;
-        }, 1200);
-      });
-
-      if (!readOnlyPreview) {
-        initCartStore();
-        void initWishlistStore();
-      }
+      import { initLuviaStorefront } from "../scripts/client";
+      initLuviaStorefront();
     </script>
-    </body>
+  </body>
 </html>
-

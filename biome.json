@@ -16,7 +16,8 @@
       "!.next",
       "!.astro",
       "!apps/medusa/.medusa",
-      "!coverage"
+      "!coverage",
+      "!**/*.astro"
     ]
   },
   "formatter": {

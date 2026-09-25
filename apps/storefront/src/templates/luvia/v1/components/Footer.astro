@@ -1,0 +1,191 @@
+---
+import type { LuviaV1Data } from "@ecs/storefront-templates";
+import * as m from "../../../../paraglide/messages.js";
+import ActionButton from "./ActionButton.astro";
+
+interface Props {
+  tenantName: string;
+  footer: LuviaV1Data["footer"];
+  editorMode?: boolean;
+  locale: "am" | "en";
+  logoUrl?: string | null;
+  emptyLogoUrl?: string | null;
+}
+
+const {
+  tenantName,
+  footer,
+  editorMode = false,
+  locale,
+  logoUrl,
+  emptyLogoUrl,
+} = Astro.props;
+---
+
+<footer class="footer">
+  <div class="footer__intro" data-editor-image-scope>
+    <div class="footer__brand">
+      <img
+        src={logoUrl ?? undefined}
+        alt={tenantName}
+        data-editor-image-path="header.logoAssetId"
+        data-editor-empty-src={emptyLogoUrl ?? undefined}
+        hidden={!logoUrl}
+      />
+      <p
+        class="type-body-s-400"
+        data-editor-path={!footer.managedContact ? "footer.blurb" : undefined}
+        contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
+      >
+        {footer.blurb}
+      </p>
+    </div>
+    {
+      (editorMode || footer.credit.enabled) && (
+        <a
+          href="https://eclipticcreative.com"
+          rel="noreferrer"
+          target="_blank"
+          data-editor-section="footer.credit"
+          data-editor-visible-path="footer.credit.enabled"
+          hidden={!footer.credit.enabled}
+          class="type-body-xs"
+        >
+          {m.footer_web_design_by({ studio: "Eclipticcreative" }, { locale })}
+        </a>
+      )
+    }
+  </div>
+
+  <div class="type-body-s-400">
+    <strong class="type-body-s-500">{m.footer_quick_links({}, { locale })}</strong>
+    <span
+      class="footer__links"
+      data-editor-links-path="footer.quickLinks"
+      data-editor-empty-label="Add quick links"
+    >
+      {
+        footer.quickLinks.map((item, index) => (
+          <a
+            class="type-body-s-400"
+            href={item.href}
+            data-editor-path={`footer.quickLinks.${index}.label`}
+            contenteditable={editorMode ? "plaintext-only" : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </span>
+  </div>
+
+  <div class="type-body-s-400">
+    <strong class="type-body-s-500">{m.nav_shop({}, { locale })}</strong>
+    <span
+      class="footer__links"
+      data-editor-links-path="footer.shopLinks"
+      data-editor-empty-label="Add shop links"
+    >
+      {
+        footer.shopLinks.map((item, index) => (
+          <a
+            class="type-body-s-400"
+            href={item.href}
+            data-editor-path={`footer.shopLinks.${index}.label`}
+            contenteditable={editorMode ? "plaintext-only" : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </span>
+  </div>
+
+  {
+    (footer.socialLinks.length > 0 || (editorMode && !footer.managedContact)) && (
+      <div class="type-body-s-400">
+        <strong class="type-body-s-500">{m.contact_socials({}, { locale })}</strong>
+        <span
+          class="footer__links"
+          data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined}
+          data-editor-empty-label={!footer.managedContact ? "Add social links" : undefined}
+        >
+          {footer.socialLinks.map((item, index) => (
+            <a
+              class="type-body-s-400"
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-editor-path={!footer.managedContact ? `footer.socialLinks.${index}.label` : undefined}
+              contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
+        </span>
+      </div>
+    )
+  }
+
+  <div class="type-body-s-400">
+    <strong class="type-body-s-500">{m.contact_information({}, { locale })}</strong>
+    <span class="footer__links">
+      {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => (
+        <a
+          class="type-body-s-400"
+          href={`tel:${phone}`}
+          data-editor-path={!footer.managedContact ? "footer.phone" : undefined}
+          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
+        >
+          {phone}
+        </a>
+      ))}
+      {(footer.email || (editorMode && !footer.managedContact)) && (
+        <a
+          class="type-body-s-400"
+          href={`mailto:${footer.email ?? ""}`}
+          data-editor-path={!footer.managedContact ? "footer.email" : undefined}
+          data-editor-empty-label={!footer.managedContact ? "Add email" : undefined}
+          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
+        >
+          {footer.email}
+        </a>
+      )}
+      {(footer.address || (editorMode && !footer.managedContact)) && (
+        <p
+          class="type-body-s-400"
+          data-editor-path={!footer.managedContact ? "footer.address" : undefined}
+          data-editor-empty-label={!footer.managedContact ? "Add address" : undefined}
+          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
+        >
+          {footer.address}
+        </p>
+      )}
+    </span>
+  </div>
+
+  <small class="type-body-s-400">
+    © {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}
+  </small>
+</footer>
+
+<aside class="inquiry" data-editor-section="footer.inquiry">
+  <p
+    class="type-heading-3"
+    data-editor-path="footer.inquiry.title"
+    contenteditable={editorMode ? "plaintext-only" : undefined}
+  >
+    {footer.inquiry.title}
+  </p>
+  <ActionButton
+    href={footer.inquiry.ctaHref}
+    icon="chat"
+    tone="secondary"
+    size="small"
+    editorPath="footer.inquiry.ctaLabel"
+    editorRelatedPaths={["footer.inquiry.ctaHref"]}
+    editorMode={editorMode}
+  >
+    {footer.inquiry.ctaLabel}
+  </ActionButton>
+</aside>

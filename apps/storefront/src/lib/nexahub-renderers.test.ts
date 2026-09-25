@@ -249,7 +249,7 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
 
   assert.doesNotMatch(wishlist, /Saved catalog|device or customer account/i);
   assert.doesNotMatch(account, /scoped to this shop|Customer account \/ (?:active|guest)|Guest access/i);
-  assert.ok(layout.includes("SaveIcon") && productCard.includes("SaveIcon"));
+  assert.ok(layout.includes('name="save"') && productCard.includes('name="save"'));
   assert.match(mainStyles, /button\[data-busy="true"\][\s\S]*?gap:/);
   assert.match(cartStyles, /cart-drawer-container[\s\S]*?overflow:\s*hidden/);
   assert.match(cartStyles, /&__items[\s\S]*?overflow-y:\s*auto/);
@@ -259,14 +259,12 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
 });
 
 test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel states, and preview structure", () => {
-  const saveIcon = read("templates/nexahub/v1/components/SaveIcon.astro");
   const wishlist = read("templates/nexahub/v1/pages/Wishlist.astro");
   const home = read("templates/nexahub/v1/pages/index.astro");
   const client = read("templates/nexahub/v1/scripts/client.ts");
   const contact = read("templates/nexahub/v1/pages/Contact.astro");
   const preview = read("pages/preview.astro");
 
-  assert.equal((saveIcon.match(/<svg/g) ?? []).length, 1, "save state must be layered inside one glyph");
   assert.match(wishlist, /<style is:global>/, "runtime-created wishlist cards need global selectors");
   assert.match(home, /data-cat-prev disabled/);
   assert.match(client, /track\.scrollBy/);

@@ -1,7 +1,9 @@
 import { fileURLToPath } from "node:url";
 import node from "@astrojs/node";
+import icon from "astro-icon";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "astro/config";
+
 
 import { ecsRedisCache } from "./src/cache/ecs-redis-cache.ts";
 import { templateCssScopePostcss } from "./src/lib/css/template-css-scope.ts";
@@ -22,6 +24,7 @@ const baseDomain =
   process.env.STOREFRONT_PUBLIC_BASE_DOMAIN?.trim() || process.env.BASE_DOMAIN?.trim() || "";
 
 export default defineConfig({
+  integrations: [icon()],
   adapter: node({
     mode: "standalone",
   }),

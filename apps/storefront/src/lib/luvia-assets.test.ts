@@ -25,9 +25,7 @@ test("Luvia static editorial images use the responsive Astro image boundary", as
     ),
   );
 
-  assert.ok(sources.every((source) => source.includes("TemplateImage")));
-  const adapter = await readFile(new URL("components/TemplateImage.astro", templateRoot), "utf8");
-  assert.match(adapter, /components\/media\/TemplateAsset\.astro/);
+  assert.ok(sources.every((source) => source.includes("TemplateAsset")));
   assert.ok(styles.every((source) => !/url\([^)]*\.(?:png|jpe?g|webp)/i.test(source)));
 });
 
@@ -36,7 +34,7 @@ test("production templates use an accessible visual state when product media is 
     "components/ProductCard.astro",
     "pages/Product.astro",
     "components/HeroProductSlide.astro",
-    "pages/Cart.astro",
+    "components/CartItem.astro",
     "../../nexahub/v1/components/ProductCard.astro",
     "../../nexahub/v1/pages/Product.astro",
   ];

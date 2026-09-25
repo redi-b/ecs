@@ -1,6 +1,6 @@
 ---
 import "../styles/pages/account.scss";
-import Icon from "../components/Icon.astro";
+import { Icon } from "astro-icon/components";
 import Layout from "../layouts/Layout.astro";
 import ActionButton from "../components/ActionButton.astro";
 import { parseLuviaData } from "../lib";
@@ -11,16 +11,46 @@ import { formatOrderReference } from "../../../../lib/order-reference";
 import { orderStatusLabel } from "../../../../lib/order-status-label";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
-interface Props { data: unknown; themeTokens?: unknown; tenantName: string; deferCartCount?: boolean; account?: CustomerAccountView | null; error?: string | null; success?: string | null; initialMode?: "login" | "register"; }
-const { data, themeTokens, tenantName, deferCartCount = false, account = null, error = null, success = null, initialMode = "login" } = Astro.props;
+interface Props {
+  data: unknown;
+  themeTokens?: unknown;
+  tenantName: string;
+  deferCartCount?: boolean;
+  account?: CustomerAccountView | null;
+  error?: string | null;
+  success?: string | null;
+  initialMode?: "login" | "register";
+}
+const {
+  data,
+  themeTokens,
+  tenantName,
+  deferCartCount = false,
+  account = null,
+  error = null,
+  success = null,
+  initialMode = "login",
+} = Astro.props;
 const template = parseLuviaData(data);
-const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const locale =
+  Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 function formatOrderDate(value: string | null) {
   if (!value) return m.account_date_unavailable({}, { locale });
-  return formatStorefrontDate(value, locale) ?? m.account_date_unavailable({}, { locale });
+  return (
+    formatStorefrontDate(value, locale) ??
+    m.account_date_unavailable({}, { locale })
+  );
 }
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title={m.account_title({}, { locale })}>
+
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  deferCartCount={deferCartCount}
+  title={m.account_title({}, { locale })}
+>
   <main
     class:list={["account container", { "is-signed-in": account }]}
     data-add-address-label={m.account_add_address({}, { locale })}
@@ -39,108 +69,836 @@ function formatOrderDate(value: string | null) {
     data-generic-error={m.status_generic_error({}, { locale })}
     data-connection-error={m.account_connection_error({}, { locale })}
   >
-    {account ? (
-      <>
-        <section class="account__hub">
-          <div><span class="account__icon"><Icon name="user" /></span><div><p class="type-body-xs">{m.account_title({}, { locale })}</p><h1 class="type-heading-1">{m.account_welcome({ name: account.customer.firstName || m.account_friend({}, { locale }) }, { locale })}</h1></div></div>
-          <div class="account__identity">
-            <p class="type-body-s-400">{account.customer.email}</p>
-            <form action="/actions/account/logout" method="post"><button class="type-body-500" type="submit">{m.account_sign_out({}, { locale })}</button></form>
-          </div>
-          <nav class="account__section-links" aria-label={m.account_title({}, { locale })} role="tablist"><a class="type-body-s-500" href="#order-history" role="tab" aria-selected="true" data-account-view="orders">{m.account_orders({}, { locale })} <span class="type-body-xs">{account.orderCount}</span></a><a class="type-body-s-500" href="#saved-addresses" role="tab" aria-selected="false" data-account-view="addresses">{m.account_addresses({}, { locale })} <span class="type-body-xs">{account.addresses.length}</span></a><a class="type-body-s-500" href="#profile-details" role="tab" aria-selected="false" data-account-view="profile">{m.account_profile({}, { locale })}</a></nav>
-        </section>
-        <section class="account__profile" id="profile-details" data-account-panel="profile" hidden>
-          <form class="account__profile-form" action="/actions/account/profile" method="post">
-            <header><p class="type-body-xs">{m.account_profile_eyebrow({}, { locale })}</p><h2 class="type-heading-3">{m.account_your_details({}, { locale })}</h2><span class="type-body-s-400">{m.account_profile_help({}, { locale })}</span></header>
-            {error && <p class="account__error type-body-s-500" role="alert">{error}</p>}
-            {success && !success.toLowerCase().includes("address") && <p class="account__success type-body-s-500" role="status">{success}</p>}
+    {
+      account ? (
+        <>
+          <section class="account__hub">
             <div>
-              <label class="type-body-s-400">{m.account_first_name({}, { locale })}<input class="type-body-400" name="firstName" value={account.customer.firstName} autocomplete="given-name" required /></label>
-              <label class="type-body-s-400">{m.account_last_name({}, { locale })}<input class="type-body-400" name="lastName" value={account.customer.lastName} autocomplete="family-name" required /></label>
+              <>
+                <span class="account__icon">
+                  <Icon name="user" />
+                </span>
+                <div>
+                  <>
+                    <p class="type-body-xs">
+                      {m.account_title({}, { locale })}
+                    </p>
+                    <h1 class="type-heading-1">
+                      {m.account_welcome(
+                        {
+                          name:
+                            account.customer.firstName ||
+                            m.account_friend({}, { locale }),
+                        },
+                        { locale },
+                      )}
+                    </h1>
+                  </>
+                </div>
+              </>
             </div>
-            <label class="type-body-s-400">{m.account_email({}, { locale })}<input class="type-body-400" value={account.customer.email} autocomplete="email" readonly aria-describedby="account-email-help" /></label>
-            <small id="account-email-help" class="type-body-xs">{m.account_email_locked({}, { locale })}</small>
-            <label class="type-body-s-400">{m.account_phone({}, { locale })} <small class="type-body-xs">({m.account_optional({}, { locale })})</small><input class="type-body-400" name="phone" value={account.customer.phone} autocomplete="tel" inputmode="tel" /></label>
-            <ActionButton type="submit">{m.account_save_details({}, { locale })}</ActionButton>
-          </form>
-        </section>
-        <section class="account__orders" id="order-history" aria-labelledby="order-history-title" data-account-panel="orders">
-          <header><div><p class="type-body-xs">{m.account_orders({}, { locale })}</p><h2 id="order-history-title" class="type-heading-3">{m.account_order_history({}, { locale })}</h2></div><span class="type-body-xs">{account.orderCount}</span></header>
-          {account.orders.length ? (
-            <><ol>{account.orders.map((order) => <li><a href={`/account/orders/${encodeURIComponent(order.id)}`} aria-label={m.account_view_order({ reference: formatOrderReference(order.id, order.customDisplayId) }, { locale })}><div><strong class="type-body-s-500">{m.account_order_reference({ reference: formatOrderReference(order.id, order.customDisplayId) }, { locale })}</strong><span class="type-body-xs">{formatOrderDate(order.createdAt)}</span></div><div><strong class="type-body-s-500">{order.total == null ? m.account_total_unavailable({}, { locale }) : formatMoney(order.total, order.currencyCode, locale)}</strong><span class="type-body-xs">{order.itemCount === 1 ? m.account_item_count({ count: order.itemCount }, { locale }) : m.account_item_count_plural({ count: order.itemCount }, { locale })} · {orderStatusLabel(order.status, locale)}</span></div><span class="account__order-arrow" aria-hidden="true">↗</span></a></li>)}</ol>
-            {account.orderCount > account.orderLimit && <nav class="account__order-pages" aria-label={m.account_order_pages({}, { locale })}>{account.orderOffset > 0 && <a class="type-body-s-500" href={`/account?page=${Math.max(1, account.orderOffset / account.orderLimit)}`}>{m.account_previous({}, { locale })}</a>}<span class="type-body-xs">{m.account_page_count({ page: Math.floor(account.orderOffset / account.orderLimit) + 1, total: Math.ceil(account.orderCount / account.orderLimit) }, { locale })}</span>{account.orderOffset + account.orderLimit < account.orderCount && <a class="type-body-s-500" href={`/account?page=${account.orderOffset / account.orderLimit + 2}`}>{m.account_next({}, { locale })}</a>}</nav>}</>
-          ) : (
-            <div class="account__empty"><strong class="type-body-l-500">{m.account_first_order({}, { locale })}</strong><p class="type-body-s-400">{m.account_browse_ready({}, { locale })}</p><a class="type-body-500" href="/products">{m.account_explore_products({}, { locale })}</a></div>
-          )}
-        </section>
-        <section class="account__addresses" id="saved-addresses" aria-labelledby="saved-addresses-title" data-account-panel="addresses" hidden>
-          <header><div><p class="type-body-xs">{m.account_faster_checkout({}, { locale })}</p><h2 id="saved-addresses-title" class="type-heading-3">{m.account_saved_addresses({}, { locale })}</h2><span class="type-body-s-400">{m.account_addresses_help({}, { locale })}</span></div><span class="type-body-xs">{account.addresses.length}</span></header>
-          {success?.toLowerCase().includes("address") && <p class="account__success type-body-s-500" role="status">{success}</p>}
-          <div class="account__address-grid">
-            {account.addresses.map((address) => <article class="account__address-card"><button class="account__address-toggle" type="button" aria-expanded="false" data-address-toggle><span><strong class="type-body-s-500">{address.addressName || `${address.firstName} ${address.lastName}`}</strong><small class="type-body-xs">{address.address1}, {address.city}</small></span><span class="account__address-actions">{address.isDefaultShipping && <em class="type-body-xs">{m.account_default({}, { locale })}</em>}<b data-toggle-label class="type-body-xs">{m.account_edit({}, { locale })}</b></span></button><form action="/actions/account/address" method="post" hidden><input type="hidden" name="addressId" value={address.id} /><div><label class="type-body-s-400">{m.account_label({}, { locale })}<input class="type-body-400" name="addressName" value={address.addressName} placeholder={m.account_home({}, { locale })} /></label><label class="type-body-s-400">{m.account_phone({}, { locale })}<input class="type-body-400" name="phone" value={address.phone} autocomplete="tel" inputmode="tel" /></label><label class="type-body-s-400">{m.account_first_name({}, { locale })}<input class="type-body-400" name="firstName" value={address.firstName} required autocomplete="given-name" /></label><label class="type-body-s-400">{m.account_last_name({}, { locale })}<input class="type-body-400" name="lastName" value={address.lastName} required autocomplete="family-name" /></label><label class="is-wide type-body-s-400">{m.account_street_address({}, { locale })}<input class="type-body-400" name="address1" value={address.address1} required autocomplete="street-address" /></label><label class="type-body-s-400">{m.account_city({}, { locale })}<input class="type-body-400" name="city" value={address.city} required autocomplete="address-level2" /></label><label class="type-body-s-400">{m.account_region({}, { locale })} <small class="type-body-xs">({m.account_optional({}, { locale })})</small><input class="type-body-400" name="province" value={address.province} autocomplete="address-level1" /></label></div><label class="account__default-address type-body-s-400"><input type="checkbox" name="isDefaultShipping" checked={address.isDefaultShipping} /> {m.account_use_at_checkout({}, { locale })}</label><footer><button class="type-body-s-500" type="submit" name="intent" value="save">{m.account_save_changes({}, { locale })}</button><button class="is-secondary type-body-s-500" type="submit" name="intent" value="delete">{m.action_remove({}, { locale })}</button></footer></form></article>)}
-            <article class="account__address-card is-new"><button class="account__address-toggle" type="button" aria-expanded="false" data-address-toggle><span><strong class="type-body-s-500">{account.addresses.length ? m.account_add_another_address({}, { locale }) : m.account_add_first_address({}, { locale })}</strong><small class="type-body-xs">{m.account_save_address_help({}, { locale })}</small></span><b data-toggle-label class="type-body-xs">{m.account_add_address({}, { locale })}</b></button><form action="/actions/account/address" method="post" hidden><div><label class="type-body-s-400">{m.account_label({}, { locale })}<input class="type-body-400" name="addressName" placeholder={m.account_home({}, { locale })} /></label><label class="type-body-s-400">{m.account_phone({}, { locale })}<input class="type-body-400" name="phone" value={account.customer.phone} autocomplete="tel" inputmode="tel" /></label><label class="type-body-s-400">{m.account_first_name({}, { locale })}<input class="type-body-400" name="firstName" value={account.customer.firstName} required autocomplete="given-name" /></label><label class="type-body-s-400">{m.account_last_name({}, { locale })}<input class="type-body-400" name="lastName" value={account.customer.lastName} required autocomplete="family-name" /></label><label class="is-wide type-body-s-400">{m.account_street_address({}, { locale })}<input class="type-body-400" name="address1" required autocomplete="street-address" /></label><label class="type-body-s-400">{m.account_city({}, { locale })}<input class="type-body-400" name="city" value="Addis Ababa" required autocomplete="address-level2" /></label><label class="type-body-s-400">{m.account_region({}, { locale })} <small class="type-body-xs">({m.account_optional({}, { locale })})</small><input class="type-body-400" name="province" autocomplete="address-level1" /></label></div><label class="account__default-address type-body-s-400"><input type="checkbox" name="isDefaultShipping" checked={account.addresses.length === 0} /> {m.account_use_at_checkout({}, { locale })}</label><footer><button class="type-body-s-500" type="submit" name="intent" value="save">{m.account_save_address({}, { locale })}</button></footer></form></article>
-          </div>
-        </section>
-      </>
-    ) : (
-      <>
-        <section class="account__welcome">
-          <span class="account__icon"><Icon name="user" /></span>
-          <p class="type-body-xs">{m.account_title({}, { locale })}</p>
-          <h1 class="type-heading-1">{m.account_guest_heading({}, { locale })}</h1>
-          <div><p class="type-body-400">{m.account_guest_intro({}, { locale })}</p><nav class="account__guest-actions"><a class="type-body-500" href="/products">{m.account_continue_guest({}, { locale })}</a><a class="type-body-500" href="/contact">{m.account_order_help({}, { locale })}</a></nav></div>
-        </section>
-        <aside class="account__auth">
-          <div class="account__auth-heading">
-            <p class="type-body-xs">{m.account_customer_access({}, { locale })}</p>
-            <h2 class="type-heading-3">{initialMode === "register" ? m.account_create_heading({}, { locale }) : m.account_welcome_back({}, { locale })}</h2>
-            <span class="type-body-s-400">{initialMode === "register" ? m.account_create_help({}, { locale }) : m.account_sign_in_help({}, { locale })}</span>
-          </div>
-          <nav class="account__auth-tabs" aria-label={m.account_customer_access({}, { locale })} role="tablist">
-            <a class="type-body-s-500" id="account-login-tab" href="/account?mode=login" role="tab" aria-selected={initialMode === "login" ? "true" : "false"} aria-controls="account-login" tabindex={initialMode === "login" ? 0 : -1} data-account-mode="login">{m.action_sign_in({}, { locale })}</a>
-            <a class="type-body-s-500" id="account-register-tab" href="/account?mode=register" role="tab" aria-selected={initialMode === "register" ? "true" : "false"} aria-controls="account-register" tabindex={initialMode === "register" ? 0 : -1} data-account-mode="register">{m.account_create({}, { locale })}</a>
-          </nav>
-          {error && <p class="account__error type-body-s-500" role="alert" data-account-error>{error}</p>}
-          <section class="account__auth-panel" id="account-login" role="tabpanel" aria-labelledby="account-login-tab" hidden={initialMode !== "login"} data-account-panel="login">
-            <form action="/actions/account/login" method="post">
-              <label class="type-body-s-400">{m.account_email({}, { locale })}<input class="type-body-400" name="email" type="email" autocomplete="email" inputmode="email" required /></label>
-              <label class="type-body-s-400">
-                {m.account_password({}, { locale })}
-                <span class="account__password-control">
-                  <input class="type-body-400" name="password" type="password" autocomplete="current-password" minlength="8" required />
-                  <button type="button" aria-label={m.account_show_password({}, { locale })} aria-pressed="false" data-password-toggle>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="account__password-slash" d="m4 4 16 16"/></svg>
-                  </button>
-                </span>
-              </label>
-              <ActionButton type="submit" fullWidth={true}>{m.action_sign_in({}, { locale })}</ActionButton>
-            </form>
-            <p class="account__auth-switch type-body-s-400">{m.account_new_here({}, { locale })} <a class="type-body-s-500" href="/account?mode=register" data-account-mode="register">{m.account_create({}, { locale })}</a></p>
+            <div class="account__identity">
+              <p class="type-body-s-400">{account.customer.email}</p>
+              <form action="/actions/account/logout" method="post">
+                <button class="type-body-500" type="submit">
+                  {m.account_sign_out({}, { locale })}
+                </button>
+              </form>
+            </div>
+            <nav
+              class="account__section-links"
+              aria-label={m.account_title({}, { locale })}
+              role="tablist"
+            >
+              <>
+                <a
+                  class="type-body-s-500"
+                  href="#order-history"
+                  role="tab"
+                  aria-selected="true"
+                  data-account-view="orders"
+                >
+                  {m.account_orders({}, { locale })}{" "}
+                  <span class="type-body-xs">{account.orderCount}</span>
+                </a>
+                <a
+                  class="type-body-s-500"
+                  href="#saved-addresses"
+                  role="tab"
+                  aria-selected="false"
+                  data-account-view="addresses"
+                >
+                  {m.account_addresses({}, { locale })}{" "}
+                  <span class="type-body-xs">{account.addresses.length}</span>
+                </a>
+                <a
+                  class="type-body-s-500"
+                  href="#profile-details"
+                  role="tab"
+                  aria-selected="false"
+                  data-account-view="profile"
+                >
+                  {m.account_profile({}, { locale })}
+                </a>
+              </>
+            </nav>
           </section>
-          <section class="account__auth-panel" id="account-register" role="tabpanel" aria-labelledby="account-register-tab" hidden={initialMode !== "register"} data-account-panel="register">
-            <form action="/actions/account/register" method="post">
-              <div class="account__name-fields">
-                <label class="type-body-s-400">{m.account_first_name({}, { locale })}<input class="type-body-400" name="firstName" autocomplete="given-name" required /></label>
-                <label class="type-body-s-400">{m.account_last_name({}, { locale })}<input class="type-body-400" name="lastName" autocomplete="family-name" required /></label>
+          <section
+            class="account__profile"
+            id="profile-details"
+            data-account-panel="profile"
+            hidden
+          >
+            <form
+              class="account__profile-form"
+              action="/actions/account/profile"
+              method="post"
+            >
+              <header>
+                <>
+                  <p class="type-body-xs">
+                    {m.account_profile_eyebrow({}, { locale })}
+                  </p>
+                  <h2 class="type-heading-3">
+                    {m.account_your_details({}, { locale })}
+                  </h2>
+                  <span class="type-body-s-400">
+                    {m.account_profile_help({}, { locale })}
+                  </span>
+                </>
+              </header>
+              {error && (
+                <p class="account__error type-body-s-500" role="alert">
+                  {error}
+                </p>
+              )}
+              {success && !success.toLowerCase().includes("address") && (
+                <p class="account__success type-body-s-500" role="status">
+                  {success}
+                </p>
+              )}
+              <div>
+                <label class="type-body-s-400">
+                  {m.account_first_name({}, { locale })}
+                  <input
+                    class="type-body-400"
+                    name="firstName"
+                    value={account.customer.firstName}
+                    autocomplete="given-name"
+                    required
+                  />
+                </label>
+                <label class="type-body-s-400">
+                  {m.account_last_name({}, { locale })}
+                  <input
+                    class="type-body-400"
+                    name="lastName"
+                    value={account.customer.lastName}
+                    autocomplete="family-name"
+                    required
+                  />
+                </label>
               </div>
-              <label class="type-body-s-400">{m.account_email({}, { locale })}<input class="type-body-400" name="email" type="email" autocomplete="email" inputmode="email" required /></label>
               <label class="type-body-s-400">
-                {m.account_password({}, { locale })}
-                <span class="account__password-control">
-                  <input class="type-body-400" name="password" type="password" autocomplete="new-password" minlength="8" required />
-                  <button type="button" aria-label={m.account_show_password({}, { locale })} aria-pressed="false" data-password-toggle>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="account__password-slash" d="m4 4 16 16"/></svg>
-                  </button>
-                </span>
-                <small class="type-body-xs">{m.account_password_help({}, { locale })}</small>
+                {m.account_email({}, { locale })}
+                <input
+                  class="type-body-400"
+                  value={account.customer.email}
+                  autocomplete="email"
+                  readonly
+                  aria-describedby="account-email-help"
+                />
               </label>
-              <ActionButton type="submit" fullWidth={true}>{m.account_create({}, { locale })}</ActionButton>
+              <small id="account-email-help" class="type-body-xs">
+                {m.account_email_locked({}, { locale })}
+              </small>
+              <label class="type-body-s-400">
+                {m.account_phone({}, { locale })}{" "}
+                <>
+                  <small class="type-body-xs">
+                    ({m.account_optional({}, { locale })})
+                  </small>
+                  <input
+                    class="type-body-400"
+                    name="phone"
+                    value={account.customer.phone}
+                    autocomplete="tel"
+                    inputmode="tel"
+                  />
+                </>
+              </label>
+              <ActionButton type="submit">
+                {m.account_save_details({}, { locale })}
+              </ActionButton>
             </form>
-            <p class="account__auth-switch type-body-s-400">{m.account_already_member({}, { locale })} <a class="type-body-s-500" href="/account?mode=login" data-account-mode="login">{m.action_sign_in({}, { locale })}</a></p>
           </section>
-        </aside>
-      </>
-    )}
+          <section
+            class="account__orders"
+            id="order-history"
+            aria-labelledby="order-history-title"
+            data-account-panel="orders"
+          >
+            <header>
+              <>
+                <div>
+                  <>
+                    <p class="type-body-xs">
+                      {m.account_orders({}, { locale })}
+                    </p>
+                    <h2 id="order-history-title" class="type-heading-3">
+                      {m.account_order_history({}, { locale })}
+                    </h2>
+                  </>
+                </div>
+                <span class="type-body-xs">{account.orderCount}</span>
+              </>
+            </header>
+            {account.orders.length ? (
+              <>
+                <ol>
+                  {account.orders.map((order) => (
+                    <li>
+                      <a
+                        href={`/account/orders/${encodeURIComponent(order.id)}`}
+                        aria-label={m.account_view_order(
+                          {
+                            reference: formatOrderReference(
+                              order.id,
+                              order.customDisplayId,
+                            ),
+                          },
+                          { locale },
+                        )}
+                      >
+                        <div>
+                          <strong class="type-body-s-500">
+                            {m.account_order_reference(
+                              {
+                                reference: formatOrderReference(
+                                  order.id,
+                                  order.customDisplayId,
+                                ),
+                              },
+                              { locale },
+                            )}
+                          </strong>
+                          <span class="type-body-xs">
+                            {formatOrderDate(order.createdAt)}
+                          </span>
+                        </div>
+                        <div>
+                          <strong class="type-body-s-500">
+                            {order.total == null
+                              ? m.account_total_unavailable({}, { locale })
+                              : formatMoney(
+                                  order.total,
+                                  order.currencyCode,
+                                  locale,
+                                )}
+                          </strong>
+                          <span class="type-body-xs">
+                            {order.itemCount === 1
+                              ? m.account_item_count(
+                                  { count: order.itemCount },
+                                  { locale },
+                                )
+                              : m.account_item_count_plural(
+                                  { count: order.itemCount },
+                                  { locale },
+                                )}{" "}
+                            · {orderStatusLabel(order.status, locale)}
+                          </span>
+                        </div>
+                        <span class="account__order-arrow" aria-hidden="true">
+                          ↗
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+                {account.orderCount > account.orderLimit && (
+                  <nav
+                    class="account__order-pages"
+                    aria-label={m.account_order_pages({}, { locale })}
+                  >
+                    {account.orderOffset > 0 && (
+                      <a
+                        class="type-body-s-500"
+                        href={`/account?page=${Math.max(1, account.orderOffset / account.orderLimit)}`}
+                      >
+                        {m.account_previous({}, { locale })}
+                      </a>
+                    )}
+                    <span class="type-body-xs">
+                      {m.account_page_count(
+                        {
+                          page:
+                            Math.floor(
+                              account.orderOffset / account.orderLimit,
+                            ) + 1,
+                          total: Math.ceil(
+                            account.orderCount / account.orderLimit,
+                          ),
+                        },
+                        { locale },
+                      )}
+                    </span>
+                    {account.orderOffset + account.orderLimit <
+                      account.orderCount && (
+                      <a
+                        class="type-body-s-500"
+                        href={`/account?page=${account.orderOffset / account.orderLimit + 2}`}
+                      >
+                        {m.account_next({}, { locale })}
+                      </a>
+                    )}
+                  </nav>
+                )}
+              </>
+            ) : (
+              <div class="account__empty">
+                <strong class="type-body-l-500">
+                  {m.account_first_order({}, { locale })}
+                </strong>
+                <p class="type-body-s-400">
+                  {m.account_browse_ready({}, { locale })}
+                </p>
+                <a class="type-body-500" href="/products">
+                  {m.account_explore_products({}, { locale })}
+                </a>
+              </div>
+            )}
+          </section>
+          <section
+            class="account__addresses"
+            id="saved-addresses"
+            aria-labelledby="saved-addresses-title"
+            data-account-panel="addresses"
+            hidden
+          >
+            <header>
+              <>
+                <div>
+                  <>
+                    <p class="type-body-xs">
+                      {m.account_faster_checkout({}, { locale })}
+                    </p>
+                    <h2 id="saved-addresses-title" class="type-heading-3">
+                      {m.account_saved_addresses({}, { locale })}
+                    </h2>
+                    <span class="type-body-s-400">
+                      {m.account_addresses_help({}, { locale })}
+                    </span>
+                  </>
+                </div>
+                <span class="type-body-xs">{account.addresses.length}</span>
+              </>
+            </header>
+            {success?.toLowerCase().includes("address") && (
+              <p class="account__success type-body-s-500" role="status">
+                {success}
+              </p>
+            )}
+            <div class="account__address-grid">
+              {account.addresses.map((address) => (
+                <article class="account__address-card">
+                  <button
+                    class="account__address-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    data-address-toggle
+                  >
+                    <span>
+                      <strong class="type-body-s-500">
+                        {address.addressName ||
+                          `${address.firstName} ${address.lastName}`}
+                      </strong>
+                      <small class="type-body-xs">
+                        {address.address1}, {address.city}
+                      </small>
+                    </span>
+                    <span class="account__address-actions">
+                      {address.isDefaultShipping && (
+                        <em class="type-body-xs">
+                          {m.account_default({}, { locale })}
+                        </em>
+                      )}
+                      <b data-toggle-label class="type-body-xs">
+                        {m.account_edit({}, { locale })}
+                      </b>
+                    </span>
+                  </button>
+                  <form action="/actions/account/address" method="post" hidden>
+                    <input type="hidden" name="addressId" value={address.id} />
+                    <div>
+                      <label class="type-body-s-400">
+                        {m.account_label({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="addressName"
+                          value={address.addressName}
+                          placeholder={m.account_home({}, { locale })}
+                        />
+                      </label>
+                      <label class="type-body-s-400">
+                        {m.account_phone({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="phone"
+                          value={address.phone}
+                          autocomplete="tel"
+                          inputmode="tel"
+                        />
+                      </label>
+                      <label class="type-body-s-400">
+                        {m.account_first_name({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="firstName"
+                          value={address.firstName}
+                          required
+                          autocomplete="given-name"
+                        />
+                      </label>
+                      <label class="type-body-s-400">
+                        {m.account_last_name({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="lastName"
+                          value={address.lastName}
+                          required
+                          autocomplete="family-name"
+                        />
+                      </label>
+                      <label class="is-wide type-body-s-400">
+                        {m.account_street_address({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="address1"
+                          value={address.address1}
+                          required
+                          autocomplete="street-address"
+                        />
+                      </label>
+                      <label class="type-body-s-400">
+                        {m.account_city({}, { locale })}
+                        <input
+                          class="type-body-400"
+                          name="city"
+                          value={address.city}
+                          required
+                          autocomplete="address-level2"
+                        />
+                      </label>
+                      <label class="type-body-s-400">
+                        {m.account_region({}, { locale })}{" "}
+                        <small class="type-body-xs">
+                          ({m.account_optional({}, { locale })})
+                        </small>
+                        <input
+                          class="type-body-400"
+                          name="province"
+                          value={address.province}
+                          autocomplete="address-level1"
+                        />
+                      </label>
+                    </div>
+                    <label class="account__default-address type-body-s-400">
+                      <input
+                        type="checkbox"
+                        name="isDefaultShipping"
+                        checked={address.isDefaultShipping}
+                      />{" "}
+                      {m.account_use_at_checkout({}, { locale })}
+                    </label>
+                    <footer>
+                      <button
+                        class="type-body-s-500"
+                        type="submit"
+                        name="intent"
+                        value="save"
+                      >
+                        {m.account_save_changes({}, { locale })}
+                      </button>
+                      <button
+                        class="is-secondary type-body-s-500"
+                        type="submit"
+                        name="intent"
+                        value="delete"
+                      >
+                        {m.action_remove({}, { locale })}
+                      </button>
+                    </footer>
+                  </form>
+                </article>
+              ))}
+              <article class="account__address-card is-new">
+                <>
+                  <button
+                    class="account__address-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    data-address-toggle
+                  >
+                    <>
+                      <span>
+                        <>
+                          <strong class="type-body-s-500">
+                            {account.addresses.length
+                              ? m.account_add_another_address({}, { locale })
+                              : m.account_add_first_address({}, { locale })}
+                          </strong>
+                          <small class="type-body-xs">
+                            {m.account_save_address_help({}, { locale })}
+                          </small>
+                        </>
+                      </span>
+                      <b data-toggle-label class="type-body-xs">
+                        {m.account_add_address({}, { locale })}
+                      </b>
+                    </>
+                  </button>
+                  <form action="/actions/account/address" method="post" hidden>
+                    <>
+                      <div>
+                        <>
+                          <label class="type-body-s-400">
+                            {m.account_label({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="addressName"
+                              placeholder={m.account_home({}, { locale })}
+                            />
+                          </label>
+                          <label class="type-body-s-400">
+                            {m.account_phone({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="phone"
+                              value={account.customer.phone}
+                              autocomplete="tel"
+                              inputmode="tel"
+                            />
+                          </label>
+                          <label class="type-body-s-400">
+                            {m.account_first_name({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="firstName"
+                              value={account.customer.firstName}
+                              required
+                              autocomplete="given-name"
+                            />
+                          </label>
+                          <label class="type-body-s-400">
+                            {m.account_last_name({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="lastName"
+                              value={account.customer.lastName}
+                              required
+                              autocomplete="family-name"
+                            />
+                          </label>
+                          <label class="is-wide type-body-s-400">
+                            {m.account_street_address({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="address1"
+                              required
+                              autocomplete="street-address"
+                            />
+                          </label>
+                          <label class="type-body-s-400">
+                            {m.account_city({}, { locale })}
+                            <input
+                              class="type-body-400"
+                              name="city"
+                              value="Addis Ababa"
+                              required
+                              autocomplete="address-level2"
+                            />
+                          </label>
+                          <label class="type-body-s-400">
+                            {m.account_region({}, { locale })}{" "}
+                            <>
+                              <small class="type-body-xs">
+                                ({m.account_optional({}, { locale })})
+                              </small>
+                              <input
+                                class="type-body-400"
+                                name="province"
+                                autocomplete="address-level1"
+                              />
+                            </>
+                          </label>
+                        </>
+                      </div>
+                      <label class="account__default-address type-body-s-400">
+                        <input
+                          type="checkbox"
+                          name="isDefaultShipping"
+                          checked={account.addresses.length === 0}
+                        />{" "}
+                        {m.account_use_at_checkout({}, { locale })}
+                      </label>
+                      <footer>
+                        <button
+                          class="type-body-s-500"
+                          type="submit"
+                          name="intent"
+                          value="save"
+                        >
+                          {m.account_save_address({}, { locale })}
+                        </button>
+                      </footer>
+                    </>
+                  </form>
+                </>
+              </article>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <section class="account__welcome">
+            <span class="account__icon">
+              <Icon name="user" />
+            </span>
+            <p class="type-body-xs">{m.account_title({}, { locale })}</p>
+            <h1 class="type-heading-1">
+              {m.account_guest_heading({}, { locale })}
+            </h1>
+            <div>
+              <>
+                <p class="type-body-400">
+                  {m.account_guest_intro({}, { locale })}
+                </p>
+                <nav class="account__guest-actions">
+                  <>
+                    <a class="type-body-500" href="/products">
+                      {m.account_continue_guest({}, { locale })}
+                    </a>
+                    <a class="type-body-500" href="/contact">
+                      {m.account_order_help({}, { locale })}
+                    </a>
+                  </>
+                </nav>
+              </>
+            </div>
+          </section>
+          <aside class="account__auth">
+            <div class="account__auth-heading">
+              <p class="type-body-xs">
+                {m.account_customer_access({}, { locale })}
+              </p>
+              <h2 class="type-heading-3">
+                {initialMode === "register"
+                  ? m.account_create_heading({}, { locale })
+                  : m.account_welcome_back({}, { locale })}
+              </h2>
+              <span class="type-body-s-400">
+                {initialMode === "register"
+                  ? m.account_create_help({}, { locale })
+                  : m.account_sign_in_help({}, { locale })}
+              </span>
+            </div>
+            <nav
+              class="account__auth-tabs"
+              aria-label={m.account_customer_access({}, { locale })}
+              role="tablist"
+            >
+              <a
+                class="type-body-s-500"
+                id="account-login-tab"
+                href="/account?mode=login"
+                role="tab"
+                aria-selected={initialMode === "login" ? "true" : "false"}
+                aria-controls="account-login"
+                tabindex={initialMode === "login" ? 0 : -1}
+                data-account-mode="login"
+              >
+                {m.action_sign_in({}, { locale })}
+              </a>
+              <a
+                class="type-body-s-500"
+                id="account-register-tab"
+                href="/account?mode=register"
+                role="tab"
+                aria-selected={initialMode === "register" ? "true" : "false"}
+                aria-controls="account-register"
+                tabindex={initialMode === "register" ? 0 : -1}
+                data-account-mode="register"
+              >
+                {m.account_create({}, { locale })}
+              </a>
+            </nav>
+            {error && (
+              <p
+                class="account__error type-body-s-500"
+                role="alert"
+                data-account-error
+              >
+                {error}
+              </p>
+            )}
+            <section
+              class="account__auth-panel"
+              id="account-login"
+              role="tabpanel"
+              aria-labelledby="account-login-tab"
+              hidden={initialMode !== "login"}
+              data-account-panel="login"
+            >
+              <form action="/actions/account/login" method="post">
+                <label class="type-body-s-400">
+                  {m.account_email({}, { locale })}
+                  <input
+                    class="type-body-400"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    inputmode="email"
+                    required
+                  />
+                </label>
+                <label class="type-body-s-400">
+                  {m.account_password({}, { locale })}
+                  <span class="account__password-control">
+                    <input
+                      class="type-body-400"
+                      name="password"
+                      type="password"
+                      autocomplete="current-password"
+                      minlength="8"
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-label={m.account_show_password({}, { locale })}
+                      aria-pressed="false"
+                      data-password-toggle
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <>
+                          <path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z" />
+                          <circle cx="12" cy="12" r="2.6" />
+                          <path
+                            class="account__password-slash"
+                            d="m4 4 16 16"
+                          />
+                        </>
+                      </svg>
+                    </button>
+                  </span>
+                </label>
+                <ActionButton type="submit" fullWidth={true}>
+                  {m.action_sign_in({}, { locale })}
+                </ActionButton>
+              </form>
+              <p class="account__auth-switch type-body-s-400">
+                {m.account_new_here({}, { locale })}{" "}
+                <a
+                  class="type-body-s-500"
+                  href="/account?mode=register"
+                  data-account-mode="register"
+                >
+                  {m.account_create({}, { locale })}
+                </a>
+              </p>
+            </section>
+            <section
+              class="account__auth-panel"
+              id="account-register"
+              role="tabpanel"
+              aria-labelledby="account-register-tab"
+              hidden={initialMode !== "register"}
+              data-account-panel="register"
+            >
+              <form action="/actions/account/register" method="post">
+                <div class="account__name-fields">
+                  <label class="type-body-s-400">
+                    {m.account_first_name({}, { locale })}
+                    <input
+                      class="type-body-400"
+                      name="firstName"
+                      autocomplete="given-name"
+                      required
+                    />
+                  </label>
+                  <label class="type-body-s-400">
+                    {m.account_last_name({}, { locale })}
+                    <input
+                      class="type-body-400"
+                      name="lastName"
+                      autocomplete="family-name"
+                      required
+                    />
+                  </label>
+                </div>
+                <label class="type-body-s-400">
+                  {m.account_email({}, { locale })}
+                  <input
+                    class="type-body-400"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    inputmode="email"
+                    required
+                  />
+                </label>
+                <label class="type-body-s-400">
+                  {m.account_password({}, { locale })}
+                  <span class="account__password-control">
+                    <input
+                      class="type-body-400"
+                      name="password"
+                      type="password"
+                      autocomplete="new-password"
+                      minlength="8"
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-label={m.account_show_password({}, { locale })}
+                      aria-pressed="false"
+                      data-password-toggle
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <>
+                          <path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z" />
+                          <circle cx="12" cy="12" r="2.6" />
+                          <path
+                            class="account__password-slash"
+                            d="m4 4 16 16"
+                          />
+                        </>
+                      </svg>
+                    </button>
+                  </span>
+                  <small class="type-body-xs">
+                    {m.account_password_help({}, { locale })}
+                  </small>
+                </label>
+                <ActionButton type="submit" fullWidth={true}>
+                  {m.account_create({}, { locale })}
+                </ActionButton>
+              </form>
+              <p class="account__auth-switch type-body-s-400">
+                {m.account_already_member({}, { locale })}{" "}
+                <a
+                  class="type-body-s-500"
+                  href="/account?mode=login"
+                  data-account-mode="login"
+                >
+                  {m.action_sign_in({}, { locale })}
+                </a>
+              </p>
+            </section>
+          </aside>
+        </>
+      )
+    }
   </main>
 </Layout>
 <script>
@@ -166,7 +924,10 @@ function formatOrderDate(value: string | null) {
   const formAnimations = new WeakMap<HTMLFormElement, Animation>();
   const setAddressFormOpen = (form: HTMLFormElement, open: boolean) => {
     formAnimations.get(form)?.cancel();
-    if (reducedMotion.matches) { form.hidden = !open; return; }
+    if (reducedMotion.matches) {
+      form.hidden = !open;
+      return;
+    }
     if (open) form.hidden = false;
     const startHeight = open ? 0 : form.scrollHeight;
     const endHeight = open ? form.scrollHeight : 0;
@@ -175,53 +936,107 @@ function formatOrderDate(value: string | null) {
       {
         height: [`${startHeight}px`, `${endHeight}px`],
         opacity: open ? [0, 1] : [1, 0],
-        transform: open ? ["translateY(-6px)", "translateY(0)"] : ["translateY(0)", "translateY(-4px)"],
+        transform: open
+          ? ["translateY(-6px)", "translateY(0)"]
+          : ["translateY(0)", "translateY(-4px)"],
       },
       { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" },
     );
     formAnimations.set(form, animation);
-    animation.addEventListener("finish", () => {
-      if (!open) form.hidden = true;
-      form.style.removeProperty("overflow");
-      formAnimations.delete(form);
-    }, { once: true });
-    animation.addEventListener("cancel", () => {
-      form.style.removeProperty("overflow");
-      formAnimations.delete(form);
-    }, { once: true });
+    animation.addEventListener(
+      "finish",
+      () => {
+        if (!open) form.hidden = true;
+        form.style.removeProperty("overflow");
+        formAnimations.delete(form);
+      },
+      { once: true },
+    );
+    animation.addEventListener(
+      "cancel",
+      () => {
+        form.style.removeProperty("overflow");
+        formAnimations.delete(form);
+      },
+      { once: true },
+    );
   };
-  document.querySelectorAll<HTMLButtonElement>("[data-address-toggle]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const form = button.parentElement?.querySelector<HTMLFormElement>("form");
-      if (!form) return;
-      const expanded = button.getAttribute("aria-expanded") === "true";
-      document.querySelectorAll<HTMLButtonElement>("[data-address-toggle]").forEach((other) => {
-        if (other === button) return;
-        other.setAttribute("aria-expanded", "false");
-        const otherLabel = other.querySelector<HTMLElement>("[data-toggle-label]");
-        if (otherLabel) otherLabel.textContent = other.closest(".is-new") ? labels.addAddress : labels.edit;
-        const otherForm = other.parentElement?.querySelector<HTMLFormElement>("form");
-        if (otherForm && !otherForm.hidden) setAddressFormOpen(otherForm, false);
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-address-toggle]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const form =
+          button.parentElement?.querySelector<HTMLFormElement>("form");
+        if (!form) return;
+        const expanded = button.getAttribute("aria-expanded") === "true";
+        document
+          .querySelectorAll<HTMLButtonElement>("[data-address-toggle]")
+          .forEach((other) => {
+            if (other === button) return;
+            other.setAttribute("aria-expanded", "false");
+            const otherLabel = other.querySelector<HTMLElement>(
+              "[data-toggle-label]",
+            );
+            if (otherLabel)
+              otherLabel.textContent = other.closest(".is-new")
+                ? labels.addAddress
+                : labels.edit;
+            const otherForm =
+              other.parentElement?.querySelector<HTMLFormElement>("form");
+            if (otherForm && !otherForm.hidden)
+              setAddressFormOpen(otherForm, false);
+          });
+        button.setAttribute("aria-expanded", String(!expanded));
+        const toggleLabel = button.querySelector<HTMLElement>(
+          "[data-toggle-label]",
+        );
+        if (toggleLabel)
+          toggleLabel.textContent = expanded
+            ? button.closest(".is-new")
+              ? labels.addAddress
+              : labels.edit
+            : labels.close;
+        setAddressFormOpen(form, !expanded);
+        if (!expanded)
+          form
+            .querySelector<HTMLInputElement>("input:not([type='hidden'])")
+            ?.focus();
       });
-      button.setAttribute("aria-expanded", String(!expanded));
-      const toggleLabel = button.querySelector<HTMLElement>("[data-toggle-label]");
-      if (toggleLabel) toggleLabel.textContent = expanded ? (button.closest(".is-new") ? labels.addAddress : labels.edit) : labels.close;
-      setAddressFormOpen(form, !expanded);
-      if (!expanded) form.querySelector<HTMLInputElement>("input:not([type='hidden'])")?.focus();
     });
-  });
 
-  const accountViews = document.querySelectorAll<HTMLElement>("[data-account-view]");
-  const accountPanels = document.querySelectorAll<HTMLElement>("[data-account-panel]");
+  const accountViews = document.querySelectorAll<HTMLElement>(
+    "[data-account-view]",
+  );
+  const accountPanels = document.querySelectorAll<HTMLElement>(
+    "[data-account-panel]",
+  );
   const showAccountView = (view: string, updateHash = false) => {
-    accountViews.forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.accountView === view)));
-    accountPanels.forEach((panel) => { panel.hidden = panel.dataset.accountPanel !== view; });
-    if (updateHash) history.replaceState(null, "", view === "orders" ? "#order-history" : view === "addresses" ? "#saved-addresses" : "#profile-details");
+    accountViews.forEach((tab) =>
+      tab.setAttribute(
+        "aria-selected",
+        String(tab.dataset.accountView === view),
+      ),
+    );
+    accountPanels.forEach((panel) => {
+      panel.hidden = panel.dataset.accountPanel !== view;
+    });
+    if (updateHash)
+      history.replaceState(
+        null,
+        "",
+        view === "orders"
+          ? "#order-history"
+          : view === "addresses"
+            ? "#saved-addresses"
+            : "#profile-details",
+      );
   };
-  accountViews.forEach((tab) => tab.addEventListener("click", (event) => {
-    event.preventDefault();
-    showAccountView(tab.dataset.accountView || "orders", true);
-  }));
+  accountViews.forEach((tab) =>
+    tab.addEventListener("click", (event) => {
+      event.preventDefault();
+      showAccountView(tab.dataset.accountView || "orders", true);
+    }),
+  );
   if (location.hash === "#saved-addresses") showAccountView("addresses");
   else if (location.hash === "#profile-details") showAccountView("profile");
 
@@ -229,72 +1044,119 @@ function formatOrderDate(value: string | null) {
 
   if (authRoot) {
     const setMode = (mode: "login" | "register", focus = false) => {
-      const activeEmail = authRoot.querySelector<HTMLInputElement>("[data-account-panel]:not([hidden]) input[type='email']")?.value ?? "";
-      authRoot.querySelectorAll<HTMLElement>("[data-account-panel]").forEach((panel) => {
-        panel.hidden = panel.dataset.accountPanel !== mode;
-      });
+      const activeEmail =
+        authRoot.querySelector<HTMLInputElement>(
+          "[data-account-panel]:not([hidden]) input[type='email']",
+        )?.value ?? "";
+      authRoot
+        .querySelectorAll<HTMLElement>("[data-account-panel]")
+        .forEach((panel) => {
+          panel.hidden = panel.dataset.accountPanel !== mode;
+        });
       authRoot.querySelectorAll<HTMLElement>("[role='tab']").forEach((tab) => {
         const selected = tab.dataset.accountMode === mode;
         tab.setAttribute("aria-selected", String(selected));
         tab.tabIndex = selected ? 0 : -1;
       });
-      const heading = authRoot.querySelector<HTMLElement>(".account__auth-heading h2");
-      const description = authRoot.querySelector<HTMLElement>(".account__auth-heading span");
-      if (heading) heading.textContent = mode === "register" ? labels.createHeading : labels.welcomeHeading;
-      if (description) description.textContent = mode === "register" ? labels.createHelp : labels.signInHelp;
+      const heading = authRoot.querySelector<HTMLElement>(
+        ".account__auth-heading h2",
+      );
+      const description = authRoot.querySelector<HTMLElement>(
+        ".account__auth-heading span",
+      );
+      if (heading)
+        heading.textContent =
+          mode === "register" ? labels.createHeading : labels.welcomeHeading;
+      if (description)
+        description.textContent =
+          mode === "register" ? labels.createHelp : labels.signInHelp;
       authRoot.querySelector<HTMLElement>("[data-account-error]")?.remove();
-      const nextEmail = authRoot.querySelector<HTMLInputElement>(`[data-account-panel='${mode}'] input[type='email']`);
-      if (nextEmail && !nextEmail.value && activeEmail) nextEmail.value = activeEmail;
-      if (focus) authRoot.querySelector<HTMLInputElement>(`[data-account-panel='${mode}'] input`)?.focus();
-      window.history.replaceState({}, "", mode === "register" ? "/account?mode=register" : "/account");
+      const nextEmail = authRoot.querySelector<HTMLInputElement>(
+        `[data-account-panel='${mode}'] input[type='email']`,
+      );
+      if (nextEmail && !nextEmail.value && activeEmail)
+        nextEmail.value = activeEmail;
+      if (focus)
+        authRoot
+          .querySelector<HTMLInputElement>(
+            `[data-account-panel='${mode}'] input`,
+          )
+          ?.focus();
+      window.history.replaceState(
+        {},
+        "",
+        mode === "register" ? "/account?mode=register" : "/account",
+      );
     };
 
-    authRoot.querySelectorAll<HTMLAnchorElement>("[data-account-mode]").forEach((link) => {
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        setMode(link.dataset.accountMode === "register" ? "register" : "login", true);
+    authRoot
+      .querySelectorAll<HTMLAnchorElement>("[data-account-mode]")
+      .forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          setMode(
+            link.dataset.accountMode === "register" ? "register" : "login",
+            true,
+          );
+        });
       });
-    });
 
-    authRoot.querySelectorAll<HTMLAnchorElement>("[role='tab']").forEach((tab) => {
-      tab.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-        event.preventDefault();
-        const mode = tab.dataset.accountMode === "register" ? "login" : "register";
-        setMode(mode);
-        authRoot.querySelector<HTMLElement>(`[role='tab'][data-account-mode='${mode}']`)?.focus();
+    authRoot
+      .querySelectorAll<HTMLAnchorElement>("[role='tab']")
+      .forEach((tab) => {
+        tab.addEventListener("keydown", (event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          const mode =
+            tab.dataset.accountMode === "register" ? "login" : "register";
+          setMode(mode);
+          authRoot
+            .querySelector<HTMLElement>(
+              `[role='tab'][data-account-mode='${mode}']`,
+            )
+            ?.focus();
+        });
       });
-    });
 
-    authRoot.querySelectorAll<HTMLButtonElement>("[data-password-toggle]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const input = button.parentElement?.querySelector<HTMLInputElement>("input");
-        if (!input) return;
-        const visible = input.type === "text";
-        input.type = visible ? "password" : "text";
-        button.setAttribute("aria-pressed", String(!visible));
-        button.setAttribute("aria-label", visible ? labels.showPassword : labels.hidePassword);
-        input.focus({ preventScroll: true });
+    authRoot
+      .querySelectorAll<HTMLButtonElement>("[data-password-toggle]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const input =
+            button.parentElement?.querySelector<HTMLInputElement>("input");
+          if (!input) return;
+          const visible = input.type === "text";
+          input.type = visible ? "password" : "text";
+          button.setAttribute("aria-pressed", String(!visible));
+          button.setAttribute(
+            "aria-label",
+            visible ? labels.showPassword : labels.hidePassword,
+          );
+          input.focus({ preventScroll: true });
+        });
       });
-    });
 
     authRoot.querySelectorAll<HTMLFormElement>("form").forEach((form) => {
-      form.addEventListener("invalid", (event) => {
-        const field = event.target;
-        if (!(field instanceof HTMLInputElement)) return;
-        field.setAttribute("aria-invalid", "true");
-        const owner = field.closest("label");
-        if (!owner) return;
-        let message = owner.querySelector<HTMLElement>("[data-field-error]");
-        if (!message) {
-          message = document.createElement("small");
-          message.dataset.fieldError = "";
-          message.className = "account__field-error";
-          message.setAttribute("role", "alert");
-          owner.append(message);
-        }
-        message.textContent = field.validationMessage;
-      }, true);
+      form.addEventListener(
+        "invalid",
+        (event) => {
+          const field = event.target;
+          if (!(field instanceof HTMLInputElement)) return;
+          field.setAttribute("aria-invalid", "true");
+          const owner = field.closest("label");
+          if (!owner) return;
+          let message = owner.querySelector<HTMLElement>("[data-field-error]");
+          if (!message) {
+            message = document.createElement("small");
+            message.dataset.fieldError = "";
+            message.className = "account__field-error";
+            message.setAttribute("role", "alert");
+            owner.append(message);
+          }
+          message.textContent = field.validationMessage;
+        },
+        true,
+      );
       form.querySelectorAll<HTMLInputElement>("input").forEach((field) => {
         field.addEventListener("input", () => {
           field.removeAttribute("aria-invalid");
@@ -305,12 +1167,19 @@ function formatOrderDate(value: string | null) {
         if (!form.checkValidity()) return;
         event.preventDefault();
         form.setAttribute("aria-busy", "true");
-        const button = form.querySelector<HTMLButtonElement>("button[type='submit']");
+        const button = form.querySelector<HTMLButtonElement>(
+          "button[type='submit']",
+        );
         if (!button) return;
-        const originalText = form.action.endsWith("/register") ? labels.createAccount : labels.signIn;
+        const originalText = form.action.endsWith("/register")
+          ? labels.createAccount
+          : labels.signIn;
         button.disabled = true;
         const text = button.querySelector<HTMLElement>(".button__text");
-        if (text) text.textContent = form.action.endsWith("/register") ? labels.creating : labels.signingIn;
+        if (text)
+          text.textContent = form.action.endsWith("/register")
+            ? labels.creating
+            : labels.signingIn;
         authRoot.querySelector<HTMLElement>("[data-account-error]")?.remove();
         try {
           const response = await fetch(form.action, {

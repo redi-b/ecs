@@ -57,7 +57,7 @@ function resolveConfiguredEditorOrigin() {
 }
 ---
 <!doctype html>
-<html lang={ctx.ok ? ctx.locale : fallbackLocale}>
+<html lang={ctx.ok ? ctx.locale : fallbackLocale} class={ctx.ok && ctx.config?.storefront?.templateKey ? `template-${ctx.config.storefront.templateKey.split(".")[0]}` : undefined}>
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>{m.preview_title({}, { locale: previewLocale })}</title></head>
   <body>
     {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>{m.preview_page_not_editable({}, { locale: previewLocale })}</h1></main> : !PreviewComponent ? <main><h1>{m.preview_unavailable({}, { locale: previewLocale })}</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}

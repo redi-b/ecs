@@ -1,3 +1,6 @@
+/// <reference path="../.astro/types.d.ts" />
+/// <reference types="astro/client" />
+
 declare namespace App {
   interface Locals {
     /** Resolved by the shared product route, never inferred from a URL alone. */

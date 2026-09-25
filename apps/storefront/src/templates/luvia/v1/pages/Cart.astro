@@ -1,11 +1,11 @@
 ---
 import "../styles/pages/cart.scss";
-import Icon from "../components/Icon.astro";
+import { Icon } from "astro-icon/components";
 import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
 import type { StoreCart } from "../../../../lib/commerce/types";
 import { formatMoney } from "../../../../lib/money";
-import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
 import DiscountCode from "../components/DiscountCode.astro";
+import CartItem from "../components/CartItem.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -22,6 +22,7 @@ interface Props {
   discountError?: string | null;
   demoMode?: boolean;
 }
+
 const {
   data,
   themeTokens,
@@ -32,12 +33,21 @@ const {
   discountError,
   demoMode = false,
 } = Astro.props;
+
 const template = parseLuviaData(data);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
-const continueShoppingLabel = resolveTemplateVoiceMessage({ fallback: m.action_continue_shopping({}, { locale }), locale, messageId: "action_continue_shopping", templateKey: "luvia.v1" });
+
+const continueShoppingLabel = resolveTemplateVoiceMessage({
+  fallback: m.action_continue_shopping({}, { locale }),
+  locale,
+  messageId: "action_continue_shopping",
+  templateKey: "luvia.v1",
+});
+
 const items = cart?.items ?? [];
 const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 const summary = resolveStoreCartSummary(cart);
+
 const clientMessages = {
   applied: m.cart_discount_applied({}, { locale }),
   applyingDiscount: m.cart_discount_applying({}, { locale }),
@@ -59,169 +69,130 @@ const clientMessages = {
 };
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={m.cart_title({}, { locale })}>
-  <main class="cart-page" data-cart-page>
-    <nav class="cart-page__breadcrumb container type-body-s-400" aria-label={m.breadcrumb_label({}, { locale })}><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.nav_cart({}, { locale })}</span></nav>
-    <header class="cart-page__heading container"><div><span class="type-body-xs">{m.cart_selection_eyebrow({}, { locale })}</span><h1 class="type-heading-1">{m.cart_title({}, { locale })}</h1><p class="type-body-400" data-page-item-count>{m.cart_ready_count({ count: itemCount }, { locale })}</p></div></header>
-    {error && <p class="cart-page__error container type-body-s-500" role="alert">{error}</p>}
-    {error && <p class="cart-page__error container type-body-s-500" role="alert">{error}</p>}
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  demoMode={demoMode}
+  title={m.cart_title({}, { locale })}
+>
+  <main class="cart-page" data-cart-page data-client-messages={JSON.stringify(clientMessages)}>
+    <nav
+      class="cart-page__breadcrumb container type-body-s-400"
+      aria-label={m.breadcrumb_label({}, { locale })}
+    >
+      <a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a>
+      <Icon name="chevron" />
+      <a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a>
+      <Icon name="chevron" />
+      <span class="type-body-s-400">{m.nav_cart({}, { locale })}</span>
+    </nav>
 
-    {items.length === 0 ? <section class="cart-page__empty empty-state container" data-cart-page-empty><span class="empty-state__mark"><Icon name="cart" /></span><div class="empty-state__copy"><h2 class="empty-state__title type-heading-3">{m.cart_empty({}, { locale })}</h2><p class="empty-state__text type-body-400">{m.cart_empty_help({}, { locale })}</p></div><a class="empty-state__action type-body-500" href="/products">{m.action_browse_products({}, { locale })}</a></section> : <div class="cart-page__layout container" data-cart-page-layout>
-      <section class="cart-lines" aria-label={m.cart_items_label({}, { locale })} data-cart-page-lines>
-        {items.map((item) => <article class="cart-line" data-cart-line={item.id}>
-          <a class="cart-line__media type-body-xs" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{(item.imageUrl || item.thumbnail) ? <img src={item.imageUrl || item.thumbnail} alt="" /> : <ProductMediaPlaceholder label={m.catalog_no_image({}, { locale })} />}</a>
-          <div class="cart-line__copy"><a class="type-body-l-500" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.title ?? m.catalog_product_fallback({}, { locale })}</a>{item.variantTitle && <span class="type-body-xs">{item.variantTitle}</span>}<small class="type-body-xs">{formatMoney(item.unitPrice, cart?.currencyCode, locale)} {m.cart_each({}, { locale })}</small></div>
-          <div class="cart-line__quantity type-body-s-500" aria-label={m.cart_quantity_for({ item: item.title ?? m.cart_item_fallback({}, { locale }) }, { locale })}>
-            <form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label={m.action_decrease_quantity({}, { locale })} disabled={item.quantity <= 1}>−</button></form>
-            <span data-line-quantity class="type-body-s-500">{item.quantity}</span>
-            <form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={item.quantity + 1} /><button type="submit" aria-label={m.action_increase_quantity({}, { locale })}>+</button></form>
+    <header class="cart-page__heading container">
+      <div>
+        <span class="type-body-xs">{m.cart_selection_eyebrow({}, { locale })}</span>
+        <h1 class="type-heading-1">{m.cart_title({}, { locale })}</h1>
+        <p class="type-body-400" data-page-item-count>
+          {m.cart_ready_count({ count: itemCount }, { locale })}
+        </p>
+      </div>
+    </header>
+
+    {
+      error && (
+        <p class="cart-page__error container type-body-s-500" role="alert">
+          {error}
+        </p>
+      )
+    }
+
+    {
+      items.length === 0 ? (
+        <section class="cart-page__empty empty-state container" data-cart-page-empty>
+          <span class="empty-state__mark">
+            <Icon name="cart" />
+          </span>
+          <div class="empty-state__copy">
+            <h2 class="empty-state__title type-heading-3">{m.cart_empty({}, { locale })}</h2>
+            <p class="empty-state__text type-body-400">{m.cart_empty_help({}, { locale })}</p>
           </div>
-          <strong data-line-total class="type-body-l-500">{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</strong>
-          <form method="post" action="/actions/cart/remove" class="cart-line__remove" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><button class="type-body-xs" type="submit">{m.action_remove({}, { locale })}</button></form>
-        </article>)}
-        <a class="cart-page__continue type-body-s-500" href="/products">← {continueShoppingLabel}</a>
-      </section>
+          <a class="empty-state__action type-body-500" href="/products">
+            {m.action_browse_products({}, { locale })}
+          </a>
+        </section>
+      ) : (
+        <div class="cart-page__layout container" data-cart-page-layout>
+          <section
+            class="cart-lines"
+            aria-label={m.cart_items_label({}, { locale })}
+            data-cart-page-lines
+          >
+            {items.map((item) => (
+              <CartItem item={item} currencyCode={cart?.currencyCode} locale={locale} />
+            ))}
+            <a class="cart-page__continue type-body-s-500" href="/products">
+              ← {continueShoppingLabel}
+            </a>
+          </section>
 
-      <aside class="cart-summary" aria-label={m.cart_order_summary({}, { locale })}>
-        <header><h2 class="type-heading-3">{m.cart_order_summary({}, { locale })}</h2><span class="type-body-xs" data-summary-count>{m.cart_item_count({ count: itemCount }, { locale })}</span></header>
-        <DiscountCode appliedCodes={summary.appliedCodes} idPrefix="cart" error={discountError} />
-        <dl><div><dt class="type-body-s-400">{m.cart_subtotal({}, { locale })}</dt><dd class="type-body-s-500" data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt class="type-body-s-400">{m.cart_discount({}, { locale })}</dt><dd class="type-body-s-500" data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</dd></div><div><dt class="type-body-s-400">{m.cart_delivery({}, { locale })}</dt><dd class="type-body-s-500" data-summary-shipping>{summary.shippingTotal != null && summary.shippingTotal > 0 ? formatMoney(summary.shippingTotal, cart?.currencyCode, locale) : m.cart_delivery_at_checkout({}, { locale })}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div data-summary-tax><dt class="type-body-s-400">{m.cart_tax({}, { locale })}</dt><dd class="type-body-s-500">{formatMoney(summary.taxTotal, cart?.currencyCode, locale)}</dd></div>}<div><dt class="type-body-l-500">{m.cart_total({}, { locale })}</dt><dd class="type-body-xl" data-summary-total>{formatMoney(summary.total, cart?.currencyCode, locale)}</dd></div></dl>
-        <p class="type-body-xs">{m.cart_delivery_note({}, { locale })}</p>
-        <a class="type-body-500" href="/checkout">{m.action_checkout({}, { locale })}</a><small class="type-body-xs">{m.cart_saved_note({}, { locale })}</small>
-      </aside>
-    </div>}
-    <script is:inline type="application/json" id="luvia-cart-state" set:html={JSON.stringify(cart)} />
+          <aside class="cart-summary" aria-label={m.cart_order_summary({}, { locale })}>
+            <header>
+              <h2 class="type-heading-3">{m.cart_order_summary({}, { locale })}</h2>
+              <span class="type-body-xs" data-summary-count>
+                {m.cart_item_count({ count: itemCount }, { locale })}
+              </span>
+            </header>
+            <DiscountCode
+              appliedCodes={summary.appliedCodes}
+              idPrefix="cart"
+              error={discountError}
+            />
+            <dl>
+              <div>
+                <dt class="type-body-s-400">{m.cart_delivery({}, { locale })}</dt>
+                <dd class="type-body-s-500" data-summary-shipping>
+                  {summary.shippingTotal != null && summary.shippingTotal > 0
+                    ? formatMoney(summary.shippingTotal, cart?.currencyCode, locale)
+                    : m.cart_delivery_at_checkout({}, { locale })}
+                </dd>
+              </div>
+              {summary.taxTotal != null && summary.taxTotal > 0 && (
+                <div data-summary-tax>
+                  <dt class="type-body-s-400">{m.cart_tax({}, { locale })}</dt>
+                  <dd class="type-body-s-500">
+                    {formatMoney(summary.taxTotal, cart?.currencyCode, locale)}
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt class="type-body-l-500">{m.cart_total({}, { locale })}</dt>
+                <dd class="type-body-xl" data-summary-total>
+                  {formatMoney(summary.total, cart?.currencyCode, locale)}
+                </dd>
+              </div>
+            </dl>
+            <p class="type-body-xs">{m.cart_delivery_note({}, { locale })}</p>
+            <a class="type-body-500" href="/checkout">
+              {m.action_checkout({}, { locale })}
+            </a>
+            <small class="type-body-xs">{m.cart_saved_note({}, { locale })}</small>
+          </aside>
+        </div>
+      )
+    }
+
+    <script
+      is:inline
+      type="application/json"
+      id="luvia-cart-state"
+      set:html={JSON.stringify(cart)}
+    />
   </main>
 </Layout>
 
 <script>
-  import {
-    $cart,
-    initCartStore,
-    updateCartItemQuantity,
-    removeCartItem,
-    applyPromotion,
-    setCart,
-  } from "../../../../lib/stores/cart";
-
-  (() => {
-    const root = document.querySelector<HTMLElement>("[data-cart-page]");
-    if (!root) return;
-
-    initCartStore();
-
-    const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
-    const money = (amount: number | null | undefined, currency?: string | null) => {
-      if (amount == null) return "—";
-      try {
-        return new Intl.NumberFormat(locale, {
-          style: "currency",
-          currency: (currency || "ETB").toUpperCase(),
-        }).format(amount);
-      } catch {
-        return String(amount);
-      }
-    };
-
-    const syncUI = (cart: any) => {
-      if (!cart) return;
-      const items = Array.isArray(cart.items) ? cart.items : [];
-      const count = items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
-
-      root.querySelectorAll<HTMLElement>("[data-cart-line]").forEach((line) => {
-        const item = items.find((candidate: any) => candidate.id === line.dataset.cartLine);
-        if (!item) {
-          line.remove();
-          return;
-        }
-        const qty = line.querySelector<HTMLElement>("[data-line-quantity]");
-        const total = line.querySelector<HTMLElement>("[data-line-total]");
-        if (qty) qty.textContent = String(item.quantity);
-        if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode);
-
-        const forms = [...line.querySelectorAll<HTMLFormElement>('form[action="/actions/cart/update"]')];
-        const decrease = forms[0]?.querySelector<HTMLInputElement>('input[name="quantity"]');
-        const increase = forms[1]?.querySelector<HTMLInputElement>('input[name="quantity"]');
-        if (decrease) decrease.value = String(Math.max(1, item.quantity - 1));
-        if (increase) increase.value = String(item.quantity + 1);
-        const decreaseButton = forms[0]?.querySelector<HTMLButtonElement>("button");
-        if (decreaseButton) decreaseButton.disabled = item.quantity <= 1;
-      });
-
-      const pageCount = root.querySelector<HTMLElement>("[data-page-item-count]");
-      const summaryCount = root.querySelector<HTMLElement>("[data-summary-count]");
-      if (pageCount) pageCount.textContent = `${count} ${count === 1 ? "item" : "items"}`;
-      if (summaryCount) summaryCount.textContent = `${count} ${count === 1 ? "item" : "items"}`;
-
-      const subtotal = root.querySelector<HTMLElement>("[data-summary-subtotal]");
-      const total = root.querySelector<HTMLElement>("[data-summary-total]");
-      const shipping = root.querySelector<HTMLElement>("[data-summary-shipping]");
-      const discountRow = root.querySelector<HTMLElement>("[data-summary-discount]");
-      const discountValue = root.querySelector<HTMLElement>("[data-summary-discount-value]");
-      const savings = Math.max(
-        0,
-        cart.discountTotal != null
-          ? Number(cart.discountTotal)
-          : Number(cart.itemDiscountTotal || 0) + Number(cart.shippingDiscountTotal || 0),
-      );
-
-      if (subtotal) subtotal.textContent = money(cart.subtotal ?? cart.itemSubtotal ?? cart.itemTotal ?? cart.total, cart.currencyCode);
-      if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode);
-      if (shipping) shipping.textContent = cart.shippingTotal > 0 ? money(cart.shippingTotal, cart.currencyCode) : "Calculated at next step";
-      if (discountRow) discountRow.hidden = savings <= 0;
-      if (discountValue) discountValue.textContent = `−${money(savings, cart.currencyCode)}`;
-
-      if (!items.length) {
-        const layout = root.querySelector("[data-cart-page-layout]");
-        layout?.remove();
-        const empty = document.createElement("section");
-        empty.className = "cart-page__empty empty-state container";
-        empty.innerHTML = `
-          <span class="empty-state__mark">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
-          </span>
-          <div class="empty-state__copy">
-            <h2 class="empty-state__title type-heading-3">Your cart is empty</h2>
-            <p class="empty-state__text type-body-400">Add pieces from the shop to start your order.</p>
-          </div>
-          <a class="empty-state__action type-body-500" href="/products">Browse products</a>
-        `;
-        root.append(empty);
-      }
-    };
-
-    $cart.subscribe((cart) => {
-      if (cart) syncUI(cart);
-    });
-
-    root.addEventListener("submit", async (event) => {
-      const form = event.target;
-      if (!(form instanceof HTMLFormElement)) return;
-      if (!form.matches("[data-cart-page-form],[data-cart-promotion-form]")) return;
-      event.preventDefault();
-
-      const formData = new FormData(form);
-      const isPromotion = form.matches("[data-cart-promotion-form]");
-
-      if (isPromotion) {
-        const intent = (formData.get("intent")?.toString() || "apply") as "apply" | "remove";
-        const code = formData.get("code")?.toString() || "";
-        if (code) {
-          await applyPromotion(code, intent);
-          if (intent !== "remove") form.reset();
-        }
-        return;
-      }
-
-      const lineItemId = formData.get("lineItemId")?.toString();
-      if (!lineItemId) return;
-
-      if (form.action.endsWith("/remove")) {
-        await removeCartItem(lineItemId);
-      } else if (form.action.endsWith("/update")) {
-        const quantity = Number(formData.get("quantity") || 1);
-        await updateCartItemQuantity(lineItemId, quantity);
-      }
-    });
-  })();
+  import { initLuviaCartPage } from "../scripts/client";
+  initLuviaCartPage();
 </script>

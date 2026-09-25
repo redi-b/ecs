@@ -20,10 +20,12 @@ interface Props {
 
 const { data, themeTokens, tenantName, cartCount, order } = Astro.props;
 const template = parseLuviaData(data);
-const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const locale =
+  Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const reference = formatOrderReference(order.id, order.customDisplayId);
 const placedAt = order.createdAt
-  ? formatStorefrontDate(order.createdAt, locale, "long") ?? m.account_date_unavailable({}, { locale })
+  ? (formatStorefrontDate(order.createdAt, locale, "long") ??
+    m.account_date_unavailable({}, { locale }))
   : m.account_date_unavailable({}, { locale });
 const stateLabel = {
   received: m.order_received({}, { locale }),
@@ -32,90 +34,279 @@ const stateLabel = {
   delivered: m.order_delivered({}, { locale }),
   cancelled: m.order_cancelled({}, { locale }),
 }[order.fulfillmentState];
-const money = (value: number | null) => value == null ? "—" : formatMoney(value, order.currencyCode, locale);
+const money = (value: number | null) =>
+  value == null ? "—" : formatMoney(value, order.currencyCode, locale);
 const address = order.shippingAddress;
 const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
 ---
 
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title={m.order_title({ reference }, { locale })}>
-  <main class="account-order container" data-checking-label={m.order_checking({}, { locale })} data-updated-label={m.order_updated_at({ time: "__TIME__" }, { locale })} data-refresh-failed-label={m.order_refresh_failed({}, { locale })}>
-    <a class="account-order__back type-body-s-500" href="/account">← {m.order_back_to_account({}, { locale })}</a>
+<Layout
+  tenantName={tenantName}
+  header={template.header}
+  footer={template.footer}
+  themeTokens={themeTokens}
+  cartCount={cartCount}
+  title={m.order_title({ reference }, { locale })}
+>
+  <main
+    class="account-order container"
+    data-checking-label={m.order_checking({}, { locale })}
+    data-updated-label={m.order_updated_at({ time: "__TIME__" }, { locale })}
+    data-refresh-failed-label={m.order_refresh_failed({}, { locale })}
+  >
+    <a class="account-order__back type-body-s-500" href="/account"
+      >← {m.order_back_to_account({}, { locale })}</a
+    >
     <header class="account-order__hero">
       <div>
         <p class="type-body-xs">{m.order_eyebrow({}, { locale })}</p>
-        <h1 class="type-heading-1">{m.order_title({ reference }, { locale })}</h1>
-        <span class="type-body-s-400">{m.order_placed({ date: placedAt }, { locale })}</span>
+        <h1 class="type-heading-1">
+          {m.order_title({ reference }, { locale })}
+        </h1>
+        <span class="type-body-s-400"
+          >{m.order_placed({ date: placedAt }, { locale })}</span
+        >
       </div>
       <div class="account-order__tracking">
         <div class="account-order__status-row">
-          <strong data-order-live-status class:list={["account-order__status type-body-s-500", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
-          <button class="account-order__refresh" type="button" data-order-refresh aria-describedby="order-refresh-note" aria-label={m.order_check_status({}, { locale })} title={m.order_check_updates({}, { locale })}>
+          <strong
+            data-order-live-status
+            class:list={[
+              "account-order__status type-body-s-500",
+              `is-${order.fulfillmentState}`,
+            ]}>{stateLabel}</strong
+          >
+          <button
+            class="account-order__refresh"
+            type="button"
+            data-order-refresh
+            aria-describedby="order-refresh-note"
+            aria-label={m.order_check_status({}, { locale })}
+            title={m.order_check_updates({}, { locale })}
+          >
             <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M21 12a9 9 0 0 1-15.2 6.5L3 16" />
-              <path d="M3 21v-5h5" />
-              <path d="M3 12a9 9 0 0 1 15.2-6.5L21 8" />
-              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-15.2 6.5L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+              <path d="M3 12a9 9 0 0 1 15.2-6.5L21 8"></path>
+              <path d="M21 3v5h-5"></path>
             </svg>
           </button>
         </div>
-        <small id="order-refresh-note" class="account-order__refresh-note type-body-xs" data-order-refresh-note aria-live="polite">{m.order_checked_on_open({}, { locale })}</small>
+        <small
+          id="order-refresh-note"
+          class="account-order__refresh-note type-body-xs"
+          data-order-refresh-note
+          aria-live="polite">{m.order_checked_on_open({}, { locale })}</small
+        >
       </div>
     </header>
 
     <div class="account-order__layout">
       <section class="account-order__items" aria-labelledby="order-items-title">
-        <header><div><p class="type-body-xs">{m.order_details({}, { locale })}</p><h2 id="order-items-title" class="type-heading-3">{m.order_what_you_ordered({}, { locale })}</h2></div><span class="type-body-xs">{order.itemCount === 1 ? m.account_item_count({ count: order.itemCount }, { locale }) : m.account_item_count_plural({ count: order.itemCount }, { locale })}</span></header>
+        <header>
+          <div>
+            <p class="type-body-xs">{m.order_details({}, { locale })}</p><h2
+              id="order-items-title"
+              class="type-heading-3"
+            >
+              {m.order_what_you_ordered({}, { locale })}
+            </h2>
+          </div><span class="type-body-xs"
+            >{
+              order.itemCount === 1
+                ? m.account_item_count({ count: order.itemCount }, { locale })
+                : m.account_item_count_plural(
+                    { count: order.itemCount },
+                    { locale },
+                  )
+            }</span
+          >
+        </header>
         <ol>
-          {order.items.map((item) => (
-            <li>
-              <span class="account-order__media">{item.thumbnail && <img src={item.thumbnail} alt="" loading="lazy" />}</span>
-              <div><strong class="type-body-s-500">{item.title}</strong>{item.variantTitle && <span class="type-body-xs">{item.variantTitle}</span>}<small class="type-body-xs">{m.order_quantity({ count: item.quantity }, { locale })}</small></div>
-              <b class="type-body-s-500">{money(item.total ?? (item.unitPrice == null ? null : item.unitPrice * item.quantity))}</b>
-            </li>
-          ))}
+          {
+            order.items.map((item) => (
+              <li>
+                <span class="account-order__media">
+                  {item.thumbnail && (
+                    <img src={item.thumbnail} alt="" loading="lazy" />
+                  )}
+                </span>
+                <div>
+                  <strong class="type-body-s-500">{item.title}</strong>
+                  {item.variantTitle && (
+                    <span class="type-body-xs">{item.variantTitle}</span>
+                  )}
+                  <small class="type-body-xs">
+                    {m.order_quantity({ count: item.quantity }, { locale })}
+                  </small>
+                </div>
+                <b class="type-body-s-500">
+                  {money(
+                    item.total ??
+                      (item.unitPrice == null
+                        ? null
+                        : item.unitPrice * item.quantity),
+                  )}
+                </b>
+              </li>
+            ))
+          }
         </ol>
       </section>
 
       <aside class="account-order__side">
         <section aria-labelledby="order-summary-title">
-          <p class="type-body-xs">{m.order_payment_summary({}, { locale })}</p><h2 id="order-summary-title" class="type-heading-3">{m.order_total({}, { locale })}</h2>
+          <p class="type-body-xs">
+            {m.order_payment_summary({}, { locale })}
+          </p><h2 id="order-summary-title" class="type-heading-3">
+            {m.order_total({}, { locale })}
+          </h2>
           <dl>
-            <div><dt class="type-body-s-400">{m.cart_subtotal({}, { locale })}</dt><dd class="type-body-s-500">{money(order.subtotal)}</dd></div>
-            {Boolean(order.discountTotal && order.discountTotal > 0) && <div class="is-saving"><dt class="type-body-s-400">{m.cart_discount({}, { locale })}</dt><dd class="type-body-s-500">−{money(order.discountTotal)}</dd></div>}
-            <div><dt class="type-body-s-400">{m.cart_delivery({}, { locale })}</dt><dd class="type-body-s-500">{money(order.shippingTotal)}</dd></div>
-            {Boolean(order.taxTotal && order.taxTotal > 0) && <div><dt class="type-body-s-400">{m.cart_tax({}, { locale })}</dt><dd class="type-body-s-500">{money(order.taxTotal)}</dd></div>}
-            <div class="is-total"><dt class="type-body-l-500">{m.cart_total({}, { locale })}</dt><dd class="type-body-xl">{money(order.total)}</dd></div>
+            <div>
+              <dt class="type-body-s-400">
+                {m.cart_subtotal({}, { locale })}
+              </dt><dd class="type-body-s-500">{money(order.subtotal)}</dd>
+            </div>
+            {
+              Boolean(order.discountTotal && order.discountTotal > 0) && (
+                <div class="is-saving">
+                  <>
+                    <dt class="type-body-s-400">
+                      {m.cart_discount({}, { locale })}
+                    </dt>
+                    <dd class="type-body-s-500">
+                      −{money(order.discountTotal)}
+                    </dd>
+                  </>
+                </div>
+              )
+            }
+            <div>
+              <dt class="type-body-s-400">
+                {m.cart_delivery({}, { locale })}
+              </dt><dd class="type-body-s-500">{money(order.shippingTotal)}</dd>
+            </div>
+            {
+              Boolean(order.taxTotal && order.taxTotal > 0) && (
+                <div>
+                  <>
+                    <dt class="type-body-s-400">
+                      {m.cart_tax({}, { locale })}
+                    </dt>
+                    <dd class="type-body-s-500">{money(order.taxTotal)}</dd>
+                  </>
+                </div>
+              )
+            }
+            <div class="is-total">
+              <dt class="type-body-l-500">{m.cart_total({}, { locale })}</dt><dd
+                class="type-body-xl"
+              >
+                {money(order.total)}
+              </dd>
+            </div>
           </dl>
         </section>
 
-        <section data-order-live-fulfillment aria-labelledby="order-fulfillment-title">
-          <p class="type-body-xs">{m.order_fulfillment({}, { locale })}</p><h2 id="order-fulfillment-title" class="type-heading-3">{stateLabel}</h2>
-          <span class="type-body-s-400">{order.shippingMethod ?? m.order_fulfillment_pending({}, { locale })}</span>
-          {order.trackingNumber && <small class="type-body-xs">{m.order_tracking_number({ number: order.trackingNumber }, { locale })}</small>}
-          {order.trackingUrl && <a class="type-body-s-500" href={order.trackingUrl} rel="noreferrer" target="_blank">{m.order_open_tracking({}, { locale })} ↗</a>}
+        <section
+          data-order-live-fulfillment
+          aria-labelledby="order-fulfillment-title"
+        >
+          <p class="type-body-xs">{m.order_fulfillment({}, { locale })}</p><h2
+            id="order-fulfillment-title"
+            class="type-heading-3"
+          >
+            {stateLabel}
+          </h2>
+          <span class="type-body-s-400"
+            >{
+              order.shippingMethod ??
+                m.order_fulfillment_pending({}, { locale })
+            }</span
+          >
+          {
+            order.trackingNumber && (
+              <small class="type-body-xs">
+                {m.order_tracking_number(
+                  { number: order.trackingNumber },
+                  { locale },
+                )}
+              </small>
+            )
+          }
+          {
+            order.trackingUrl && (
+              <a
+                class="type-body-s-500"
+                href={order.trackingUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {m.order_open_tracking({}, { locale })} ↗
+              </a>
+            )
+          }
         </section>
 
-        {address && !isPickup && (
-          <section aria-labelledby="order-address-title">
-            <p class="type-body-xs">{m.order_delivery_details({}, { locale })}</p><h2 id="order-address-title" class="type-heading-3">{m.order_shipping_address({}, { locale })}</h2>
-            <address class="type-body-s-400">
-              <strong class="type-body-s-500">{[address.firstName, address.lastName].filter(Boolean).join(" ")}</strong>
-              <span class="type-body-s-400">{address.address1}</span>{address.address2 && <span class="type-body-s-400">{address.address2}</span>}
-              <span class="type-body-s-400">{[address.city, address.province, address.postalCode].filter(Boolean).join(", ")}</span>
-              {address.phone && <span class="type-body-s-400">{address.phone}</span>}
-            </address>
-          </section>
-        )}
+        {
+          address && !isPickup && (
+            <section aria-labelledby="order-address-title">
+              <>
+                <p class="type-body-xs">
+                  {m.order_delivery_details({}, { locale })}
+                </p>
+                <h2 id="order-address-title" class="type-heading-3">
+                  {m.order_shipping_address({}, { locale })}
+                </h2>
+              </>
+              <address class="type-body-s-400">
+                <strong class="type-body-s-500">
+                  {[address.firstName, address.lastName]
+                    .filter(Boolean)
+                    .join(" ")}
+                </strong>
+                <span class="type-body-s-400">{address.address1}</span>
+                {address.address2 && (
+                  <span class="type-body-s-400">{address.address2}</span>
+                )}
+                <span class="type-body-s-400">
+                  {[address.city, address.province, address.postalCode]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+                {address.phone && (
+                  <span class="type-body-s-400">{address.phone}</span>
+                )}
+              </address>
+            </section>
+          )
+        }
       </aside>
     </div>
 
-    <footer class="account-order__help"><div><p class="type-body-xs">{m.account_need_help({}, { locale })}</p><h2 class="type-heading-3">{m.order_help_title({}, { locale })}</h2><span class="type-body-s-400">{m.order_help_reference({ reference }, { locale })}</span></div><ActionButton href="/contact" tone="secondary">{m.account_contact_shop({}, { locale })}</ActionButton></footer>
+    <footer class="account-order__help">
+      <div>
+        <p class="type-body-xs">{m.account_need_help({}, { locale })}</p><h2
+          class="type-heading-3"
+        >
+          {m.order_help_title({}, { locale })}
+        </h2><span class="type-body-s-400"
+          >{m.order_help_reference({ reference }, { locale })}</span
+        >
+      </div><ActionButton href="/contact" tone="secondary"
+        >{m.account_contact_shop({}, { locale })}</ActionButton
+      >
+    </footer>
   </main>
 </Layout>
 
 <script>
-  const refreshButton = document.querySelector<HTMLButtonElement>("[data-order-refresh]");
-  const refreshNote = document.querySelector<HTMLElement>("[data-order-refresh-note]");
+  const refreshButton = document.querySelector<HTMLButtonElement>(
+    "[data-order-refresh]",
+  );
+  const refreshNote = document.querySelector<HTMLElement>(
+    "[data-order-refresh-note]",
+  );
 
   refreshButton?.addEventListener("click", async () => {
     if (refreshButton.disabled) return;
@@ -123,7 +314,8 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
     refreshButton.disabled = true;
     refreshButton.dataset.loading = "true";
     const root = refreshButton.closest<HTMLElement>("[data-checking-label]");
-    if (refreshNote) refreshNote.textContent = root?.dataset.checkingLabel || "";
+    if (refreshNote)
+      refreshNote.textContent = root?.dataset.checkingLabel || "";
 
     try {
       const response = await fetch(window.location.href, {
@@ -131,28 +323,42 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
         credentials: "same-origin",
         headers: { Accept: "text/html" },
       });
-      if (!response.ok) throw new Error(`Order refresh failed (${response.status})`);
+      if (!response.ok)
+        throw new Error(`Order refresh failed (${response.status})`);
 
-      const nextDocument = new DOMParser().parseFromString(await response.text(), "text/html");
-      const replacements = ["[data-order-live-status]", "[data-order-live-fulfillment]"];
+      const nextDocument = new DOMParser().parseFromString(
+        await response.text(),
+        "text/html",
+      );
+      const replacements = [
+        "[data-order-live-status]",
+        "[data-order-live-fulfillment]",
+      ];
 
       for (const selector of replacements) {
         const current = document.querySelector<HTMLElement>(selector);
         const next = nextDocument.querySelector<HTMLElement>(selector);
-        if (!current || !next) throw new Error(`Missing refreshed order fragment: ${selector}`);
+        if (!current || !next)
+          throw new Error(`Missing refreshed order fragment: ${selector}`);
         current.replaceWith(next);
       }
 
       if (refreshNote) {
-        const checkedAt = new Intl.DateTimeFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { hour: "numeric", minute: "2-digit" }).format(new Date());
-        refreshNote.textContent = (root?.dataset.updatedLabel || "").replace("__TIME__", checkedAt);
+        const checkedAt = new Intl.DateTimeFormat(
+          document.documentElement.lang === "am" ? "am-ET" : "en-ET",
+          { hour: "numeric", minute: "2-digit" },
+        ).format(new Date());
+        refreshNote.textContent = (root?.dataset.updatedLabel || "").replace(
+          "__TIME__",
+          checkedAt,
+        );
       }
     } catch {
-      if (refreshNote) refreshNote.textContent = root?.dataset.refreshFailedLabel || "";
+      if (refreshNote)
+        refreshNote.textContent = root?.dataset.refreshFailedLabel || "";
     } finally {
       refreshButton.disabled = false;
       delete refreshButton.dataset.loading;
     }
   });
 </script>
-

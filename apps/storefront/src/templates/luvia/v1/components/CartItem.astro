@@ -1,0 +1,74 @@
+---
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
+import type { StoreCartItem } from "../../../../lib/commerce/types";
+import { formatMoney } from "../../../../lib/money";
+import * as m from "../../../../paraglide/messages.js";
+
+interface Props {
+  item: StoreCartItem;
+  currencyCode?: string | null;
+  locale: "am" | "en";
+}
+
+const { item, currencyCode, locale } = Astro.props;
+const productHref = item.productHandle
+  ? `/products/${encodeURIComponent(item.productHandle)}`
+  : "/products";
+---
+
+<article class="cart-line" data-cart-line={item.id}>
+  <a class="cart-line__media type-body-xs" href={productHref}>
+    {
+      item.imageUrl || item.thumbnail ? (
+        <img src={item.imageUrl || item.thumbnail} alt="" />
+      ) : (
+        <ProductMediaPlaceholder label={m.catalog_no_image({}, { locale })} />
+      )
+    }
+  </a>
+  <div class="cart-line__copy">
+    <a class="type-body-l-500" href={productHref}>
+      {item.title ?? m.catalog_product_fallback({}, { locale })}
+    </a>
+    {item.variantTitle && <span class="type-body-xs">{item.variantTitle}</span>}
+    <small class="type-body-xs">
+      {formatMoney(item.unitPrice, currencyCode, locale)} {m.cart_each({}, { locale })}
+    </small>
+  </div>
+  <div
+    class="cart-line__quantity type-body-s-500"
+    aria-label={m.cart_quantity_for(
+      { item: item.title ?? m.cart_item_fallback({}, { locale }) },
+      { locale },
+    )}
+  >
+    <form method="post" action="/actions/cart/update" data-cart-page-form>
+      <input type="hidden" name="lineItemId" value={item.id} />
+      <input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} />
+      <button
+        type="submit"
+        aria-label={m.action_decrease_quantity({}, { locale })}
+        disabled={item.quantity <= 1}
+      >
+        −
+      </button>
+    </form>
+    <span data-line-quantity class="type-body-s-500">{item.quantity}</span>
+    <form method="post" action="/actions/cart/update" data-cart-page-form>
+      <input type="hidden" name="lineItemId" value={item.id} />
+      <input type="hidden" name="quantity" value={item.quantity + 1} />
+      <button type="submit" aria-label={m.action_increase_quantity({}, { locale })}>
+        +
+      </button>
+    </form>
+  </div>
+  <strong data-line-total class="type-body-l-500">
+    {formatMoney(item.total ?? item.unitPrice, currencyCode, locale)}
+  </strong>
+  <form method="post" action="/actions/cart/remove" class="cart-line__remove" data-cart-page-form>
+    <input type="hidden" name="lineItemId" value={item.id} />
+    <button class="type-body-xs" type="submit">
+      {m.action_remove({}, { locale })}
+    </button>
+  </form>
+</article>

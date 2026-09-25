@@ -26,7 +26,6 @@ export function initNexahubStorefront() {
   const navigationBackdrop = document.querySelector<HTMLButtonElement>("[data-header-backdrop]");
   const overlay = document.querySelector<HTMLElement>("[data-cart-overlay]");
   const drawer = document.querySelector<HTMLElement>("[data-cart-modal]");
-  const status = drawer?.querySelector<HTMLElement>("[data-cart-status]");
   const itemsRoot = drawer?.querySelector<HTMLElement>("[data-cart-items]");
   const footer = drawer?.querySelector<HTMLElement>("[data-cart-footer]");
   const drawerCount = drawer?.querySelector<HTMLElement>("[data-cart-drawer-count]");

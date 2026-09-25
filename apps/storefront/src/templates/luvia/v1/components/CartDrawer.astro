@@ -1,0 +1,62 @@
+---
+import * as m from "../../../../paraglide/messages.js";
+
+interface Props {
+  locale: "am" | "en";
+  continueShoppingLabel: string;
+}
+
+const { locale, continueShoppingLabel } = Astro.props;
+---
+
+<button
+  class="cart-backdrop"
+  type="button"
+  data-cart-backdrop
+  aria-label={m.cart_close({}, { locale })}
+  hidden
+></button>
+
+<aside
+  class="cart-drawer"
+  data-cart-drawer
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="cart-title"
+  hidden
+>
+  <header>
+    <div>
+      <h2 id="cart-title" class="type-heading-4">{m.cart_title({}, { locale })}</h2>
+      <span data-cart-drawer-count class="type-body-s-400">
+        {m.cart_item_count({ count: 0 }, { locale })}
+      </span>
+    </div>
+    <button type="button" data-cart-close aria-label={m.cart_close({}, { locale })}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m7 7 10 10M17 7 7 17" />
+      </svg>
+    </button>
+  </header>
+  <div class="cart-drawer__status type-body-s-400" data-cart-status aria-live="polite"></div>
+  <div class="cart-drawer__items" data-cart-items></div>
+  <footer data-cart-footer hidden>
+    <dl>
+      <div class="type-body-s-400">
+        <dt class="type-body-s-400">{m.cart_subtotal({}, { locale })}</dt>
+        <dd data-cart-subtotal class="type-body-s-500"></dd>
+      </div>
+      <div class="type-body-s-400">
+        <dt class="type-body-s-400">{m.cart_delivery({}, { locale })}</dt>
+        <dd class="type-body-s-400">{m.cart_delivery_at_checkout({}, { locale })}</dd>
+      </div>
+      <div class="type-body-400">
+        <dt class="type-body-500">{m.cart_total({}, { locale })}</dt>
+        <dd data-cart-total class="type-body-500"></dd>
+      </div>
+    </dl>
+    <a class="cart-checkout type-body-500" href="/checkout">{m.action_checkout({}, { locale })}</a>
+    <a class="cart-view type-body-s-500" href="/cart">{m.cart_view({}, { locale })}</a>
+    <button type="button" data-cart-continue class="type-body-s-500">{continueShoppingLabel}</button>
+  </footer>
+</aside>
