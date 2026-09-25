@@ -14,6 +14,18 @@ export * from "./templates/afro/v1/defaults";
 export * from "./templates/afro/v1/editor";
 export * from "./templates/afro/v1/palette";
 export * from "./templates/afro/v1/schema";
-export * from "./theme/palette";
+export {
+  contrastingInk,
+  contrastRatio,
+  generateThemeFromPrimary,
+  hexToHsl,
+  hexToRgb,
+  hslToHex,
+  inferSurfaceMode,
+  isHexColor,
+  normalizeHex,
+  rgbToHex,
+  type ThemePaletteSeed,
+  type ThemeSurfaceMode,
+} from "./theme/palette";
 export * from "./theme/brand-presets";
-
