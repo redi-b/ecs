@@ -38,18 +38,18 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} title={m.order_title({ reference }, { locale })}>
-  <main class="lv-account-order container" data-checking-label={m.order_checking({}, { locale })} data-updated-label={m.order_updated_at({ time: "__TIME__" }, { locale })} data-refresh-failed-label={m.order_refresh_failed({}, { locale })}>
-    <a class="lv-account-order__back type-body-s-500" href="/account">← {m.order_back_to_account({}, { locale })}</a>
-    <header class="lv-account-order__hero">
+  <main class="account-order container" data-checking-label={m.order_checking({}, { locale })} data-updated-label={m.order_updated_at({ time: "__TIME__" }, { locale })} data-refresh-failed-label={m.order_refresh_failed({}, { locale })}>
+    <a class="account-order__back type-body-s-500" href="/account">← {m.order_back_to_account({}, { locale })}</a>
+    <header class="account-order__hero">
       <div>
         <p class="type-body-xs">{m.order_eyebrow({}, { locale })}</p>
         <h1 class="type-heading-1">{m.order_title({ reference }, { locale })}</h1>
         <span class="type-body-s-400">{m.order_placed({ date: placedAt }, { locale })}</span>
       </div>
-      <div class="lv-account-order__tracking">
-        <div class="lv-account-order__status-row">
-          <strong data-order-live-status class:list={["lv-account-order__status type-body-s-500", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
-          <button class="lv-account-order__refresh" type="button" data-order-refresh aria-describedby="order-refresh-note" aria-label={m.order_check_status({}, { locale })} title={m.order_check_updates({}, { locale })}>
+      <div class="account-order__tracking">
+        <div class="account-order__status-row">
+          <strong data-order-live-status class:list={["account-order__status type-body-s-500", `is-${order.fulfillmentState}`]}>{stateLabel}</strong>
+          <button class="account-order__refresh" type="button" data-order-refresh aria-describedby="order-refresh-note" aria-label={m.order_check_status({}, { locale })} title={m.order_check_updates({}, { locale })}>
             <svg aria-hidden="true" viewBox="0 0 24 24">
               <path d="M21 12a9 9 0 0 1-15.2 6.5L3 16" />
               <path d="M3 21v-5h5" />
@@ -58,17 +58,17 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
             </svg>
           </button>
         </div>
-        <small id="order-refresh-note" class="lv-account-order__refresh-note type-body-xs" data-order-refresh-note aria-live="polite">{m.order_checked_on_open({}, { locale })}</small>
+        <small id="order-refresh-note" class="account-order__refresh-note type-body-xs" data-order-refresh-note aria-live="polite">{m.order_checked_on_open({}, { locale })}</small>
       </div>
     </header>
 
-    <div class="lv-account-order__layout">
-      <section class="lv-account-order__items" aria-labelledby="order-items-title">
+    <div class="account-order__layout">
+      <section class="account-order__items" aria-labelledby="order-items-title">
         <header><div><p class="type-body-xs">{m.order_details({}, { locale })}</p><h2 id="order-items-title" class="type-heading-3">{m.order_what_you_ordered({}, { locale })}</h2></div><span class="type-body-xs">{order.itemCount === 1 ? m.account_item_count({ count: order.itemCount }, { locale }) : m.account_item_count_plural({ count: order.itemCount }, { locale })}</span></header>
         <ol>
           {order.items.map((item) => (
             <li>
-              <span class="lv-account-order__media">{item.thumbnail && <img src={item.thumbnail} alt="" loading="lazy" />}</span>
+              <span class="account-order__media">{item.thumbnail && <img src={item.thumbnail} alt="" loading="lazy" />}</span>
               <div><strong class="type-body-s-500">{item.title}</strong>{item.variantTitle && <span class="type-body-xs">{item.variantTitle}</span>}<small class="type-body-xs">{m.order_quantity({ count: item.quantity }, { locale })}</small></div>
               <b class="type-body-s-500">{money(item.total ?? (item.unitPrice == null ? null : item.unitPrice * item.quantity))}</b>
             </li>
@@ -76,7 +76,7 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
         </ol>
       </section>
 
-      <aside class="lv-account-order__side">
+      <aside class="account-order__side">
         <section aria-labelledby="order-summary-title">
           <p class="type-body-xs">{m.order_payment_summary({}, { locale })}</p><h2 id="order-summary-title" class="type-heading-3">{m.order_total({}, { locale })}</h2>
           <dl>
@@ -109,7 +109,7 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
       </aside>
     </div>
 
-    <footer class="lv-account-order__help"><div><p class="type-body-xs">{m.account_need_help({}, { locale })}</p><h2 class="type-heading-3">{m.order_help_title({}, { locale })}</h2><span class="type-body-s-400">{m.order_help_reference({ reference }, { locale })}</span></div><ActionButton href="/contact" tone="secondary">{m.account_contact_shop({}, { locale })}</ActionButton></footer>
+    <footer class="account-order__help"><div><p class="type-body-xs">{m.account_need_help({}, { locale })}</p><h2 class="type-heading-3">{m.order_help_title({}, { locale })}</h2><span class="type-body-s-400">{m.order_help_reference({ reference }, { locale })}</span></div><ActionButton href="/contact" tone="secondary">{m.account_contact_shop({}, { locale })}</ActionButton></footer>
   </main>
 </Layout>
 

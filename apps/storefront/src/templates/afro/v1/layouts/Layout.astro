@@ -194,7 +194,7 @@ const afroClientMessages = {
     <StorefrontFonts />
   </head>
   <body
-    class="afro-body"
+    class="body"
     style={themeStyle}
     data-editor-mode={editorMode ? "true" : undefined}
     data-demo-mode={demoMode ? "true" : undefined}
@@ -267,7 +267,7 @@ const afroClientMessages = {
                     data-editor-empty-src={emptyLogoUrl ?? undefined}
                   />
                 ) : (
-                  <span class="afro-wordmark" data-editor-image-fallback>{tenantName}</span>
+                  <span class="wordmark" data-editor-image-fallback>{tenantName}</span>
                 )}
               </div>
             </a>
@@ -333,7 +333,7 @@ const afroClientMessages = {
       </header>
 
       {demoMode && (
-        <aside class="afro-demo" role="status">
+        <aside class="demo-banner" role="status">
           <strong>Template preview</strong>
           <nav aria-label="Preview pages">
             <a href="/demo/storefront/afro">Home</a>
@@ -369,7 +369,7 @@ const afroClientMessages = {
                         data-editor-empty-src={emptyLogoUrl ?? undefined}
                       />
                     ) : (
-                      <span class="afro-wordmark afro-wordmark--footer">{tenantName}</span>
+                      <span class="wordmark wordmark--footer">{tenantName}</span>
                     )}
                   </div>
                 </a>
@@ -461,9 +461,9 @@ const afroClientMessages = {
 </html>
 
 <style>
-  .afro-demo { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
-  .afro-demo nav { display: flex; gap: 1rem; }
-  .afro-demo nav a { color: #ff720a; text-decoration: underline; }
-  .afro-wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary, #ff720a); line-height: 1; }
-  .afro-wordmark--footer { color: inherit; font-size: 1.5rem; }
+  .demo-banner { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
+  .demo-banner nav { display: flex; gap: 1rem; }
+  .demo-banner nav a { color: #ff720a; text-decoration: underline; }
+  .wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary, #ff720a); line-height: 1; }
+  .wordmark--footer { color: inherit; font-size: 1.5rem; }
 </style>

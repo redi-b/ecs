@@ -110,19 +110,45 @@ export function createDemoMediaSeeder(options: DemoMediaSeederOptions) {
                   : "image/jpeg";
           return { bytes, mimeType };
         }
+        console.warn(`[seed:demo] Local image file not found: ${filePath}`);
+        return null;
       }
+
+      const skipRemote =
+        options.env.SKIP_REMOTE_MEDIA === "true" ||
+        options.env.SEED_DEMO_FAST === "true" ||
+        process.argv.includes("--skip-remote-media") ||
+        process.argv.includes("--fast");
+      if (skipRemote) {
+        return null;
+      }
+
+      const timeoutMs = Number.parseInt(
+        options.env.MEDIA_FETCH_TIMEOUT_MS ??
+          process.argv.find((arg) => arg.startsWith("--timeout="))?.split("=")[1] ??
+          "2500",
+        10,
+      );
+
+      console.info(`[seed:demo] Fetching remote image (${timeoutMs}ms limit): ${url}`);
       const response = await fetch(url, {
         redirect: "follow",
-        signal: AbortSignal.timeout(20_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
-      if (!response.ok) return null;
+      if (!response.ok) {
+        console.warn(`[seed:demo] Remote image fetch HTTP ${response.status}: ${url}`);
+        return null;
+      }
       const bytes = Buffer.from(await response.arrayBuffer());
       if (!bytes.byteLength) return null;
       return {
         bytes,
         mimeType: response.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg",
       };
-    } catch {
+    } catch (err) {
+      console.warn(
+        `[seed:demo] Remote image fetch error/timeout for ${url}: ${(err as Error)?.message ?? err}`,
+      );
       return null;
     }
   }

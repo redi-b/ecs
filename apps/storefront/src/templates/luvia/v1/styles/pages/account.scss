@@ -1,24 +1,24 @@
 @use "../abstracts" as *;
 
-.lv-request__intro>p,
-.lv-account section>p,
-.lv-wishlist header>p {
+.request__intro>p,
+.account section>p,
+.wishlist header>p {
   display: flex;
   align-items: center;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-request__intro h1,
-.lv-account h1,
-.lv-wishlist h1 {
+.request__intro h1,
+.account h1,
+.wishlist h1 {
   margin: $space-600 0;
 }
 
 @media(max-width:900px) {
-  .lv-request,
+  .request,
   
-    .lv-account {
+    .account {
   
       gap: $space-650
   
@@ -26,11 +26,11 @@
 }
 
 @media(max-width:760px) {
-  .lv-request,
+  .request,
   
-    .lv-account,
+    .account,
   
-    .lv-account.is-signed-in {
+    .account.is-signed-in {
   
       padding: $space-1050 0 $space-900;
   
@@ -38,16 +38,16 @@
   
     }
 
-  .lv-wishlist__grid,
+  .wishlist__grid,
   
-    .lv-account__address-grid {
+    .account__address-grid {
   
       grid-template-columns: 1fr
   
     }
 }
 
-.lv-account {
+.account {
   margin: auto;
   padding: $space-1150 0 $space-1050;
   display: grid;
@@ -56,18 +56,18 @@
   gap: $space-600;
 }
 
-.lv-account>section,
-.lv-account>aside {
+.account>section,
+.account>aside {
   padding: $space-800;
   border-radius: $radius-500;
 }
 
-.lv-account>section {
+.account>section {
   border: 1px solid var(--clr-line);
   background: var(--clr-surface);
 }
 
-.lv-account__icon {
+.account__icon {
   width: 68px;
   height: 68px;
   display: grid;
@@ -76,20 +76,20 @@
   background: var(--clr-accent);
 }
 
-.lv-account section>div {
+.account section>div {
   max-width: 620px;
   color: alpha(var(--clr-ink), 0.62);
   line-height: 1.5;
 }
 
-.lv-account nav {
+.account nav {
   margin-top: $space-600;
   display: flex;
   flex-wrap: wrap;
   gap: $space-200;
 }
 
-.lv-account nav a {
+.account nav a {
   min-height: 48px;
   padding: 0 $space-450;
   display: inline-flex;
@@ -100,13 +100,13 @@
   text-decoration: none;
 }
 
-.lv-account__guest-actions a:first-child {
+.account__guest-actions a:first-child {
   border-color: var(--clr-primary);
   background: var(--clr-primary);
   color: var(--clr-on-primary);
 }
 
-.lv-account>aside {
+.account>aside {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -114,55 +114,55 @@
   color: var(--clr-white);
 }
 
-.lv-account aside>p {
+.account aside>p {
   margin: 0 auto auto 0;
   color: alpha(var(--clr-ink), 0.45);
 }
 
-.lv-account ul {
+.account ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.lv-account li {
+.account li {
   padding: $space-450 0;
   border-bottom: 1px solid alpha(var(--clr-primary), 0.17);
   color: var(--clr-soft);
 }
 
-.lv-account li::before {
+.account li::before {
   content: "✓";
   margin-right: $space-250;
   color: var(--clr-primary);
 }
 
-.lv-account__auth {
+.account__auth {
   justify-content: flex-start !important;
   gap: $space-450;
   background: var(--clr-soft) !important;
   color: var(--clr-ink) !important;
 }
 
-.lv-account__auth-heading {
+.account__auth-heading {
   margin-bottom: $space-50;
 }
 
-.lv-account__auth-heading>p,
-.lv-account__orders header p {
+.account__auth-heading>p,
+.account__orders header p {
   margin: 0 0 $space-250;
 }
 
-.lv-account__auth-heading h2,
-.lv-account__orders h2 {
+.account__auth-heading h2,
+.account__orders h2 {
   margin: 0 0 $space-200;
 }
 
-.lv-account__auth-heading span {
+.account__auth-heading span {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account .lv-account__auth-tabs {
+.account .account__auth-tabs {
   width: 100%;
   margin: $space-50 0 0;
   padding: $space-100;
@@ -174,7 +174,7 @@
   background: var(--clr-white);
 }
 
-.lv-account .lv-account__auth-tabs a {
+.account .account__auth-tabs a {
   min-height: 42px;
   padding: 0 $space-400;
   justify-content: center;
@@ -183,39 +183,39 @@
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account .lv-account__auth-tabs a[aria-selected="true"] {
+.account .account__auth-tabs a[aria-selected="true"] {
   background: var(--clr-dark);
   color: var(--clr-on-dark);
 }
 
-.lv-account__auth-panel {
+.account__auth-panel {
   padding: $space-550;
   border: 1px solid var(--clr-line);
   border-radius: $radius-400;
   background: var(--clr-surface);
 }
 
-.lv-account__auth-panel[hidden] {
+.account__auth-panel[hidden] {
   display: none;
 }
 
-.lv-account__auth form {
+.account__auth form {
   display: grid;
   gap: $space-400;
 }
 
-.lv-account__name-fields {
+.account__name-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-250;
 }
 
-.lv-account__auth label {
+.account__auth label {
   display: grid;
   gap: $space-150;
 }
 
-.lv-account__auth input {
+.account__auth input {
   width: 100%;
   min-height: 49px;
   padding: 0 $space-350;
@@ -225,34 +225,34 @@
   color: var(--clr-ink);
 }
 
-.lv-account__auth input:focus {
+.account__auth input:focus {
   outline: 2px solid alpha(var(--clr-primary), 0.5);
   border-color: var(--clr-primary);
 }
 
-.lv-account__auth input[aria-invalid="true"] {
+.account__auth input[aria-invalid="true"] {
   border-color: var(--clr-danger);
   outline-color: alpha(var(--clr-danger), 0.42);
 }
 
-.lv-account__auth small {
+.account__auth small {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__auth .lv-account__field-error {
+.account__auth .account__field-error {
   color: var(--clr-danger);
 }
 
-.lv-account__password-control {
+.account__password-control {
   position: relative;
   display: block;
 }
 
-.lv-account__password-control input {
+.account__password-control input {
   padding-right: $space-800;
 }
 
-.lv-account__password-control button {
+.account__password-control button {
   position: absolute;
   top: 50%;
   right: 7px;
@@ -269,17 +269,17 @@
   cursor: pointer;
 }
 
-.lv-account__password-control button:hover {
+.account__password-control button:hover {
   background: alpha(var(--clr-accent), 0.45);
   color: var(--clr-ink);
 }
 
-.lv-account__password-control button:focus-visible {
+.account__password-control button:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 1px;
 }
 
-.lv-account__password-control svg {
+.account__password-control svg {
   width: 19px;
   fill: none;
   stroke: currentColor;
@@ -288,22 +288,22 @@
   stroke-width: 1.7;
 }
 
-.lv-account__password-control button[aria-pressed="false"] .lv-account__password-slash {
+.account__password-control button[aria-pressed="false"] .account__password-slash {
   display: none;
 }
 
-.lv-account__auth-switch {
+.account__auth-switch {
   margin: $space-450 0 0;
   color: alpha(var(--clr-ink), 0.62);
   text-align: center;
 }
 
-.lv-account__auth-switch a {
+.account__auth-switch a {
   color: var(--clr-ink);
   text-underline-offset: 3px;
 }
 
-.lv-account__identity button {
+.account__identity button {
   min-height: 48px;
   padding: 0 $space-500;
   border: 0;
@@ -313,7 +313,7 @@
   cursor: pointer;
 }
 
-.lv-account__error {
+.account__error {
   margin: 0;
   padding: $space-300 $space-350;
   border-radius: $radius-200;
@@ -321,53 +321,53 @@
   color: var(--clr-danger);
 }
 
-.lv-account.is-signed-in {
+.account.is-signed-in {
   grid-template-columns: 1fr;
 }
 
-.lv-account__hub {
+.account__hub {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: $space-550 $space-700;
 }
 
-.lv-account__hub>div:first-child {
+.account__hub>div:first-child {
   max-width: none !important;
   display: flex;
   align-items: center;
   gap: $space-500;
 }
 
-.lv-account__hub>div:first-child>div {
+.account__hub>div:first-child>div {
   display: grid;
   gap: $space-100;
 }
 
-.lv-account__hub>div:first-child p {
+.account__hub>div:first-child p {
   margin: 0;
 }
 
-.lv-account__hub h1 {
+.account__hub h1 {
   margin: 0;
 }
 
-.lv-account__hub .lv-account__identity {
+.account__hub .account__identity {
   min-width: 280px;
 }
 
-.lv-account__identity {
+.account__identity {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $space-350;
 }
 
-.lv-account__identity p {
+.account__identity p {
   overflow-wrap: anywhere;
 }
 
-.lv-account .lv-account__section-links {
+.account .account__section-links {
   grid-column: 1/-1;
   width: 100%;
   margin: 0;
@@ -380,20 +380,20 @@
   background: var(--clr-soft);
 }
 
-.lv-account .lv-account__section-links a {
+.account .account__section-links a {
   min-height: 44px;
   padding: 0 $space-350;
   justify-content: space-between;
   background: var(--clr-soft);
 }
 
-.lv-account .lv-account__section-links a[aria-selected="true"] {
+.account .account__section-links a[aria-selected="true"] {
   border-color: var(--clr-dark);
   background: var(--clr-dark);
   color: var(--clr-on-dark);
 }
 
-.lv-account .lv-account__section-links span {
+.account .account__section-links span {
   min-width: 24px;
   height: 24px;
   display: grid;
@@ -402,39 +402,39 @@
   background: var(--clr-accent);
 }
 
-.lv-account__profile-form {
+.account__profile-form {
   max-width: 760px;
   margin: 0 auto;
   display: grid;
   gap: $space-350;
 }
 
-.lv-account__profile-form header h2 {
+.account__profile-form header h2 {
   margin: 0 0 $space-100;
 }
 
-.lv-account__profile-form header p {
+.account__profile-form header p {
   margin: 0;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__profile-form>div {
+.account__profile-form>div {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-250;
 }
 
-.lv-account__profile-form label {
+.account__profile-form label {
   display: grid;
   gap: $space-150;
   color: var(--clr-ink);
 }
 
-.lv-account__profile-form label>small {
+.account__profile-form label>small {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__profile-form input {
+.account__profile-form input {
   width: 100%;
   min-height: 49px;
   padding: 0 $space-350;
@@ -444,22 +444,22 @@
   color: var(--clr-ink);
 }
 
-.lv-account__profile-form input:focus {
+.account__profile-form input:focus {
   outline: 2px solid alpha(var(--clr-primary), 0.5);
   border-color: var(--clr-primary);
 }
 
-.lv-account__profile-form input[readonly] {
+.account__profile-form input[readonly] {
   color: alpha(var(--clr-ink), 0.62);
   cursor: not-allowed;
 }
 
-.lv-account__profile-form>small {
+.account__profile-form>small {
   color: alpha(var(--clr-ink), 0.62);
   line-height: 1.4;
 }
 
-.lv-account__success {
+.account__success {
   margin: 0;
   padding: $space-300 $space-350;
   border-radius: $radius-200;
@@ -467,18 +467,18 @@
   color: var(--clr-ink);
 }
 
-.lv-account__orders {
+.account__orders {
   border: 1px solid var(--clr-line);
   background: var(--clr-soft);
 }
 
-.lv-account__orders header {
+.account__orders header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.lv-account__orders header>span {
+.account__orders header>span {
   min-width: 38px;
   height: 38px;
   display: grid;
@@ -487,23 +487,23 @@
   background: var(--clr-accent);
 }
 
-.lv-account__orders ol {
+.account__orders ol {
   margin: $space-650 0 0;
   padding: 0;
   display: grid;
   list-style: none;
 }
 
-.lv-account__orders li {
+.account__orders li {
   padding: 0;
   border-top: 1px solid var(--clr-line);
 }
 
-.lv-account__orders li::before {
+.account__orders li::before {
   display: none;
 }
 
-.lv-account__orders li>a {
+.account__orders li>a {
   min-height: 78px;
   padding: $space-400 $space-50;
   display: grid;
@@ -514,31 +514,31 @@
   text-decoration: none;
 }
 
-.lv-account__orders li>a:hover strong {
+.account__orders li>a:hover strong {
   color: var(--clr-primary);
 }
 
-.lv-account__orders li>a:focus-visible {
+.account__orders li>a:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 4px;
   border-radius: $radius-150;
 }
 
-.lv-account__orders li div {
+.account__orders li div {
   display: grid;
   gap: $space-100;
 }
 
-.lv-account__orders li div:last-child {
+.account__orders li div:last-child {
   text-align: right;
 }
 
-.lv-account__orders li span {
+.account__orders li span {
   color: alpha(var(--clr-ink), 0.62);
   text-transform: capitalize;
 }
 
-.lv-account__order-arrow {
+.account__order-arrow {
   width: 32px;
   height: 32px;
   display: grid;
@@ -548,12 +548,12 @@
   color: var(--clr-ink) !important;
 }
 
-.lv-account__orders li>a:hover .lv-account__order-arrow {
+.account__orders li>a:hover .account__order-arrow {
   transform: translate(2px, -2px);
   background: var(--clr-accent);
 }
 
-.lv-account__order-pages {
+.account__order-pages {
   margin-top: $space-550;
   display: flex;
   align-items: center;
@@ -561,7 +561,7 @@
   gap: $space-350;
 }
 
-.lv-account__order-pages a {
+.account__order-pages a {
   min-height: 40px;
   padding: 0 $space-350;
   display: inline-flex;
@@ -572,11 +572,11 @@
   text-decoration: none;
 }
 
-.lv-account__order-pages span {
+.account__order-pages span {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__empty {
+.account__empty {
   margin-top: $space-650;
   padding: $space-650;
   border: 1px dashed var(--clr-line);
@@ -584,38 +584,38 @@
   text-align: center;
 }
 
-.lv-account__empty p {
+.account__empty p {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__empty a {
+.account__empty a {
   color: var(--clr-ink);
 }
 
-.lv-account__addresses {
+.account__addresses {
   grid-column: 1;
 }
 
-.lv-account__addresses>header {
+.account__addresses>header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: $space-500;
 }
 
-.lv-account__addresses>header p {
+.account__addresses>header p {
   margin: 0 0 $space-250;
 }
 
-.lv-account__addresses>header h2 {
+.account__addresses>header h2 {
   margin: 0 0 $space-150;
 }
 
-.lv-account__addresses>header div>span {
+.account__addresses>header div>span {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__addresses>header>span {
+.account__addresses>header>span {
   min-width: 38px;
   height: 38px;
   display: grid;
@@ -624,7 +624,7 @@
   background: var(--clr-accent);
 }
 
-.lv-account section>.lv-account__address-grid {
+.account section>.account__address-grid {
   width: 100%;
   max-width: none;
   margin-top: $space-600;
@@ -633,18 +633,18 @@
   gap: $space-300;
 }
 
-.lv-account__address-card {
+.account__address-card {
   border: 1px solid var(--clr-line);
   border-radius: $radius-400;
   background: var(--clr-soft);
   overflow: hidden;
 }
 
-.lv-account__address-card:has(.lv-account__address-toggle[aria-expanded="true"]) {
+.account__address-card:has(.account__address-toggle[aria-expanded="true"]) {
   grid-column: 1/-1;
 }
 
-.lv-account__address-toggle {
+.account__address-toggle {
   width: 100%;
   min-height: 88px;
   padding: $space-450 $space-500;
@@ -659,16 +659,16 @@
   cursor: pointer;
 }
 
-.lv-account__address-toggle span {
+.account__address-toggle span {
   display: grid;
   gap: $space-100;
 }
 
-.lv-account__address-toggle small {
+.account__address-toggle small {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account__address-toggle em {
+.account__address-toggle em {
   padding: $space-150 $space-250;
   border-radius: $radius-pill;
   background: var(--clr-accent);
@@ -676,13 +676,13 @@
   font-style: normal;
 }
 
-.lv-account__address-actions {
+.account__address-actions {
   display: flex !important;
   align-items: center;
   gap: $space-200;
 }
 
-.lv-account__address-toggle b {
+.account__address-toggle b {
   min-height: 34px;
   padding: 0 $space-300;
   display: inline-flex;
@@ -695,36 +695,36 @@
   white-space: nowrap;
 }
 
-.lv-account__address-toggle[aria-expanded="true"] {
+.account__address-toggle[aria-expanded="true"] {
   border-bottom: 1px solid var(--clr-line);
 }
 
-.lv-account__address-card form {
+.account__address-card form {
   padding: $space-500;
   display: grid;
   gap: $space-350;
 }
 
-.lv-account__address-card form[hidden] {
+.account__address-card form[hidden] {
   display: none;
 }
 
-.lv-account__address-card form>div {
+.account__address-card form>div {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-300;
 }
 
-.lv-account__address-card label {
+.account__address-card label {
   display: grid;
   gap: $space-150;
 }
 
-.lv-account__address-card label.is-wide {
+.account__address-card label.is-wide {
   grid-column: 1/-1;
 }
 
-.lv-account__address-card input:not([type="checkbox"]) {
+.account__address-card input:not([type="checkbox"]) {
   width: 100%;
   min-height: 47px;
   padding: 0 $space-350;
@@ -734,31 +734,31 @@
   color: var(--clr-ink);
 }
 
-.lv-account__address-card input:focus-visible {
+.account__address-card input:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 1px;
 }
 
-.lv-account__default-address {
+.account__default-address {
   display: flex !important;
   grid-template-columns: auto 1fr;
   align-items: center;
   justify-content: flex-start;
 }
 
-.lv-account__default-address input {
+.account__default-address input {
   width: 18px;
   height: 18px;
   accent-color: var(--clr-primary);
 }
 
-.lv-account__address-card footer {
+.account__address-card footer {
   display: flex;
   flex-wrap: wrap;
   gap: $space-200;
 }
 
-.lv-account__address-card footer button {
+.account__address-card footer button {
   min-height: 43px;
   padding: 0 $space-400;
   border: 1px solid var(--clr-dark);
@@ -768,13 +768,13 @@
   cursor: pointer;
 }
 
-.lv-account__address-card footer button.is-secondary {
+.account__address-card footer button.is-secondary {
   background: transparent;
   color: var(--clr-ink);
 }
 
 @media(max-width:900px) {
-  .lv-account__address-grid {
+  .account__address-grid {
   
       grid-template-columns: repeat(2, minmax(0, 1fr))
   
@@ -782,7 +782,7 @@
 }
 
 @media(max-width:760px) {
-  .lv-account__hub {
+  .account__hub {
   
       grid-template-columns: 1fr;
   
@@ -790,7 +790,7 @@
   
     }
 
-  .lv-account__hub>div:first-child {
+  .account__hub>div:first-child {
   
       align-items: flex-start;
   
@@ -798,13 +798,13 @@
   
     }
 
-  .lv-account__hub .lv-account__identity {
+  .account__hub .account__identity {
   
       min-width: 0
   
     }
 
-  .lv-account__icon {
+  .account__icon {
   
       width: 52px;
   
@@ -814,13 +814,13 @@
   
     }
 
-  .lv-account__icon img {
+  .account__icon img {
   
       width: 21px
   
     }
 
-  .lv-account .lv-account__section-links {
+  .account .account__section-links {
   
       grid-template-columns: repeat(3, minmax(0, 1fr));
   
@@ -828,7 +828,7 @@
   
     }
 
-  .lv-account .lv-account__section-links a {
+  .account .account__section-links a {
   
       min-width: 0;
   
@@ -842,9 +842,9 @@
   
     }
 
-  .lv-account>section,
+  .account>section,
   
-    .lv-account>aside {
+    .account>aside {
   
       padding: $space-650 $space-550;
   
@@ -852,29 +852,29 @@
   
     }
 
-  .lv-account__name-fields,
+  .account__name-fields,
   
-    .lv-account__profile-form>div,
+    .account__profile-form>div,
   
-    .lv-account__address-card form>div {
+    .account__address-card form>div {
   
       grid-template-columns: 1fr
   
     }
 
-  .lv-account__address-card label.is-wide {
+  .account__address-card label.is-wide {
   
       grid-column: auto
   
     }
 
-  .lv-account__auth-panel {
+  .account__auth-panel {
   
       padding: $space-450
   
     }
 
-  .lv-account__orders li>a {
+  .account__orders li>a {
   
       grid-template-columns: 1fr $space-650;
   
@@ -882,7 +882,7 @@
   
     }
 
-  .lv-account__orders li div:nth-child(2) {
+  .account__orders li div:nth-child(2) {
   
       grid-column: 1;
   
@@ -890,7 +890,7 @@
   
     }
 
-  .lv-account__order-arrow {
+  .account__order-arrow {
   
       grid-column: 2;
   
@@ -898,25 +898,25 @@
   
     }
 
-  .lv-account__orders li div:last-child {
+  .account__orders li div:last-child {
   
       text-align: left
   
     }
 
-  .lv-account section>.lv-account__address-grid {
+  .account section>.account__address-grid {
   
       grid-template-columns: 1fr
   
     }
 
-  .lv-account__address-card:has(.lv-account__address-toggle[aria-expanded="true"]) {
+  .account__address-card:has(.account__address-toggle[aria-expanded="true"]) {
   
       grid-column: auto
   
     }
 
-  .lv-account__address-toggle {
+  .account__address-toggle {
   
       min-height: 82px;
   
@@ -924,13 +924,13 @@
   
     }
 
-  .lv-account__address-actions {
+  .account__address-actions {
   
       flex: none !important
   
     }
 
-  .lv-account__address-toggle small {
+  .account__address-toggle small {
   
       max-width: 52vw;
   
@@ -942,7 +942,7 @@
   
     }
 
-  .lv-account__address-card form {
+  .account__address-card form {
   
       padding: $space-450 $space-400
   
@@ -950,13 +950,13 @@
 }
 
 @media(max-width:380px) {
-  .lv-account .lv-account__section-links {
+  .account .account__section-links {
   
       grid-template-columns: 1fr
   
     }
 
-  .lv-account .lv-account__section-links a {
+  .account .account__section-links a {
   
       justify-content: space-between;
   
@@ -964,13 +964,13 @@
   
     }
 
-  .lv-account__hub>div:first-child {
+  .account__hub>div:first-child {
   
       gap: $space-300
   
     }
 
-  .lv-account__icon {
+  .account__icon {
   
       width: 54px;
   
@@ -978,7 +978,7 @@
   
     }
 
-  .lv-account__identity {
+  .account__identity {
   
       align-items: flex-start;
   
@@ -986,7 +986,7 @@
   
     }
 
-  .lv-account__identity button {
+  .account__identity button {
   
       width: 100%
   
@@ -994,13 +994,13 @@
 }
 
 @media(max-width:760px) {
-  .lv-account__hub>div:first-child>div {
+  .account__hub>div:first-child>div {
   
       min-width: 0
   
     }
 
-  .lv-account__hub>div:first-child p {
+  .account__hub>div:first-child p {
   
       overflow-wrap: anywhere
   

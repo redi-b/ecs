@@ -17,16 +17,16 @@ const variant = product.variants.find((item) => item.inStock) ?? product.variant
 const badge = resolveProductBadge(product, variant);
 const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
 ---
-<section class="lv-promo__slide" data-promo-slide aria-hidden={active ? "false" : "true"}>
-  <div class="lv-promo__media">
+<section class="promo__slide" data-promo-slide aria-hidden={active ? "false" : "true"}>
+  <div class="promo__media">
     {product.thumbnail ? <img src={product.thumbnail} alt={title} /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     {badge ? <small class="type-body-xs">{badge.label}</small> : null}
     <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><Icon name="wishlist" /></button>
   </div>
-  <div class="lv-promo__copy">
+  <div class="promo__copy">
     <strong class="type-promo-title" title={title}>{title}</strong>
     <b class="type-promo-price">{formatMoney(variant?.priceAmount ?? product.priceAmount, variant?.currencyCode ?? product.currencyCode, locale)}</b>
-    <div class="lv-promo__actions">
+    <div class="promo__actions">
       {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} icon="bag" tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
     </div>
   </div>

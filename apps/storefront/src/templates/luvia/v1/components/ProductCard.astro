@@ -22,16 +22,16 @@ const originalPrice = purchasableVariant?.originalPriceAmount ?? product.origina
 const cardThumbnail = product.thumbnailVariants?.w400 ?? product.thumbnail;
 const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
 ---
-<article class="lv-product-card">
-  <div class="lv-product-card__media">
-    <a class="lv-product-card__media-link" href={href} aria-label={`${m.action_view_product({}, { locale })}: ${title}`}>
+<article class="product-card">
+  <div class="product-card__media">
+    <a class="product-card__media-link" href={href} aria-label={`${m.action_view_product({}, { locale })}: ${title}`}>
       {cardThumbnail ? <img src={cardThumbnail} srcset={cardSrcset ?? undefined} alt={title} width="400" height="400" loading={eager ? "eager" : "lazy"} decoding="async" /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     </a>
-    {badge ? <span class:list={["lv-product-card__badge type-body-xs", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <Icon name="star" /> : null}{badge.label}</span> : null}
-    <button class="lv-product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button>
-    {purchasableVariant ? <form class="lv-product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : null}
+    {badge ? <span class:list={["product-card__badge type-body-xs", `is-${badge.kind}`]}>{badge.kind === "promotion" ? <Icon name="star" /> : null}{badge.label}</span> : null}
+    <button class="product-card__heart" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button>
+    {purchasableVariant ? <form class="product-card__cta" action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={purchasableVariant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!purchasableVariant.inStock}><span data-card-add-label>{purchasableVariant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : null}
   </div>
-  <p class="lv-product-card__brand type-body-s-400">{brand}</p>
-  <a class="lv-product-card__title type-body-l-400" href={href}>{title}</a>
-  <p class="lv-product-card__price type-body-xl"><strong>{formatMoney(product.priceAmount, product.currencyCode, locale)}</strong>{originalPrice ? <del class="type-body-s-400">{formatMoney(originalPrice, product.currencyCode, locale)}</del> : null}</p>
+  <p class="product-card__brand type-body-s-400">{brand}</p>
+  <a class="product-card__title type-body-l-400" href={href}>{title}</a>
+  <p class="product-card__price type-body-xl"><strong>{formatMoney(product.priceAmount, product.currencyCode, locale)}</strong>{originalPrice ? <del class="type-body-s-400">{formatMoney(originalPrice, product.currencyCode, locale)}</del> : null}</p>
 </article>

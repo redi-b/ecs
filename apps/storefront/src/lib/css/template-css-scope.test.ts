@@ -30,8 +30,8 @@ test("does not split commas inside :is / :where / :not", () => {
   const parts = splitSelectorList(":is(ul, ol), .x");
   assert.deepEqual(parts, [":is(ul, ol)", " .x"]);
   assert.equal(
-    prefixSelectorList(".lv-rich-text :is(ul, ol)", ".template-luvia"),
-    ".template-luvia .lv-rich-text :is(ul, ol)",
+    prefixSelectorList(".rich-text :is(ul, ol)", ".template-luvia"),
+    ".template-luvia .rich-text :is(ul, ol)",
   );
 });
 

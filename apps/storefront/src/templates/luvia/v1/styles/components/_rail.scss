@@ -1,12 +1,12 @@
 @use "../abstracts" as *;
 
-.lv-rail-controls {
+.rail-controls {
   display: flex;
   align-items: center;
   gap: $space-150;
 }
 
-.lv-rail-controls button {
+.rail-controls button {
   width: 48px;
   height: 44px;
   padding: 0;
@@ -17,19 +17,19 @@
   background: var(--clr-soft);
   color: var(--clr-ink);
   cursor: pointer;
-  transition: background-color var(--lv-motion-fast) var(--lv-ease-out), color var(--lv-motion-fast) var(--lv-ease-out), opacity var(--lv-motion-fast) var(--lv-ease-out);
+  transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
-.lv-rail-controls button:hover:not(:disabled) {
+.rail-controls button:hover:not(:disabled) {
   background: var(--clr-accent);
 }
 
-.lv-rail-controls button:focus-visible {
+.rail-controls button:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 3px;
 }
 
-.lv-rail-controls button:disabled {
+.rail-controls button:disabled {
   cursor: default;
   opacity: .35;
 }

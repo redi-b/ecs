@@ -16,10 +16,10 @@ const inputId = `${idPrefix}-discount-code`;
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 
-<section class="lv-discount-code" aria-labelledby={labelId} data-discount-code>
+<section class="discount-code" aria-labelledby={labelId} data-discount-code>
   <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
     <label id={labelId} for={inputId} class="type-body-s-500">{m.cart_discount_question({}, { locale })}</label>
-    <div class="lv-discount-code__field">
+    <div class="discount-code__field">
       <input
         id={inputId}
         name="code"
@@ -33,7 +33,7 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
     </div>
     {helper && <small class="type-body-xs">{helper}</small>}
   </form>
-  <div class="lv-discount-code__applied" data-applied-promotions>
+  <div class="discount-code__applied" data-applied-promotions>
     {appliedCodes.map((promotion) => (
       <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
         <input type="hidden" name="intent" value="remove" />
@@ -43,5 +43,5 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
       </form>
     ))}
   </div>
-  <p class:list={["lv-discount-code__status type-body-xs", { "is-error": Boolean(error) }]} data-discount-status aria-live="polite">{error}</p>
+  <p class:list={["discount-code__status type-body-xs", { "is-error": Boolean(error) }]} data-discount-status aria-live="polite">{error}</p>
 </section>

@@ -1,15 +1,25 @@
-import EmblaCarousel, { type EmblaCarouselType } from "embla-carousel";
-
 const CAROUSEL_UPDATED_EVENT = "ecs:hero-carousel-updated";
 
 function mountHeroCarousel(root: HTMLElement) {
   const viewport = root.querySelector<HTMLElement>("[data-promo-viewport]");
   const dots = root.querySelector<HTMLElement>("[data-promo-dots]");
-  if (!viewport || !dots) return;
+  const slides = Array.from(root.querySelectorAll<HTMLElement>("[data-promo-slide]"));
+  if (!viewport || !dots || slides.length === 0) return;
 
-  let embla: EmblaCarouselType | undefined;
+  let selectedIndex = 0;
   let autoplayTimer: number | undefined;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const canScrollNext = () => selectedIndex < slides.length - 1;
+
+  const scrollTo = (index: number) => {
+    selectedIndex = (index + slides.length) % slides.length;
+    render();
+  };
+
+  const scrollNext = () => {
+    scrollTo((selectedIndex + 1) % slides.length);
+  };
 
   const stopAutoplay = () => {
     if (autoplayTimer !== undefined) window.clearInterval(autoplayTimer);
@@ -18,44 +28,33 @@ function mountHeroCarousel(root: HTMLElement) {
 
   const startAutoplay = () => {
     stopAutoplay();
-    if (!embla || embla.scrollSnapList().length < 2 || reducedMotion.matches || document.hidden) {
+    if (slides.length < 2 || reducedMotion.matches || document.hidden) {
       return;
     }
     autoplayTimer = window.setInterval(() => {
-      if (!embla) return;
-      if (embla.canScrollNext()) embla.scrollNext();
-      else embla.scrollTo(0);
+      if (canScrollNext()) scrollNext();
+      else scrollTo(0);
     }, 6000);
   };
 
   const render = () => {
-    if (!embla) return;
-    const selected = embla.selectedScrollSnap();
-    const snaps = embla.scrollSnapList();
     dots.replaceChildren(
-      ...snaps.map((_, index) => {
+      ...slides.map((_, index) => {
         const dot = document.createElement("button");
         dot.type = "button";
         dot.dataset.promoDot = String(index);
         dot.setAttribute("aria-label", `Show featured product ${index + 1}`);
-        if (index === selected) dot.setAttribute("aria-current", "true");
+        if (index === selectedIndex) dot.setAttribute("aria-current", "true");
         return dot;
       }),
     );
-    dots.hidden = snaps.length < 2;
-    root.querySelectorAll<HTMLElement>("[data-promo-slide]").forEach((slide, index) => {
-      slide.setAttribute("aria-hidden", String(index !== selected));
+    dots.hidden = slides.length < 2;
+    slides.forEach((slide, index) => {
+      const active = index === selectedIndex;
+      slide.setAttribute("aria-hidden", String(!active));
+      slide.classList.toggle("is-active", active);
     });
   };
-
-  embla = EmblaCarousel(viewport, {
-    align: "start",
-    containScroll: "trimSnaps",
-    dragFree: false,
-    loop: false,
-    skipSnaps: false,
-  });
-  embla.on("init", render).on("reInit", render).on("select", render);
 
   dots.addEventListener("click", (event) => {
     const target =
@@ -65,7 +64,7 @@ function mountHeroCarousel(root: HTMLElement) {
     if (!target) return;
     const index = Number.parseInt(target.dataset.promoDot ?? "", 10);
     if (Number.isInteger(index)) {
-      embla?.scrollTo(index);
+      scrollTo(index);
       startAutoplay();
     }
   });
@@ -83,8 +82,7 @@ function mountHeroCarousel(root: HTMLElement) {
   reducedMotion.addEventListener("change", startAutoplay);
 
   root.addEventListener(CAROUSEL_UPDATED_EVENT, () => {
-    embla?.reInit();
-    embla?.scrollTo(0, true);
+    scrollTo(0);
     render();
     startAutoplay();
   });

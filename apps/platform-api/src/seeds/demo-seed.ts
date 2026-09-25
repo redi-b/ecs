@@ -88,8 +88,57 @@ const cleanOnly =
   process.argv.includes("--reverse");
 const operationsOnly = process.argv.includes("--operations-only");
 
-function assertDemoFixtureIntegrity() {
-  for (const shop of demoShops) {
+function resolveTargetShops(): readonly DemoShopDefinition[] {
+  const shopArg = process.argv.find((arg) => arg.startsWith("--shop="));
+  const shopsArg = process.argv.find((arg) => arg.startsWith("--shops="));
+  const localOnly =
+    process.argv.includes("--local-only") ||
+    process.argv.includes("--local-shops") ||
+    process.env.SEED_DEMO_LOCAL_ONLY === "true";
+
+  if (localOnly) {
+    return demoShops.filter((s) => s.tenant.handle === "bolestyle" || s.tenant.handle === "afro");
+  }
+
+  const raw = shopsArg
+    ? shopsArg.slice("--shops=".length)
+    : shopArg
+      ? shopArg.slice("--shop=".length)
+      : process.env.SEED_DEMO_SHOPS ?? process.env.SEED_DEMO_SHOP;
+
+  if (!raw) return demoShops;
+
+  const targets = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (targets.length === 0) return demoShops;
+
+  const matched = demoShops.filter((s) => {
+    const handle = s.tenant.handle.toLowerCase();
+    const name = s.tenant.name.toLowerCase();
+    const tpl = s.templateKey?.toLowerCase() ?? "";
+    return targets.some((t) => {
+      if (handle === t || name === t || tpl.includes(t)) return true;
+      if (handle === "bolestyle" && (t === "fashion" || t === "luvia")) return true;
+      if (handle === "addistech" && (t === "tech" || t === "nexahub")) return true;
+      if (handle === "afro" && (t === "afro" || t === "apparel")) return true;
+      return false;
+    });
+  });
+
+  if (matched.length === 0) {
+    throw new Error(
+      `No demo shops matched filter: "${raw}". Available shops: ${demoShops.map((s) => s.tenant.handle).join(", ")}`,
+    );
+  }
+
+  return matched;
+}
+
+function assertDemoFixtureIntegrity(shops: readonly DemoShopDefinition[]) {
+  for (const shop of shops) {
     const productHandles = new Set<string>();
     const categoryHandles = new Set<string>();
     const collectionHandles = new Set<string>();
@@ -136,6 +185,8 @@ function assertDemoFixtureIntegrity() {
 }
 
 async function main() {
+  const targetShops = resolveTargetShops();
+
   if (cleanOnly) {
     const cleaned = await demoCleanup.cleanAllDemoData();
     console.log(
@@ -166,6 +217,10 @@ Local operations demo ready.
     return;
   }
 
+  console.info(
+    `[seed:demo] Target demo shops: ${targetShops.map((shop) => shop.tenant.handle).join(", ")}`,
+  );
+
   await ensureMedusaAdminTokenForSeed();
   if (!medusaAdminApiToken) {
     const message =
@@ -188,7 +243,7 @@ Local operations demo ready.
   // Idempotent path: do not wipe platform tenants. Refresh commerce per shop instead.
   const billing = createBillingService(platformDb.db);
   await billing.ensureDefaultPlans();
-  assertDemoFixtureIntegrity();
+  assertDemoFixtureIntegrity(targetShops);
 
   const provisionCommerceResources = createMedusaCommerceProvisioningClient({
     internalApiToken: platformInternalApiToken,
@@ -202,7 +257,7 @@ Local operations demo ready.
 
   const results = [];
 
-  for (const shop of demoShops) {
+  for (const shop of targetShops) {
     const result = await seedShop(shop, createTenantShop);
     results.push(result);
   }

@@ -37,22 +37,22 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode} title={m.order_confirmed({}, { locale })}>
-  <main class="lv-confirmation container" data-copy-label={m.action_copy({}, { locale })} data-copied-label={m.action_copied({}, { locale })} data-copy-success={m.confirmation_copy_success({}, { locale })} data-copy-fallback={m.confirmation_copy_fallback({ reference: "__REFERENCE__" }, { locale })}>
-    <div class="lv-confirmation__glow" aria-hidden="true"></div>
-    <section class="lv-confirmation__card" aria-labelledby="confirmation-title">
-      <div class="lv-confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><Icon name="sparkle" /></div>
-      <p class="lv-confirmation__eyebrow type-body-xs">{m.order_received({}, { locale })}</p>
+  <main class="confirmation container" data-copy-label={m.action_copy({}, { locale })} data-copied-label={m.action_copied({}, { locale })} data-copy-success={m.confirmation_copy_success({}, { locale })} data-copy-fallback={m.confirmation_copy_fallback({ reference: "__REFERENCE__" }, { locale })}>
+    <div class="confirmation__glow" aria-hidden="true"></div>
+    <section class="confirmation__card" aria-labelledby="confirmation-title">
+      <div class="confirmation__mark"><span></span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m14 25 7 7 14-17" /></svg><Icon name="sparkle" /></div>
+      <p class="confirmation__eyebrow type-body-xs">{m.order_received({}, { locale })}</p>
       <h1 id="confirmation-title" class="type-heading-1">{m.confirmation_luvia_heading({}, { locale })}</h1>
-      <p class="lv-confirmation__intro type-body-400">{m.confirmation_luvia_intro({ shop: tenantName }, { locale })}</p>
-      <div class="lv-confirmation__receipt">
+      <p class="confirmation__intro type-body-400">{m.confirmation_luvia_intro({ shop: tenantName }, { locale })}</p>
+      <div class="confirmation__receipt">
         <div><span class="type-body-s-400">{m.order_reference({}, { locale })}</span><strong class="type-body-s-500">{reference}</strong><button class="type-body-xs" type="button" data-copy-order data-order-id={reference}>{m.action_copy({}, { locale })}</button></div>
         {verified && lastOrder?.total != null && <div><span class="type-body-s-400">{m.order_total({}, { locale })}</span><strong class="type-body-s-500">{formatMoney(lastOrder.total, lastOrder.currencyCode, locale)}</strong></div>}
         <div><span class="type-body-s-400">{m.confirmation_status({}, { locale })}</span><strong class="type-body-s-500">{verified ? m.order_confirmed({}, { locale }) : m.confirmation_order_placed({}, { locale })}</strong></div>
       </div>
-      <p class="lv-confirmation__notice type-body-xs" data-copy-status aria-live="polite">{m.confirmation_reference_help({}, { locale })} {hasCustomerSession ? m.confirmation_account_help({}, { locale }) : m.confirmation_guest_help({}, { locale })}</p>
-      <div class="lv-confirmation__actions"><ActionButton href="/products" icon="bag">{m.action_continue_shopping({}, { locale })}</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">{m.action_view_order_history({}, { locale })}</ActionButton>}<ActionButton href="/" tone="secondary">{m.action_return_home({}, { locale })}</ActionButton></div>
+      <p class="confirmation__notice type-body-xs" data-copy-status aria-live="polite">{m.confirmation_reference_help({}, { locale })} {hasCustomerSession ? m.confirmation_account_help({}, { locale }) : m.confirmation_guest_help({}, { locale })}</p>
+      <div class="confirmation__actions"><ActionButton href="/products" icon="bag">{m.action_continue_shopping({}, { locale })}</ActionButton>{hasCustomerSession && <ActionButton href="/account" tone="secondary">{m.action_view_order_history({}, { locale })}</ActionButton>}<ActionButton href="/" tone="secondary">{m.action_return_home({}, { locale })}</ActionButton></div>
     </section>
-    <aside class="lv-confirmation__steps" aria-label={m.confirmation_next({}, { locale })}><p class="type-body-xs">{m.confirmation_next({}, { locale })}</p><ol><li><span class="type-body-xs">01</span><div><strong class="type-heading-4">{m.confirmation_review({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_review_help({}, { locale })}</small></div></li><li><span class="type-body-xs">02</span><div><strong class="type-heading-4">{m.confirmation_preparation({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_preparation_help({}, { locale })}</small></div></li><li><span class="type-body-xs">03</span><div><strong class="type-heading-4">{m.confirmation_updates({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_updates_help({}, { locale })}</small></div></li></ol></aside>
+    <aside class="confirmation__steps" aria-label={m.confirmation_next({}, { locale })}><p class="type-body-xs">{m.confirmation_next({}, { locale })}</p><ol><li><span class="type-body-xs">01</span><div><strong class="type-heading-4">{m.confirmation_review({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_review_help({}, { locale })}</small></div></li><li><span class="type-body-xs">02</span><div><strong class="type-heading-4">{m.confirmation_preparation({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_preparation_help({}, { locale })}</small></div></li><li><span class="type-body-xs">03</span><div><strong class="type-heading-4">{m.confirmation_updates({}, { locale })}</strong><small class="type-body-xs">{m.confirmation_updates_help({}, { locale })}</small></div></li></ol></aside>
   </main>
 </Layout>
 

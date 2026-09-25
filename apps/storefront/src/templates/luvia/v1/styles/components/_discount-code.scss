@@ -1,6 +1,6 @@
 @use "../abstracts" as *;
 
-.lv-discount-code {
+.discount-code {
   padding: $space-400;
   display: grid;
   gap: $space-300;
@@ -9,19 +9,19 @@
   background: var(--clr-soft);
 }
 
-.lv-discount-code label {
+.discount-code label {
   display: block;
   margin-bottom: $space-200;
   color: var(--clr-ink);
 }
 
-.lv-discount-code__field {
+.discount-code__field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: $space-200;
 }
 
-.lv-discount-code input {
+.discount-code input {
   min-width: 0;
   height: 44px;
   padding: 0 $space-350;
@@ -33,12 +33,12 @@
   outline: none;
 }
 
-.lv-discount-code input:focus-visible {
+.discount-code input:focus-visible {
   border-color: var(--clr-primary);
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.18);
 }
 
-.lv-discount-code button {
+.discount-code button {
   min-height: 44px;
   padding: 0 $space-400;
   border: 0;
@@ -48,84 +48,84 @@
   cursor: pointer;
 }
 
-.lv-discount-code button:disabled {
+.discount-code button:disabled {
   cursor: wait;
   opacity: .58;
 }
 
-.lv-discount-code form > small,
-.lv-discount-code__applied small {
+.discount-code form > small,
+.discount-code__applied small {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-discount-code form > small {
+.discount-code form > small {
   display: block;
   margin-top: $space-200;
 }
 
-.lv-discount-code__applied {
+.discount-code__applied {
   display: grid;
   gap: $space-200;
 }
 
-.lv-discount-code__applied:empty {
+.discount-code__applied:empty {
   display: none;
 }
 
-.lv-discount-code__applied:not(:empty) {
+.discount-code__applied:not(:empty) {
   padding-top: $space-300;
   border-top: 1px solid var(--clr-line);
 }
 
-.lv-discount-code__applied form {
+.discount-code__applied form {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $space-300;
 }
 
-.lv-discount-code__applied span {
+.discount-code__applied span {
   display: flex;
   min-width: 0;
   flex-direction: column;
 }
 
-.lv-discount-code__applied b {
+.discount-code__applied b {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.lv-discount-code__applied button {
+.discount-code__applied button {
   min-height: 34px;
   padding-inline: $space-250;
   background: transparent;
   color: var(--clr-ink);
 }
 
-.lv-discount-code__status {
+.discount-code__status {
   min-height: 0;
   margin: 0;
   color: var(--clr-primary);
 }
 
-.lv-discount-code__status:empty {
+.discount-code__status:empty {
   display: none;
 }
 
-.lv-discount-code__status.is-error {
+.discount-code__status.is-error {
   color: var(--clr-danger);
 }
 
 @media (max-width: 420px) {
-  .lv-discount-code {
+  .discount-code {
     padding: $space-350;
   }
 
-  .lv-discount-code__field {
+  .discount-code__field {
     grid-template-columns: 1fr;
   }
 
-  .lv-discount-code__field button {
+  .discount-code__field button {
     width: 100%;
   }
 }

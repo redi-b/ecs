@@ -1,24 +1,24 @@
 @use "../abstracts" as *;
 
-.lv-request__intro>p,
-.lv-account section>p,
-.lv-wishlist header>p {
+.request__intro>p,
+.account section>p,
+.wishlist header>p {
   display: flex;
   align-items: center;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-request__intro h1,
-.lv-account h1,
-.lv-wishlist h1 {
+.request__intro h1,
+.account h1,
+.wishlist h1 {
   margin: $space-600 0;
 }
 
 @media(max-width:900px) {
-  .lv-request,
+  .request,
   
-    .lv-account {
+    .account {
   
       gap: $space-650
   
@@ -26,11 +26,11 @@
 }
 
 @media(max-width:760px) {
-  .lv-request,
+  .request,
   
-    .lv-account,
+    .account,
   
-    .lv-account.is-signed-in {
+    .account.is-signed-in {
   
       padding: $space-1050 0 $space-900;
   
@@ -38,16 +38,16 @@
   
     }
 
-  .lv-wishlist__grid,
+  .wishlist__grid,
   
-    .lv-account__address-grid {
+    .account__address-grid {
   
       grid-template-columns: 1fr
   
     }
 }
 
-.lv-request {
+.request {
   min-height: 850px;
   margin: auto;
   padding: $space-1150 0 $space-1050;
@@ -57,14 +57,14 @@
   align-items: center;
 }
 
-.lv-request__intro>span {
+.request__intro>span {
   max-width: 520px;
   display: block;
   color: alpha(var(--clr-ink), 0.62);
   line-height: 1.5;
 }
 
-.lv-request__panel {
+.request__panel {
   padding: $space-600;
   border: 1px solid var(--clr-line);
   border-radius: $radius-500;
@@ -72,14 +72,14 @@
   box-shadow: 0 30px 80px alpha(var(--clr-ink), 0.1);
 }
 
-.lv-request__panel>header {
+.request__panel>header {
   margin-bottom: $space-600;
   display: flex;
   gap: $space-350;
   align-items: center;
 }
 
-.lv-request__panel>header>span {
+.request__panel>header>span {
   width: 50px;
   height: 50px;
   display: grid;
@@ -88,22 +88,22 @@
   background: var(--clr-accent);
 }
 
-.lv-request__panel h2 {
+.request__panel h2 {
   margin: 0 0 $space-100;
 }
 
-.lv-request__panel header p {
+.request__panel header p {
   margin: 0;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-request form {
+.request form {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $space-400;
 }
 
-.lv-request label {
+.request label {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -111,14 +111,14 @@
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-request label.is-wide,
-.lv-request form>button,
-.lv-request__unavailable {
+.request label.is-wide,
+.request form>button,
+.request__unavailable {
   grid-column: 1 / -1;
 }
 
-.lv-request input,
-.lv-request textarea {
+.request input,
+.request textarea {
   width: 100%;
   min-height: 52px;
   padding: $space-350;
@@ -127,18 +127,18 @@
   outline: 0;
 }
 
-.lv-request textarea {
+.request textarea {
   min-height: 120px;
   resize: vertical;
 }
 
-.lv-request input:focus,
-.lv-request textarea:focus {
+.request input:focus,
+.request textarea:focus {
   border-color: var(--clr-primary);
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.14);
 }
 
-.lv-request form>button {
+.request form>button {
   min-height: 54px;
   border: 0;
   border-radius: $radius-pill;
@@ -147,7 +147,7 @@
   cursor: pointer;
 }
 
-.lv-request__unavailable {
+.request__unavailable {
   padding: $space-350;
   border-radius: $radius-200;
   background: var(--clr-warning-bg);
@@ -155,23 +155,23 @@
 }
 
 @media(max-width:760px) {
-  .lv-request__panel {
+  .request__panel {
   
       padding: $space-550 $space-400
   
     }
 
-  .lv-request form {
+  .request form {
   
       grid-template-columns: 1fr
   
     }
 
-  .lv-request label.is-wide,
+  .request label.is-wide,
   
-    .lv-request form>button,
+    .request form>button,
   
-    .lv-request__unavailable {
+    .request__unavailable {
   
       grid-column: auto
   

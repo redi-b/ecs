@@ -101,55 +101,55 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={m.catalog_listing_title({}, { locale })} seo={seo}>
-  <main class="lv-shop">
-    <section class="lv-shop-hero">
-      <TemplateImage class="lv-shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
-      <div class="lv-shop-hero__wrapper container">
-        <div class="lv-shop-hero__content">
+  <main class="shop">
+    <section class="shop-hero">
+      <TemplateImage class="shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
+      <div class="shop-hero__wrapper container">
+        <div class="shop-hero__content">
           <nav aria-label={m.breadcrumb_label({}, { locale })} class="type-body-s-400"><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.nav_shop({}, { locale })}</span></nav>
           <h1 class="type-heading-1">{m.catalog_listing_title({}, { locale })}</h1>
         </div>
       </div>
     </section>
 
-    <section class="lv-shop-products container" aria-labelledby="products-listing-title">
-      <form class="lv-catalog-filter" method="get" action="/products" data-product-search-suggestions data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
-        <header><h2 id="products-listing-title" class="type-heading-3">{m.catalog_listing_title({}, { locale })}</h2><button class="lv-filter-toggle type-body-s-500" type="button" aria-expanded="false" aria-controls="catalog-filter-controls"><span>{m.catalog_filters({}, { locale })}</span><svg class="lv-filter-toggle__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg></button></header>
-        <button class="lv-filter-backdrop" type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close></button>
-        <div class="lv-catalog-filter__body" id="catalog-filter-controls">
-          <div class="lv-filter-sheet-head"><strong class="type-body-l-500">{m.catalog_filter_products({}, { locale })}</strong><button type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div>
-          <div class="lv-catalog-filter__scroll">
-          <div class="lv-catalog-filter__controls">
+    <section class="shop-products container" aria-labelledby="products-listing-title">
+      <form class="catalog-filter" method="get" action="/products" data-product-search-suggestions data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })} data-search-for={m.search_for({ query: "{query}" }, { locale })}>
+        <header><h2 id="products-listing-title" class="type-heading-3">{m.catalog_listing_title({}, { locale })}</h2><button class="filter-toggle type-body-s-500" type="button" aria-expanded="false" aria-controls="catalog-filter-controls"><span>{m.catalog_filters({}, { locale })}</span><svg class="filter-toggle__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg></button></header>
+        <button class="filter-backdrop" type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close></button>
+        <div class="catalog-filter__body" id="catalog-filter-controls">
+          <div class="filter-sheet-head"><strong class="type-body-l-500">{m.catalog_filter_products({}, { locale })}</strong><button type="button" aria-label={m.catalog_close_filters({}, { locale })} data-filter-close><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button></div>
+          <div class="catalog-filter__scroll">
+          <div class="catalog-filter__controls">
             {filters.collectionId && <input type="hidden" name="collection" value={filters.collectionId} />}
-            <div class="lv-catalog-filter__search" data-search-suggestions-anchor><label class="sr-only" for="lv-catalog-search">{m.catalog_search_label({}, { locale })}</label><input id="lv-catalog-search" class="type-body-400" name="q" type="search" value={filters.q ?? ""} placeholder={m.search_products_placeholder({}, { locale })} /></div>
-            {collections.length > 0 && <details class="lv-filter-menu" open>
+            <div class="catalog-filter__search" data-search-suggestions-anchor><label class="sr-only" for="catalog-search">{m.catalog_search_label({}, { locale })}</label><input id="catalog-search" class="type-body-400" name="q" type="search" value={filters.q ?? ""} placeholder={m.search_products_placeholder({}, { locale })} /></div>
+            {collections.length > 0 && <details class="filter-menu" open>
               <summary><span class="type-body-xs">{m.catalog_collection({}, { locale })}</span><strong class="type-body-s-500" data-filter-value>{activeCollection?.title ?? m.catalog_all_collections({}, { locale })}</strong></summary>
               <div role="radiogroup" aria-label={m.catalog_collection({}, { locale })}>
                 <label class="type-body-s-400"><input type="radio" name="collection" value="" checked={!filters.collectionId} /><span class="type-body-s-400">{m.catalog_all_collections({}, { locale })}</span></label>
                 {collections.flatMap((collection) => { const handle = taxonomyHandle(collection); return handle ? [<label class="type-body-s-400"><input type="radio" name="collection" value={handle} checked={filters.collectionId === handle} /><span class="type-body-s-400">{collection.title ?? m.catalog_collection_fallback({}, { locale })}</span>{facets?.collections[collection.id] !== undefined && <small class="type-body-xs">{facets.collections[collection.id]}</small>}</label>] : []; })}
               </div>
             </details>}
-            {categories.length > 0 && <details class="lv-filter-menu">
+            {categories.length > 0 && <details class="filter-menu">
               <summary><span class="type-body-xs">{m.catalog_category({}, { locale })}</span><strong class="type-body-s-500" data-filter-value>{categoryLabel}</strong></summary>
               <div role="radiogroup" aria-label={m.catalog_category({}, { locale })}>
                 <label class="type-body-s-400"><input type="radio" name="category" value="" checked={!filters.categoryId} /><span class="type-body-s-400">{m.catalog_all_categories({}, { locale })}</span></label>
                 {categories.flatMap((category) => { const handle = taxonomyHandle(category); return handle ? [<label class="type-body-s-400"><input type="radio" name="category" value={handle} checked={filters.categoryId === handle} /><span class="type-body-s-400">{category.name ?? m.catalog_category_fallback({}, { locale })}</span>{facets?.categories[category.id] !== undefined && <small class="type-body-xs">{facets.categories[category.id]}</small>}</label>] : []; })}
               </div>
             </details>}
-            {facets?.price && <details class="lv-filter-menu lv-filter-menu--price">
+            {facets?.price && <details class="filter-menu filter-menu--price">
               <summary><span class="type-body-xs">{m.catalog_price_range({}, { locale })}</span><strong class="type-body-s-500" data-filter-value>{filters.priceMin !== undefined || filters.priceMax !== undefined ? m.catalog_custom_price({}, { locale }) : m.catalog_any_price({}, { locale })}</strong></summary>
-              <div class="lv-price-filter" role="group" aria-label={m.catalog_price_range({}, { locale })}>
+              <div class="price-filter" role="group" aria-label={m.catalog_price_range({}, { locale })}>
                 <label class="type-body-xs"><span class="type-body-xs">{m.catalog_from({}, { locale })}</span><input class="type-body-s-400" name="price_min" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMin} placeholder={String(Math.floor(facets.price.min))} /></label>
                 <label class="type-body-xs"><span class="type-body-xs">{m.catalog_to({}, { locale })}</span><input class="type-body-s-400" name="price_max" type="number" min={Math.floor(facets.price.min)} max={Math.ceil(facets.price.max)} step="1" value={filters.priceMax} placeholder={String(Math.ceil(facets.price.max))} /></label>
               </div>
             </details>}
-            {facets?.options.map((option) => <details class="lv-filter-menu">
+            {facets?.options.map((option) => <details class="filter-menu">
               <summary><span class="type-body-xs">{option.name}</span><strong class="type-body-s-500" data-filter-value>{filters.optionPairs.some((token) => parseOptionPair(token)?.name === option.name) ? m.catalog_selected({}, { locale }) : option.name}</strong></summary>
               <div role="group" aria-label={`Filter by ${option.name}`}>
                 {option.values.map((item) => <label class="type-body-s-400"><input type="checkbox" name="option" value={item.token} checked={filters.optionPairs.includes(item.token)} /><span class="type-body-s-400">{item.value}</span><small class="type-body-xs">{item.count}</small></label>)}
               </div>
             </details>)}
-            <details class="lv-filter-menu lv-filter-menu--sort">
+            <details class="filter-menu filter-menu--sort">
               <summary><span class="type-body-xs">{m.catalog_sort_by({}, { locale })}</span><strong class="type-body-s-500" data-filter-value>{sortLabel}</strong></summary>
               <div role="radiogroup" aria-label={m.catalog_sort_by({}, { locale })}>
                 <label class="type-body-s-400"><input type="radio" name="order" value="" checked={!filters.order} /><span class="type-body-s-400">{m.catalog_featured({}, { locale })}</span></label>
@@ -162,8 +162,8 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
             </details>
           </div>
           </div>
-          <div class="lv-filter-footer">
-          <div class="lv-catalog-filter__active type-body-xs">
+          <div class="filter-footer">
+          <div class="catalog-filter__active type-body-xs">
             <div>
               {filters.q && <a class="type-body-xs" href={clearFilterHref("q")}><strong class="type-body-xs">{m.action_search({}, { locale })}:</strong> {filters.q}<span aria-hidden="true">×</span></a>}
               {activeCollection && <a class="type-body-xs" href={clearFilterHref("collectionId")}><strong class="type-body-xs">{m.catalog_collection({}, { locale })}:</strong> {activeCollection.title}<span aria-hidden="true">×</span></a>}
@@ -175,20 +175,20 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
             </div>
             <span class="type-body-xs">{m.catalog_result_count({ count: totalCount }, { locale })}</span>
           </div>
-          <div class="lv-filter-footer__actions">{hasActiveFilters && <a class="lv-filter-clear type-body-s-500" href="/products">{m.catalog_clear_filters({}, { locale })}</a>}<button class="lv-filter-apply type-body-s-500" type="submit" data-default-label={m.catalog_apply_filters({}, { locale })} data-applying-label={m.catalog_applying_filters({}, { locale })}>{m.catalog_apply_filters({}, { locale })}</button></div>
+          <div class="filter-footer__actions">{hasActiveFilters && <a class="filter-clear type-body-s-500" href="/products">{m.catalog_clear_filters({}, { locale })}</a>}<button class="filter-apply type-body-s-500" type="submit" data-default-label={m.catalog_apply_filters({}, { locale })} data-applying-label={m.catalog_applying_filters({}, { locale })}>{m.catalog_apply_filters({}, { locale })}</button></div>
           </div>
         </div>
       </form>
 
-      <div class="lv-catalog-loading" data-catalog-loading hidden role="status" aria-live="polite">
+      <div class="catalog-loading" data-catalog-loading hidden role="status" aria-live="polite">
         <div>{Array.from({ length: 8 }, () => <span></span>)}</div>
         <p class="type-body-s-400">{m.catalog_refreshing({}, { locale })}</p>
       </div>
 
       <div data-catalog-results>
-        {errorMessage ? <div class="lv-catalog-state lv-empty-state" role="alert"><span class="lv-empty-state__mark"><Icon name="search" /></span><div class="lv-empty-state__copy"><h2 class="lv-empty-state__title type-heading-3">{m.catalog_load_failed({}, { locale })}</h2><p class="lv-empty-state__text type-body-400">{m.status_generic_error({}, { locale })}</p></div></div> : products.length === 0 && hasActiveFilters ? <div class="lv-catalog-state lv-empty-state" role="status"><span class="lv-empty-state__mark"><Icon name="search" /></span><div class="lv-empty-state__copy"><h2 class="lv-empty-state__title type-heading-3">{m.catalog_no_match({}, { locale })}</h2><p class="lv-empty-state__text type-body-400">{m.catalog_adjust_filters({}, { locale })}</p></div><a class="lv-empty-state__action type-body-500" href="/products">{m.catalog_clear_filters({}, { locale })}</a></div> : products.length === 0 ? <div class="lv-catalog-state lv-empty-state" role="status"><span class="lv-empty-state__mark"><Icon name="sparkle" /></span><div class="lv-empty-state__copy"><h2 class="lv-empty-state__title type-heading-3">{m.catalog_getting_ready({}, { locale })}</h2><p class="lv-empty-state__text type-body-400">{m.catalog_check_back({}, { locale })}</p></div><a class="lv-empty-state__action type-body-500" href="/">{m.action_return_home({}, { locale })}</a></div> : <div class="lv-catalog-grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div>}
+        {errorMessage ? <div class="catalog-state empty-state" role="alert"><span class="empty-state__mark"><Icon name="search" /></span><div class="empty-state__copy"><h2 class="empty-state__title type-heading-3">{m.catalog_load_failed({}, { locale })}</h2><p class="empty-state__text type-body-400">{m.status_generic_error({}, { locale })}</p></div></div> : products.length === 0 && hasActiveFilters ? <div class="catalog-state empty-state" role="status"><span class="empty-state__mark"><Icon name="search" /></span><div class="empty-state__copy"><h2 class="empty-state__title type-heading-3">{m.catalog_no_match({}, { locale })}</h2><p class="empty-state__text type-body-400">{m.catalog_adjust_filters({}, { locale })}</p></div><a class="empty-state__action type-body-500" href="/products">{m.catalog_clear_filters({}, { locale })}</a></div> : products.length === 0 ? <div class="catalog-state empty-state" role="status"><span class="empty-state__mark"><Icon name="sparkle" /></span><div class="empty-state__copy"><h2 class="empty-state__title type-heading-3">{m.catalog_getting_ready({}, { locale })}</h2><p class="empty-state__text type-body-400">{m.catalog_check_back({}, { locale })}</p></div><a class="empty-state__action type-body-500" href="/">{m.action_return_home({}, { locale })}</a></div> : <div class="catalog-grid">{products.map((product, index) => <ProductCard product={product} eager={index < 4} />)}</div>}
 
-        {!errorMessage && products.length > 0 && <div class="lv-catalog-pagination type-body-s-400"><p class="type-body-s-400">{m.catalog_showing({ shown: Math.min(offset + products.length, totalCount), total: totalCount }, { locale })}</p>{totalPages > 1 && <nav aria-label={m.catalog_pagination({}, { locale })} class="type-body-s-500">{hasPrev && prevHref ? <a href={prevHref} rel="prev" aria-label={m.catalog_previous({}, { locale })}>‹</a> : <span aria-disabled="true">‹</span>}{pageWindow.map((page, index) => <>{index > 0 && pageWindow[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}<a class:list={{ "is-current": page === currentPage }} href={productsHref((page - 1) * limit)} aria-current={page === currentPage ? "page" : undefined}>{page}</a></>)}{hasNext && nextHref ? <a href={nextHref} rel="next" aria-label={m.catalog_next({}, { locale })}>›</a> : <span aria-disabled="true">›</span>}</nav>}</div>}
+        {!errorMessage && products.length > 0 && <div class="catalog-pagination type-body-s-400"><p class="type-body-s-400">{m.catalog_showing({ shown: Math.min(offset + products.length, totalCount), total: totalCount }, { locale })}</p>{totalPages > 1 && <nav aria-label={m.catalog_pagination({}, { locale })} class="type-body-s-500">{hasPrev && prevHref ? <a href={prevHref} rel="prev" aria-label={m.catalog_previous({}, { locale })}>‹</a> : <span aria-disabled="true">‹</span>}{pageWindow.map((page, index) => <>{index > 0 && pageWindow[index - 1] !== page - 1 && <i aria-hidden="true">…</i>}<a class:list={{ "is-current": page === currentPage }} href={productsHref((page - 1) * limit)} aria-current={page === currentPage ? "page" : undefined}>{page}</a></>)}{hasNext && nextHref ? <a href={nextHref} rel="next" aria-label={m.catalog_next({}, { locale })}>›</a> : <span aria-disabled="true">›</span>}</nav>}</div>}
       </div>
     </section>
   </main>
@@ -198,13 +198,13 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
   import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
   import { initAnimatedDetails } from "../../../../lib/browser/animate-details";
 
-  const toggle = document.querySelector<HTMLButtonElement>(".lv-filter-toggle");
+  const toggle = document.querySelector<HTMLButtonElement>(".filter-toggle");
   const controls = document.querySelector<HTMLElement>("#catalog-filter-controls");
   const filterFocusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const setFiltersOpen = (open: boolean) => {
     toggle?.setAttribute("aria-expanded", String(open));
     controls?.toggleAttribute("data-open", open);
-    document.documentElement.toggleAttribute("data-lv-filters-open", open);
+    document.documentElement.toggleAttribute("data-filters-open", open);
     if (controls && window.matchMedia("(max-width: 700px)").matches) {
       controls.toggleAttribute("aria-modal", open);
       if (open) { controls.setAttribute("role", "dialog"); controls.querySelector<HTMLElement>("[data-filter-close]")?.focus(); }
@@ -214,13 +214,13 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
   toggle?.addEventListener("click", () => setFiltersOpen(toggle.getAttribute("aria-expanded") !== "true"));
   document.querySelectorAll<HTMLButtonElement>("[data-filter-close]").forEach((button) => button.addEventListener("click", () => { setFiltersOpen(false); toggle?.focus(); }));
 
-  const form = document.querySelector<HTMLFormElement>(".lv-catalog-filter");
+  const form = document.querySelector<HTMLFormElement>(".catalog-filter");
   initProductSearchSuggestions(form);
-  initAnimatedDetails(document, ".lv-filter-menu", ":scope > div");
-  const section = document.querySelector<HTMLElement>(".lv-shop-products");
+  initAnimatedDetails(document, ".filter-menu", ":scope > div");
+  const section = document.querySelector<HTMLElement>(".shop-products");
   const loading = document.querySelector<HTMLElement>("[data-catalog-loading]");
   const results = document.querySelector<HTMLElement>("[data-catalog-results]");
-  const apply = form?.querySelector<HTMLButtonElement>(".lv-filter-apply");
+  const apply = form?.querySelector<HTMLButtonElement>(".filter-apply");
   const showLoading = () => {
     if (!loading || !results || !section) return;
     loading.hidden = false;
@@ -229,7 +229,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
     if (apply) { apply.disabled = true; apply.textContent = apply.dataset.applyingLabel || apply.textContent; }
   };
   form?.addEventListener("submit", showLoading);
-  document.querySelectorAll<HTMLDetailsElement>(".lv-filter-menu").forEach((menu) => {
+  document.querySelectorAll<HTMLDetailsElement>(".filter-menu").forEach((menu) => {
     menu.addEventListener("change", (event) => {
       const input = event.target instanceof HTMLInputElement ? event.target : null;
       const value = menu.querySelector<HTMLElement>("[data-filter-value]");
@@ -239,7 +239,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
   });
   document.addEventListener("click", (event) => {
     const anchor = event.target instanceof Element
-      ? event.target.closest<HTMLAnchorElement>(".lv-catalog-filter a, .lv-catalog-pagination a, .lv-catalog-state a")
+      ? event.target.closest<HTMLAnchorElement>(".catalog-filter a, .catalog-pagination a, .catalog-state a")
       : null;
     const mouseEvent = event instanceof MouseEvent ? event : null;
     if (anchor && mouseEvent && !event.defaultPrevented && !mouseEvent.metaKey && !mouseEvent.ctrlKey && !mouseEvent.shiftKey && !mouseEvent.altKey) showLoading();

@@ -136,14 +136,14 @@ const wishlistItem = product
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={product?.title ?? m.product_not_found({}, { locale })} seo={seo} structuredData={structuredData}>
-  {!product ? <main class="lv-product-missing"><h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1><p class="type-body-400">{m.product_unavailable({}, { locale })}</p><a class="type-body-500" href="/products">{m.action_back_to_products({}, { locale })}</a></main> : <main class="lv-product-page" data-product-detail>
-    <nav class="lv-product-breadcrumb container type-body-s-400" aria-label={m.breadcrumb_label({}, { locale })}><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.catalog_products({}, { locale })}</span></nav>
-    {(notice === "added" || error) && <p class:list={["lv-product-server-notice container type-body-s-400", { "is-error": error }]} role={error ? "alert" : "status"}>{error ?? m.product_added_to_cart({}, { locale })}</p>}
+  {!product ? <main class="product-missing"><h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1><p class="type-body-400">{m.product_unavailable({}, { locale })}</p><a class="type-body-500" href="/products">{m.action_back_to_products({}, { locale })}</a></main> : <main class="product-page" data-product-detail>
+    <nav class="product-breadcrumb container type-body-s-400" aria-label={m.breadcrumb_label({}, { locale })}><a href="/" class="type-body-s-400">{m.nav_home({}, { locale })}</a><Icon name="chevron" /><a href="/products" class="type-body-s-400">{m.nav_shop({}, { locale })}</a><Icon name="chevron" /><span class="type-body-s-400">{m.catalog_products({}, { locale })}</span></nav>
+    {(notice === "added" || error) && <p class:list={["product-server-notice container type-body-s-400", { "is-error": error }]} role={error ? "alert" : "status"}>{error ?? m.product_added_to_cart({}, { locale })}</p>}
 
-    <section class="lv-product-detail container">
-      <div class="lv-product-gallery">
+    <section class="product-detail container">
+      <div class="product-gallery">
         {gallery.length > 1 && (
-          <div class="lv-product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>
+          <div class="product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>
             {gallery.map((img, index) => {
               const thumbSrc = resolveProductImage(img.variants, "w200", img.url);
               const mainSrc = resolveProductImage(img.variants, "w1200", resolveProductImage(img.variants, "w800", img.url));
@@ -164,7 +164,7 @@ const wishlistItem = product
             })}
           </div>
         )}
-        <div class="lv-product-gallery__main" data-gallery-main>
+        <div class="product-gallery__main" data-gallery-main>
           {initialHeroImage ? (
             <img
               src={resolveProductImage(initialHeroImage.variants, "w1200", resolveProductImage(initialHeroImage.variants, "w800", initialHeroImage.url))}
@@ -177,15 +177,15 @@ const wishlistItem = product
           ) : (
             <ProductMediaPlaceholder label={m.product_no_image({ product: product.title ?? m.catalog_product_fallback({}, { locale }) }, { locale })} />
           )}
-          <span class:list={["lv-product-gallery__badge type-body-xs", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}>
+          <span class:list={["product-gallery__badge type-body-xs", badge ? `is-${badge.kind}` : null]} data-product-badge hidden={!badge}>
             <Icon name="star" data-product-badge-icon hidden={badge?.kind !== "promotion"} />
             <span>{badge?.label ?? ""}</span>
           </span>
         </div>
       </div>
 
-      <div class="lv-product-buy">
-        <div class="lv-product-title"><span class="type-body-xs">{brand}</span><h1 class="type-heading-3">{product.title}</h1><p class="lv-product-price type-body-xl"><strong data-product-price class="type-body-xl">{currentPrice}</strong><del data-product-original-price class="type-body-s-400" hidden={!originalPrice}>{originalPrice ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode, locale) : ""}</del></p><small data-product-stock class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}>{defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
+      <div class="product-buy">
+        <div class="product-title"><span class="type-body-xs">{brand}</span><h1 class="type-heading-3">{product.title}</h1><p class="product-price type-body-xl"><strong data-product-price class="type-body-xl">{currentPrice}</strong><del data-product-original-price class="type-body-s-400" hidden={!originalPrice}>{originalPrice ? formatMoney(originalPrice, defaultVariant?.currencyCode ?? product.currencyCode, locale) : ""}</del></p><small data-product-stock class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}>{defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}{defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}</small></div>
         <form method="post" action="/actions/cart/add" data-add-form>
           <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
           <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
@@ -211,7 +211,7 @@ const wishlistItem = product
                     if (imageSwatch) {
                       return (
                         <button
-                          class="lv-product-swatch lv-product-swatch--image"
+                          class="product-swatch product-swatch--image"
                           type="button"
                           data-option-title={axis.title}
                           data-option-value={value}
@@ -236,7 +236,7 @@ const wishlistItem = product
                     if (colorSwatch) {
                       return (
                         <button
-                          class="lv-product-swatch"
+                          class="product-swatch"
                           type="button"
                           data-option-title={axis.title}
                           data-option-value={value}
@@ -265,20 +265,20 @@ const wishlistItem = product
               </fieldset>
             );
           })}
-          <div class="lv-product-cart-row"><button class="lv-product-add type-body-l-500" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-l-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button><button class="lv-product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button></div>
-          <p class="lv-product-feedback type-body-xs" data-add-feedback aria-live="polite"></p>
+          <div class="product-cart-row"><button class="product-add type-body-l-500" type="submit" data-add-button disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-l-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="product-spinner" aria-hidden="true"></span></button><button class="product-wishlist" type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.action_add_to_wishlist({}, { locale })}><Icon name="wishlist" /></button></div>
+          <p class="product-feedback type-body-xs" data-add-feedback aria-live="polite"></p>
         </form>
 
-        <div class="lv-product-accordions">
-          <details open><summary class="type-body-l-500">{m.product_description({}, { locale })} <Icon name="chevron" /></summary><div class="lv-rich-text type-body-400" set:html={descriptionHtml} /></details>
+        <div class="product-accordions">
+          <details open><summary class="type-body-l-500">{m.product_description({}, { locale })} <Icon name="chevron" /></summary><div class="rich-text type-body-400" set:html={descriptionHtml} /></details>
           <details><summary class="type-body-l-500">{m.product_delivery_details({}, { locale })} <Icon name="chevron" /></summary><div><p class="type-body-400">{m.product_delivery_help({}, { locale })}</p></div></details>
         </div>
       </div>
     </section>
 
-    {relatedProducts.length > 0 && <section class="lv-related container" aria-labelledby="related-products-title"><header><h2 id="related-products-title" class="type-heading-3">{m.product_related({}, { locale })}</h2><div class="lv-rail-controls"><button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>←</button><button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>→</button></div></header><div class="lv-related__rail" data-related-rail role="region" aria-label={m.product_related({}, { locale })}>{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
+    {relatedProducts.length > 0 && <section class="related container" aria-labelledby="related-products-title"><header><h2 id="related-products-title" class="type-heading-3">{m.product_related({}, { locale })}</h2><div class="rail-controls"><button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>←</button><button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>→</button></div></header><div class="related__rail" data-related-rail role="region" aria-label={m.product_related({}, { locale })}>{relatedProducts.map((item) => <ProductCard product={item} />)}</div></section>}
 
-    <div class="lv-sticky-product" data-sticky-product><div><strong class="type-body-s-500">{product.title}</strong><span data-sticky-price class="type-body-500">{currentPrice}</span></div><button type="button" data-sticky-add class="type-body-500" disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="lv-product-spinner" aria-hidden="true"></span></button></div>
+    <div class="sticky-product" data-sticky-product><div><strong class="type-body-s-500">{product.title}</strong><span data-sticky-price class="type-body-500">{currentPrice}</span></div><button type="button" data-sticky-add class="type-body-500" disabled={!defaultVariant?.inStock}><span data-add-label class="type-body-500">{defaultVariant?.inStock ? addToCartLabel : m.catalog_out_of_stock({}, { locale })}</span><span class="product-spinner" aria-hidden="true"></span></button></div>
     <script is:inline type="application/json" id="luvia-product-variants" set:html={serializeJsonForScript(variantsPayload)} />
     <script is:inline type="application/json" id="luvia-option-media-bindings" set:html={serializeJsonForScript(product?.optionMediaBindings ?? null)} />
   </main>}
@@ -416,7 +416,7 @@ const wishlistItem = product
       if (thumb instanceof HTMLButtonElement) { const main = root.querySelector("[data-gallery-main] > img"); if (main && thumb.dataset.galleryThumb) { main.setAttribute("src", thumb.dataset.galleryThumb); if (thumb.dataset.galleryThumbSrcset) { main.setAttribute("srcset", thumb.dataset.galleryThumbSrcset); } else { main.removeAttribute("srcset"); } } root.querySelectorAll("[data-gallery-thumb]").forEach((item) => item.removeAttribute("aria-current")); thumb.setAttribute("aria-current", "true"); }
     });
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    root.querySelectorAll(".lv-product-accordions details").forEach((disclosure) => {
+    root.querySelectorAll(".product-accordions details").forEach((disclosure) => {
       if (!(disclosure instanceof HTMLDetailsElement)) return;
       const summary = disclosure.querySelector("summary");
       if (!summary) return;
@@ -500,7 +500,7 @@ const wishlistItem = product
     document.querySelector("[data-related-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
     document.querySelector("[data-related-next]")?.addEventListener("click", () => rail?.scrollBy({ left: Math.max(280, rail.clientWidth * .75), behavior: "smooth" }));
     const stickyProduct = root.querySelector("[data-sticky-product]");
-    const inquiry = document.querySelector(".lv-inquiry");
+    const inquiry = document.querySelector(".inquiry");
     if (stickyProduct instanceof HTMLElement && inquiry instanceof HTMLElement && "IntersectionObserver" in window) {
       const inquiryObserver = new IntersectionObserver(([entry]) => {
         stickyProduct.toggleAttribute("data-hidden", Boolean(entry?.isIntersecting));

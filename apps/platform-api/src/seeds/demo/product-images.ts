@@ -24,18 +24,36 @@ const DEMO_PRODUCT_PHOTO_IDS: Record<string, readonly number[]> = {
   "demo-tech-laptop-sleeve": [89723, 4065891],
   "demo-tech-bt-speaker": [35436825, 13658002],
   "demo-tech-powerbank-20k": [3921704, 5208777],
-  "demo-fashion-linen-midi": [985635, 1755428],
-  "demo-fashion-wrap-blouse": [994523, 1462637],
-  "demo-fashion-chino": [1598507, 2983464],
-  "demo-fashion-crew-tee": [996329, 8532616],
-  "demo-fashion-crossbody": [1152077, 1936848],
-  "demo-fashion-canvas-tote": [904350, 2905238],
-  "demo-fashion-sneakers": [2529148, 1598505],
-  "demo-fashion-ankle-boots": [267242, 1464625],
-  "demo-fashion-silk-scarf": [45982, 45055],
-  "demo-fashion-blazer": [4964992, 19380820],
-  "demo-fashion-denim-jacket": [1082529, 7679720],
-  "demo-fashion-gift-box": [264985, 1666065],
+
+  // Luvia Cosmetics & Skincare — solid studio grey backgrounds
+  "demo-fashion-hydra-serum": [4041392, 3685530, 4465124],
+  "demo-fashion-botanical-face-oil": [3762879, 7262991, 3373746],
+  "demo-fashion-peptide-night-cream": [4041391, 4465831, 7262988],
+  "demo-fashion-clarifying-cleanser": [4465829, 8128071, 4465830],
+  "demo-fashion-facial-mist": [8128069, 4465125],
+  "demo-fashion-mineral-clay-mask": [7263004, 7263009, 6621472],
+  "demo-fashion-brightening-eye-elixir": [7262987, 8128070, 6621473],
+  "demo-fashion-barrier-balm": [7263005, 6621474],
+  "demo-fashion-velvet-matte-lipstick": [7428102, 7428103],
+  "demo-fashion-liquid-highlighter": [7263007, 3373745],
+  "demo-fashion-eau-de-parfum": [8140898, 8140899, 8140900],
+  "demo-fashion-body-lotion": [8467972, 4465830],
+  "demo-fashion-botanical-body-butter": [8467973, 4465831],
+  "demo-fashion-signature-gift-set": [4465828, 7262988],
+
+  // Legacy aliases
+  "demo-fashion-linen-midi": [4041392, 3685530],
+  "demo-fashion-wrap-blouse": [3762879, 7262991],
+  "demo-fashion-chino": [4041391, 4465831],
+  "demo-fashion-crew-tee": [4465829, 8128071],
+  "demo-fashion-crossbody": [8140898, 8140899],
+  "demo-fashion-canvas-tote": [7263004, 7263009],
+  "demo-fashion-sneakers": [7428102, 7428103],
+  "demo-fashion-ankle-boots": [7262987, 8128070],
+  "demo-fashion-silk-scarf": [8128069, 4465125],
+  "demo-fashion-blazer": [7263005, 6621474],
+  "demo-fashion-denim-jacket": [8467972, 4465830],
+  "demo-fashion-gift-box": [4465828, 7262988],
 };
 
 const AFRO_PRODUCT_LOCAL_IMAGES: Record<string, readonly string[]> = {
@@ -76,6 +94,34 @@ const AFRO_ASSET_DIR_CANDIDATES = [
   resolve("/home/hossa/projects/Websites/ecom-template-3/src/assets"),
 ];
 
+const LUVIA_PRODUCT_LOCAL_IMAGES: Record<string, readonly string[]> = {
+  "demo-fashion-hydra-serum": ["hydra-serum.png", "hydra-serum-2.png"],
+  "demo-fashion-botanical-face-oil": ["botanical-face-oil.png", "botanical-face-oil-2.png"],
+  "demo-fashion-peptide-night-cream": ["peptide-night-cream.png", "peptide-night-cream-2.png"],
+  "demo-fashion-clarifying-cleanser": ["clarifying-cleanser.png", "clarifying-cleanser-2.png"],
+  "demo-fashion-facial-mist": ["facial-mist.png", "facial-mist-2.png"],
+  "demo-fashion-mineral-clay-mask": ["mineral-clay-mask.png", "mineral-clay-mask-2.png"],
+  "demo-fashion-brightening-eye-elixir": ["eye-elixir.png", "eye-elixir-2.png"],
+  "demo-fashion-barrier-balm": ["barrier-balm.png", "barrier-balm-2.png"],
+  "demo-fashion-velvet-matte-lipstick": ["velvet-lipstick.png", "velvet-lipstick-2.png"],
+  "demo-fashion-liquid-highlighter": ["liquid-highlighter.png", "liquid-highlighter-2.png"],
+  "demo-fashion-eau-de-parfum": ["eau-de-parfum.png", "eau-de-parfum-2.png"],
+  "demo-fashion-body-lotion": ["body-lotion.png", "body-lotion-2.png"],
+  "demo-fashion-botanical-body-butter": ["body-butter.png", "body-butter-2.png"],
+  "demo-fashion-signature-gift-set": ["gift-set.png", "gift-set-2.png"],
+};
+
+const LUVIA_ASSET_DIR_CANDIDATES = [
+  resolve(process.cwd(), "apps/storefront/src/templates/luvia/v1/assets/products"),
+  resolve(process.cwd(), "apps/storefront/src/templates/luvia/v1/assets"),
+  fileURLToPath(
+    new URL("../../../../../apps/storefront/src/templates/luvia/v1/assets/products", import.meta.url),
+  ),
+  fileURLToPath(
+    new URL("../../../../../apps/storefront/src/templates/luvia/v1/assets", import.meta.url),
+  ),
+];
+
 function getAfroAssetPath(filename: string): string | null {
   for (const dir of AFRO_ASSET_DIR_CANDIDATES) {
     const fullPath = resolve(dir, filename);
@@ -84,7 +130,30 @@ function getAfroAssetPath(filename: string): string | null {
   return null;
 }
 
+function getLuviaAssetPath(filename: string): string | null {
+  for (const dir of LUVIA_ASSET_DIR_CANDIDATES) {
+    const fullPath = resolve(dir, filename);
+    if (existsSync(fullPath)) return fullPath;
+  }
+  return null;
+}
+
 export function demoProductImages(productHandle: string): readonly DemoProductImage[] {
+  const luviaLocalFiles = LUVIA_PRODUCT_LOCAL_IMAGES[productHandle];
+  if (luviaLocalFiles && luviaLocalFiles.length > 0) {
+    const resolved = luviaLocalFiles
+      .map((filename) => {
+        const filePath = getLuviaAssetPath(filename);
+        if (!filePath) return null;
+        return {
+          sourceUrl: `local://luvia/v1/assets/${filename}`,
+          url: `file://${filePath}`,
+        };
+      })
+      .filter((img): img is DemoProductImage => img !== null);
+    if (resolved.length > 0) return resolved;
+  }
+
   const localFiles = AFRO_PRODUCT_LOCAL_IMAGES[productHandle];
   if (localFiles && localFiles.length > 0) {
     return localFiles.map((filename) => {

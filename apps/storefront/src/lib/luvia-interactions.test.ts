@@ -23,7 +23,7 @@ test("product and address disclosures animate their content instead of snapping"
     readTemplate("pages/Account.astro"),
   ]);
 
-  assert.match(product, /\.lv-product-accordions details/);
+  assert.match(product, /\.product-accordions details/);
   assert.match(product, /disclosure\.animate/);
   assert.match(account, /const setAddressFormOpen =/);
   assert.match(account, /form\.animate/);
@@ -36,12 +36,12 @@ test("catalog facets support persistent batch filtering and a dedicated scroll r
     readFile(new URL("./browser/animate-details.ts", import.meta.url), "utf8"),
   ]);
 
-  assert.match(catalog, /initAnimatedDetails\(document, "\.lv-filter-menu"/);
+  assert.match(catalog, /initAnimatedDetails\(document, "\.filter-menu"/);
   assert.doesNotMatch(catalog, /other\.open\s*=\s*false/);
   assert.doesNotMatch(catalog, /menu\.open\s*=\s*false/);
-  assert.match(styles, /\.lv-catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
-  assert.match(catalog, /lv-catalog-filter__scroll/);
-  assert.match(catalog, /lv-filter-footer[\s\S]*lv-catalog-filter__active[\s\S]*lv-filter-clear[\s\S]*lv-filter-apply/);
+  assert.match(styles, /\.catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(catalog, /catalog-filter__scroll/);
+  assert.match(catalog, /filter-footer[\s\S]*catalog-filter__active[\s\S]*filter-clear[\s\S]*filter-apply/);
   assert.match(animation, /animation\.finished/);
   assert.match(animation, /if \(!opening\) details\.open = false/);
 });

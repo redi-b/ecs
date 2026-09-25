@@ -1,7 +1,7 @@
 @use "../abstracts" as *;
 @use "./empty-state";
 
-.lv-cart-backdrop {
+.cart-backdrop {
   position: fixed;
   z-index: 99;
   inset: 0;
@@ -12,11 +12,11 @@
   backdrop-filter: blur(2px);
 }
 
-.lv-cart-backdrop[data-open] {
+.cart-backdrop[data-open] {
   opacity: 1;
 }
 
-.lv-cart-drawer {
+.cart-drawer {
   position: fixed;
   z-index: 100;
   top: 0;
@@ -34,11 +34,11 @@
   transform: translateX(102%);
 }
 
-.lv-cart-drawer[data-open] {
+.cart-drawer[data-open] {
   transform: translateX(0);
 }
 
-.lv-cart-drawer>header {
+.cart-drawer>header {
   flex: none;
   min-height: 80px;
   padding: $space-400 $space-600;
@@ -48,24 +48,24 @@
   border-bottom: 1px solid var(--clr-line);
 }
 
-.lv-cart-drawer>header>div {
+.cart-drawer>header>div {
   display: flex;
   align-items: center;
   gap: $space-250;
 }
 
-.lv-cart-drawer h2 {
+.cart-drawer h2 {
   margin: 0;
 }
 
-.lv-cart-drawer>header span {
+.cart-drawer>header span {
   padding: $space-100 $space-200;
   border-radius: $radius-pill;
   background: var(--clr-soft);
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-cart-drawer>header button {
+.cart-drawer>header button {
   width: 44px;
   height: 44px;
   padding: 0;
@@ -79,7 +79,7 @@
   cursor: pointer;
 }
 
-.lv-cart-drawer>header button svg {
+.cart-drawer>header button svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -88,24 +88,24 @@
   stroke-width: 1.8;
 }
 
-.lv-cart-drawer__status {
+.cart-drawer__status {
   flex: none;
   min-height: 0;
   padding: 0 $space-600;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-cart-drawer__status:not(:empty) {
+.cart-drawer__status:not(:empty) {
   padding-top: $space-250;
   padding-bottom: $space-250;
 }
 
-.lv-cart-drawer__status.is-error {
+.cart-drawer__status.is-error {
   color: var(--clr-danger);
   background: var(--clr-danger-bg);
 }
 
-.lv-cart-drawer__items {
+.cart-drawer__items {
   min-height: 0;
   flex: 1 1 auto;
   padding: $space-450 $space-500;
@@ -118,7 +118,7 @@
   touch-action: pan-y;
 }
 
-.lv-cart-item {
+.cart-item {
   padding: $space-300;
   display: grid;
   grid-template-columns: 74px minmax(0, 1fr) auto;
@@ -129,12 +129,12 @@
   background: var(--clr-surface);
 }
 
-.lv-cart-item[data-updating] {
+.cart-item[data-updating] {
   opacity: .52;
   pointer-events: none;
 }
 
-.lv-cart-item__media {
+.cart-item__media {
   width: 74px;
   height: 82px;
   display: grid;
@@ -144,35 +144,35 @@
   background: var(--clr-soft);
 }
 
-.lv-cart-item__media img {
+.cart-item__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.lv-cart-item__copy {
+.cart-item__copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: $space-100;
 }
 
-.lv-cart-item__copy strong {
+.cart-item__copy strong {
   overflow: hidden;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.lv-cart-item__copy span {
+.cart-item__copy span {
   color: alpha(var(--clr-ink), 0.45);
 }
 
-.lv-cart-item__copy b {
+.cart-item__copy b {
   margin-top: $space-150;
 }
 
-.lv-cart-item__actions {
+.cart-item__actions {
   display: flex;
   align-self: stretch;
   flex-direction: column;
@@ -181,7 +181,7 @@
   gap: $space-200;
 }
 
-.lv-cart-quantity {
+.cart-quantity {
   min-width: 106px;
   height: 38px;
   padding: 0 $space-100;
@@ -193,7 +193,7 @@
   text-align: center;
 }
 
-.lv-cart-quantity button {
+.cart-quantity button {
   width: 32px;
   height: 32px;
   border: 0;
@@ -202,11 +202,11 @@
   cursor: pointer;
 }
 
-.lv-cart-quantity button:disabled {
+.cart-quantity button:disabled {
   opacity: .35;
 }
 
-.lv-cart-remove {
+.cart-remove {
   min-height: 30px;
   padding: 0;
   border: 0;
@@ -216,11 +216,11 @@
   cursor: pointer;
 }
 
-.lv-cart-empty {
+.cart-empty {
   margin: auto;
 }
 
-.lv-cart-drawer>footer {
+.cart-drawer>footer {
   flex: none;
   padding: $space-500 $space-600 max($space-500, env(safe-area-inset-bottom));
   border-top: 1px solid var(--clr-line);
@@ -228,33 +228,33 @@
   box-shadow: 0 -10px 30px alpha(var(--clr-ink), 0.04);
 }
 
-.lv-cart-drawer>footer dl {
+.cart-drawer>footer dl {
   margin: 0 0 $space-450;
   display: flex;
   flex-direction: column;
   gap: $space-200;
 }
 
-.lv-cart-drawer>footer dl>div {
+.cart-drawer>footer dl>div {
   display: flex;
   justify-content: space-between;
   gap: $space-500;
   color: alpha(var(--clr-ink), 0.45);
 }
 
-.lv-cart-drawer>footer dl>div:last-child {
+.cart-drawer>footer dl>div:last-child {
   margin-top: $space-50;
   padding-top: $space-300;
   border-top: 1px solid var(--clr-line);
   color: var(--clr-ink);
 }
 
-.lv-cart-drawer dd {
+.cart-drawer dd {
   margin: 0;
   text-align: right;
 }
 
-.lv-cart-checkout {
+.cart-checkout {
   min-height: 52px;
   display: flex;
   align-items: center;
@@ -265,7 +265,7 @@
   text-decoration: none;
 }
 
-.lv-cart-view {
+.cart-view {
   min-height: 38px;
   margin-top: $space-200;
   display: flex;
@@ -277,7 +277,7 @@
   text-underline-offset: 3px;
 }
 
-.lv-cart-drawer>footer>button {
+.cart-drawer>footer>button {
   width: 100%;
   min-height: 42px;
   margin-top: $space-200;
@@ -288,21 +288,21 @@
 }
 
 @media (max-width: 760px) {
-  .lv-cart-drawer {  
+  .cart-drawer {  
     width: min(100vw, 440px);  
   }
 
-  .lv-cart-drawer>header {  
+  .cart-drawer>header {  
     min-height: 68px;  
     padding-inline: $space-400;  
   }
 
-  .lv-cart-drawer__items {  
+  .cart-drawer__items {  
     padding: $space-300 $space-350;  
     gap: $space-300;  
   }
 
-  .lv-cart-item {  
+  .cart-item {  
     grid-template-columns: 62px minmax(0, 1fr);  
     grid-template-rows: auto auto;  
     gap: $space-250 $space-300;  
@@ -310,12 +310,12 @@
     padding: $space-300;  
   }
 
-  .lv-cart-item__media {  
+  .cart-item__media {  
     width: 62px;  
     height: 68px;  
   }
 
-  .lv-cart-item__copy strong {  
+  .cart-item__copy strong {  
     white-space: normal;  
     display: -webkit-box;  
     -webkit-line-clamp: 2;  
@@ -323,7 +323,7 @@
     line-height: 1.25;  
   }
 
-  .lv-cart-item__actions {  
+  .cart-item__actions {  
     grid-column: 1 / -1;  
     align-self: auto;  
     flex-direction: row;  
@@ -335,26 +335,26 @@
     border-top: 1px dashed var(--clr-line);  
   }
 
-  .lv-cart-quantity {  
+  .cart-quantity {  
     min-width: 96px;  
     height: 34px;  
   }
 
-  .lv-cart-quantity button {  
+  .cart-quantity button {  
     width: 28px;  
     height: 28px;  
   }
 
-  .lv-cart-drawer>footer {  
+  .cart-drawer>footer {  
     padding: $space-400 $space-400 max($space-400, env(safe-area-inset-bottom));  
   }
 
-  .lv-cart-drawer>footer dl {  
+  .cart-drawer>footer dl {  
     margin: 0 0 $space-300;  
     gap: $space-150;  
   }
 
-  .lv-cart-checkout {  
+  .cart-checkout {  
     min-height: 48px;  
   }
 }

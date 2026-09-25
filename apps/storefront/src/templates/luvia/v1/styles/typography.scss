@@ -44,7 +44,7 @@
   }
 }
 
-body.lv-body {
+body.body {
   @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading, "cap-height");
 
   .type-heading-1 {

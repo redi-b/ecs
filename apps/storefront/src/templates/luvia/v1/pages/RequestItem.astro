@@ -18,12 +18,12 @@ const inquiryMessages = {
 };
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} title={m.request_title({}, { locale })}>
-  <main class="lv-request container">
-    <section class="lv-request__intro"><p class="type-body-xs"><Icon name="sparkle" />{m.request_title({}, { locale })}</p><h1 class="type-heading-1">{m.request_title({}, { locale })}</h1><span class="type-body-l-400">{m.request_intro({}, { locale })}</span></section>
-    <section class="lv-request__panel"><header><span><Icon name="search" /></span><div><h2 class="type-heading-3">{m.request_title({}, { locale })}</h2><p class="type-body-s-400">{m.request_intro({}, { locale })}</p></div></header>
+  <main class="request container">
+    <section class="request__intro"><p class="type-body-xs"><Icon name="sparkle" />{m.request_title({}, { locale })}</p><h1 class="type-heading-1">{m.request_title({}, { locale })}</h1><span class="type-body-l-400">{m.request_intro({}, { locale })}</span></section>
+    <section class="request__panel"><header><span><Icon name="search" /></span><div><h2 class="type-heading-3">{m.request_title({}, { locale })}</h2><p class="type-body-s-400">{m.request_intro({}, { locale })}</p></div></header>
       <form data-inquiry-form action="/actions/inquiries" method="post">
         <input type="hidden" name="type" value="product_request" />
-        <label class="lv-inquiry-honeypot" aria-hidden="true"><span class="type-body-s-400">Website</span><input class="type-body-400" name="website" tabindex="-1" autocomplete="off" /></label>
+        <label class="inquiry-honeypot" aria-hidden="true"><span class="type-body-s-400">Website</span><input class="type-body-400" name="website" tabindex="-1" autocomplete="off" /></label>
         <label class="type-body-s-400"><span class="type-body-s-400">{m.request_product_name({}, { locale })}*</span><input class="type-body-400" name="productName" required /></label>
         <label class="type-body-s-400"><span class="type-body-s-400">{m.request_brand_optional({}, { locale })}</span><input class="type-body-400" name="brand" /></label>
         <label class="is-wide type-body-s-400"><span class="type-body-s-400">{m.request_link_optional({}, { locale })}</span><input class="type-body-400" name="productUrl" type="url" inputmode="url" placeholder="https://" /></label>
@@ -31,11 +31,11 @@ const inquiryMessages = {
         <label class="type-body-s-400"><span class="type-body-s-400">{m.request_contact({}, { locale })}*</span><input class="type-body-400" name="contact" required /></label>
         <label class="is-wide type-body-s-400"><span class="type-body-s-400">{m.request_details_optional({}, { locale })}</span><textarea class="type-body-400" name="details" placeholder={m.request_details_placeholder({}, { locale })}></textarea></label>
         <button class="type-body-500" type="submit">{m.request_send({}, { locale })}</button>
-        <p class:list={["lv-inquiry-status type-body-s-400", sent && "is-success", submitError && "is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent ? inquiryMessages.received : submitError ? inquiryMessages.failed : ""}</p>
+        <p class:list={["inquiry-status type-body-s-400", sent && "is-success", submitError && "is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent ? inquiryMessages.received : submitError ? inquiryMessages.failed : ""}</p>
       </form>
     </section>
   </main>
 </Layout>
 <script is:inline define:vars={{ inquiryMessages }}>
-  (() => { const form = document.querySelector("[data-inquiry-form]"); if (!(form instanceof HTMLFormElement)) return; const status = form.querySelector("[data-inquiry-status]"); const button = form.querySelector("button[type=submit]"); form.addEventListener("submit", async (event) => { if (!form.reportValidity()) return; event.preventDefault(); if (button instanceof HTMLButtonElement) { button.disabled = true; button.setAttribute("aria-busy", "true"); } if (status) { status.textContent = inquiryMessages.sending; status.className = "lv-inquiry-status is-pending"; } try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); if (!response.ok) throw new Error(inquiryMessages.failed); form.reset(); if (status) { status.textContent = inquiryMessages.received; status.className = "lv-inquiry-status is-success"; } } catch { if (status) { status.textContent = inquiryMessages.failed; status.className = "lv-inquiry-status is-error"; } } finally { if (button instanceof HTMLButtonElement) { button.disabled = false; button.removeAttribute("aria-busy"); } } }); })();
+  (() => { const form = document.querySelector("[data-inquiry-form]"); if (!(form instanceof HTMLFormElement)) return; const status = form.querySelector("[data-inquiry-status]"); const button = form.querySelector("button[type=submit]"); form.addEventListener("submit", async (event) => { if (!form.reportValidity()) return; event.preventDefault(); if (button instanceof HTMLButtonElement) { button.disabled = true; button.setAttribute("aria-busy", "true"); } if (status) { status.textContent = inquiryMessages.sending; status.className = "inquiry-status is-pending"; } try { const response = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } }); if (!response.ok) throw new Error(inquiryMessages.failed); form.reset(); if (status) { status.textContent = inquiryMessages.received; status.className = "inquiry-status is-success"; } } catch { if (status) { status.textContent = inquiryMessages.failed; status.className = "inquiry-status is-error"; } } finally { if (button instanceof HTMLButtonElement) { button.disabled = false; button.removeAttribute("aria-busy"); } } }); })();
 </script>

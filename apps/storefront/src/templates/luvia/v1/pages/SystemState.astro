@@ -27,11 +27,11 @@ const template = parseLuviaData(data);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} seo={{ canonicalUrl: Astro.url.href, description, noindex: true, title: `${title} · ${tenantName}` }}>
-  <main class="lv-system" id="main-content" data-storefront-state>
-    <div class="lv-system__copy">
+  <main class="system" id="main-content" data-storefront-state>
+    <div class="system__copy">
       {code ? <p class="type-body-s-500">{code}</p> : null}
       <h1 class="type-display" data-state-copy data-offline-copy={m.status_offline_title({}, { locale })}>{title}</h1>
-      <div class="lv-system__description type-body-400" data-state-copy data-offline-copy={m.status_offline_help({}, { locale })}>{description}</div>
+      <div class="system__description type-body-400" data-state-copy data-offline-copy={m.status_offline_help({}, { locale })}>{description}</div>
       {actionHref && actionLabel ? <ActionButton href={actionHref} tone="primary">{actionLabel}</ActionButton> : null}
     </div>
   </main>

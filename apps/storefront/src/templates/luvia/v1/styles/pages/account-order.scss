@@ -1,19 +1,19 @@
 @use "../abstracts" as *;
 
-.lv-account-order {
+.account-order {
   margin: auto;
   padding: $space-1100 0 $space-1050;
   color: var(--clr-ink);
 }
 
-.lv-account-order__back {
+.account-order__back {
   display: inline-flex;
   margin-bottom: $space-550;
   color: alpha(var(--clr-ink), 0.62);
   text-underline-offset: 4px;
 }
 
-.lv-account-order__hero {
+.account-order__hero {
   padding: $space-700 $space-750;
   display: flex;
   align-items: flex-end;
@@ -24,43 +24,43 @@
   background: var(--clr-soft);
 }
 
-.lv-account-order p {
+.account-order p {
   margin: 0 0 $space-200;
 }
 
-.lv-account-order h1 {
+.account-order h1 {
   margin: 0 0 $space-250;
 }
 
-.lv-account-order__hero span {
+.account-order__hero span {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account-order__tracking {
+.account-order__tracking {
   display: grid;
   justify-items: end;
   gap: $space-150;
 }
 
-.lv-account-order__status-row {
+.account-order__status-row {
   display: flex;
   align-items: center;
   gap: $space-150;
 }
 
-.lv-account-order__status {
+.account-order__status {
   padding: $space-250 $space-400;
   border-radius: $radius-pill;
   background: var(--clr-accent);
   white-space: nowrap;
 }
 
-.lv-account-order__status.is-cancelled {
+.account-order__status.is-cancelled {
   background: var(--clr-danger-bg);
   color: var(--clr-danger);
 }
 
-.lv-account-order__refresh {
+.account-order__refresh {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -74,22 +74,22 @@
   cursor: pointer;
 }
 
-.lv-account-order__refresh:hover {
+.account-order__refresh:hover {
   border-color: alpha(var(--clr-primary), 0.38);
   background: var(--clr-soft);
 }
 
-.lv-account-order__refresh:focus-visible {
+.account-order__refresh:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 3px;
 }
 
-.lv-account-order__refresh:disabled {
+.account-order__refresh:disabled {
   cursor: wait;
   opacity: .65;
 }
 
-.lv-account-order__refresh svg {
+.account-order__refresh svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -99,16 +99,16 @@
   stroke-linejoin: round;
 }
 
-.lv-account-order__refresh[data-loading="true"] svg {
+.account-order__refresh[data-loading="true"] svg {
 }
 
-.lv-account-order__refresh-note {
+.account-order__refresh-note {
   color: alpha(var(--clr-ink), 0.45);
 }
 
 
 
-.lv-account-order__layout {
+.account-order__layout {
   margin-top: $space-450;
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(310px, .75fr);
@@ -116,30 +116,30 @@
   align-items: start;
 }
 
-.lv-account-order__items,
-.lv-account-order__side>section,
-.lv-account-order__help {
+.account-order__items,
+.account-order__side>section,
+.account-order__help {
   border: 1px solid var(--clr-line);
   border-radius: $radius-500;
   background: var(--clr-surface);
 }
 
-.lv-account-order__items {
+.account-order__items {
   padding: $space-650;
 }
 
-.lv-account-order__items>header {
+.account-order__items>header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: $space-500;
 }
 
-.lv-account-order h2 {
+.account-order h2 {
   margin: 0;
 }
 
-.lv-account-order__items>header>span {
+.account-order__items>header>span {
   min-height: 34px;
   padding: 0 $space-300;
   display: inline-flex;
@@ -149,13 +149,13 @@
   white-space: nowrap;
 }
 
-.lv-account-order__items ol {
+.account-order__items ol {
   margin: $space-600 0 0;
   padding: 0;
   list-style: none;
 }
 
-.lv-account-order__items li {
+.account-order__items li {
   padding: $space-400 0;
   display: grid;
   grid-template-columns: 82px 1fr auto;
@@ -164,7 +164,7 @@
   border-top: 1px solid var(--clr-line);
 }
 
-.lv-account-order__media {
+.account-order__media {
   width: 82px;
   aspect-ratio: 1;
   display: grid;
@@ -174,81 +174,81 @@
   background: var(--clr-soft);
 }
 
-.lv-account-order__media img {
+.account-order__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.lv-account-order__items li>div {
+.account-order__items li>div {
   display: grid;
   gap: $space-100;
 }
 
-.lv-account-order__items li span,
-.lv-account-order__items li small {
+.account-order__items li span,
+.account-order__items li small {
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account-order__items li>b {
+.account-order__items li>b {
   white-space: nowrap;
 }
 
-.lv-account-order__side {
+.account-order__side {
   display: grid;
   gap: $space-450;
 }
 
-.lv-account-order__side>section {
+.account-order__side>section {
   padding: $space-600;
 }
 
-.lv-account-order__side h2 {
+.account-order__side h2 {
   margin-bottom: $space-450;
 }
 
-.lv-account-order dl {
+.account-order dl {
   margin: 0;
   display: grid;
   gap: $space-250;
 }
 
-.lv-account-order dl>div {
+.account-order dl>div {
   display: flex;
   justify-content: space-between;
   gap: $space-500;
   color: alpha(var(--clr-ink), 0.62);
 }
 
-.lv-account-order dl dd {
+.account-order dl dd {
   margin: 0;
   color: var(--clr-ink);
 }
 
-.lv-account-order dl .is-saving,
-.lv-account-order dl .is-saving dd {
+.account-order dl .is-saving,
+.account-order dl .is-saving dd {
   color: var(--clr-primary);
 }
 
-.lv-account-order dl .is-total {
+.account-order dl .is-total {
   margin-top: $space-100;
   padding-top: $space-350;
   border-top: 1px solid var(--clr-line);
   color: var(--clr-ink);
 }
 
-.lv-account-order__side section>span,
-.lv-account-order__side section>small {
+.account-order__side section>span,
+.account-order__side section>small {
   display: block;
   color: alpha(var(--clr-ink), 0.62);
   line-height: 1.45;
 }
 
-.lv-account-order__side section>small {
+.account-order__side section>small {
   margin-top: $space-300;
 }
 
-.lv-account-order__side section>a {
+.account-order__side section>a {
   min-height: 42px;
   margin-top: $space-450;
   padding: 0 $space-400;
@@ -260,18 +260,18 @@
   text-decoration: none;
 }
 
-.lv-account-order address {
+.account-order address {
   display: grid;
   gap: $space-150;
   color: alpha(var(--clr-ink), 0.62);
   font-style: normal;
 }
 
-.lv-account-order address strong {
+.account-order address strong {
   color: var(--clr-ink);
 }
 
-.lv-account-order__help {
+.account-order__help {
   margin-top: $space-450;
   padding: $space-600 $space-650;
   display: flex;
@@ -282,83 +282,83 @@
   color: var(--clr-on-dark);
 }
 
-.lv-account-order__help p {
+.account-order__help p {
   color: alpha(var(--clr-on-dark), 0.65);
 }
 
-.lv-account-order__help h2 {
+.account-order__help h2 {
   margin-bottom: $space-150;
 }
 
-.lv-account-order__help>div>span {
+.account-order__help>div>span {
   color: alpha(var(--clr-on-dark), 0.7);
 }
 
 @media(max-width:900px) {
-  .lv-account-order {
+  .account-order {
     width: calc(100% - 40px)
   }
 
-  .lv-account-order__layout {
+  .account-order__layout {
     grid-template-columns: 1fr
   }
 
-  .lv-account-order__side {
+  .account-order__side {
     grid-template-columns: repeat(2, minmax(0, 1fr))
   }
 
-  .lv-account-order__side>section:first-child {
+  .account-order__side>section:first-child {
     grid-column: 1 / -1
   }
 }
 
 @media(max-width:620px) {
-  .lv-account-order {
+  .account-order {
     padding: $space-1050 0 $space-900
   }
 
-  .lv-account-order__hero {
+  .account-order__hero {
     padding: $space-600 $space-550;
     align-items: flex-start;
     flex-direction: column
   }
 
-  .lv-account-order__tracking {
+  .account-order__tracking {
     justify-items: start
   }
 
-  .lv-account-order__layout,
-  .lv-account-order__side {
+  .account-order__layout,
+  .account-order__side {
     grid-template-columns: 1fr
   }
 
-  .lv-account-order__side>section:first-child {
+  .account-order__side>section:first-child {
     grid-column: auto
   }
 
-  .lv-account-order__items {
+  .account-order__items {
     padding: $space-600 $space-450
   }
 
-  .lv-account-order__items li {
+  .account-order__items li {
     grid-template-columns: $space-900 1fr
   }
 
-  .lv-account-order__media {
+  .account-order__media {
     width: 64px;
   }
 
-  .lv-account-order__items li>b {
+  .account-order__items li>b {
     grid-column: 2
   }
 
-  .lv-account-order__help {
+  .account-order__help {
     padding: $space-600 $space-550;
     align-items: flex-start;
     flex-direction: column
   }
 
-  .lv-account-order__help .lv-button {
+  .account-order__help .button {
     width: 100%
   }
 }

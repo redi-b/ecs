@@ -59,10 +59,15 @@ const env = {
   SEED_DEMO_ALLOW_PARTIAL: strict ? "false" : (process.env.SEED_DEMO_ALLOW_PARTIAL ?? "true"),
 };
 
+const passthroughArgs = args.filter(
+  (arg) => !["--clean", "--unseed", "--reverse", "--strict"].includes(arg),
+);
+
 const demoArgs = [
   "src/seeds/demo-seed.ts",
   ...(clean ? ["--clean"] : []),
   ...(strict ? ["--strict"] : []),
+  ...passthroughArgs,
 ];
 
 info(

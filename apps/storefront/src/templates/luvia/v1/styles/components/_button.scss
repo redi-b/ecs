@@ -1,6 +1,6 @@
 @use "../abstracts" as *;
 
-.lv-button {
+.button {
   width: fit-content;
   padding: 0;
   display: inline-flex;
@@ -14,13 +14,13 @@
   cursor: pointer;
 }
 
-.lv-button:disabled {
+.button:disabled {
   opacity: .55;
   cursor: not-allowed;
 }
 
-.lv-button__text,
-.lv-button__icon {
+.button__text,
+.button__icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,74 +31,74 @@
   transition: filter 180ms ease, box-shadow 180ms ease;
 }
 
-.lv-button__text {
+.button__text {
   padding-inline: 49px;
   white-space: nowrap;
 }
 
-.lv-button__text[contenteditable]:focus {
+.button__text[contenteditable]:focus {
   outline: none;
 }
 
-.lv-button__icon {
+.button__icon {
   aspect-ratio: 1;
   flex: none;
 }
 
-.lv-button--large .lv-button__text,
-.lv-button--large .lv-button__icon {
+.button--large .button__text,
+.button--large .button__icon {
   height: 50px;
 }
 
-.lv-button--large .lv-button__text {
+.button--large .button__text {
 }
 
-.lv-button--large .lv-button__icon {
+.button--large .button__icon {
   width: 50px;
 }
 
-.lv-button--small .lv-button__text,
-.lv-button--small .lv-button__icon {
+.button--small .button__text,
+.button--small .button__icon {
   height: 38px;
 }
 
-.lv-button--small .lv-button__text {
+.button--small .button__text {
   padding-inline: 20px;
 }
 
-.lv-button--small .lv-button__icon {
+.button--small .button__icon {
   width: 38px;
 }
 
-.lv-button__icon svg {
+.button__icon svg {
   width: 18px;
   height: 18px;
 }
 
-.lv-button--small-icon .lv-button__icon svg {
+.button--small-icon .button__icon svg {
   width: 13px;
   height: 13px;
 }
 
-.lv-button--secondary .lv-button__text,
-.lv-button--secondary .lv-button__icon {
+.button--secondary .button__text,
+.button--secondary .button__icon {
   background: var(--clr-dark);
   color: var(--clr-on-dark);
 }
 
-.lv-button--light .lv-button__text,
-.lv-button--light .lv-button__icon {
+.button--light .button__text,
+.button--light .button__icon {
   background: var(--clr-bg);
   color: var(--clr-ink);
 }
 
-.lv-button:hover:not(:disabled) .lv-button__text,
-.lv-button:hover:not(:disabled) .lv-button__icon {
+.button:hover:not(:disabled) .button__text,
+.button:hover:not(:disabled) .button__icon {
   filter: brightness(.97);
   box-shadow: 0 5px 14px alpha(var(--clr-ink), 0.1);
 }
 
-.lv-button:focus-visible {
+.button:focus-visible {
   outline: 2px solid var(--clr-primary);
   outline-offset: 3px;
   border-radius: $radius-pill;

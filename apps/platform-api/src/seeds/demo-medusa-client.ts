@@ -57,6 +57,7 @@ export function createDemoMedusaClient(options: DemoMedusaClientOptions) {
 
   async function loadPgModule() {
     try {
+      // @ts-ignore - dynamic optional pg dependency in monorepo
       return await import("pg");
     } catch {
       // Fallbacks support monorepo development layouts.
@@ -80,7 +81,8 @@ export function createDemoMedusaClient(options: DemoMedusaClientOptions) {
       const requireFromDb = createRequire(
         resolve(getPlatformApiServiceDir(import.meta.url), "../../packages/db/package.json"),
       );
-      return requireFromDb("pg") as typeof import("pg");
+      // @ts-ignore - dynamic optional pg dependency in monorepo
+      return requireFromDb("pg") as { Client: new (options?: unknown) => { connect(): Promise<void>; query(q: string, p?: unknown[]): Promise<{ rows: unknown[] }>; end(): Promise<void> } };
     } catch {
       return null;
     }

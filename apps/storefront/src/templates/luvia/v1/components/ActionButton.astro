@@ -41,11 +41,11 @@ const Element = href ? "a" : "button";
 
 <Element
   class:list={[
-    "lv-button",
-    `lv-button--${resolvedTone}`,
-    `lv-button--${size}`,
-    { "lv-button--small-icon": iconSize === "small" },
-    { "lv-button--full": fullWidth },
+    "button",
+    `button--${resolvedTone}`,
+    `button--${size}`,
+    { "button--small-icon": iconSize === "small" },
+    { "button--full": fullWidth },
     className,
   ]}
   href={href}
@@ -57,12 +57,12 @@ const Element = href ? "a" : "button";
   {...rest}
 >
   <span
-    class:list={["lv-button__text", size === "small" ? "type-body-400" : "type-body-l-500"]}
+    class:list={["button__text", size === "small" ? "type-body-400" : "type-body-l-500"]}
     contenteditable={editorPath && editorMode ? "plaintext-only" : undefined}
     data-editor-text-target={editorPath ? "" : undefined}
   ><slot /></span>
   {icon ? (
-    <span class="lv-button__icon" aria-hidden="true">
+    <span class="button__icon" aria-hidden="true">
       <Icon name={icon} />
     </span>
   ) : null}
