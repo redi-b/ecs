@@ -21,6 +21,7 @@ import { createTelegramRuntime } from "./bootstrap/telegram.js";
 import { createTenantRuntime } from "./bootstrap/tenant.js";
 import { createTenantManagementRuntime } from "./bootstrap/tenant-management.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
 import { parseTrustedOrigins } from "./context/platform-auth.js";
@@ -33,6 +34,8 @@ import { createStorefrontInquiryService } from "./modules/storefront/inquiry-ser
 import { createStorefrontTemplateService } from "./modules/storefront/template-service.js";
 
 loadPlatformApiEnvFiles();
+
+assertPlatformProductionEnvironment(process.env);
 
 const env = loadServiceEnv({
   ...process.env,

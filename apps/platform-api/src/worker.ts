@@ -14,6 +14,7 @@ import { createWorkerCommerceRuntime } from "./bootstrap/worker-commerce.js";
 import { createWorkerNotificationRuntime } from "./bootstrap/worker-notifications.js";
 import { startWorkerScheduling } from "./bootstrap/worker-scheduling.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
@@ -30,6 +31,8 @@ import { platformJobRegistry } from "./jobs/registry.js";
 import { createMediaService } from "./modules/media/index.js";
 
 loadPlatformApiEnvFiles();
+
+assertPlatformProductionEnvironment(process.env);
 
 const env = loadServiceEnv({
   ...process.env,
