@@ -115,6 +115,8 @@ export const subscriptions = pgTable(
     billingCycle: text("billing_cycle").notNull().default("monthly"),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    renewalPlanVersionId: uuid("renewal_plan_version_id").references(() => planVersions.id),
+    renewalEffectiveAt: timestamp("renewal_effective_at", { withTimezone: true }),
     trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     trialFallbackPlanVersionId: uuid("trial_fallback_plan_version_id").references(
@@ -126,6 +128,7 @@ export const subscriptions = pgTable(
   (table) => [
     uniqueIndex("subscriptions_tenant_id_unique").on(table.tenantId),
     index("subscriptions_plan_version_id_idx").on(table.planVersionId),
+    index("subscriptions_renewal_plan_version_id_idx").on(table.renewalPlanVersionId),
   ],
 );
 

@@ -107,24 +107,13 @@ export function createBillingPlanService(db: PlatformDb) {
 
   const ensureDefaultPlans = async () => {
     for (const plan of DEFAULT_PLANS) {
-      await db
+      const [inserted] = await db
         .insert(plans)
         .values(plan)
-        .onConflictDoUpdate({
-          target: plans.id,
-          set: {
-            // Transitional latest-version projection for legacy readers.
-            features: plan.features,
-            code: plan.code,
-            kind: plan.kind,
-            limits: plan.limits,
-            name: plan.name,
-            price: plan.price,
-            status: plan.status,
-            visibility: plan.visibility,
-          },
-        });
-      await ensurePublishedPlanVersion(plan);
+        .onConflictDoNothing({ target: plans.id })
+        .returning({ id: plans.id });
+      const published = inserted ? null : await latestPlanVersion(plan.id);
+      if (!published) await ensurePublishedPlanVersion(plan);
     }
   };
 

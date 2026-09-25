@@ -69,6 +69,8 @@ export type Subscription = {
   readonly currentPeriodStart: Date | null;
   readonly id: SubscriptionId;
   readonly planVersionId: PlanVersionId;
+  readonly renewalPlanVersionId: PlanVersionId | null;
+  readonly renewalEffectiveAt: Date | null;
   readonly status: SubscriptionStatus;
 };
 

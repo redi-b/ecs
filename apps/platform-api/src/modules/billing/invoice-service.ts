@@ -221,6 +221,8 @@ export function createBillingInvoiceService(input: BillingInvoiceServiceOptions)
       const [sub] = await transaction
         .select({
           billingCycle: subscriptions.billingCycle,
+          renewalPlanVersionId: subscriptions.renewalPlanVersionId,
+          renewalEffectiveAt: subscriptions.renewalEffectiveAt,
           currentPeriodEnd: subscriptions.currentPeriodEnd,
           planId: subscriptions.planId,
           planVersionId: subscriptions.planVersionId,
@@ -252,12 +254,15 @@ export function createBillingInvoiceService(input: BillingInvoiceServiceOptions)
             .limit(1);
       const nextPlanVersionId = nextPlanVersion?.id ?? sub?.planVersionId;
       if (!nextPlanVersionId) throw new Error("billing_plan_version_not_found");
+      const consumedRenewal = sub?.renewalPlanVersionId === nextPlanVersionId;
 
       await transaction
         .update(subscriptions)
         .set({
           planId: nextPlanId,
           planVersionId: nextPlanVersionId,
+          renewalPlanVersionId: consumedRenewal ? null : sub?.renewalPlanVersionId,
+          renewalEffectiveAt: consumedRenewal ? null : sub?.renewalPlanVersionId ? nextEnd : null,
           currentPeriodEnd: nextEnd,
           currentPeriodStart: now,
           manualPaymentState: "paid",

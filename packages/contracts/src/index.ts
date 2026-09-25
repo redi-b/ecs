@@ -1000,6 +1000,10 @@ export const merchantBillingStatusSchema = z.object({
       manualPaymentState: z.string().min(1),
       currentPeriodStart: z.string().min(1).nullable(),
       currentPeriodEnd: z.string().min(1).nullable(),
+      renewalPlanVersionId: z.string().min(1).nullable().optional(),
+      renewalEffectiveAt: z.string().min(1).nullable().optional(),
+      renewalPlanName: z.string().min(1).nullable().optional(),
+      renewalPlanPrice: z.string().min(1).nullable().optional(),
       trialStartedAt: z.string().min(1).nullable().optional(),
       trialEndsAt: z.string().min(1).nullable().optional(),
       /** Free plan scheduled to start at period end (no refund of remaining paid days). */

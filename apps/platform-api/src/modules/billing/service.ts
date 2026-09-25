@@ -137,7 +137,8 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             .update(subscriptions)
             .set({
               status: "active",
-              currentPeriodEnd: null,
+              currentPeriodEnd: addBillingMonths(new Date(), 1),
+              currentPeriodStart: new Date(),
               manualPaymentState: "none",
               ...(pinnedVersion ? { planVersionId: pinnedVersion.id } : {}),
             })
@@ -152,7 +153,9 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
       }
 
       const now = new Date();
-      const starterVersion = await ensurePublishedPlanVersion(DEFAULT_PLAN_CATALOG.starter);
+      const starterVersion =
+        (await latestPlanVersion(DEFAULT_PLAN_CATALOG.starter.id)) ??
+        (await ensurePublishedPlanVersion(DEFAULT_PLAN_CATALOG.starter));
       const [subscription] = await db
         .insert(subscriptions)
         .values({
@@ -162,7 +165,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: now,
-          currentPeriodEnd: null,
+          currentPeriodEnd: addBillingMonths(now, 1),
           manualPaymentState: "none",
         })
         .onConflictDoNothing({ target: subscriptions.tenantId })
@@ -235,6 +238,8 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
             planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
             currentPeriodEnd: subscriptions.currentPeriodEnd,
+            renewalPlanVersionId: subscriptions.renewalPlanVersionId,
+            renewalEffectiveAt: subscriptions.renewalEffectiveAt,
             trialEndsAt: subscriptions.trialEndsAt,
             trialFallbackPlanVersionId: subscriptions.trialFallbackPlanVersionId,
             manualPaymentState: subscriptions.manualPaymentState,
@@ -245,13 +250,98 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           .where(eq(subscriptions.tenantId, input.tenantId))
           .limit(1);
 
-        if (!row || (isFreePlanPrice(row.planPrice) && row.status !== "trialing")) {
+        if (!row) {
           return {
             trialExpired: false,
             renewed: false,
             pastDue: false,
             scheduled: null as null | { planId: string; subscriptionId: string },
           };
+        }
+
+        if (isFreePlanPrice(row.planPrice) && row.status !== "trialing") {
+          const now = new Date();
+          if (!row.currentPeriodEnd || row.currentPeriodEnd > now) {
+            return { trialExpired: false, renewed: false, pastDue: false, scheduled: null };
+          }
+
+          if (row.renewalPlanVersionId) {
+            const [renewal] = await transaction
+              .select({
+                id: planVersions.id,
+                planId: planVersions.planId,
+                name: planVersions.name,
+                price: planVersions.price,
+              })
+              .from(planVersions)
+              .where(eq(planVersions.id, row.renewalPlanVersionId))
+              .limit(1);
+            if (renewal && isFreePlanPrice(renewal.price)) {
+              await transaction
+                .update(subscriptions)
+                .set({
+                  planId: renewal.planId,
+                  planVersionId: renewal.id,
+                  renewalPlanVersionId: null,
+                  renewalEffectiveAt: null,
+                  currentPeriodStart: now,
+                  currentPeriodEnd: addBillingMonths(now, 1),
+                })
+                .where(eq(subscriptions.id, row.subscriptionId));
+              return { trialExpired: false, renewed: true, pastDue: false, scheduled: null };
+            }
+            if (renewal) {
+              const [existingInvoice] = await transaction
+                .select({ id: invoices.id })
+                .from(invoices)
+                .where(
+                  and(
+                    eq(invoices.subscriptionId, row.subscriptionId),
+                    eq(invoices.status, "pending"),
+                  ),
+                )
+                .limit(1);
+              if (!existingInvoice) {
+                const [created] = await transaction
+                  .insert(invoices)
+                  .values({
+                    tenantId: input.tenantId,
+                    subscriptionId: row.subscriptionId,
+                    planVersionId: renewal.id,
+                    amount: renewal.price,
+                    currency: "ETB",
+                    status: "pending",
+                    dueAt: now,
+                    provider: `plan:${renewal.planId}`,
+                  })
+                  .returning({ id: invoices.id });
+                if (created) {
+                  await transaction
+                    .insert(billingOutboxEvents)
+                    .values({
+                      eventKey: `billing.invoice_ready:${created.id}`,
+                      eventType: "billing.invoice_ready",
+                      tenantId: input.tenantId,
+                      payload: {
+                        amount: String(renewal.price),
+                        currencyCode: "ETB",
+                        invoiceId: created.id,
+                        planName: renewal.name,
+                        subscriptionId: row.subscriptionId,
+                      },
+                    })
+                    .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
+                  return { trialExpired: false, renewed: true, pastDue: false, scheduled: null };
+                }
+              }
+            }
+          } else {
+            await transaction
+              .update(subscriptions)
+              .set({ currentPeriodStart: now, currentPeriodEnd: addBillingMonths(now, 1) })
+              .where(eq(subscriptions.id, row.subscriptionId));
+          }
+          return { trialExpired: false, renewed: false, pastDue: false, scheduled: null };
         }
 
         const lifecycle = planBillingLifecycle({
@@ -274,7 +364,9 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           await transaction
             .update(subscriptions)
             .set({
-              currentPeriodEnd: isFreePlanPrice(fallback.price) ? null : endedAt,
+              currentPeriodEnd: isFreePlanPrice(fallback.price)
+                ? addBillingMonths(endedAt, 1)
+                : endedAt,
               currentPeriodStart: endedAt,
               manualPaymentState: isFreePlanPrice(fallback.price) ? "none" : "pending",
               planId: fallback.planId,
@@ -320,10 +412,62 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           };
         }
 
+        const [pendingInvoice] = await transaction
+          .select({
+            amount: invoices.amount,
+            id: invoices.id,
+            planVersionId: invoices.planVersionId,
+          })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.tenantId, input.tenantId),
+              eq(invoices.status, "pending"),
+              eq(invoices.subscriptionId, row.subscriptionId),
+            ),
+          )
+          .limit(1);
+        const pendingPlanVersionId = pendingInvoice?.planVersionId ?? null;
+        const [pendingPlanVersion] = pendingPlanVersionId
+          ? await transaction
+              .select({
+                id: planVersions.id,
+                planId: planVersions.planId,
+                name: planVersions.name,
+                price: planVersions.price,
+              })
+              .from(planVersions)
+              .where(eq(planVersions.id, pendingPlanVersionId))
+              .limit(1)
+          : [undefined];
+        const renewalPlanVersionId = row.renewalPlanVersionId;
+        const renewalAppliesToNextPeriod =
+          renewalPlanVersionId &&
+          (!row.renewalEffectiveAt ||
+            !row.currentPeriodEnd ||
+            row.renewalEffectiveAt <= row.currentPeriodEnd);
+        const [renewalTerms] =
+          !pendingPlanVersion && renewalAppliesToNextPeriod
+            ? await transaction
+                .select({
+                  id: planVersions.id,
+                  planId: planVersions.planId,
+                  name: planVersions.name,
+                  price: planVersions.price,
+                })
+                .from(planVersions)
+                .where(eq(planVersions.id, renewalPlanVersionId))
+                .limit(1)
+            : [undefined];
+        const invoicePlanVersionId =
+          pendingPlanVersion?.id ?? renewalTerms?.id ?? row.planVersionId;
+        const invoicePlanId = pendingPlanVersion?.planId ?? renewalTerms?.planId ?? row.planId;
+        const invoicePlanName = pendingPlanVersion?.name ?? renewalTerms?.name ?? row.planName;
+        const invoicePlanPrice = pendingInvoice?.amount ?? renewalTerms?.price ?? row.planPrice;
         const payload = {
           subscriptionId: row.subscriptionId,
-          planName: row.planName,
-          amount: String(row.planPrice),
+          planName: invoicePlanName,
+          amount: String(invoicePlanPrice),
           currencyCode: "ETB",
         };
         let pastDue = false;
@@ -353,20 +497,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
         }
 
         if (lifecycle.createRenewalInvoice) {
-          const [existing] = await transaction
-            .select({ id: invoices.id })
-            .from(invoices)
-            .where(
-              and(
-                eq(invoices.tenantId, input.tenantId),
-                eq(invoices.status, "pending"),
-                eq(invoices.amount, row.planPrice),
-                eq(invoices.currency, "ETB"),
-              ),
-            )
-            .limit(1);
-
-          if (!existing) {
+          if (!pendingInvoice) {
             const dueAt = new Date();
             dueAt.setUTCDate(dueAt.getUTCDate() + BILLING_RENEWAL_LEAD_DAYS);
             const [created] = await transaction
@@ -374,12 +505,12 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
               .values({
                 tenantId: input.tenantId,
                 subscriptionId: row.subscriptionId,
-                planVersionId: row.planVersionId,
-                amount: row.planPrice,
+                planVersionId: invoicePlanVersionId,
+                amount: invoicePlanPrice,
                 currency: "ETB",
                 status: "pending",
                 dueAt,
-                provider: `plan:${row.planId}`,
+                provider: `plan:${invoicePlanId}`,
               })
               .returning({ id: invoices.id });
             if (created) {

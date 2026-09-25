@@ -33,6 +33,8 @@ type SubscriptionProjection = {
   billingCycle: string;
   currentPeriodStart: Date | null;
   currentPeriodEnd: Date | null;
+  renewalPlanVersionId: string | null;
+  renewalEffectiveAt: Date | null;
   manualPaymentState: string;
   trialStartedAt: Date | null;
   trialEndsAt: Date | null;
@@ -58,6 +60,8 @@ export function createBillingStatusService({
         billingCycle: subscriptions.billingCycle,
         currentPeriodEnd: subscriptions.currentPeriodEnd,
         currentPeriodStart: subscriptions.currentPeriodStart,
+        renewalPlanVersionId: subscriptions.renewalPlanVersionId,
+        renewalEffectiveAt: subscriptions.renewalEffectiveAt,
         manualPaymentState: subscriptions.manualPaymentState,
         planFeatures: sql<unknown>`coalesce(${planVersions.features}, ${plans.features})`,
         planId: plans.id,
@@ -84,6 +88,13 @@ export function createBillingStatusService({
     subscription: SubscriptionProjection,
     tenantId: string,
   ): Promise<BillingStatusResult> => {
+    const [renewalPlan] = subscription.renewalPlanVersionId
+      ? await db
+          .select({ name: planVersions.name, price: planVersions.price })
+          .from(planVersions)
+          .where(eq(planVersions.id, subscription.renewalPlanVersionId))
+          .limit(1)
+      : [undefined];
     const invoiceRows = await db
       .select(selectInvoiceFields())
       .from(invoices)
@@ -157,6 +168,10 @@ export function createBillingStatusService({
           manualPaymentState: clientPaymentState,
           currentPeriodStart: serializeDate(subscription.currentPeriodStart),
           currentPeriodEnd: serializeDate(subscription.currentPeriodEnd),
+          renewalPlanVersionId: subscription.renewalPlanVersionId,
+          renewalEffectiveAt: serializeDate(subscription.renewalEffectiveAt),
+          renewalPlanName: renewalPlan?.name ?? null,
+          renewalPlanPrice: renewalPlan ? String(renewalPlan.price) : null,
           trialStartedAt: serializeDate(subscription.trialStartedAt),
           trialEndsAt: serializeDate(subscription.trialEndsAt),
           scheduledPlanId: scheduledPlan?.id ?? null,

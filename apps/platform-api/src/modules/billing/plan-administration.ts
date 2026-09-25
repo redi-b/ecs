@@ -10,6 +10,7 @@ import {
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
+  invoices,
   planDrafts,
   planPresentations,
   plans,
@@ -17,7 +18,7 @@ import {
   subscriptions,
   tenants,
 } from "@ecs/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import {
   ENTITLEMENT_CATALOG,
@@ -723,6 +724,32 @@ export function createPlanAdministrationService(db: PlatformDb) {
               status: "active",
             })
             .where(eq(plans.id, input.planId));
+          await transaction
+            .update(subscriptions)
+            .set({
+              renewalPlanVersionId: publication.version.id,
+              renewalEffectiveAt: sql`
+                case when exists (
+                  select 1 from ${invoices}
+                  where ${invoices.subscriptionId} = ${subscriptions.id}
+                    and ${invoices.status} = 'pending'
+                ) then coalesce(${subscriptions.currentPeriodEnd}, now())
+                  + case when ${subscriptions.billingCycle} = 'yearly'
+                    then interval '1 year' else interval '1 month' end
+                else coalesce(
+                  ${subscriptions.currentPeriodEnd},
+                  now() + case when ${subscriptions.billingCycle} = 'yearly'
+                    then interval '1 year' else interval '1 month' end
+                ) end
+              `,
+            })
+            .where(
+              and(
+                eq(subscriptions.planId, input.planId),
+                ne(subscriptions.planVersionId, publication.version.id),
+                inArray(subscriptions.status, ["active", "past_due"]),
+              ),
+            );
         }
         await transaction.delete(planDrafts).where(eq(planDrafts.id, draftRow.id));
         await transaction.insert(auditLogs).values({
