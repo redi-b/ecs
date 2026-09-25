@@ -10,6 +10,8 @@ export async function GET(request: Request) {
   const origin = `${protocol}://${host}`;
   const settingsUrl = new URL("/dashboard/settings?tab=account", origin);
   settingsUrl.searchParams.set("connection", "google-linked");
+  const errorUrl = new URL("/dashboard/settings?tab=account", origin);
+  errorUrl.searchParams.set("connection", "google-failed");
   const trustedDashboardHost =
     isCentralDashboardHost(host) || (await validateShopHost({ forwardedHost: host })).ok;
   if (!trustedDashboardHost) {
@@ -21,7 +23,11 @@ export async function GET(request: Request) {
     "",
   );
   const response = await fetch(`${platformBaseUrl}/platform/auth/link-social`, {
-    body: JSON.stringify({ callbackURL: settingsUrl.toString(), provider: "google" }),
+    body: JSON.stringify({
+      callbackURL: settingsUrl.toString(),
+      errorCallbackURL: errorUrl.toString(),
+      provider: "google",
+    }),
     headers: {
       accept: "application/json",
       "content-type": "application/json",

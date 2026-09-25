@@ -241,13 +241,13 @@ test("unlinking a sign-in method delegates last-method protection to Better Auth
   };
 
   const result = await unlinkAccountConnection({
-    accountId: "account_google",
     cookieHeader: "ecs.session_token=session_1",
     origin: "https://bole.example.com",
     platformApiBaseUrl: "https://api.example.com",
+    providerId: "google",
   });
 
   assert.equal(result.ok, true);
   assert.equal(captured?.url, "https://api.example.com/platform/auth/unlink-account");
-  assert.deepEqual(await captured?.json(), { accountId: "account_google" });
+  assert.deepEqual(await captured?.json(), { providerId: "google" });
 });

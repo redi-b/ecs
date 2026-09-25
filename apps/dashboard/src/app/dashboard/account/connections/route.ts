@@ -10,13 +10,13 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const body = (await request.json().catch(() => null)) as { accountId?: unknown } | null;
-  if (typeof body?.accountId !== "string" || !body.accountId)
-    return NextResponse.json({ error: "invalid_account" }, { status: 400 });
+  const body = (await request.json().catch(() => null)) as { providerId?: unknown } | null;
+  if (typeof body?.providerId !== "string" || !body.providerId)
+    return NextResponse.json({ error: "invalid_provider" }, { status: 400 });
   const result = await unlinkAccountConnection({
     ...(await getAccountAuthRequestContext(request)),
-    accountId: body.accountId,
+    providerId: body.providerId,
   });
-  if (!result.ok) return NextResponse.json({ error: "unlink_failed" }, { status: result.status });
+  if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
   return NextResponse.json({ ok: true });
 }

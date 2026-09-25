@@ -87,6 +87,7 @@ export function AccountSecurityPanel({
   const [connectionsLoading, setConnectionsLoading] = useState(true);
   const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [avatar, setAvatar] = useState<ProfileAvatarPreferences>(
     actor.avatar ?? defaultProfileAvatar,
@@ -285,13 +286,14 @@ export function AccountSecurityPanel({
     if (connection === "google-linked") {
       toast.success(t("settings.accountSecurity.connections.linked"));
     } else if (connection === "google-unavailable") {
-      toast.error(t("settings.accountSecurity.connections.unavailable"));
+      setConnectionError("unavailable");
     } else if (connection === "google-failed") {
-      toast.error(t("settings.accountSecurity.connections.linkFailed"));
+      setConnectionError(url.searchParams.get("error") ?? "link_failed");
     }
     url.searchParams.delete("verified");
     url.searchParams.delete("emailChanged");
     url.searchParams.delete("connection");
+    url.searchParams.delete("error");
     const query = url.searchParams.toString();
     router.replace(query ? `${url.pathname}?${query}` : url.pathname, { scroll: false });
   }, [router, t]);
@@ -652,6 +654,23 @@ export function AccountSecurityPanel({
             {t("settings.accountSecurity.connections.description")}
           </p>
         </div>
+        {connectionError ? (
+          <Alert className="mx-4 mt-3 w-auto" variant="destructive">
+            <AppIcons.error aria-hidden="true" />
+            <AlertTitle>{t("settings.accountSecurity.connections.linkErrorTitle")}</AlertTitle>
+            <AlertDescription>
+              {connectionError === "access_denied"
+                ? t("settings.accountSecurity.connections.cancelled")
+                : connectionError === "email_doesn't_match"
+                  ? t("settings.accountSecurity.connections.emailMismatch")
+                  : connectionError === "account_already_linked_to_different_user"
+                    ? t("settings.accountSecurity.connections.alreadyLinked")
+                    : connectionError === "unavailable"
+                      ? t("settings.accountSecurity.connections.unavailable")
+                      : t("settings.accountSecurity.connections.linkFailed")}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <div className="flex items-center justify-between gap-3 px-4 py-3.5">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -676,7 +695,7 @@ export function AccountSecurityPanel({
                 if (!google) return;
                 setUnlinkingGoogle(true);
                 const response = await fetch("/dashboard/account/connections", {
-                  body: JSON.stringify({ accountId: google.id }),
+                  body: JSON.stringify({ providerId: google.providerId }),
                   headers: { "content-type": "application/json" },
                   method: "DELETE",
                 }).catch(() => null);

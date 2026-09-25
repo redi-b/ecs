@@ -14,6 +14,7 @@ it("starts explicit Google linking with the current session", async () => {
     assert.equal(new Headers(init?.headers).get("cookie"), "ecs.session_token=session_1");
     assert.deepEqual(JSON.parse(String(init?.body)), {
       callbackURL: "http://app.lvh.me/dashboard/settings?tab=account&connection=google-linked",
+      errorCallbackURL: "http://app.lvh.me/dashboard/settings?tab=account&connection=google-failed",
       provider: "google",
     });
     return Response.json(

@@ -40,6 +40,16 @@ describe("calendar foundation", () => {
     assert.doesNotMatch(label ?? "", /\bAM\b/);
   });
 
+  it("puts the month before the day in Amharic Ethiopian dates", () => {
+    assert.equal(
+      formatCalendarDate("2026-09-24T09:00:00.000Z", {
+        calendar: "ethiopic",
+        locale: "am",
+      }),
+      "መስከረም 14 2019 ዓ.ም.",
+    );
+  });
+
   it("keeps persistence values as canonical ISO instants", () => {
     assert.equal(toCanonicalIsoInstant("2026-09-24T12:00:00+03:00"), "2026-09-24T09:00:00.000Z");
     assert.equal(toCanonicalIsoInstant("not-a-date"), null);

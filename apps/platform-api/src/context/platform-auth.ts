@@ -431,6 +431,7 @@ export function createPlatformAuth(options: {
     account: {
       accountLinking: {
         allowDifferentEmails: false,
+        disableImplicitLinking: true,
         enabled: true,
         requireLocalEmailVerified: true,
       },

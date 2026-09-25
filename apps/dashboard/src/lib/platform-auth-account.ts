@@ -376,9 +376,11 @@ export async function listAccountConnections(options: AuthRequestContext) {
   return { connections, ok: true as const };
 }
 
-export async function unlinkAccountConnection(options: AuthRequestContext & { accountId: string }) {
+export async function unlinkAccountConnection(
+  options: AuthRequestContext & { providerId: string },
+) {
   return postAccountAuth("/platform/auth/unlink-account", options, {
-    accountId: options.accountId,
+    providerId: options.providerId,
   });
 }
 

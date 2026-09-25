@@ -34,12 +34,33 @@ function formatWithEthiopianEra(
   formatter: Intl.DateTimeFormat,
   date: Date,
   calendar: CalendarSystem,
+  locale: string,
 ) {
   if (calendar !== "ethiopic") return formatter.format(date);
-  return formatter
+  const parts = formatter
     .formatToParts(date)
-    .map((part) => (part.type === "era" ? "ዓ.ም." : part.value))
-    .join("");
+    .map((part) => (part.type === "era" ? { ...part, value: "ዓ.ም." } : part));
+  if (!locale.toLowerCase().startsWith("am")) {
+    return parts.map((part) => part.value).join("");
+  }
+
+  const datePartTypes = new Set<Intl.DateTimeFormatPartTypes>(["day", "era", "month", "year"]);
+  const values = new Map(
+    parts.filter((part) => datePartTypes.has(part.type)).map((part) => [part.type, part.value]),
+  );
+  const lastDatePartIndex = parts.reduce(
+    (lastIndex, part, index) => (datePartTypes.has(part.type) ? index : lastIndex),
+    -1,
+  );
+  const dateLabel = [values.get("month"), values.get("day"), values.get("year"), values.get("era")]
+    .filter(Boolean)
+    .join(" ");
+  const timeLabel = parts
+    .slice(lastDatePartIndex + 1)
+    .map((part) => part.value)
+    .join("")
+    .trim();
+  return timeLabel ? `${dateLabel} ${timeLabel}` : dateLabel;
 }
 
 export function toValidDate(value: DateInput): Date | null {
@@ -67,7 +88,7 @@ export function formatCalendarDate(
     dateStyle: options.dateStyle ?? "medium",
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
   });
-  return formatWithEthiopianEra(formatter, date, calendar);
+  return formatWithEthiopianEra(formatter, date, calendar, options.locale);
 }
 
 export function formatCalendarDateTime(
@@ -88,7 +109,7 @@ export function formatCalendarDateTime(
     timeStyle: options.timeStyle ?? "short",
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
   });
-  return formatWithEthiopianEra(formatter, date, calendar);
+  return formatWithEthiopianEra(formatter, date, calendar, options.locale);
 }
 
 export function formatDualCalendarDate(
@@ -258,5 +279,5 @@ export function formatCalendarMonthYear(
     timeZone: options.timeZone ?? ETHIOPIA_TIME_ZONE,
     year: "numeric",
   });
-  return formatWithEthiopianEra(formatter, date, calendar);
+  return formatWithEthiopianEra(formatter, date, calendar, options.locale);
 }
