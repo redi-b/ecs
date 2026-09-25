@@ -307,7 +307,7 @@ export function LaunchAssistant({
       <div className="flex shrink-0 items-center justify-between gap-3 border-t p-3">
         <Button asChild size="sm" variant="outline">
           <Link
-            href={`${dashboardRoutes.settings}?tab=storefront`}
+            href={`${dashboardRoutes.settings}?section=storefront`}
             prefetch={false}
             onClick={() => changeOpen(false)}
           >

@@ -8,9 +8,9 @@ export async function GET(request: Request) {
   const protocol =
     request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.slice(0, -1);
   const origin = `${protocol}://${host}`;
-  const settingsUrl = new URL("/dashboard/settings?tab=account", origin);
+  const settingsUrl = new URL("/dashboard/settings?section=account", origin);
   settingsUrl.searchParams.set("connection", "google-linked");
-  const errorUrl = new URL("/dashboard/settings?tab=account", origin);
+  const errorUrl = new URL("/dashboard/settings?section=account", origin);
   errorUrl.searchParams.set("connection", "google-failed");
   const trustedDashboardHost =
     isCentralDashboardHost(host) || (await validateShopHost({ forwardedHost: host })).ok;

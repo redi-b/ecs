@@ -163,7 +163,7 @@ export function StorefrontLocalizationPanel({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button asChild size="icon-sm" variant="ghost">
-                <Link href="/dashboard/settings?tab=storefront">
+                <Link href="/dashboard/settings?section=storefront">
                   <RiSettings4Line />
                   <span className="sr-only">{t("editor.translations.openSettings")}</span>
                 </Link>
@@ -187,7 +187,7 @@ export function StorefrontLocalizationPanel({
               </p>
             </div>
             <Button asChild className="shrink-0" size="sm" variant="outline">
-              <Link href="/dashboard/settings?tab=storefront">
+              <Link href="/dashboard/settings?section=storefront">
                 {t("editor.translations.openSettings")}
               </Link>
             </Button>

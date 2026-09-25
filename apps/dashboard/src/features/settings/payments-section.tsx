@@ -212,7 +212,7 @@ export function PaymentsSection({
             </Button>
           ) : (
             <Button asChild className="shrink-0 rounded-full" size="sm" variant="outline">
-              <Link href={`${dashboardRoutes.settings}?tab=fulfillment`}>
+              <Link href={`${dashboardRoutes.settings}?section=fulfillment`}>
                 {t("settings.payments.cod.openFulfillment")}
               </Link>
             </Button>

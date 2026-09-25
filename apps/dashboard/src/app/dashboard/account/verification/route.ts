@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const origin = ctx.origin ?? new URL(request.url).origin;
   const result = await sendAccountVerificationEmail({
     ...ctx,
-    callbackURL: `${origin}/dashboard/settings?tab=account&verified=1`,
+    callbackURL: `${origin}/dashboard/settings?section=account&verified=1`,
     email: identity.email,
   });
   if (!result.ok) {

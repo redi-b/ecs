@@ -107,7 +107,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
             </EmptyDescription>
           </EmptyHeader>
           <Button asChild size="sm">
-            <Link href="/dashboard/settings?tab=storefront">
+            <Link href="/dashboard/settings?section=storefront">
               {t("editor.actions.openSettings")}
             </Link>
           </Button>
@@ -146,7 +146,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
                   token: previewSession.token,
                 })
               : undefined,
-            settingsUrl: "/dashboard/settings?tab=storefront",
+            settingsUrl: "/dashboard/settings?section=storefront",
             storefrontName: access.access.tenant.name,
             templateKey: draft.draft.templateKey,
             templateName: getTemplateDisplayName(draft.draft.templateKey),

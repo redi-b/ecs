@@ -44,7 +44,7 @@ export function getLaunchChecklistItems(
       const status = check?.status ?? "unavailable";
       const href =
         id === "profile"
-          ? `${dashboardRoutes.settings}?tab=shop`
+          ? `${dashboardRoutes.settings}?section=shop`
           : id === "catalog"
             ? dashboardRoutes.products
             : dashboardRoutes.editor;
@@ -73,7 +73,7 @@ export function getLaunchChecklistItems(
         ),
         ready: false,
         unavailable: fulfillment.status === "unavailable",
-        href: `${dashboardRoutes.settings}?tab=fulfillment`,
+        href: `${dashboardRoutes.settings}?section=fulfillment`,
         required: true,
       });
     }
@@ -148,7 +148,7 @@ export function getLaunchChecklistItems(
       ready: hasReviewedStorefront,
       href: hasStorefrontDraft
         ? dashboardRoutes.editor
-        : `${dashboardRoutes.settings}?tab=storefront`,
+        : `${dashboardRoutes.settings}?section=storefront`,
       required: true,
     },
     {
@@ -188,7 +188,7 @@ export function getLaunchChecklistItems(
       label: t("overview.launch.fulfillment"),
       description: t("overview.launch.fulfillmentDesc"),
       ready: false,
-      href: `${dashboardRoutes.settings}?tab=fulfillment`,
+      href: `${dashboardRoutes.settings}?section=fulfillment`,
       required: false,
     },
     {
@@ -196,7 +196,7 @@ export function getLaunchChecklistItems(
       label: t("overview.launch.payments"),
       description: t("overview.launch.paymentsDesc"),
       ready: false,
-      href: `${dashboardRoutes.settings}?tab=payments`,
+      href: `${dashboardRoutes.settings}?section=payments`,
       required: false,
     },
   ];

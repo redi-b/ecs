@@ -88,7 +88,7 @@ export default async function StorefrontTranslationsPage({
             <EmptyDescription>{t("editor.translations.disabledDescription")}</EmptyDescription>
           </EmptyHeader>
           <Button asChild size="sm">
-            <Link href="/dashboard/settings?tab=storefront">
+            <Link href="/dashboard/settings?section=storefront">
               {t("editor.translations.openSettings")}
             </Link>
           </Button>
@@ -151,7 +151,7 @@ export default async function StorefrontTranslationsPage({
     <PageShell
       actions={
         <Button asChild size="sm" variant="outline">
-          <Link href="/dashboard/settings?tab=storefront">
+          <Link href="/dashboard/settings?section=storefront">
             <RiSettings4Line />
             {t("editor.translations.openSettings")}
           </Link>

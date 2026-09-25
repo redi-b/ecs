@@ -13,8 +13,9 @@ it("starts explicit Google linking with the current session", async () => {
     assert.equal(String(input), "http://localhost:3000/platform/auth/link-social");
     assert.equal(new Headers(init?.headers).get("cookie"), "ecs.session_token=session_1");
     assert.deepEqual(JSON.parse(String(init?.body)), {
-      callbackURL: "http://app.lvh.me/dashboard/settings?tab=account&connection=google-linked",
-      errorCallbackURL: "http://app.lvh.me/dashboard/settings?tab=account&connection=google-failed",
+      callbackURL: "http://app.lvh.me/dashboard/settings?section=account&connection=google-linked",
+      errorCallbackURL:
+        "http://app.lvh.me/dashboard/settings?section=account&connection=google-failed",
       provider: "google",
     });
     return Response.json(
@@ -39,6 +40,6 @@ it("returns to account settings when Google linking fails", async () => {
   );
   assert.equal(
     response.headers.get("location"),
-    "http://app.lvh.me/dashboard/settings?tab=account&connection=google-failed",
+    "http://app.lvh.me/dashboard/settings?section=account&connection=google-failed",
   );
 });

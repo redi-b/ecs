@@ -10,8 +10,8 @@ test("account completion preserves supported local destinations", () => {
     "/accept-invitation?invitationId=invite_1",
   );
   assert.equal(
-    getSafeAccountCompletionPath("/dashboard/settings?tab=account"),
-    "/dashboard/settings?tab=account",
+    getSafeAccountCompletionPath("/dashboard/settings?section=account"),
+    "/dashboard/settings?section=account",
   );
 });
 

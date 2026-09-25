@@ -893,7 +893,7 @@ function TranslationOverview({
     {
       label: t("editor.translations.delivery"),
       metric: readinessMetric(shippingQueue),
-      href: "/dashboard/settings?tab=fulfillment",
+      href: "/dashboard/settings?section=fulfillment",
       target: queueTarget(shippingQueue, "shipping"),
     },
   ];

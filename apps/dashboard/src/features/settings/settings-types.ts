@@ -16,7 +16,7 @@ export type Delivery = DeliverySettings["delivery"];
 export type SettingsWorkspaceProps = {
   delivery: Delivery | null;
   domains: TenantDomainContract[];
-  initialTab?: string | undefined;
+  initialSection?: string | undefined;
   payments: MerchantPaymentsStatus | null;
   /** mailto: or https — merchant support for Chapa setup help. */
   paymentsSupportHref?: string | null | undefined;

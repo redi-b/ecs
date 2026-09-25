@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const origin = ctx.origin ?? new URL(request.url).origin;
   const result = await changeAccountEmail({
     ...ctx,
-    callbackURL: `${origin}/dashboard/settings?tab=account&emailChanged=1`,
+    callbackURL: `${origin}/dashboard/settings?section=account&emailChanged=1`,
     newEmail,
   });
   if (!result.ok) {

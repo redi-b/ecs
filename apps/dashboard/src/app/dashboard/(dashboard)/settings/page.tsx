@@ -18,7 +18,7 @@ import { getStorefrontTemplates } from "@/lib/storefront-templates";
 
 type SettingsPageProps = {
   searchParams?: Promise<
-    DashboardSearchParams & { settingsStatus?: string; tab?: string; templateStatus?: string }
+    DashboardSearchParams & { settingsStatus?: string; section?: string; templateStatus?: string }
   >;
 };
 
@@ -106,7 +106,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <SettingsWorkspace
           delivery={delivery?.ok ? delivery.delivery : null}
           domains={domains?.ok ? domains.domains : []}
-          initialTab={resolvedSearchParams.tab}
+          initialSection={resolvedSearchParams.section}
           payments={payments?.ok ? payments.payment : null}
           paymentsSupportHref={paymentsSupportHref}
           settingsStatus={resolvedSearchParams.settingsStatus}

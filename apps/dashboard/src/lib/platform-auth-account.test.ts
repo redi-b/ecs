@@ -120,8 +120,8 @@ test("password reset preflight delegates to Better Auth without consuming the to
 
 test("account return paths remain local to dashboard routes", () => {
   assert.equal(
-    getSafeAccountReturnPath("/dashboard/settings?tab=account"),
-    "/dashboard/settings?tab=account",
+    getSafeAccountReturnPath("/dashboard/settings?section=account"),
+    "/dashboard/settings?section=account",
   );
   assert.equal(getSafeAccountReturnPath("https://evil.example/path"), "/sign-in");
   assert.equal(getSafeAccountReturnPath("//evil.example/path"), "/sign-in");
@@ -169,7 +169,7 @@ test("email changes forward the current session and host-aware callback", async 
   };
 
   await changeAccountEmail({
-    callbackURL: "https://bole.example.com/dashboard/settings?tab=account",
+    callbackURL: "https://bole.example.com/dashboard/settings?section=account",
     cookieHeader: "ecs.session_token=session_1",
     newEmail: " NEW@EXAMPLE.COM ",
     origin: "https://bole.example.com",
@@ -178,7 +178,7 @@ test("email changes forward the current session and host-aware callback", async 
 
   assert.equal(captured?.headers.get("cookie"), "ecs.session_token=session_1");
   assert.deepEqual(await captured?.json(), {
-    callbackURL: "https://bole.example.com/dashboard/settings?tab=account",
+    callbackURL: "https://bole.example.com/dashboard/settings?section=account",
     newEmail: "new@example.com",
   });
 });

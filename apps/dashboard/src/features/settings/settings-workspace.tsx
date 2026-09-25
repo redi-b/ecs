@@ -64,7 +64,7 @@ function canOpenSettingsSection(
 export function SettingsWorkspace({
   delivery,
   domains,
-  initialTab,
+  initialSection,
   payments,
   paymentsSupportHref = null,
   settingsStatus,
@@ -79,7 +79,7 @@ export function SettingsWorkspace({
   const { permissions } = useAccess();
   const { t } = useI18n();
   const [section, setSection] = useState<SettingsSectionId>(() => {
-    const requested = parseSettingsSection(initialTab);
+    const requested = parseSettingsSection(initialSection);
     return canOpenSettingsSection(requested, permissions) ? requested : "preferences";
   });
   const [name, setName] = useState(summary.tenant.name);
@@ -172,11 +172,11 @@ export function SettingsWorkspace({
   }, [permissions, section]);
 
   useEffect(() => {
-    const requested = parseSettingsSection(initialTab);
+    const requested = parseSettingsSection(initialSection);
     if (canOpenSettingsSection(requested, permissions)) {
       setSection(requested);
     }
-  }, [initialTab, permissions]);
+  }, [initialSection, permissions]);
 
   useEffect(() => {
     setShowLaunchAssistant(!isLaunchAssistantHidden(summary.tenant.id));
@@ -267,8 +267,11 @@ export function SettingsWorkspace({
       if (shopDirty) resetShopDraft();
       setSection(next);
       const url = new URL(window.location.href);
-      if (next === "shop") url.searchParams.delete("tab");
-      else url.searchParams.set("tab", next);
+      if (next === "shop") {
+        url.searchParams.delete("section");
+      } else {
+        url.searchParams.set("section", next);
+      }
       router.replace(`${url.pathname}?${url.searchParams.toString()}`, { scroll: false });
     });
   }
