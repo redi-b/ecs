@@ -134,10 +134,10 @@ pnpm dev:down
 pnpm dev:logs
 ```
 
-If port `5432` is unavailable, start PostgreSQL on another port and update the database URLs in the root, Platform API, and Medusa environment files:
+If port `5432` is unavailable, set `POSTGRES_HOST_PORT=5433` in the root `.env`, then use the normal command:
 
 ```bash
-POSTGRES_HOST_PORT=5433 pnpm dev:infra
+pnpm dev
 ```
 
 ### Quality checks

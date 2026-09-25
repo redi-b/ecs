@@ -21,6 +21,7 @@ import { createTelegramRuntime } from "./bootstrap/telegram.js";
 import { createTenantRuntime } from "./bootstrap/tenant.js";
 import { createTenantManagementRuntime } from "./bootstrap/tenant-management.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { getSystemHosts } from "./config/hosts.js";
 import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
 import { parseTrustedOrigins } from "./context/platform-auth.js";
@@ -34,6 +35,8 @@ import { createStorefrontTemplateService } from "./modules/storefront/template-s
 
 loadPlatformApiEnvFiles();
 
+assertPlatformProductionEnvironment(process.env);
+
 const env = loadServiceEnv({
   ...process.env,
   SERVICE_NAME: process.env.SERVICE_NAME ?? "platform-api",
@@ -46,7 +49,8 @@ const logger = createLogger({
 
 const platformDb = createPlatformDb({
   connectionString:
-    process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5433/platform_db",
+    process.env.PLATFORM_DATABASE_URL ??
+    `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/platform_db`,
   max: Number.parseInt(process.env.PLATFORM_DATABASE_POOL_MAX ?? "5", 10),
   idleTimeoutMillis: Number.parseInt(
     process.env.PLATFORM_DATABASE_POOL_IDLE_TIMEOUT_MS ?? "30000",

@@ -42,12 +42,17 @@ import { cn } from "@/lib/utils";
 import {
   type AddressForm,
   addressFormFromSaved,
+  buildManualOrderPayload,
+  calculateManualOrderPricing,
+  canContinueFromManualOrderCustomer,
+  canContinueFromManualOrderItems,
   type CatalogVariant,
   type CustomerAddressOption,
   type CustomerOption,
   emptyAddress,
   formatCustomerAddressLabel,
   formatPrice,
+  isManualOrderDraftDirty,
   type LineItem,
   MANUAL_ADDRESS_NEW,
 } from "./manual-order-model";
@@ -362,50 +367,41 @@ function ManualOrderCreateDialogInner() {
     setSavedAddressId(MANUAL_ADDRESS_NEW);
   }
 
-  const isDirty = useMemo(() => {
-    if (customerMode === "existing" && customerId) return true;
-    if (
-      customerMode === "new" &&
-      (customerEmail.trim() ||
-        customerFirstName.trim() ||
-        customerLastName.trim() ||
-        customerPhone.trim())
-    ) {
-      return true;
-    }
-    if (lines.length > 0) return true;
-    if (discountType !== "none" || discountValue || adjustmentReason.trim()) return true;
-    if (note.trim()) return true;
-    if (!includeAddress) return true;
-    if (savedAddressId !== MANUAL_ADDRESS_NEW) return true;
-    const empty = emptyAddress;
-    if (
-      address.address1 !== empty.address1 ||
-      address.city !== empty.city ||
-      address.firstName !== empty.firstName ||
-      address.lastName !== empty.lastName ||
-      address.phone !== empty.phone ||
-      address.province !== empty.province
-    ) {
-      return true;
-    }
-    return false;
-  }, [
-    address,
-    customerEmail,
-    customerFirstName,
-    customerId,
-    customerLastName,
-    customerMode,
-    customerPhone,
-    adjustmentReason,
-    discountType,
-    discountValue,
-    includeAddress,
-    lines.length,
-    note,
-    savedAddressId,
-  ]);
+  const isDirty = useMemo(
+    () =>
+      isManualOrderDraftDirty({
+        address,
+        adjustmentReason,
+        customerEmail,
+        customerFirstName,
+        customerId,
+        customerLastName,
+        customerMode,
+        customerPhone,
+        discountType,
+        discountValue,
+        includeAddress,
+        lines,
+        note,
+        savedAddressId,
+      }),
+    [
+      address,
+      customerEmail,
+      customerFirstName,
+      customerId,
+      customerLastName,
+      customerMode,
+      customerPhone,
+      adjustmentReason,
+      discountType,
+      discountValue,
+      includeAddress,
+      lines.length,
+      note,
+      savedAddressId,
+    ],
+  );
 
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
     isDirty && open,
@@ -419,15 +415,15 @@ function ManualOrderCreateDialogInner() {
   }
 
   function canContinueFromCustomer() {
-    // Existing: ID is enough (profile already has contact info).
-    if (customerMode === "existing") {
-      return Boolean(customerId);
-    }
-    return customerPhone.replace(/\D/g, "").length >= 8;
+    return canContinueFromManualOrderCustomer({
+      customerId,
+      customerMode,
+      customerPhone,
+    });
   }
 
   function canContinueFromItems() {
-    return lines.length > 0 && lines.every((line) => line.quantity > 0);
+    return canContinueFromManualOrderItems(lines);
   }
 
   const orderSteps = useMemo(
@@ -618,59 +614,44 @@ function ManualOrderCreateDialogInner() {
     );
   }
 
-  const merchandiseSubtotal = lines.reduce((sum, line) => {
-    const variant = variantById.get(line.variantId);
-    return sum + (line.unitPrice ?? variant?.priceAmount ?? 0) * line.quantity;
-  }, 0);
-  const parsedDiscountValue = Number(discountValue);
-  const discountAmount =
-    discountType === "percentage"
-      ? merchandiseSubtotal * (Number.isFinite(parsedDiscountValue) ? parsedDiscountValue / 100 : 0)
-      : discountType === "fixed" && Number.isFinite(parsedDiscountValue)
-        ? parsedDiscountValue
-        : 0;
-  const hasPriceAdjustment =
-    lines.some((line) => line.unitPrice !== null) || discountType !== "none";
-  const adjustmentIsValid =
-    !hasPriceAdjustment ||
-    (adjustmentReason.trim().length >= 3 &&
-      (discountType === "none" ||
-        (Number.isFinite(parsedDiscountValue) && parsedDiscountValue > 0)) &&
-      discountAmount >= 0 &&
-      discountAmount <= merchandiseSubtotal &&
-      (discountType !== "percentage" || parsedDiscountValue <= 100));
+  const {
+    adjustmentIsValid,
+    discountAmount,
+    hasPriceAdjustment,
+    merchandiseSubtotal,
+    parsedDiscountValue,
+  } = calculateManualOrderPricing(
+    lines,
+    variantById,
+    discountType,
+    discountValue,
+    adjustmentReason,
+  );
 
   async function create() {
     if (!canContinueFromCustomer() || !canContinueFromItems() || !adjustmentIsValid) return;
     setSaving(true);
     setError(null);
 
-    const payload = {
-      customerEmail: customerEmail.trim().toLowerCase() || null,
-      customerFirstName: customerFirstName.trim() || null,
-      customerId: customerMode === "existing" ? customerId : null,
-      customerLastName: customerLastName.trim() || null,
-      customerPhone: customerPhone.trim() || null,
-      items: lines.map((line) => ({
-        quantity: line.quantity,
-        unitPrice: line.unitPrice,
-        variantId: line.variantId,
-      })),
-      discount: discountType === "none" ? null : { type: discountType, value: parsedDiscountValue },
-      adjustmentReason: hasPriceAdjustment ? adjustmentReason.trim() : null,
-      note: note.trim() || null,
-      shippingAddress: includeAddress
-        ? {
-            address1: address.address1.trim() || null,
-            city: address.city.trim() || null,
-            countryCode: "et",
-            firstName: address.firstName.trim() || customerFirstName.trim() || null,
-            lastName: address.lastName.trim() || customerLastName.trim() || null,
-            phone: address.phone.trim() || customerPhone.trim() || null,
-            province: address.province.trim() || null,
-          }
-        : null,
-    };
+    const payload = buildManualOrderPayload(
+      {
+        address,
+        adjustmentReason,
+        customerEmail,
+        customerFirstName,
+        customerId,
+        customerLastName,
+        customerMode,
+        customerPhone,
+        discountType,
+        discountValue,
+        includeAddress,
+        lines,
+        note,
+        savedAddressId,
+      },
+      { hasPriceAdjustment, parsedDiscountValue },
+    );
 
     const response = await fetch("/dashboard/orders/actions/create", {
       body: JSON.stringify(payload),

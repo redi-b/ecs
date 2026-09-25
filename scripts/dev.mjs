@@ -7,18 +7,22 @@
  *   pnpm dev --grouped
  *   pnpm dev --split-medusa
  */
-import {
-  blank,
-  box,
-  error,
-  formatMs,
-  heading,
-  info,
-  run,
-  step,
-  success,
-} from "./lib/cli.mjs";
+import { readFileSync } from "node:fs";
 
+import { blank, box, error, formatMs, heading, info, run, step, success } from "./lib/cli.mjs";
+
+function loadPostgresHostPort() {
+  if (process.env.POSTGRES_HOST_PORT) return;
+
+  try {
+    const match = readFileSync(".env", "utf8").match(/^POSTGRES_HOST_PORT\s*=\s*(\d+)/m);
+    if (match?.[1]) process.env.POSTGRES_HOST_PORT = match[1];
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
+loadPostgresHostPort();
 const passthrough = process.argv.slice(2).filter((arg) => arg !== "--");
 const startedAt = Date.now();
 

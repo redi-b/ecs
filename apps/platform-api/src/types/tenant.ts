@@ -382,6 +382,9 @@ export type TenantShopProvisioningResult =
         | "provisioning_attempt_not_found"
         | "provisioning_attempt_not_retryable"
         | "template_unavailable"
-        | "storefront_template_unavailable";
+        | "storefront_template_unavailable"
+        | "tenant_provisioning_failed"
+        | "tenant_provisioning_in_progress"
+        | "tenant_provisioning_unavailable";
       status: 400 | 404 | 409 | 502 | 503;
     };

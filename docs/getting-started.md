@@ -18,7 +18,7 @@ pnpm seed:demo
 
 `pnpm dev` starts infrastructure, migrations, seed configuration, and apps together. `pnpm dev:infra` starts only Compose services (Postgres, Redis, Meilisearch, SeaweedFS, Caddy, Umami).
 
-If host port 5432 is in use: `POSTGRES_HOST_PORT=5433 pnpm dev:infra`, then match database URLs in env files.
+If host port 5432 is in use, set `POSTGRES_HOST_PORT=5433` in the root `.env`. The development launcher derives both database URLs from it.
 
 ## Local hosts
 

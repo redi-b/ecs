@@ -16,7 +16,7 @@ import {
   applyBulkInventoryUpdates,
   parseBulkInventoryUpdates,
 } from "../../modules/inventory/bulk-adjustment.js";
-import { getProductMediaReferences } from "../../modules/media/product-references.js";
+import { runProductWriteCommand } from "../../modules/commerce/product-write-command.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -34,30 +34,6 @@ import {
   getOptionalBodyProductVariants,
 } from "./product-body.js";
 import { getProductOptionSetValues } from "./product-option-set-body.js";
-
-async function syncWrittenProductMedia(
-  options: PlatformAppOptions,
-  input: { productId: string; salesChannelId: string; tenantId: string },
-): Promise<boolean> {
-  if (!options.getMerchantProduct || !options.syncProductMedia) return true;
-  try {
-    const latest = await options.getMerchantProduct({
-      productId: input.productId,
-      salesChannelId: input.salesChannelId,
-    });
-    if (!latest.ok) return true;
-    const product = latest.product;
-    await options.syncProductMedia({
-      ...getProductMediaReferences(product),
-      productId: input.productId,
-      tenantId: input.tenantId,
-    });
-    return false;
-  } catch (error) {
-    console.error("Product media sync failed after save", error);
-    return true;
-  }
-}
 
 export function registerMerchantProductRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -114,51 +90,56 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "missing_title" }, 400);
     }
 
-    const product = await options.createMerchantProduct({
-      title,
-      description: getOptionalBodyString(body, "description"),
-      handle: getOptionalBodyString(body, "handle"),
-      collectionId: getOptionalBodyString(body, "collectionId"),
-      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
-      imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
-      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
-      ...(productOptions ? { options: productOptions } : {}),
-      ...(productVariants ? { variants: productVariants } : {}),
-      priceAmount: getOptionalBodyNumber(body, "priceAmount"),
-      currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
-      regionId: commerce.context.medusaRegionId,
-      status: getOptionalBodyString(body, "status"),
-      ...(result.context.medusaStockLocationId
-        ? { stockLocationId: result.context.medusaStockLocationId }
-        : {}),
-      ...(result.context.medusaShippingProfileId
-        ? { shippingProfileId: result.context.medusaShippingProfileId }
-        : {}),
-      thumbnail: getOptionalBodyString(body, "thumbnail"),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      tenantId: result.context.tenantId,
-    });
+    const command = await runProductWriteCommand(
+      {
+        getProduct: options.getMerchantProduct,
+        syncProductMedia: options.syncProductMedia,
+        write: () =>
+          options.createMerchantProduct!({
+            title,
+            description: getOptionalBodyString(body, "description"),
+            handle: getOptionalBodyString(body, "handle"),
+            collectionId: getOptionalBodyString(body, "collectionId"),
+            categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
+            imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+            ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
+            ...(productOptions ? { options: productOptions } : {}),
+            ...(productVariants ? { variants: productVariants } : {}),
+            priceAmount: getOptionalBodyNumber(body, "priceAmount"),
+            currencyCode: getOptionalBodyString(body, "currencyCode") ?? "etb",
+            regionId: commerce.context.medusaRegionId,
+            status: getOptionalBodyString(body, "status"),
+            ...(result.context.medusaStockLocationId
+              ? { stockLocationId: result.context.medusaStockLocationId }
+              : {}),
+            ...(result.context.medusaShippingProfileId
+              ? { shippingProfileId: result.context.medusaShippingProfileId }
+              : {}),
+            thumbnail: getOptionalBodyString(body, "thumbnail"),
+            salesChannelId: commerce.context.medusaSalesChannelId,
+            tenantId: result.context.tenantId,
+          }),
+      },
+      {
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        synchronizeMedia:
+          body !== null &&
+          typeof body === "object" &&
+          ["imageUrls", "thumbnail", "variants", "options", "optionMediaBindings"].some(
+            (key) => key in body,
+          ),
+        tenantId: result.context.tenantId,
+      },
+    );
+    const product = command.result;
 
     if (!product.ok) {
       return context.json({ error: product.error }, product.status);
     }
 
-    const hasMedia = Boolean(
-      getOptionalBodyString(body, "thumbnail") ||
-        getOptionalBodyStringArray(body, "imageUrls")?.length ||
-        productVariants?.some((variant) => variant.imageUrl),
-    );
-    const mediaSyncWarning = hasMedia
-      ? await syncWrittenProductMedia(options, {
-          productId: product.product.id,
-          salesChannelId: commerce.context.medusaSalesChannelId,
-          tenantId: result.context.tenantId,
-        })
-      : false;
-
     return context.json({
       product: product.product,
-      mediaSyncWarning,
+      mediaSyncWarning: command.mediaSyncWarning,
     });
   });
 
@@ -717,48 +698,54 @@ export function registerMerchantProductRoutes(
     const productOptions = getOptionalBodyProductOptions(body);
     const productVariants = getOptionalBodyProductVariants(body);
     const optionMediaBindings = getOptionalBodyOptionMediaBindings(body);
-    const product = await options.updateMerchantProduct({
-      productId: context.req.param("productId"),
-      title: getOptionalBodyString(body, "title"),
-      description: getOptionalBodyString(body, "description"),
-      handle: getOptionalBodyString(body, "handle"),
-      collectionId: getOptionalBodyString(body, "collectionId"),
-      categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
-      imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
-      ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
-      ...(productOptions ? { options: productOptions } : {}),
-      ...(productVariants ? { variants: productVariants } : {}),
-      regionId: commerce.context.medusaRegionId,
-      status: getOptionalBodyString(body, "status"),
-      ...(result.context.medusaStockLocationId
-        ? { stockLocationId: result.context.medusaStockLocationId }
-        : {}),
-      thumbnail: getOptionalBodyString(body, "thumbnail"),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      tenantId: result.context.tenantId,
-    });
-
-    if (!product.ok) {
-      return context.json({ error: product.error }, product.status);
-    }
-
     const mediaChanged =
       body !== null &&
       typeof body === "object" &&
       ["imageUrls", "thumbnail", "variants", "options", "optionMediaBindings"].some(
         (key) => key in body,
       );
-    const mediaSyncWarning = mediaChanged
-      ? await syncWrittenProductMedia(options, {
-          productId: product.product.id,
-          salesChannelId: commerce.context.medusaSalesChannelId,
-          tenantId: result.context.tenantId,
-        })
-      : false;
+    const command = await runProductWriteCommand(
+      {
+        getProduct: options.getMerchantProduct,
+        syncProductMedia: options.syncProductMedia,
+        write: () =>
+          options.updateMerchantProduct!({
+            productId: context.req.param("productId"),
+            title: getOptionalBodyString(body, "title"),
+            description: getOptionalBodyString(body, "description"),
+            handle: getOptionalBodyString(body, "handle"),
+            collectionId: getOptionalBodyString(body, "collectionId"),
+            categoryIds: getOptionalBodyStringArray(body, "categoryIds"),
+            imageUrls: getOptionalBodyStringArray(body, "imageUrls"),
+            ...(optionMediaBindings !== undefined ? { optionMediaBindings } : {}),
+            ...(productOptions ? { options: productOptions } : {}),
+            ...(productVariants ? { variants: productVariants } : {}),
+            regionId: commerce.context.medusaRegionId,
+            status: getOptionalBodyString(body, "status"),
+            ...(result.context.medusaStockLocationId
+              ? { stockLocationId: result.context.medusaStockLocationId }
+              : {}),
+            thumbnail: getOptionalBodyString(body, "thumbnail"),
+            salesChannelId: commerce.context.medusaSalesChannelId,
+            tenantId: result.context.tenantId,
+          }),
+      },
+      {
+        productId: context.req.param("productId"),
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        synchronizeMedia: mediaChanged,
+        tenantId: result.context.tenantId,
+      },
+    );
+    const product = command.result;
+
+    if (!product.ok) {
+      return context.json({ error: product.error }, product.status);
+    }
 
     return context.json({
       product: product.product,
-      mediaSyncWarning,
+      mediaSyncWarning: command.mediaSyncWarning,
     });
   });
 

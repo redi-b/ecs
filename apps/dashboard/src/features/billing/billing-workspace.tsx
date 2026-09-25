@@ -6,8 +6,8 @@ import { useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -189,6 +189,9 @@ export function BillingWorkspace({
   const scheduledPlanName = subscription.scheduledPlanName ?? null;
   const scheduledEffectiveAt = subscription.scheduledEffectiveAt ?? null;
   const hasScheduledDowngrade = Boolean(scheduledPlanId);
+  const renewalEffectiveAt = subscription.renewalEffectiveAt ?? null;
+  const renewalPlanPrice = subscription.renewalPlanPrice ?? null;
+  const hasRenewalChange = Boolean(renewalEffectiveAt && renewalPlanPrice);
   const selectedIsScheduledTarget = Boolean(scheduledPlanId) && chosenPlan.id === scheduledPlanId;
   const periodStillActive =
     !isCurrentFree &&
@@ -430,6 +433,14 @@ export function BillingWorkspace({
             {t("billing.plan.scheduledChange", {
               name: scheduledPlanName ?? theFreePlanLabel,
               date: formatDate(scheduledEffectiveAt),
+            })}
+          </p>
+        ) : null}
+        {hasRenewalChange && renewalEffectiveAt && renewalPlanPrice ? (
+          <p className="text-sm text-muted-foreground">
+            {t("billing.plan.renewalChange", {
+              date: formatDate(renewalEffectiveAt),
+              price: formatMoney(renewalPlanPrice, "ETB", formatNumber),
             })}
           </p>
         ) : null}

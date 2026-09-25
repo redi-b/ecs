@@ -88,6 +88,9 @@ export function AccountSecurityPanel({
   const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [pendingGoogleAction, setPendingGoogleAction] = useState<"connect" | "disconnect" | null>(
+    null,
+  );
   const [profileLoading, setProfileLoading] = useState(true);
   const [avatar, setAvatar] = useState<ProfileAvatarPreferences>(
     actor.avatar ?? defaultProfileAvatar,
@@ -690,21 +693,7 @@ export function AccountSecurityPanel({
           {connections.some((item) => item.providerId === "google") ? (
             <Button
               disabled={connectionsLoading || unlinkingGoogle || connections.length <= 1}
-              onClick={async () => {
-                const google = connections.find((item) => item.providerId === "google");
-                if (!google) return;
-                setUnlinkingGoogle(true);
-                const response = await fetch("/dashboard/account/connections", {
-                  body: JSON.stringify({ providerId: google.providerId }),
-                  headers: { "content-type": "application/json" },
-                  method: "DELETE",
-                }).catch(() => null);
-                setUnlinkingGoogle(false);
-                if (!response?.ok)
-                  return toast.error(t("settings.accountSecurity.connections.unlinkFailed"));
-                setConnections((items) => items.filter((item) => item.id !== google.id));
-                toast.success(t("settings.accountSecurity.connections.unlinked"));
-              }}
+              onClick={() => setPendingGoogleAction("disconnect")}
               size="sm"
               type="button"
               variant="outline"
@@ -716,10 +705,7 @@ export function AccountSecurityPanel({
           ) : (
             <Button
               disabled={connectionsLoading || linkingGoogle}
-              onClick={() => {
-                setLinkingGoogle(true);
-                window.location.assign("/dashboard/account/google-link");
-              }}
+              onClick={() => setPendingGoogleAction("connect")}
               size="sm"
               type="button"
               variant="outline"
@@ -1091,6 +1077,60 @@ export function AccountSecurityPanel({
           </p>
         </div>
       </section>
+
+      <ConfirmDialog
+        cancelDisabled={linkingGoogle || unlinkingGoogle}
+        confirmDisabled={linkingGoogle || unlinkingGoogle}
+        confirmLabel={
+          pendingGoogleAction === "connect"
+            ? t("settings.accountSecurity.connections.connectConfirm")
+            : t("settings.accountSecurity.connections.disconnectConfirm")
+        }
+        description={
+          pendingGoogleAction === "connect"
+            ? t("settings.accountSecurity.connections.connectDescription")
+            : t("settings.accountSecurity.connections.disconnectDescription")
+        }
+        onConfirm={(event) => {
+          if (pendingGoogleAction === "connect") {
+            setPendingGoogleAction(null);
+            setLinkingGoogle(true);
+            window.location.assign("/dashboard/account/google-link");
+            return;
+          }
+
+          const google = connections.find((item) => item.providerId === "google");
+          if (!google) return;
+          event.preventDefault();
+          setUnlinkingGoogle(true);
+          void fetch("/dashboard/account/connections", {
+            body: JSON.stringify({ providerId: google.providerId }),
+            headers: { "content-type": "application/json" },
+            method: "DELETE",
+          })
+            .catch(() => null)
+            .then((response) => {
+              if (!response?.ok) {
+                toast.error(t("settings.accountSecurity.connections.unlinkFailed"));
+                return;
+              }
+              setConnections((items) => items.filter((item) => item.id !== google.id));
+              setPendingGoogleAction(null);
+              toast.success(t("settings.accountSecurity.connections.unlinked"));
+            })
+            .finally(() => setUnlinkingGoogle(false));
+        }}
+        onOpenChange={(open) => {
+          if (!open && !linkingGoogle && !unlinkingGoogle) setPendingGoogleAction(null);
+        }}
+        open={pendingGoogleAction !== null}
+        title={
+          pendingGoogleAction === "connect"
+            ? t("settings.accountSecurity.connections.connectTitle")
+            : t("settings.accountSecurity.connections.disconnectTitle")
+        }
+        tone={pendingGoogleAction === "disconnect" ? "destructive" : "default"}
+      />
 
       <ConfirmDialog
         cancelDisabled={Boolean(revokingToken)}

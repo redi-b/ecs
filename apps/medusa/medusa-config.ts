@@ -35,7 +35,9 @@ module.exports = defineConfig({
     },
   ],
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL || "postgres://ecs:ecs@localhost:5432/medusa_db",
+    databaseUrl:
+      process.env.DATABASE_URL ||
+      `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/medusa_db`,
     ...(databaseSslEnabled
       ? {}
       : {

@@ -30,7 +30,8 @@
     "switchesTo": "ወደ {name} ይቀየራል",
     "freePlan": "ነፃ ዕቅድ",
     "theFreePlan": "ነፃው ዕቅድ",
-    "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ገንዘብ አይኖርም። ከዚያ በፊት ማቋረጥ ይችላሉ።"
+    "scheduledChange": "በ{date} ወደ {name} ይቀየራል። ለቀሩት ቀናት ተመላሽ ገንዘብ አይኖርም። ከዚያ በፊት ማቋረጥ ይችላሉ።",
+    "renewalChange": "በ{date} ዕቅዱ በ{price} ይታደሳል። እስከዚያ የአሁኑ ዋጋዎ አይቀየርም።"
   },
   "entitlements": {
     "title": "በዕቅድዎ ውስጥ የተካተቱ",

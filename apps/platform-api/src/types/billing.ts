@@ -79,6 +79,10 @@ export type BillingStatus = {
     manualPaymentState: string;
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
+    renewalPlanVersionId?: string | null;
+    renewalEffectiveAt?: string | null;
+    renewalPlanName?: string | null;
+    renewalPlanPrice?: string | null;
     trialStartedAt?: string | null;
     trialEndsAt?: string | null;
     /** Free plan id scheduled to take effect at period end (no refund). */

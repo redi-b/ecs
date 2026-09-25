@@ -28,6 +28,8 @@ This glossary describes business meaning. It intentionally does not prescribe st
 
 **Subscription** — An account's assignment to one plan version over a period of time.
 
+**Renewal transition** — The scheduled move of a subscription to a newer published version of the same plan when its current billing period ends.
+
 **Trial** — A time-limited subscription phase that grants one plan version without collecting its recurring price.
 
 **Trial policy** — Immutable plan-version terms defining whether a trial is offered, its duration, eligibility, activation, and fallback.
@@ -58,7 +60,9 @@ This glossary describes business meaning. It intentionally does not prescribe st
 
 - Published plan versions never change.
 - A subscription always identifies the exact plan version whose terms it receives.
-- A plan change never silently changes an existing subscription.
+- A subscription remains pinned to one complete plan version for its current billing period.
+- Publishing a new plan version schedules subscriptions on older versions of that plan to move to the complete new version at their next billing period.
+- A renewal transition never changes current-period access or an already-issued invoice.
 - Trial eligibility is claimed durably and cannot be recovered by deleting or recreating a subscription.
 - Trial expiry never deletes account data and always resolves to its pinned fallback version.
 - Customer-facing presentation cannot grant capabilities or change billing terms.

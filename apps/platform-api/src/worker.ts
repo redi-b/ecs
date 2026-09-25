@@ -14,6 +14,7 @@ import { createWorkerCommerceRuntime } from "./bootstrap/worker-commerce.js";
 import { createWorkerNotificationRuntime } from "./bootstrap/worker-notifications.js";
 import { startWorkerScheduling } from "./bootstrap/worker-scheduling.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
+import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
@@ -30,6 +31,8 @@ import { platformJobRegistry } from "./jobs/registry.js";
 import { createMediaService } from "./modules/media/index.js";
 
 loadPlatformApiEnvFiles();
+
+assertPlatformProductionEnvironment(process.env);
 
 const env = loadServiceEnv({
   ...process.env,
@@ -49,7 +52,8 @@ if (!redisUrl) {
 
 const platformDb = createPlatformDb({
   connectionString:
-    process.env.PLATFORM_DATABASE_URL ?? "postgres://ecs:ecs@localhost:5433/platform_db",
+    process.env.PLATFORM_DATABASE_URL ??
+    `postgres://ecs:ecs@localhost:${process.env.POSTGRES_HOST_PORT ?? "5432"}/platform_db`,
   max: Number.parseInt(process.env.PLATFORM_DATABASE_POOL_MAX ?? "5", 10),
   idleTimeoutMillis: Number.parseInt(
     process.env.PLATFORM_DATABASE_POOL_IDLE_TIMEOUT_MS ?? "30000",

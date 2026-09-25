@@ -1,4 +1,12 @@
-import { parseTrialPolicy } from "@ecs/billing";
+import {
+  addBillingInterval,
+  BILLING_RENEWAL_LEAD_DAYS,
+  type BillingInterval,
+  encodeScheduledDowngrade,
+  MS_PER_DAY,
+  parseScheduledDowngradePlanId,
+  parseTrialPolicy,
+} from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import {
   billingOutboxEvents,
@@ -14,21 +22,14 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { BillingStatus } from "../../types/index.js";
 import {
-  addBillingMonths,
   type BillingServicePaymentOptions,
   createBillingInvoiceService,
   isFreePlanPrice,
   selectInvoiceFields,
   serializeDate,
 } from "./invoice-service.js";
-import {
-  BILLING_RENEWAL_LEAD_DAYS,
-  encodeScheduledDowngrade,
-  MS_PER_DAY,
-  parseScheduledDowngradePlanId,
-  planBillingLifecycle,
-} from "./lifecycle.js";
 import { createBillingLifecycleRunner } from "./lifecycle-runner.js";
+import { createBillingSubscriptionLifecycleService } from "./subscription-lifecycle-service.js";
 import { DEFAULT_PLAN_CATALOG, DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 import { createBillingPlanService } from "./plan-service.js";
 import { createBillingStatusService } from "./status-service.js";
@@ -44,7 +45,7 @@ export {
   parseScheduledDowngradePlanId,
   planBillingLifecycle,
   SCHEDULED_DOWNGRADE_PREFIX,
-} from "./lifecycle.js";
+} from "@ecs/billing";
 export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -67,6 +68,10 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
     listPlans: planService.listPlans,
     paymentOptions: options,
     syncTenantBillingLifecycle: (input) => self().syncTenantBillingLifecycle(input),
+  });
+  const subscriptionLifecycleService = createBillingSubscriptionLifecycleService({
+    applyScheduledDowngrade: (input) => self().applyScheduledDowngrade(input),
+    db,
   });
   const runBillingLifecycle = createBillingLifecycleRunner({
     db,
@@ -137,7 +142,8 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
             .update(subscriptions)
             .set({
               status: "active",
-              currentPeriodEnd: null,
+              currentPeriodEnd: addBillingInterval(new Date(), "month"),
+              currentPeriodStart: new Date(),
               manualPaymentState: "none",
               ...(pinnedVersion ? { planVersionId: pinnedVersion.id } : {}),
             })
@@ -152,7 +158,9 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
       }
 
       const now = new Date();
-      const starterVersion = await ensurePublishedPlanVersion(DEFAULT_PLAN_CATALOG.starter);
+      const starterVersion =
+        (await latestPlanVersion(DEFAULT_PLAN_CATALOG.starter.id)) ??
+        (await ensurePublishedPlanVersion(DEFAULT_PLAN_CATALOG.starter));
       const [subscription] = await db
         .insert(subscriptions)
         .values({
@@ -162,7 +170,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: now,
-          currentPeriodEnd: null,
+          currentPeriodEnd: addBillingInterval(now, starterVersion.terms.interval),
           manualPaymentState: "none",
         })
         .onConflictDoNothing({ target: subscriptions.tenantId })
@@ -220,206 +228,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
 
     listPlans: planService.listPlans,
     getPublicPlanCatalog: planService.getPublicPlanCatalog,
-    syncTenantBillingLifecycle: async (input: { tenantId: string }) => {
-      const result = await db.transaction(async (transaction) => {
-        await transaction.execute(
-          sql`select pg_advisory_xact_lock(hashtextextended(${`billing-lifecycle:${input.tenantId}`}, 0))`,
-        );
-
-        const [row] = await transaction
-          .select({
-            subscriptionId: subscriptions.id,
-            planVersionId: subscriptions.planVersionId,
-            status: subscriptions.status,
-            planId: plans.id,
-            planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
-            planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
-            currentPeriodEnd: subscriptions.currentPeriodEnd,
-            trialEndsAt: subscriptions.trialEndsAt,
-            trialFallbackPlanVersionId: subscriptions.trialFallbackPlanVersionId,
-            manualPaymentState: subscriptions.manualPaymentState,
-          })
-          .from(subscriptions)
-          .innerJoin(plans, eq(plans.id, subscriptions.planId))
-          .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
-          .where(eq(subscriptions.tenantId, input.tenantId))
-          .limit(1);
-
-        if (!row || (isFreePlanPrice(row.planPrice) && row.status !== "trialing")) {
-          return {
-            trialExpired: false,
-            renewed: false,
-            pastDue: false,
-            scheduled: null as null | { planId: string; subscriptionId: string },
-          };
-        }
-
-        const lifecycle = planBillingLifecycle({
-          currentPeriodEnd: row.status === "trialing" ? row.trialEndsAt : row.currentPeriodEnd,
-          manualPaymentState: row.manualPaymentState,
-          now: new Date(),
-          status: row.status,
-        });
-        if (lifecycle.expireTrial) {
-          if (!row.trialFallbackPlanVersionId) {
-            throw new Error(`Trial subscription ${row.subscriptionId} has no fallback version.`);
-          }
-          const [fallback] = await transaction
-            .select({ id: planVersions.id, planId: planVersions.planId, price: planVersions.price })
-            .from(planVersions)
-            .where(eq(planVersions.id, row.trialFallbackPlanVersionId))
-            .limit(1);
-          if (!fallback) throw new Error("Trial fallback plan version no longer exists.");
-          const endedAt = new Date();
-          await transaction
-            .update(subscriptions)
-            .set({
-              currentPeriodEnd: isFreePlanPrice(fallback.price) ? null : endedAt,
-              currentPeriodStart: endedAt,
-              manualPaymentState: isFreePlanPrice(fallback.price) ? "none" : "pending",
-              planId: fallback.planId,
-              planVersionId: fallback.id,
-              status: "active",
-              trialEndsAt: null,
-            })
-            .where(
-              and(eq(subscriptions.id, row.subscriptionId), eq(subscriptions.status, "trialing")),
-            );
-          await transaction
-            .update(subscriptionTrials)
-            .set({ endedAt, status: "expired" })
-            .where(
-              and(
-                eq(subscriptionTrials.subscriptionId, row.subscriptionId),
-                eq(subscriptionTrials.status, "active"),
-              ),
-            );
-          await transaction
-            .insert(billingOutboxEvents)
-            .values({
-              eventKey: `billing.trial_expired:${row.subscriptionId}`,
-              eventType: "billing.trial_expired",
-              tenantId: input.tenantId,
-              payload: {
-                fallbackPlanVersionId: fallback.id,
-                planName: row.planName,
-                subscriptionId: row.subscriptionId,
-              },
-            })
-            .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
-          return { renewed: false, pastDue: false, scheduled: null, trialExpired: true };
-        }
-        if (lifecycle.scheduledPlanId) {
-          return {
-            renewed: false,
-            pastDue: false,
-            trialExpired: false,
-            scheduled: lifecycle.applyScheduledDowngrade
-              ? { planId: lifecycle.scheduledPlanId, subscriptionId: row.subscriptionId }
-              : null,
-          };
-        }
-
-        const payload = {
-          subscriptionId: row.subscriptionId,
-          planName: row.planName,
-          amount: String(row.planPrice),
-          currencyCode: "ETB",
-        };
-        let pastDue = false;
-        let renewed = false;
-
-        if (lifecycle.markPastDue) {
-          const [changed] = await transaction
-            .update(subscriptions)
-            .set({ status: "past_due" })
-            .where(
-              and(eq(subscriptions.id, row.subscriptionId), eq(subscriptions.status, row.status)),
-            )
-            .returning({ id: subscriptions.id });
-          if (changed) {
-            pastDue = true;
-            const period = row.currentPeriodEnd?.toISOString() ?? "unknown-period";
-            await transaction
-              .insert(billingOutboxEvents)
-              .values({
-                eventKey: `billing.past_due:${row.subscriptionId}:${period}`,
-                eventType: "billing.past_due",
-                tenantId: input.tenantId,
-                payload,
-              })
-              .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
-          }
-        }
-
-        if (lifecycle.createRenewalInvoice) {
-          const [existing] = await transaction
-            .select({ id: invoices.id })
-            .from(invoices)
-            .where(
-              and(
-                eq(invoices.tenantId, input.tenantId),
-                eq(invoices.status, "pending"),
-                eq(invoices.amount, row.planPrice),
-                eq(invoices.currency, "ETB"),
-              ),
-            )
-            .limit(1);
-
-          if (!existing) {
-            const dueAt = new Date();
-            dueAt.setUTCDate(dueAt.getUTCDate() + BILLING_RENEWAL_LEAD_DAYS);
-            const [created] = await transaction
-              .insert(invoices)
-              .values({
-                tenantId: input.tenantId,
-                subscriptionId: row.subscriptionId,
-                planVersionId: row.planVersionId,
-                amount: row.planPrice,
-                currency: "ETB",
-                status: "pending",
-                dueAt,
-                provider: `plan:${row.planId}`,
-              })
-              .returning({ id: invoices.id });
-            if (created) {
-              renewed = true;
-              await transaction
-                .insert(billingOutboxEvents)
-                .values({
-                  eventKey: `billing.invoice_ready:${created.id}`,
-                  eventType: "billing.invoice_ready",
-                  tenantId: input.tenantId,
-                  payload: { ...payload, invoiceId: created.id },
-                })
-                .onConflictDoNothing({ target: billingOutboxEvents.eventKey });
-            }
-          }
-        }
-
-        return {
-          renewed,
-          pastDue,
-          scheduled: null as null | { planId: string; subscriptionId: string },
-          trialExpired: false,
-        };
-      });
-
-      if (result.scheduled) {
-        const applied = await self().applyScheduledDowngrade({
-          tenantId: input.tenantId,
-          subscriptionId: result.scheduled.subscriptionId,
-          planId: result.scheduled.planId,
-        });
-        return { renewed: false, pastDue: false, downgraded: applied, trialExpired: false };
-      }
-      return {
-        renewed: result.renewed,
-        pastDue: result.pastDue,
-        downgraded: false,
-        trialExpired: result.trialExpired,
-      };
-    },
+    ...subscriptionLifecycleService,
 
     startPlanTrial: async (input: {
       actorUserId: string;
@@ -586,8 +395,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           planVersionId: version.id,
           status: "active",
           currentPeriodStart: now,
-          // Free forever has no period end pressure.
-          currentPeriodEnd: isFreePlanPrice(plan.price) ? null : addBillingMonths(now, 1),
+          currentPeriodEnd: addBillingInterval(now, version.terms.interval),
           manualPaymentState: isFreePlanPrice(plan.price) ? "none" : "paid",
         })
         .where(

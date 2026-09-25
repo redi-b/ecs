@@ -1,4 +1,4 @@
-import type { createJobsClient } from "@ecs/jobs";
+import type { JobMaintenanceClient, JobRepeatableScheduler } from "@ecs/jobs";
 import type { createLogger } from "@ecs/logger";
 import {
   DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS,
@@ -13,7 +13,7 @@ import type { createNotificationService } from "../modules/notifications/service
 type WorkerSchedulingOptions = {
   buildVersion: string;
   env: NodeJS.ProcessEnv;
-  jobsClient: ReturnType<typeof createJobsClient>;
+  jobsClient: JobMaintenanceClient & JobRepeatableScheduler;
   logger: ReturnType<typeof createLogger>;
   medusaInternalUrl: string;
   notificationService: ReturnType<typeof createNotificationService>;

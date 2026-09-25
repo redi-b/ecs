@@ -5,20 +5,22 @@ export type CommerceProvisioningInput = {
   requestedByUserId: string;
 };
 
+export type CommerceProvisioningResources = {
+  storeId: string;
+  salesChannelId: string;
+  stockLocationId: string;
+  publishableKeyId: string;
+  regionId: string;
+  shippingProfileId: string;
+  fulfillmentSetId: string;
+  serviceZoneId: string;
+  shippingOptionId: string;
+};
+
 export type CommerceProvisioningResult =
   | {
       ok: true;
-      resources: {
-        storeId: string;
-        salesChannelId: string;
-        stockLocationId: string;
-        publishableKeyId: string;
-        regionId: string;
-        shippingProfileId: string;
-        fulfillmentSetId: string;
-        serviceZoneId: string;
-        shippingOptionId: string;
-      };
+      resources: CommerceProvisioningResources;
     }
   | {
       ok: false;

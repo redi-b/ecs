@@ -30,7 +30,8 @@
     "switchesTo": "Switches to {name}",
     "freePlan": "free plan",
     "theFreePlan": "the free plan",
-    "scheduledChange": "Changes to {name} on {date}. No refund for remaining days. You can cancel before then."
+    "scheduledChange": "Changes to {name} on {date}. No refund for remaining days. You can cancel before then.",
+    "renewalChange": "On {date}, this plan renews at {price}. Your current price stays the same until then."
   },
   "entitlements": {
     "title": "Included with your plan",

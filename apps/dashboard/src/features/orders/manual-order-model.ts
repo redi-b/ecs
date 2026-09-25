@@ -104,3 +104,139 @@ export function formatPrice(amount: number, currencyCode: string) {
     return `${amount} ${currencyCode.toUpperCase()}`;
   }
 }
+
+export type ManualOrderDiscountType = "none" | "fixed" | "percentage";
+export type ManualOrderCustomerMode = "existing" | "new";
+
+export type ManualOrderDraft = {
+  address: AddressForm;
+  adjustmentReason: string;
+  customerEmail: string;
+  customerFirstName: string;
+  customerId: string | null;
+  customerLastName: string;
+  customerMode: ManualOrderCustomerMode;
+  customerPhone: string;
+  discountType: ManualOrderDiscountType;
+  discountValue: string;
+  includeAddress: boolean;
+  lines: LineItem[];
+  note: string;
+  savedAddressId: string;
+};
+
+export function canContinueFromManualOrderCustomer(
+  draft: Pick<ManualOrderDraft, "customerId" | "customerMode" | "customerPhone">,
+) {
+  return draft.customerMode === "existing"
+    ? Boolean(draft.customerId)
+    : draft.customerPhone.replace(/\D/g, "").length >= 8;
+}
+
+export function canContinueFromManualOrderItems(lines: LineItem[]) {
+  return lines.length > 0 && lines.every((line) => line.quantity > 0);
+}
+
+export function isManualOrderDraftDirty(draft: ManualOrderDraft) {
+  if (draft.customerMode === "existing" && draft.customerId) return true;
+  if (
+    draft.customerMode === "new" &&
+    (draft.customerEmail.trim() ||
+      draft.customerFirstName.trim() ||
+      draft.customerLastName.trim() ||
+      draft.customerPhone.trim())
+  ) {
+    return true;
+  }
+  if (draft.lines.length > 0) return true;
+  if (
+    draft.discountType !== "none" ||
+    draft.discountValue ||
+    draft.adjustmentReason.trim() ||
+    draft.note.trim() ||
+    !draft.includeAddress ||
+    draft.savedAddressId !== MANUAL_ADDRESS_NEW
+  ) {
+    return true;
+  }
+
+  return (Object.keys(emptyAddress) as Array<keyof AddressForm>).some(
+    (key) => draft.address[key] !== emptyAddress[key],
+  );
+}
+
+export function calculateManualOrderPricing(
+  lines: LineItem[],
+  variants: ReadonlyMap<string, CatalogVariant>,
+  discountType: ManualOrderDiscountType,
+  discountValue: string,
+  adjustmentReason: string,
+) {
+  const merchandiseSubtotal = lines.reduce((sum, line) => {
+    const variant = variants.get(line.variantId);
+    return sum + (line.unitPrice ?? variant?.priceAmount ?? 0) * line.quantity;
+  }, 0);
+  const parsedDiscountValue = Number(discountValue);
+  const discountAmount =
+    discountType === "percentage"
+      ? merchandiseSubtotal * (Number.isFinite(parsedDiscountValue) ? parsedDiscountValue / 100 : 0)
+      : discountType === "fixed" && Number.isFinite(parsedDiscountValue)
+        ? parsedDiscountValue
+        : 0;
+  const hasPriceAdjustment =
+    lines.some((line) => line.unitPrice !== null) || discountType !== "none";
+  const adjustmentIsValid =
+    !hasPriceAdjustment ||
+    (adjustmentReason.trim().length >= 3 &&
+      (discountType === "none" ||
+        (Number.isFinite(parsedDiscountValue) && parsedDiscountValue > 0)) &&
+      discountAmount >= 0 &&
+      discountAmount <= merchandiseSubtotal &&
+      (discountType !== "percentage" || parsedDiscountValue <= 100));
+
+  return {
+    adjustmentIsValid,
+    discountAmount,
+    hasPriceAdjustment,
+    merchandiseSubtotal,
+    parsedDiscountValue,
+  };
+}
+
+export function buildManualOrderPayload(
+  draft: ManualOrderDraft,
+  pricing: Pick<
+    ReturnType<typeof calculateManualOrderPricing>,
+    "hasPriceAdjustment" | "parsedDiscountValue"
+  >,
+) {
+  return {
+    customerEmail: draft.customerEmail.trim().toLowerCase() || null,
+    customerFirstName: draft.customerFirstName.trim() || null,
+    customerId: draft.customerMode === "existing" ? draft.customerId : null,
+    customerLastName: draft.customerLastName.trim() || null,
+    customerPhone: draft.customerPhone.trim() || null,
+    items: draft.lines.map((line) => ({
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      variantId: line.variantId,
+    })),
+    discount:
+      draft.discountType === "none"
+        ? null
+        : { type: draft.discountType, value: pricing.parsedDiscountValue },
+    adjustmentReason: pricing.hasPriceAdjustment ? draft.adjustmentReason.trim() : null,
+    note: draft.note.trim() || null,
+    shippingAddress: draft.includeAddress
+      ? {
+          address1: draft.address.address1.trim() || null,
+          city: draft.address.city.trim() || null,
+          countryCode: "et",
+          firstName: draft.address.firstName.trim() || draft.customerFirstName.trim() || null,
+          lastName: draft.address.lastName.trim() || draft.customerLastName.trim() || null,
+          phone: draft.address.phone.trim() || draft.customerPhone.trim() || null,
+          province: draft.address.province.trim() || null,
+        }
+      : null,
+  };
+}
