@@ -101,6 +101,25 @@ export type JobsClient = {
   close(): Promise<void>;
 };
 
+export type JobEnqueuer = Pick<JobsClient, "enqueueJob">;
+export type JobRepeatableScheduler = Pick<
+  JobsClient,
+  "enqueueJob" | "removeRepeatableJob" | "scheduleRepeatableJob"
+>;
+export type JobMaintenanceClient = Pick<
+  JobsClient,
+  "cleanupExpiredRuns" | "enqueueJob" | "reconcileQueued" | "recordSchedulerHeartbeat"
+>;
+export type JobOperationsClient = Pick<
+  JobsClient,
+  | "cancelQueuedJob"
+  | "getJobRun"
+  | "getQueueHealth"
+  | "getSchedulerHealth"
+  | "listOperationalJobs"
+  | "retryFailedJob"
+>;
+
 function summarizeRun(run: JobRunRecord, registry?: JobRegistry): JobRunSummary {
   return {
     id: run.id,

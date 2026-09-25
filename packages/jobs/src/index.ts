@@ -1,6 +1,13 @@
 /** Re-export for job handlers that must fail without retry (no direct bullmq imports in apps). */
 export { UnrecoverableError } from "bullmq";
-export type { JobsClient, JobsClientOptions } from "./client.js";
+export type {
+  JobEnqueuer,
+  JobMaintenanceClient,
+  JobOperationsClient,
+  JobRepeatableScheduler,
+  JobsClient,
+  JobsClientOptions,
+} from "./client.js";
 export { createJobsClient } from "./client.js";
 export {
   DEFAULT_BACKOFF_MS,

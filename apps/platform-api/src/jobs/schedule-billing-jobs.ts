@@ -1,4 +1,4 @@
-import type { JobsClient } from "@ecs/jobs";
+import type { JobRepeatableScheduler } from "@ecs/jobs";
 
 type ScheduleLogger = {
   info?: (obj: Record<string, unknown>, msg?: string) => void;
@@ -11,7 +11,7 @@ type ScheduleLogger = {
  * survives worker restarts and is visible via getRepeatableJobs.
  */
 export async function registerBillingRepeatableJobs(options: {
-  jobsClient: JobsClient;
+  jobsClient: JobRepeatableScheduler;
   logger?: ScheduleLogger;
   /** Default 5 minutes. Set 0 or negative to remove/disable. */
   reconcileIntervalMs?: number;
@@ -30,7 +30,7 @@ export async function registerBillingRepeatableJobs(options: {
 
 async function upsertOrRemove(
   options: {
-    jobsClient: JobsClient;
+    jobsClient: JobRepeatableScheduler;
     logger?: ScheduleLogger;
   },
   job: { name: string; everyMs: number },
@@ -39,13 +39,7 @@ async function upsertOrRemove(
 
   if (!Number.isFinite(everyMs) || everyMs <= 0) {
     // Best-effort cleanup of known defaults so disabling env actually sticks.
-    for (const candidate of [
-      everyMs,
-      5 * 60 * 1000,
-      60 * 60 * 1000,
-      300_000,
-      3_600_000,
-    ]) {
+    for (const candidate of [everyMs, 5 * 60 * 1000, 60 * 60 * 1000, 300_000, 3_600_000]) {
       if (candidate > 0) {
         try {
           await options.jobsClient.removeRepeatableJob({
@@ -88,10 +82,7 @@ async function upsertOrRemove(
   }
 }
 
-export function parseBillingIntervalMs(
-  value: string | undefined,
-  fallback: number,
-): number {
+export function parseBillingIntervalMs(value: string | undefined, fallback: number): number {
   if (value === undefined || value.trim() === "") return fallback;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) return fallback;

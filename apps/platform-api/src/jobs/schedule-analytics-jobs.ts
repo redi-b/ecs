@@ -1,4 +1,4 @@
-import type { JobsClient } from "@ecs/jobs";
+import type { JobRepeatableScheduler } from "@ecs/jobs";
 
 export const DEFAULT_ANALYTICS_ROLLUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const DEFAULT_ANALYTICS_STARTUP_RETRY_MS = 30_000;
@@ -22,7 +22,7 @@ function waitForRetry(delayMs: number, signal?: AbortSignal): Promise<boolean> {
 export async function registerAnalyticsRepeatableJobs(options: {
   intervalMs?: number;
   isCommerceReady?: () => Promise<boolean>;
-  jobsClient: JobsClient;
+  jobsClient: JobRepeatableScheduler;
   now?: () => Date;
   signal?: AbortSignal;
   startupRetryMs?: number;
