@@ -217,6 +217,14 @@
       transition:
         opacity $dur-ui ease,
         transform $dur-ui $ease-out;
+
+      path {
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.6;
+      }
     }
 
     [data-icon="plus"] {

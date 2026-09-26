@@ -8,6 +8,7 @@ import type {
   StoreProduct,
   StoreProductsResponse,
 } from "../../../../lib/commerce/types";
+import { resolveCategoryMedia } from "../../../../lib/commerce/taxonomy-media";
 import { formatMoney } from "../../../../lib/money";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -170,9 +171,9 @@ const hasCatalogError = "message" in productsResult;
 </div>
 <h2 class="catalogue-section__title type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2>
 </header>
-        <div class="catalogue-section__grid" data-editor-categories-path="home.categories.categoryIds">{selectedCategories.map((item, index) => {
+        <div class="catalogue-section__grid" data-editor-categories-path="home.categories.categoryIds" data-editor-limit="6">{selectedCategories.map((item, index) => {
           const fallback = categoryFallbacks[index % categoryFallbacks.length];
-          return <CollectionCard item={item} kind="category" image={item.mediaUrl || fallback} variant={index === 0 ? "featured" : "standard"} />;
+          return <CollectionCard item={item} kind="category" image={resolveCategoryMedia(item, products) || fallback} variant={index === 0 ? "featured" : "standard"} />;
         })}</div>
         <footer class="catalogue-section__footer">
 <Button text={m.catalog_all_products({}, { locale })} href="/products" />
@@ -359,10 +360,10 @@ const hasCatalogError = "message" in productsResult;
 </template>)}
     {editorMode && categories.map((category, index) => <>
 <template data-editor-category-option-featured={category.id}>
-<CollectionCard item={category} kind="category" image={category.mediaUrl || categoryFallbacks[index % categoryFallbacks.length]} variant="featured" />
+<CollectionCard item={category} kind="category" image={resolveCategoryMedia(category, products) || categoryFallbacks[index % categoryFallbacks.length]} variant="featured" />
 </template>
 <template data-editor-category-option-standard={category.id}>
-<CollectionCard item={category} kind="category" image={category.mediaUrl || categoryFallbacks[index % categoryFallbacks.length]} variant="standard" />
+<CollectionCard item={category} kind="category" image={resolveCategoryMedia(category, products) || categoryFallbacks[index % categoryFallbacks.length]} variant="standard" />
 </template>
 </>)}
   </main>

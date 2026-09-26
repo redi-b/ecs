@@ -412,7 +412,7 @@ const homeFilterCollections = collections.slice(0, 4);
                 >
                   {template.home.categories.title}
                 </h2>
-                <nav data-editor-categories-path="home.categories.categoryIds">
+                <nav data-editor-categories-path="home.categories.categoryIds" data-editor-limit="4">
                   {selectedCategories.length ? (
                     selectedCategories.map((category, index) => (
                       <a
@@ -420,7 +420,7 @@ const homeFilterCollections = collections.slice(0, 4);
                         href={categoryProductsHref(category)}
                       >
                         <span>
-                          {index + 1}/{" "}
+                          <span data-editor-position>{index + 1}/ </span>
                           {category.name ?? m.catalog_category_fallback({}, { locale })}
                         </span>
                         <Icon name="diagonal-arrow" />
@@ -517,7 +517,7 @@ const homeFilterCollections = collections.slice(0, 4);
           <template data-editor-category-option={category.id}>
             <a data-preview-href={categoryProductsHref(category)}>
               <>
-                <span>{category.name ?? "Category"}</span>
+                <span><span data-editor-position></span>{category.name ?? "Category"}</span>
                 <Icon name="diagonal-arrow" />
               </>
             </a>

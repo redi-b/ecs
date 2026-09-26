@@ -31,7 +31,7 @@ const categoryLinks = [
   { label: m.nav_all_products({}, { locale }), href: "/products" },
   ...categories
     .filter((category) => category.handle?.trim())
-    .slice(0, 7)
+    .slice(0, 4)
     .map((category) => ({
       label: category.name ?? m.catalog_category_fallback({}, { locale }),
       href: categoryProductsHref(category),

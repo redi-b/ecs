@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
 import Button from "./Button.astro";
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
   count: string;
   href: string;
   id: string;
-  image: string;
+  image?: string | null;
   title: string;
 }
 
@@ -24,7 +25,11 @@ const { active = false, count, href, id, image, title } = Astro.props;
 >
   <div class="category-card__bg-image">
     <div class="img-wrapper">
-      <img src={image} alt={title} class="cover" width="499" height="382" loading="lazy" />
+      {image ? (
+        <img src={image} alt={title} class="cover" width="499" height="382" loading="lazy" />
+      ) : (
+        <ProductMediaPlaceholder label={`No image available for ${title}`} />
+      )}
     </div>
   </div>
   <div class="category-card__overlay category-card__overlay--inactive" aria-hidden="true"></div>

@@ -1,5 +1,6 @@
 ---
 import Button from "./Button.astro";
+import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPlaceholder.astro";
 import type { ImageMetadata } from "astro";
 import type { StoreCollection, StoreCategory } from "../../../../lib/commerce/types";
 import { collectionProductsHref, categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
@@ -60,6 +61,7 @@ const imgSrc = typeof propImage === "string"
           loading="lazy"
         />
       )}
+      {!imgSrc && <ProductMediaPlaceholder label={`No image available for ${title}`} />}
     </div>
   </div>
 

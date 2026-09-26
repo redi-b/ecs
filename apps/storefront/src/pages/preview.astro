@@ -191,6 +191,10 @@ function resolveConfiguredEditorOrigin() {
         }
         if (event.data?.type !== 'ecs:editor:update') return;
         const fields = event.data.fields || {};
+        const editorLimit = (node, fallback) => {
+          const value = Number.parseInt(node.getAttribute('data-editor-limit') || '', 10);
+          return Number.isFinite(value) && value > 0 ? value : fallback;
+        };
         fieldNodes().forEach((node) => {
           const path = node.getAttribute('data-editor-path') || node.getAttribute('data-editor-mirror-path');
           const ownsFocus = document.activeElement === node || node.contains(document.activeElement);
@@ -295,7 +299,7 @@ function resolveConfiguredEditorOrigin() {
           const track = node.querySelector('[data-promo-track]');
           const target = track || node;
           const fragment = document.createDocumentFragment();
-          ids.slice(0, 6).forEach((id) => {
+          ids.slice(0, editorLimit(node, 6)).forEach((id) => {
             if (typeof id !== 'string') return;
             const option = document.querySelector(`template[data-editor-product-option="${CSS.escape(id)}"]`);
             if (option instanceof HTMLTemplateElement) fragment.append(option.content.cloneNode(true));
@@ -313,7 +317,7 @@ function resolveConfiguredEditorOrigin() {
             ? requestedIds
             : Array.from(document.querySelectorAll(`template[${fallbackAttribute}]`)).slice(0, 6).map((option) => option.getAttribute(fallbackAttribute));
           const fragment = document.createDocumentFragment();
-          ids.slice(0, 6).forEach((id, index) => {
+          ids.slice(0, editorLimit(node, 6)).forEach((id, index) => {
             if (typeof id !== 'string') return;
             const variant = variants[Math.min(index, variants.length - 1)] || '';
             const selector = variant
@@ -336,14 +340,20 @@ function resolveConfiguredEditorOrigin() {
             ? requestedIds
             : Array.from(document.querySelectorAll(`template[${fallbackAttribute}]`)).slice(0, 6).map((option) => option.getAttribute(fallbackAttribute));
           const fragment = document.createDocumentFragment();
-          ids.slice(0, 6).forEach((id, index) => {
+          ids.slice(0, editorLimit(node, 6)).forEach((id, index) => {
             if (typeof id !== 'string') return;
             const variant = variants[Math.min(index, variants.length - 1)] || '';
             const selector = variant
               ? `template[data-editor-category-option-${variant}="${CSS.escape(id)}"]`
               : `template[data-editor-category-option="${CSS.escape(id)}"]`;
             const option = document.querySelector(selector);
-            if (option instanceof HTMLTemplateElement) fragment.append(option.content.cloneNode(true));
+            if (option instanceof HTMLTemplateElement) {
+              const content = option.content.cloneNode(true);
+              content.querySelectorAll?.('[data-editor-position]').forEach((label) => {
+                label.textContent = `${index + 1}/ `;
+              });
+              fragment.append(content);
+            }
           });
           node.replaceChildren(fragment);
         });

@@ -171,11 +171,14 @@ button[data-busy="true"]::before {
   justify-content: center;
 }
 
-.nexa-save-icon__filled { display: none !important; }
+.nexa-save-icon__outline,
+.nexa-save-icon__filled { align-items: center; justify-content: center; }
+
+.nexa-save-icon__filled { display: none; }
 
 :where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
   .nexa-save-icon__outline { display: none; }
-  .nexa-save-icon__filled { display: block !important; }
+  .nexa-save-icon__filled { display: inline-flex; }
 }
 
 button[data-busy="true"] > svg,

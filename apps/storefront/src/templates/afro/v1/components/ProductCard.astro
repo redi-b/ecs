@@ -7,6 +7,7 @@ import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPl
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import "../styles/components/_product-card.scss";
+import QuickAddGlyph from "./QuickAddGlyph.astro";
 
 interface Props {
   product?: StoreProduct;
@@ -161,10 +162,7 @@ const wishlistItem = JSON.stringify({
         disabled={!inStock}
         data-action="quick-add"
       >
-        <span class="product-card__quick-glyph" aria-hidden="true">
-          <Icon name="plus" width={12} height={12} />
-          <Icon name="check" width={14} height={14} />
-        </span>
+        <QuickAddGlyph />
         <span class="product-card__tip type-body-xs-500" role="tooltip">
           {inStock ? "Add to cart" : "Out of stock"}
         </span>
@@ -177,10 +175,7 @@ const wishlistItem = JSON.stringify({
       aria-label={`Add ${title} to cart`}
       data-action="quick-add"
     >
-      <span class="product-card__quick-glyph" aria-hidden="true">
-        <Icon name="plus" width={12} height={12} />
-        <Icon name="check" width={14} height={14} />
-      </span>
+      <QuickAddGlyph />
       <span class="product-card__tip type-body-xs-500" role="tooltip">Add to cart</span>
     </button>
   )}

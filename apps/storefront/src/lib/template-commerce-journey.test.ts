@@ -117,7 +117,11 @@ test("Afro keeps merchant configuration authoritative and demo data bounded", ()
   assert.equal(layout.includes("data-editor-links-path"), false);
   assert.equal(layout.includes(`data-editor-path="footer.`), false);
 
-  assert.ok(home.includes("const showTemplatePlaceholders = demoMode || editorMode"));
+  assert.equal(home.includes("showTemplatePlaceholders"), false);
+  assert.ok(home.includes("resolveCategoryMedia(category, products)"));
+  assert.ok(home.includes("resolveCollectionMedia(collection, products)"));
+  assert.ok(home.includes('data-editor-limit="5"'));
+  assert.ok(home.includes('data-editor-limit="4"'));
   assert.equal(layout.includes('href="https://tiktok.com"'), false);
   assert.equal(layout.includes('href="https://instagram.com"'), false);
   assert.equal(layout.includes("AFRO Studio"), false);

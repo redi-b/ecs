@@ -47,25 +47,26 @@ export async function loadHomePageModel(
 
   if (featured.enabled !== false || catalog?.enabled !== false) {
     const productIds = resolveHomeProductIds(merchandising);
-    const result = options?.includeCatalogFallback
-      ? await loadPreviewProducts({ ctx, productIds })
-      : productIds.length
-        ? await getStoreProductsByIds({
-            platformApiBaseUrl: ctx.platformApiBaseUrl,
-            requestHost: ctx.requestHost,
-            locale: ctx.commerceLocale,
-            regionId: ctx.config.commerce.regionId,
-            productIds: productIds.slice(0, 48),
-          })
-        : merchandising.allowUnselectedProductFallback
-          ? await listStoreProducts({
+    const result =
+      options?.includeCatalogFallback || merchandising.categories?.enabled !== false
+        ? await loadPreviewProducts({ ctx, productIds })
+        : productIds.length
+          ? await getStoreProductsByIds({
               platformApiBaseUrl: ctx.platformApiBaseUrl,
               requestHost: ctx.requestHost,
               locale: ctx.commerceLocale,
               regionId: ctx.config.commerce.regionId,
-              limit,
+              productIds: productIds.slice(0, 48),
             })
-          : null;
+          : merchandising.allowUnselectedProductFallback
+            ? await listStoreProducts({
+                platformApiBaseUrl: ctx.platformApiBaseUrl,
+                requestHost: ctx.requestHost,
+                locale: ctx.commerceLocale,
+                regionId: ctx.config.commerce.regionId,
+                limit,
+              })
+            : null;
     if (result && isStoreError(result)) productsError = result.message;
     else if (result) featuredProducts = result.products;
   }

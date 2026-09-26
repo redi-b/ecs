@@ -229,7 +229,8 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
   assert.doesNotMatch(button, /JSON\.stringify\(editorRelatedPaths\)/);
   assert.match(home, /: products\s*\)\.slice/);
   assert.match(home, /: categories\s*\)\.slice/);
-  assert.match(home, /category\.mediaUrl \|\| categoryFallbacks/);
+  assert.match(home, /resolveCategoryMedia\(category, products\)/);
+  assert.match(home, /resolveCategoryMedia\(item, products\) \|\| fallback/);
   assert.doesNotMatch(home, /categoryImages|laptopCategory|smartphoneCategory|peripheralCategory/);
   assert.doesNotMatch(
     home,
@@ -416,6 +417,7 @@ test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel stat
   const client = read("templates/nexahub/v1/scripts/client.ts");
   const contact = read("templates/nexahub/v1/pages/Contact.astro");
   const preview = read("pages/preview.astro");
+  const saveIcon = read("templates/nexahub/v1/components/SaveIcon.astro");
 
   assert.match(
     wishlist,
@@ -431,6 +433,9 @@ test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel stat
   assert.match(preview, /previewBindings/);
   assert.match(preview, /preserve-structure/);
   assert.match(preview, /data-editor-category-option-\$\{variant\}/);
+  assert.match(preview, /editorLimit\(node, 6\)/);
+  assert.match(saveIcon, /<span class="nexa-save-icon__outline">/);
+  assert.match(saveIcon, /<span class="nexa-save-icon__filled">/);
   assert.doesNotMatch(preview, /ids\.slice\(0, 4\)/);
 });
 
