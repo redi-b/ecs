@@ -43,8 +43,11 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieStore = await cookies();
-  const sidebarDefaultOpen = getSidebarDefaultOpen(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value);
   const currentPath = requestHeaders.get(DASHBOARD_PATH_HEADER) ?? "/dashboard";
+  const sidebarDefaultOpen = getSidebarDefaultOpen(
+    cookieStore.get(SIDEBAR_COOKIE_NAME)?.value,
+    currentPath,
+  );
   const tenantId = new URL(currentPath, "http://dashboard.local").searchParams.get("tenantId");
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";

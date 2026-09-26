@@ -54,7 +54,7 @@ test("new shop data and every preset satisfy both template contracts", () => {
         preset.colors.accent,
       ])
         assert.ok(
-          contrastRatio(preset.colors.foreground, background) >= 4.5,
+          contrastRatio(preset.colors.foreground, background) >= 7,
           `${template.templateKey}/${preset.id}: readable text`,
         );
       assert.ok(

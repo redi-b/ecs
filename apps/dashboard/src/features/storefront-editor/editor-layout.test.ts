@@ -4,6 +4,10 @@ import { describe, it } from "node:test";
 
 const chromeSource = await readFile(new URL("./editor-chrome.tsx", import.meta.url), "utf8");
 const settingsSource = await readFile(new URL("./editor-settings.tsx", import.meta.url), "utf8");
+const editorSource = await readFile(
+  new URL("./storefront-visual-editor.tsx", import.meta.url),
+  "utf8",
+);
 const pageSource = await readFile(
   new URL("../../app/dashboard/(dashboard)/editor/page.tsx", import.meta.url),
   "utf8",
@@ -47,5 +51,10 @@ describe("storefront editor workspace containment", () => {
     assert.doesNotMatch(settingsSource, /border-l-2 border-transparent/);
     assert.doesNotMatch(settingsSource, /ring-offset-2 ring-offset-background/);
     assert.match(settingsSource, /bg-primary\/\[0\.07\] ring-2 ring-primary/);
+  });
+
+  it("automatically collapses the left sidebar to maximize editing space", () => {
+    assert.match(editorSource, /useOptionalSidebar/);
+    assert.match(editorSource, /setSidebarOpenRef\.current\?\.(\(false\)|false)/);
   });
 });

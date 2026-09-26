@@ -48,7 +48,8 @@ const HEX_RE = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 export function normalizeHex(input: string, fallback = "#0f766e"): string {
   const raw = input.trim();
   const match = HEX_RE.exec(raw);
-  if (!match) return fallback.startsWith("#") ? fallback.toLowerCase() : `#${fallback.toLowerCase()}`;
+  if (!match)
+    return fallback.startsWith("#") ? fallback.toLowerCase() : `#${fallback.toLowerCase()}`;
   let body = match[1]!.toLowerCase();
   if (body.length === 3) {
     body = body
@@ -73,9 +74,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 
 export function rgbToHex(r: number, g: number, b: number): string {
   const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  return `#${[clamp(r), clamp(g), clamp(b)]
-    .map((v) => v.toString(16).padStart(2, "0"))
-    .join("")}`;
+  return `#${[clamp(r), clamp(g), clamp(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
 export function hexToHsl(hex: string): Hsl | null {
@@ -299,11 +298,7 @@ export function shiftColorRelativeToPrimary(
   const magnitude = clamp(Math.abs(dh), 18, 38);
   const accentH = normHue(np.h + direction * magnitude);
 
-  return hslToHex(
-    accentH,
-    clamp(np.s + ds * 0.85, 22, 78),
-    clamp(np.l + dl * 0.85, 32, 62),
-  );
+  return hslToHex(accentH, clamp(np.s + ds * 0.85, 22, 78), clamp(np.l + dl * 0.85, 32, 62));
 }
 
 /** Keep brand primary usable on both surfaces. */
@@ -326,7 +321,9 @@ export function clampPrimaryForSurface(primaryHex: string, mode: ThemeSurfaceMod
  * After offset shift: ensure text/surface contrast and ink on fills.
  * Desaturates body text so brand red never becomes pink copy.
  */
-export function ensurePaletteContrast(colors: Omit<GeneratedThemeColors, "onPrimary" | "onAccent">): GeneratedThemeColors {
+export function ensurePaletteContrast(
+  colors: Omit<GeneratedThemeColors, "onPrimary" | "onAccent">,
+): GeneratedThemeColors {
   let { background, foreground, primary, muted, accent } = colors;
   background = normalizeHex(background);
   foreground = normalizeHex(foreground);
@@ -338,14 +335,17 @@ export function ensurePaletteContrast(colors: Omit<GeneratedThemeColors, "onPrim
   const darkSurface = bgL <= 0.45;
 
   // Body text: force near-neutral so brand never tints copy into pink/green.
+  // Enforce WCAG AAA (7:1) contrast against background.
   {
     const f = hexToHsl(foreground);
     if (f) {
-      const targetL = darkSurface ? clamp(Math.max(f.l, 88), 88, 95) : clamp(Math.min(f.l, 14), 8, 16);
+      const targetL = darkSurface
+        ? clamp(Math.max(f.l, 90), 90, 96)
+        : clamp(Math.min(f.l, 12), 6, 14);
       foreground = hslToHex(f.h, clamp(f.s, 0, 6), targetL);
     }
-    if (contrastRatio(background, foreground) < 4.5) {
-      foreground = darkSurface ? "#e8ebe9" : "#121816";
+    if (contrastRatio(background, foreground) < 7) {
+      foreground = darkSurface ? "#ffffff" : "#0b0f0d";
     }
   }
 
@@ -425,12 +425,7 @@ export function generateThemeFromSeed(
       primary,
       "surface",
     ),
-    foreground: shiftColorRelativeToPrimary(
-      seed.colors.foreground,
-      seedPrimary,
-      primary,
-      "text",
-    ),
+    foreground: shiftColorRelativeToPrimary(seed.colors.foreground, seedPrimary, primary, "text"),
     muted: shiftColorRelativeToPrimary(seed.colors.muted, seedPrimary, primary, "surface"),
     accent: shiftColorRelativeToPrimary(
       seed.colors.accent,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
+import { useOptionalSidebar } from "@/components/ui/sidebar";
 import {
   getErrorMessage,
   StorefrontEditorShell,
@@ -72,6 +73,13 @@ export function StorefrontVisualEditor({
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipHistoryRef = useRef(false);
   const savedTranslationsRef = useRef(getLocalizedTranslations(initialData));
+  const sidebar = useOptionalSidebar();
+  const setSidebarOpenRef = useRef(sidebar?.setOpen);
+  setSidebarOpenRef.current = sidebar?.setOpen;
+
+  useEffect(() => {
+    setSidebarOpenRef.current?.(false);
+  }, []);
 
   useEffect(() => {
     if (canEdit) markStorefrontEditorVisited(draft.tenantId);

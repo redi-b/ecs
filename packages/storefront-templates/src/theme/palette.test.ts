@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  contrastingInk,
+  contrastRatio,
   DEFAULT_DARK_SEED,
   DEFAULT_LIGHT_SEED,
-  contrastRatio,
-  contrastingInk,
   generateThemeFromPrimary,
   generateThemeFromSeed,
   hexToHsl,
@@ -70,7 +70,7 @@ test("body text stays low saturation when brand is red", () => {
   assert.ok(fg.s <= 10, `foreground too saturated: ${fg.s}`);
   assert.ok(fg.l >= 85, `foreground too dark: ${fg.l}`);
   assert.ok(relativeLuminance(colors.background) < 0.25);
-  assert.ok(contrastRatio(colors.background, colors.foreground) >= 4.5);
+  assert.ok(contrastRatio(colors.background, colors.foreground) >= 7);
   assert.ok(contrastRatio(colors.primary, colors.onPrimary) >= 3);
 });
 
@@ -95,7 +95,13 @@ test("an authored primary reproduces its template seed exactly", () => {
   };
   const colors = generateThemeFromSeed(seed.colors.primary, seed);
   assert.deepEqual(
-    { background: colors.background, foreground: colors.foreground, primary: colors.primary, muted: colors.muted, accent: colors.accent },
+    {
+      background: colors.background,
+      foreground: colors.foreground,
+      primary: colors.primary,
+      muted: colors.muted,
+      accent: colors.accent,
+    },
     seed.colors,
   );
 });
