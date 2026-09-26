@@ -125,17 +125,10 @@ export function PublicationStatusBadge({ status }: { status: PublicationStatus }
 }
 
 function EditorStatusSummary({ live, status }: { live: boolean; status: PublicationStatus }) {
-  const { t } = useI18n();
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <ShopLiveStatusBadge live={live} />
       <PublicationStatusBadge status={status} />
-      <HelpTip
-        className="size-7"
-        label={t("editor.status.helpTitle")}
-        summary={t("editor.status.helpSummary")}
-        title={t("editor.status.helpTitle")}
-      />
     </div>
   );
 }

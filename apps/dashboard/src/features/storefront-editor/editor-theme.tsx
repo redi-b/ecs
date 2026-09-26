@@ -125,6 +125,7 @@ export function ThemeBrandSection({
                   ? resetPrimary
                   : undefined
               }
+              description={t("editor.theme.appearanceHelp")}
               label={t("editor.theme.colorBrand")}
               onChange={onBrandColorChange}
               swatchOnly
@@ -229,6 +230,7 @@ function ChannelField({
 
 export function ColorPickerField({
   defaultColor,
+  description,
   label,
   onChange,
   onCommit,
@@ -237,6 +239,7 @@ export function ColorPickerField({
 }: {
   /** Template default for this field — shown as a labeled restore option */
   defaultColor?: string | undefined;
+  description?: string | undefined;
   label: string;
   onChange: (value: string) => void;
   onCommit?: ((value: string) => void) | undefined;
@@ -347,19 +350,24 @@ export function ColorPickerField({
         sticky="partial"
       >
         <div className="flex max-h-[var(--radix-popover-content-available-height)] min-h-0 flex-col">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3">
-            <div className="min-w-0 truncate text-sm font-medium">{label}</div>
-            {showCustom ? (
-              <Button
-                className="shrink-0"
-                onClick={() => setShowCustom(false)}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <RiArrowLeftSLine aria-hidden />
-                {t("common.back")}
-              </Button>
+          <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 truncate text-sm font-medium">{label}</div>
+              {showCustom ? (
+                <Button
+                  className="shrink-0"
+                  onClick={() => setShowCustom(false)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <RiArrowLeftSLine aria-hidden />
+                  {t("common.back")}
+                </Button>
+              ) : null}
+            </div>
+            {description ? (
+              <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
             ) : null}
           </div>
 

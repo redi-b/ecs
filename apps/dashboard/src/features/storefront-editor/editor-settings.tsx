@@ -367,12 +367,12 @@ export function StorefrontSettingsPanel({
                   <CollapsibleContent>
                     <div
                       className={cn(
-                        "flex min-w-0 flex-col gap-[1.125rem] p-3.5",
+                        "flex min-w-0 flex-col gap-2 py-3",
                         enabledField && !sectionVisible && "pointer-events-none opacity-50",
                       )}
                     >
                       {hasShopManagedFields ? (
-                        <div className="rounded-xl border bg-muted/20 p-3 text-sm">
+                        <div className="mx-4 rounded-xl border bg-muted/20 p-3 text-sm">
                           <p className="text-muted-foreground">
                             {t("editor.settings.sharedContactHelp")}
                           </p>
@@ -392,10 +392,10 @@ export function StorefrontSettingsPanel({
                         return (
                           <Field
                             className={cn(
-                              "-m-2 min-w-0 gap-3 rounded-lg p-2",
+                              "min-w-0 gap-2.5 px-4 py-2.5 transition-[background-color,box-shadow]",
                               (selectedPath === field.path ||
                                 selectedPath?.startsWith(`${field.path}.`)) &&
-                                "bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",
+                                "bg-primary/[0.07] ring-2 ring-inset ring-primary/25 shadow-sm",
                             )}
                             data-editor-settings-path={field.path}
                             key={field.path}

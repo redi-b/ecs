@@ -106,7 +106,7 @@
   },
   "theme": {
     "appearance": "Brand color",
-    "appearanceHelp": "Sets the main color for buttons and accents.",
+    "appearanceHelp": "Sets the primary brand color used for buttons, links, and accents across your storefront.",
     "autoPalette": "Automatic palette",
     "autoPaletteOn": "Brand and surface keep the set in sync.",
     "autoPaletteOff": "Manual colors. Rebuild from brand anytime.",
