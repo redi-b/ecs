@@ -245,7 +245,7 @@ export function StorefrontLocalizationPanel({
             >
               <CollapsibleTrigger asChild>
                 <button
-                  className="group flex w-full items-center gap-3 bg-muted/25 px-3 py-2.5 text-left transition-colors hover:bg-muted/45"
+                  className="group flex w-full items-center gap-3 bg-muted/10 px-4 py-3 text-left transition-colors hover:bg-muted/20"
                   type="button"
                 >
                   <RiArrowDownSLine className="size-4 shrink-0 transition-transform group-data-[state=closed]:-rotate-90" />
@@ -262,7 +262,7 @@ export function StorefrontLocalizationPanel({
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="divide-y border-t">
+                <div className="flex min-w-0 flex-col gap-2 py-3 border-t border-border/80">
                   {section.fields.map((field) => {
                     const value = translations[field.path] ?? field.defaultTranslation ?? "";
                     const selected = selectedPath === field.path;
@@ -270,11 +270,14 @@ export function StorefrontLocalizationPanel({
                     return (
                       <div
                         className={cn(
-                          "m-1 space-y-2 rounded-xl p-3 transition-[background-color,box-shadow] duration-150",
-                          selected && "bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",
+                          "flex min-w-0 flex-col gap-2.5 px-4 py-2.5 transition-[background-color,box-shadow]",
+                          selected &&
+                            "bg-primary/[0.07] ring-2 ring-inset ring-primary/25 shadow-sm",
                         )}
                         data-editor-settings-path={field.path}
                         key={field.path}
+                        onClickCapture={() => onSelectPath(field.path)}
+                        onFocusCapture={() => onSelectPath(field.path)}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <label
