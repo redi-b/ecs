@@ -50,7 +50,7 @@ function ToastNotice({
   // Keep the exit animation independent of reduced-motion and CSS availability.
   useEffect(() => {
     if (open) return;
-    const timer = setTimeout(() => toast.dismiss(notice.id), 180);
+    const timer = setTimeout(() => toast.dismiss(notice.id), 220);
     return () => clearTimeout(timer);
   }, [open, notice.id]);
 
