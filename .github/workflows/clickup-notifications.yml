@@ -175,7 +175,10 @@ jobs:
             // ---------- GitHub stats ----------
 
             // Match the linked commit page by comparing the head to its first parent.
-            const { resolvePushStats } = require('./.github/scripts/clickup-push-stats.cjs');
+            const {
+              resolveCommitStats,
+              resolvePushStats,
+            } = require('./.github/scripts/clickup-push-stats.cjs');
 
             // ---------- duplicate suppression ----------
 
@@ -247,6 +250,8 @@ jobs:
 
               const commits = Array.isArray(event.commits) ? event.commits : [];
               const stats = await resolvePushStats(event, head, exec, core);
+              const commitStats =
+                commits.length > 1 ? await resolveCommitStats(commits, exec, core) : [];
               const author =
                 (head.author && head.author.username) ||
                 (event.pusher && event.pusher.name) ||
@@ -260,27 +265,39 @@ jobs:
                 '**Branch:** ' + code(branch),
               ];
               if (event.forced) lines.push('**Note:** Force push');
-              lines.push(
-                '**Commit:** ' + code(truncate(head.message, 120)),
-                '**Author:** ' + md(author)
-              );
-              if (stats.available) {
-                lines.push(
-                  '**Commit changes:** ' +
-                    code('+' + num(stats.additions)) +
-                    ' / ' +
-                    code('-' + num(stats.deletions)) +
-                    ' lines',
-                  '**Files:** ' + num(stats.filesChanged) + ' changed'
-                );
-              } else {
-                lines.push('**Commit changes:** unavailable');
-              }
+              lines.push('**Author:** ' + md(author));
               if (commits.length > 1) {
-                lines.push('**Commits:** ' + commits.length + ' commits pushed');
-              }
-              if (commitUrl) {
-                lines.push('', '[' + code(head.id.slice(0, 7)) + '](' + commitUrl + ')');
+                lines.push('', '**Commits (' + commits.length + ')**');
+                for (const commit of commits) {
+                  const resolved = commitStats.find((entry) => entry.id === commit.id);
+                  const url = safeUrl(repoHtmlUrl + '/commit/' + commit.id);
+                  const hash = code(commit.id.slice(0, 7));
+                  const link = url ? '[' + hash + '](' + url + ')' : hash;
+                  const detail = resolved && resolved.stats.available
+                    ? ' — ' +
+                      code('+' + num(resolved.stats.additions)) + ' / ' +
+                      code('-' + num(resolved.stats.deletions)) + ', ' +
+                      num(resolved.stats.filesChanged) + ' files'
+                    : ' — changes unavailable';
+                  lines.push('- ' + link + ' ' + md(truncate(commit.message, 90)) + detail);
+                }
+              } else {
+                lines.push('**Commit:** ' + code(truncate(head.message, 120)));
+                if (stats.available) {
+                  lines.push(
+                    '**Commit changes:** ' +
+                      code('+' + num(stats.additions)) +
+                      ' / ' +
+                      code('-' + num(stats.deletions)) +
+                      ' lines',
+                    '**Files:** ' + num(stats.filesChanged) + ' changed'
+                  );
+                } else {
+                  lines.push('**Commit changes:** unavailable');
+                }
+                if (commitUrl) {
+                  lines.push('', '[' + code(head.id.slice(0, 7)) + '](' + commitUrl + ')');
+                }
               }
 
               await sendToClickUp('🚀 New Push — ' + repoFullName, lines.join('\n'));

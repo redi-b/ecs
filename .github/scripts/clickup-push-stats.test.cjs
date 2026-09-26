@@ -1,7 +1,11 @@
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 
-const { parseShortStat, resolvePushStats } = require("./clickup-push-stats.cjs");
+const {
+  parseShortStat,
+  resolveCommitStats,
+  resolvePushStats,
+} = require("./clickup-push-stats.cjs");
 
 const BEFORE = "1".repeat(40);
 const AFTER = "2".repeat(40);
@@ -95,5 +99,43 @@ describe("ClickUp push stats", () => {
     );
     assert.equal(result.available, false);
     assert.equal(warnings.length, 1);
+  });
+
+  it("resolves first-parent stats for every commit in a multi-commit push", async () => {
+    const second = "4".repeat(40);
+    const calls = [];
+    const exec = {
+      async getExecOutput(_command, args) {
+        calls.push(args);
+        if (args[0] === "rev-parse") {
+          return { exitCode: 0, stdout: `${args[1].startsWith(AFTER) ? PARENT : AFTER}\n` };
+        }
+        return {
+          exitCode: 0,
+          stdout: args.at(-2) === AFTER
+            ? " 2 files changed, 8 insertions(+), 3 deletions(-)"
+            : " 1 file changed, 2 insertions(+)",
+        };
+      },
+    };
+
+    const results = await resolveCommitStats(
+      [{ id: AFTER }, { id: second }],
+      exec,
+      { warning() {} },
+    );
+
+    assert.deepEqual(results, [
+      {
+        id: AFTER,
+        stats: { additions: 8, available: true, deletions: 3, filesChanged: 2 },
+      },
+      {
+        id: second,
+        stats: { additions: 2, available: true, deletions: 0, filesChanged: 1 },
+      },
+    ]);
+    assert.equal(calls.filter((args) => args[0] === "rev-parse").length, 2);
+    assert.equal(calls.filter((args) => args[0] === "diff").length, 2);
   });
 });

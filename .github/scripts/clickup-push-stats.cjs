@@ -51,4 +51,14 @@ async function resolvePushStats(event, head, exec, core) {
   return { available: true, ...parseShortStat(result.stdout) };
 }
 
-module.exports = { parseShortStat, resolvePushStats };
+async function resolveCommitStats(commits, exec, core) {
+  const results = [];
+  for (const commit of commits) {
+    if (!FULL_SHA.test(commit?.id || "")) continue;
+    const stats = await resolvePushStats({ after: commit.id }, commit, exec, core);
+    results.push({ id: commit.id, stats });
+  }
+  return results;
+}
+
+module.exports = { parseShortStat, resolveCommitStats, resolvePushStats };
