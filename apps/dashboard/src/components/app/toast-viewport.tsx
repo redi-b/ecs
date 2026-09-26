@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const DEFAULT_DURATION = 6000;
 const MAX_TIMER_DURATION = 2_147_483_647;
+const SWIPE_THRESHOLD = 48;
 
 function content(value: ToastT["title"]) {
   return typeof value === "function" ? value() : value;
@@ -33,8 +34,15 @@ function ToastNotice({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(true);
+  const [verticalSwipe, setVerticalSwipe] = useState<"idle" | "move" | "cancel" | "end">(
+    "idle",
+  );
+  const [verticalOffset, setVerticalOffset] = useState(0);
   const manual = useRef(false);
   const closed = useRef(false);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const verticalOffsetRef = useRef(0);
+  const verticalSwipeActive = useRef(false);
   const loading = notice.type === "loading";
   // Radix uses a browser timer; Infinity overflows and can close immediately.
   const duration = loading ? MAX_TIMER_DURATION : (notice.duration ?? DEFAULT_DURATION);
@@ -81,6 +89,13 @@ function ToastNotice({
     );
   };
 
+  const resetVerticalSwipe = () => {
+    pointerStart.current = null;
+    if (verticalSwipeActive.current) setVerticalSwipe("cancel");
+    verticalSwipeActive.current = false;
+    verticalOffsetRef.current = 0;
+  };
+
   return (
     <ToastPrimitive.Root
       className={cn("ecs-notice", notice.className)}
@@ -99,7 +114,46 @@ function ToastNotice({
         if (!dismissible) event.preventDefault();
         else manual.current = true;
       }}
-      style={{ "--notice-duration": `${duration}ms`, ...notice.style } as CSSProperties}
+      onPointerDown={(event) => {
+        if (!dismissible || event.button !== 0) return;
+        pointerStart.current = { x: event.clientX, y: event.clientY };
+        verticalSwipeActive.current = false;
+        verticalOffsetRef.current = 0;
+        setVerticalSwipe("idle");
+        setVerticalOffset(0);
+      }}
+      onPointerMove={(event) => {
+        const start = pointerStart.current;
+        if (!start || !dismissible) return;
+        const x = event.clientX - start.x;
+        const y = event.clientY - start.y;
+        if (y < -6 && Math.abs(y) > Math.abs(x)) {
+          verticalSwipeActive.current = true;
+          verticalOffsetRef.current = y;
+          setVerticalSwipe("move");
+          setVerticalOffset(y);
+        }
+      }}
+      onPointerUp={() => {
+        if (verticalSwipeActive.current && verticalOffsetRef.current <= -SWIPE_THRESHOLD) {
+          pointerStart.current = null;
+          verticalSwipeActive.current = false;
+          manual.current = true;
+          setVerticalSwipe("end");
+          close(false);
+          return;
+        }
+        resetVerticalSwipe();
+      }}
+      onPointerCancel={resetVerticalSwipe}
+      data-vertical-swipe={verticalSwipe}
+      style={
+        {
+          "--notice-duration": `${duration}ms`,
+          "--notice-swipe-y": `${verticalOffset}px`,
+          ...notice.style,
+        } as CSSProperties
+      }
       type="background"
     >
       {!loading && duration > 0 && <span className="ecs-notice-lifetime" aria-hidden="true" />}

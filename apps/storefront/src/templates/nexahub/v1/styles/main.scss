@@ -164,21 +164,32 @@ button[data-busy="true"]::before {
   font-size: 0;
 }
 
-.nexa-save-icon,
-.nexa-save-icon svg {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.nexa-save-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  line-height: 0;
 }
 
 .nexa-save-icon__outline,
-.nexa-save-icon__filled { align-items: center; justify-content: center; }
+.nexa-save-icon__filled {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
 
-.nexa-save-icon__filled { display: none; }
+.nexa-save-icon svg { display: block; width: 15px; height: 15px; }
+.nexa-save-icon__filled { visibility: hidden; }
 
 :where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
-  .nexa-save-icon__outline { display: none; }
-  .nexa-save-icon__filled { display: inline-flex; }
+  .nexa-save-icon__outline { visibility: hidden; }
+  .nexa-save-icon__filled { visibility: visible; }
 }
 
 button[data-busy="true"] > svg,
@@ -187,12 +198,11 @@ button[data-busy="true"] > .btn__icon {
 }
 
 [data-wishlist-toggle] {
-  transition: color var(--nexa-motion-fast) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out);
+  transition: color var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out);
 }
 
 [data-wishlist-toggle][aria-pressed="true"] {
   color: var(--nexa-primary);
-  transform: scale(1.08);
 }
 
 .mask-lines,

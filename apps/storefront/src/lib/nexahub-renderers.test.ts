@@ -393,6 +393,7 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
   const account = read("templates/nexahub/v1/pages/Account.astro");
   const layout = read("templates/nexahub/v1/layouts/Layout.astro");
   const productCard = read("templates/nexahub/v1/components/ProductCard.astro");
+  const productPage = read("templates/nexahub/v1/pages/Product.astro");
   const mainStyles = read("templates/nexahub/v1/styles/main.scss");
   const cartStyles = read("templates/nexahub/v1/styles/components/_cart-drawer.scss");
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
@@ -402,7 +403,16 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
     account,
     /scoped to this shop|Customer account \/ (?:active|guest)|Guest access/i,
   );
-  assert.ok(layout.includes("<SaveIcon") && productCard.includes("<SaveIcon"));
+  assert.ok(
+    layout.includes("<SaveIcon") &&
+      productCard.includes("<SaveIcon") &&
+      productPage.includes("<SaveIcon"),
+  );
+  assert.match(mainStyles, /\.nexa-save-icon\s*\{[\s\S]*?width:\s*15px[\s\S]*?height:\s*15px/);
+  assert.doesNotMatch(
+    mainStyles,
+    /\[data-wishlist-toggle\]\[aria-pressed="true"\][\s\S]*?transform:\s*scale/,
+  );
   assert.match(mainStyles, /button\[data-busy="true"\][\s\S]*?gap:/);
   assert.match(cartStyles, /cart-drawer-container[\s\S]*?overflow:\s*hidden/);
   assert.match(cartStyles, /&__items[\s\S]*?overflow-y:\s*auto/);
