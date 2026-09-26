@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { prefixSelectorList, scopeCssText, splitSelectorList, templateScopeFromId } from "./template-css-scope";
+import {
+  prefixSelectorList,
+  scopeCssText,
+  splitSelectorList,
+  templateScopeFromId,
+} from "./template-css-scope";
 
 test("prefixes simple rules and keeps :root/html targeting the scoped root", () => {
   const css = `
@@ -19,12 +24,11 @@ body { margin: 0; }
 });
 
 test("does not split commas inside :is / :where / :not", () => {
-  const out = scopeCssText(`:where(a, button, input):focus-visible { outline: 1px; }`, ".template-nexahub");
-  assert.equal(
-    out.includes(".template-nexahub :where(a, button, input):focus-visible"),
-    true,
-    out,
+  const out = scopeCssText(
+    `:where(a, button, input):focus-visible { outline: 1px; }`,
+    ".template-nexahub",
   );
+  assert.equal(out.includes(".template-nexahub :where(a, button, input):focus-visible"), true, out);
   assert.equal(out.includes(".template-nexahub button,"), false, out);
 
   const parts = splitSelectorList(":is(ul, ol), .x");
@@ -63,6 +67,10 @@ test("templateScopeFromId matches template paths only", () => {
   assert.equal(
     templateScopeFromId("/app/src/templates/nexahub/v1/pages/index.astro?type=style"),
     "nexahub",
+  );
+  assert.equal(
+    templateScopeFromId("/app/src/templates/future-shop/v2/styles/main.scss"),
+    "future-shop",
   );
   assert.equal(templateScopeFromId("/app/src/components/Shell.astro"), null);
 });

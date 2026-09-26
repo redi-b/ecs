@@ -223,7 +223,7 @@ describe("storefront editor state", () => {
     const editorData = buildEditorData(draft);
     assert.equal(editorData.content[0]?.props?.heroTitle, "Luvia hero");
     assert.equal(editorData.content[0]?.props?.footerBlurb, "Original footer");
-    assert.deepEqual(editorData.content[0]?.props?.headerNavigation, []);
+    assert.equal(editorData.content[0]?.props?.headerNavigation, undefined);
     assert.deepEqual(editorData.content[0]?.props?.footerSocialLinks, []);
 
     const editedData: EditorData = {
@@ -235,7 +235,6 @@ describe("storefront editor state", () => {
           heroTitle: "Edited Luvia hero",
           heroFeaturedProductIds: ["prod_one", "prod_two"],
           footerBlurb: "Edited footer",
-          headerNavigation: [{ label: "Shop", href: "/products" }],
           footerSocialLinks: [
             { label: "Instagram", href: "https://instagram.com/example" },
             { label: "", href: "/incomplete" },
@@ -259,7 +258,7 @@ describe("storefront editor state", () => {
     assert.deepEqual(data.home.hero.featuredProductIds, ["prod_one", "prod_two"]);
     assert.equal(data.home.hero.featuredProductId, undefined);
     assert.equal(data.footer.blurb, "Original footer");
-    assert.deepEqual(data.header.navigation, [{ label: "Shop", href: "/products" }]);
+    assert.deepEqual(data.header.navigation, []);
     assert.deepEqual(data.footer.socialLinks, []);
   });
 

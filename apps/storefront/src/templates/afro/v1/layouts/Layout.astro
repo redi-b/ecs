@@ -9,7 +9,7 @@ import StructuredData from "../../../../components/shell/StructuredData.astro";
 import { listStoreCategories, listStoreCollections } from "../../../../lib/commerce/catalog";
 import { categoryProductsHref, collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
-import { getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
+import { getEcsLandingPageUrl, getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -60,6 +60,7 @@ const {
   title: propTitle,
   description: propDescription,
 } = Astro.props;
+const ecsLandingPageUrl = getEcsLandingPageUrl();
 
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 
@@ -138,30 +139,27 @@ const collectionLinks = navigationCollections
     href: collectionProductsHref(item),
   }));
 
-const navItems = [
-  { text: "Home", href: "/", active: isHome, navId: "home", hasDropdown: false },
-  { text: "Shop", href: "/products", active: isShop, navId: "shop", hasDropdown: false },
-  {
-    text: "Categories",
-    href: isHome ? "#categories" : "/#categories",
-    navId: "categories",
-    hasDropdown: true,
-    dropdownItems: [
-      { text: "All Categories", href: "/products" },
-      ...categoryLinks,
-    ],
-  },
-  {
-    text: "Collections",
-    href: isHome ? "#collections" : "/#collections",
-    navId: "collections",
-    hasDropdown: true,
-    dropdownItems: [
-      { text: "All Collections", href: "/products" },
-      ...collectionLinks,
-    ],
-  },
-];
+const navItems = (header?.navigation ?? []).map((item, index) => {
+  const isCategories = item.href.includes("#categories");
+  const isCollections = item.href.includes("#collections");
+  const dropdownItems = isCategories
+    ? [{ text: m.catalog_all_categories({}, { locale }), href: "/products" }, ...categoryLinks]
+    : isCollections
+      ? [{ text: m.catalog_all_collections({}, { locale }), href: "/products" }, ...collectionLinks]
+      : undefined;
+
+  return {
+    text: item.label,
+    href: item.href,
+    active: item.href === "/" ? isHome : item.href.startsWith("/products") ? isShop : false,
+    navId: `nav-${index}`,
+    hasDropdown: Boolean(dropdownItems?.length),
+    dropdownItems,
+  };
+});
+
+const quickLinks = footer?.quickLinks ?? [];
+const socialLinks = footer?.socialLinks ?? [];
 
 const afroClientMessages = {
   cartLoading: m.cart_loading({}, { locale }),
@@ -188,8 +186,8 @@ const afroClientMessages = {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content={propDescription ?? seo?.description ?? "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm."} />
-    <title>{propTitle ?? seo?.title ?? `${tenantName} | AFRO Studio`}</title>
+    <meta name="description" content={propDescription ?? seo?.description ?? footer.blurb} />
+    <title>{propTitle ?? seo?.title ?? tenantName}</title>
     <SeoHead seo={seo} />
     <StorefrontFonts />
   </head>
@@ -206,7 +204,7 @@ const afroClientMessages = {
         {header?.promoText && (
           <div class="site-header__promo">
             <div class="site-header__promo-inner">
-              <span class="site-header__promo-text type-body-xs-700" data-editor-path="header.promoText" contenteditable={editorMode ? "plaintext-only" : undefined}>{header.promoText}</span>
+              <span class="site-header__promo-text type-body-xs-700" data-editor-path="header.promoText">{header.promoText}</span>
               {header.countdownText && (
                 <span class="site-header__promo-timer type-body-xs-700" id="header-countdown" data-editor-path="header.countdownText">
                   {header.countdownText}
@@ -231,6 +229,7 @@ const afroClientMessages = {
                           item.active ? "site-header__link--active type-body-500" : "type-body-400",
                         ]}
                         data-nav-id={item.navId}
+
                       >
                         <span>{item.text}</span>
                         {item.hasDropdown && (
@@ -349,7 +348,7 @@ const afroClientMessages = {
 
       <slot />
 
-      <footer class="site-footer">
+      <footer class="site-footer" data-editor-section="footer">
         <div class="site-footer__container">
           <div class="site-footer__inner">
             <div class="site-footer__top">
@@ -373,17 +372,25 @@ const afroClientMessages = {
                     )}
                   </div>
                 </a>
-                <p class="site-footer__tagline type-body-s-400" data-editor-path="footer.blurb" contenteditable={editorMode ? "plaintext-only" : undefined}>
-                  {footer?.blurb ?? "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm."}
+                <p class="site-footer__tagline type-body-s-400">
+                  {footer.blurb}
                 </p>
+                {editorMode && (!footer.phone || !footer.email) && (
+                  <p class="site-footer__contact-missing type-body-xs-500" data-editor-section="footer">
+                    {m.footer_contact_incomplete({}, { locale })}
+                  </p>
+                )}
               </div>
 
               <!-- Navigation Columns -->
               <div class="site-footer__nav-cols">
                 <div class="site-footer__col">
-                  <h3 class="site-footer__col-title type-body-s-700">Shop</h3>
+                  <h3 class="site-footer__col-title type-body-s-700">{m.footer_shop({}, { locale })}</h3>
                   <ul class="site-footer__link-list">
-                    <li><a href="/products" class="site-footer__link type-body-s-400">All Products</a></li>
+                    <li><a href="/products" class="site-footer__link type-body-s-400">{m.catalog_all_products({}, { locale })}</a></li>
+                    {quickLinks.map((link) => (
+                      <li><a href={link.href} class="site-footer__link type-body-s-400"><span>{link.label}</span></a></li>
+                    ))}
                     {categoryLinks.slice(0, 5).map((link) => (
                       <li>
                         <a href={link.href} class="site-footer__link type-body-s-400">
@@ -395,7 +402,7 @@ const afroClientMessages = {
                 </div>
 
                 <div class="site-footer__col">
-                  <h3 class="site-footer__col-title type-body-s-700">Collections</h3>
+                  <h3 class="site-footer__col-title type-body-s-700">{m.catalog_all_collections({}, { locale })}</h3>
                   <ul class="site-footer__link-list">
                     {collectionLinks.slice(0, 5).map((link) => (
                       <li>
@@ -408,12 +415,11 @@ const afroClientMessages = {
                 </div>
 
                 <div class="site-footer__col">
-                  <h3 class="site-footer__col-title type-body-s-700">Follow Us</h3>
+                  <h3 class="site-footer__col-title type-body-s-700">{m.contact_socials({}, { locale })}</h3>
                   <ul class="site-footer__link-list">
-                    <li><a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">TikTok</a></li>
-                    <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Instagram</a></li>
-                    <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Facebook</a></li>
-                    <li><a href="https://telegram.org" target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400">Telegram</a></li>
+                    {socialLinks.map((link) => (
+                      <li><a href={link.href} target="_blank" rel="noopener noreferrer" class="site-footer__link type-body-s-400"><span>{link.label}</span></a></li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -421,8 +427,11 @@ const afroClientMessages = {
 
             <div class="site-footer__bottom">
               <p class="site-footer__copyright type-body-xs-500">
-                © {new Date().getFullYear()} {tenantName}. All rights reserved.
+                © {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}
               </p>
+              <a class="site-footer__credit type-body-xs-500" href={ecsLandingPageUrl} rel="noreferrer" target="_blank">
+                {m.footer_design_by_ecs({}, { locale })}
+              </a>
             </div>
           </div>
         </div>

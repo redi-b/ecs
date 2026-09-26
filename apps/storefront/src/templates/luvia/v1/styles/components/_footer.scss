@@ -73,6 +73,14 @@
   object-position: left center;
 }
 
+.footer__contact-missing {
+  padding: $space-250 $space-300;
+  border: 1px dashed alpha(var(--clr-ink), 0.28);
+  border-radius: $radius-200;
+  color: alpha(var(--clr-ink), 0.72);
+  cursor: pointer;
+}
+
 .footer small {
   position: absolute;
   right: 28px;

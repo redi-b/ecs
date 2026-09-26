@@ -1,6 +1,7 @@
 ---
 import type { LuviaV1Data } from "@ecs/storefront-templates";
 import * as m from "../../../../paraglide/messages.js";
+import { getEcsLandingPageUrl } from "../../../../lib/env";
 import ActionButton from "./ActionButton.astro";
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
   emptyLogoUrl?: string | null;
 }
 
+const ecsLandingPageUrl = getEcsLandingPageUrl();
+
 const {
   tenantName,
   footer,
@@ -22,7 +25,7 @@ const {
 } = Astro.props;
 ---
 
-<footer class="footer">
+<footer class="footer" data-editor-section="footer">
   <div class="footer__intro" data-editor-image-scope>
     <div class="footer__brand">
       <img
@@ -34,43 +37,25 @@ const {
       />
       <p
         class="type-body-s-400"
-        data-editor-path={!footer.managedContact ? "footer.blurb" : undefined}
-        contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
       >
         {footer.blurb}
       </p>
     </div>
-    {
-      (editorMode || footer.credit.enabled) && (
-        <a
-          href="https://eclipticcreative.com"
-          rel="noreferrer"
-          target="_blank"
-          data-editor-section="footer.credit"
-          data-editor-visible-path="footer.credit.enabled"
-          hidden={!footer.credit.enabled}
-          class="type-body-xs"
-        >
-          {m.footer_web_design_by({ studio: "Eclipticcreative" }, { locale })}
-        </a>
-      )
-    }
+    <a href={ecsLandingPageUrl} rel="noreferrer" target="_blank" class="type-body-xs">
+      {m.footer_design_by_ecs({}, { locale })}
+    </a>
   </div>
 
   <div class="type-body-s-400">
     <strong class="type-body-s-500">{m.footer_quick_links({}, { locale })}</strong>
     <span
       class="footer__links"
-      data-editor-links-path="footer.quickLinks"
-      data-editor-empty-label="Add quick links"
     >
       {
-        footer.quickLinks.map((item, index) => (
+        footer.quickLinks.map((item) => (
           <a
             class="type-body-s-400"
             href={item.href}
-            data-editor-path={`footer.quickLinks.${index}.label`}
-            contenteditable={editorMode ? "plaintext-only" : undefined}
           >
             {item.label}
           </a>
@@ -83,16 +68,12 @@ const {
     <strong class="type-body-s-500">{m.nav_shop({}, { locale })}</strong>
     <span
       class="footer__links"
-      data-editor-links-path="footer.shopLinks"
-      data-editor-empty-label="Add shop links"
     >
       {
-        footer.shopLinks.map((item, index) => (
+        footer.shopLinks.map((item) => (
           <a
             class="type-body-s-400"
             href={item.href}
-            data-editor-path={`footer.shopLinks.${index}.label`}
-            contenteditable={editorMode ? "plaintext-only" : undefined}
           >
             {item.label}
           </a>
@@ -107,17 +88,13 @@ const {
         <strong class="type-body-s-500">{m.contact_socials({}, { locale })}</strong>
         <span
           class="footer__links"
-          data-editor-links-path={!footer.managedContact ? "footer.socialLinks" : undefined}
-          data-editor-empty-label={!footer.managedContact ? "Add social links" : undefined}
         >
-          {footer.socialLinks.map((item, index) => (
+          {footer.socialLinks.map((item) => (
             <a
               class="type-body-s-400"
               href={item.href}
               target="_blank"
               rel="noopener noreferrer"
-              data-editor-path={!footer.managedContact ? `footer.socialLinks.${index}.label` : undefined}
-              contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
             >
               {item.label}
             </a>
@@ -129,13 +106,16 @@ const {
 
   <div class="type-body-s-400">
     <strong class="type-body-s-500">{m.contact_information({}, { locale })}</strong>
+    {editorMode && (!footer.phone || !footer.email) && (
+      <p class="footer__contact-missing type-body-xs-500" data-editor-section="footer">
+        {m.footer_contact_incomplete({}, { locale })}
+      </p>
+    )}
     <span class="footer__links">
       {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => (
         <a
           class="type-body-s-400"
           href={`tel:${phone}`}
-          data-editor-path={!footer.managedContact ? "footer.phone" : undefined}
-          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
         >
           {phone}
         </a>
@@ -144,9 +124,6 @@ const {
         <a
           class="type-body-s-400"
           href={`mailto:${footer.email ?? ""}`}
-          data-editor-path={!footer.managedContact ? "footer.email" : undefined}
-          data-editor-empty-label={!footer.managedContact ? "Add email" : undefined}
-          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
         >
           {footer.email}
         </a>
@@ -154,9 +131,6 @@ const {
       {(footer.address || (editorMode && !footer.managedContact)) && (
         <p
           class="type-body-s-400"
-          data-editor-path={!footer.managedContact ? "footer.address" : undefined}
-          data-editor-empty-label={!footer.managedContact ? "Add address" : undefined}
-          contenteditable={editorMode && !footer.managedContact ? "plaintext-only" : undefined}
         >
           {footer.address}
         </p>

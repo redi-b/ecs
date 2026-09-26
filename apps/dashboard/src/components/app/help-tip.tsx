@@ -24,6 +24,8 @@ type HelpTipProps = {
   contentClassName?: string;
   /** Optional footer under rich body (e.g. contact support button). */
   footer?: ReactNode;
+  /** Optional content rendered inside the trigger instead of the question icon. */
+  triggerContent?: ReactNode;
 };
 
 /**
@@ -38,6 +40,7 @@ export function HelpTip({
   rich = false,
   contentClassName,
   footer,
+  triggerContent,
 }: HelpTipProps) {
   const { t } = useI18n();
   const resolvedLabel = label ?? t("common.moreInfo");
@@ -63,7 +66,12 @@ export function HelpTip({
     hoverCloseTimer.current = window.setTimeout(() => setOpen(false), 100);
   }
 
-  useEffect(() => () => cancelHoverClose(), []);
+  useEffect(
+    () => () => {
+      if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
+    },
+    [],
+  );
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -80,7 +88,7 @@ export function HelpTip({
           onPointerEnter={openFromHover}
           onPointerLeave={closeFromHover}
         >
-          <Icon className="size-3.5" />
+          {triggerContent ?? <Icon className="size-3.5" />}
         </Button>
       </PopoverTrigger>
       <PopoverContent

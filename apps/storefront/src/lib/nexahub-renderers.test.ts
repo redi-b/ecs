@@ -31,9 +31,14 @@ test("NexaHub listing preserves URL filters, pagination, and truthful states", (
     'rel="next"',
     "m.catalog_empty(",
     "m.catalog_no_results(",
-  ]) assert.ok(source.includes(marker), `listing is missing ${marker}`);
+  ])
+    assert.ok(source.includes(marker), `listing is missing ${marker}`);
   assert.ok(source.includes("products.map((product"), "listing must use route products");
-  assert.equal(/iphone|lenovo|logitech|dell/i.test(source), false, "listing must not contain mock products");
+  assert.equal(
+    /iphone|lenovo|logitech|dell/i.test(source),
+    false,
+    "listing must not contain mock products",
+  );
 });
 
 test("NexaHub PDP submits shared cart actions and resolves authoritative variants", () => {
@@ -47,10 +52,21 @@ test("NexaHub PDP submits shared cart actions and resolves authoritative variant
     "data-option-axis",
     "data-gallery-thumb",
     "data-wishlist-toggle",
-  ]) assert.ok(source.includes(marker), `PDP is missing ${marker}`);
-  assert.equal(/Br\.\s*184|20% OFF|Storm Grey|16GB|512GB/i.test(source), false, "PDP must not contain reference mock commerce facts");
-  assert.ok(source.includes("sanitizeProductDescription"), "PDP must sanitize merchant rich text defensively");
-  assert.ok(source.includes("set:html={descriptionHtml}"), "PDP must render the sanitized rich description as markup");
+  ])
+    assert.ok(source.includes(marker), `PDP is missing ${marker}`);
+  assert.equal(
+    /Br\.\s*184|20% OFF|Storm Grey|16GB|512GB/i.test(source),
+    false,
+    "PDP must not contain reference mock commerce facts",
+  );
+  assert.ok(
+    source.includes("sanitizeProductDescription"),
+    "PDP must sanitize merchant rich text defensively",
+  );
+  assert.ok(
+    source.includes("set:html={descriptionHtml}"),
+    "PDP must render the sanitized rich description as markup",
+  );
 });
 
 test("NexaHub cart owns the shared mutation contract and truthful states", () => {
@@ -65,10 +81,22 @@ test("NexaHub cart owns the shared mutation contract and truthful states", () =>
     "data-cart-page-status",
     "m.cart_empty(",
     "m.action_checkout(",
-  ]) assert.ok(source.includes(marker), `cart is missing ${marker}`);
-  assert.ok(updateAction.includes("customerFacingStoreError(result.message)"), "inventory failures must not be replaced by a generic cart error");
-  assert.doesNotMatch(source, /Updated\./, "visible cart state must not be followed by redundant success copy");
-  assert.doesNotMatch(source, /←\s*Continue shopping/, "cart navigation must use the shared icon asset rather than a text glyph");
+  ])
+    assert.ok(source.includes(marker), `cart is missing ${marker}`);
+  assert.ok(
+    updateAction.includes("customerFacingStoreError(result.message)"),
+    "inventory failures must not be replaced by a generic cart error",
+  );
+  assert.doesNotMatch(
+    source,
+    /Updated\./,
+    "visible cart state must not be followed by redundant success copy",
+  );
+  assert.doesNotMatch(
+    source,
+    /←\s*Continue shopping/,
+    "cart navigation must use the shared icon asset rather than a text glyph",
+  );
 });
 
 test("NexaHub checkout and confirmation own shared fulfillment and payment contracts", () => {
@@ -85,17 +113,42 @@ test("NexaHub checkout and confirmation own shared fulfillment and payment contr
     "/actions/checkout/cod",
     "priceMismatch",
     "customerAddresses",
-  ]) assert.ok(checkout.includes(marker), `checkout is missing ${marker}`);
-  for (const marker of ["formatOrderReference", "data-copy-order", "hasCustomerSession", "formatMoney"]) assert.ok(confirmation.includes(marker), `confirmation is missing ${marker}`);
+  ])
+    assert.ok(checkout.includes(marker), `checkout is missing ${marker}`);
+  for (const marker of [
+    "formatOrderReference",
+    "data-copy-order",
+    "hasCustomerSession",
+    "formatMoney",
+  ])
+    assert.ok(confirmation.includes(marker), `confirmation is missing ${marker}`);
 });
 
 test("NexaHub owns account, wishlist, and inquiry surfaces", () => {
   const registry = read("templates/registry.ts");
-  for (const slot of ["Account", "AccountOrder", "Wishlist", "Contact", "RequestItem", "PaymentReturn"]) {
-    assert.match(registry, new RegExp(`${slot}:\\s*NexahubV1${slot}`), `${slot} is not NexaHub-owned`);
+  for (const slot of [
+    "Account",
+    "AccountOrder",
+    "Wishlist",
+    "Contact",
+    "RequestItem",
+    "PaymentReturn",
+  ]) {
+    assert.match(
+      registry,
+      new RegExp(`${slot}:\\s*NexahubV1${slot}`),
+      `${slot} is not NexaHub-owned`,
+    );
   }
   const account = read("templates/nexahub/v1/pages/Account.astro");
-  for (const action of ["/actions/account/login", "/actions/account/register", "/actions/account/profile", "/actions/account/address", "/actions/account/logout"]) assert.ok(account.includes(action), `account is missing ${action}`);
+  for (const action of [
+    "/actions/account/login",
+    "/actions/account/register",
+    "/actions/account/profile",
+    "/actions/account/address",
+    "/actions/account/logout",
+  ])
+    assert.ok(account.includes(action), `account is missing ${action}`);
   const contact = read("templates/nexahub/v1/pages/Contact.astro");
   const request = read("templates/nexahub/v1/pages/RequestItem.astro");
   assert.ok(contact.includes('name="type" value="contact"'));
@@ -108,7 +161,22 @@ test("NexaHub renderer map has no borrowed fallback presentation", () => {
   const block = registry.match(/"nexahub@1"\s*:\s*\{([\s\S]*?)\n\s*},/)?.[1] ?? "";
   assert.ok(block, "NexaHub registry block was not found");
   assert.doesNotMatch(block, /Fallback[A-Z]/);
-  for (const slot of ["Home", "ProductList", "Product", "Cart", "Checkout", "PaymentReturn", "OrderConfirm", "Contact", "RequestItem", "Wishlist", "Account", "AccountOrder", "SystemState"]) assert.match(block, new RegExp(`${slot}:\\s*NexahubV1`), `${slot} is not owned`);
+  for (const slot of [
+    "Home",
+    "ProductList",
+    "Product",
+    "Cart",
+    "Checkout",
+    "PaymentReturn",
+    "OrderConfirm",
+    "Contact",
+    "RequestItem",
+    "Wishlist",
+    "Account",
+    "AccountOrder",
+    "SystemState",
+  ])
+    assert.match(block, new RegExp(`${slot}:\\s*NexahubV1`), `${slot} is not owned`);
   const notFound = read("pages/404.astro");
   const state = read("templates/nexahub/v1/pages/SystemState.astro");
   assert.ok(notFound.includes("SystemState"));
@@ -122,9 +190,9 @@ test("every production template owns safe system states", () => {
   const offline = read("components/shell/OfflineStateEnhancer.astro");
   assert.match(registry, /SystemState:\s*LuviaV1SystemState/);
   assert.match(registry, /SystemState:\s*NexahubV1SystemState/);
-  assert.ok(notFound.includes('status: 404') && notFound.includes('noindex'));
-  assert.ok(unexpected.includes('status: 500') && unexpected.includes('.catch(() => null)'));
-  assert.ok(offline.includes('navigator.onLine') && offline.includes('addEventListener("online"'));
+  assert.ok(notFound.includes("status: 404") && notFound.includes("noindex"));
+  assert.ok(unexpected.includes("status: 500") && unexpected.includes(".catch(() => null)"));
+  assert.ok(offline.includes("navigator.onLine") && offline.includes('addEventListener("online"'));
 });
 
 test("NexaHub binds editable content while live rendering uses safe catalog fallbacks", () => {
@@ -142,8 +210,8 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
     "footer.phone",
     "footer.email",
     "footer.address",
-    "footer.credit.enabled",
-  ]) assert.ok(source.includes(path), `renderer is missing editor binding for ${path}`);
+  ])
+    assert.ok(source.includes(path), `renderer is missing editor binding for ${path}`);
 
   assert.match(button, /editorRelatedPaths\.join\(" "\)/);
   assert.doesNotMatch(button, /JSON\.stringify\(editorRelatedPaths\)/);
@@ -151,14 +219,22 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
   assert.match(home, /: collections\s*\)\.slice/);
   assert.match(home, /nexahubAsset\(collection\.mediaUrl \?\? collectionProductImage\.get/);
   assert.doesNotMatch(home, /categoryImages|laptopCategory|smartphoneCategory|peripheralCategory/);
-  assert.doesNotMatch(home, /Choose a catalog product to publish|Selected products will appear here/i);
+  assert.doesNotMatch(
+    home,
+    /Choose a catalog product to publish|Selected products will appear here/i,
+  );
   assert.ok(preview.includes("data-editor-products-path"));
 });
 
 test("NexaHub shell owns the reference dropdown, cart drawer, and wishlist controller", () => {
   const layout = read("templates/nexahub/v1/layouts/Layout.astro");
   const client = read("templates/nexahub/v1/scripts/client.ts");
-  for (const marker of ["data-header-dropdown-menu", "data-cart-overlay", "data-cart-items", "data-wishlist-indicator"]) {
+  for (const marker of [
+    "data-header-dropdown-menu",
+    "data-cart-overlay",
+    "data-cart-items",
+    "data-wishlist-indicator",
+  ]) {
     assert.ok(layout.includes(marker), `shell is missing ${marker}`);
   }
   assert.ok(client.includes("initWishlistStore()"));
@@ -171,13 +247,40 @@ test("NexaHub exposes cart mutation failures visibly and keeps mobile product de
   const responsive = read("templates/nexahub/v1/styles/responsive.scss");
 
   assert.ok(layout.includes("data-nexa-toast"), "shell needs a visible mutation feedback surface");
-  assert.ok(client.includes("showToast(failureMessage"), "add-to-cart failures must reach the visible feedback surface");
-  assert.match(responsive, /\.product-info\s*\{[^}]*height:\s*auto[^}]*\}/, "mobile PDP must override its desktop fixed height");
-  assert.doesNotMatch(read("templates/nexahub/v1/styles/pages/product-details.scss"), /height:\s*588px/, "merchant product content must not be trapped in a fixed-height desktop card");
-  assert.match(read("templates/nexahub/v1/pages/Product.astro"), /data-description-toggle/, "long product descriptions should expose one accessible disclosure behavior across breakpoints");
-  assert.match(read("templates/nexahub/v1/styles/pages/product-details.scss"), /-webkit-line-clamp:\s*5/, "collapsed product descriptions should preserve product configuration visibility");
-  assert.match(read("templates/nexahub/v1/pages/Product.astro"), /grid-template-columns:\s*48px minmax\(0, 1fr\) 48px/, "mobile quantity controls should anchor actions to both edges");
-  assert.match(read("templates/nexahub/v1/styles/components/_header.scss"), /nexa-search-close/, "mobile search should animate with navigation closing");
+  assert.ok(
+    client.includes("showToast(failureMessage"),
+    "add-to-cart failures must reach the visible feedback surface",
+  );
+  assert.match(
+    responsive,
+    /\.product-info\s*\{[^}]*height:\s*auto[^}]*\}/,
+    "mobile PDP must override its desktop fixed height",
+  );
+  assert.doesNotMatch(
+    read("templates/nexahub/v1/styles/pages/product-details.scss"),
+    /height:\s*588px/,
+    "merchant product content must not be trapped in a fixed-height desktop card",
+  );
+  assert.match(
+    read("templates/nexahub/v1/pages/Product.astro"),
+    /data-description-toggle/,
+    "long product descriptions should expose one accessible disclosure behavior across breakpoints",
+  );
+  assert.match(
+    read("templates/nexahub/v1/styles/pages/product-details.scss"),
+    /-webkit-line-clamp:\s*5/,
+    "collapsed product descriptions should preserve product configuration visibility",
+  );
+  assert.match(
+    read("templates/nexahub/v1/pages/Product.astro"),
+    /grid-template-columns:\s*48px minmax\(0, 1fr\) 48px/,
+    "mobile quantity controls should anchor actions to both edges",
+  );
+  assert.match(
+    read("templates/nexahub/v1/styles/components/_header.scss"),
+    /nexa-search-close/,
+    "mobile search should animate with navigation closing",
+  );
 });
 
 test("NexaHub ports the reference listing controls and featured carousel structure", () => {
@@ -186,12 +289,27 @@ test("NexaHub ports the reference listing controls and featured carousel structu
   const home = read("templates/nexahub/v1/pages/index.astro");
   const client = read("templates/nexahub/v1/scripts/client.ts");
 
-  for (const marker of ["products-hero__card", "products-catalog__wrapper", "products-pagination__numbers", "ProductFilterBar"]) {
+  for (const marker of [
+    "products-hero__card",
+    "products-catalog__wrapper",
+    "products-pagination__numbers",
+    "ProductFilterBar",
+  ]) {
     assert.ok(listing.includes(marker), `listing is missing reference marker ${marker}`);
   }
   assert.doesNotMatch(listing, /<select|Apply filters|Browse products/i);
-  for (const marker of ["product-filter-trigger", "product-filter-panel", "data-filter-panel-toggle"]) assert.ok(filters.includes(marker));
-  for (const marker of ["data-featured-carousel", "hero-section__featured-meta", "hero-section__featured-dots"]) assert.ok(home.includes(marker));
+  for (const marker of [
+    "product-filter-trigger",
+    "product-filter-panel",
+    "data-filter-panel-toggle",
+  ])
+    assert.ok(filters.includes(marker));
+  for (const marker of [
+    "data-featured-carousel",
+    "hero-section__featured-meta",
+    "hero-section__featured-dots",
+  ])
+    assert.ok(home.includes(marker));
   assert.ok(client.includes('from "embla-carousel"'));
   assert.match(client, /prefers-reduced-motion: reduce/);
   assert.match(client, /pointerenter.*stopAutoplay/);
@@ -203,13 +321,24 @@ test("NexaHub keeps labels centered and uses the reference carousel icons", () =
   const home = read("templates/nexahub/v1/pages/index.astro");
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
 
-  assert.doesNotMatch(button, /data-text-anim="linkAnimation"/, "button labels must not be hidden without the reference animation bootstrap");
+  assert.doesNotMatch(
+    button,
+    /data-text-anim="linkAnimation"/,
+    "button labels must not be hidden without the reference animation bootstrap",
+  );
   assert.match(home, /Icon name="arrow-right"/);
-  assert.doesNotMatch(home, />←<|>→</, "category controls must use the reference SVG, not text glyphs");
+  assert.doesNotMatch(
+    home,
+    />←<|>→</,
+    "category controls must use the reference SVG, not text glyphs",
+  );
   assert.match(headerStyles, /\[data-cart-count\]\s*\{[\s\S]*?position:\s*absolute/);
   const buttonStyles = read("templates/nexahub/v1/styles/components/_button.scss");
   assert.match(buttonStyles, /&--full-width[\s\S]*?&\.btn--with-icon[\s\S]*?position:\s*relative/);
-  assert.match(buttonStyles, /\.btn__icon\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset-inline-end/);
+  assert.match(
+    buttonStyles,
+    /\.btn__icon\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset-inline-end/,
+  );
 });
 
 test("NexaHub never invents featured commerce and preserves reference secondary-page geometry", () => {
@@ -230,8 +359,10 @@ test("NexaHub interaction polish is keyboard-safe, reduced-motion-safe, and anno
   const mainStyles = read("templates/nexahub/v1/styles/main.scss");
   const indexStyles = read("templates/nexahub/v1/styles/pages/index.scss");
 
-  for (const marker of ["data-nexa-live", 'aria-live="polite"', 'aria-atomic="true"']) assert.ok(layout.includes(marker));
-  for (const marker of ["setBusy", "aria-busy", 'event.key === "Tab"', "focusableElements"]) assert.ok(client.includes(marker));
+  for (const marker of ["data-nexa-live", 'aria-live="polite"', 'aria-atomic="true"'])
+    assert.ok(layout.includes(marker));
+  for (const marker of ["setBusy", "aria-busy", 'event.key === "Tab"', "focusableElements"])
+    assert.ok(client.includes(marker));
   assert.match(mainStyles, /prefers-reduced-motion:\s*reduce/);
   assert.match(mainStyles, /data-busy/);
   assert.match(indexStyles, /grid-template-rows:\s*0fr/);
@@ -248,7 +379,10 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
   const headerStyles = read("templates/nexahub/v1/styles/components/_header.scss");
 
   assert.doesNotMatch(wishlist, /Saved catalog|device or customer account/i);
-  assert.doesNotMatch(account, /scoped to this shop|Customer account \/ (?:active|guest)|Guest access/i);
+  assert.doesNotMatch(
+    account,
+    /scoped to this shop|Customer account \/ (?:active|guest)|Guest access/i,
+  );
   assert.ok(layout.includes('name="save"') && productCard.includes('name="save"'));
   assert.match(mainStyles, /button\[data-busy="true"\][\s\S]*?gap:/);
   assert.match(cartStyles, /cart-drawer-container[\s\S]*?overflow:\s*hidden/);
@@ -265,7 +399,11 @@ test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel stat
   const contact = read("templates/nexahub/v1/pages/Contact.astro");
   const preview = read("pages/preview.astro");
 
-  assert.match(wishlist, /<style is:global>/, "runtime-created wishlist cards need global selectors");
+  assert.match(
+    wishlist,
+    /<style is:global>/,
+    "runtime-created wishlist cards need global selectors",
+  );
   assert.match(home, /data-cat-prev disabled/);
   assert.match(client, /track\.scrollBy/);
   assert.match(client, /previous\.disabled/);
@@ -287,7 +425,15 @@ test("NexaHub has a shared touch-first responsive contract for live and editor r
   assert.match(responsive, /@media \(max-width:\s*420px\)/);
   assert.match(responsive, /min-height:\s*44px/);
   assert.match(responsive, /safe-area-inset-bottom/);
-  for (const surface of ["hero-section", "catalogue-section", "products-section", "product-main", "nexa-secondary", "nexa-commerce", "site-footer"]) {
+  for (const surface of [
+    "hero-section",
+    "catalogue-section",
+    "products-section",
+    "product-main",
+    "nexa-secondary",
+    "nexa-commerce",
+    "site-footer",
+  ]) {
     assert.ok(responsive.includes(surface), `responsive contract is missing ${surface}`);
   }
 });
@@ -305,9 +451,15 @@ test("NexaHub navigation, cart, and mobile product filters use bounded modal beh
   assert.doesNotMatch(client, /portalFilterMenu|document\.body\.append\(menu\)/);
   assert.match(productFilter, /event\.key !== "Tab"/);
   assert.match(productFilter, /panel\.querySelectorAll<HTMLElement>\(focusableSelector\)/);
-  assert.match(client, /const locked = Boolean\(header\?\.classList\.contains\("is-open"\) \|\| overlay\?\.classList\.contains\("is-visible"\)\)/);
+  assert.match(
+    client,
+    /const locked = Boolean\(header\?\.classList\.contains\("is-open"\) \|\| overlay\?\.classList\.contains\("is-visible"\)\)/,
+  );
   assert.match(client, /navigationLastFocused/);
-  assert.match(client, /focusableElements\(overlay\?\.classList\.contains\("is-visible"\) \? drawer : header\)/);
+  assert.match(
+    client,
+    /focusableElements\(overlay\?\.classList\.contains\("is-visible"\) \? drawer : header\)/,
+  );
   assert.match(headerStyles, /&__backdrop\.is-visible/);
   assert.match(filterStyles, /\.product-filter-backdrop/);
   assert.match(filterStyles, /height: min\(88dvh, 780px\)/);
@@ -316,7 +468,11 @@ test("NexaHub navigation, cart, and mobile product filters use bounded modal beh
   assert.match(cartStyles, /&\.is-open\s*\{\s*transform:\s*translate3d\(0,\s*0,\s*0\)/);
   assert.match(client, /requestAnimationFrame\(\(\) => window\.requestAnimationFrame/);
   assert.match(cartStyles, /cubic-bezier\(\.22,\s*\.75,\s*\.25,\s*1\)/);
-  assert.doesNotMatch(homeStyles, /\.cart-drawer-(?:overlay|container)/, "the home page must not override the shared cart drawer");
+  assert.doesNotMatch(
+    homeStyles,
+    /\.cart-drawer-(?:overlay|container)/,
+    "the home page must not override the shared cart drawer",
+  );
 });
 
 test("NexaHub keeps its commerce shell and reference PDP structure consistent across routes", () => {
@@ -380,7 +536,9 @@ test("NexaHub derives its complete primary scale from merchant theme tokens", ()
     "styles/components/_product-card.scss",
     "styles/pages/index.scss",
     "styles/pages/products.scss",
-  ].map((path) => read(`templates/nexahub/v1/${path}`)).join("\n");
+  ]
+    .map((path) => read(`templates/nexahub/v1/${path}`))
+    .join("\n");
 
   assert.doesNotMatch(variables, /\$clr-primary-[^:]+:\s*#[0-9a-f]{6,8}/i);
   assert.match(variables, /\$clr-primary-500:\s*var\(--nexa-primary\)/);
@@ -396,6 +554,9 @@ test("NexaHub page entries load the mobile contract after page-specific styles",
     ["pages/Product.astro", "../styles/pages/product-details.scss"],
   ] as const) {
     const source = read(`templates/nexahub/v1/${page}`);
-    assert.ok(source.indexOf(pageStyle) < source.indexOf("../styles/responsive.scss"), `${page} must load responsive rules last`);
+    assert.ok(
+      source.indexOf(pageStyle) < source.indexOf("../styles/responsive.scss"),
+      `${page} must load responsive rules last`,
+    );
   }
 });

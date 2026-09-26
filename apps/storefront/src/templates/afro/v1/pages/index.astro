@@ -13,10 +13,11 @@ import CollectionCard from "../components/CollectionCard.astro";
 import ProductCard from "../components/ProductCard.astro";
 import ProductFilters from "../components/ProductFilters.astro";
 import Layout from "../layouts/Layout.astro";
-import { afroAsset, parseAfroData } from "../lib";
+import { parseAfroData } from "../lib";
 
 // Default Assets
 import heroShop from "../assets/hero-shop.png";
+import TemplateAsset from "../../../../components/media/TemplateAsset.astro";
 import bgJackets from "../assets/bg-jackets.png";
 import bgShirts from "../assets/bg-shirts.png";
 import bgTrousers from "../assets/bg-trousers.png";
@@ -56,6 +57,7 @@ const {
 } = Astro.props;
 
 const template = parseAfroData(data);
+const secondaryPhone = template.footer.phone2 ?? template.footer.additionalPhones?.[0];
 const products = "products" in productsResult ? productsResult.products : [];
 const productById = new Map(products.map((product) => [product.id, product]));
 
@@ -79,24 +81,37 @@ const defaultCollections = [
   { title: "Accessories Collection", description: "Handcrafted bags, hats, and fine accessories to complete your look.", image: menCollection.src, href: "/products?collection=accessories" },
 ];
 
-const selectedCategories = categories.length > 0
-  ? categories.slice(0, 5).map((cat, idx) => ({
-      id: cat.id,
-      title: cat.name || "Category",
-      count: "Explore",
-      image: cat.mediaUrl || defaultCategories[idx % defaultCategories.length].image,
-      href: `/products?category=${encodeURIComponent(cat.name || cat.id)}`,
-    }))
-  : defaultCategories;
+const showTemplatePlaceholders = demoMode || editorMode;
+const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
+const selectedCategoryCollections = template.home?.categories?.collectionIds?.length
+  ? template.home.categories.collectionIds
+      .map((id) => collectionById.get(id))
+      .filter((collection): collection is StoreCollection => Boolean(collection))
+  : collections;
+const selectedHomeCollections = template.home?.collections?.collectionIds?.length
+  ? template.home.collections.collectionIds
+      .map((id) => collectionById.get(id))
+      .filter((collection): collection is StoreCollection => Boolean(collection))
+  : collections;
 
-const selectedCollections = collections.length > 0
-  ? collections.slice(0, 4).map((col, idx) => ({
-      title: col.title || "Collection",
-      description: (col as any).description || "Thoughtfully crafted essentials.",
-      image: col.mediaUrl || defaultCollections[idx % defaultCollections.length].image,
-      href: `/products?collection=${encodeURIComponent(col.handle || col.title || col.id)}`,
+const selectedCategories = selectedCategoryCollections.length > 0
+  ? selectedCategoryCollections.slice(0, 5).map((collection, idx) => ({
+      id: collection.id,
+      title: collection.title || "Collection",
+      count: "Explore",
+      image: collection.mediaUrl || (showTemplatePlaceholders ? defaultCategories[idx % defaultCategories.length].image : ""),
+      href: `/products?collection=${encodeURIComponent(collection.handle || collection.title || collection.id)}`,
     }))
-  : defaultCollections;
+  : showTemplatePlaceholders ? defaultCategories : [];
+
+const selectedCollections = selectedHomeCollections.length > 0
+  ? selectedHomeCollections.slice(0, 4).map((collection, idx) => ({
+      title: collection.title || "Collection",
+      description: (collection as StoreCollection & { description?: string }).description || "",
+      image: collection.mediaUrl || (showTemplatePlaceholders ? defaultCollections[idx % defaultCollections.length].image : ""),
+      href: `/products?collection=${encodeURIComponent(collection.handle || collection.title || collection.id)}`,
+    }))
+  : showTemplatePlaceholders ? defaultCollections : [];
 ---
 
 <Layout
@@ -128,14 +143,16 @@ const selectedCollections = collections.length > 0
           <div class="hero-section__promo-card">
             <div class="hero-section__promo-banner">
               <div class="img-wrapper">
-                <img
-                  src={afroAsset(template.home?.hero?.imageAssetId, heroShop.src)}
+                <TemplateAsset
+                  src={template.home?.hero?.imageAssetId}
+                  fallback={heroShop}
                   alt="Storefront display"
                   class="cover"
-                  width="744"
-                  height="363"
+                  widths={[480, 744, 1200]}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  loading="eager"
+                  fetchpriority="high"
                   data-editor-image-path="home.hero.imageAssetId"
-                  data-editor-empty-src={heroShop.src}
                 />
               </div>
             </div>
@@ -151,7 +168,7 @@ const selectedCollections = collections.length > 0
               </button>
 
               <div class="hero-section__carousel-viewport" id="hero-carousel-viewport">
-                <div class="hero-section__carousel-track" id="hero-carousel-track">
+                <div class="hero-section__carousel-track" id="hero-carousel-track" data-editor-products-path="home.hero.productIds">
                   {
                     heroProducts.map((prod) => (
                       <ProductCard product={prod} />
@@ -175,7 +192,7 @@ const selectedCollections = collections.length > 0
     )}
 
     <!-- Category Section -->
-    {(editorMode || template.home?.categories?.enabled) && (
+    {(editorMode || (template.home?.categories?.enabled && selectedCategories.length > 0)) && (
       <section class="category-section" id="categories" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home?.categories?.enabled}>
         <div class="category-section__bg" aria-hidden="true"></div>
         <div class="category-section__wrapper container">
@@ -204,7 +221,7 @@ const selectedCollections = collections.length > 0
           </div>
 
           <div class="category-section__viewport" id="category-carousel-viewport">
-            <div class="category-section__row" id="category-carousel-track">
+            <div class="category-section__row" id="category-carousel-track" data-editor-collections-path="home.categories.collectionIds">
               {
                 selectedCategories.map((cat, idx) => (
                   <div
@@ -269,9 +286,12 @@ const selectedCollections = collections.length > 0
     {(editorMode || template.home?.products?.enabled) && (
       <section class="product-grid-section" id="products" data-editor-section="home.products" data-editor-visible-path="home.products.enabled" hidden={!template.home?.products?.enabled}>
         <div class="product-grid-section__wrapper container">
+          <h2 class="product-grid-section__title type-header-2" data-editor-path="home.products.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
+            {template.home?.products?.title}
+          </h2>
           <ProductFilters collections={collections} categories={categories} totalCount={products.length} shownCount={Math.min(15, products.length)} />
 
-          <div class="product-grid-section__grid" id="home-product-grid">
+          <div class="product-grid-section__grid" id="home-product-grid" data-editor-products-path="home.products.productIds">
             {
               products.map((prod, index) => (
                 <ProductCard
@@ -291,11 +311,11 @@ const selectedCollections = collections.length > 0
     )}
 
     <!-- Collections Section -->
-    {(editorMode || template.home?.collections?.enabled) && (
+    {(editorMode || (template.home?.collections?.enabled && selectedCollections.length > 0)) && (
       <section class="collections-section" id="collections" data-editor-section="home.collections" data-editor-visible-path="home.collections.enabled" hidden={!template.home?.collections?.enabled}>
         <div class="collections-section__wrapper container">
-          <h2 class="collections-section__title type-header-2">
-            Everything you need to dress well, feel well, and look well.
+          <h2 class="collections-section__title type-header-2" data-editor-path="home.collections.title" contenteditable={editorMode ? "plaintext-only" : undefined}>
+            {template.home?.collections?.title}
           </h2>
 
           <div class="collections-section__carousel-container">
@@ -309,7 +329,7 @@ const selectedCollections = collections.length > 0
             </button>
 
             <div class="collections-section__viewport" id="collections-carousel-viewport">
-              <div class="collections-section__cards">
+              <div class="collections-section__cards" data-editor-collections-path="home.collections.collectionIds">
                 {
                   selectedCollections.map((col) => (
                     <CollectionCard
@@ -404,28 +424,32 @@ const selectedCollections = collections.length > 0
 
           <div class="contact-section__info-card">
             <div class="contact-section__info-header">
-              <h3 class="type-header-4">Let’s keep in touch!</h3>
-              <p class="type-body-s-400">Reach out anytime or follow us online to see what we’re up to.</p>
+              <h3 class="type-header-4" data-editor-path="home.contact.infoTitle" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home?.contact?.infoTitle}</h3>
+              <p class="type-body-s-400" data-editor-path="home.contact.infoBody" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home?.contact?.infoBody}</p>
             </div>
 
             <div class="contact-section__info-details">
-              <div class="contact-section__info-row">
-                <span class="type-body-xs-500">Email</span>
-                <a href={`mailto:${template.footer?.email ?? "hello@afroclothing.com"}`} class="type-body-s-500">
-                  {template.footer?.email ?? "hello@afroclothing.com"}
-                </a>
-              </div>
-              <div class="contact-section__info-row">
-                <span class="type-body-xs-500">Phone 1</span>
-                <a href={`tel:${template.footer?.phone ?? "+251 91 456 7890"}`} class="type-body-s-500">
-                  {template.footer?.phone ?? "+251 91 456 7890"}
-                </a>
-              </div>
-              {template.footer?.additionalPhones?.[0] && (
+              {template.footer.email && (
+                <div class="contact-section__info-row">
+                  <span class="type-body-xs-500">Email</span>
+                  <a href={`mailto:${template.footer.email}`} class="type-body-s-500">
+                    {template.footer.email}
+                  </a>
+                </div>
+              )}
+              {template.footer.phone && (
+                <div class="contact-section__info-row">
+                  <span class="type-body-xs-500">Phone 1</span>
+                  <a href={`tel:${template.footer.phone}`} class="type-body-s-500">
+                    {template.footer.phone}
+                  </a>
+                </div>
+              )}
+              {secondaryPhone && (
                 <div class="contact-section__info-row">
                   <span class="type-body-xs-500">Phone 2</span>
-                  <a href={`tel:${template.footer.additionalPhones[0]}`} class="type-body-s-500">
-                    {template.footer.additionalPhones[0]}
+                  <a href={`tel:${secondaryPhone}`} class="type-body-s-500">
+                    {secondaryPhone}
                   </a>
                 </div>
               )}

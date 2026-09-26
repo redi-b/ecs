@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { selectableStorefrontTemplates } from "@ecs/storefront-templates";
+import { storefrontTemplateClassName } from "../templates/template-key.js";
 
 const read = (relativePath: string) =>
   readFileSync(new URL(relativePath, `${new URL("..", import.meta.url).href}/`), "utf8");
@@ -64,6 +65,55 @@ test("every production template resolves the complete buyer journey", () => {
     for (const marker of step.evidence)
       assert.ok(fallback.includes(marker), `${step.slot} is missing ${marker}`);
   }
+});
+
+test("editor previews and template CSS share one canonical identity", () => {
+  const preview = read("pages/preview.astro");
+  const scoper = read("lib/css/template-css-scope.ts");
+  assert.ok(preview.includes("storefrontTemplateClassName(ctx.config.storefront.templateKey)"));
+  assert.equal(preview.includes("templateKey.split"), false);
+  assert.ok(scoper.includes("([a-z0-9-]+)\\/v\\d+"));
+
+  for (const template of selectableStorefrontTemplates) {
+    const layout = read(
+      "templates/" + template.slug + "/v" + template.version + "/layouts/Layout.astro",
+    );
+    assert.ok(
+      layout.includes('class="' + storefrontTemplateClassName(template.templateKey) + '"'),
+      template.templateKey + " layout must use its canonical scoped CSS class",
+    );
+  }
+});
+
+test("Afro keeps merchant configuration authoritative and demo data bounded", () => {
+  const home = read("templates/afro/v1/pages/index.astro");
+  const listing = read("templates/afro/v1/pages/ProductList.astro");
+  const layout = read("templates/afro/v1/layouts/Layout.astro");
+  const account = read("templates/afro/v1/pages/Account.astro");
+
+  for (const marker of [
+    'data-editor-products-path="home.hero.productIds"',
+    'data-editor-collections-path="home.categories.collectionIds"',
+    'data-editor-products-path="home.products.productIds"',
+    'data-editor-collections-path="home.collections.collectionIds"',
+    'data-editor-path="home.contact.infoTitle"',
+    'data-editor-path="home.contact.infoBody"',
+  ])
+    assert.ok(home.includes(marker), "Afro home is missing " + marker);
+
+  for (const marker of ["listing.title", "listing.body", "listing.imageAssetId"])
+    assert.ok(listing.includes(marker), "Afro listing is missing " + marker);
+
+  assert.ok(layout.includes("const navItems"));
+  assert.ok(layout.includes("const quickLinks"));
+  assert.equal(layout.includes("data-editor-links-path"), false);
+  assert.equal(layout.includes(`data-editor-path="footer.`), false);
+
+  assert.ok(home.includes("const showTemplatePlaceholders = demoMode || editorMode"));
+  assert.equal(layout.includes('href="https://tiktok.com"'), false);
+  assert.equal(layout.includes('href="https://instagram.com"'), false);
+  assert.equal(layout.includes("AFRO Studio"), false);
+  assert.equal(account.includes("AFRO Studio"), false);
 });
 
 test("every selectable template uses the shared analytics boundary exactly once", () => {

@@ -21,12 +21,24 @@ describe("storefront localization fields", () => {
 
     assert.ok(fields.length > 10);
     assert.ok(fields.some((field) => field.path === "home.hero.title"));
-    assert.ok(fields.some((field) => field.path === "header.navigation.0.label"));
+    assert.equal(
+      fields.some((field) => field.path.startsWith("header.navigation")),
+      false,
+    );
     assert.ok(fields.some((field) => field.path === "seo.title"));
     assert.ok(fields.some((field) => field.path === "seo.description"));
-    assert.equal(fields.some((field) => field.path.startsWith("footer.phone")), false);
-    assert.equal(fields.some((field) => field.path.startsWith("footer.socialLinks")), false);
-    assert.equal(fields.some((field) => field.path === "footer.blurb"), false);
+    assert.equal(
+      fields.some((field) => field.path.startsWith("footer.phone")),
+      false,
+    );
+    assert.equal(
+      fields.some((field) => field.path.startsWith("footer.socialLinks")),
+      false,
+    );
+    assert.equal(
+      fields.some((field) => field.path === "footer.blurb"),
+      false,
+    );
     assert.equal(
       fields.some((field) => /color|asset|href|productIds/i.test(field.path)),
       false,
@@ -111,13 +123,13 @@ describe("storefront localization fields", () => {
       data: nexahubV1Defaults,
       templateKey: "nexahub@1",
     });
-    const home = defaults.find((field) => field.path === "header.navigation.0.label");
-    assert.equal(home?.source, "Home");
-    assert.equal(home?.defaultTranslation, "ዋና ገጽ");
+    const cta = defaults.find((field) => field.path === "home.hero.primaryCtaLabel");
+    assert.equal(cta?.source, "Our Products");
+    assert.equal(cta?.defaultTranslation, "ምርቶቻችን");
     assert.equal(
-      home &&
+      cta &&
         getStorefrontTranslationStatus({
-          field: home,
+          field: cta,
           locale: "am",
           localizedContent: { version: 1, locales: {} },
         }),
@@ -125,9 +137,7 @@ describe("storefront localization fields", () => {
     );
 
     const customized = structuredClone(nexahubV1Defaults);
-    const firstNavigationItem = customized.header.navigation[0];
-    assert.ok(firstNavigationItem);
-    firstNavigationItem.label = "Welcome";
+    customized.home.hero.primaryCtaLabel = "Browse products";
     const customizedHome = getStorefrontTranslationFields({
       data: customized,
       templateKey: "nexahub@1",

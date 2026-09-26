@@ -53,9 +53,9 @@ const isActiveLink = (href: string) =>
       <span></span><span></span><span></span>
       <span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span>
     </button>
-    <nav class="nav" id="navigation" aria-label={m.a11y_store_navigation({}, { locale })} data-editor-links-path="header.navigation">
+    <nav class="nav" id="navigation" aria-label={m.a11y_store_navigation({}, { locale })}>
       {
-        header.navigation.map((item, index) => (
+        header.navigation.map((item) => (
           <a
             class:list={[
               "type-body-400",
@@ -63,8 +63,6 @@ const isActiveLink = (href: string) =>
             ]}
             href={item.href}
             aria-current={isActiveLink(item.href) ? "page" : undefined}
-            data-editor-path={`header.navigation.${index}.label`}
-            contenteditable={editorMode ? "plaintext-only" : undefined}
           >
             {item.label}
           </a>

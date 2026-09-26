@@ -4,10 +4,7 @@ export const afroV1EditorSchema = {
   templateKey: "afro@1",
   templateVersion: 1,
   previewMode: "iframe",
-  previewPages: [
-    { id: "home", label: "Home" },
-    { id: "products", label: "Products" },
-  ],
+  previewPages: [{ id: "home", label: "Home" }],
   theme: {
     allowSurfaceMode: false,
     editableColors: ["primary"],
@@ -30,13 +27,6 @@ export const afroV1EditorSchema = {
           prop: "afroCountdownText",
           label: "Countdown timer",
           kind: "text",
-        },
-        {
-          path: "header.navigation",
-          prop: "afroHeaderNavigation",
-          label: "Navigation links",
-          kind: "links",
-          preview: { strategy: "preserve-structure" },
         },
       ],
     },
@@ -90,8 +80,7 @@ export const afroV1EditorSchema = {
           label: "Categories",
           kind: "collections",
           maxItems: 12,
-          helpText:
-            "Choose up to 12 categories, or leave empty to use current catalog categories.",
+          helpText: "Choose up to 12 categories, or leave empty to use current catalog categories.",
           preview: { strategy: "variant-options", variants: ["active", "standard"] },
         },
       ],
@@ -175,26 +164,6 @@ export const afroV1EditorSchema = {
       ],
     },
     {
-      id: "listing",
-      label: "Product listing",
-      previewPage: "products",
-      fields: [
-        { path: "listing.title", prop: "afroListingTitle", label: "Title", kind: "text" },
-        {
-          path: "listing.body",
-          prop: "afroListingBody",
-          label: "Description",
-          kind: "textarea",
-        },
-        {
-          path: "listing.imageAssetId",
-          prop: "afroListingImage",
-          label: "Header image",
-          kind: "image",
-        },
-      ],
-    },
-    {
       id: "footer",
       label: "Footer",
       fields: [
@@ -214,19 +183,6 @@ export const afroV1EditorSchema = {
         { path: "footer.phone", prop: "afroFooterPhone", label: "Phone 1", kind: "text" },
         { path: "footer.phone2", prop: "afroFooterPhone2", label: "Phone 2", kind: "text" },
         { path: "footer.email", prop: "afroFooterEmail", label: "Email", kind: "text" },
-      ],
-    },
-    {
-      id: "footer-credit",
-      label: "Design credit",
-      fields: [
-        {
-          path: "footer.credit.enabled",
-          prop: "afroCreditEnabled",
-          label: "Show design credit",
-          kind: "boolean",
-          helpText: "Show the fixed ECS design credit in the storefront footer.",
-        },
       ],
     },
     {

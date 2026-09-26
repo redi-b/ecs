@@ -2,7 +2,7 @@ const SCOPE_MARKER = "ecs-css-scope:";
 
 function templateScopeFromId(id: string): string | null {
   const file = id.split("?")[0]!.replaceAll("\\", "/");
-  const match = file.match(/\/src\/templates\/(luvia|nexahub|afro)\/v1\//);
+  const match = file.match(/\/src\/templates\/([a-z0-9-]+)\/v\d+\//);
   return match ? match[1]! : null;
 }
 
@@ -52,7 +52,7 @@ function splitSelectorList(selector: string): string[] {
 function prefixOneSelector(sel: string, scope: string): string {
   if (!sel) return sel;
   if (sel === ":root" || sel === "html") return scope;
-  if (sel === "*" ) return `${scope} ${sel}`;
+  if (sel === "*") return `${scope} ${sel}`;
   if (sel === "body" || sel.startsWith("body ")) return `${scope} ${sel}`;
   if (sel.startsWith("html.") || sel.startsWith("html[") || sel.startsWith("html:")) {
     return `${scope}${sel.slice(4)}`;
@@ -60,7 +60,13 @@ function prefixOneSelector(sel: string, scope: string): string {
   if (sel.startsWith(":root.") || sel.startsWith(":root[")) {
     return `${scope}${sel.slice(5)}`;
   }
-  if (sel === scope || sel.startsWith(`${scope} `) || sel.startsWith(`${scope}.`) || sel.startsWith(`${scope}[`) || sel.startsWith(`${scope}:`)) {
+  if (
+    sel === scope ||
+    sel.startsWith(`${scope} `) ||
+    sel.startsWith(`${scope}.`) ||
+    sel.startsWith(`${scope}[`) ||
+    sel.startsWith(`${scope}:`)
+  ) {
     return sel;
   }
   return `${scope} ${sel}`;
@@ -73,8 +79,13 @@ function prefixSelectorList(selector: string, scope: string): string {
     .join(", ");
 }
 
-function isGlobalAtRuleAncestor(node: { type?: string; name?: string; parent?: unknown } | null | undefined): boolean {
-  let current = node?.parent as { type?: string; name?: string; parent?: unknown } | null | undefined;
+function isGlobalAtRuleAncestor(
+  node: { type?: string; name?: string; parent?: unknown } | null | undefined,
+): boolean {
+  let current = node?.parent as
+    | { type?: string; name?: string; parent?: unknown }
+    | null
+    | undefined;
   while (current && current.type !== "root") {
     if (current.type === "atrule" && current.name) {
       const name = current.name.replace(/^-.*?-/, "").toLowerCase();
@@ -100,8 +111,11 @@ export function templateCssScopePostcss() {
   return {
     postcssPlugin: "ecs-template-css-scope",
     Once(root: PostcssRoot, helpers: { result: { opts: { from?: string; to?: string } } }) {
-      const from = String(helpers.result.opts.from ?? helpers.result.opts.to ?? "").replaceAll("\\", "/");
-      const match = from.match(/\/src\/templates\/(luvia|nexahub|afro)\/v1\//);
+      const from = String(helpers.result.opts.from ?? helpers.result.opts.to ?? "").replaceAll(
+        "\\",
+        "/",
+      );
+      const match = from.match(/\/src\/templates\/([a-z0-9-]+)\/v\d+\//);
       if (!match) return;
       const scope = `.template-${match[1]!}`;
 
@@ -208,7 +222,10 @@ export function scopeCssText(css: string, scope: string): string {
         const inner = trimmed.slice(open + 1, last);
         const close = trimmed.slice(last);
         // Do not re-inject the scope marker inside nested blocks.
-        const scopedInner = scopeCssText(inner, scope).replace(/^\/\* ecs-css-scope:[^*]+\*\/\s*/, "");
+        const scopedInner = scopeCssText(inner, scope).replace(
+          /^\/\* ecs-css-scope:[^*]+\*\/\s*/,
+          "",
+        );
         out.push(`${head}${scopedInner}${close}`);
         continue;
       }
@@ -222,7 +239,10 @@ export function scopeCssText(css: string, scope: string): string {
         const head = trimmed.slice(0, open + 1);
         const inner = trimmed.slice(open + 1, last);
         const close = trimmed.slice(last);
-        const scopedInner = scopeCssText(inner, scope).replace(/^\/\* ecs-css-scope:[^*]+\*\/\s*/, "");
+        const scopedInner = scopeCssText(inner, scope).replace(
+          /^\/\* ecs-css-scope:[^*]+\*\/\s*/,
+          "",
+        );
         out.push(`${head}${scopedInner}${close}`);
         continue;
       }

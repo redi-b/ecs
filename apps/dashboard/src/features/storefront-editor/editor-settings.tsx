@@ -45,7 +45,7 @@ import {
   getStorefrontPageProps,
   type StorefrontPageProps,
 } from "./editor-state";
-import { ColorPickerField, FontSelect, ThemeBrandSection } from "./editor-theme";
+import { ColorPickerField, ThemeBrandSection } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
 export {
@@ -69,12 +69,13 @@ export function StorefrontSettingsPanel({
   const manifest = getStorefrontEditorManifest(templateKey);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () => new Set(["header", "hero", "theme"]),
+    () => new Set(["theme", "header", "hero"]),
   );
   const [sectionNavigatorOpen, setSectionNavigatorOpen] = useState(false);
-  const activeSection = manifest?.sections.find((section) =>
-    sectionContainsPath(section, selectedPath),
-  );
+  const sections = manifest
+    ? [...manifest.sections].sort((a, b) => sectionOrder(a.id) - sectionOrder(b.id))
+    : [];
+  const activeSection = sections.find((section) => sectionContainsPath(section, selectedPath));
 
   const scrollSettingsPathIntoView = useCallback((path: string) => {
     requestAnimationFrame(() => {
@@ -114,7 +115,7 @@ export function StorefrontSettingsPanel({
   }
 
   const selectSection = (sectionId: string) => {
-    const section = manifest.sections.find((candidate) => candidate.id === sectionId);
+    const section = sections.find((candidate) => candidate.id === sectionId);
     if (!section) return;
     setOpenSections((current) => new Set(current).add(section.id));
     const path = sectionSettingsPath(section);
@@ -123,7 +124,7 @@ export function StorefrontSettingsPanel({
     setSectionNavigatorOpen(false);
   };
 
-  const collapsibleSectionIds = manifest.sections
+  const collapsibleSectionIds = sections
     .filter((section) => section.id === "theme" || sectionHasCollapsibleBody(section))
     .map((section) => section.id);
   const allSectionsExpanded = collapsibleSectionIds.every((id) => openSections.has(id));
@@ -166,7 +167,7 @@ export function StorefrontSettingsPanel({
               <CommandList className="max-h-72 px-1.5 pb-1.5">
                 <CommandEmpty>{t("editor.settings.noMatchingSection")}</CommandEmpty>
                 <CommandGroup className="p-0">
-                  {manifest.sections.map((section) => (
+                  {sections.map((section) => (
                     <CommandItem
                       data-checked={activeSection?.id === section.id ? true : undefined}
                       key={section.id}
@@ -216,8 +217,8 @@ export function StorefrontSettingsPanel({
           <TooltipContent>{t("editor.translations.openSettings")}</TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex flex-col gap-2.5 p-3 pb-10 sm:p-4">
-        {manifest.sections.map((section) => {
+      <div className="flex flex-col gap-2.5 p-3 pb-10 sm:p-3.5">
+        {sections.map((section) => {
           if (section.id === "theme") {
             return (
               <div
@@ -366,7 +367,7 @@ export function StorefrontSettingsPanel({
                   <CollapsibleContent>
                     <div
                       className={cn(
-                        "flex min-w-0 flex-col gap-5 p-4",
+                        "flex min-w-0 flex-col gap-4 p-3.5",
                         enabledField && !sectionVisible && "pointer-events-none opacity-50",
                       )}
                     >
@@ -391,7 +392,7 @@ export function StorefrontSettingsPanel({
                         return (
                           <Field
                             className={cn(
-                              "min-w-0 gap-2.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150",
+                              "-m-1 min-w-0 gap-2 rounded-lg p-1",
                               (selectedPath === field.path ||
                                 selectedPath?.startsWith(`${field.path}.`)) &&
                                 "bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",
@@ -441,6 +442,12 @@ export function StorefrontSettingsPanel({
       </div>
     </div>
   );
+}
+
+function sectionOrder(id: string) {
+  if (id === "theme") return 0;
+  if (id === "header") return 1;
+  return 2;
 }
 
 function sectionSettingsPath(section: { id: string; fields: StorefrontEditorField[] }) {
@@ -557,15 +564,10 @@ export function StorefrontSettingControl({
     );
   }
 
-  if (field.path.includes("typography.")) {
-    return (
-      <FontSelect onChange={(nextValue) => update(nextValue)} value={stringValue || "Inter"} />
-    );
-  }
-
   if (field.kind === "image") {
     return (
       <MediaImageReferenceControl
+        compact
         label={field.label}
         onChange={(next) => update(next)}
         value={stringValue}

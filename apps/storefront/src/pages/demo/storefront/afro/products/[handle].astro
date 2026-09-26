@@ -3,12 +3,6 @@ import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
 import { afroDemoProducts, findAfroDemoProduct } from "../../../../../lib/demo/afro-fixture";
 import Product from "../../../../../templates/afro/v1/pages/Product.astro";
 
-export function getStaticPaths() {
-  return afroDemoProducts.map((product) => ({
-    params: { handle: product.handle },
-  }));
-}
-
 const handle = Astro.params.handle ?? "suede-zip-jacket";
 const product = findAfroDemoProduct(handle) ?? afroDemoProducts[0];
 const relatedProducts = afroDemoProducts.filter((p) => p.handle !== product?.handle).slice(0, 4);

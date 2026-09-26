@@ -39,11 +39,20 @@
     "leave": "Leave"
   },
   "status": {
-    "live": "Live",
-    "publishedLive": "Matches live",
-    "draftSaved": "Draft saved",
-    "unpublishedEdits": "Unpublished edits",
-    "paused": "Paused"
+    "live": "Shop live",
+    "publishedLive": "Up to date",
+    "draftSaved": "Saved, not published",
+    "unpublishedEdits": "Unsaved changes",
+    "paused": "Shop paused",
+    "helpTitle": "What these statuses mean",
+    "helpSummary": "One status shows whether customers can shop. The other shows whether your latest changes are saved and published.",
+    "shopTitle": "Customer access",
+    "changesTitle": "Your changes",
+    "liveHelp": "Customers can visit and shop from your storefront.",
+    "pausedHelp": "Customers cannot shop from your storefront right now.",
+    "publishedHelp": "The editor matches what customers can see.",
+    "savedHelp": "Your draft is saved. Publish when you want customers to see it.",
+    "unsavedHelp": "Save these changes before leaving the editor."
   },
   "toast": {
     "savingDraft": "Saving draft…",
@@ -96,8 +105,8 @@
     "expandAll": "Expand all"
   },
   "theme": {
-    "appearance": "Appearance",
-    "appearanceHelp": "Surface and brand color drive a full palette with readable contrast. Accent stays related to your brand. Edit any swatch for full control. Open the menu for rebuild or reset to defaults.",
+    "appearance": "Brand color",
+    "appearanceHelp": "Choose your main storefront color. Supporting colors are adjusted automatically.",
     "autoPalette": "Automatic palette",
     "autoPaletteOn": "Brand and surface keep the set in sync.",
     "autoPaletteOff": "Manual colors. Rebuild from brand anytime.",
@@ -120,8 +129,8 @@
     "defaultColor": "Default template color"
   },
   "media": {
-    "referenceSet": "Image reference set",
-    "uploadOrChoose": "Upload a file or choose from your library",
+    "referenceSet": "Image selected",
+    "uploadOrChoose": "Choose or upload",
     "uploading": "Uploading…",
     "uploadImage": "Upload image",
     "chooseLibrary": "Choose from library",

@@ -23,8 +23,8 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,14 +60,25 @@ import {
 
 export function ShopLiveStatusBadge({ live }: { live: boolean }) {
   const { t } = useI18n();
+  const label = live ? t("editor.status.live") : t("editor.status.paused");
   return (
-    <Badge
-      variant={live ? "success" : "warning"}
-      className="gap-1.5 px-2 py-0.5 text-[11px] font-medium shadow-sm"
-    >
-      <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
-      {live ? t("editor.status.live") : t("editor.status.paused")}
-    </Badge>
+    <HelpTip
+      className={cn(
+        "h-6 w-auto gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium shadow-sm",
+        live
+          ? "bg-success text-success-foreground hover:bg-success hover:text-success-foreground"
+          : "bg-warning text-warning-foreground hover:bg-warning hover:text-warning-foreground",
+      )}
+      label={label}
+      summary={live ? t("editor.status.liveHelp") : t("editor.status.pausedHelp")}
+      title={t("editor.status.shopTitle")}
+      triggerContent={
+        <>
+          <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
+          {label}
+        </>
+      }
+    />
   );
 }
 
@@ -75,33 +86,55 @@ export function PublicationStatusBadge({ status }: { status: PublicationStatus }
   const { t } = useI18n();
   const copy = {
     published: {
+      help: t("editor.status.publishedHelp"),
       label: t("editor.status.publishedLive"),
-      tone: "bg-primary text-primary-foreground",
-      dot: "bg-primary-foreground",
+      tone: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
     },
     "saved-draft": {
+      help: t("editor.status.savedHelp"),
       label: t("editor.status.draftSaved"),
-      tone: "bg-muted text-foreground",
-      dot: "bg-muted-foreground",
+      tone: "bg-muted text-foreground hover:bg-muted hover:text-foreground",
     },
     unsaved: {
+      help: t("editor.status.unsavedHelp"),
       label: t("editor.status.unpublishedEdits"),
-      tone: "bg-accent text-accent-foreground",
-      dot: "bg-accent-foreground",
+      tone: "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground",
     },
-  } satisfies Record<PublicationStatus, { dot: string; label: string; tone: string }>;
+  } satisfies Record<PublicationStatus, { help: string; label: string; tone: string }>;
   const item = copy[status];
 
   return (
-    <span
+    <HelpTip
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium shadow-sm",
+        "h-6 w-auto gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium shadow-sm",
         item.tone,
       )}
-    >
-      <span className={cn("size-1.5 rounded-full", item.dot)} />
-      {item.label}
-    </span>
+      label={item.label}
+      summary={item.help}
+      title={t("editor.status.changesTitle")}
+      triggerContent={
+        <>
+          <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
+          {item.label}
+        </>
+      }
+    />
+  );
+}
+
+function EditorStatusSummary({ live, status }: { live: boolean; status: PublicationStatus }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <ShopLiveStatusBadge live={live} />
+      <PublicationStatusBadge status={status} />
+      <HelpTip
+        className="size-7"
+        label={t("editor.status.helpTitle")}
+        summary={t("editor.status.helpSummary")}
+        title={t("editor.status.helpTitle")}
+      />
+    </div>
   );
 }
 
@@ -489,8 +522,7 @@ export function StorefrontEditorShell({
             </div>
             <div className="truncate text-xs text-muted-foreground">{editorMeta.templateName}</div>
           </div>
-          {!isLive ? <ShopLiveStatusBadge live={false} /> : null}
-          <PublicationStatusBadge status={publicationStatus} />
+          <EditorStatusSummary live={isLive} status={publicationStatus} />
         </div>
         <StorefrontEditorActions
           canEdit={canEdit}
@@ -635,7 +667,7 @@ export function StorefrontEditorShell({
           <aside
             className={cn(
               "flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/80 bg-background transition-[width,opacity] duration-200 ease-out",
-              "lg:w-[clamp(18rem,20vw,24rem)] lg:flex-none lg:border-l lg:border-t-0",
+              "lg:w-[clamp(19.5rem,23vw,27rem)] lg:flex-none lg:border-l lg:border-t-0",
               !settingsOpen && "lg:pointer-events-none lg:w-0 lg:border-l-0 lg:opacity-0",
               mobilePanel !== "settings" && "max-lg:hidden",
             )}

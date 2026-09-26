@@ -131,6 +131,15 @@
     color: var(--nexa-ink);
     max-width: 591px;
   }
+
+  &__body {
+    margin: 0;
+    max-width: 56ch;
+    color: alpha(var(--nexa-ink), 0.72);
+    font-family: $ff-body;
+    font-size: $fs-body-s-500;
+    line-height: 1.5;
+  }
 }
 
 // 2. Products Catalog Section

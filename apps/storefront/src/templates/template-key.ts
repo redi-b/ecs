@@ -6,3 +6,12 @@ const LEGACY_TEMPLATE_KEYS: Readonly<Record<string, string>> = {
 export function resolveStorefrontTemplateKey(templateKey: string): string {
   return LEGACY_TEMPLATE_KEYS[templateKey] ?? templateKey;
 }
+
+/** Stable template identity used by DOM roots and scoped template CSS. */
+export function storefrontTemplateSlug(templateKey: string): string {
+  return resolveStorefrontTemplateKey(templateKey).split("@", 1)[0]!;
+}
+
+export function storefrontTemplateClassName(templateKey: string): string {
+  return `template-${storefrontTemplateSlug(templateKey)}`;
+}

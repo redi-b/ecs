@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { afroV1Defaults } from "../templates/afro/v1/defaults";
+import { afroV1EditorSchema } from "../templates/afro/v1/editor";
+import { afroV1DataSchema } from "../templates/afro/v1/schema";
 import { luviaV1Defaults } from "../templates/luvia/v1/defaults";
 import { luviaV1EditorSchema } from "../templates/luvia/v1/editor";
 import { luviaV1DataSchema } from "../templates/luvia/v1/schema";
 import { nexahubV1Defaults } from "../templates/nexahub/v1/defaults";
 import { nexahubV1EditorSchema } from "../templates/nexahub/v1/editor";
 import { nexahubV1DataSchema } from "../templates/nexahub/v1/schema";
-import { afroV1Defaults } from "../templates/afro/v1/defaults";
-import { afroV1EditorSchema } from "../templates/afro/v1/editor";
-import { afroV1DataSchema } from "../templates/afro/v1/schema";
 import { storefrontEditorManifestSchema } from "./schema";
 
 const syntheticEditorManifest = {
@@ -33,10 +33,13 @@ test("synthetic manifests preserve template-agnostic editor validation", () => {
   assert.deepEqual(luvia.theme?.editableColors, ["primary"]);
   const synthetic = storefrontEditorManifestSchema.parse(syntheticEditorManifest);
   assert.equal(synthetic.templateKey, "test-template@1");
-  assert.deepEqual(synthetic.sections[0]?.fields.map((field) => field.path), ["home.title"]);
+  assert.deepEqual(
+    synthetic.sections[0]?.fields.map((field) => field.path),
+    ["home.title"],
+  );
 });
 
-test("Luvia editor exposes reusable catalog and link-list fields", () => {
+test("Luvia editor exposes a focused home-page surface", () => {
   const parsed = storefrontEditorManifestSchema.parse(luviaV1EditorSchema);
   const fields = parsed.sections.flatMap((section) => section.fields);
 
@@ -48,14 +51,24 @@ test("Luvia editor exposes reusable catalog and link-list fields", () => {
     fields.find((field) => field.path === "home.hero.featuredProductIds")?.deprecatedPaths,
     ["home.hero.featuredProductId"],
   );
-  assert.equal(fields.find((field) => field.path === "header.navigation")?.kind, "links");
+  assert.equal(
+    fields.some((field) => field.path === "header.navigation"),
+    false,
+  );
   assert.equal(fields.find((field) => field.path === "footer.socialLinks")?.kind, "links");
   assert.equal(
     fields.find((field) => field.path === "home.categories.collectionIds")?.kind,
     "collections",
   );
-  assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.kind, "links");
+  assert.equal(
+    fields.some((field) => field.path === "footer.quickLinks"),
+    false,
+  );
   assert.equal(fields.find((field) => field.path === "footer.inquiry.title")?.kind, "text");
+  assert.equal(
+    fields.some((field) => field.path.endsWith("Href")),
+    false,
+  );
   assert.equal(
     fields.find((field) => field.path === "home.categories.imageAssetId")?.kind,
     "image",
@@ -64,20 +77,38 @@ test("Luvia editor exposes reusable catalog and link-list fields", () => {
 });
 
 test("variant preview contracts require an explicit variant order", () => {
-  assert.throws(() => storefrontEditorManifestSchema.parse({
-    ...syntheticEditorManifest,
-    sections: [{ id: "collections", label: "Collections", fields: [{ path: "home.collections", prop: "collections", label: "Collections", kind: "collections", preview: { strategy: "variant-options" } }] }],
-  }), /require variants/i);
+  assert.throws(
+    () =>
+      storefrontEditorManifestSchema.parse({
+        ...syntheticEditorManifest,
+        sections: [
+          {
+            id: "collections",
+            label: "Collections",
+            fields: [
+              {
+                path: "home.collections",
+                prop: "collections",
+                label: "Collections",
+                kind: "collections",
+                preview: { strategy: "variant-options" },
+              },
+            ],
+          },
+        ],
+      }),
+    /require variants/i,
+  );
 });
 
-test("Luvia design credit is a platform-owned, toggle-only capability", () => {
+test("Luvia design credit remains platform-owned and is not merchant-editable", () => {
   const manifest = storefrontEditorManifestSchema.parse(luviaV1EditorSchema);
-  const creditSection = manifest.sections.find((section) => section.id === "footer-credit");
+  const fields = manifest.sections.flatMap((section) => section.fields);
   const parsedDefaults = luviaV1DataSchema.parse(luviaV1Defaults);
 
-  assert.deepEqual(
-    creditSection?.fields.map((field) => field.path),
-    ["footer.credit.enabled"],
+  assert.equal(
+    fields.some((field) => field.path.startsWith("footer.credit")),
+    false,
   );
   assert.deepEqual(parsedDefaults.footer.credit, { enabled: true });
 });
@@ -96,26 +127,35 @@ test("NexaHub exposes a narrow theme and explicit catalog fallback", () => {
     /leave empty.*newest/i,
   );
   assert.deepEqual(defaults.home.featuredItem.productIds, []);
-  assert.deepEqual(
-    manifest.sections.find((section) => section.id === "footer-credit")?.fields.map((field) => field.path),
-    ["footer.credit.enabled"],
+  assert.equal(
+    fields.some((field) => field.path.startsWith("footer.credit")),
+    false,
   );
   assert.equal(new Set(fields.map((field) => field.prop)).size, fields.length);
-  assert.equal(fields.find((field) => field.path === "header.navigation")?.preview?.strategy, "preserve-structure");
-  assert.deepEqual(fields.find((field) => field.path === "home.categories.collectionIds")?.preview, {
-    strategy: "variant-options",
-    variants: ["featured", "standard"],
-  });
-  assert.equal(fields.find((field) => field.path === "footer.quickLinks")?.preview?.strategy, "list-items");
+  assert.equal(
+    fields.some((field) => field.path === "header.navigation"),
+    false,
+  );
+  assert.deepEqual(
+    fields.find((field) => field.path === "home.categories.collectionIds")?.preview,
+    {
+      strategy: "variant-options",
+      variants: ["featured", "standard"],
+    },
+  );
+  assert.equal(
+    fields.some((field) => field.path === "footer.quickLinks"),
+    false,
+  );
 });
 
-test("NexaHub declares listing preview through the generic page contract", () => {
+test("NexaHub keeps the editor focused on the home page", () => {
   const manifest = storefrontEditorManifestSchema.parse(nexahubV1EditorSchema);
-  assert.deepEqual(manifest.previewPages, [
-    { id: "home", label: "Home" },
-    { id: "products", label: "Products" },
-  ]);
-  assert.equal(manifest.sections.find((section) => section.id === "listing")?.previewPage, "products");
+  assert.deepEqual(manifest.previewPages, [{ id: "home", label: "Home" }]);
+  assert.equal(
+    manifest.sections.some((section) => section.id === "listing"),
+    false,
+  );
   const pageIds = new Set(manifest.previewPages.map((page) => page.id));
   for (const section of manifest.sections) {
     if (section.previewPage) assert.ok(pageIds.has(section.previewPage));
@@ -131,15 +171,32 @@ test("Afro exposes a clean editor schema and valid default contracts", () => {
   assert.deepEqual(manifest.theme?.editableColors, ["primary"]);
   assert.deepEqual(defaults.home.products.productIds, []);
   assert.deepEqual(defaults.home.categories.collectionIds, []);
-  assert.deepEqual(
-    manifest.sections.find((section) => section.id === "footer-credit")?.fields.map((field) => field.path),
-    ["footer.credit.enabled"],
+  assert.equal(defaults.footer.email, undefined);
+  assert.equal(defaults.footer.phone, undefined);
+  assert.deepEqual(defaults.footer.socialLinks, []);
+  assert.equal(
+    fields.some((field) => field.path.startsWith("footer.credit")),
+    false,
   );
   assert.equal(new Set(fields.map((field) => field.prop)).size, fields.length);
-  assert.equal(fields.find((field) => field.path === "header.navigation")?.preview?.strategy, "preserve-structure");
-  assert.deepEqual(fields.find((field) => field.path === "home.categories.collectionIds")?.preview, {
-    strategy: "variant-options",
-    variants: ["active", "standard"],
-  });
-  assert.equal(manifest.sections.find((section) => section.id === "listing")?.previewPage, "products");
+  assert.equal(
+    fields.some((field) => field.path === "header.navigation"),
+    false,
+  );
+  assert.equal(
+    fields.some((field) => field.path === "footer.quickLinks"),
+    false,
+  );
+  assert.deepEqual(
+    fields.find((field) => field.path === "home.categories.collectionIds")?.preview,
+    {
+      strategy: "variant-options",
+      variants: ["active", "standard"],
+    },
+  );
+  assert.deepEqual(manifest.previewPages, [{ id: "home", label: "Home" }]);
+  assert.equal(
+    manifest.sections.some((section) => section.id === "listing"),
+    false,
+  );
 });

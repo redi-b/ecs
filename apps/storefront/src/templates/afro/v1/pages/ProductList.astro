@@ -12,6 +12,7 @@ import Button from "../components/Button.astro";
 import Layout from "../layouts/Layout.astro";
 import ProductCard from "../components/ProductCard.astro";
 import heroShop from "../assets/hero-shop.png";
+import TemplateAsset from "../../../../components/media/TemplateAsset.astro";
 import { parseAfroData } from "../lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -86,13 +87,14 @@ function pageHref(page: number) {
 
 const title = filters.q
   ? `Search: ${filters.q}`
-  : activeCollection?.title ?? activeCategory?.name ?? "All Collections";
+  : activeCollection?.title ?? activeCategory?.name ?? template.listing.title;
+const listingIsEditable = !filters.q && !activeCollection && !activeCategory;
 
 const sortOptions = [
-  { value: "featured", label: "Featured" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-  { value: "title_asc", label: "Alphabetical (A–Z)" },
+  { value: "created_at", label: "Featured" },
+  { value: "price", label: "Price: Low to High" },
+  { value: "-price", label: "Price: High to Low" },
+  { value: "title", label: "Alphabetical (A–Z)" },
 ];
 
 interface ActiveFilterPill {
@@ -177,12 +179,16 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
     <section class="shop-hero">
       <div class="shop-hero__wrapper container">
         <div class="shop-hero__bg">
-          <img
-            src={heroShop.src}
-            alt="AFRO Studio shop collection overview"
+          <TemplateAsset
+            src={template.listing.imageAssetId}
+            fallback={heroShop}
+            alt={` shop collection overview`}
             class="cover"
-            width="1920"
-            height="600"
+            widths={[480, 768, 1200, 1600]}
+            sizes="100vw"
+            loading="eager"
+            fetchpriority="high"
+            data-editor-image-path="listing.imageAssetId"
           />
         </div>
 
@@ -193,12 +199,12 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
             <span class="shop-hero__crumb-current type-body-xs-700">Shop</span>
           </nav>
 
-          <h1 class="shop-hero__title type-header-1">
+          <h1 class="shop-hero__title type-header-1" data-editor-path={listingIsEditable ? "listing.title" : undefined} contenteditable={editorMode && listingIsEditable ? "plaintext-only" : undefined}>
             {title}
           </h1>
 
-          <p class="shop-hero__description type-body-l">
-            Explore our collection of thoughtful modern apparel designed for everyday rhythm and timeless ease.
+          <p class="shop-hero__description type-body-l" data-editor-path="listing.body" contenteditable={editorMode ? "plaintext-only" : undefined}>
+            {template.listing.body}
           </p>
         </div>
       </div>
@@ -476,7 +482,7 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
                           class="dropdown__option type-body-s-400"
                           role="option"
                           data-value={opt.value}
-                          onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value as any }, 0)}#shop-products'`}
+                          onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value }, 0)}#shop-products'`}
                         >
                           {opt.label}
                         </button>

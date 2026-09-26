@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import * as React from "react";
 import type { ReactNode } from "react";
+// biome-ignore lint/correctness/noUnusedImports: JSX runtime is required by direct Node SSR tests.
+import * as React from "react";
 import { useEffect, useState } from "react";
 
 import { DataTableFilters } from "@/components/app/data-table-filters";
@@ -25,6 +26,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import type { MediaAsset } from "@/lib/merchant-media";
 import { cn } from "@/lib/utils";
@@ -148,20 +150,34 @@ export function MediaLibraryDialog({
   return (
     <>
       {showTrigger ? (
-        <Button
-          className={triggerClassName}
-          onClick={() => setDialogOpen(true)}
-          size={triggerSize}
-          type="button"
-          variant={triggerVariant}
-        >
-          {triggerContent ?? (
-            <>
-              <AppIcons.image data-icon="inline-start" />
-              {triggerLabel ?? t("media.chooseLibrary")}
-            </>
-          )}
-        </Button>
+        triggerContent ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={triggerLabel ?? t("media.chooseLibrary")}
+                className={triggerClassName}
+                onClick={() => setDialogOpen(true)}
+                size={triggerSize}
+                type="button"
+                variant={triggerVariant}
+              >
+                {triggerContent}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{triggerLabel ?? t("media.chooseLibrary")}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            className={triggerClassName}
+            onClick={() => setDialogOpen(true)}
+            size={triggerSize}
+            type="button"
+            variant={triggerVariant}
+          >
+            <AppIcons.image data-icon="inline-start" />
+            {triggerLabel ?? t("media.chooseLibrary")}
+          </Button>
+        )
       ) : null}
       <Dialog onOpenChange={setDialogOpen} open={open}>
         <DialogContent

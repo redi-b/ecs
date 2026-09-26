@@ -4,10 +4,7 @@ export const nexahubV1EditorSchema = {
   templateKey: "nexahub@1",
   templateVersion: 1,
   previewMode: "iframe",
-  previewPages: [
-    { id: "home", label: "Home" },
-    { id: "products", label: "Products" },
-  ],
+  previewPages: [{ id: "home", label: "Home" }],
   theme: {
     allowSurfaceMode: false,
     editableColors: ["primary"],
@@ -19,13 +16,6 @@ export const nexahubV1EditorSchema = {
       label: "Header",
       fields: [
         { path: "header.logoAssetId", prop: "nexahubLogoAssetId", label: "Logo", kind: "image" },
-        {
-          path: "header.navigation",
-          prop: "nexahubHeaderNavigation",
-          label: "Navigation links",
-          kind: "links",
-          preview: { strategy: "preserve-structure" },
-        },
       ],
     },
     {
@@ -52,12 +42,6 @@ export const nexahubV1EditorSchema = {
           prop: "nexahubHeroCtaLabel",
           label: "Button label",
           kind: "text",
-        },
-        {
-          path: "home.hero.primaryCtaHref",
-          prop: "nexahubHeroCtaHref",
-          label: "Button link",
-          kind: "link",
         },
       ],
     },
@@ -269,27 +253,6 @@ export const nexahubV1EditorSchema = {
           label: "Button label",
           kind: "text",
         },
-        {
-          path: "home.contact.ctaHref",
-          prop: "nexahubContactCtaHref",
-          label: "Button link",
-          kind: "link",
-        },
-      ],
-    },
-    {
-      id: "listing",
-      label: "Product listing",
-      previewPage: "products",
-      fields: [
-        { path: "listing.eyebrow", prop: "nexahubListingEyebrow", label: "Eyebrow", kind: "text" },
-        { path: "listing.title", prop: "nexahubListingTitle", label: "Title", kind: "text" },
-        {
-          path: "listing.body",
-          prop: "nexahubListingBody",
-          label: "Description",
-          kind: "textarea",
-        },
       ],
     },
     {
@@ -301,13 +264,6 @@ export const nexahubV1EditorSchema = {
           prop: "nexahubFooterBlurb",
           label: "Description",
           kind: "textarea",
-        },
-        {
-          path: "footer.quickLinks",
-          prop: "nexahubFooterLinks",
-          label: "Quick links",
-          kind: "links",
-          preview: { strategy: "list-items" },
         },
         {
           path: "footer.socialLinks",
@@ -323,19 +279,6 @@ export const nexahubV1EditorSchema = {
           prop: "nexahubFooterAddress",
           label: "Address",
           kind: "textarea",
-        },
-      ],
-    },
-    {
-      id: "footer-credit",
-      label: "Design credit",
-      fields: [
-        {
-          path: "footer.credit.enabled",
-          prop: "nexahubCreditEnabled",
-          label: "Show design credit",
-          kind: "boolean",
-          helpText: "Show the fixed ECS design credit in the storefront footer.",
         },
       ],
     },

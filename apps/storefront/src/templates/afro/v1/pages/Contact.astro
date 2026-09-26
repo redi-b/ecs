@@ -13,7 +13,8 @@ interface Props {
 
 const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
 const template = parseAfroData(data);
-const { email, phone, additionalPhones } = template.footer;
+const { email, phone, phone2, additionalPhones } = template.footer;
+const secondaryPhone = phone2 ?? additionalPhones?.[0];
 ---
 
 <Layout
@@ -29,7 +30,7 @@ const { email, phone, additionalPhones } = template.footer;
       <div class="contact-section__wrapper container">
         <div class="contact-section__form-card">
           <h1 class="contact-section__title type-header-2">
-            Have a question or looking for something specific?
+            {template.home.contact.title}
           </h1>
 
           <form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
@@ -89,28 +90,32 @@ const { email, phone, additionalPhones } = template.footer;
 
         <div class="contact-section__info-card">
           <div class="contact-section__info-header">
-            <h3 class="type-header-4">Let’s keep in touch!</h3>
-            <p class="type-body-s-400">Reach out anytime or follow us online to see what we’re up to.</p>
+            <h3 class="type-header-4">{template.home.contact.infoTitle}</h3>
+            <p class="type-body-s-400">{template.home.contact.infoBody}</p>
           </div>
 
           <div class="contact-section__info-details">
-            <div class="contact-section__info-row">
-              <span class="type-body-xs-500">Email</span>
-              <a href={`mailto:${email ?? "hello@afroclothing.com"}`} class="type-body-s-500">
-                {email ?? "hello@afroclothing.com"}
-              </a>
-            </div>
-            <div class="contact-section__info-row">
-              <span class="type-body-xs-500">Phone 1</span>
-              <a href={`tel:${phone ?? "+251 91 456 7890"}`} class="type-body-s-500">
-                {phone ?? "+251 91 456 7890"}
-              </a>
-            </div>
-            {additionalPhones?.[0] && (
+            {email && (
+              <div class="contact-section__info-row">
+                <span class="type-body-xs-500">Email</span>
+                <a href={`mailto:${email}`} class="type-body-s-500">
+                  {email}
+                </a>
+              </div>
+            )}
+            {phone && (
+              <div class="contact-section__info-row">
+                <span class="type-body-xs-500">Phone 1</span>
+                <a href={`tel:${phone}`} class="type-body-s-500">
+                  {phone}
+                </a>
+              </div>
+            )}
+            {secondaryPhone && (
               <div class="contact-section__info-row">
                 <span class="type-body-xs-500">Phone 2</span>
-                <a href={`tel:${additionalPhones[0]}`} class="type-body-s-500">
-                  {additionalPhones[0]}
+                <a href={`tel:${secondaryPhone}`} class="type-body-s-500">
+                  {secondaryPhone}
                 </a>
               </div>
             )}

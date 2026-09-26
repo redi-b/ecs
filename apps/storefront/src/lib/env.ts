@@ -2,6 +2,10 @@ export function getPlatformApiBaseUrl() {
   return process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
 }
 
+export function getEcsLandingPageUrl() {
+  return process.env.ECS_LANDING_PAGE_URL?.trim() || "https://aecs.eclipticcreative.com";
+}
+
 function configuredValue(value: string | undefined) {
   const normalized = value?.trim();
   return normalized || undefined;

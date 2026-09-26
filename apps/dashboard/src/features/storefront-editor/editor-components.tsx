@@ -15,13 +15,7 @@ export {
   StorefrontEditorShell,
   ToolbarIconButton,
 } from "./editor-chrome";
-
-export {
-  EditorImageSourceActions,
-  ImageReferenceControl,
-  StorefrontSettingControl,
-  StorefrontSettingsPanel,
-} from "./editor-settings";
+export { StorefrontCollectionPicker, StorefrontProductsPicker } from "./editor-merchandising";
 
 export {
   EditableHint,
@@ -30,7 +24,14 @@ export {
   TemplatePreview,
   UnsupportedTemplatePreview,
 } from "./editor-preview";
+export {
+  EditorImageSourceActions,
+  ImageReferenceControl,
+  StorefrontSettingControl,
+  StorefrontSettingsPanel,
+} from "./editor-settings";
 
+export { ColorPickerField, ThemeBrandSection } from "./editor-theme";
 export {
   getErrorMessage,
   isHexColor,
@@ -38,7 +39,3 @@ export {
   updateStorefrontProp,
   updateStorefrontProps,
 } from "./editor-utils";
-
-export { ColorPickerField, FontSelect, ThemeBrandSection } from "./editor-theme";
-
-export { StorefrontCollectionPicker, StorefrontProductsPicker } from "./editor-merchandising";

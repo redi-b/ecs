@@ -51,6 +51,15 @@
     max-width: 40ch;
   }
 
+  &__contact-missing {
+    margin: 0;
+    padding: $space-250 $space-300;
+    border: 1px dashed rgba($clr-neutral-50, 0.3);
+    border-radius: $radius-200;
+    color: rgba($clr-neutral-50, 0.78);
+    cursor: pointer;
+  }
+
   &__nav-cols {
     display: flex;
     flex: 1 1 0;
@@ -104,6 +113,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: $space-300;
+    flex-wrap: wrap;
   }
 
   &__copyright {

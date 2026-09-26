@@ -5,6 +5,7 @@ import { loadPageContext } from "../lib/page-context";
 import { parseStorefrontPreviewPageId } from "../lib/storefront-preview-page-contract";
 import { loadStorefrontPreviewPage } from "../lib/storefront-preview-pages";
 import * as m from "../paraglide/messages.js";
+import { storefrontTemplateClassName } from "../templates/template-key.js";
 
 const token = Astro.url.searchParams.get("token")?.trim() ?? "";
 const pageId = parseStorefrontPreviewPageId(Astro.url.searchParams.get("page"));
@@ -38,6 +39,9 @@ const previewBindings = Object.fromEntries(
 const previewPage = ctx.ok && pageId ? await loadStorefrontPreviewPage(ctx, pageId) : null;
 const PreviewComponent = previewPage?.component;
 const previewLocale = ctx.ok ? ctx.locale : "en";
+const templateClassName = ctx.ok
+  ? storefrontTemplateClassName(ctx.config.storefront.templateKey)
+  : undefined;
 
 Astro.response.headers.set("cache-control", "private, no-store");
 Astro.response.headers.set("referrer-policy", "no-referrer");
@@ -57,7 +61,7 @@ function resolveConfiguredEditorOrigin() {
 }
 ---
 <!doctype html>
-<html lang={ctx.ok ? ctx.locale : fallbackLocale} class={ctx.ok && ctx.config?.storefront?.templateKey ? `template-${ctx.config.storefront.templateKey.split(".")[0]}` : undefined}>
+<html lang={ctx.ok ? ctx.locale : fallbackLocale} class={templateClassName}>
   <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><meta name="robots" content="noindex,nofollow" /><title>{m.preview_title({}, { locale: previewLocale })}</title></head>
   <body>
     {!ctx.ok ? <main><h1>{ctx.message}</h1></main> : !pageId ? <main><h1>{m.preview_page_not_editable({}, { locale: previewLocale })}</h1></main> : !PreviewComponent ? <main><h1>{m.preview_unavailable({}, { locale: previewLocale })}</h1></main> : <PreviewComponent {...previewPage?.props} data={ctx.config.storefront.data} tenantName={ctx.config.tenant.name} themeTokens={ctx.config.storefront.themeTokens} platformApiBaseUrl={ctx.platformApiBaseUrl} requestHost={ctx.requestHost} deferCartCount={true} editorMode={true} />}

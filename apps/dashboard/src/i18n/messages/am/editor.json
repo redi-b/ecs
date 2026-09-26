@@ -39,11 +39,20 @@
     "leave": "ውጣ"
   },
   "status": {
-    "live": "በስራ ላይ",
-    "publishedLive": "ከመደብሩ ጋር ተመሳሳይ",
-    "draftSaved": "የተቀመጠ ለውጥ",
-    "unpublishedEdits": "ያልተለቀቁ ለውጦች",
-    "paused": "መደብሩ ቆሟል"
+    "live": "መደብሩ ክፍት ነው",
+    "publishedLive": "ሁሉም ወቅታዊ ነው",
+    "draftSaved": "ተቀምጧል፣ አልተለቀቀም",
+    "unpublishedEdits": "ያልተቀመጡ ለውጦች",
+    "paused": "መደብሩ ቆሟል",
+    "helpTitle": "የሁኔታዎቹ ትርጉም",
+    "helpSummary": "አንዱ መደብሩ ለደንበኞች ክፍት መሆኑን፣ ሌላው ደግሞ ለውጦችዎ መቀመጣቸውን እና መለቀቃቸውን ያሳያል።",
+    "shopTitle": "የደንበኛ መዳረሻ",
+    "changesTitle": "ለውጦችዎ",
+    "liveHelp": "ደንበኞች መደብርዎን ማየት እና መግዛት ይችላሉ።",
+    "pausedHelp": "ደንበኞች አሁን ከመደብርዎ መግዛት አይችሉም።",
+    "publishedHelp": "ያስተካከሉት ነገር ደንበኞች ከሚያዩት ጋር አንድ ነው።",
+    "savedHelp": "ረቂቁ ተቀምጧል። ደንበኞች እንዲያዩት ሲፈልጉ ይልቀቁት።",
+    "unsavedHelp": "ከዚህ ገጽ ከመውጣትዎ በፊት ለውጦቹን ያስቀምጡ።"
   },
   "toast": {
     "savingDraft": "ለውጦቹ እየተቀመጡ ነው…",
@@ -96,8 +105,8 @@
     "expandAll": "ሁሉንም ክፈት"
   },
   "theme": {
-    "appearance": "ገጽታ",
-    "appearanceHelp": "የገጹ እና የብራንድ ቀለም ተስማሚ የቀለም ምርጫዎችን በራሳቸው ያዘጋጃሉ። ቀለሞቹን እንደፈለጉ መቀየር ወይም ወደ መጀመሪያው መመለስ ይችላሉ።",
+    "appearance": "የብራንድ ቀለም",
+    "appearanceHelp": "የመደብርዎን ዋና ቀለም ይምረጡ። ሌሎች ቀለሞች በራሳቸው ይስተካከላሉ።",
     "autoPalette": "ተስማሚ የቀለም ስብስብ",
     "autoPaletteOn": "የብራንድ እና የገጹ ቀለም ስብስቡን በራሳቸው ያስተካክላሉ።",
     "autoPaletteOff": "ቀለሞችን በእጅ ለመምረጥ። ከብራንድ ቀለም እንደገና ማዘጋጀት ይችላሉ።",
@@ -121,7 +130,7 @@
   },
   "media": {
     "referenceSet": "የተመረጠ ምስል",
-    "uploadOrChoose": "ፋይል ይጫኑ ወይም ከሚዲያ ማዕከል ይምረጡ",
+    "uploadOrChoose": "ይምረጡ ወይም ይጫኑ",
     "uploading": "እየተጫነ ነው…",
     "uploadImage": "ምስል ጫን",
     "chooseLibrary": "ከሚዲያ ማዕከል ምረጥ",

@@ -27,7 +27,7 @@ describe("storefront editor workspace containment", () => {
   });
 
   it("keeps preview and settings aligned while allowing the desktop panel to collapse", () => {
-    assert.match(chromeSource, /lg:w-\[clamp\(18rem,20vw,24rem\)\]/);
+    assert.match(chromeSource, /lg:w-\[clamp\(19\.5rem,23vw,27rem\)\]/);
     assert.match(chromeSource, /lg:w-0 lg:border-l-0 lg:opacity-0/);
     assert.match(chromeSource, /setSettingsOpen\(true\)/);
   });

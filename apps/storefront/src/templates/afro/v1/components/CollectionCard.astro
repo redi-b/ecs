@@ -1,5 +1,6 @@
 ---
 import Button from "./Button.astro";
+import type { ImageMetadata } from "astro";
 import type { StoreCollection, StoreCategory } from "../../../../lib/commerce/types";
 import { collectionProductsHref, categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import "../styles/components/_collection-card.scss";
@@ -9,7 +10,7 @@ interface Props {
   kind?: "collection" | "category";
   title?: string;
   description?: string;
-  image?: any;
+  image?: ImageMetadata | string | null;
   href?: string;
   buttonText?: string;
   reversed?: boolean;
@@ -30,7 +31,10 @@ const {
 } = Astro.props;
 
 const title = propTitle ?? (item && "title" in item ? item.title : item && "name" in item ? item.name : "Collection");
-const description = propDescription ?? (item as any)?.description ?? "Discover our carefully curated pieces.";
+const itemDescription = item && "description" in item && typeof item.description === "string"
+  ? item.description
+  : undefined;
+const description = propDescription ?? itemDescription ?? "";
 const href = propHref ?? (
   item
     ? (kind === "collection"
@@ -38,7 +42,9 @@ const href = propHref ?? (
         : categoryProductsHref(item as StoreCategory))
     : "/shop"
 );
-const imgSrc = propImage?.src ?? (typeof propImage === "string" ? propImage : (item?.mediaUrl ?? ""));
+const imgSrc = typeof propImage === "string"
+  ? propImage
+  : propImage?.src ?? item?.mediaUrl ?? "";
 ---
 
 <article class:list={["collection-card", reversed && "collection-card--reversed", className]}>

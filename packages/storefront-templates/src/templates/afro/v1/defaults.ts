@@ -47,17 +47,8 @@ export const afroV1Defaults: AfroV1Data = {
   footer: {
     blurb:
       "Style that feels good today and lasts for seasons. Thoughtfully crafted essentials for your everyday rhythm.",
-    phone: "+251 91 456 7890",
-    phone2: "+251 91 456 7890",
-    email: "hello@afroclothing.com",
     quickLinks: [],
-    socialLinks: [
-      { label: "TikTok", href: "https://tiktok.com" },
-      { label: "Instagram", href: "https://instagram.com" },
-      { label: "Facebook", href: "https://facebook.com" },
-      { label: "Telegram", href: "https://telegram.org" },
-      { label: "Twitter / X", href: "https://x.com" },
-    ],
+    socialLinks: [],
     credit: { enabled: true },
   },
 };

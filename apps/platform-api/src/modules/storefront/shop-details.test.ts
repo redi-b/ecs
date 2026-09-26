@@ -34,8 +34,16 @@ test("new shop data and every preset satisfy both template contracts", () => {
         socialLinks: { label: string }[];
       };
     };
-    assert.equal(parsed.header.useShopName, false);
-    assert.equal(parsed.header.logoAssetId, undefined);
+    assert.deepEqual(
+      parsed.header,
+      (original as { header: typeof parsed.header }).header,
+      `: preserve the template header`,
+    );
+    assert.deepEqual(
+      (branded as { home?: unknown }).home,
+      (original as { home?: unknown }).home,
+      `: preserve the template home copy`,
+    );
     assert.equal(parsed.footer.email, undefined);
     assert.deepEqual(parsed.footer.additionalPhones, details.additionalPhones);
     assert.equal(parsed.footer.socialLinks[0]?.label, "Instagram");
