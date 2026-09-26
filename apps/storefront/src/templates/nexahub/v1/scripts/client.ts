@@ -2,13 +2,12 @@ import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-coun
 import {
   $cart,
   $cartDrawerOpen,
-  initCartStore,
   fetchCart,
   addToCart,
   updateCartItemQuantity,
   removeCartItem,
 } from "../../../../lib/stores/cart";
-import { initWishlistStore } from "../../../../lib/stores/wishlist";
+import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 import EmblaCarousel from "embla-carousel";
 
 export function initNexahubStorefront() {
@@ -411,7 +410,6 @@ export function initNexahubStorefront() {
     }
   });
   if (!readOnly) {
-    initCartStore();
-    void initWishlistStore();
+    initStorefrontRuntime();
   }
 }

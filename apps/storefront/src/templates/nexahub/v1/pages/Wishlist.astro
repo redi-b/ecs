@@ -49,6 +49,7 @@ const wishlistMessages = {
     if (!content) return;
     const messages = JSON.parse(root?.dataset.wishlistMessages || "{}") as Record<string, string>;
     let items: WishlistEntry[] = [];
+    let focusAfterRender: string | null = null;
     const money = (amount: number | null, currency: string | null) => {
       if (typeof amount !== "number") return "";
       try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
@@ -60,12 +61,13 @@ const wishlistMessages = {
       if (!items.length) {
         const empty = document.createElement("div");
         empty.className = "nexa-wishlist-empty";
-        const icon = document.createElement("span"); icon.setAttribute("aria-hidden", "true"); icon.textContent = "◇";
+        const icon = document.createElement("span"); icon.setAttribute("aria-hidden", "true"); icon.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.6 12 20 12 20z"/></svg>';
         const title = document.createElement("h2"); title.textContent = messages.emptyTitle || "";
         const help = document.createElement("p"); help.textContent = messages.emptyHelp || "";
-        const browse = document.createElement("a"); browse.className = "nexa-primary-action"; browse.href = localizeBrowserPath("/products"); browse.textContent = `${messages.browse || ""} ↗`;
+        const browse = document.createElement("a"); browse.className = "nexa-primary-action"; browse.href = localizeBrowserPath("/products"); browse.textContent = messages.browse || "";
         empty.append(icon, title, help, browse);
         content.append(empty);
+        if (focusAfterRender) { focusAfterRender = null; browse.focus(); }
         return;
       }
       const grid = document.createElement("div");
@@ -73,6 +75,7 @@ const wishlistMessages = {
       items.forEach((item) => {
         const card = document.createElement("article");
         card.className = "nexa-wishlist-card";
+        card.dataset.wishlistPath = item.path;
         const media = document.createElement("a");
         media.className = "nexa-wishlist-card__media";
         const itemPath = localizeBrowserPath(item.path);
@@ -82,6 +85,10 @@ const wishlistMessages = {
           const image = document.createElement("img");
           image.src = item.thumbnail;
           image.alt = item.title;
+          image.width = 900;
+          image.height = 900;
+          image.loading = "lazy";
+          image.decoding = "async";
           media.append(image);
         }
         const body = document.createElement("div");
@@ -97,17 +104,18 @@ const wishlistMessages = {
         actions.className = "nexa-wishlist-card__actions";
         const view = document.createElement("a");
         view.href = itemPath;
-        view.textContent = `${messages.view || ""} ↗`;
+        view.textContent = messages.view || "";
         const remove = document.createElement("button");
         remove.type = "button";
         remove.textContent = messages.remove || "";
         remove.setAttribute("aria-label", (messages.removeProduct || "").replace("__PRODUCT__", item.title));
-        remove.addEventListener("click", () => window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items: items.filter(saved => saved.path !== item.path), origin: "page" } })));
+        remove.addEventListener("click", () => { const index = items.findIndex((saved) => saved.path === item.path); focusAfterRender = items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__"; window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items: items.filter(saved => saved.path !== item.path), origin: "page" } })); });
         actions.append(view, remove);
         card.append(media, body, actions);
         grid.append(card);
       });
       content.append(grid);
+      if (focusAfterRender) { const target = focusAfterRender === "__empty__" ? content.querySelector<HTMLElement>(".nexa-wishlist-empty a") : content.querySelector<HTMLElement>(`[data-wishlist-path="${CSS.escape(focusAfterRender)}"] a`); focusAfterRender = null; target?.focus(); }
     };
     window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
       const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail?.items;

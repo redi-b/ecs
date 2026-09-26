@@ -3,15 +3,12 @@ import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-coun
 import {
   $cart,
   $cartDrawerOpen,
-  initCartStore,
   fetchCart,
   addToCart,
   updateCartItemQuantity,
   removeCartItem,
 } from "../../../../lib/stores/cart";
-import {
-  initWishlistStore,
-} from "../../../../lib/stores/wishlist";
+import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
 
 export function initAfroStorefront() {
@@ -73,8 +70,7 @@ export function initAfroStorefront() {
   initInquiryForms({ readOnly, clientMessage });
 
   if (!readOnly) {
-    initCartStore();
-    void initWishlistStore();
+    initStorefrontRuntime();
   }
 }
 

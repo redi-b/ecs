@@ -4,10 +4,7 @@ import {
   $cart,
   $cartCount,
   setCart,
-  addToCart,
   updateCartItemQuantity,
-  removeCartItem,
-  applyPromotion,
 } from "./cart";
 import type { StoreCart } from "../commerce/types";
 
@@ -77,7 +74,6 @@ test("cart nanostore computes cart count correctly", () => {
 
 test("cart nanostore rolls back optimistic update when network fails", async () => {
   setCart(mockCart, false);
-  const original = $cart.get();
 
   // Mock global fetch to fail
   const originalFetch = globalThis.fetch;

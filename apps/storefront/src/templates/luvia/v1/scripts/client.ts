@@ -10,7 +10,7 @@ import {
   removeCartItem,
   applyPromotion,
 } from "../../../../lib/stores/cart";
-import { initWishlistStore } from "../../../../lib/stores/wishlist";
+import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 
 function getClientMessages(): Record<string, string> {
   try {
@@ -397,8 +397,7 @@ export function initLuviaStorefront() {
   }
 
   if (!readOnlyPreview) {
-    initCartStore();
-    void initWishlistStore();
+    initStorefrontRuntime();
   }
 }
 

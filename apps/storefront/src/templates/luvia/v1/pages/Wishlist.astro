@@ -23,6 +23,7 @@ const wishlistMessages = {
   savedProduct: m.wishlist_saved_product({}, { locale }),
   productFallback: m.catalog_product_fallback({}, { locale }),
   remove: m.action_remove({}, { locale }),
+  view: m.action_view_product({}, { locale }),
 };
 ---
 
@@ -70,6 +71,7 @@ const wishlistMessages = {
       root?.dataset.wishlistMessages || "{}",
     ) as Record<string, string>;
     let items: WishlistEntry[] = [];
+    let focusAfterRender: string | null = null;
     const money = (amount: number | null, currency: string | null) => {
       if (typeof amount !== "number") return "";
       try {
@@ -105,12 +107,17 @@ const wishlistMessages = {
         link.textContent = messages.browse || "";
         empty.append(mark, body, link);
         content.append(empty);
+        if (focusAfterRender) {
+          focusAfterRender = null;
+          link.focus();
+        }
         return;
       }
       const grid = document.createElement("div");
       grid.className = "wishlist__grid";
       for (const item of items) {
         const card = document.createElement("article");
+        card.dataset.wishlistPath = item.path;
         const itemPath = localizeBrowserPath(item.path);
         if (item.thumbnail) {
           const media = document.createElement("a");
@@ -141,6 +148,9 @@ const wishlistMessages = {
         remove.type = "button";
         remove.textContent = messages.remove || "";
         remove.addEventListener("click", () => {
+          const index = items.findIndex((saved) => saved.path === item.path);
+          focusAfterRender =
+            items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__";
           window.dispatchEvent(
             new CustomEvent(WISHLIST_UPDATED_EVENT, {
               detail: {
@@ -152,10 +162,27 @@ const wishlistMessages = {
         });
         card.append(meta, link);
         if (price.textContent) card.append(price);
-        card.append(remove);
+        const actions = document.createElement("div");
+        actions.className = "wishlist__actions";
+        const view = document.createElement("a");
+        view.className = "type-body-xs";
+        view.href = itemPath;
+        view.textContent = messages.view || "";
+        actions.append(view, remove);
+        card.append(actions);
         grid.append(card);
       }
       content.append(grid);
+      if (focusAfterRender) {
+        const target =
+          focusAfterRender === "__empty__"
+            ? content.querySelector<HTMLElement>(".empty-state__action")
+            : content.querySelector<HTMLElement>(
+                `[data-wishlist-path="${CSS.escape(focusAfterRender)}"] a`,
+              );
+        focusAfterRender = null;
+        target?.focus();
+      }
     };
     window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
       const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail

@@ -69,6 +69,18 @@ test("NexaHub PDP submits shared cart actions and resolves authoritative variant
   );
 });
 
+test("NexaHub wishlist controls expose distinct outline and filled icon states", () => {
+  const icon = read("templates/nexahub/v1/components/SaveIcon.astro");
+  const card = read("templates/nexahub/v1/components/ProductCard.astro");
+  const layout = read("templates/nexahub/v1/layouts/Layout.astro");
+  assert.ok(icon.includes('name="save"'));
+  assert.ok(icon.includes('name="save-filled"'));
+  assert.ok(icon.includes('class="nexa-save-icon__outline"'));
+  assert.ok(icon.includes('class="nexa-save-icon__filled"'));
+  assert.ok(card.includes("<SaveIcon />"));
+  assert.ok(layout.includes("<SaveIcon />"));
+});
+
 test("NexaHub cart owns the shared mutation contract and truthful states", () => {
   const registry = read("templates/registry.ts");
   const source = read("templates/nexahub/v1/pages/Cart.astro");
@@ -226,9 +238,11 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
   assert.ok(preview.includes("data-editor-products-path"));
 });
 
-test("NexaHub shell owns the reference dropdown, cart drawer, and wishlist controller", () => {
+test("every template mounts one shared shopping runtime", () => {
   const layout = read("templates/nexahub/v1/layouts/Layout.astro");
-  const client = read("templates/nexahub/v1/scripts/client.ts");
+  const clients = ["afro", "luvia", "nexahub"].map((template) =>
+    read(`templates/${template}/v1/scripts/client.ts`),
+  );
   for (const marker of [
     "data-header-dropdown-menu",
     "data-cart-overlay",
@@ -237,8 +251,12 @@ test("NexaHub shell owns the reference dropdown, cart drawer, and wishlist contr
   ]) {
     assert.ok(layout.includes(marker), `shell is missing ${marker}`);
   }
-  assert.ok(client.includes("initWishlistStore()"));
-  assert.ok(client.includes("$cart"));
+  for (const client of clients) {
+    assert.ok(client.includes("initStorefrontRuntime()"));
+    assert.doesNotMatch(client, /initWishlistStore/);
+    assert.doesNotMatch(client, /initWishlistController/);
+  }
+  assert.ok(clients[2]?.includes("$cart"));
 });
 
 test("NexaHub exposes cart mutation failures visibly and keeps mobile product details content-sized", () => {
@@ -383,7 +401,7 @@ test("NexaHub wishlist, account, busy controls, and cart drawer stay buyer-facin
     account,
     /scoped to this shop|Customer account \/ (?:active|guest)|Guest access/i,
   );
-  assert.ok(layout.includes('name="save"') && productCard.includes('name="save"'));
+  assert.ok(layout.includes("<SaveIcon") && productCard.includes("<SaveIcon"));
   assert.match(mainStyles, /button\[data-busy="true"\][\s\S]*?gap:/);
   assert.match(cartStyles, /cart-drawer-container[\s\S]*?overflow:\s*hidden/);
   assert.match(cartStyles, /&__items[\s\S]*?overflow-y:\s*auto/);

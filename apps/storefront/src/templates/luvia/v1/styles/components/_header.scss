@@ -250,14 +250,21 @@
 
 .count {
   position: absolute;
-  top: -5px;
-  right: -3px;
-  min-width: 19px;
-  height: 19px;
-  padding: 0 $space-100;
+  inset-block-start: -3px;
+  inset-inline-end: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid var(--clr-bg);
   border-radius: $radius-pill;
   background: var(--clr-primary);
   color: var(--clr-on-primary);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
   text-align: center;
 }
 

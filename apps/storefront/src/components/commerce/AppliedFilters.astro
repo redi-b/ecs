@@ -1,0 +1,50 @@
+---
+import { catalogHref, parseOptionPair, type CatalogFilters } from "../../lib/commerce/catalog-filters";
+import type { StoreCategory, StoreCollection } from "../../lib/commerce/types";
+import { taxonomyHandle } from "../../lib/commerce/taxonomy-links";
+import { STOREFRONT_LOCALE_HEADER } from "../../lib/storefront-locale";
+import * as m from "../../paraglide/messages.js";
+
+interface Props {
+  filters: CatalogFilters;
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+}
+const { filters, collections = [], categories = [] } = Astro.props;
+const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+const number = new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET");
+const chips: Array<{ label: string; href: string }> = [];
+const remove = (key: keyof CatalogFilters) => catalogHref({ ...filters, [key]: undefined });
+if (filters.collectionId) chips.push({
+  label: collections.find(item => taxonomyHandle(item) === filters.collectionId)?.title ?? m.catalog_collection({}, { locale }),
+  href: remove("collectionId"),
+});
+if (filters.categoryId) chips.push({
+  label: categories.find(item => taxonomyHandle(item) === filters.categoryId)?.name ?? m.catalog_category({}, { locale }),
+  href: remove("categoryId"),
+});
+for (const token of filters.optionPairs) {
+  const pair = parseOptionPair(token);
+  if (pair) chips.push({ label: `${pair.name}: ${pair.value}`, href: catalogHref({ ...filters, optionPairs: filters.optionPairs.filter(item => item !== token) }) });
+}
+if (filters.priceMin !== undefined) chips.push({ label: `${m.catalog_from({}, { locale })}: ETB ${number.format(filters.priceMin)}`, href: remove("priceMin") });
+if (filters.priceMax !== undefined) chips.push({ label: `${m.catalog_to({}, { locale })}: ETB ${number.format(filters.priceMax)}`, href: remove("priceMax") });
+const clearHref = catalogHref({ q: filters.q, order: filters.order, optionPairs: [] });
+---
+{chips.length > 0 && <nav class="applied-filters" aria-label={m.catalog_filters({}, { locale })}>
+  <ul>{chips.map(chip => <li><a href={chip.href} aria-label={`${m.action_remove({}, { locale })}: ${chip.label}`}>
+    <span>{chip.label}</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8" /></svg>
+  </a></li>)}</ul>
+  <a class="applied-filters__clear" href={clearHref}>{m.catalog_clear_filters({}, { locale })}</a>
+</nav>}
+<style>
+  .applied-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-block: 0 1.5rem; font: inherit; }
+  ul { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: 0; }
+  li { min-width: 0; max-width: 100%; }
+  li a { display: flex; align-items: center; gap: .625rem; min-height: 44px; padding: .5rem .875rem; border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 999px; color: inherit; font-size: .875rem; line-height: 1.4; text-decoration: none; }
+  li a:hover { background: color-mix(in srgb, currentColor 5%, transparent); }
+  li span { overflow-wrap: anywhere; }
+  a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+  a svg { width: .875rem; height: .875rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+  .applied-filters__clear { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-size: .875rem; text-underline-offset: 4px; }
+</style>
