@@ -40,7 +40,7 @@ export function TaxonomyIdentityCell({
   );
 
   return (
-    <div className="flex min-w-48 items-center gap-3">
+    <div className="flex w-64 max-w-64 min-w-0 items-center gap-3 overflow-hidden">
       {media}
       <CatalogTranslatedName
         renderName={

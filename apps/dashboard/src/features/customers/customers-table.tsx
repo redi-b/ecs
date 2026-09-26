@@ -163,7 +163,7 @@ export function CustomersTable({
         ),
         cell: ({ row }) => {
           return (
-            <div className="min-w-0 px-1.5 py-1">
+            <div className="w-64 max-w-64 min-w-0 overflow-hidden px-1.5 py-1">
               <Link
                 className={cn(listEntityLinkClassName, "truncate")}
                 href={dashboardRoutes.customerDetail(row.original.id)}

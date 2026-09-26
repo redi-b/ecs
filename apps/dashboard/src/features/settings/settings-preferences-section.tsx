@@ -21,7 +21,6 @@ import {
 import { useI18n } from "@/i18n/provider";
 
 const calendarOptions = ["follow-language", "ethiopian", "gregorian"] as const;
-const calendarPreviewInstant = "2026-09-24T09:00:00.000Z";
 
 export function PreferencesSection({
   canOpenFulfillment,
@@ -43,6 +42,7 @@ export function PreferencesSection({
     useCalendarPreference();
   const [calendarPreference, setCalendarPreference] =
     useState<UserCalendarPreference>(savedPreference);
+  const [calendarPreviewInstant] = useState(() => new Date());
   const [savingCalendar, setSavingCalendar] = useState(false);
   const calendarDirty = calendarPreference !== savedPreference;
   const selectedCalendarDescription = t(

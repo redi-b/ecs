@@ -31,7 +31,7 @@ export function ProductIdentityCell({
     hrefOverride ?? getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId);
 
   return (
-    <div className="flex w-64 max-w-64 items-center gap-3">
+    <div className="flex w-64 max-w-64 items-center gap-3 overflow-hidden">
       <ProductMediaCell product={product} />
       <div className="flex min-w-0 flex-col gap-1">
         <CatalogTranslatedName
