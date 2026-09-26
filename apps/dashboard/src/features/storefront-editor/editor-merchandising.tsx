@@ -252,18 +252,24 @@ export function StorefrontCollectionsPicker({
         const collections = payload?.data?.collections ?? payload?.collections ?? [];
         setOptions(
           Array.isArray(collections)
-            ? collections
-                .map((row: { handle?: string | null; id?: string; mediaUrl?: string | null; title?: string | null }) =>
-                  row?.id
-                    ? {
-                        id: String(row.id),
-                        title: String(row.title ?? row.id),
-                        handle: row.handle ?? null,
-                        thumbnailUrl: row.mediaUrl ?? null,
-                      }
-                    : null,
+            ? (collections
+                .map(
+                  (row: {
+                    handle?: string | null;
+                    id?: string;
+                    mediaUrl?: string | null;
+                    title?: string | null;
+                  }) =>
+                    row?.id
+                      ? {
+                          id: String(row.id),
+                          title: String(row.title ?? row.id),
+                          handle: row.handle ?? null,
+                          thumbnailUrl: row.mediaUrl ?? null,
+                        }
+                      : null,
                 )
-                .filter(Boolean) as CatalogOption[]
+                .filter(Boolean) as CatalogOption[])
             : [],
         );
       })
@@ -295,13 +301,28 @@ export function StorefrontCollectionsPicker({
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <ProductCatalogPickerTrigger
+            icon="tag"
+            label={
+              loading
+                ? t("editor.merchandising.loadingCollections")
+                : value.length === 0
+                  ? t("editor.merchandising.selectCollections")
+                  : value.length === 1
+                    ? t("editor.merchandising.collectionSelected")
+                    : t("editor.merchandising.collectionsSelected", { count: value.length })
+            }
             loading={loading}
             onClick={() => setOpen(true)}
             selectedCount={value.length}
           />
         </div>
         {value.length > 0 ? (
-          <Button className="h-9 shrink-0 px-3" onClick={() => onChange([])} type="button" variant="outline">
+          <Button
+            className="h-9 shrink-0 px-3"
+            onClick={() => onChange([])}
+            type="button"
+            variant="outline"
+          >
             {t("editor.merchandising.clear")}
           </Button>
         ) : null}
@@ -342,6 +363,7 @@ export function StorefrontCategoriesPicker({
   onChange: (value: string[]) => void;
   value: string[];
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [options, setOptions] = useState<CatalogOption[]>([]);
@@ -407,6 +429,16 @@ export function StorefrontCategoriesPicker({
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <ProductCatalogPickerTrigger
+            icon="tag"
+            label={
+              loading
+                ? t("editor.merchandising.loadingCategories")
+                : value.length === 0
+                  ? t("editor.merchandising.selectCategories")
+                  : value.length === 1
+                    ? t("editor.merchandising.categorySelected")
+                    : t("editor.merchandising.categoriesSelected", { count: value.length })
+            }
             loading={loading}
             onClick={() => setOpen(true)}
             selectedCount={value.length}
@@ -419,7 +451,7 @@ export function StorefrontCategoriesPicker({
             type="button"
             variant="outline"
           >
-            Clear
+            {t("editor.merchandising.clear")}
           </Button>
         ) : null}
       </div>

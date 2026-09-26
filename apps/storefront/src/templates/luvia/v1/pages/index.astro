@@ -30,7 +30,6 @@ import TemplateAsset from "../../../../components/media/TemplateAsset.astro";
 interface Props {
   data: unknown;
   productsResult: StoreProductsResponse | StorefrontError;
-  collectionProducts?: StoreProduct[];
   collections?: StoreCollection[];
   categories?: StoreCategory[];
   tenantName: string;
@@ -45,7 +44,6 @@ interface Props {
 const {
   data,
   productsResult,
-  collectionProducts = [],
   collections = [],
   categories = [],
   tenantName,
@@ -83,10 +81,9 @@ const topPicks = pickProducts(
   products,
   template.home.featuredProducts.limit,
 );
-const listingSource = collectionProducts.length ? collectionProducts : products;
 const listing = pickProducts(
   template.home.products.productIds,
-  listingSource,
+  products,
   template.home.products.limit,
 );
 const legacyHeroId = template.home.hero.featuredProductId;

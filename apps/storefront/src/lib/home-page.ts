@@ -7,7 +7,6 @@ import type { StoreCategory, StoreCollection, StoreProduct } from "./commerce/ty
 import type { PageContext } from "./page-context";
 
 type ProductSelection = { enabled?: boolean; limit?: number; productIds: string[] };
-type CollectionSelection = { collectionId?: string; enabled?: boolean; limit?: number };
 type CategorySelection = {
   enabled?: boolean;
   categoryIds?: string[];
@@ -15,9 +14,8 @@ type CategorySelection = {
   collectionIds?: string[];
 };
 
-type ResolvedHomeMerchandising = {
+export type ResolvedHomeMerchandising = {
   heroProductIds: string[];
-  featuredCollection?: CollectionSelection;
   featuredProducts: ProductSelection;
   products?: ProductSelection;
   categories?: CategorySelection;
@@ -38,31 +36,26 @@ export async function loadHomePageModel(
 
   const featured = merchandising.featuredProducts;
   const catalog = merchandising.products;
-  const limit = Math.max(featured.limit ?? 8, catalog?.enabled === false ? 0 : catalog?.limit ?? 0);
+  const limit = Math.max(
+    featured.limit ?? 8,
+    catalog?.enabled === false ? 0 : (catalog?.limit ?? 0),
+  );
   let featuredProducts: StoreProduct[] = [];
-  let collectionProducts: StoreProduct[] = [];
   let productsError: string | null = null;
   let collections: StoreCollection[] = [];
   let categories: StoreCategory[] = [];
 
   if (featured.enabled !== false || catalog?.enabled !== false) {
-    const configuredIds = featured.productIds.length > 0 ? featured.productIds : catalog?.productIds ?? [];
-    const productIds = [...new Set([...merchandising.heroProductIds, ...configuredIds])];
+    const productIds = resolveHomeProductIds(merchandising);
     const result = options?.includeCatalogFallback
-      ? await listStoreProducts({
-          platformApiBaseUrl: ctx.platformApiBaseUrl,
-          requestHost: ctx.requestHost,
-          locale: ctx.commerceLocale,
-          regionId: ctx.config.commerce.regionId,
-          limit: 48,
-        })
+      ? await loadPreviewProducts({ ctx, productIds })
       : productIds.length
         ? await getStoreProductsByIds({
-          platformApiBaseUrl: ctx.platformApiBaseUrl,
-          requestHost: ctx.requestHost,
-          locale: ctx.commerceLocale,
-          regionId: ctx.config.commerce.regionId,
-          productIds: productIds.slice(0, limit),
+            platformApiBaseUrl: ctx.platformApiBaseUrl,
+            requestHost: ctx.requestHost,
+            locale: ctx.commerceLocale,
+            regionId: ctx.config.commerce.regionId,
+            productIds: productIds.slice(0, 48),
           })
         : merchandising.allowUnselectedProductFallback
           ? await listStoreProducts({
@@ -75,19 +68,6 @@ export async function loadHomePageModel(
           : null;
     if (result && isStoreError(result)) productsError = result.message;
     else if (result) featuredProducts = result.products;
-  }
-
-  const collection = merchandising.featuredCollection;
-  if (collection?.enabled && collection.collectionId?.trim()) {
-    const result = await listStoreProducts({
-      platformApiBaseUrl: ctx.platformApiBaseUrl,
-      requestHost: ctx.requestHost,
-      locale: ctx.commerceLocale,
-      regionId: ctx.config.commerce.regionId,
-      collectionId: collection.collectionId.trim(),
-      limit: collection.limit ?? 8,
-    });
-    if (!isStoreError(result)) collectionProducts = result.products;
   }
 
   if (merchandising.categories?.enabled !== false) {
@@ -108,7 +88,6 @@ export async function loadHomePageModel(
   }
 
   return {
-    collectionProducts,
     collections,
     categories,
     productsResult: productsError
@@ -117,12 +96,55 @@ export async function loadHomePageModel(
   };
 }
 
+export function resolveHomeProductIds(merchandising: ResolvedHomeMerchandising) {
+  return [
+    ...new Set([
+      ...merchandising.heroProductIds,
+      ...merchandising.featuredProducts.productIds,
+      ...(merchandising.products?.productIds ?? []),
+    ]),
+  ];
+}
+
+async function loadPreviewProducts({
+  ctx,
+  productIds,
+}: {
+  ctx: Extract<PageContext, { ok: true }>;
+  productIds: string[];
+}) {
+  const [catalog, selected] = await Promise.all([
+    listStoreProducts({
+      platformApiBaseUrl: ctx.platformApiBaseUrl,
+      requestHost: ctx.requestHost,
+      locale: ctx.commerceLocale,
+      regionId: ctx.config.commerce.regionId,
+      limit: 48,
+    }),
+    productIds.length
+      ? getStoreProductsByIds({
+          platformApiBaseUrl: ctx.platformApiBaseUrl,
+          requestHost: ctx.requestHost,
+          locale: ctx.commerceLocale,
+          regionId: ctx.config.commerce.regionId,
+          productIds,
+        })
+      : null,
+  ]);
+  if (isStoreError(catalog)) return catalog;
+  if (selected && isStoreError(selected)) return selected;
+
+  const products = [...(selected?.products ?? []), ...catalog.products].filter(
+    (product, index, all) => all.findIndex((candidate) => candidate.id === product.id) === index,
+  );
+  return { ...catalog, products };
+}
+
 export function resolveHomeMerchandising(
   contract: {
     featuredProductsPath: string;
     catalogProductsPath?: string;
     heroProductIdPaths: readonly string[];
-    featuredCollectionPath?: string;
     categoriesPath?: string;
     allowUnselectedProductFallback: boolean;
   },
@@ -135,9 +157,6 @@ export function resolveHomeMerchandising(
     ? valueAtPath(data, contract.catalogProductsPath)
     : undefined;
   const products = isProductSelection(catalogValue) ? catalogValue : undefined;
-  const collectionValue = contract.featuredCollectionPath
-    ? valueAtPath(data, contract.featuredCollectionPath)
-    : undefined;
   const categoriesValue = contract.categoriesPath
     ? valueAtPath(data, contract.categoriesPath)
     : undefined;
@@ -153,26 +172,30 @@ export function resolveHomeMerchandising(
     heroProductIds,
     featuredProducts,
     products,
-    featuredCollection: isCollectionSelection(collectionValue) ? collectionValue : undefined,
     categories: isCategorySelection(categoriesValue) ? categoriesValue : undefined,
     allowUnselectedProductFallback: contract.allowUnselectedProductFallback,
   };
 }
 
 function valueAtPath(value: unknown, path: string): unknown {
-  return path.split(".").reduce<unknown>((current, key) =>
-    current && typeof current === "object" && !Array.isArray(current)
-      ? (current as Record<string, unknown>)[key]
-      : undefined, value);
+  return path
+    .split(".")
+    .reduce<unknown>(
+      (current, key) =>
+        current && typeof current === "object" && !Array.isArray(current)
+          ? (current as Record<string, unknown>)[key]
+          : undefined,
+      value,
+    );
 }
 
 function isProductSelection(value: unknown): value is ProductSelection {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value) &&
-    Array.isArray((value as ProductSelection).productIds);
-}
-
-function isCollectionSelection(value: unknown): value is CollectionSelection {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray((value as ProductSelection).productIds)
+  );
 }
 
 function isCategorySelection(value: unknown): value is CategorySelection {

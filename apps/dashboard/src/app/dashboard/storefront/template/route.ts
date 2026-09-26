@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -69,6 +70,11 @@ export async function POST(request: Request) {
       ? NextResponse.json({ ok: false, message: result.message }, { status: result.status })
       : redirectToAdmin(request, result.message, tenantId, returnTo);
   }
+
+  // A template selection replaces the complete draft. Invalidate both entry
+  // points so a prefetched editor cannot reopen the previously selected draft.
+  revalidatePath("/dashboard/editor");
+  revalidatePath("/dashboard/settings");
 
   if (wantsJson) {
     return NextResponse.json({

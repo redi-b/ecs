@@ -20,7 +20,7 @@ export const afroV1Defaults: AfroV1Data = {
     categories: {
       enabled: true,
       title: "Find your own style with confidence.",
-      collectionIds: [],
+      categoryIds: [],
     },
     products: {
       enabled: true,

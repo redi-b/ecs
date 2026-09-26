@@ -1,10 +1,10 @@
-import { loadHomePageModel } from "./home-page.js";
+import { getStorefrontRenderer } from "../templates/registry.js";
+import type { StorefrontPageComponent, StorefrontRenderer } from "../templates/types.js";
 import { listStoreCategories, listStoreCollections } from "./commerce/catalog.js";
 import { listStoreProducts } from "./commerce/products.js";
 import { isStoreError } from "./commerce/result.js";
+import { loadHomePageModel } from "./home-page.js";
 import type { PageContext } from "./page-context.js";
-import { getStorefrontRenderer } from "../templates/registry.js";
-import type { StorefrontPageComponent, StorefrontRenderer } from "../templates/types.js";
 import type { StorefrontPreviewPageId } from "./storefront-preview-page-contract.js";
 
 type PreviewPage = {
@@ -28,8 +28,8 @@ const previewPages: Record<StorefrontPreviewPageId, PreviewPageDescriptor> = {
       const model = await loadHomePageModel(context, { includeCatalogFallback: true });
       return {
         productsResult: model?.productsResult ?? { products: [] },
-        collectionProducts: model?.collectionProducts ?? [],
         collections: model?.collections ?? [],
+        categories: model?.categories ?? [],
       };
     },
   },
@@ -68,7 +68,9 @@ const previewPages: Record<StorefrontPreviewPageId, PreviewPageDescriptor> = {
         products,
         errorMessage: isStoreError(productsResult) ? productsResult.message : null,
         hasPrev: false,
-        hasNext: !isStoreError(productsResult) && products.length < (productsResult.count ?? products.length),
+        hasNext:
+          !isStoreError(productsResult) &&
+          products.length < (productsResult.count ?? products.length),
         nextHref: "/products?offset=24",
         collections: isStoreError(collectionsResult) ? [] : collectionsResult.collections,
         categories: isStoreError(categoriesResult) ? [] : categoriesResult.categories,

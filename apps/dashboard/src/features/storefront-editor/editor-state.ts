@@ -59,9 +59,6 @@ export type StorefrontPageProps = {
   bodyFont?: string;
   collectionsStripEnabled?: boolean;
   collectionsStripTitle?: string;
-  featuredCollectionEnabled?: boolean;
-  featuredCollectionId?: string;
-  featuredCollectionTitle?: string;
   featuredProductIds?: string[];
   heroFeaturedProductIds?: string[];
   featuredProductsEnabled?: boolean;

@@ -37,12 +37,6 @@ export const luviaV1DataSchema = z.object({
       trustLabels: z.array(z.string().min(1)).max(3),
     }),
     featuredProducts: merchandisingSchema,
-    featuredCollection: z.object({
-      enabled: z.boolean().default(true),
-      title: z.string().default(""),
-      collectionId: z.string().min(1).optional(),
-      limit: z.number().int().min(1).max(48).default(12),
-    }),
     products: merchandisingSchema,
     categories: z.object({
       enabled: z.boolean().default(true),
@@ -65,16 +59,19 @@ export const luviaV1DataSchema = z.object({
     managedContact: z.boolean().optional(),
     additionalPhones: z.array(z.string()).optional(),
     blurb: z.string().optional(),
-    credit: z.object({
-      enabled: z.boolean().default(true),
-    }).default({ enabled: true }),
+    credit: z
+      .object({
+        enabled: z.boolean().default(true),
+      })
+      .default({ enabled: true }),
     phone: z.string().optional(),
     email: z.string().optional(),
     address: z.string().optional(),
     socialLinks: z.array(navigationItemSchema),
     quickLinks: z.array(navigationItemSchema).default([
       { label: "Home", href: "/" },
-      { label: "Shop", href: "/products" }, { label: "Contact", href: "/contact" },
+      { label: "Shop", href: "/products" },
+      { label: "Contact", href: "/contact" },
       { label: "Wishlist", href: "/wishlist" },
     ]),
     shopLinks: z.array(navigationItemSchema).default([
@@ -82,11 +79,17 @@ export const luviaV1DataSchema = z.object({
       { label: "Request an item", href: "/request-item" },
       { label: "Wishlist", href: "/wishlist" },
     ]),
-    inquiry: z.object({
-      title: z.string().min(1),
-      ctaLabel: z.string().min(1),
-      ctaHref: z.string().min(1),
-    }).default({ title: "Do you have any inquiries for us?", ctaLabel: "Let’s Get in Touch", ctaHref: "/contact" }),
+    inquiry: z
+      .object({
+        title: z.string().min(1),
+        ctaLabel: z.string().min(1),
+        ctaHref: z.string().min(1),
+      })
+      .default({
+        title: "Do you have any inquiries for us?",
+        ctaLabel: "Let’s Get in Touch",
+        ctaHref: "/contact",
+      }),
   }),
 });
 

@@ -8,7 +8,9 @@ import type {
   StoreProductsResponse,
 } from "../../../../lib/commerce/types";
 import type { StorefrontSeo } from "../../../../lib/seo";
+import { categoryProductsHref, collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import Button from "../components/Button.astro";
+import CategoryCard from "../components/CategoryCard.astro";
 import CollectionCard from "../components/CollectionCard.astro";
 import ProductCard from "../components/ProductCard.astro";
 import ProductFilters from "../components/ProductFilters.astro";
@@ -82,34 +84,36 @@ const defaultCollections = [
 ];
 
 const showTemplatePlaceholders = demoMode || editorMode;
+const categoryById = new Map(categories.map((category) => [category.id, category]));
+const selectedCatalogCategories = template.home?.categories?.categoryIds?.length
+  ? template.home.categories.categoryIds
+      .map((id) => categoryById.get(id))
+      .filter((category): category is StoreCategory => Boolean(category))
+  : categories;
 const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
-const selectedCategoryCollections = template.home?.categories?.collectionIds?.length
-  ? template.home.categories.collectionIds
-      .map((id) => collectionById.get(id))
-      .filter((collection): collection is StoreCollection => Boolean(collection))
-  : collections;
 const selectedHomeCollections = template.home?.collections?.collectionIds?.length
   ? template.home.collections.collectionIds
       .map((id) => collectionById.get(id))
       .filter((collection): collection is StoreCollection => Boolean(collection))
   : collections;
 
-const selectedCategories = selectedCategoryCollections.length > 0
-  ? selectedCategoryCollections.slice(0, 5).map((collection, idx) => ({
-      id: collection.id,
-      title: collection.title || "Collection",
+const selectedCategories = selectedCatalogCategories.length > 0
+  ? selectedCatalogCategories.slice(0, 5).map((category, idx) => ({
+      id: category.id,
+      title: category.name || "Category",
       count: "Explore",
-      image: collection.mediaUrl || (showTemplatePlaceholders ? defaultCategories[idx % defaultCategories.length].image : ""),
-      href: `/products?collection=${encodeURIComponent(collection.handle || collection.title || collection.id)}`,
+      image: category.mediaUrl || (showTemplatePlaceholders ? defaultCategories[idx % defaultCategories.length].image : ""),
+      href: categoryProductsHref(category),
     }))
   : showTemplatePlaceholders ? defaultCategories : [];
 
 const selectedCollections = selectedHomeCollections.length > 0
   ? selectedHomeCollections.slice(0, 4).map((collection, idx) => ({
+      id: collection.id,
       title: collection.title || "Collection",
       description: (collection as StoreCollection & { description?: string }).description || "",
       image: collection.mediaUrl || (showTemplatePlaceholders ? defaultCollections[idx % defaultCollections.length].image : ""),
-      href: `/products?collection=${encodeURIComponent(collection.handle || collection.title || collection.id)}`,
+      href: collectionProductsHref(collection),
     }))
   : showTemplatePlaceholders ? defaultCollections : [];
 ---
@@ -221,60 +225,9 @@ const selectedCollections = selectedHomeCollections.length > 0
           </div>
 
           <div class="category-section__viewport" id="category-carousel-viewport">
-            <div class="category-section__row" id="category-carousel-track" data-editor-collections-path="home.categories.collectionIds">
+            <div class="category-section__row" id="category-carousel-track" data-editor-categories-path="home.categories.categoryIds">
               {
-                selectedCategories.map((cat, idx) => (
-                  <div
-                    class:list={[
-                      "category-card",
-                      idx === 0 ? "category-card--active" : "category-card--standard",
-                    ]}
-                    data-category={cat.id}
-                    data-href={cat.href}
-                    role="group"
-                    aria-roledescription="slide"
-                    aria-label={`${cat.title} category`}
-                  >
-                    <div class="category-card__bg-image">
-                      <div class="img-wrapper">
-                        <img
-                          src={cat.image}
-                          alt={cat.title}
-                          class="cover"
-                          width="499"
-                          height="382"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-
-                    <div class="category-card__overlay category-card__overlay--inactive" aria-hidden="true"></div>
-                    <div class="category-card__overlay category-card__overlay--active" aria-hidden="true"></div>
-
-                    <div class="category-card__content-box">
-                      <div class="category-card__info">
-                        <h3 class="category-card__title type-header-5">{cat.title}</h3>
-                        <span class="category-card__count type-body-s-500">{cat.count}</span>
-                      </div>
-
-                      <div class="category-card__action category-card__action--active">
-                        <Button
-                          text="Browse"
-                          variant="secondary"
-                          size="small"
-                          icon="arrow"
-                          href={cat.href}
-                        />
-                      </div>
-
-                      <div class="category-card__action category-card__action--inactive">
-                        <span class="category-card__circle-btn" aria-hidden="true">
-                          <Icon name="arrow" width={12} height={10} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                selectedCategories.map((cat, idx) => <CategoryCard {...cat} active={idx === 0} />)
               }
             </div>
           </div>
@@ -458,5 +411,40 @@ const selectedCollections = selectedHomeCollections.length > 0
         </div>
       </section>
     )}
+    {editorMode && products.map((product) => (
+      <template data-editor-product-option={product.id}>
+        <ProductCard product={product} />
+      </template>
+    ))}
+    {editorMode && categories.map((category, index) => {
+      const item = {
+        id: category.id,
+        title: category.name || "Category",
+        count: "Explore",
+        image: category.mediaUrl || defaultCategories[index % defaultCategories.length].image,
+        href: categoryProductsHref(category),
+      };
+      return (
+        <>
+          <template data-editor-category-option-active={category.id}>
+            <CategoryCard {...item} active />
+          </template>
+          <template data-editor-category-option-standard={category.id}>
+            <CategoryCard {...item} />
+          </template>
+        </>
+      );
+    })}
+    {editorMode && collections.map((collection, index) => (
+      <template data-editor-collection-option={collection.id}>
+        <CollectionCard
+          title={collection.title || "Collection"}
+          description=""
+          image={collection.mediaUrl || defaultCollections[index % defaultCollections.length].image}
+          buttonText="Browse Now"
+          href={collectionProductsHref(collection)}
+        />
+      </template>
+    ))}
   </main>
 </Layout>

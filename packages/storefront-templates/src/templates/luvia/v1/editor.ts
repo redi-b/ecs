@@ -192,24 +192,6 @@ export const luviaV1EditorSchema = {
       ],
     },
     {
-      id: "featured-collection",
-      label: "Featured collection",
-      fields: [
-        {
-          path: "home.featuredCollection.enabled",
-          prop: "featuredCollectionEnabled",
-          label: "Show collection",
-          kind: "boolean",
-        },
-        {
-          path: "home.featuredCollection.collectionId",
-          prop: "featuredCollectionId",
-          label: "Collection",
-          kind: "collection",
-        },
-      ],
-    },
-    {
       id: "footer",
       label: "Footer",
       fields: [

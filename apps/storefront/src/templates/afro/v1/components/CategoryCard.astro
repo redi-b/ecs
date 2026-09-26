@@ -1,0 +1,46 @@
+---
+import { Icon } from "astro-icon/components";
+import Button from "./Button.astro";
+
+interface Props {
+  active?: boolean;
+  count: string;
+  href: string;
+  id: string;
+  image: string;
+  title: string;
+}
+
+const { active = false, count, href, id, image, title } = Astro.props;
+---
+
+<div
+  class:list={["category-card", active ? "category-card--active" : "category-card--standard"]}
+  data-category={id}
+  data-href={href}
+  role="group"
+  aria-roledescription="slide"
+  aria-label={`${title} category`}
+>
+  <div class="category-card__bg-image">
+    <div class="img-wrapper">
+      <img src={image} alt={title} class="cover" width="499" height="382" loading="lazy" />
+    </div>
+  </div>
+  <div class="category-card__overlay category-card__overlay--inactive" aria-hidden="true"></div>
+  <div class="category-card__overlay category-card__overlay--active" aria-hidden="true"></div>
+  <div class="category-card__content-box">
+    <div class="category-card__info">
+      <h3 class="category-card__title type-header-5">{title}</h3>
+      <span class="category-card__count type-body-s-500">{count}</span>
+    </div>
+    <div class="category-card__action category-card__action--active">
+      <Button text="Browse" variant="secondary" size="small" icon="arrow" href={href} />
+    </div>
+    <div class="category-card__action category-card__action--inactive">
+      <span class="category-card__circle-btn" aria-hidden="true">
+        <Icon name="arrow" width={12} height={10} />
+      </span>
+    </div>
+  </div>
+</div>

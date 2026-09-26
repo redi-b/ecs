@@ -93,13 +93,21 @@ test("Afro keeps merchant configuration authoritative and demo data bounded", ()
 
   for (const marker of [
     'data-editor-products-path="home.hero.productIds"',
-    'data-editor-collections-path="home.categories.collectionIds"',
+    'data-editor-categories-path="home.categories.categoryIds"',
     'data-editor-products-path="home.products.productIds"',
     'data-editor-collections-path="home.collections.collectionIds"',
     'data-editor-path="home.contact.infoTitle"',
     'data-editor-path="home.contact.infoBody"',
   ])
     assert.ok(home.includes(marker), "Afro home is missing " + marker);
+
+  for (const marker of [
+    "data-editor-product-option",
+    "data-editor-category-option-active",
+    "data-editor-category-option-standard",
+    "data-editor-collection-option",
+  ])
+    assert.ok(home.includes(marker), "Afro preview is missing " + marker);
 
   for (const marker of ["listing.title", "listing.body", "listing.imageAssetId"])
     assert.ok(listing.includes(marker), "Afro listing is missing " + marker);
@@ -114,6 +122,45 @@ test("Afro keeps merchant configuration authoritative and demo data bounded", ()
   assert.equal(layout.includes('href="https://instagram.com"'), false);
   assert.equal(layout.includes("AFRO Studio"), false);
   assert.equal(account.includes("AFRO Studio"), false);
+});
+
+test("every home editor renderer fulfills its merchandising preview contract", () => {
+  for (const template of selectableStorefrontTemplates) {
+    const home = read(`templates/${template.slug}/v${template.version}/pages/index.astro`);
+    const editor = read(
+      `../../../../packages/storefront-templates/src/templates/${template.slug}/v${template.version}/editor.ts`,
+    );
+
+    const contracts = [
+      {
+        kind: "products",
+        pathAttribute: "data-editor-products-path",
+        option: "data-editor-product-option",
+      },
+      {
+        kind: "categories",
+        pathAttribute: "data-editor-categories-path",
+        option: "data-editor-category-option",
+      },
+      {
+        kind: "collections",
+        pathAttribute: "data-editor-collections-path",
+        option: "data-editor-collection-option",
+      },
+    ] as const;
+
+    for (const contract of contracts) {
+      if (!editor.includes(`kind: "${contract.kind}"`)) continue;
+      assert.ok(
+        home.includes(contract.pathAttribute),
+        `${template.templateKey} is missing ${contract.pathAttribute}`,
+      );
+      assert.ok(
+        home.includes(contract.option),
+        `${template.templateKey} is missing ${contract.option}`,
+      );
+    }
+  }
 });
 
 test("every selectable template uses the shared analytics boundary exactly once", () => {

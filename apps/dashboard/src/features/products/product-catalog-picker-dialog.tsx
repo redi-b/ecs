@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
-import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -266,8 +265,8 @@ export function ProductCatalogPickerDialog({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border bg-card/60">
             {loading && catalogProducts.length === 0 ? (
               <div className="space-y-2 p-3">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <div className="flex items-center gap-3 rounded-2xl border p-3" key={index}>
+                {["one", "two", "three", "four", "five"].map((key) => (
+                  <div className="flex items-center gap-3 rounded-2xl border p-3" key={key}>
                     <Skeleton className="size-12 shrink-0 rounded-full" />
                     <div className="min-w-0 flex-1 space-y-2">
                       <Skeleton className="h-4 w-2/3" />
@@ -340,8 +339,9 @@ export function ProductCatalogPickerDialog({
                     );
                   }
 
-                  if (variants.length === 1) {
-                    const variant = variants[0]!;
+                  const onlyVariant = variants[0];
+                  if (variants.length === 1 && onlyVariant) {
+                    const variant = onlyVariant;
                     const isSelected = selectedIds.includes(variant.id);
                     const oos = isVariantOutOfStock(variant);
                     return (
@@ -567,12 +567,14 @@ export function ProductCatalogPickerDialog({
 
 export function ProductCatalogPickerTrigger({
   disabled,
+  icon = "products",
   label,
   loading,
   onClick,
   selectedCount = 0,
 }: {
   disabled?: boolean;
+  icon?: "products" | "tag";
   label?: string;
   loading?: boolean;
   onClick: () => void;
@@ -589,6 +591,8 @@ export function ProductCatalogPickerTrigger({
         ? t("common.productSelected")
         : t("common.productsSelected", { count: selectedCount }));
 
+  const TriggerIcon = AppIcons[icon];
+
   return (
     <Button
       className={cn(
@@ -601,7 +605,7 @@ export function ProductCatalogPickerTrigger({
       variant="outline"
     >
       <span className="flex min-w-0 items-center gap-2 truncate">
-        <AppIcons.products className="size-4 shrink-0 opacity-70" />
+        <TriggerIcon className="size-4 shrink-0 opacity-70" />
         <span className="truncate">{resolved}</span>
       </span>
       <AppIcons.arrowRight className="size-4 shrink-0 opacity-60" />

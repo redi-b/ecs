@@ -30,7 +30,10 @@ test("localized storefront sidecars reject shared and unknown fields", () => {
   assert.equal(
     validateStorefrontLocalizedContent({
       data: luviaV1Defaults,
-      localizedContent: { version: 1, locales: { am: { "themeTokens.colors.primary": translation } } },
+      localizedContent: {
+        version: 1,
+        locales: { am: { "themeTokens.colors.primary": translation } },
+      },
       templateKey: "luvia@1",
     }),
     false,
@@ -115,7 +118,7 @@ test("accepts NexaHub catalog selections when saving and publishing", () => {
   const data = structuredClone(nexahubV1Defaults);
   data.home.featuredItem.productIds = ["prod_selected", "prod_featured_second"];
   data.home.bestSellers.productIds = ["prod_selected", "prod_second"];
-  data.home.categories.collectionIds = ["pcol_selected"];
+  data.home.categories.categoryIds = ["pcat_selected"];
 
   const normalized = normalizeStorefrontDraftPayload({
     data,
@@ -125,9 +128,12 @@ test("accepts NexaHub catalog selections when saving and publishing", () => {
 
   assert.ok(normalized);
   const normalizedData = normalized.data as typeof data;
-  assert.deepEqual(normalizedData.home.featuredItem.productIds, ["prod_selected", "prod_featured_second"]);
+  assert.deepEqual(normalizedData.home.featuredItem.productIds, [
+    "prod_selected",
+    "prod_featured_second",
+  ]);
   assert.deepEqual(normalizedData.home.bestSellers.productIds, ["prod_selected", "prod_second"]);
-  assert.deepEqual(normalizedData.home.categories.collectionIds, ["pcol_selected"]);
+  assert.deepEqual(normalizedData.home.categories.categoryIds, ["pcat_selected"]);
 });
 
 test("rejects cross-template payloads instead of coercing them", () => {
@@ -144,16 +150,19 @@ test("rejects cross-template payloads instead of coercing them", () => {
 test("normalizes a synthetic template through the generic template boundary", () => {
   const dataSchema = z.object({ headline: z.string() });
   const themeSchema = z.object({ primary: z.string() });
-  const normalized = normalizeStorefrontDraftPayload({
-    data: { headline: "Merchant headline" },
-    templateKey: "test-template@1",
-    themeTokens: { primary: "#123456" },
-  }, () => ({
-    defaultData: { headline: "Default headline" },
-    defaultThemeTokens: { primary: "#000000" },
-    schema: dataSchema,
-    themeSchema,
-  }));
+  const normalized = normalizeStorefrontDraftPayload(
+    {
+      data: { headline: "Merchant headline" },
+      templateKey: "test-template@1",
+      themeTokens: { primary: "#123456" },
+    },
+    () => ({
+      defaultData: { headline: "Default headline" },
+      defaultThemeTokens: { primary: "#000000" },
+      schema: dataSchema,
+      themeSchema,
+    }),
+  );
 
   assert.ok(normalized);
   assert.deepEqual(normalized.data, { headline: "Merchant headline" });

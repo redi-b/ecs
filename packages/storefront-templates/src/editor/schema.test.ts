@@ -136,13 +136,10 @@ test("NexaHub exposes a narrow theme and explicit catalog fallback", () => {
     fields.some((field) => field.path === "header.navigation"),
     false,
   );
-  assert.deepEqual(
-    fields.find((field) => field.path === "home.categories.categoryIds")?.preview,
-    {
-      strategy: "variant-options",
-      variants: ["featured", "standard"],
-    },
-  );
+  assert.deepEqual(fields.find((field) => field.path === "home.categories.categoryIds")?.preview, {
+    strategy: "variant-options",
+    variants: ["featured", "standard"],
+  });
   assert.equal(
     fields.some((field) => field.path === "footer.quickLinks"),
     false,
@@ -170,7 +167,7 @@ test("Afro exposes a clean editor schema and valid default contracts", () => {
   assert.equal(manifest.theme?.allowSurfaceMode, false);
   assert.deepEqual(manifest.theme?.editableColors, ["primary"]);
   assert.deepEqual(defaults.home.products.productIds, []);
-  assert.deepEqual(defaults.home.categories.collectionIds, []);
+  assert.deepEqual(defaults.home.categories.categoryIds, []);
   assert.equal(defaults.footer.email, undefined);
   assert.equal(defaults.footer.phone, undefined);
   assert.deepEqual(defaults.footer.socialLinks, []);
@@ -187,13 +184,10 @@ test("Afro exposes a clean editor schema and valid default contracts", () => {
     fields.some((field) => field.path === "footer.quickLinks"),
     false,
   );
-  assert.deepEqual(
-    fields.find((field) => field.path === "home.categories.collectionIds")?.preview,
-    {
-      strategy: "variant-options",
-      variants: ["active", "standard"],
-    },
-  );
+  assert.deepEqual(fields.find((field) => field.path === "home.categories.categoryIds")?.preview, {
+    strategy: "variant-options",
+    variants: ["active", "standard"],
+  });
   assert.deepEqual(manifest.previewPages, [{ id: "home", label: "Home" }]);
   assert.equal(
     manifest.sections.some((section) => section.id === "listing"),

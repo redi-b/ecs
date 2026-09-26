@@ -27,12 +27,6 @@ export const luviaV1Defaults: LuviaV1Data = {
       productIds: [],
       limit: 8,
     },
-    featuredCollection: {
-      enabled: false,
-      title: "",
-      collectionId: undefined,
-      limit: 12,
-    },
     products: {
       enabled: true,
       title: "Products Listing",

@@ -209,7 +209,6 @@ describe("storefront editor state", () => {
             trustLabels: ["One", "Two", "Three"],
           },
           featuredProducts: { enabled: true, title: "Top picks", productIds: [], limit: 8 },
-          featuredCollection: { enabled: false, title: "", limit: 12 },
           products: { enabled: true, title: "Products", productIds: [], limit: 12 },
         },
         footer: { blurb: "Original footer", socialLinks: [] },

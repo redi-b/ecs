@@ -30,7 +30,9 @@ export const afroV1DataSchema = z.object({
     categories: z.object({
       enabled: z.boolean().default(true),
       title: z.string().min(1),
-      collectionIds: z.array(z.string().min(1)).max(12).default([]),
+      categoryIds: z.array(z.string().min(1)).max(12).default([]),
+      /** @deprecated Kept so previously saved drafts continue to parse. */
+      collectionIds: z.array(z.string().min(1)).max(12).optional(),
     }),
     products: selectableProductsSchema,
     collections: z.object({
