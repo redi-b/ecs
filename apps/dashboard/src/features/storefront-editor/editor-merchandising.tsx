@@ -332,3 +332,120 @@ export function StorefrontCollectionsPicker({
     </div>
   );
 }
+
+export function StorefrontCategoriesPicker({
+  maxSelection,
+  onChange,
+  value,
+}: {
+  maxSelection?: number | undefined;
+  onChange: (value: string[]) => void;
+  value: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [options, setOptions] = useState<CatalogOption[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/dashboard/products/categories/actions/list?limit=100", {
+      credentials: "same-origin",
+    })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (cancelled) return;
+        const categories = payload?.data?.categories ?? payload?.categories ?? [];
+        setOptions(
+          Array.isArray(categories)
+            ? (categories
+                .map(
+                  (row: {
+                    handle?: string | null;
+                    id?: string;
+                    mediaUrl?: string | null;
+                    name?: string | null;
+                  }) =>
+                    row?.id
+                      ? {
+                          id: String(row.id),
+                          title: String(row.name ?? row.id),
+                          handle: row.handle ?? null,
+                          thumbnailUrl: row.mediaUrl ?? null,
+                        }
+                      : null,
+                )
+                .filter(Boolean) as CatalogOption[])
+            : [],
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const items = useMemo(
+    () =>
+      options.map((category) => ({
+        id: category.id,
+        title: category.title,
+        subtitle: category.handle ? `/${category.handle}` : null,
+        thumbnailUrl: category.thumbnailUrl ?? null,
+        searchText: [category.title, category.handle, category.id].filter(Boolean).join(" "),
+      })),
+    [options],
+  );
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <ProductCatalogPickerTrigger
+            loading={loading}
+            onClick={() => setOpen(true)}
+            selectedCount={value.length}
+          />
+        </div>
+        {value.length > 0 ? (
+          <Button
+            className="h-9 shrink-0 px-3"
+            onClick={() => onChange([])}
+            type="button"
+            variant="outline"
+          >
+            Clear
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {value.length === 0
+          ? "Catalog categories are shown until you choose specific ones."
+          : `${value.length} ${value.length === 1 ? "category" : "categories"} selected.`}
+      </p>
+      <ProductCatalogPickerDialog
+        allowEmptySelection
+        confirmLabel="Save categories"
+        description="Choose the categories customers can open from this section."
+        emptyDescription="Create a category first, then return here to feature it."
+        emptyTitle="No categories found"
+        items={items}
+        loading={loading}
+        {...(maxSelection === undefined ? {} : { maxSelection })}
+        onConfirm={onChange}
+        onOpenChange={setOpen}
+        open={open}
+        searchPlaceholder="Search categories"
+        selectedIds={value}
+        selectionMode="multiple"
+        showCreateProductLink={false}
+        title="Choose categories"
+      />
+    </div>
+  );
+}

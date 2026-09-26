@@ -299,7 +299,7 @@ function coerceFieldValue(kind: string, value: unknown): unknown {
     return Boolean(value);
   }
 
-  if (kind === "products" || kind === "collections") {
+  if (kind === "products" || kind === "collections" || kind === "categories") {
     if (Array.isArray(value)) {
       return value.map(String).filter((id) => id.trim().length > 0);
     }
@@ -348,7 +348,7 @@ function normalizePropForEditor(kind: string, value: unknown): unknown {
   if (kind === "boolean") {
     return typeof value === "boolean" ? value : value == null ? true : Boolean(value);
   }
-  if (kind === "products" || kind === "collections") {
+  if (kind === "products" || kind === "collections" || kind === "categories") {
     return Array.isArray(value) ? value.map(String) : [];
   }
   if (kind === "product") {

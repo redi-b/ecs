@@ -8,7 +8,12 @@ import type { PageContext } from "./page-context";
 
 type ProductSelection = { enabled?: boolean; limit?: number; productIds: string[] };
 type CollectionSelection = { collectionId?: string; enabled?: boolean; limit?: number };
-type CategorySelection = { enabled?: boolean; collectionIds?: string[] };
+type CategorySelection = {
+  enabled?: boolean;
+  categoryIds?: string[];
+  /** @deprecated Existing storefront data may still carry collection selections. */
+  collectionIds?: string[];
+};
 
 type ResolvedHomeMerchandising = {
   heroProductIds: string[];

@@ -26,13 +26,13 @@ export const nexahubV1Defaults: NexahubV1Data = {
     },
     categories: {
       enabled: true,
-      eyebrow: "PRODUCTS CATALOGUE",
+      eyebrow: "SHOP BY CATEGORY",
       title: "Elite Hardware for High-Performance Workflows",
-      collectionIds: [],
+      categoryIds: [],
     },
     bestSellers: {
       enabled: true,
-      title: "Browse Our Full Tech Products Collection",
+      title: "Browse Our Full Tech Catalog",
       productIds: [],
       limit: 8,
     },

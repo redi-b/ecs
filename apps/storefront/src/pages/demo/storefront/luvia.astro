@@ -1,6 +1,10 @@
 ---
 import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
-import { luviaDemoCollections, luviaDemoProducts } from "../../../lib/demo/luvia-fixture";
+import {
+  luviaDemoCategories,
+  luviaDemoCollections,
+  luviaDemoProducts,
+} from "../../../lib/demo/luvia-fixture";
 import LuviaV1Home from "../../../templates/luvia/v1/pages/index.astro";
 ---
 
@@ -11,6 +15,7 @@ import LuviaV1Home from "../../../templates/luvia/v1/pages/index.astro";
   productsResult={{ products: luviaDemoProducts, count: luviaDemoProducts.length, limit: luviaDemoProducts.length, offset: 0 }}
   collectionProducts={luviaDemoProducts}
   collections={luviaDemoCollections}
+  categories={luviaDemoCategories}
   cartCount={0}
   deferCartCount={false}
   demoMode

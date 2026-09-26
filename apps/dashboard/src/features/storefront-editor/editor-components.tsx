@@ -15,7 +15,11 @@ export {
   StorefrontEditorShell,
   ToolbarIconButton,
 } from "./editor-chrome";
-export { StorefrontCollectionPicker, StorefrontProductsPicker } from "./editor-merchandising";
+export {
+  StorefrontCategoriesPicker,
+  StorefrontCollectionPicker,
+  StorefrontProductsPicker,
+} from "./editor-merchandising";
 
 export {
   EditableHint,

@@ -57,8 +57,8 @@ test("Luvia editor exposes a focused home-page surface", () => {
   );
   assert.equal(fields.find((field) => field.path === "footer.socialLinks")?.kind, "links");
   assert.equal(
-    fields.find((field) => field.path === "home.categories.collectionIds")?.kind,
-    "collections",
+    fields.find((field) => field.path === "home.categories.categoryIds")?.kind,
+    "categories",
   );
   assert.equal(
     fields.some((field) => field.path === "footer.quickLinks"),
@@ -121,7 +121,7 @@ test("NexaHub exposes a narrow theme and explicit catalog fallback", () => {
   assert.equal(manifest.theme?.allowSurfaceMode, false);
   assert.deepEqual(manifest.theme?.editableColors, ["primary"]);
   assert.deepEqual(defaults.home.bestSellers.productIds, []);
-  assert.deepEqual(defaults.home.categories.collectionIds, []);
+  assert.deepEqual(defaults.home.categories.categoryIds, []);
   assert.match(
     fields.find((field) => field.path === "home.bestSellers.productIds")?.helpText ?? "",
     /leave empty.*newest/i,
@@ -137,7 +137,7 @@ test("NexaHub exposes a narrow theme and explicit catalog fallback", () => {
     false,
   );
   assert.deepEqual(
-    fields.find((field) => field.path === "home.categories.collectionIds")?.preview,
+    fields.find((field) => field.path === "home.categories.categoryIds")?.preview,
     {
       strategy: "variant-options",
       variants: ["featured", "standard"],

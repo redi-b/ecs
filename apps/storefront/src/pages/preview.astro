@@ -79,8 +79,8 @@ function resolveConfiguredEditorOrigin() {
       const selectPath = (path) => {
         document.querySelectorAll('[data-editor-selected]').forEach((node) => node.removeAttribute('data-editor-selected'));
         if (!path) return;
-        const node = Array.from(document.querySelectorAll('[data-editor-path],[data-editor-section],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-related-paths]')).find((candidate) =>
-          candidate.getAttribute('data-editor-path') === path || candidate.getAttribute('data-editor-section') === path || candidate.getAttribute('data-editor-image-path') === path || candidate.getAttribute('data-editor-background-image-path') === path || candidate.getAttribute('data-editor-links-path') === path || candidate.getAttribute('data-editor-product-path') === path || candidate.getAttribute('data-editor-products-path') === path || candidate.getAttribute('data-editor-collections-path') === path
+        const node = Array.from(document.querySelectorAll('[data-editor-path],[data-editor-section],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-categories-path],[data-editor-related-paths]')).find((candidate) =>
+          candidate.getAttribute('data-editor-path') === path || candidate.getAttribute('data-editor-section') === path || candidate.getAttribute('data-editor-image-path') === path || candidate.getAttribute('data-editor-background-image-path') === path || candidate.getAttribute('data-editor-links-path') === path || candidate.getAttribute('data-editor-product-path') === path || candidate.getAttribute('data-editor-products-path') === path || candidate.getAttribute('data-editor-collections-path') === path || candidate.getAttribute('data-editor-categories-path') === path
           || (candidate.getAttribute('data-editor-related-paths') || '').split(/\s+/).includes(path)
         );
         node?.setAttribute('data-editor-selected', 'true');
@@ -155,8 +155,8 @@ function resolveConfiguredEditorOrigin() {
 
       document.addEventListener('click', (event) => {
         const element = event.target instanceof Element ? event.target : null;
-        const target = element?.closest('[data-editor-path],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-section]');
-        const path = target?.getAttribute('data-editor-path') || target?.getAttribute('data-editor-image-path') || target?.getAttribute('data-editor-background-image-path') || target?.getAttribute('data-editor-links-path') || target?.getAttribute('data-editor-product-path') || target?.getAttribute('data-editor-products-path') || target?.getAttribute('data-editor-collections-path') || target?.getAttribute('data-editor-section');
+        const target = element?.closest('[data-editor-path],[data-editor-image-path],[data-editor-background-image-path],[data-editor-links-path],[data-editor-product-path],[data-editor-products-path],[data-editor-collections-path],[data-editor-categories-path],[data-editor-section]');
+        const path = target?.getAttribute('data-editor-path') || target?.getAttribute('data-editor-image-path') || target?.getAttribute('data-editor-background-image-path') || target?.getAttribute('data-editor-links-path') || target?.getAttribute('data-editor-product-path') || target?.getAttribute('data-editor-products-path') || target?.getAttribute('data-editor-collections-path') || target?.getAttribute('data-editor-categories-path') || target?.getAttribute('data-editor-section');
         if (path) {
           selectPath(path);
           postToParent({ type: 'ecs:preview:select', path });
@@ -326,6 +326,27 @@ function resolveConfiguredEditorOrigin() {
           });
           node.replaceChildren(fragment);
         });
+        document.querySelectorAll('[data-editor-categories-path]').forEach((node) => {
+          const path = node.getAttribute('data-editor-categories-path');
+          const binding = path ? previewBindings[path] : null;
+          const variants = binding?.strategy === 'variant-options' && Array.isArray(binding.variants) ? binding.variants : [];
+          const requestedIds = path && Array.isArray(fields[path]) ? fields[path] : [];
+          const fallbackAttribute = variants.length ? `data-editor-category-option-${variants[0]}` : 'data-editor-category-option';
+          const ids = requestedIds.length || node.hasAttribute('data-editor-preserve-empty')
+            ? requestedIds
+            : Array.from(document.querySelectorAll(`template[${fallbackAttribute}]`)).slice(0, 6).map((option) => option.getAttribute(fallbackAttribute));
+          const fragment = document.createDocumentFragment();
+          ids.slice(0, 6).forEach((id, index) => {
+            if (typeof id !== 'string') return;
+            const variant = variants[Math.min(index, variants.length - 1)] || '';
+            const selector = variant
+              ? `template[data-editor-category-option-${variant}="${CSS.escape(id)}"]`
+              : `template[data-editor-category-option="${CSS.escape(id)}"]`;
+            const option = document.querySelector(selector);
+            if (option instanceof HTMLTemplateElement) fragment.append(option.content.cloneNode(true));
+          });
+          node.replaceChildren(fragment);
+        });
         document.querySelectorAll('[data-editor-theme-vars]').forEach((node) => {
           let mappings = {};
           try { mappings = JSON.parse(node.getAttribute('data-editor-theme-vars') || '{}'); } catch {}
@@ -345,19 +366,19 @@ function resolveConfiguredEditorOrigin() {
   :global([data-editor-path]),:global([data-editor-path] *){cursor:text!important}
   :global([data-editor-empty-label]:empty){min-width:7rem;min-height:2rem;display:inline-flex!important;align-items:center;padding:.3rem .55rem;border-radius:.45rem;background:color-mix(in srgb,#1687ff 7%,transparent);color:color-mix(in srgb,#1687ff 78%,#425466);font-size:.75rem;line-height:1.2;cursor:pointer!important}
   :global([data-editor-empty-label]:empty)::before{content:attr(data-editor-empty-label)}
-  :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-products-path]),:global([data-editor-collections-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
+  :global([data-editor-path]),:global([data-editor-section]),:global([data-editor-image-path]),:global([data-editor-background-image-path]),:global([data-editor-links-path]),:global([data-editor-product-path]),:global([data-editor-products-path]),:global([data-editor-collections-path]),:global([data-editor-categories-path]){outline:1px solid rgb(22 135 255 / 0);outline-offset:2px;box-shadow:0 0 0 3px rgb(22 135 255 / 0);transition:outline-offset .16s ease,box-shadow .16s ease,background-color .16s ease}
   :global([data-editor-path]:focus),:global([data-editor-path]:focus-visible){outline-color:color-mix(in srgb,#1687ff 88%,transparent)!important}
   :global([data-editor-selected="true"] [data-editor-path]:focus),:global([data-editor-selected="true"] [data-editor-path]:focus-visible),:global(.btn [contenteditable]),:global(.btn [contenteditable]:focus),:global(.btn [contenteditable]:focus-visible){outline:0!important;outline-offset:0!important;box-shadow:none!important;border-color:transparent!important}
   :global(html[data-editor-hints="on"] [data-editor-section]){outline:1px dashed color-mix(in srgb,#1687ff 22%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px}
   :global(html[data-editor-hints="on"] [data-editor-image-path]),:global(html[data-editor-hints="on"] [data-editor-background-image-path]){outline-color:color-mix(in srgb,#1687ff 34%,transparent)}
-  :global(html[data-editor-hints="on"] [data-editor-links-path]),:global(html[data-editor-hints="on"] [data-editor-product-path]),:global(html[data-editor-hints="on"] [data-editor-products-path]),:global(html[data-editor-hints="on"] [data-editor-collections-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px;cursor:pointer}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]),:global(html[data-editor-hints="on"] [data-editor-product-path]),:global(html[data-editor-hints="on"] [data-editor-products-path]),:global(html[data-editor-hints="on"] [data-editor-collections-path]),:global(html[data-editor-hints="on"] [data-editor-categories-path]){outline:1px solid color-mix(in srgb,#1687ff 34%,transparent);outline-offset:2px;cursor:pointer}
   :global(html[data-editor-hints="on"] [data-editor-section]:hover){outline-color:color-mix(in srgb,#1687ff 52%,transparent);outline-offset:3px;background-color:color-mix(in srgb,#1687ff 2%,transparent)}
   :global(html[data-editor-hints="on"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 78%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 7%,transparent)}
   :global(html[data-editor-hints="on"] [data-editor-image-path]:hover),:global(html[data-editor-hints="on"] [data-editor-background-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-image-path]:hover),:global(html[data-editor-hints="off"] [data-editor-background-image-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent);cursor:pointer}
   :global(html[data-editor-hints="off"] [data-editor-section]:hover){outline-style:dashed;outline-color:color-mix(in srgb,#1687ff 48%,transparent);outline-offset:3px}
   :global(html[data-editor-hints="off"] [data-editor-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
-  :global(html[data-editor-hints="on"] [data-editor-links-path]:hover),:global(html[data-editor-hints="on"] [data-editor-product-path]:hover),:global(html[data-editor-hints="on"] [data-editor-products-path]:hover),:global(html[data-editor-hints="on"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="off"] [data-editor-links-path]:hover),:global(html[data-editor-hints="off"] [data-editor-product-path]:hover),:global(html[data-editor-hints="off"] [data-editor-products-path]:hover),:global(html[data-editor-hints="off"] [data-editor-collections-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
+  :global(html[data-editor-hints="on"] [data-editor-links-path]:hover),:global(html[data-editor-hints="on"] [data-editor-product-path]:hover),:global(html[data-editor-hints="on"] [data-editor-products-path]:hover),:global(html[data-editor-hints="on"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="on"] [data-editor-categories-path]:hover),:global(html[data-editor-hints="off"] [data-editor-links-path]:hover),:global(html[data-editor-hints="off"] [data-editor-product-path]:hover),:global(html[data-editor-hints="off"] [data-editor-products-path]:hover),:global(html[data-editor-hints="off"] [data-editor-collections-path]:hover),:global(html[data-editor-hints="off"] [data-editor-categories-path]:hover){outline-color:color-mix(in srgb,#1687ff 76%,transparent);outline-offset:3px;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 6%,transparent)}
   :global([data-editor-selected="true"]){outline:2px solid color-mix(in srgb,#1687ff 88%,transparent)!important;outline-offset:3px!important;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 10%,transparent)!important}
   :global(.template-luvia .button[data-editor-path]){border-radius:999px}
   :global([data-preview-href]){cursor:default}

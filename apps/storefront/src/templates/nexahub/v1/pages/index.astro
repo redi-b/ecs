@@ -82,38 +82,22 @@ const selectedProducts = (
         .filter((item): item is StoreProduct => Boolean(item))
     : products
 ).slice(0, template.home.bestSellers.limit);
-const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
-const selectedCollections = (
-  template.home.categories.collectionIds.length
-    ? template.home.categories.collectionIds
-        .map((id) => collectionById.get(id))
-        .filter((item): item is StoreCollection => Boolean(item))
-    : collections
+const categoryById = new Map(categories.map((category) => [category.id, category]));
+const selectedCategories = (
+  template.home.categories.categoryIds.length
+    ? template.home.categories.categoryIds
+        .map((id) => categoryById.get(id))
+        .filter((item): item is StoreCategory => Boolean(item))
+    : categories
 ).slice(0, 6);
-const selectedTaxonomy = selectedCollections.length
-  ? selectedCollections.map((item) => ({ item, kind: "collection" as const }))
-  : categories.slice(0, 6).map((item) => ({ item, kind: "category" as const }));
 const categoryFallbacks = [
   categoryFallback1.src,
   categoryFallback2.src,
   categoryFallback3.src,
 ];
-const collectionProductImage = new Map<string, string>();
-for (const product of products) {
-  if (
-    product.collectionId &&
-    product.thumbnail &&
-    !collectionProductImage.has(product.collectionId)
-  ) {
-    collectionProductImage.set(product.collectionId, product.thumbnail);
-  }
-}
-const collectionImage = (collection: StoreCollection, index = 0) =>
-  nexahubAsset(collection.mediaUrl ?? collectionProductImage.get(collection.id), "") ||
-  categoryFallbacks[index % categoryFallbacks.length];
 const hasCatalogError = "message" in productsResult;
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} navigationCollections={collections} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} editorMode={editorMode} seo={seo} structuredData={structuredData} renderPath={editorMode || demoMode ? "/" : undefined}>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} navigationCategories={categories} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} editorMode={editorMode} seo={seo} structuredData={structuredData} renderPath={editorMode || demoMode ? "/" : undefined}>
   <main id="main-content">
     {(editorMode || template.home.hero.enabled) && <section class="hero-section" data-editor-section="home.hero" data-editor-visible-path="home.hero.enabled" hidden={!template.home.hero.enabled}>
       <img class="hero-section__background" src={nexahubAsset(template.home.hero.imageAssetId, heroFallback.src)} alt="" data-editor-image-path="home.hero.imageAssetId" data-editor-empty-src={heroFallback.src} />
@@ -174,7 +158,7 @@ const hasCatalogError = "message" in productsResult;
       </div>
     </section>}
 
-    {(editorMode || template.home.categories.enabled) && selectedTaxonomy.length > 0 && <section class="catalogue-section" id="catalogue" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}>
+    {(editorMode || template.home.categories.enabled) && selectedCategories.length > 0 && <section class="catalogue-section" id="catalogue" data-editor-section="home.categories" data-editor-visible-path="home.categories.enabled" hidden={!template.home.categories.enabled}>
       <div class="container catalogue-section__wrapper">
         <header class="catalogue-section__header">
 <div class="catalogue-section__eyebrow">
@@ -186,10 +170,9 @@ const hasCatalogError = "message" in productsResult;
 </div>
 <h2 class="catalogue-section__title type-heading-2" data-editor-path="home.categories.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.categories.title}</h2>
 </header>
-        <div class="catalogue-section__grid" data-editor-collections-path="home.categories.collectionIds">{selectedTaxonomy.map(({ item, kind }, index) => {
+        <div class="catalogue-section__grid" data-editor-categories-path="home.categories.categoryIds">{selectedCategories.map((item, index) => {
           const fallback = categoryFallbacks[index % categoryFallbacks.length];
-          const image = kind === "collection" ? collectionImage(item, index) : (item.mediaUrl || fallback);
-          return <CollectionCard item={item} kind={kind} image={image} variant={index === 0 ? "featured" : "standard"} />;
+          return <CollectionCard item={item} kind="category" image={item.mediaUrl || fallback} variant={index === 0 ? "featured" : "standard"} />;
         })}</div>
         <footer class="catalogue-section__footer">
 <Button text={m.catalog_all_products({}, { locale })} href="/products" />
@@ -197,7 +180,7 @@ const hasCatalogError = "message" in productsResult;
 <button type="button" class="catalogue-section__arrow" aria-label={m.home_previous_category({}, { locale })} data-cat-prev disabled>
 <span class="catalogue-section__arrow-icon catalogue-section__arrow-icon--previous"><Icon name="arrow-right" /></span>
 </button>
-<button type="button" class="catalogue-section__arrow" aria-label={m.home_next_category({}, { locale })} data-cat-next disabled={selectedTaxonomy.length <= 3}>
+<button type="button" class="catalogue-section__arrow" aria-label={m.home_next_category({}, { locale })} data-cat-next disabled={selectedCategories.length <= 3}>
 <span class="catalogue-section__arrow-icon"><Icon name="arrow-right" /></span>
 </button>
 </div>
@@ -374,22 +357,13 @@ const hasCatalogError = "message" in productsResult;
     {editorMode && products.map((product) => <template data-editor-product-option={product.id}>
 <ProductCard product={product} />
 </template>)}
-    {editorMode && collections.map((collection, index) => <>
-<template data-editor-collection-option-featured={collection.id}>
-<CollectionCard item={collection} kind="collection" image={collectionImage(collection, index)} variant="featured" />
-</template>
-<template data-editor-collection-option-standard={collection.id}>
-<CollectionCard item={collection} kind="collection" image={collectionImage(collection, index)} variant="standard" />
-</template>
-</>)}
-    {editorMode && collections.length === 0 && categories.map((category, index) => <>
-<template data-editor-collection-option-featured={category.id}>
+    {editorMode && categories.map((category, index) => <>
+<template data-editor-category-option-featured={category.id}>
 <CollectionCard item={category} kind="category" image={category.mediaUrl || categoryFallbacks[index % categoryFallbacks.length]} variant="featured" />
 </template>
-<template data-editor-collection-option-standard={category.id}>
+<template data-editor-category-option-standard={category.id}>
 <CollectionCard item={category} kind="category" image={category.mediaUrl || categoryFallbacks[index % categoryFallbacks.length]} variant="standard" />
 </template>
 </>)}
   </main>
 </Layout>
-

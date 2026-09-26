@@ -6,9 +6,9 @@ import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytic
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
 import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
-import { listStoreCollections } from "../../../../lib/commerce/catalog";
-import { collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
-import type { StoreCollection } from "../../../../lib/commerce/types";
+import { listStoreCategories } from "../../../../lib/commerce/catalog";
+import { categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import type { StoreCategory } from "../../../../lib/commerce/types";
 import { getEcsLandingPageUrl, getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -34,7 +34,7 @@ interface Props {
   themeTokens?: unknown;
   seo?: StorefrontSeo;
   structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
-  navigationCollections?: StoreCollection[];
+  navigationCategories?: StoreCategory[];
   renderPath?: string;
 }
 const {
@@ -48,23 +48,23 @@ const {
   themeTokens,
   seo,
   structuredData,
-  navigationCollections: suppliedNavigationCollections,
+  navigationCategories: suppliedNavigationCategories,
   renderPath,
 } = Astro.props;
 const ecsLandingPageUrl = getEcsLandingPageUrl();
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
-const collectionsResult =
-  suppliedNavigationCollections === undefined && !demoMode
-    ? await listStoreCollections({
+const categoriesResult =
+  suppliedNavigationCategories === undefined && !demoMode
+    ? await listStoreCategories({
         platformApiBaseUrl: getPlatformApiBaseUrl(),
         requestHost: getRequestHost(Astro.request),
         locale: locale === "am" ? "am-ET" : "en-ET",
         limit: 8,
       })
     : null;
-const navigationCollections =
-  suppliedNavigationCollections ??
-  (collectionsResult && "collections" in collectionsResult ? collectionsResult.collections : []);
+const navigationCategories =
+  suppliedNavigationCategories ??
+  (categoriesResult && "categories" in categoriesResult ? categoriesResult.categories : []);
 const theme = parseNexahubThemeTokens(themeTokens);
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
@@ -86,12 +86,12 @@ const productNav = header.navigation.find((item) => item.href === "/products");
 const primaryNav = header.navigation.filter((item) => item.href !== "/products");
 const productLinks = [
   { label: m.nav_all_products({}, { locale }), href: "/products" },
-  ...navigationCollections
+  ...navigationCategories
     .filter((item) => item.handle?.trim())
     .slice(0, 8)
     .map((item) => ({
-      label: item.title ?? m.catalog_products({}, { locale }),
-      href: collectionProductsHref(item),
+      label: item.name ?? m.catalog_category_fallback({}, { locale }),
+      href: categoryProductsHref(item),
     })),
 ];
 const socialIconNames = ["facebook", "instagram", "tiktok", "linkedin"] as const;
@@ -162,7 +162,7 @@ const nexahubClientMessages = {
     <footer class="site-footer" data-editor-section="footer"><div class="site-footer__layers"><div class="site-footer__layer site-footer__layer--1"></div><div class="site-footer__layer site-footer__layer--2"></div></div><div class="site-footer__inner">
 <div class="site-footer__col site-footer__col--about"><a href="/" class="site-footer__logo" aria-label={m.a11y_shop_home({ shop: tenantName }, { locale })} data-editor-image-scope><img src={logoUrl ?? undefined} alt={tenantName} data-editor-image-path="header.logoAssetId" data-editor-empty-src={emptyLogoUrl ?? undefined} hidden={!logoUrl} /><span class="nexa-wordmark" data-editor-image-fallback hidden={Boolean(logoUrl)}>{tenantName}</span></a><p class="site-footer__text type-body-s-400">{footer.blurb}</p><div class="site-footer__meta"><small class="site-footer__copyright type-body-xs-400">© {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}</small><a class="nexa-credit" href={ecsLandingPageUrl} rel="noreferrer" target="_blank">{m.footer_design_by_ecs({}, { locale })}</a></div></div>
       <div class="site-footer__col site-footer__col--boxed"><h3 class="site-footer__heading type-body-s-500">{m.footer_quick_links({}, { locale })}</h3><ul class="site-footer__nav">{footer.quickLinks.map((item) => <li><a href={item.href} class="type-body-s-400">{item.label}</a></li>)}</ul></div>
-      <div class="site-footer__col site-footer__col--boxed"><h3 class="site-footer__heading type-body-s-500">{m.footer_products({}, { locale })}</h3><ul class="site-footer__nav">{productLinks.map((item) => <li><a href={item.href} class="type-body-s-400">{item.label}</a></li>)}</ul></div>
+      <div class="site-footer__col site-footer__col--boxed"><h3 class="site-footer__heading type-body-s-500">{m.catalog_all_categories({}, { locale })}</h3><ul class="site-footer__nav">{productLinks.map((item) => <li><a href={item.href} class="type-body-s-400">{item.label}</a></li>)}</ul></div>
       <div class="site-footer__col site-footer__col--contact"><h3 class="site-footer__heading type-body-s-500">{m.footer_contacts({}, { locale })}</h3>{editorMode && (!footer.phone || !footer.email) && <p class="site-footer__contact-missing type-body-xs-500" data-editor-section="footer">{m.footer_contact_incomplete({}, { locale })}</p>}<address class="site-footer__contact-info">
         {footer.address && <p>{footer.address}</p>}
         {footer.email && <p><a href={`mailto:${footer.email}`}>{footer.email}</a></p>}

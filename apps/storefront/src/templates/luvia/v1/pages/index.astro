@@ -2,12 +2,16 @@
 import "../styles/pages/index.scss";
 import { Icon } from "astro-icon/components";
 import type {
+  StoreCategory,
   StoreCollection,
   StorefrontError,
   StoreProduct,
   StoreProductsResponse,
 } from "../../../../lib/commerce/types";
-import { collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import {
+  categoryProductsHref,
+  collectionProductsHref,
+} from "../../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -28,6 +32,7 @@ interface Props {
   productsResult: StoreProductsResponse | StorefrontError;
   collectionProducts?: StoreProduct[];
   collections?: StoreCollection[];
+  categories?: StoreCategory[];
   tenantName: string;
   themeTokens: unknown;
   cartCount?: number;
@@ -42,6 +47,7 @@ const {
   productsResult,
   collectionProducts = [],
   collections = [],
+  categories = [],
   tenantName,
   themeTokens,
   cartCount = 0,
@@ -92,15 +98,13 @@ const configuredHeroIds = template.home.hero.featuredProductIds.length
 const heroProducts = pickProducts(configuredHeroIds, products, 6).length
   ? pickProducts(configuredHeroIds, products, 6)
   : products.slice(0, 3);
-const collectionById = new Map(
-  collections.map((collection) => [collection.id, collection]),
-);
-const categoryCollections = (
-  template.home.categories.collectionIds.length
-    ? template.home.categories.collectionIds
-        .map((id) => collectionById.get(id))
-        .filter((item): item is StoreCollection => Boolean(item))
-    : collections
+const categoryById = new Map(categories.map((category) => [category.id, category]));
+const selectedCategories = (
+  template.home.categories.categoryIds.length
+    ? template.home.categories.categoryIds
+        .map((id) => categoryById.get(id))
+        .filter((item): item is StoreCategory => Boolean(item))
+    : categories
 ).slice(0, 4);
 const collectionHref = collectionProductsHref;
 const homeFilterCollections = collections.slice(0, 4);
@@ -118,6 +122,7 @@ const homeFilterCollections = collections.slice(0, 4);
   editorMode={editorMode}
   seo={seo}
   structuredData={structuredData}
+  categories={categories}
 >
   <main class="home">
     {
@@ -410,17 +415,16 @@ const homeFilterCollections = collections.slice(0, 4);
                 >
                   {template.home.categories.title}
                 </h2>
-                <nav data-editor-collections-path="home.categories.collectionIds">
-                  {categoryCollections.length ? (
-                    categoryCollections.map((collection, index) => (
+                <nav data-editor-categories-path="home.categories.categoryIds">
+                  {selectedCategories.length ? (
+                    selectedCategories.map((category, index) => (
                       <a
                         class="type-heading-4"
-                        href={collectionHref(collection)}
+                        href={categoryProductsHref(category)}
                       >
                         <span>
                           {index + 1}/{" "}
-                          {collection.title ??
-                            m.catalog_collection_fallback({}, { locale })}
+                          {category.name ?? m.catalog_category_fallback({}, { locale })}
                         </span>
                         <Icon name="diagonal-arrow" />
                       </a>
@@ -512,11 +516,11 @@ const homeFilterCollections = collections.slice(0, 4);
     }
     {
       editorMode &&
-        collections.map((collection) => (
-          <template data-editor-collection-option={collection.id}>
-            <a data-preview-href={collectionHref(collection)}>
+        categories.map((category) => (
+          <template data-editor-category-option={category.id}>
+            <a data-preview-href={categoryProductsHref(category)}>
               <>
-                <span>{collection.title ?? "Collection"}</span>
+                <span>{category.name ?? "Category"}</span>
                 <Icon name="diagonal-arrow" />
               </>
             </a>

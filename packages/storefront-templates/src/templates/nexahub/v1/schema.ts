@@ -41,7 +41,9 @@ export const nexahubV1DataSchema = z.object({
       enabled: z.boolean().default(true),
       eyebrow: z.string().min(1),
       title: z.string().min(1),
-      collectionIds: z.array(z.string().min(1)).max(6).default([]),
+      categoryIds: z.array(z.string().min(1)).max(6).default([]),
+      /** @deprecated Kept so existing published storefront data still parses. */
+      collectionIds: z.array(z.string().min(1)).max(6).optional(),
     }),
     bestSellers: selectableProductsSchema,
     quality: z.object({

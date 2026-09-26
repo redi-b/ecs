@@ -9,6 +9,7 @@ export const storefrontEditorFieldKindSchema = z.enum([
   "boolean",
   "collection",
   "collections",
+  "categories",
   "product",
   "products",
   "links",
@@ -20,7 +21,7 @@ export const storefrontEditorFieldSchema = z.object({
   label: z.string().min(1),
   kind: storefrontEditorFieldKindSchema,
   helpText: z.string().optional(),
-  /** Maximum selectable items for product/collection multi-pickers. */
+  /** Maximum selectable items for product/taxonomy multi-pickers. */
   maxItems: z.number().int().positive().optional(),
   /** Obsolete persisted paths removed when this replacement field is saved. */
   deprecatedPaths: z.array(z.string().min(1)).optional(),
@@ -33,7 +34,12 @@ export const storefrontEditorFieldSchema = z.object({
   if (field.preview?.strategy === "variant-options" && !field.preview.variants?.length) {
     context.addIssue({ code: "custom", message: "variant-options preview fields require variants", path: ["preview", "variants"] });
   }
-  if (field.maxItems && field.kind !== "products" && field.kind !== "collections") {
+  if (
+    field.maxItems &&
+    field.kind !== "products" &&
+    field.kind !== "collections" &&
+    field.kind !== "categories"
+  ) {
     context.addIssue({ code: "custom", message: "maxItems is only valid for multi-select fields", path: ["maxItems"] });
   }
 });

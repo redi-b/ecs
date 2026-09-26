@@ -2,6 +2,8 @@
 import type { LuviaV1Data } from "@ecs/storefront-templates";
 import * as m from "../../../../paraglide/messages.js";
 import { getEcsLandingPageUrl } from "../../../../lib/env";
+import { categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
+import type { StoreCategory } from "../../../../lib/commerce/types";
 import ActionButton from "./ActionButton.astro";
 
 interface Props {
@@ -11,6 +13,7 @@ interface Props {
   locale: "am" | "en";
   logoUrl?: string | null;
   emptyLogoUrl?: string | null;
+  categories?: StoreCategory[];
 }
 
 const ecsLandingPageUrl = getEcsLandingPageUrl();
@@ -22,7 +25,18 @@ const {
   locale,
   logoUrl,
   emptyLogoUrl,
+  categories = [],
 } = Astro.props;
+const categoryLinks = [
+  { label: m.nav_all_products({}, { locale }), href: "/products" },
+  ...categories
+    .filter((category) => category.handle?.trim())
+    .slice(0, 7)
+    .map((category) => ({
+      label: category.name ?? m.catalog_category_fallback({}, { locale }),
+      href: categoryProductsHref(category),
+    })),
+];
 ---
 
 <footer class="footer" data-editor-section="footer">
@@ -65,12 +79,12 @@ const {
   </div>
 
   <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.nav_shop({}, { locale })}</strong>
+    <strong class="type-body-s-500">{m.catalog_all_categories({}, { locale })}</strong>
     <span
       class="footer__links"
     >
       {
-        footer.shopLinks.map((item) => (
+        categoryLinks.map((item) => (
           <a
             class="type-body-s-400"
             href={item.href}

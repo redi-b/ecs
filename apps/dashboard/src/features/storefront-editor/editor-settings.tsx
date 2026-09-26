@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { StorefrontLinksEditor } from "./editor-links";
 import {
   StorefrontCollectionPicker,
+  StorefrontCategoriesPicker,
   StorefrontCollectionsPicker,
   StorefrontProductsPicker,
 } from "./editor-merchandising";
@@ -527,6 +528,17 @@ export function StorefrontSettingControl({
     const ids = Array.isArray(value) ? value.map(String) : [];
     return (
       <StorefrontCollectionsPicker
+        maxSelection={field.maxItems}
+        onChange={(next) => update(next)}
+        value={ids}
+      />
+    );
+  }
+
+  if (field.kind === "categories") {
+    const ids = Array.isArray(value) ? value.map(String) : [];
+    return (
+      <StorefrontCategoriesPicker
         maxSelection={field.maxItems}
         onChange={(next) => update(next)}
         value={ids}

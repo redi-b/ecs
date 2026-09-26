@@ -216,7 +216,7 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
 
   for (const path of [
     "home.hero.imageAssetId",
-    "home.categories.collectionIds",
+    "home.categories.categoryIds",
     "home.bestSellers.productIds",
     "footer.socialLinks",
     "footer.phone",
@@ -228,8 +228,8 @@ test("NexaHub binds editable content while live rendering uses safe catalog fall
   assert.match(button, /editorRelatedPaths\.join\(" "\)/);
   assert.doesNotMatch(button, /JSON\.stringify\(editorRelatedPaths\)/);
   assert.match(home, /: products\s*\)\.slice/);
-  assert.match(home, /: collections\s*\)\.slice/);
-  assert.match(home, /nexahubAsset\(collection\.mediaUrl \?\? collectionProductImage\.get/);
+  assert.match(home, /: categories\s*\)\.slice/);
+  assert.match(home, /category\.mediaUrl \|\| categoryFallbacks/);
   assert.doesNotMatch(home, /categoryImages|laptopCategory|smartphoneCategory|peripheralCategory/);
   assert.doesNotMatch(
     home,
@@ -426,11 +426,11 @@ test("NexaHub runtime UI keeps one save glyph, scoped styles, real carousel stat
   assert.match(client, /track\.scrollBy/);
   assert.match(client, /previous\.disabled/);
   assert.match(contact, /<Button text=\{m\.contact_send/);
-  assert.match(home, /data-editor-collection-option-featured/);
-  assert.match(home, /data-editor-collection-option-standard/);
+  assert.match(home, /data-editor-category-option-featured/);
+  assert.match(home, /data-editor-category-option-standard/);
   assert.match(preview, /previewBindings/);
   assert.match(preview, /preserve-structure/);
-  assert.match(preview, /data-editor-collection-option-\$\{variant\}/);
+  assert.match(preview, /data-editor-category-option-\$\{variant\}/);
   assert.doesNotMatch(preview, /ids\.slice\(0, 4\)/);
 });
 
@@ -499,9 +499,9 @@ test("NexaHub keeps its commerce shell and reference PDP structure consistent ac
   const productCard = read("templates/nexahub/v1/components/ProductCard.astro");
   const preview = read("pages/preview.astro");
 
-  assert.doesNotMatch(layout, /productNav && \(navigationCollections\.length/);
-  assert.match(layout, /suppliedNavigationCollections === undefined/);
-  assert.match(layout, /await listStoreCollections/);
+  assert.doesNotMatch(layout, /productNav && \(navigationCategories\.length/);
+  assert.match(layout, /suppliedNavigationCategories === undefined/);
+  assert.match(layout, /await listStoreCategories/);
   assert.match(layout, /productLinks\.map\(\(item\) => <li>/);
   assert.match(product, /similar-products__eyebrow/);
   assert.match(product, /m\.product_related/);
@@ -522,7 +522,7 @@ test("NexaHub editor rendering preserves the logical public route", () => {
   assert.match(listing, /renderPath=\{editorMode \? "\/products" : undefined\}/);
 });
 
-test("NexaHub preview collection options reuse the production Astro card renderer", () => {
+test("NexaHub preview category options reuse the production Astro card renderer", () => {
   const home = read("templates/nexahub/v1/pages/index.astro");
   const card = read("templates/nexahub/v1/components/CollectionCard.astro");
 
@@ -530,7 +530,7 @@ test("NexaHub preview collection options reuse the production Astro card rendere
   assert.ok(card.includes("catalogue-section__overlay-info"));
   assert.equal((home.match(/<CollectionCard/g) ?? []).length >= 3, true);
   assert.doesNotMatch(
-    home.match(/data-editor-collection-option-featured[\s\S]*?<\/template>/)?.[0] ?? "",
+    home.match(/data-editor-category-option-featured[\s\S]*?<\/template>/)?.[0] ?? "",
     /catalogue-section__overlay-box/,
     "preview option templates must not carry a second handwritten card implementation",
   );

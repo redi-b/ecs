@@ -47,7 +47,9 @@ export const luviaV1DataSchema = z.object({
     categories: z.object({
       enabled: z.boolean().default(true),
       title: z.string().min(1),
-      collectionIds: z.array(z.string()).default([]),
+      categoryIds: z.array(z.string()).default([]),
+      /** @deprecated Kept so existing published storefront data still parses. */
+      collectionIds: z.array(z.string()).optional(),
       imageAssetId: z.string().min(1).optional(),
       previewAssetId: z.string().min(1).optional(),
     }),

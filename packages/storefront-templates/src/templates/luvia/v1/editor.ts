@@ -113,11 +113,12 @@ export const luviaV1EditorSchema = {
         },
         { path: "home.categories.title", prop: "categoriesTitle", label: "Title", kind: "text" },
         {
-          path: "home.categories.collectionIds",
-          prop: "categoryCollectionIds",
-          label: "Collections",
-          kind: "collections",
-          helpText: "Choose and order the real catalog collections customers can explore here.",
+          path: "home.categories.categoryIds",
+          prop: "categoryIds",
+          label: "Categories",
+          kind: "categories",
+          deprecatedPaths: ["home.categories.collectionIds"],
+          helpText: "Choose and order the catalog categories customers can explore here.",
         },
         {
           path: "home.categories.imageAssetId",

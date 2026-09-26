@@ -41,8 +41,8 @@ export const luviaV1Defaults: LuviaV1Data = {
     },
     categories: {
       enabled: true,
-      title: "Find Your Perfect Match in Cosmetic Products.",
-      collectionIds: [],
+      title: "Shop by category",
+      categoryIds: [],
     },
     cta: {
       enabled: true,
