@@ -139,9 +139,6 @@ export function ThemeBrandSection({
                   {primary}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                {t("editor.theme.appearanceHelp")}
-              </p>
             </div>
           </div>
         </CollapsibleContent>

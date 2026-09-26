@@ -217,7 +217,7 @@ export function StorefrontSettingsPanel({
           <TooltipContent>{t("editor.translations.openSettings")}</TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex flex-col gap-2.5 p-3 pb-10 sm:p-3.5">
+      <div className="flex flex-col gap-3 p-3 pb-10 sm:p-3.5">
         {sections.map((section) => {
           if (section.id === "theme") {
             return (
@@ -367,7 +367,7 @@ export function StorefrontSettingsPanel({
                   <CollapsibleContent>
                     <div
                       className={cn(
-                        "flex min-w-0 flex-col gap-4 p-3.5",
+                        "flex min-w-0 flex-col gap-[1.125rem] p-3.5",
                         enabledField && !sectionVisible && "pointer-events-none opacity-50",
                       )}
                     >
@@ -392,7 +392,7 @@ export function StorefrontSettingsPanel({
                         return (
                           <Field
                             className={cn(
-                              "-m-1 min-w-0 gap-2 rounded-lg p-1",
+                              "-m-2 min-w-0 gap-3 rounded-lg p-2",
                               (selectedPath === field.path ||
                                 selectedPath?.startsWith(`${field.path}.`)) &&
                                 "bg-primary/[0.07] ring-2 ring-primary/25 shadow-sm",

@@ -106,7 +106,7 @@
   },
   "theme": {
     "appearance": "Brand color",
-    "appearanceHelp": "Choose your main storefront color. Supporting colors are adjusted automatically.",
+    "appearanceHelp": "Sets the main color for buttons and accents.",
     "autoPalette": "Automatic palette",
     "autoPaletteOn": "Brand and surface keep the set in sync.",
     "autoPaletteOff": "Manual colors. Rebuild from brand anytime.",

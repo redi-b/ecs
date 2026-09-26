@@ -66,11 +66,12 @@ export function ShopLiveStatusBadge({ live }: { live: boolean }) {
       className={cn(
         "h-6 w-auto gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium shadow-sm",
         live
-          ? "bg-success text-success-foreground hover:bg-success hover:text-success-foreground"
-          : "bg-warning text-warning-foreground hover:bg-warning hover:text-warning-foreground",
+          ? "!bg-success !text-success-foreground !hover:bg-success !hover:text-success-foreground"
+          : "!bg-warning !text-warning-foreground !hover:bg-warning !hover:text-warning-foreground",
       )}
       label={label}
       summary={live ? t("editor.status.liveHelp") : t("editor.status.pausedHelp")}
+      rich
       title={t("editor.status.shopTitle")}
       triggerContent={
         <>
@@ -88,17 +89,17 @@ export function PublicationStatusBadge({ status }: { status: PublicationStatus }
     published: {
       help: t("editor.status.publishedHelp"),
       label: t("editor.status.publishedLive"),
-      tone: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+      tone: "!bg-primary !text-primary-foreground !hover:bg-primary !hover:text-primary-foreground",
     },
     "saved-draft": {
       help: t("editor.status.savedHelp"),
       label: t("editor.status.draftSaved"),
-      tone: "bg-muted text-foreground hover:bg-muted hover:text-foreground",
+      tone: "!bg-muted !text-foreground !hover:bg-muted !hover:text-foreground",
     },
     unsaved: {
       help: t("editor.status.unsavedHelp"),
       label: t("editor.status.unpublishedEdits"),
-      tone: "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground",
+      tone: "!bg-accent !text-accent-foreground !hover:bg-accent !hover:text-accent-foreground",
     },
   } satisfies Record<PublicationStatus, { help: string; label: string; tone: string }>;
   const item = copy[status];
@@ -111,6 +112,7 @@ export function PublicationStatusBadge({ status }: { status: PublicationStatus }
       )}
       label={item.label}
       summary={item.help}
+      rich
       title={t("editor.status.changesTitle")}
       triggerContent={
         <>

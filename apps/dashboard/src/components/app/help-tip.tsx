@@ -1,5 +1,6 @@
 "use client";
 
+import { RiInformationLine } from "@remixicon/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
@@ -109,7 +110,7 @@ export function HelpTip({
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 border-b border-border/60 bg-muted/25 px-3.5 py-3">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background text-muted-foreground shadow-xs">
-                <Icon className="size-3.5" />
+                <RiInformationLine className="size-3.5" />
               </div>
               {title ? (
                 <p className="min-w-0 text-sm font-medium tracking-tight text-foreground">

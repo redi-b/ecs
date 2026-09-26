@@ -415,6 +415,11 @@ const afroClientMessages = {
                 </div>
 
                 <div class="site-footer__col">
+                  {editorMode && socialLinks.length === 0 && (
+                    <p class="site-footer__contact-missing type-body-xs-500" data-editor-section="footer">
+                      {m.footer_social_incomplete({}, { locale })}
+                    </p>
+                  )}
                   <h3 class="site-footer__col-title type-body-s-700">{m.contact_socials({}, { locale })}</h3>
                   <ul class="site-footer__link-list">
                     {socialLinks.map((link) => (
