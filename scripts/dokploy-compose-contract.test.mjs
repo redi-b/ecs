@@ -29,6 +29,15 @@ test("storefront receives the branded demo host at runtime", () => {
   );
 });
 
+test("Traefik requests certificates for the demo and seeded Afro storefront", () => {
+  assert.match(compose, /Host\(`demo\.\$\{BASE_DOMAIN\}`\)/);
+  assert.match(compose, /Host\(`afrostudio\.\$\{BASE_DOMAIN\}`\)/);
+  assert.match(
+    compose,
+    /traefik\.http\.routers\.ecs-caddy-demo-certs\.tls\.certresolver=letsencrypt/,
+  );
+});
+
 test("storefront receives the trusted public media base at runtime", () => {
   assert.match(
     serviceBlock("storefront", "caddy"),

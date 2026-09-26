@@ -43,7 +43,7 @@ Wildcard **DNS** and wildcard **TLS** are separate concerns.
 
 | Hosts | Certificate |
 |-------|-------------|
-| `dashboard`, `api`, `shop`, `media`, and explicitly approved beta shops | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
+| Platform hosts, `demo`, and explicitly approved beta shops such as `afrostudio` | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
 | Any other `{shop}.${BASE_DOMAIN}` | Catch-all router reaches ECS, but a regex-only host rule cannot supply a concrete ACME domain and Traefik serves its default certificate |
 
 Wildcard DNS routes shop traffic but does not provide wildcard TLS. Before relying on managed shop hosts, configure a DNS-01 resolver in Dokploy's static Traefik configuration and request one `*.BASE_DOMAIN` certificate explicitly from the catch-all router. DNS-01 requires API access to the authoritative DNS provider; the default HTTP-01 resolver cannot issue wildcard certificates.
