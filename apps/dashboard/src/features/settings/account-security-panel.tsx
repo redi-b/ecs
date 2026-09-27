@@ -38,7 +38,11 @@ import {
   parseUserAgent,
 } from "@/features/settings/account-security-parts";
 import { ProfileAvatarEditor } from "@/features/settings/profile-avatar-editor";
-import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
+import {
+  SectionIntro,
+  SettingsFormActions,
+  SettingsSectionBody,
+} from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -526,7 +530,7 @@ export function AccountSecurityPanel({
     <SettingsSectionBody>
       <SectionIntro title={t("settings.accountSecurity.title")} />
 
-      <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
+      <section className="rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
         <div className="flex items-center gap-3.5 border-b border-border/60 bg-muted/20 px-4 py-3.5 sm:px-4">
           <Dialog
             open={avatarDialogOpen}
@@ -621,30 +625,18 @@ export function AccountSecurityPanel({
             required
             value={phone}
           />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              disabled={savingProfile || (!nameDirty && !phoneDirty && !avatarDirty)}
-              onClick={() => {
-                setName(initialName ?? "");
-                setAvatar(savedAvatar);
-                setPhone(savedPhone);
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              className="w-full rounded-full sm:w-auto"
-              disabled={savingProfile || (!nameDirty && !phoneDirty && !avatarDirty)}
-              onClick={() => void saveProfile()}
-              size="sm"
-              type="button"
-            >
-              {savingProfile ? t("common.saving") : t("settings.accountSecurity.saveName")}
-            </Button>
-          </div>
+          <SettingsFormActions
+            className="-mx-4 -mb-3.5"
+            dirty={nameDirty || phoneDirty || avatarDirty}
+            onDiscard={() => {
+              setName(initialName ?? "");
+              setAvatar(savedAvatar);
+              setPhone(savedPhone);
+            }}
+            onSave={() => void saveProfile()}
+            pending={savingProfile}
+            saveLabel={t("settings.accountSecurity.saveName")}
+          />
         </div>
       </section>
 

@@ -15,6 +15,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import {
   SectionIntro,
+  SettingsFormActions,
   SettingsPanel,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
@@ -88,7 +89,6 @@ export function PreferencesSection({
       />
 
       <SettingsPanel
-        className="overflow-hidden"
         contentClassName="space-y-0 p-0"
         description={t("settings.accountSecurity.calendar.description")}
         title={t("settings.accountSecurity.calendar.title")}
@@ -117,25 +117,13 @@ export function PreferencesSection({
             <p className="mt-1 text-sm font-medium tabular-nums text-foreground">{preview}</p>
           </div>
         </div>
-        <div className="flex justify-end gap-2 border-t border-border/60 bg-muted/10 px-4 py-3">
-          <Button
-            disabled={!calendarDirty || savingCalendar}
-            onClick={() => setCalendarPreference(savedPreference)}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            className="rounded-full"
-            disabled={!calendarDirty || savingCalendar}
-            onClick={() => void saveCalendarPreference()}
-            size="sm"
-            type="button"
-          >
-            {savingCalendar ? t("common.saving") : t("common.save")}
-          </Button>
+        <div className="px-3">
+          <SettingsFormActions
+            dirty={calendarDirty}
+            onDiscard={() => setCalendarPreference(savedPreference)}
+            onSave={() => void saveCalendarPreference()}
+            pending={savingCalendar}
+          />
         </div>
       </SettingsPanel>
 

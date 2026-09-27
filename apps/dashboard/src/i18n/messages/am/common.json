@@ -3,6 +3,8 @@
   "continue": "ቀጥል",
   "back": "ተመለስ",
   "save": "አስቀምጥ",
+  "saveChanges": "ለውጦችን አስቀምጥ",
+  "discard": "ለውጦቹን ተው",
   "cancel": "ይቅር",
   "notSet": "አልተዘጋጀም",
   "preview": "ቅድመ እይታ",
@@ -107,6 +109,7 @@
   "moreInfo": "ተጨማሪ መረጃ",
   "unsaved": {
     "eyebrow": "ያልተቀመጠ",
+    "actionsLabel": "ያልተቀመጡ ለውጦች",
     "title": "ሳያስቀምጡ ይወጣሉ?",
     "description": "ያልተቀመጡ ለውጦች አሉዎት። አሁን ከወጡ እነዚያ ለውጦች ይጠፋሉ።",
     "summary": "ለማስቀመጥ የሚጠብቁ ለውጦች",

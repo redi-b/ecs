@@ -3,6 +3,8 @@
   "continue": "Continue",
   "back": "Back",
   "save": "Save",
+  "saveChanges": "Save changes",
+  "discard": "Discard",
   "cancel": "Cancel",
   "notSet": "Not set",
   "preview": "Preview",
@@ -107,6 +109,7 @@
   "moreInfo": "More info",
   "unsaved": {
     "eyebrow": "Unsaved",
+    "actionsLabel": "Unsaved changes",
     "title": "Leave without saving?",
     "description": "You have unsaved changes. If you leave now, those changes will be lost.",
     "summary": "Changes to save",

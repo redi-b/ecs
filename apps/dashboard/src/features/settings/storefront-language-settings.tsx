@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
-import { SettingsPanel } from "@/features/settings/settings-sections";
+import { SettingsFormActions, SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
 import { dashboardRoutes } from "@/lib/routes";
@@ -130,7 +130,7 @@ export function StorefrontLanguageSettingsPanel({
         </fieldset>
       ) : null}
 
-      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-t pt-4">
         {saved.enabledLocales.includes("am") ? (
           <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
             <Link href={dashboardRoutes.storefrontTranslations}>
@@ -141,24 +141,15 @@ export function StorefrontLanguageSettingsPanel({
         ) : (
           <span />
         )}
-        <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
-          {dirty ? (
-            <span className="text-xs font-medium text-warning-foreground">
-              {t("common.unsaved.eyebrow")}
-            </span>
-          ) : null}
-          <Button
-            className="w-full rounded-full sm:w-auto"
-            disabled={!dirty || pending}
-            onClick={save}
-            size="sm"
-          >
-            {pending
-              ? t("settings.storefront.languagesSaving")
-              : t("settings.storefront.languagesSave")}
-          </Button>
-        </div>
       </div>
+      <SettingsFormActions
+        dirty={dirty}
+        onDiscard={() => setSettings(saved)}
+        onSave={save}
+        pending={pending}
+        saveLabel={t("settings.storefront.languagesSave")}
+        savingLabel={t("settings.storefront.languagesSaving")}
+      />
       <ConfirmDialog
         cancelLabel={t("settings.storefront.languagesNotNow")}
         confirmLabel={

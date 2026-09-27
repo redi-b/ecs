@@ -5,11 +5,10 @@ import { CheckIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";
-
-import { Badge } from "@/components/ui/badge";
-import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
-import { Button } from "@/components/ui/button";
 import Link from "@/components/app/link";
+import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -75,7 +74,7 @@ export function SettingsPanel({
   contentClassName?: string;
 }) {
   return (
-    <Card className={cn(className)} size="sm">
+    <Card className={cn("overflow-visible", className)} size="sm">
       <CardHeader
         className={cn(
           "flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3",
@@ -95,6 +94,65 @@ export function SettingsPanel({
         {children}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Contextual actions for a settings draft. It stays at the bottom edge while a
+ * long panel is being edited, then settles back into the panel as its footer.
+ */
+export function SettingsFormActions({
+  canSave = true,
+  className,
+  dirty,
+  onDiscard,
+  onSave,
+  pending = false,
+  saveLabel,
+  savingLabel,
+  submit = false,
+}: {
+  canSave?: boolean;
+  className?: string;
+  dirty: boolean;
+  onDiscard: () => void;
+  onSave?: () => void;
+  pending?: boolean;
+  saveLabel?: string;
+  savingLabel?: string;
+  submit?: boolean;
+}) {
+  const { t } = useI18n();
+
+  if (!dirty) return null;
+
+  return (
+    <section
+      aria-label={t("common.unsaved.actionsLabel")}
+      className={cn(
+        "sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 -mx-3 -mb-3 mt-5 flex flex-col gap-3 rounded-b-xl border-t border-border/70 bg-card/95 px-3 py-3 shadow-[0_-8px_24px_-20px_rgb(0_0_0/0.45)] backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 sm:flex-row sm:items-center sm:justify-between",
+        className,
+      )}
+    >
+      <output className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="size-1.5 rounded-full bg-warning-foreground" aria-hidden />
+        {t("common.unsaved.eyebrow")}
+      </output>
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+        <Button disabled={pending} onClick={onDiscard} size="sm" type="button" variant="ghost">
+          {t("common.discard")}
+        </Button>
+        <Button
+          className="rounded-full"
+          disabled={!canSave || pending}
+          onClick={submit ? undefined : onSave}
+          size="sm"
+          type={submit ? "submit" : "button"}
+        >
+          {pending ? (savingLabel ?? t("common.saving")) : (saveLabel ?? t("common.saveChanges"))}
+        </Button>
+      </div>
+    </section>
   );
 }
 

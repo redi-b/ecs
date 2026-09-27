@@ -9,6 +9,7 @@ import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SettingsFormActions } from "@/features/settings/settings-sections";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -270,6 +271,7 @@ export function NotificationEventPicker({
   dirty,
   onChange,
   onSave,
+  onDiscard,
   lockedEvents = [],
 }: {
   events: string[];
@@ -279,6 +281,7 @@ export function NotificationEventPicker({
   dirty: boolean;
   onChange: (events: string[]) => void;
   onSave: () => void;
+  onDiscard: () => void;
   lockedEvents?: readonly string[];
 }) {
   const { t } = useI18n();
@@ -341,18 +344,15 @@ export function NotificationEventPicker({
           </div>
         ))}
       </div>
-      {/* Nested panel stays; save only when the draft differs. */}
-      {dirty ? (
-        <Button
-          className="rounded-full"
-          disabled={disabled || saving || events.length === 0}
-          size="sm"
-          type="button"
-          onClick={onSave}
-        >
-          {saving ? t("common.saving") : t("settings.notifications.saveEvents")}
-        </Button>
-      ) : null}
+      <SettingsFormActions
+        canSave={events.length > 0 && !disabled}
+        className="-mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4"
+        dirty={dirty}
+        onDiscard={onDiscard}
+        onSave={onSave}
+        pending={saving ?? false}
+        saveLabel={t("settings.notifications.saveEvents")}
+      />
     </div>
   );
 }

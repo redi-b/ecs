@@ -97,6 +97,7 @@ export function SettingsWorkspace({
   const [isPending, startTransition] = useTransition();
   const [savingFee, setSavingFee] = useState(false);
   const [storefrontLanguageDirty, setStorefrontLanguageDirty] = useState(false);
+  const [storefrontSeoDirty, setStorefrontSeoDirty] = useState(false);
   const [accountChanges, setAccountChanges] = useState<readonly string[]>([]);
   const [preferenceChanges, setPreferenceChanges] = useState<readonly string[]>([]);
   const nameId = useId();
@@ -134,8 +135,11 @@ export function SettingsWorkspace({
       ? preferenceChanges
       : section === "shop"
         ? shopChanges
-        : section === "storefront" && storefrontLanguageDirty
-          ? [t("settings.storefront.languagesTitle")]
+        : section === "storefront"
+          ? [
+              ...(storefrontLanguageDirty ? [t("settings.storefront.languagesTitle")] : []),
+              ...(storefrontSeoDirty ? [t("settings.storefront.seoTitle")] : []),
+            ]
           : section === "account"
             ? accountChanges
             : [];
@@ -147,6 +151,7 @@ export function SettingsWorkspace({
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
     shopDirty ||
       storefrontLanguageDirty ||
+      storefrontSeoDirty ||
       accountChanges.length > 0 ||
       preferenceChanges.length > 0,
   );
@@ -405,6 +410,7 @@ export function SettingsWorkspace({
               nextHost={nextHost}
               onHandleChange={(value) => setHandle(value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
               onNameChange={setName}
+              onDiscard={resetShopDraft}
               onSave={() => (handleChanged ? setDialogOpen(true) : saveShopSettings())}
               onToggleHandleLock={() => {
                 if (handleUnlocked) {
@@ -482,6 +488,7 @@ export function SettingsWorkspace({
               seo={storefrontSeo}
               languageSettings={storefrontLanguageSettings}
               onLanguageDirtyChange={setStorefrontLanguageDirty}
+              onSeoDirtyChange={setStorefrontSeoDirty}
               storefrontTemplates={storefrontTemplates}
               summary={summary}
             />

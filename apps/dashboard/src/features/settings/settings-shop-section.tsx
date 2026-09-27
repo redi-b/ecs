@@ -3,7 +3,6 @@
 import { usePolicy } from "@/components/app/access-context";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { HandleAvailability } from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
+  SettingsFormActions,
   SettingsPanel,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
@@ -38,6 +38,7 @@ export function ShopSection({
   nextHost,
   onHandleChange,
   onNameChange,
+  onDiscard,
   onSave,
   onToggleHandleLock,
 }: {
@@ -56,6 +57,7 @@ export function ShopSection({
   nextHost: string;
   onHandleChange: (value: string) => void;
   onNameChange: (value: string) => void;
+  onDiscard: () => void;
   onSave: () => void;
   onToggleHandleLock: () => void;
 }) {
@@ -145,17 +147,14 @@ export function ShopSection({
             </Alert>
           ) : null}
           {canManage ? (
-            <div className="flex justify-end">
-              <Button
-                className="w-full rounded-full sm:w-auto"
-                disabled={!canSaveShop || !dirty || isPending}
-                onClick={onSave}
-                size="sm"
-                type="button"
-              >
-                {isPending ? t("common.saving") : t("settings.shop.saveShop")}
-              </Button>
-            </div>
+            <SettingsFormActions
+              canSave={canSaveShop}
+              dirty={dirty}
+              onDiscard={onDiscard}
+              onSave={onSave}
+              pending={isPending}
+              saveLabel={t("settings.shop.saveShop")}
+            />
           ) : null}
         </SettingsPanel>
       </div>

@@ -11,10 +11,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "@/components/app/link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getSelectedTemplateName,
@@ -40,10 +40,12 @@ export function StorefrontSection({
   seo,
   languageSettings,
   onLanguageDirtyChange,
+  onSeoDirtyChange,
 }: {
   seo: StorefrontSeoSettings;
   languageSettings: StorefrontLanguageSettings;
   onLanguageDirtyChange?: ((dirty: boolean) => void) | undefined;
+  onSeoDirtyChange?: ((dirty: boolean) => void) | undefined;
   storefrontTemplates: StorefrontTemplateCatalogItem[];
   summary: MerchantDashboardAccess;
 }) {
@@ -325,6 +327,7 @@ export function StorefrontSection({
       />
       <StorefrontSeoSettingsForm
         initialSeo={seo}
+        onDirtyChange={onSeoDirtyChange}
         tenantId={summary.tenant.id}
         tenantName={summary.tenant.name}
       />

@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  buildNotificationEventsPayload,
   ALWAYS_ON_EMAIL_EVENTS,
+  buildNotificationEventsPayload,
   defaultNotificationEvents,
   isValidNotificationEmail,
   NotificationChannelHeader,
@@ -58,9 +58,7 @@ function emailStateFromPreferences(preferences: NotificationPreference[]): Email
   return {
     target: match.target,
     enabled: true,
-    events: [
-      ...new Set([...normalizeNotificationEvents(match.events), ...ALWAYS_ON_EMAIL_EVENTS]),
-    ],
+    events: [...new Set([...normalizeNotificationEvents(match.events), ...ALWAYS_ON_EMAIL_EVENTS])],
   };
 }
 
@@ -350,7 +348,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
         <TelegramConnectPanel available={telegramAvailable} tenantId={tenantId} />
       ) : null}
 
-      <Card size="sm">
+      <Card className="overflow-visible" size="sm">
         <NotificationChannelHeader
           badge={<NotificationStatusBadge status={status} />}
           description={t("settings.notifications.emailDescription")}
@@ -501,6 +499,7 @@ export function NotificationsSection({ tenantId }: { tenantId: string }) {
                   lockedEvents={ALWAYS_ON_EMAIL_EVENTS}
                   saving={savingEvents}
                   onChange={setEventsDraft}
+                  onDiscard={() => setEventsDraft(saved.events)}
                   onSave={saveEvents}
                 />
               ) : null}

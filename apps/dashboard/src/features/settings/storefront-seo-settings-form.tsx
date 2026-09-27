@@ -1,9 +1,9 @@
 "use client";
 
 import type { StorefrontSeoSettings } from "@ecs/contracts";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { ImageUpIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -11,15 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
-import { SettingsPanel } from "@/features/settings/settings-sections";
+import { SettingsFormActions, SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 
 export function StorefrontSeoSettingsForm({
   initialSeo,
+  onDirtyChange,
   tenantId,
   tenantName,
 }: {
   initialSeo: StorefrontSeoSettings;
+  onDirtyChange?: ((dirty: boolean) => void) | undefined;
   tenantId: string;
   tenantName: string;
 }) {
@@ -58,6 +60,12 @@ export function StorefrontSeoSettingsForm({
       form.reset(value);
     },
   });
+  const dirty = useStore(form.store, (state) => state.isDirty);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
 
   return (
     <SettingsPanel
@@ -217,16 +225,15 @@ export function StorefrontSeoSettingsForm({
           selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty] as const}
         >
           {([canSubmit, isSubmitting, isDirty]) => (
-            <div className="flex justify-end pt-2">
-              <Button
-                className="w-full rounded-full sm:w-auto"
-                disabled={!canSubmit || !isDirty || isSubmitting}
-                size="sm"
-                type="submit"
-              >
-                {isSubmitting ? t("settings.storefront.seoSaving") : t("settings.storefront.seoSave")}
-              </Button>
-            </div>
+            <SettingsFormActions
+              canSave={canSubmit}
+              dirty={isDirty}
+              onDiscard={() => form.reset()}
+              pending={isSubmitting}
+              saveLabel={t("settings.storefront.seoSave")}
+              savingLabel={t("settings.storefront.seoSaving")}
+              submit
+            />
           )}
         </form.Subscribe>
       </form>

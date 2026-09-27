@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -19,27 +18,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
   buildNotificationEventsPayload,
   defaultNotificationEvents,
-  normalizeNotificationEvents,
   NotificationAccountCountBadge,
   NotificationAlertsSwitch,
   NotificationChannelHeader,
   NotificationChannelUnavailable,
   NotificationEventPicker,
+  normalizeNotificationEvents,
   sameNotificationEvents,
 } from "@/features/settings/notification-channel-ui";
 import {
   apiError,
-  connectSteps,
   type ConnectSession,
+  connectSteps,
 } from "@/features/settings/telegram-connect-helpers";
 import { DestinationIdentity } from "@/features/settings/telegram-connect-parts";
-import type { TelegramDestination } from "@/lib/platform-api/notifications/telegram-client";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+import type { TelegramDestination } from "@/lib/platform-api/notifications/telegram-client";
 import { cn } from "@/lib/utils";
 
 export function TelegramConnectPanel({
@@ -128,7 +127,7 @@ export function TelegramConnectPanel({
       })();
     }, 2500);
     return () => window.clearInterval(id);
-  }, [session, qs, loadDestinations]);
+  }, [session, qs, loadDestinations, t]);
 
   function postAction(body: Record<string, unknown>) {
     return fetch(`/dashboard/settings/notifications/telegram?${qs}`, {
@@ -247,7 +246,11 @@ export function TelegramConnectPanel({
         toast.error(apiError(data, "destination_not_found"));
         return;
       }
-      toast.success(enabled ? t("settings.notifications.telegramPanel.alertsResumed") : t("settings.notifications.telegramPanel.alertsPaused"));
+      toast.success(
+        enabled
+          ? t("settings.notifications.telegramPanel.alertsResumed")
+          : t("settings.notifications.telegramPanel.alertsPaused"),
+      );
       await loadDestinations();
     });
   }
@@ -392,7 +395,7 @@ export function TelegramConnectPanel({
 
   return (
     <>
-      <Card size="sm">
+      <Card className="overflow-visible" size="sm">
         <NotificationChannelHeader
           badge={<NotificationAccountCountBadge count={destinations.length} />}
           description={t("settings.notifications.telegramPanel.headerDescription")}
@@ -423,9 +426,11 @@ export function TelegramConnectPanel({
                         className="rounded-full"
                         size="sm"
                         type="button"
-                        onClick={() =>
-                          window.open(session.deepLink!, "_blank", "noopener,noreferrer")
-                        }
+                        onClick={() => {
+                          if (session.deepLink) {
+                            window.open(session.deepLink, "_blank", "noopener,noreferrer");
+                          }
+                        }}
                       >
                         {t("settings.telegram.openTelegram")}
                         <AppIcons.externalLink className="size-3.5" />
@@ -557,7 +562,9 @@ export function TelegramConnectPanel({
                 variant={hasAccounts ? "outline" : "default"}
                 onClick={() => setConnectDialogOpen(true)}
               >
-                {hasAccounts ? t("settings.notifications.telegramPanel.connectAnother") : t("settings.notifications.telegramPanel.connectTelegram")}
+                {hasAccounts
+                  ? t("settings.notifications.telegramPanel.connectAnother")
+                  : t("settings.notifications.telegramPanel.connectTelegram")}
               </Button>
             </div>
           ) : null}
@@ -570,6 +577,7 @@ export function TelegramConnectPanel({
               events={eventsDraft}
               saving={savingEvents}
               onChange={setEventsDraft}
+              onDiscard={() => setEventsDraft(savedEvents)}
               onSave={saveEvents}
             />
           ) : null}
@@ -580,7 +588,9 @@ export function TelegramConnectPanel({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {hasAccounts ? t("settings.notifications.telegramPanel.connectAnotherTelegram") : t("settings.notifications.telegramPanel.connectTelegram")}
+              {hasAccounts
+                ? t("settings.notifications.telegramPanel.connectAnotherTelegram")
+                : t("settings.notifications.telegramPanel.connectTelegram")}
             </DialogTitle>
             <DialogDescription>
               You’ll leave this page briefly to authorize alerts in Telegram.
@@ -611,7 +621,9 @@ export function TelegramConnectPanel({
               type="button"
               onClick={startConnect}
             >
-              {isPending ? t("settings.notifications.telegramPanel.opening") : t("settings.notifications.telegramPanel.continueTelegram")}
+              {isPending
+                ? t("settings.notifications.telegramPanel.opening")
+                : t("settings.notifications.telegramPanel.continueTelegram")}
               {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
             </Button>
           </DialogFooter>
@@ -646,17 +658,15 @@ export function TelegramConnectPanel({
               variant="destructive"
               onClick={confirmRemove}
             >
-              {isPending ? t("settings.notifications.telegramPanel.disconnecting") : t("settings.notifications.telegramPanel.disconnect")}
+              {isPending
+                ? t("settings.notifications.telegramPanel.disconnecting")
+                : t("settings.notifications.telegramPanel.disconnect")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <UnsavedChangesDialog
-        onLeave={confirmLeave}
-        onStay={cancelLeave}
-        open={leaveDialogOpen}
-      />
+      <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
 }
