@@ -447,7 +447,7 @@
 
     .category-card__content-box {
       background-color: $clr-neutral-100;
-      border: 1px solid rgba($clr-primary-200, 0.5);
+      border: 1px solid color-mix(in srgb, $clr-primary-200 50%, transparent);
       border-radius: $radius-200;
       padding: $space-250 $space-300;
       backdrop-filter: blur(8px);
@@ -915,7 +915,7 @@
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         border-color: $clr-primary-500;
-        background-color: rgba($clr-primary-200, 0.28);
+        background-color: color-mix(in srgb, $clr-primary-200 28.000000000000004%, transparent);
       }
     }
   }

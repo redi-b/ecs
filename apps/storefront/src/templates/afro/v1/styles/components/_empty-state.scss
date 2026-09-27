@@ -9,7 +9,7 @@
   gap: $space-350;
   padding: $space-650 $space-450;
   background:
-    radial-gradient(circle at 50% 0%, rgba($clr-primary-200, 0.55), transparent 58%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, $clr-primary-200 55.00000000000001%, transparent), transparent 58%),
     $clr-neutral-50;
   border: 1px solid rgba($clr-neutral-900, 0.06);
   border-radius: $radius-450;

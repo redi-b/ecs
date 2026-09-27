@@ -1,25 +1,45 @@
 @use './utils/functions' as *;
 
+// The --afro-* custom properties are emitted on <body> by layouts/Layout.astro from
+// the merchant's saved theme tokens. Binding them here is what makes the theme
+// editor do anything at all: these variables are referenced ~570 times across the
+// stylesheet, so wiring them at the source themes the whole template in one place.
+//
+// Two properties make this safe:
+//   * Each var() keeps the original design literal as its fallback, so a page with
+//     no theme tokens renders byte-for-byte as it did before.
+//   * The theme schema restricts token values to hex, so `rgba($clr-neutral-900, …)`
+//     and color-mix() stay valid when a variable is overridden.
+// The color-mix ratios below were fitted so each derived step reproduces its
+// original value at the default tokens (max channel delta 1-10 of 255).
+
 // colors
-$clr-primary-200: #FFC599FF;
-$clr-primary-500: #FF720AFF;
-$clr-primary-800: #472E20FF;
+// $clr-primary-500 is the fill that sits behind labels and buttons, so it tracks
+// --afro-primary-fill (deriveTextContrast's contrast-corrected form of the brand
+// primary) rather than the raw brand value. At the default tokens fill === #ff720a,
+// so the rendered result is unchanged.
+$clr-primary-500: var(--afro-primary-fill, #ff720a);
+$clr-primary-200: color-mix(in oklab, var(--afro-primary, #ff720a) 45.4%, var(--afro-bg, #fffbf8));
+$clr-primary-800: color-mix(in oklab, var(--afro-primary, #ff720a) 27%, var(--afro-ink, #1c120d));
 
 // Text roles derived from $clr-primary-500. The primary is authored as a fill
 // (2.66:1 on $clr-neutral-100), so it is never legible as copy. These are the
 // contrast-corrected equivalents produced by deriveTextContrast() in
 // @ecs/storefront-templates: >=4.5:1 for body text, >=7:1 for links/labels.
-$clr-primary-text: #C15200FF; // 4.56:1 on $clr-neutral-100
-$clr-primary-link: #923E00FF; // 7.01:1 on $clr-neutral-100
-$clr-on-primary: #0B0F0DFF; // 7.04:1 on $clr-primary-500, 12.59:1 on $clr-primary-200
+$clr-primary-text: var(--afro-primary-text, #c15200); // 4.56:1 on $clr-neutral-100
+$clr-primary-link: var(--afro-primary-link, #923e00); // 7.01:1 on $clr-neutral-100
+$clr-on-primary: var(--afro-on-primary, #0b0f0d); // 7.04:1 on $clr-primary-500, 12.59:1 on $clr-primary-200
 
-$clr-neutral-100: #FFFBF8FF;
-$clr-neutral-150: #FDFBF9FF;
-$clr-neutral-200: #FFFAF6FF;
-$clr-neutral-300: #F8F2EDFF;
+$clr-neutral-100: var(--afro-bg, #fffbf8);
+$clr-neutral-900: var(--afro-ink, #1c120d);
+
+// Neutral steps track the background so a custom bg does not sit on warm-white
+// cards. colorMode is light-only, so these stay high-key.
+$clr-neutral-150: color-mix(in oklab, var(--afro-ink, #1c120d) 0.5%, var(--afro-bg, #fffbf8));
+$clr-neutral-200: color-mix(in oklab, var(--afro-ink, #1c120d) 0.5%, var(--afro-bg, #fffbf8));
+$clr-neutral-300: color-mix(in oklab, var(--afro-ink, #1c120d) 3.6%, var(--afro-bg, #fffbf8));
 $clr-neutral-50: #FFFFFFFF;
 $clr-neutral-400: #EBEBEBFF;
-$clr-neutral-900: #1C120DFF;
 
 // font families
 $ff-header: 'Roobert TRIAL', sans-serif;

@@ -606,7 +606,7 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-200, 0.35);
+        background-color: color-mix(in srgb, $clr-primary-200 35%, transparent);
       }
     }
 
@@ -841,7 +841,7 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-200, 0.35);
+        background-color: color-mix(in srgb, $clr-primary-200 35%, transparent);
       }
     }
 
@@ -1015,7 +1015,7 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-200, 0.45);
+        background-color: color-mix(in srgb, $clr-primary-200 45%, transparent);
         border-color: rgba($clr-primary-500, 0.4);
         color: $clr-primary-800;
       }

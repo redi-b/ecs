@@ -108,17 +108,17 @@ const date = (value: string | null) => {
               : "Access your saved addresses and order history."}
           </p>
 
-          {error && <div style="padding: 0.75rem 1rem; margin-bottom: 1.5rem; background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322; border-radius: 4px; font-size: 0.875rem;">{error}</div>}
+          {error && <div role="alert" style="padding: 0.75rem 1rem; margin-bottom: 1.5rem; background: #fff1f0; border: 1px solid #ffa39e; color: #cf1322; border-radius: 4px; font-size: 0.875rem;">{error}</div>}
 
           {initialMode === "login" ? (
             <form action="/actions/account/login" method="post" style="display: flex; flex-direction: column; gap: 1rem;">
               <div>
-                <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">Email Address</label>
-                <input name="email" type="email" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                <label class="type-body-s-500" for="login-email" style="display: block; margin-bottom: 0.25rem;">Email Address</label>
+                <input id="login-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
               </div>
               <div>
-                <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">Password</label>
-                <input name="password" type="password" required minlength="8" class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                <label class="type-body-s-500" for="login-password" style="display: block; margin-bottom: 0.25rem;">Password</label>
+                <input id="login-password" name="password" type="password" autocomplete="current-password" required minlength="8" class="checkout-form__input type-body-s-400" style="width: 100%;" />
               </div>
               <Button text="Sign In" type="submit" variant="primary" size="large" fullWidth={true} />
               <p class="type-body-xs-500" style="text-align: center; margin-top: 1rem;">
@@ -129,21 +129,21 @@ const date = (value: string | null) => {
             <form action="/actions/account/register" method="post" style="display: flex; flex-direction: column; gap: 1rem;">
               <div style="display: flex; gap: 1rem;">
                 <div style="flex: 1;">
-                  <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">First Name</label>
-                  <input name="firstName" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                  <label class="type-body-s-500" for="register-first-name" style="display: block; margin-bottom: 0.25rem;">First Name</label>
+                  <input id="register-first-name" name="firstName" autocomplete="given-name" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
                 </div>
                 <div style="flex: 1;">
-                  <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">Last Name</label>
-                  <input name="lastName" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                  <label class="type-body-s-500" for="register-last-name" style="display: block; margin-bottom: 0.25rem;">Last Name</label>
+                  <input id="register-last-name" name="lastName" autocomplete="family-name" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
                 </div>
               </div>
               <div>
-                <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">Email Address</label>
-                <input name="email" type="email" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                <label class="type-body-s-500" for="register-email" style="display: block; margin-bottom: 0.25rem;">Email Address</label>
+                <input id="register-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" required class="checkout-form__input type-body-s-400" style="width: 100%;" />
               </div>
               <div>
-                <label class="type-body-s-500" style="display: block; margin-bottom: 0.25rem;">Password</label>
-                <input name="password" type="password" required minlength="8" class="checkout-form__input type-body-s-400" style="width: 100%;" />
+                <label class="type-body-s-500" for="register-password" style="display: block; margin-bottom: 0.25rem;">Password</label>
+                <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" class="checkout-form__input type-body-s-400" style="width: 100%;" />
               </div>
               <Button text="Create Account" type="submit" variant="primary" size="large" fullWidth={true} />
               <p class="type-body-xs-500" style="text-align: center; margin-top: 1rem;">

@@ -36,7 +36,9 @@ export function initAfroStorefront() {
   initSearchModal();
 
   // --- Live Search Suggestions ---
-  const searchForms = document.querySelectorAll<HTMLFormElement>("[data-product-search-suggestions]");
+  const searchForms = document.querySelectorAll<HTMLFormElement>(
+    "[data-product-search-suggestions]",
+  );
   searchForms.forEach((form) => initProductSearchSuggestions(form));
 
   // --- Header Nav Links & Scrollspy ---
@@ -63,8 +65,11 @@ export function initAfroStorefront() {
   // --- Product Detail Controls ---
   initProductDetail();
 
+  // --- Promo Countdown ---
+  initCountdown();
+
   // --- Cart Drawer ---
-  initCartDrawerRuntime({ readOnly, locale });
+  initCartDrawerRuntime({ readOnly, locale, clientMessage });
 
   // --- Inquiries Form ---
   initInquiryForms({ readOnly, clientMessage });
@@ -74,9 +79,45 @@ export function initAfroStorefront() {
   }
 }
 
+// The promo bar rendered a frozen "12:00:42" — the field is merchant-editable but
+// nothing ever ticked it. Tick down from the configured duration instead.
+// ponytail: counts down from page load, so a refresh restarts it. If the promo ever
+// needs a fixed deadline, add a target datetime to the schema and diff against that.
+export function initCountdown() {
+  const node = document.getElementById("header-countdown");
+  if (!node) return;
+  const match = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec((node.textContent || "").trim());
+  // Anything that is not a plain duration ("Ends Sunday", "Limited stock") is
+  // merchant copy, so it is left exactly as authored.
+  if (!match) return;
+  let remaining = Number(match[1] || 0) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+  if (!Number.isFinite(remaining) || remaining <= 0) return;
+
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const render = () => {
+    node.textContent =
+      `${pad(Math.floor(remaining / 3600))}:` +
+      `${pad(Math.floor((remaining % 3600) / 60))}:` +
+      `${pad(remaining % 60)}`;
+  };
+  render();
+
+  let timer = 0;
+  timer = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      window.clearInterval(timer);
+      return;
+    }
+    render();
+  }, 1000);
+}
+
 export function initSearchModal() {
   const modal = document.getElementById("search-modal");
-  const openBtns = document.querySelectorAll("#search-toggle-btn, [data-search-open], .site-header__search-toggle");
+  const openBtns = document.querySelectorAll(
+    "#search-toggle-btn, [data-search-open], .site-header__search-toggle",
+  );
   const closeBtn = document.getElementById("search-modal-close");
   const backdrop = document.getElementById("search-modal-backdrop");
   const input = document.getElementById("search-modal-input") as HTMLInputElement | null;
@@ -109,7 +150,10 @@ export function initSearchModal() {
   backdrop?.addEventListener("click", close);
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && (modal.classList.contains("is-open") || modal.classList.contains("search-modal--open"))) {
+    if (
+      e.key === "Escape" &&
+      (modal.classList.contains("is-open") || modal.classList.contains("search-modal--open"))
+    ) {
       close();
     }
   });
@@ -790,9 +834,11 @@ function initInquiryForms({
 function initCartDrawerRuntime({
   readOnly,
   locale,
+  clientMessage,
 }: {
   readOnly: boolean;
   locale: string;
+  clientMessage: (key: string, fallback?: string) => string;
 }) {
   const drawer = document.getElementById("cart-drawer");
   const backdrop = document.getElementById("cart-backdrop");
@@ -802,6 +848,7 @@ function initCartDrawerRuntime({
   const itemsRoot = drawer?.querySelector<HTMLElement>("[data-cart-items]");
   const summary = drawer?.querySelector<HTMLElement>("[data-cart-footer]");
   const empty = document.getElementById("cart-empty");
+  const status = drawer?.querySelector<HTMLElement>("[data-cart-status]");
 
   function openDrawer(cart?: any) {
     if (drawer) {
@@ -846,13 +893,93 @@ function initCartDrawerRuntime({
     }
   };
 
+  // Cart contents are merchant-controlled, so the drawer never builds markup from
+  // them. Nodes are created and filled through properties/textContent, which makes
+  // a title like `<img src=x onerror=...>` inert text instead of live HTML.
+  const el = <K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    className = "",
+    text = "",
+  ): HTMLElementTagNameMap[K] => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  };
+
+  // Icon geometry is developer-authored and static. Nothing from the cart reaches it.
+  const icon = (
+    name: string,
+    viewBox: string,
+    size: [number, number],
+    d: string,
+    strokeWidth: string,
+  ) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", String(size[0]));
+    svg.setAttribute("height", String(size[1]));
+    svg.setAttribute("viewBox", viewBox);
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("data-icon", name);
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", strokeWidth);
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    return svg;
+  };
+
+  // Cart URLs come from the API, so refuse anything that is not http(s) or
+  // root-relative. Blocks `javascript:` and protocol-relative sources.
+  const safeUrl = (value: unknown): string => {
+    const raw = typeof value === "string" ? value.trim() : "";
+    if (!raw) return "";
+    if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+    try {
+      const url = new URL(raw, window.location.origin);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+    } catch {
+      return "";
+    }
+  };
+
+  // [data-cart-status] is a live region that ships in CartDrawer.astro but was
+  // never written to, so cart changes were silent for screen readers.
+  let announceSeq = 0;
+  const announce = (message: string) => {
+    if (!status || !message) return;
+    const seq = ++announceSeq;
+    status.textContent = "";
+    window.setTimeout(() => {
+      if (seq !== announceSeq) return;
+      status.textContent = message;
+      window.setTimeout(() => {
+        if (seq === announceSeq) status.textContent = "";
+      }, 5000);
+    }, 30);
+  };
+
   const renderCart = (cart: any) => {
     if (!itemsRoot || !summary) return;
     const priorIds = new Set(
       Array.from(itemsRoot.querySelectorAll<HTMLElement>(".cart-item")).map(
-        (el) => el.dataset.itemId,
+        (node) => node.dataset.itemId,
       ),
     );
+    // Rebuilding the list wholesale destroys the button the user just pressed and
+    // drops focus to <body>. Remember where focus was so it can be restored below.
+    const active = document.activeElement as HTMLElement | null;
+    const focusKey =
+      active && itemsRoot.contains(active)
+        ? {
+            lineId: active.closest<HTMLElement>("[data-line-item-id]")?.dataset.lineItemId,
+            action: active.dataset.cartAction,
+          }
+        : null;
     itemsRoot.replaceChildren();
     const items = Array.isArray(cart?.items) ? cart.items : [];
     const count = items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
@@ -863,45 +990,100 @@ function initCartDrawerRuntime({
     itemsRoot.hidden = items.length === 0;
 
     for (const item of items) {
-      const line = document.createElement("div");
+      const line = el("div", "cart-item");
       line.setAttribute("role", "listitem");
-      line.className = "cart-item";
       if (!priorIds.has(item.id)) {
         line.classList.add("is-entering");
       }
       line.dataset.itemId = item.id;
       line.dataset.lineItemId = item.id;
+      const title = item.title || clientMessage("product", "Piece");
 
-      line.innerHTML = `
-        <div class="cart-item__thumb">
-          <div class="img-wrapper">
-            ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title || ""}" class="cover" width="84" height="84" />` : ""}
-          </div>
-        </div>
-        <div class="cart-item__details">
-          <div class="cart-item__top">
-            <div class="cart-item__titles">
-              <h4 class="cart-item__title type-body-500">${item.title || "Piece"}</h4>
-              ${item.variantTitle ? `<p class="cart-item__brand type-body-s-400">${item.variantTitle}</p>` : ""}
-            </div>
-            <button type="button" class="cart-item__remove-btn" aria-label="Remove item" data-cart-remove data-line-item-id="${item.id}">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" data-icon="trash"><path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-          <div class="cart-item__bottom">
-            <div class="cart-item__quantity" aria-label="Quantity selector">
-              <button type="button" class="cart-item__qty-btn cart-item__qty-btn--minus" aria-label="Decrease quantity" data-cart-quantity="${Math.max(1, Number(item.quantity) - 1)}" data-line-item-id="${item.id}" ${Number(item.quantity) <= 1 ? "disabled" : ""}>
-                <svg width="10" height="2" viewBox="0 0 10 2" fill="none" data-icon="minus"><path d="M1 1h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </button>
-              <span class="cart-item__qty-val type-body-400">${item.quantity}</span>
-              <button type="button" class="cart-item__qty-btn cart-item__qty-btn--plus" aria-label="Increase quantity" data-cart-quantity="${Number(item.quantity) + 1}" data-line-item-id="${item.id}">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" data-icon="plus"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </button>
-            </div>
-            <span class="cart-item__price type-body-500">${money(item.total ?? item.unitPrice, cart.currencyCode)}</span>
-          </div>
-        </div>
-      `;
+      const thumb = el("div", "cart-item__thumb");
+      const thumbWrap = el("div", "img-wrapper");
+      const src = safeUrl(item.thumbnail);
+      if (src) {
+        const image = el("img", "cover") as HTMLImageElement;
+        image.src = src;
+        // Decorative: the product name is rendered as text right beside it.
+        image.alt = "";
+        image.width = 84;
+        image.height = 84;
+        thumbWrap.appendChild(image);
+      }
+      thumb.appendChild(thumbWrap);
+
+      const details = el("div", "cart-item__details");
+      const top = el("div", "cart-item__top");
+      const titles = el("div", "cart-item__titles");
+      titles.appendChild(el("h4", "cart-item__title type-body-500", title));
+      if (item.variantTitle) {
+        titles.appendChild(el("p", "cart-item__brand type-body-s-400", String(item.variantTitle)));
+      }
+
+      const removeBtn = el("button", "cart-item__remove-btn") as HTMLButtonElement;
+      removeBtn.type = "button";
+      removeBtn.setAttribute("aria-label", `${clientMessage("remove", "Remove item")}: ${title}`);
+      removeBtn.dataset.cartAction = "remove";
+      removeBtn.dataset.cartRemove = "";
+      removeBtn.dataset.lineItemId = item.id;
+      removeBtn.appendChild(
+        icon(
+          "trash",
+          "0 0 16 16",
+          [16, 16],
+          "M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z",
+          "1.2",
+        ),
+      );
+      top.append(titles, removeBtn);
+
+      const bottom = el("div", "cart-item__bottom");
+      const quantity = el("div", "cart-item__quantity");
+      quantity.setAttribute("aria-label", `${clientMessage("quantity", "Quantity")}: ${title}`);
+      const qty = Math.max(1, Number(item.quantity) || 1);
+
+      const minus = el(
+        "button",
+        "cart-item__qty-btn cart-item__qty-btn--minus",
+      ) as HTMLButtonElement;
+      minus.type = "button";
+      minus.setAttribute(
+        "aria-label",
+        `${clientMessage("decreaseQuantity", "Decrease quantity")}: ${title}`,
+      );
+      minus.dataset.cartAction = "dec";
+      minus.dataset.cartQuantity = String(Math.max(1, qty - 1));
+      minus.dataset.lineItemId = item.id;
+      minus.disabled = qty <= 1;
+      minus.appendChild(icon("minus", "0 0 10 2", [10, 2], "M1 1h8", "1.5"));
+
+      const qtyValue = el("span", "cart-item__qty-val type-body-400", String(item.quantity));
+      qtyValue.setAttribute("aria-live", "polite");
+
+      const plus = el("button", "cart-item__qty-btn cart-item__qty-btn--plus") as HTMLButtonElement;
+      plus.type = "button";
+      plus.setAttribute(
+        "aria-label",
+        `${clientMessage("increaseQuantity", "Increase quantity")}: ${title}`,
+      );
+      plus.dataset.cartAction = "inc";
+      plus.dataset.cartQuantity = String(qty + 1);
+      plus.dataset.lineItemId = item.id;
+      plus.appendChild(icon("plus", "0 0 10 10", [10, 10], "M5 1v8M1 5h8", "1.5"));
+
+      quantity.append(minus, qtyValue, plus);
+      bottom.append(
+        quantity,
+        el(
+          "span",
+          "cart-item__price type-body-500",
+          money(item.total ?? item.unitPrice, cart.currencyCode),
+        ),
+      );
+
+      details.append(top, bottom);
+      line.append(thumb, details);
       itemsRoot.appendChild(line);
     }
 
@@ -909,6 +1091,13 @@ function initCartDrawerRuntime({
     const totalEl = summary.querySelector<HTMLElement>("[data-cart-total]");
     if (subtotalEl) subtotalEl.textContent = money(cart.subtotal ?? cart.total, cart.currencyCode);
     if (totalEl) totalEl.textContent = money(cart.total, cart.currencyCode);
+
+    if (focusKey?.lineId && focusKey.action) {
+      const restored = itemsRoot.querySelector<HTMLButtonElement>(
+        `[data-line-item-id="${CSS.escape(focusKey.lineId)}"] [data-cart-action="${focusKey.action}"]`,
+      );
+      if (restored && !restored.disabled) restored.focus();
+    }
   };
 
   // Cart item actions (increase / decrease / remove) with Nanostores optimistic update
@@ -928,9 +1117,26 @@ function initCartDrawerRuntime({
         ?.querySelector(".cart-item__qty-val");
       if (valEl) replay(valEl, "is-tick");
       const qty = Number(quantityBtn.dataset.cartQuantity || "1");
-      await updateCartItemQuantity(lineItemId, qty);
+      try {
+        await updateCartItemQuantity(lineItemId, qty);
+        announce(clientMessage("cartQuantityUpdated", "Quantity updated."));
+      } catch (error) {
+        console.error("[afro] cart quantity update failed", error);
+        announce(clientMessage("cartUpdateFailed", "Could not update quantity. Please try again."));
+        // The optimistic update is not rolled back on failure, so resync from the server.
+        void fetchCart();
+      }
     } else if (removeBtn) {
-      await removeCartItem(lineItemId);
+      try {
+        await removeCartItem(lineItemId);
+        announce(clientMessage("cartItemRemoved", "Item removed from your cart."));
+      } catch (error) {
+        console.error("[afro] cart item removal failed", error);
+        announce(
+          clientMessage("cartUpdateFailed", "Could not remove that item. Please try again."),
+        );
+        void fetchCart();
+      }
     }
   });
 
@@ -957,19 +1163,29 @@ function initCartDrawerRuntime({
     event.preventDefault();
 
     const submitBtn = form.querySelector<HTMLButtonElement>("button[type=submit]");
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      replay(submitBtn, "is-added");
-    }
+    if (submitBtn) submitBtn.disabled = true;
 
-    const cartToggle = document.getElementById("cart-toggle-btn");
-    if (cartToggle) replay(cartToggle, "is-bump");
-
-    await addToCart({ form, openDrawer: true });
-
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      window.setTimeout(() => submitBtn.classList.remove("is-added"), 1200);
+    try {
+      await addToCart({ form, openDrawer: true });
+      // Only celebrate once the cart has actually accepted the item.
+      if (submitBtn) {
+        replay(submitBtn, "is-added");
+        window.setTimeout(() => submitBtn.classList.remove("is-added"), 1200);
+      }
+      const cartToggle = document.getElementById("cart-toggle-btn");
+      if (cartToggle) replay(cartToggle, "is-bump");
+      announce(clientMessage("cartItemAdded", "Added to your cart."));
+    } catch (error) {
+      console.error("[afro] add to cart failed", error);
+      announce(
+        clientMessage(
+          "cartAddFailed",
+          "Could not add to cart. Please check your connection and try again.",
+        ),
+      );
+    } finally {
+      // Without this, a rejected request left the button permanently disabled.
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 }

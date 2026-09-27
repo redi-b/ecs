@@ -215,7 +215,7 @@
   }
 
   &__badge-discount {
-    background-color: rgba($clr-primary-200, 0.5);
+    background-color: color-mix(in srgb, $clr-primary-200 50%, transparent);
     color: $clr-primary-800;
     padding: $space-200 $space-250;
     border-radius: $radius-500;
@@ -272,9 +272,23 @@
     display: flex;
     flex-direction: column;
     gap: $space-200;
+    // These are now a real fieldset/legend pair; drop the UA chrome that would
+    // otherwise add padding, border and min-width around the options.
+    margin: 0;
+    padding: 0;
+    border: none;
+    min-inline-size: 0;
   }
 
   &__option-label {
+    color: rgba($clr-neutral-900, 0.72);
+    margin: 0;
+    padding: 0;
+    display: block;
+    width: 100%;
+  }
+
+  &__selection {
     color: rgba($clr-neutral-900, 0.72);
     margin: 0;
   }
@@ -308,6 +322,16 @@
     &--active {
       box-shadow: inset 0 0 0 1.5px $clr-primary-500;
     }
+  }
+
+  // The swatch colour lives on a child so an unresolvable option value still
+  // renders as a neutral chip instead of an empty transparent disc.
+  &__swatch-chip {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background-color: $clr-neutral-300;
   }
 
   &__sizes {
@@ -413,7 +437,7 @@
     width: 52px;
     height: 52px;
     border-radius: $radius-700;
-    border: 1px solid rgba($clr-primary-800, 0.2);
+    border: 1px solid color-mix(in srgb, $clr-primary-800 20%, transparent);
     background-color: transparent;
     display: flex;
     align-items: center;

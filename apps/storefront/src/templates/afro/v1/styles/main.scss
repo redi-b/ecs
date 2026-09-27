@@ -37,12 +37,35 @@ body, main {
   }
 }
 
-body.no-scroll {
-  overflow: hidden;
+// Off-screen until focused, then pinned above all layers. Every page already
+// ships id="main-content", so this is the only missing piece for keyboard users.
+.skip-link {
+  position: fixed;
+  z-index: 10000;
+  top: $space-300;
+  left: $space-300;
+  padding: $space-300 $space-500;
+  border-radius: $radius-100;
+  background: $clr-neutral-900;
+  color: $clr-neutral-100;
+  text-decoration: underline;
+  transform: translateY(-250%);
+  transition: transform $dur-ui $ease-out;
+
+  &:focus-visible {
+    transform: translateY(0);
+  }
 }
 
-.sf-icon {
-  display: contents;
+// _reset.scss sets `html, body { overflow-x: clip }`, which stops the body's
+// overflow from propagating to the viewport, so locking body alone did nothing
+// and the drawer/menu scrolled the page behind itself.
+body.no-scroll {
+  overflow: hidden;
+
+  html:has(&) {
+    overflow: hidden;
+  }
 }
 
 .wishlist-heart {
@@ -158,7 +181,7 @@ body.no-scroll {
 }
 
 @keyframes line-flash {
-  0% { background-color: rgba($clr-primary-200, 0.7); }
+  0% { background-color: color-mix(in srgb, $clr-primary-200 70%, transparent); }
   100% { background-color: $clr-neutral-150; }
 }
 

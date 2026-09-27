@@ -150,7 +150,7 @@
   }
 
   &__price {
-    color: rgba($clr-primary-800, 0.9);
+    color: color-mix(in srgb, $clr-primary-800 90%, transparent);
     margin: 0;
     padding-bottom: $space-150;
     white-space: nowrap;

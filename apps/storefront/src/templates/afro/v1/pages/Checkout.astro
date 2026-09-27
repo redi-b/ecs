@@ -154,6 +154,7 @@ const CITIES = [
                       type="text"
                       id="first-name"
                       name="firstName"
+                      autocomplete="given-name"
                       value={defaultAddress?.firstName || customer?.firstName || ""}
                       placeholder="Enter first name"
                       required
@@ -169,6 +170,7 @@ const CITIES = [
                       type="text"
                       id="last-name"
                       name="lastName"
+                      autocomplete="family-name"
                       value={defaultAddress?.lastName || customer?.lastName || ""}
                       placeholder="Enter last name"
                       required
@@ -187,6 +189,7 @@ const CITIES = [
                       type="tel"
                       id="phone-number"
                       name="phone"
+                      autocomplete="tel"
                       value={defaultAddress?.phone || customer?.phone || ""}
                       placeholder="+251 9__ __ __"
                       required
@@ -243,6 +246,9 @@ const CITIES = [
                       type="email"
                       id="email"
                       name="email"
+                      autocomplete="email"
+                      inputmode="email"
+                      spellcheck="false"
                       value={customer?.email || ""}
                       required={defaultPayment === "chapa"}
                       placeholder="email@example.com"
@@ -258,6 +264,7 @@ const CITIES = [
                       type="text"
                       id="street-address"
                       name="address1"
+                      autocomplete="address-line1"
                       value={defaultAddress?.address1 || ""}
                       placeholder="Bole Sub City, Kebele 03, House No. 240"
                       required

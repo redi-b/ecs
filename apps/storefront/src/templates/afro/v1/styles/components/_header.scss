@@ -62,7 +62,7 @@
     align-items: center;
     list-style: none;
     padding: $space-100;
-    border: 1px solid rgba($clr-primary-800, 0.2);
+    border: 1px solid color-mix(in srgb, $clr-primary-800 20%, transparent);
     border-radius: $radius-700;
     gap: 0;
     margin: 0;
@@ -217,7 +217,7 @@
         linear-gradient(180deg, rgba($clr-primary-500, 0.05) 0%, rgba($clr-primary-500, 0.25) 100%) border-box;
       border: 1px solid transparent;
       color: rgba($clr-neutral-900, 0.72);
-      box-shadow: 0 4px 13px rgba($clr-primary-200, 0.33);
+      box-shadow: 0 4px 13px color-mix(in srgb, $clr-primary-200 33%, transparent);
     }
   }
 
@@ -264,7 +264,7 @@
     width: 52px;
     height: 52px;
     border-radius: $radius-700;
-    border: 1px solid rgba($clr-primary-800, 0.2);
+    border: 1px solid color-mix(in srgb, $clr-primary-800 20%, transparent);
     background-color: transparent;
     color: $clr-primary-800;
     text-decoration: none;

@@ -117,6 +117,10 @@ const themeStyle = [
   `--afro-bg:${theme.colors.background}`,
   `--afro-ink:${theme.colors.foreground}`,
   `--afro-primary:${theme.colors.primary}`,
+  // The editor derives all five colours from the merchant's primary via
+  // deriveAfroPalette (dashboard editor-state.ts), so muted/accent do change. They
+  // have no consumer in the afro palette yet: nothing in the design is authored as
+  // an accent role. They are emitted so wiring one is a one-line change.
   `--afro-muted:${theme.colors.muted}`,
   `--afro-accent:${theme.colors.accent}`,
   `--afro-primary-text:${brandText.text}`,
@@ -206,6 +210,7 @@ const afroClientMessages = {
     data-editor-theme-vars={editorMode ? JSON.stringify({ primary: "--afro-primary", background: "--afro-bg", foreground: "--afro-ink", muted: "--afro-muted", accent: "--afro-accent", onPrimary: "--afro-on-primary" }) : undefined}
   >
     <StructuredData value={structuredData} />
+    <a class="skip-link" href="#main-content">{m.a11y_skip_to_content({}, { locale })}</a>
     <div id="page-wrapper">
       <header class="site-header">
         {header?.promoText && (
@@ -213,7 +218,13 @@ const afroClientMessages = {
             <div class="site-header__promo-inner">
               <span class="site-header__promo-text type-body-xs-700" data-editor-path="header.promoText">{header.promoText}</span>
               {header.countdownText && (
-                <span class="site-header__promo-timer type-body-xs-700" id="header-countdown" data-editor-path="header.countdownText">
+                <span
+                  class="site-header__promo-timer type-body-xs-700"
+                  id="header-countdown"
+                  role="timer"
+                  aria-live="off"
+                  data-editor-path="header.countdownText"
+                >
                   {header.countdownText}
                 </span>
               )}

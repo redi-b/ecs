@@ -25,11 +25,27 @@ export async function getPublishedStorefrontConfig(options: {
   previewToken?: string;
   requestHost?: string | null;
 }): Promise<StorefrontConfigResult> {
-  const fetcher = options.fetcher ?? fetch;
-  const request = new Request(getConfigUrl(options.platformApiBaseUrl, options.previewToken), {
-    headers: getStorefrontHeaders(options.requestHost),
-  });
-  const response = await fetcher(request);
+  // Everything below is transport: an unreachable API, a refused connection, an
+  // unresolvable base URL or an unreadable body. None of those are exceptional for
+  // a function whose declared return type is a result object, so they are reported
+  // as one instead of escaping as a TypeError. Without this, any platform outage
+  // turned every page that resolves config — including the 404 page — into an
+  // unhandled 500 instead of the system-state screen callers already handle.
+  let response: Response;
+  try {
+    const request = new Request(getConfigUrl(options.platformApiBaseUrl, options.previewToken), {
+      headers: getStorefrontHeaders(options.requestHost),
+    });
+    response = await (options.fetcher ?? fetch)(request);
+  } catch (error) {
+    console.error("[storefront] published storefront config unreachable", error);
+    return {
+      ok: false,
+      status: 503,
+      message: customerFacingStoreError("config_request_failed"),
+    };
+  }
+
   const data = await response.json().catch(() => undefined);
 
   if (!response.ok) {

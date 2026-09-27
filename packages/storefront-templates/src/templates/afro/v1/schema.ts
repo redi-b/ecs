@@ -70,14 +70,21 @@ export const afroV1DataSchema = z.object({
 
 export type AfroV1Data = z.infer<typeof afroV1DataSchema>;
 
+// These land in inline `--afro-*` custom properties that the stylesheet then
+// feeds to rgba() and color-mix(). Restricting them to 6-digit hex keeps those
+// combinations valid in every engine instead of relying on rgba(8-digit-hex).
+const hexColor = z
+  .string()
+  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Expected a hex colour such as #1c120d");
+
 export const afroV1ThemeTokensSchema = z.object({
   autoPalette: z.boolean().default(true),
   colors: z.object({
-    background: z.string().min(1),
-    foreground: z.string().min(1),
-    primary: z.string().min(1),
-    muted: z.string().min(1),
-    accent: z.string().min(1),
+    background: hexColor,
+    foreground: hexColor,
+    primary: hexColor,
+    muted: hexColor,
+    accent: hexColor,
   }),
   typography: z.object({
     headingFont: z.literal("Roobert TRIAL").or(z.string().min(1)),

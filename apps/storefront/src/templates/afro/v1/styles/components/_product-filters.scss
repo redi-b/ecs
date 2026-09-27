@@ -149,7 +149,7 @@
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       border-color: rgba($clr-primary-500, 0.55);
-      background-color: rgba($clr-primary-200, 0.35);
+      background-color: color-mix(in srgb, $clr-primary-200 35%, transparent);
     }
   }
 

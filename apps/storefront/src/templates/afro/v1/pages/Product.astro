@@ -1,7 +1,13 @@
 ---
 import { Icon } from "astro-icon/components";
-import type { StoreProduct, StoreProductVariant } from "../../../../lib/commerce/types";
+import type {
+  StoreProduct,
+  StoreProductVariant,
+  StoreProductOption,
+} from "../../../../lib/commerce/types";
 import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
+import { isColorOptionTitle, resolveColorSwatch } from "../../../../lib/commerce/product-options";
+import { serializeJsonForScript } from "../../../../lib/serialize-json";
 import { formatMoney } from "../../../../lib/money";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -58,13 +64,48 @@ const currentPrice = formatMoney(
   locale,
 );
 
-const sizes = ["S", "M", "L", "XL"];
-const colors = [
-  { name: "Brown", hex: "#784b28" },
-  { name: "Black", hex: "#1c120d" },
-  { name: "Beige", hex: "#e2d2c1" },
-];
+// Selectors are derived from the product's real variants. The previous hardcoded
+// size/colour lists rendered controls that changed nothing, so the hidden variantId
+// stayed pinned to the default variant and shoppers silently bought the wrong size.
+const axes: StoreProductOption[] = product?.options?.length
+  ? product.options
+  : (() => {
+      const map = new Map<string, Set<string>>();
+      for (const variant of product?.variants ?? [])
+        for (const option of variant.optionValues) {
+          if (!map.has(option.optionTitle)) map.set(option.optionTitle, new Set());
+          map.get(option.optionTitle)?.add(option.value);
+        }
+      return [...map].map(([title, values], index) => ({
+        id: `axis-${index}`,
+        title,
+        values: [...values],
+      }));
+    })();
 
+const isSelected = (axisTitle: string, value: string) =>
+  defaultVariant?.optionValues.some(
+    (option) => option.optionTitle === axisTitle && option.value === value,
+  ) ?? false;
+
+// Only the fields the client needs to resolve a selection to a real variant.
+const variants = (product?.variants ?? []).map((variant) => ({
+  id: variant.id,
+  inStock: variant.inStock,
+  priceAmount: variant.priceAmount,
+  currencyCode: variant.currencyCode,
+  optionValues: Object.fromEntries(
+    variant.optionValues.map((option) => [option.optionTitle, option.value]),
+  ),
+}));
+
+const clientMessages = {
+  inStock: m.catalog_in_stock({}, { locale }),
+  outOfStock: m.catalog_out_of_stock({}, { locale }),
+  addToCart: m.action_add_to_cart({}, { locale }),
+  selected: m.product_selected({ options: "__OPTIONS__" }, { locale }),
+  selectOption: m.product_select_option({ option: "__VALUE__" }, { locale }),
+};
 const href = product?.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const wishlistItem = product
   ? JSON.stringify({
@@ -98,7 +139,12 @@ const wishlistItem = product
       </div>
     </main>
   ) : (
-    <main class="pdp-page" id="main-content" data-product-detail>
+    <main
+      class="pdp-page"
+      id="main-content"
+      data-product-detail
+      data-client-messages={JSON.stringify(clientMessages)}
+    >
       <section class="product-showcase-section">
         <div class="product-showcase-section__wrapper container">
           <!-- Breadcrumbs -->
@@ -186,8 +232,14 @@ const wishlistItem = product
                     {badge.label}
                   </span>
                 )}
-                <span class="product-details__badge-stock type-body-xs-500">
-                  {defaultVariant?.inStock ? "In Stock" : "Out of Stock"}
+                <span
+                  class="product-details__badge-stock type-body-xs-500"
+                  data-product-stock
+                  aria-live="polite"
+                >
+                  {defaultVariant?.inStock
+                    ? m.catalog_in_stock({}, { locale })
+                    : m.catalog_out_of_stock({}, { locale })}
                 </span>
               </div>
 
@@ -208,59 +260,89 @@ const wishlistItem = product
 
               <div class="product-details__divider" aria-hidden="true"></div>
 
-              <!-- Color Selector -->
-              <div class="product-details__option-group">
-                <span class="product-details__option-label type-body-s-500">Color</span>
-                <div class="product-details__swatches" role="radiogroup" aria-label="Select Color">
-                  {colors.map((color, idx) => (
-                    <button
-                      type="button"
+              <!-- Variant Selectors: driven by the product's real option axes -->
+              {axes.map((axis) => {
+                const showSwatches =
+                  axis.displayMode === "swatch" || isColorOptionTitle(axis.title);
+                return (
+                  <fieldset class="product-details__option-group" data-option-axis={axis.title}>
+                    <legend class="product-details__option-label type-body-s-500">
+                      {axis.title}
+                    </legend>
+                    <div
                       class:list={[
-                        "product-details__swatch",
-                        idx === 0 && "product-details__swatch--active",
+                        showSwatches ? "product-details__swatches" : "product-details__sizes",
                       ]}
-                      style={`background-color: ${color.hex};`}
-                      aria-label={color.name}
-                      role="radio"
-                      aria-checked={idx === 0 ? "true" : "false"}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <!-- Size Selector -->
-              <div class="product-details__option-group">
-                <span class="product-details__option-label type-body-s-500">Select Size</span>
-                <div class="product-details__sizes" role="radiogroup" aria-label="Select Size">
-                  {sizes.map((size) => (
-                    <button
-                      type="button"
-                      class:list={[
-                        "product-details__size-btn",
-                        "type-body-s-500",
-                        size === "M" && "product-details__size-btn--active",
-                      ]}
-                      role="radio"
-                      aria-checked={size === "M" ? "true" : "false"}
                     >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      {axis.values.map((value) => {
+                        const selected = isSelected(axis.title, value);
+                        const swatch = showSwatches ? resolveColorSwatch(value) : null;
+                        const label = clientMessages.selectOption.replace("__VALUE__", value);
+                        if (showSwatches) {
+                          return (
+                            <button
+                              type="button"
+                              class:list={[
+                                "product-details__swatch",
+                                selected && "product-details__swatch--active",
+                              ]}
+                              data-option-title={axis.title}
+                              data-option-value={value}
+                              aria-pressed={selected ? "true" : "false"}
+                              aria-label={label}
+                              title={value}
+                            >
+                              <span
+                                class="product-details__swatch-chip"
+                                style={swatch ? `background-color: ${swatch};` : undefined}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          );
+                        }
+                        return (
+                          <button
+                            type="button"
+                            class:list={[
+                              "product-details__size-btn",
+                              "type-body-s-500",
+                              selected && "product-details__size-btn--active",
+                            ]}
+                            data-option-title={axis.title}
+                            data-option-value={value}
+                            aria-pressed={selected ? "true" : "false"}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                );
+              })}
 
               <!-- Actions Form -->
               <form action="/actions/cart/add" method="post" data-add-form class="product-details__form">
-                <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} />
+                <input
+                  type="hidden"
+                  name="variantId"
+                  value={defaultVariant?.id ?? ""}
+                  data-variant-id
+                />
                 <input type="hidden" name="quantity" value="1" id="pdp-quantity-input" />
+
+                <p class="product-details__selection type-body-s-400" data-config-summary>
+                  {defaultVariant?.optionValues.map((option) => option.value).join(" · ") ||
+                    defaultVariant?.title ||
+                    ""}
+                </p>
 
                 <div class="product-details__actions">
                   <div class="product-details__quantity">
                     <button
                       type="button"
                       class="product-details__qty-btn product-details__qty-btn--minus"
-                      aria-label="Decrease quantity"
-                      onclick="(() => { const v = document.getElementById('pdp-qty-val'); const q = document.getElementById('pdp-quantity-input'); if(v && q) { const n = Math.max(1, parseInt(v.textContent || '1') - 1); v.textContent = String(n); q.setAttribute('value', String(n)); } })()"
+                      aria-label={m.action_decrease_quantity({}, { locale })}
                     >
                       <Icon name="minus" width={12} height={2} />
                     </button>
@@ -268,22 +350,27 @@ const wishlistItem = product
                     <button
                       type="button"
                       class="product-details__qty-btn product-details__qty-btn--plus"
-                      aria-label="Increase quantity"
-                      onclick="(() => { const v = document.getElementById('pdp-qty-val'); const q = document.getElementById('pdp-quantity-input'); if(v && q) { const n = parseInt(v.textContent || '1') + 1; v.textContent = String(n); q.setAttribute('value', String(n)); } })()"
+                      aria-label={m.action_increase_quantity({}, { locale })}
                     >
                       <Icon name="plus" width={12} height={12} />
                     </button>
                   </div>
 
+
                   <div class="product-details__cta">
                     <Button
-                      text={defaultVariant?.inStock ? "Add to Cart" : "Out of Stock"}
+                      text={
+                        defaultVariant?.inStock
+                          ? m.action_add_to_cart({}, { locale })
+                          : m.catalog_out_of_stock({}, { locale })
+                      }
                       variant="primary"
                       size="large"
                       fullWidth={true}
                       type="submit"
                       disabled={!defaultVariant?.inStock}
                       data-action="open-cart"
+                      data-add-label
                     />
                   </div>
 
@@ -325,4 +412,128 @@ const wishlistItem = product
       )}
     </main>
   )}
+
+  {product && (
+    <script
+      is:inline
+      type="application/json"
+      id="afro-product-variants"
+      set:html={serializeJsonForScript(variants)}
+    />
+  )}
 </Layout>
+
+<script>
+  // Resolves the selected option values to a real variant and keeps the price,
+  // stock label, add-to-cart state and hidden variantId in step with it. The
+  // matching rule lives in lib.ts so it is unit tested — see
+  // afro-product-variants.test.ts.
+  import { resolveAfroVariant } from "../lib";
+
+  const root = document.querySelector("[data-product-detail]");
+  // A product with no option axes has nothing to select, and the server already
+  // rendered the correct default variant. Leaving this alone also keeps the form
+  // usable, since an empty selection resolves to null and would disable submit.
+  const axisGroups = root?.querySelectorAll("[data-option-axis]") ?? [];
+  if (root && axisGroups.length > 0) {
+    let variants: Array<{
+      id: string;
+      inStock: boolean;
+      priceAmount: number | null;
+      currencyCode: string | null;
+      optionValues: Record<string, string>;
+    }> = [];
+    let clientMessages: Record<string, string> = {};
+    try {
+      variants = JSON.parse(
+        document.getElementById("afro-product-variants")?.textContent || "[]",
+      );
+      clientMessages = JSON.parse(root.getAttribute("data-client-messages") || "{}");
+    } catch {
+      // Unparseable payload: variants stays empty so every selection resolves to
+      // null and the submit button is disabled rather than sending a wrong id.
+    }
+    const selected: Record<string, string | undefined> = {};
+    axisGroups.forEach((axis) => {
+      const active = axis.querySelector<HTMLElement>('[aria-pressed="true"]');
+      if (active) selected[active.dataset.optionTitle || ""] = active.dataset.optionValue;
+    });
+
+    const formatPrice = (amount: number, currency: string | null) => {
+      try {
+        return new Intl.NumberFormat(
+          document.documentElement.lang === "am" ? "am-ET" : "en-ET",
+          {
+            style: "currency",
+            currency: (currency || "ETB").toUpperCase(),
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          },
+        ).format(amount);
+      } catch {
+        return String(amount);
+      }
+    };
+
+    const sync = () => {
+      const variant = resolveAfroVariant(variants, selected);
+      const input = root.querySelector<HTMLInputElement>("[data-variant-id]");
+      const submit = root.querySelector<HTMLButtonElement>(
+        "[data-add-form] button[type=submit]",
+      );
+      const price = root.querySelector(".product-details__price");
+      const stock = root.querySelector("[data-product-stock]");
+      const label = root.querySelector("[data-add-label] .btn__text");
+      const summary = root.querySelector("[data-config-summary]");
+
+      if (summary && clientMessages.selected) {
+        summary.textContent = clientMessages.selected.replace(
+          "__OPTIONS__",
+          Object.values(selected).join(" · "),
+        );
+      }
+      if (!variant) {
+        // Nothing confirmed, so refuse to submit rather than sell a default variant.
+        if (input) input.value = "";
+        if (submit) submit.disabled = true;
+        return;
+      }
+      if (input) input.value = variant.id;
+      if (submit) submit.disabled = !variant.inStock;
+      if (label) {
+        label.textContent = variant.inStock
+          ? clientMessages.addToCart || label.textContent
+          : clientMessages.outOfStock || label.textContent;
+      }
+      if (price && variant.priceAmount != null) {
+        price.textContent = formatPrice(variant.priceAmount, variant.currencyCode);
+      }
+      if (stock) {
+        stock.textContent = variant.inStock
+          ? clientMessages.inStock || ""
+          : clientMessages.outOfStock || "";
+      }
+    };
+
+    root.querySelectorAll<HTMLButtonElement>("[data-option-value]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const title = button.dataset.optionTitle;
+        if (!title) return;
+        selected[title] = button.dataset.optionValue;
+        root
+          .querySelectorAll<HTMLElement>(`[data-option-title="${CSS.escape(title)}"]`)
+          .forEach((item) => {
+            const on = item === button;
+            item.setAttribute("aria-pressed", String(on));
+            if (item.classList.contains("product-details__swatch")) {
+              item.classList.toggle("product-details__swatch--active", on);
+            }
+            if (item.classList.contains("product-details__size-btn")) {
+              item.classList.toggle("product-details__size-btn--active", on);
+            }
+          });
+        sync();
+      });
+    });
+  }
+</script>
