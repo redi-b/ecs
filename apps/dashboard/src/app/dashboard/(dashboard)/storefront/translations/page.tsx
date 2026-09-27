@@ -1,11 +1,11 @@
-import { RiSettings4Line, RiTranslate2 } from "@remixicon/react";
+import { RiSettings4Line } from "@remixicon/react";
 import { headers } from "next/headers";
 import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { EnableAmharicPanel } from "@/features/storefront-editor/enable-amharic-panel";
 import { StorefrontTranslationWorkspace } from "@/features/storefront-editor/storefront-translation-workspace";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
@@ -81,18 +81,10 @@ export default async function StorefrontTranslationsPage({
           />
         }
       >
-        <Empty className="min-h-72 rounded-2xl border border-dashed">
-          <EmptyHeader>
-            <RiTranslate2 className="size-5 text-muted-foreground" />
-            <EmptyTitle>{t("editor.translations.disabledTitle")}</EmptyTitle>
-            <EmptyDescription>{t("editor.translations.disabledDescription")}</EmptyDescription>
-          </EmptyHeader>
-          <Button asChild size="sm">
-            <Link href="/dashboard/settings?section=storefront">
-              {t("editor.translations.openSettings")}
-            </Link>
-          </Button>
-        </Empty>
+        <EnableAmharicPanel
+          initialSettings={draft.draft.languageSettings}
+          tenantId={draft.draft.tenantId}
+        />
       </PageShell>
     );
   }

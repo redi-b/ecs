@@ -15,6 +15,7 @@ import { SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
 import { dashboardRoutes } from "@/lib/routes";
+import { saveStorefrontLanguageSettings } from "@/lib/storefront-languages-client";
 
 export function StorefrontLanguageSettingsPanel({
   initialSettings,
@@ -52,17 +53,15 @@ export function StorefrontLanguageSettingsPanel({
   function save() {
     if (!dirty || pending) return;
     startTransition(async () => {
-      const response = await fetch(dashboardRoutes.storefrontLanguagesAction, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId, languageSettings: settings }),
+      const result = await saveStorefrontLanguageSettings({
+        languageSettings: settings,
+        tenantId,
       });
-      const result = await response.json().catch(() => null);
-      if (!response.ok) {
+      if (!result.ok) {
         toast.error(t("settings.storefront.languagesSaveFailed"));
         return;
       }
-      const nextSettings = result.languageSettings ?? settings;
+      const nextSettings = result.languageSettings;
       setSaved(nextSettings);
       dispatchStorefrontLanguagesChanged(nextSettings.enabledLocales);
       router.refresh();
