@@ -32,12 +32,14 @@ export function AccountMenu({
   accessibleShopCount = 1,
   currentTenantId,
   demoMode = false,
+  landingPageUrl,
   shopPickerUrl,
 }: {
   actor: MerchantDashboardSummary["actor"];
   accessibleShopCount?: number;
   currentTenantId?: string;
   demoMode?: boolean;
+  landingPageUrl?: string;
   shopPickerUrl?: string;
 }) {
   const { t } = useI18n();
@@ -172,6 +174,14 @@ export function AccountMenu({
                   >
                     <AppIcons.shoppingBag />
                     {t("account.switchShop")}
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
+              {!demoMode && landingPageUrl ? (
+                <DropdownMenuItem asChild className="py-1.5">
+                  <a href={landingPageUrl} rel="noreferrer" target="_blank">
+                    <AppIcons.externalLink />
+                    {t("account.ecsWebsite")}
                   </a>
                 </DropdownMenuItem>
               ) : null}

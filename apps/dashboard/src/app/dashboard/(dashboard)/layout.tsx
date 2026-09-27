@@ -43,6 +43,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   const t = await getTranslations();
   const requestHeaders = await headers();
   const cookieStore = await cookies();
+  const landingPageUrl = process.env.ECS_LANDING_PAGE_URL?.trim();
   const currentPath = requestHeaders.get(DASHBOARD_PATH_HEADER) ?? "/dashboard";
   const sidebarDefaultOpen = getSidebarDefaultOpen(
     cookieStore.get(SIDEBAR_COOKIE_NAME)?.value,
@@ -161,6 +162,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
               <AppSidebar
                 access={access.access}
                 centralDashboardUrl={getCentralDashboardUrl("").replace(/\/$/, "")}
+                {...(landingPageUrl ? { landingPageUrl } : {})}
               />
               <SidebarInset>
                 {access.access.actor.supportAccess ? (

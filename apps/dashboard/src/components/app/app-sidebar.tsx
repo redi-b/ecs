@@ -216,10 +216,12 @@ export function AppSidebar({
   access,
   centralDashboardUrl,
   demoMode = false,
+  landingPageUrl,
 }: {
   access: Pick<MerchantDashboardAccess, "actor" | "permissions" | "shopAccess" | "tenant">;
   centralDashboardUrl?: string;
   demoMode?: boolean;
+  landingPageUrl?: string;
 }) {
   const pathname = usePathname();
   const closeMobileSidebar = useCloseMobileSidebar();
@@ -310,7 +312,10 @@ export function AppSidebar({
           actor={access.actor}
           currentTenantId={access.tenant.id}
           demoMode={demoMode}
-          {...(centralDashboardUrl ? { shopPickerUrl: `${centralDashboardUrl}/dashboard/shops` } : {})}
+          {...(landingPageUrl ? { landingPageUrl } : {})}
+          {...(centralDashboardUrl
+            ? { shopPickerUrl: `${centralDashboardUrl}/dashboard/shops` }
+            : {})}
         />
       </SidebarFooter>
       <SidebarRail />
