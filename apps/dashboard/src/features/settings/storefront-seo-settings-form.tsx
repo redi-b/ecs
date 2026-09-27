@@ -5,13 +5,14 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { ImageUpIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
-import { SettingsFormActions, SettingsPanel } from "@/features/settings/settings-sections";
+import { SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 
 export function StorefrontSeoSettingsForm({
@@ -225,7 +226,7 @@ export function StorefrontSeoSettingsForm({
           selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty] as const}
         >
           {([canSubmit, isSubmitting, isDirty]) => (
-            <SettingsFormActions
+            <ContextualSaveActions
               canSave={canSubmit}
               dirty={isDirty}
               onDiscard={() => form.reset()}

@@ -8,6 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { useCalendarPreference } from "@/components/providers/calendar-preference-provider";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field";
@@ -15,7 +16,6 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import {
   SectionIntro,
-  SettingsFormActions,
   SettingsPanel,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
@@ -118,7 +118,7 @@ export function PreferencesSection({
           </div>
         </div>
         <div className="px-3">
-          <SettingsFormActions
+          <ContextualSaveActions
             dirty={calendarDirty}
             onDiscard={() => setCalendarPreference(savedPreference)}
             onSave={() => void saveCalendarPreference()}

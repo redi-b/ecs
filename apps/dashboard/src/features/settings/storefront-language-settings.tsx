@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
-import { SettingsFormActions, SettingsPanel } from "@/features/settings/settings-sections";
+import { SettingsPanel } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
 import { dashboardRoutes } from "@/lib/routes";
@@ -142,7 +143,7 @@ export function StorefrontLanguageSettingsPanel({
           <span />
         )}
       </div>
-      <SettingsFormActions
+      <ContextualSaveActions
         dirty={dirty}
         onDiscard={() => setSettings(saved)}
         onSave={save}

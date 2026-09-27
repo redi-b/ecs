@@ -1,6 +1,7 @@
 "use client";
 
 import { usePolicy } from "@/components/app/access-context";
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -15,7 +16,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { HandleAvailability } from "@/features/settings/settings-helpers";
 import {
   SectionIntro,
-  SettingsFormActions,
   SettingsPanel,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
@@ -147,7 +147,7 @@ export function ShopSection({
             </Alert>
           ) : null}
           {canManage ? (
-            <SettingsFormActions
+            <ContextualSaveActions
               canSave={canSaveShop}
               dirty={dirty}
               onDiscard={onDiscard}

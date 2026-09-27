@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
@@ -305,7 +306,7 @@ export function StorefrontTranslationWorkspace({
   }
 
   return (
-    <div className="relative flex flex-col gap-5">
+    <div className={cn("relative flex flex-col gap-5", dirty && "pb-24")}>
       <div
         ref={stickySentinelRef}
         aria-hidden="true"
@@ -645,13 +646,10 @@ export function StorefrontTranslationWorkspace({
                   (field) =>
                     reviewedPaths.has(field.path) || values[field.path] !== savedValues[field.path],
                 ) ? (
-                  <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2.5">
+                  <div className="flex items-center border-t border-border/60 bg-muted/20 px-4 py-2.5">
                     <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                       {t("common.unsaved.eyebrow")}
                     </span>
-                    <Button disabled={!dirty || pending} onClick={save} size="sm" type="button">
-                      {pending ? t("editor.translations.saving") : t("editor.translations.save")}
-                    </Button>
                   </div>
                 ) : null}
               </CollapsibleContent>
@@ -689,6 +687,18 @@ export function StorefrontTranslationWorkspace({
         queueNavigation={sheetNavigation}
         target={taxonomyTarget}
         tenantId={tenantId}
+      />
+      <ContextualSaveActions
+        dirty={dirty}
+        mode="floating"
+        onDiscard={() => {
+          setValues({ ...savedValues });
+          setReviewedPaths(new Set());
+        }}
+        onSave={save}
+        pending={pending}
+        saveLabel={t("editor.translations.save")}
+        savingLabel={t("editor.translations.saving")}
       />
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>

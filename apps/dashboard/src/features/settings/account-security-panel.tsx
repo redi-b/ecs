@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { useActorOrFallback } from "@/components/app/actor-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { ProfileAvatar } from "@/components/app/profile-avatar";
@@ -38,11 +39,7 @@ import {
   parseUserAgent,
 } from "@/features/settings/account-security-parts";
 import { ProfileAvatarEditor } from "@/features/settings/profile-avatar-editor";
-import {
-  SectionIntro,
-  SettingsFormActions,
-  SettingsSectionBody,
-} from "@/features/settings/settings-sections";
+import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -625,7 +622,7 @@ export function AccountSecurityPanel({
             required
             value={phone}
           />
-          <SettingsFormActions
+          <ContextualSaveActions
             className="-mx-4 -mb-3.5"
             dirty={nameDirty || phoneDirty || avatarDirty}
             onDiscard={() => {

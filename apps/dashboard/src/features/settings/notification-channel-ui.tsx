@@ -2,6 +2,7 @@
 
 import { type ReactNode, useId } from "react";
 
+import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { AppIcons } from "@/components/app/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { SettingsFormActions } from "@/features/settings/settings-sections";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -344,7 +344,7 @@ export function NotificationEventPicker({
           </div>
         ))}
       </div>
-      <SettingsFormActions
+      <ContextualSaveActions
         canSave={events.length > 0 && !disabled}
         className="-mx-3.5 -mb-3.5 sm:-mx-4 sm:-mb-4"
         dirty={dirty}
