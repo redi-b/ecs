@@ -111,8 +111,14 @@ export function initLuviaStorefront() {
   });
   headerBackdrop?.addEventListener("click", () => setHeaderSurface(null, true));
 
+  const isSearchCollapsed = () => {
+    if (!searchInput) return false;
+    const style = window.getComputedStyle(searchInput);
+    return style.position === "absolute" && style.visibility === "hidden";
+  };
+
   searchButton?.addEventListener("click", (event) => {
-    if (window.matchMedia("(max-width: 760px)").matches && headerSurface !== "search") {
+    if (isSearchCollapsed() && headerSurface !== "search") {
       event.preventDefault();
       setHeaderSurface("search");
     }
@@ -120,9 +126,11 @@ export function initLuviaStorefront() {
 
   searchForm?.addEventListener("submit", (event) => {
     if (searchInput?.value.trim()) return;
-    event.preventDefault();
-    if (window.matchMedia("(max-width: 760px)").matches) setHeaderSurface("search");
-    searchInput?.focus();
+    if (isSearchCollapsed()) {
+      event.preventDefault();
+      setHeaderSurface("search");
+      searchInput?.focus();
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -132,7 +140,7 @@ export function initLuviaStorefront() {
   });
 
   window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => {
-    if (event.matches) setHeaderSurface(null);
+    if (event.matches && headerSurface === "menu") setHeaderSurface(null);
   });
 
   // Cart Drawer

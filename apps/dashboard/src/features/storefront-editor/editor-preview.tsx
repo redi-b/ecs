@@ -1,6 +1,6 @@
 "use client";
 
-import { contrastingInk, contrastRatio, getStorefrontEditorManifest } from "@ecs/storefront-templates";
+import { contrastingInk, contrastRatio, deriveTextContrast, getStorefrontEditorManifest } from "@ecs/storefront-templates";
 import { RiEditLine, RiExternalLinkLine, RiRefreshLine } from "@remixicon/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -147,21 +147,31 @@ function StorefrontIframePreview({
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
   }, [data, liveProps, manifest, previewLocale, templateKey]);
   const resolvedTheme = useMemo(
-    () => ({
-      accent: liveProps.accentColor,
-      background: liveProps.backgroundColor,
-      foreground: liveProps.foregroundColor,
-      muted: liveProps.mutedColor,
-      onAccent: liveProps.accentColor ? contrastingInk(liveProps.accentColor) : undefined,
-      onPrimary: liveProps.primaryColor ? contrastingInk(liveProps.primaryColor) : undefined,
-      primary: liveProps.primaryColor,
-      primaryEdge:
-        liveProps.primaryColor && liveProps.backgroundColor && liveProps.foregroundColor
-          ? contrastRatio(liveProps.primaryColor, liveProps.backgroundColor) < 1.3
-            ? liveProps.foregroundColor
-            : "transparent"
-          : undefined,
-    }),
+    () => {
+      const brandText =
+        liveProps.primaryColor && liveProps.backgroundColor
+          ? deriveTextContrast(liveProps.primaryColor, liveProps.backgroundColor)
+          : undefined;
+      return {
+        accent: liveProps.accentColor,
+        background: liveProps.backgroundColor,
+        foreground: liveProps.foregroundColor,
+        muted: liveProps.mutedColor,
+        onAccent: liveProps.accentColor ? contrastingInk(liveProps.accentColor) : undefined,
+        onPrimary: liveProps.primaryColor ? contrastingInk(liveProps.primaryColor) : undefined,
+        primary: liveProps.primaryColor,
+        primaryFill: brandText?.fill ?? liveProps.primaryColor,
+        primaryText: brandText?.text ?? liveProps.primaryColor,
+        primaryLink: brandText?.link ?? liveProps.primaryColor,
+        primaryDark: liveProps.primaryColor ? `color-mix(in srgb, ${liveProps.primaryColor}, #000 65%)` : undefined,
+        primaryEdge:
+          liveProps.primaryColor && liveProps.backgroundColor && liveProps.foregroundColor
+            ? contrastRatio(liveProps.primaryColor, liveProps.backgroundColor) < 1.3
+              ? liveProps.foregroundColor
+              : "transparent"
+            : undefined,
+      };
+    },
     [
       liveProps.accentColor,
       liveProps.backgroundColor,

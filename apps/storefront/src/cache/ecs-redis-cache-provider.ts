@@ -18,7 +18,14 @@ type CacheSetOptions = {
   tags?: string[];
 };
 
-const PRIVATE_PATH_PREFIXES = ["/cart", "/checkout", "/order", "/actions", "/cart-count", "/internal"];
+const PRIVATE_PATH_PREFIXES = [
+  "/cart",
+  "/checkout",
+  "/order",
+  "/actions",
+  "/cart-count",
+  "/internal",
+];
 
 function isPrivatePath(pathname: string) {
   return PRIVATE_PATH_PREFIXES.some(
@@ -46,7 +53,7 @@ const factory: CacheProviderFactory = (rawConfig) => {
   const redisUrl = config.redisUrl?.trim() || process.env.REDIS_URL || "redis://localhost:6379";
 
   let client: Redis | null = null;
-  let disabled = false;
+  const disabled = false;
 
   function redis() {
     if (disabled) return null;
@@ -125,8 +132,7 @@ const factory: CacheProviderFactory = (rawConfig) => {
       const response = await next();
 
       // Astro types for custom provider context may lag behind runtime cache API.
-      const opts = (context as { cache?: { options?: CacheSetOptions } }).cache
-        ?.options;
+      const opts = (context as { cache?: { options?: CacheSetOptions } }).cache?.options;
       if (
         !opts ||
         opts.maxAge == null ||

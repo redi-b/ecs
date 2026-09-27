@@ -80,19 +80,19 @@ body.body {
   }
 
   .type-body-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading, "cap-height");
+    @include type-token($ff-body, $fw-regular, $fs-body, $lh-body, $ls-heading);
   }
 
   .type-body-500 {
-    @include type-token($ff-body, $fw-medium, $fs-body, $lh-body, $ls-heading, "cap-height");
+    @include type-token($ff-body, $fw-medium, $fs-body, $lh-body, $ls-heading);
   }
 
   .type-body-s-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body-s, $lh-body-s, $ls-none, "cap-height");
+    @include type-token($ff-body, $fw-regular, $fs-body-s, $lh-body-s, $ls-none);
   }
 
   .type-body-s-500 {
-    @include type-token($ff-body, $fw-medium, $fs-body-s, $lh-body-s, $ls-none, "cap-height");
+    @include type-token($ff-body, $fw-medium, $fs-body-s, $lh-body-s, $ls-none);
   }
 
   .type-body-xs {

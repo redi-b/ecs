@@ -33,7 +33,7 @@ const isActiveLink = (href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 ---
 
-<header class="header">
+<header class="header container">
   <div class="header__start">
     <a
       class="logo"
@@ -103,37 +103,39 @@ const isActiveLink = (href: string) =>
         <Icon name="search" />
       </button>
     </form>
-    <a
-      class="action action--wishlist"
-      href="/wishlist"
-      aria-label={m.nav_wishlist({}, { locale })}
-      data-wishlist-indicator
-    >
-      <Icon name="wishlist" />
-    </a>
-    <a
-      class="action"
-      href="/cart"
-      aria-label={m.nav_cart({}, { locale })}
-      data-cart-trigger
-    >
-      <Icon name="cart" />
-      <span
-        class="count type-body-xs"
-        data-cart-count
-        aria-live="polite"
-        hidden={deferCartCount ? true : cartCount <= 0}
+    <div class="actions__group">
+      <a
+        class="action action--wishlist"
+        href="/wishlist"
+        aria-label={m.nav_wishlist({}, { locale })}
+        data-wishlist-indicator
       >
-        {deferCartCount ? "" : cartCount}
-      </span>
-    </a>
-    <a
-      class="action action--account"
-      href="/account"
-      aria-label={m.nav_account({}, { locale })}
-    >
-      <Icon name="user" />
-    </a>
+        <Icon name="wishlist" />
+      </a>
+      <a
+        class="action"
+        href="/cart"
+        aria-label={m.nav_cart({}, { locale })}
+        data-cart-trigger
+      >
+        <Icon name="cart" />
+        <span
+          class="count type-body-xs"
+          data-cart-count
+          aria-live="polite"
+          hidden={deferCartCount ? true : cartCount <= 0}
+        >
+          {deferCartCount ? "" : cartCount}
+        </span>
+      </a>
+      <a
+        class="action action--account"
+        href="/account"
+        aria-label={m.nav_account({}, { locale })}
+      >
+        <Icon name="user" />
+      </a>
+    </div>
   </div>
 </header>
 <button class="header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>

@@ -1,9 +1,8 @@
 import { fileURLToPath } from "node:url";
 import node from "@astrojs/node";
-import icon from "astro-icon";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "astro/config";
-
+import icon from "astro-icon";
 
 import { ecsRedisCache } from "./src/cache/ecs-redis-cache.ts";
 import { templateCssScopePostcss } from "./src/lib/css/template-css-scope.ts";

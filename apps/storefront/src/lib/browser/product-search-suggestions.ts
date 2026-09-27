@@ -91,7 +91,7 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       }
       const copy = document.createElement("span");
       copy.className = "product-search-suggestions__copy";
-      const title = document.createElement("strong");
+      const title = document.createElement("span");
       title.textContent = suggestion.title;
       copy.append(title);
       if (suggestion.collection) {

@@ -15,8 +15,9 @@
   --sf-muted: #ebe4d8;
   --sf-surface: #fffcf7;
   --sf-border: color-mix(in srgb, var(--sf-fg) 10%, transparent);
-  --sf-shadow: 0 1px 2px color-mix(in srgb, var(--sf-fg) 6%, transparent),
-    0 12px 32px color-mix(in srgb, var(--sf-fg) 6%, transparent);
+  --sf-shadow:
+    0 1px 2px color-mix(in srgb, var(--sf-fg) 6%, transparent), 0 12px 32px
+    color-mix(in srgb, var(--sf-fg) 6%, transparent);
   --sf-radius: 14px;
   --sf-max: 1120px;
   --sf-heading-font: "Fraunces", ui-serif, Georgia, serif;
@@ -129,7 +130,9 @@ img {
   opacity: 0.88;
   padding: 0.35rem 0;
   border-bottom: 2px solid transparent;
-  transition: opacity 0.15s ease, border-color 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .sf-nav a:hover,
@@ -246,7 +249,10 @@ img {
   color: inherit;
   min-height: 100%;
   box-shadow: var(--sf-shadow);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .sf-card:hover {
@@ -260,8 +266,11 @@ img {
   aspect-ratio: 1;
   width: 100%;
   object-fit: cover;
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--sf-muted) 70%, #fff), var(--sf-muted));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--sf-muted) 70%, #fff),
+    var(--sf-muted)
+  );
   display: block;
 }
 
@@ -308,7 +317,9 @@ img {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: filter 0.15s ease, transform 0.1s ease;
+  transition:
+    filter 0.15s ease,
+    transform 0.1s ease;
 }
 
 .sf-btn:hover:not(:disabled) {
@@ -364,7 +375,9 @@ img {
   font: inherit;
   background: var(--sf-surface);
   color: var(--sf-fg);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .sf-field input:focus,

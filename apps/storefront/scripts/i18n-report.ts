@@ -15,12 +15,18 @@ function namespace(key: string) {
 }
 
 export function createTranslationCoverage(base: Messages, translation: Messages) {
-  const keys = Object.keys(base).filter((key) => key !== "$schema").sort();
+  const keys = Object.keys(base)
+    .filter((key) => key !== "$schema")
+    .sort();
   const missing = keys.filter((key) => !(key in translation));
-  const extra = Object.keys(translation).filter((key) => key !== "$schema" && !(key in base)).sort();
+  const extra = Object.keys(translation)
+    .filter((key) => key !== "$schema" && !(key in base))
+    .sort();
   const empty = keys.filter((key) => !translation[key]?.trim());
   const placeholderMismatch = keys.filter(
-    (key) => JSON.stringify(placeholders(base[key] ?? "")) !== JSON.stringify(placeholders(translation[key] ?? "")),
+    (key) =>
+      JSON.stringify(placeholders(base[key] ?? "")) !==
+      JSON.stringify(placeholders(translation[key] ?? "")),
   );
   const untranslatedClones = keys.filter(
     (key) => base[key] === translation[key] && !intentionallyShared.has(key),
@@ -28,16 +34,26 @@ export function createTranslationCoverage(base: Messages, translation: Messages)
   const namespaces = Object.fromEntries(
     [...new Set(keys.map(namespace))].sort().map((name) => {
       const namespaceKeys = keys.filter((key) => namespace(key) === name);
-      const incomplete = new Set([...missing, ...empty, ...placeholderMismatch, ...untranslatedClones]);
+      const incomplete = new Set([
+        ...missing,
+        ...empty,
+        ...placeholderMismatch,
+        ...untranslatedClones,
+      ]);
       const translated = namespaceKeys.filter((key) => !incomplete.has(key)).length;
-      return [name, { total: namespaceKeys.length, translated, fallback: namespaceKeys.length - translated }];
+      return [
+        name,
+        { total: namespaceKeys.length, translated, fallback: namespaceKeys.length - translated },
+      ];
     }),
   );
   return {
     locale: "am",
     sourceLocale: "en",
     total: keys.length,
-    translated: keys.length - new Set([...missing, ...empty, ...placeholderMismatch, ...untranslatedClones]).size,
+    translated:
+      keys.length -
+      new Set([...missing, ...empty, ...placeholderMismatch, ...untranslatedClones]).size,
     missing,
     extra,
     empty,
@@ -55,7 +71,13 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   ]);
   const report = createTranslationCoverage(base, translation);
   console.log(JSON.stringify(report, null, 2));
-  if (report.missing.length || report.extra.length || report.empty.length || report.placeholderMismatch.length || report.untranslatedClones.length) {
+  if (
+    report.missing.length ||
+    report.extra.length ||
+    report.empty.length ||
+    report.placeholderMismatch.length ||
+    report.untranslatedClones.length
+  ) {
     process.exitCode = 1;
   }
 }

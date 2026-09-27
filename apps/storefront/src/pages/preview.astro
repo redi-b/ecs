@@ -362,7 +362,10 @@ function resolveConfiguredEditorOrigin() {
           try { mappings = JSON.parse(node.getAttribute('data-editor-theme-vars') || '{}'); } catch {}
           const theme = event.data.theme || {};
           Object.entries(mappings).forEach(([role, variable]) => {
-            if (typeof variable === 'string' && typeof theme[role] === 'string') node.style.setProperty(variable, theme[role]);
+            const val = theme[role] ?? (role === 'primaryFill' || role === 'primaryText' || role === 'primaryLink' ? theme.primary : role === 'primaryDark' && typeof theme.primary === 'string' ? `color-mix(in srgb, ${theme.primary}, #000 65%)` : undefined);
+            if (typeof variable === 'string' && typeof val === 'string') {
+              node.style.setProperty(variable, val);
+            }
           });
         });
       });

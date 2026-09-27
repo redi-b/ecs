@@ -20,7 +20,7 @@ import categoryImage from "../assets/categories-hero-image.webp";
 import ctaImage from "../assets/cta-layer-image.webp";
 import heroBg from "../assets/hero-bg-alt-image.webp";
 import heroPortrait from "../assets/hero-portrait-image.webp";
-import scrollMark from "../assets/scroll-logomark.svg";
+import logo from "../assets/luvia-logo.svg";
 import HeroProductSlide from "../components/HeroProductSlide.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData, storefrontAsset } from "../lib";
@@ -60,6 +60,8 @@ const locale =
   Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const products = "products" in productsResult ? productsResult.products : [];
 const hasError = "message" in productsResult;
+const emptyLogoUrl = template.header.useShopName ? null : logo.src;
+const logoUrl = template.header.logoAssetId ?? emptyLogoUrl;
 const heroBackground = storefrontAsset(
   template.home.hero.imageAssetId,
   heroBg.src,
@@ -129,113 +131,115 @@ const homeFilterCollections = collections.slice(0, 4);
           data-editor-section="home.hero"
           data-editor-visible-path="home.hero.enabled"
           data-editor-background-image-path="home.hero.imageAssetId"
+          style={`--hero-bg: url('${heroBackground}');`}
           hidden={!template.home.hero.enabled}
         >
-          <TemplateAsset
-            class="hero__background"
-            src={heroBackground}
-            fallback={heroBg}
-            alt=""
-            widths={[480, 768, 1024, 1512, 2400]}
-            sizes="100vw"
-            loading="eager"
-            fetchpriority="high"
-          />
-          <div class="hero__copy container">
-            <>
-              <h1
-                class="type-heading-1"
-                data-editor-path="home.hero.title"
-                contenteditable={editorMode ? "plaintext-only" : undefined}
-              >
-                {template.home.hero.title}
-              </h1>
-              <p
-                class="type-body-400"
-                data-editor-path="home.hero.subtitle"
-                contenteditable={editorMode ? "plaintext-only" : undefined}
-              >
-                {template.home.hero.subtitle}
-              </p>
-              <ActionButton
-                href={template.home.hero.primaryCtaHref}
-                icon="bag"
-                editorPath="home.hero.primaryCtaLabel"
-                editorRelatedPaths={["home.hero.primaryCtaHref"]}
-                editorMode={editorMode}
-              >
-                {template.home.hero.primaryCtaLabel}
-              </ActionButton>
-            </>
-            {template.home.hero.trustLabels.length > 0 && (
-              <ul>
-                {template.home.hero.trustLabels.map((label, index) => (
-                  <li class="type-body-400">
-                    <Icon name="trust-badge" class="trust-badge" />
-                    <span
-                      data-editor-path={`home.hero.trustLabels.${index}`}
-                      contenteditable={
-                        editorMode ? "plaintext-only" : undefined
-                      }
-                    >
-                      {label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div class="hero__portrait">
-            <TemplateAsset
-              src={portrait}
-              fallback={heroPortrait}
-              alt={m.home_luvia_hero_image_alt({}, { locale })}
-              widths={[480, 768, 1024]}
-              sizes="(max-width: 900px) 100vw, 50vw"
-              loading="eager"
-              fetchpriority="high"
-              data-editor-image-path="home.hero.portraitAssetId"
-            />
-            {!template.header.useShopName && (
-              <img class="hero__scroll" src={scrollMark.src} alt="" />
-            )}
-            {heroProducts.length > 0 && (
-              <article
-                class="promo"
-                data-promo-carousel
-                data-editor-products-path="home.hero.featuredProductIds"
-                aria-label={m.home_featured_products({}, { locale })}
-              >
-                <button
-                  type="button"
-                  class="promo__nav promo__nav--prev"
-                  data-promo-prev
-                  aria-label={m.home_previous_products({}, { locale })}
-                  hidden={heroProducts.length < 2}
+          <div class="hero__container container">
+            <div class="hero__copy">
+              <>
+                <h1
+                  class="type-heading-1"
+                  data-editor-path="home.hero.title"
+                  contenteditable={editorMode ? "plaintext-only" : undefined}
                 >
-                  <Icon name="chevron" />
-                </button>
-                <div class="promo__viewport" data-promo-viewport>
-                  <div class="promo__track" data-promo-track>
-                    {heroProducts.map((product, index) => (
-                      <HeroProductSlide
-                        product={product}
-                        active={index === 0}
-                      />
-                    ))}
-                  </div>
+                  {template.home.hero.title}
+                </h1>
+                <p
+                  class="type-body-400"
+                  data-editor-path="home.hero.subtitle"
+                  contenteditable={editorMode ? "plaintext-only" : undefined}
+                >
+                  {template.home.hero.subtitle}
+                </p>
+                <ActionButton
+                  href={template.home.hero.primaryCtaHref}
+                  icon="bag"
+                  editorPath="home.hero.primaryCtaLabel"
+                  editorRelatedPaths={["home.hero.primaryCtaHref"]}
+                  editorMode={editorMode}
+                >
+                  {template.home.hero.primaryCtaLabel}
+                </ActionButton>
+              </>
+              {template.home.hero.trustLabels.length > 0 && (
+                <ul>
+                  {template.home.hero.trustLabels.map((label, index) => (
+                    <li class="type-body-400">
+                      <Icon name="trust-badge" class="trust-badge" />
+                      <span
+                        data-editor-path={`home.hero.trustLabels.${index}`}
+                        contenteditable={
+                          editorMode ? "plaintext-only" : undefined
+                        }
+                      >
+                        {label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div class="hero__right">
+              <div class="hero__portrait">
+                <TemplateAsset
+                  src={portrait}
+                  fallback={heroPortrait}
+                  alt={m.home_luvia_hero_image_alt({}, { locale })}
+                  widths={[480, 768, 1024]}
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  loading="eager"
+                  fetchpriority="high"
+                  data-editor-image-path="home.hero.portraitAssetId"
+                />
+              </div>
+              {logoUrl && (
+                <div class="hero__scroll">
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    data-editor-image-path="header.logoAssetId"
+                    data-editor-empty-src={emptyLogoUrl ?? undefined}
+                  />
                 </div>
-                <button
-                  type="button"
-                  class="promo__nav promo__nav--next"
-                  data-promo-next
-                  aria-label={m.home_next_products({}, { locale })}
-                  hidden={heroProducts.length < 2}
+              )}
+              {heroProducts.length > 0 && (
+                <article
+                  class="promo"
+                  data-promo-carousel
+                  data-editor-products-path="home.hero.featuredProductIds"
+                  aria-label={m.home_featured_products({}, { locale })}
                 >
-                  <Icon name="chevron" />
-                </button>
-              </article>
-            )}
+                  <button
+                    type="button"
+                    class="promo__nav promo__nav--prev"
+                    data-promo-prev
+                    aria-label={m.home_previous_products({}, { locale })}
+                    hidden={heroProducts.length < 2}
+                  >
+                    <Icon name="chevron" />
+                  </button>
+                  <div class="promo__viewport" data-promo-viewport>
+                    <div class="promo__track" data-promo-track>
+                      {heroProducts.map((product, index) => (
+                        <HeroProductSlide
+                          product={product}
+                          active={index === 0}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="promo__nav promo__nav--next"
+                    data-promo-next
+                    aria-label={m.home_next_products({}, { locale })}
+                    hidden={heroProducts.length < 2}
+                  >
+                    <Icon name="chevron" />
+                  </button>
+                </article>
+              )}
+            </div>
           </div>
         </section>
       )
