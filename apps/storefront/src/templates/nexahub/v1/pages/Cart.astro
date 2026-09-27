@@ -39,6 +39,12 @@ const clientMessages = {
       <header class="nexa-commerce__heading"><span class="nexa-kicker">{m.cart_selection_eyebrow({}, { locale })}</span><div><h1>{m.cart_title({}, { locale })}</h1><p data-page-item-count>{m.cart_ready_count({ count: itemCount }, { locale })}</p></div></header>
       {error && <div class="nexa-notice nexa-notice--error" role="alert"><strong>{m.cart_unavailable({}, { locale })}</strong><p>{error}</p></div>}
       <p class="nexa-live" data-cart-page-status aria-live="polite"></p>
+    <script
+      is:inline
+      type="application/json"
+      id="nexahub-cart-state"
+      set:html={JSON.stringify(cart)}
+    />
 
       {!items.length ? <section class="nexa-empty" data-cart-page-empty><span class="nexa-empty__index">00</span><h2>{m.cart_empty({}, { locale })}</h2><p>{m.cart_empty_help({}, { locale })}</p><Button text={m.action_browse_products({}, { locale })} href="/products" /></section> : <div class="nexa-commerce__split" data-cart-page-layout>
         <section class="nexa-lines" aria-label={m.cart_items_label({}, { locale })} data-cart-page-lines>
@@ -47,7 +53,7 @@ const clientMessages = {
             <span class="nexa-line__index">{String(index + 1).padStart(2, "0")}</span>
             <a class="nexa-line__media" href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{(item.imageUrl || item.thumbnail) ? <img src={item.imageUrl || item.thumbnail} alt="" width="480" height="480" loading={index === 0 ? "eager" : "lazy"} decoding="async" /> : <span>{m.catalog_no_image({}, { locale })}</span>}</a>
             <div class="nexa-line__copy"><a href={item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products"}>{item.title ?? m.catalog_product_fallback({}, { locale })}</a>{item.variantTitle && <span>{item.variantTitle}</span>}<small>{formatMoney(item.unitPrice, cart?.currencyCode, locale)} {m.cart_each({}, { locale })}</small></div>
-            <div class="nexa-line__controls"><div class="nexa-stepper"><form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label={m.action_decrease_quantity({}, { locale })} disabled={item.quantity <= 1}><Icon name="minus" /></button></form><span data-line-quantity>{item.quantity}</span><form method="post" action="/actions/cart/update" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={item.quantity + 1} /><button type="submit" aria-label={m.action_increase_quantity({}, { locale })}><Icon name="plus" /></button></form></div><strong data-line-total>{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</strong><form method="post" action="/actions/cart/remove" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><button class="nexa-text-action" type="submit">{m.action_remove({}, { locale })}</button></form></div>
+            <div class="nexa-line__controls"><div class="nexa-stepper" role="group" aria-label={m.cart_quantity_for({ item: item.title ?? m.cart_item_fallback({}, { locale }) }, { locale })}><form method="post" action="/actions/cart/update" data-cart-page-form data-qty="dec"><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} /><button type="submit" aria-label={m.action_decrease_quantity({}, { locale })} disabled={item.quantity <= 1}><Icon name="minus" /></button></form><span data-line-quantity aria-live="polite" aria-live="polite">{item.quantity}</span><form method="post" action="/actions/cart/update" data-cart-page-form data-qty="inc"><input type="hidden" name="lineItemId" value={item.id} /><input type="hidden" name="quantity" value={item.quantity + 1} /><button type="submit" aria-label={m.action_increase_quantity({}, { locale })}><Icon name="plus" /></button></form></div><strong data-line-total aria-live="polite">{formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}</strong><form method="post" action="/actions/cart/remove" data-cart-page-form><input type="hidden" name="lineItemId" value={item.id} /><button class="nexa-text-action" type="submit">{m.action_remove({}, { locale })}</button></form></div>
           </article>)}
           <a class="nexa-back-link" href="/products"><span class="nexa-back-link__icon" aria-hidden="true"><Icon name="arrow-right" /></span>{m.action_continue_shopping({}, { locale })}</a>
         </section>
@@ -55,7 +61,7 @@ const clientMessages = {
         <aside class="nexa-summary" aria-label={m.cart_order_summary({}, { locale })}>
           <header class="nexa-panel-head"><h2>{m.cart_order_summary({}, { locale })}</h2><span data-summary-count>{m.cart_item_count({ count: itemCount }, { locale })}</span></header>
           <div class="nexa-discount" data-discount-code><label for="nexa-cart-code">{m.cart_promotion_code({}, { locale })}</label><form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="apply" /><input id="nexa-cart-code" name="code" autocomplete="off" placeholder={m.cart_code_placeholder({}, { locale })} required /><button type="submit">{m.action_apply({}, { locale })}</button></form><div data-applied-promotions>{summary.appliedCodes.map((promotion) => <form method="post" action="/actions/cart/promotion" data-cart-promotion-form><input type="hidden" name="intent" value="remove" /><input type="hidden" name="code" value={promotion.code ?? ""} /><span>{m.cart_code_applied({ code: promotion.code ?? "" }, { locale })}</span><button type="submit">{m.action_remove({}, { locale })}</button></form>)}</div><p class:list={["nexa-live", { "is-error": discountError }]} data-discount-status aria-live="polite">{discountError}</p></div>
-          <dl class="nexa-totals"><div><dt>{m.cart_subtotal({}, { locale })}</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>{m.cart_discount({}, { locale })}</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</dd></div><div><dt>{m.cart_delivery({}, { locale })}</dt><dd data-summary-shipping>{summary.shippingTotal && summary.shippingTotal > 0 ? formatMoney(summary.shippingTotal, cart?.currencyCode, locale) : m.cart_delivery_at_checkout({}, { locale })}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>{m.cart_tax({}, { locale })}</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode, locale)}</dd></div>}<div class="nexa-totals__total"><dt>{m.cart_total({}, { locale })}</dt><dd data-summary-total>{formatMoney(summary.total, cart?.currencyCode, locale)}</dd></div></dl>
+          <dl class="nexa-totals"><div><dt>{m.cart_subtotal({}, { locale })}</dt><dd data-summary-subtotal>{formatMoney(summary.subtotal, cart?.currencyCode, locale)}</dd></div><div data-summary-discount hidden={!summary.savingsTotal}><dt>{m.cart_discount({}, { locale })}</dt><dd data-summary-discount-value>−{formatMoney(summary.savingsTotal, cart?.currencyCode, locale)}</dd></div><div><dt>{m.cart_delivery({}, { locale })}</dt><dd data-summary-shipping>{summary.shippingTotal && summary.shippingTotal > 0 ? formatMoney(summary.shippingTotal, cart?.currencyCode, locale) : m.cart_delivery_at_checkout({}, { locale })}</dd></div>{summary.taxTotal != null && summary.taxTotal > 0 && <div><dt>{m.cart_tax({}, { locale })}</dt><dd>{formatMoney(summary.taxTotal, cart?.currencyCode, locale)}</dd></div>}<div class="nexa-totals__total"><dt>{m.cart_total({}, { locale })}</dt><dd data-summary-total aria-live="polite">{formatMoney(summary.total, cart?.currencyCode, locale)}</dd></div></dl>
           <a class="nexa-primary-action" href="/checkout">{m.action_checkout({}, { locale })} <span class="nexa-primary-action__icon" aria-hidden="true"><Icon name="arrow-up-right" /></span></a><small>{m.cart_next_step_note({}, { locale })}</small>
         </aside>
       </div>}
@@ -63,21 +69,163 @@ const clientMessages = {
   </main>
 </Layout>
 
-<script is:inline>
-  (() => {
-    const root = document.querySelector('[data-cart-page]'); if (!root) return;
-    const status = root.querySelector('[data-cart-page-status]');
-    const messages = JSON.parse(root.dataset.cartMessages || '{}');
-    const money = (amount, currency) => { try { return new Intl.NumberFormat(root.dataset.locale || 'en-ET', { style: 'currency', currency: String(currency || 'ETB').toUpperCase() }).format(Number(amount || 0)); } catch { return String(amount ?? ''); } };
-    const renderPromotions = (cart) => { const target = root.querySelector('[data-applied-promotions]'); if (!target) return; target.replaceChildren(); (cart.promotions || []).filter((promotion) => !promotion.isAutomatic && promotion.code).forEach((promotion) => { const form = document.createElement('form'); form.method = 'post'; form.action = '/actions/cart/promotion'; form.dataset.cartPromotionForm = ''; const intent = document.createElement('input'); intent.type = 'hidden'; intent.name = 'intent'; intent.value = 'remove'; const code = document.createElement('input'); code.type = 'hidden'; code.name = 'code'; code.value = promotion.code; const label = document.createElement('span'); label.textContent = String(messages.codeApplied || '').replace('__CODE__', promotion.code); const button = document.createElement('button'); button.type = 'submit'; button.textContent = messages.remove || ''; form.append(intent, code, label, button); target.append(form); }); };
-    const sync = (result) => {
-      const cart = result.cart; const items = Array.isArray(cart.items) ? cart.items : []; const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-      root.querySelectorAll('[data-cart-line]').forEach((line) => { const item = items.find((candidate) => candidate.id === line.dataset.cartLine); if (!item) { line.remove(); return; } const quantity = line.querySelector('[data-line-quantity]'); const total = line.querySelector('[data-line-total]'); if (quantity) quantity.textContent = String(item.quantity); if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode); const forms = [...line.querySelectorAll('form[action="/actions/cart/update"]')]; const down = forms[0]?.querySelector('input[name="quantity"]'); const up = forms[1]?.querySelector('input[name="quantity"]'); if (down) down.value = String(Math.max(1, item.quantity - 1)); if (up) up.value = String(item.quantity + 1); const downButton = forms[0]?.querySelector('button'); if (downButton) downButton.disabled = item.quantity <= 1; });
-      root.querySelectorAll('[data-page-item-count],[data-summary-count]').forEach((node) => { const template = node.hasAttribute('data-page-item-count') ? root.dataset.readyCount : root.dataset.itemCount; node.textContent = String(template || '').replace('__COUNT__', String(count)); });
-      const savings = Math.max(0, Number(cart.discountTotal ?? 0) || Number(cart.itemDiscountTotal || 0) + Number(cart.shippingDiscountTotal || 0)); const subtotal = root.querySelector('[data-summary-subtotal]'); const total = root.querySelector('[data-summary-total]'); const discount = root.querySelector('[data-summary-discount]'); const discountValue = root.querySelector('[data-summary-discount-value]'); if (subtotal) subtotal.textContent = money(cart.subtotal ?? cart.itemSubtotal ?? cart.itemTotal, cart.currencyCode); if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode); if (discount) discount.hidden = savings <= 0; if (discountValue) discountValue.textContent = `−${money(savings, cart.currencyCode)}`; renderPromotions(cart);
-      if (!items.length) window.location.reload();
-      window.dispatchEvent(new CustomEvent('ecs:cart-updated', { detail: { ...result, openDrawer: false } }));
+<script>
+  import { formatMoney } from "../../../../lib/money";
+  import { $cart, applyPromotion, initCartStore, removeCartItem, updateCartItemQuantity } from "../../../../lib/stores/cart";
+
+  const root = document.querySelector<HTMLElement>("[data-cart-page]");
+  if (root) {
+    const status = root.querySelector<HTMLElement>("[data-cart-page-status]");
+    const messages = JSON.parse(root.dataset.cartMessages || "{}");
+    const locale = root.dataset.locale === "am-ET" ? "am" : "en";
+    const money = (amount: number | null | undefined, currency: string | null | undefined) =>
+      formatMoney(Number(amount ?? 0), currency, locale);
+
+    initCartStore();
+
+    const renderPromotions = (promotions: any[]) => {
+      const target = root.querySelector("[data-applied-promotions]");
+      if (!target) return;
+      target.replaceChildren();
+      for (const promotion of promotions) {
+        if (promotion.isAutomatic || !promotion.code) continue;
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/actions/cart/promotion";
+        form.dataset.cartPromotionForm = "";
+        const intent = document.createElement("input");
+        intent.type = "hidden";
+        intent.name = "intent";
+        intent.value = "remove";
+        const code = document.createElement("input");
+        code.type = "hidden";
+        code.name = "code";
+        code.value = promotion.code;
+        const label = document.createElement("span");
+        label.textContent = String(messages.codeApplied || "").replace("__CODE__", promotion.code);
+        const button = document.createElement("button");
+        button.type = "submit";
+        button.textContent = messages.remove || "";
+        form.append(intent, code, label, button);
+        target.append(form);
+      }
     };
-    root.addEventListener('submit', async (event) => { const form = event.target; if (!(form instanceof HTMLFormElement) || !form.matches('[data-cart-page-form],[data-cart-promotion-form]')) return; event.preventDefault(); const feedback = form.matches('[data-cart-promotion-form]') ? root.querySelector('[data-discount-status]') : status; const button = event.submitter; const wasDisabled = button instanceof HTMLButtonElement ? button.disabled : false; if (button instanceof HTMLButtonElement) { button.disabled = true; button.dataset.busy = 'true'; button.setAttribute('aria-busy', 'true'); } form.setAttribute('aria-busy', 'true'); if (feedback) { feedback.classList.remove('is-error'); feedback.textContent = root.dataset.updating || ''; } try { const response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { Accept: 'application/json' } }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(root.dataset.updateFailed || ''); sync(result); if (feedback) feedback.textContent = ''; } catch (cause) { if (feedback) { feedback.textContent = cause instanceof Error ? cause.message : root.dataset.updateFailed || ''; feedback.classList.add('is-error'); } } finally { form.removeAttribute('aria-busy'); if (button instanceof HTMLButtonElement) { button.disabled = wasDisabled; delete button.dataset.busy; button.removeAttribute('aria-busy'); } } });
-  })();
+
+    const sync = (cart: any) => {
+      const items = Array.isArray(cart.items) ? cart.items : [];
+      const count = items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+
+      root.querySelectorAll<HTMLElement>("[data-cart-line]").forEach((line) => {
+        const item = items.find((candidate: any) => candidate.id === line.dataset.cartLine);
+        if (!item) {
+          line.remove();
+          return;
+        }
+        const quantity = line.querySelector<HTMLElement>("[data-line-quantity]");
+        const total = line.querySelector<HTMLElement>("[data-line-total]");
+        if (quantity) quantity.textContent = String(item.quantity);
+        if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode);
+
+        // Select by intent; forms[0]/forms[1] assumed a DOM order one extra
+        // form would silently break.
+        const down = line.querySelector<HTMLInputElement>('form[data-qty="dec"] input[name="quantity"]');
+        const up = line.querySelector<HTMLInputElement>('form[data-qty="inc"] input[name="quantity"]');
+        if (down) down.value = String(Math.max(1, item.quantity - 1));
+        if (up) up.value = String(item.quantity + 1);
+        const downButton = line.querySelector<HTMLButtonElement>('form[data-qty="dec"] button');
+        if (downButton) downButton.disabled = item.quantity <= 1;
+      });
+
+      root.querySelectorAll<HTMLElement>("[data-page-item-count],[data-summary-count]").forEach((node) => {
+        const template = node.hasAttribute("data-page-item-count")
+          ? root.dataset.readyCount
+          : root.dataset.itemCount;
+        node.textContent = String(template || "").replace("__COUNT__", String(count));
+      });
+
+      const savings = Math.max(
+        0,
+        Number(cart.discountTotal ?? 0) ||
+          Number(cart.itemDiscountTotal || 0) + Number(cart.shippingDiscountTotal || 0),
+      );
+      const subtotal = root.querySelector<HTMLElement>("[data-summary-subtotal]");
+      const total = root.querySelector<HTMLElement>("[data-summary-total]");
+      const discount = root.querySelector<HTMLElement>("[data-summary-discount]");
+      const discountValue = root.querySelector<HTMLElement>("[data-summary-discount-value]");
+      if (subtotal) subtotal.textContent = money(cart.subtotal ?? cart.itemSubtotal ?? cart.itemTotal, cart.currencyCode);
+      if (total) total.textContent = money(cart.total ?? cart.itemTotal, cart.currencyCode);
+      if (discount) discount.hidden = savings <= 0;
+      if (discountValue) discountValue.textContent = `−${money(savings, cart.currencyCode)}`;
+      renderPromotions(cart.promotions || []);
+
+      // Patch the empty state in place. A reload used to be the only way to
+      // show it, discarding focus and scroll position.
+      const layout = root.querySelector<HTMLElement>("[data-cart-page-layout]");
+      const empty = root.querySelector<HTMLElement>("[data-cart-page-empty]");
+      if (items.length === 0 && empty) {
+        if (layout) layout.hidden = true;
+        empty.hidden = false;
+      } else if (layout && empty) {
+        layout.hidden = false;
+        empty.hidden = true;
+      }
+    };
+
+    $cart.subscribe((cart) => {
+      if (cart) sync(cart);
+    });
+
+    root.addEventListener("submit", async (event) => {
+      const form = event.target;
+      if (
+        !(form instanceof HTMLFormElement) ||
+        !form.matches("[data-cart-page-form],[data-cart-promotion-form]")
+      ) {
+        return;
+      }
+      event.preventDefault();
+      const feedback = form.matches("[data-cart-promotion-form]")
+        ? root.querySelector<HTMLElement>("[data-discount-status]")
+        : status;
+      const button = event.submitter;
+      const wasDisabled = button instanceof HTMLButtonElement ? button.disabled : false;
+      if (button instanceof HTMLButtonElement) {
+        button.disabled = true;
+        button.dataset.busy = "true";
+        button.setAttribute("aria-busy", "true");
+      }
+      form.setAttribute("aria-busy", "true");
+      if (feedback) {
+        feedback.classList.remove("is-error");
+        feedback.textContent = root.dataset.updating || "";
+      }
+
+      try {
+        const data = new FormData(form);
+        let result: { ok: boolean };
+        if (form.matches("[data-cart-promotion-form]")) {
+          result = await applyPromotion(
+            String(data.get("code") ?? ""),
+            data.get("intent") === "remove" ? "remove" : "apply",
+          );
+        } else {
+          const lineItemId = String(data.get("lineItemId") ?? "");
+          if (form.matches('form[action="/actions/cart/remove"]')) {
+            result = await removeCartItem(lineItemId);
+          } else {
+            result = await updateCartItemQuantity(lineItemId, Number(data.get("quantity") ?? 1));
+          }
+        }
+        if (feedback) feedback.textContent = result.ok ? "" : root.dataset.updateFailed || "";
+        if (feedback && !result.ok) feedback.classList.add("is-error");
+      } finally {
+        form.removeAttribute("aria-busy");
+        if (button instanceof HTMLButtonElement) {
+          button.disabled = wasDisabled;
+          delete button.dataset.busy;
+          button.removeAttribute("aria-busy");
+        }
+      }
+    });
+  }
 </script>

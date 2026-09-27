@@ -37,7 +37,6 @@
   box-shadow: -8px 0 24px alpha(var(--nexa-black), 0.2);
   transform: translate3d(102%, 0, 0);
   transition: transform 320ms cubic-bezier(.22, .75, .25, 1);
-  will-change: transform;
   box-sizing: border-box;
 
   &.is-open { transform: translate3d(0, 0, 0); }

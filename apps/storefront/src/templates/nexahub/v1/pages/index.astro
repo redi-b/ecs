@@ -338,12 +338,11 @@ const hasCatalogError = "message" in productsResult;
 <input type="hidden" name="type" value="contact" />
 <input type="hidden" name="subject" value="Storefront contact request" />
 <div class="contact-section__row">
-<input type="text" name="name" required placeholder={m.contact_name_required({}, { locale })} class="contact-section__input type-body-s-400" />
-<input type="tel" name="phone" placeholder={m.contact_phone({}, { locale })} class="contact-section__input type-body-s-400" />
+<label class="nexa-sr-only">{m.contact_full_name({}, { locale })}<input type="text" name="name" required autocomplete="name" placeholder={m.contact_name_required({}, { locale })} class="contact-section__input type-body-s-400" /></label>
+<label class="nexa-sr-only">{m.contact_phone({}, { locale })}<input type="tel" name="phone" autocomplete="tel" placeholder={m.contact_phone({}, { locale })} class="contact-section__input type-body-s-400" /></label>
 </div>
-<input type="email" name="email" required placeholder={m.contact_email_required({}, { locale })} class="contact-section__input type-body-s-400" />
-<textarea name="message" rows="4" required placeholder={m.contact_message_required({}, { locale })} class="contact-section__textarea type-body-s-400">
-</textarea>
+<label class="nexa-sr-only">{m.contact_email({}, { locale })}<input type="email" name="email" required autocomplete="email" placeholder={m.contact_email_required({}, { locale })} class="contact-section__input type-body-s-400" /></label>
+<label class="nexa-sr-only">{m.contact_message({}, { locale })}<textarea name="message" rows="4" required placeholder={m.contact_message_required({}, { locale })} class="contact-section__textarea type-body-s-400"></textarea></label>
 <Button text={template.home.contact.ctaLabel} editorPath="home.contact.ctaLabel" editorRelatedPaths={["home.contact.ctaHref"]} editorMode={editorMode} />
 </form>
 <p data-inquiry-status aria-live="polite">

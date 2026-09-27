@@ -47,16 +47,16 @@ const date = (value: string | null) => {
 </div>
 </header>
 <div class="nexa-account__toolbar">
-<nav aria-label={m.account_title({}, { locale })} role="tablist">
-<a href="#order-history" role="tab" aria-selected="true" data-account-view="orders">{m.account_orders({}, { locale })} / {account.orderCount}</a>
-<a href="#saved-addresses" role="tab" aria-selected="false" data-account-view="addresses">{m.account_addresses({}, { locale })} / {account.addresses.length}</a>
-<a href="#profile-details" role="tab" aria-selected="false" data-account-view="profile">{m.account_profile({}, { locale })}</a>
-</nav>
+<div aria-label={m.account_title({}, { locale })} role="tablist">
+<a id="account-view-orders" href="#order-history" role="tab" aria-controls="order-history" aria-selected="true" data-account-view="orders">{m.account_orders({}, { locale })} / {account.orderCount}</a>
+<a id="account-view-addresses" href="#saved-addresses" role="tab" aria-controls="saved-addresses" aria-selected="false" data-account-view="addresses">{m.account_addresses({}, { locale })} / {account.addresses.length}</a>
+<a id="account-view-profile" href="#profile-details" role="tab" aria-controls="profile-details" aria-selected="false" data-account-view="profile">{m.account_profile({}, { locale })}</a>
+</div>
 <form action="/actions/account/logout" method="post">
 <button type="submit">{m.account_sign_out({}, { locale })}</button>
 </form>
 </div>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}{success&&<div class="nexa-notice" role="status">{success}</div>}
-<section class="nexa-data-panel" id="order-history" data-account-panel="orders">
+<section class="nexa-data-panel" id="order-history" role="tabpanel" aria-labelledby="account-view-orders" data-account-panel="orders">
 <header class="nexa-panel-head">
 <h2>{m.account_order_history({}, { locale })}</h2>
 <span>{account.orderCount===1?m.account_item_count({ count: account.orderCount }, { locale }):m.account_item_count_plural({ count: account.orderCount }, { locale })}</span>
@@ -81,7 +81,7 @@ const date = (value: string | null) => {
 <p>{m.account_no_orders_help({}, { locale })}</p>
 <a class="nexa-primary-action" href="/products">{m.action_browse_products({}, { locale })} <span class="nexa-primary-action__icon" aria-hidden="true">↗</span></a>
 </div>}</section>
-<section class="nexa-data-panel" id="saved-addresses" data-account-panel="addresses" hidden>
+<section class="nexa-data-panel" id="saved-addresses" role="tabpanel" aria-labelledby="account-view-addresses" data-account-panel="addresses" hidden>
 <header class="nexa-panel-head">
 <h2>{m.account_saved_addresses({}, { locale })}</h2>
 <span>{account.addresses.length===1?m.account_address_count({ count: account.addresses.length }, { locale }):m.account_address_count_plural({ count: account.addresses.length }, { locale })}</span>
@@ -152,7 +152,7 @@ const date = (value: string | null) => {
 </article>
 </div>
 </section>
-<section class="nexa-data-panel" id="profile-details" data-account-panel="profile" hidden>
+<section class="nexa-data-panel" id="profile-details" role="tabpanel" aria-labelledby="account-view-profile" data-account-panel="profile" hidden>
 <header class="nexa-panel-head">
 <h2>{m.account_profile_details({}, { locale })}</h2>
 <span>{m.account_contact_details({}, { locale })}</span>
@@ -201,9 +201,9 @@ const date = (value: string | null) => {
 <section class="nexa-form-panel" data-account-auth>
 <header class="nexa-panel-head">
 <h2>{initialMode==="register"?m.account_create({}, { locale }):m.action_sign_in({}, { locale })}</h2>
-<nav role="tablist">
+<div role="tablist" aria-label={m.account_title({}, { locale })}>
 <a href="/account" role="tab" aria-selected={initialMode==="login"} data-account-mode="login">{m.action_sign_in({}, { locale })}</a> / <a href="/account?mode=register" role="tab" aria-selected={initialMode==="register"} data-account-mode="register">{m.account_register({}, { locale })}</a>
-</nav>
+</div>
 </header>{error&&<div class="nexa-notice nexa-notice--error" role="alert">{error}</div>}<section data-auth-panel="login" hidden={initialMode!=="login"}>
 <form class="nexa-account-form" action="/actions/account/login" method="post">
 <label class="is-wide">{m.account_email({}, { locale })}<input name="email" type="email" required autocomplete="email"/>

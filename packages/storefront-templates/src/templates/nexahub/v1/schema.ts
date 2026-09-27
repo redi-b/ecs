@@ -16,7 +16,11 @@ export const nexahubV1DataSchema = z.object({
   header: z.object({
     useShopName: z.boolean().optional(),
     logoAssetId: z.string().min(1).optional(),
-    navigation: z.array(navigationItemSchema),
+    navigation: z.array(navigationItemSchema).default([
+      { label: "Home", href: "/" },
+      { label: "Products", href: "/products" },
+      { label: "Contact", href: "/contact" },
+    ]),
   }),
   home: z.object({
     hero: z.object({
@@ -86,14 +90,20 @@ export const nexahubV1DataSchema = z.object({
       body: z.string().min(1),
       imageAssetId: z.string().min(1).optional(),
       ctaLabel: z.string().min(1),
-      ctaHref: z.string().min(1),
+      ctaHref: z.string().min(1).default("/contact"),
     }),
   }),
-  listing: z.object({
-    eyebrow: z.string().min(1),
-    title: z.string().min(1),
-    body: z.string().min(1),
-  }),
+  listing: z
+    .object({
+      eyebrow: z.string().min(1),
+      title: z.string().min(1),
+      body: z.string().min(1),
+    })
+    .default({
+      eyebrow: "Our catalog",
+      title: "Products",
+      body: "Browse available technology and accessories from our current catalog.",
+    }),
   footer: z.object({
     managedContact: z.boolean().optional(),
     additionalPhones: z.array(z.string()).optional(),
@@ -101,8 +111,16 @@ export const nexahubV1DataSchema = z.object({
     phone: z.string().optional(),
     email: z.string().optional(),
     address: z.string().optional(),
-    quickLinks: z.array(navigationItemSchema),
-    socialLinks: z.array(navigationItemSchema),
+    quickLinks: z.array(navigationItemSchema).default([
+      { label: "Home", href: "/" },
+      { label: "Products", href: "/products" },
+      { label: "Contact", href: "/contact" },
+    ]),
+    socialLinks: z.array(navigationItemSchema).default([
+      { label: "Instagram", href: "https://instagram.com" },
+      { label: "Facebook", href: "https://facebook.com" },
+      { label: "LinkedIn", href: "https://linkedin.com" },
+    ]),
     credit: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
   }),
 });
@@ -118,12 +136,17 @@ export const nexahubV1ThemeTokensSchema = z.object({
     muted: z.string().min(1),
     accent: z.string().min(1),
   }),
-  typography: z.object({
-    headingFont: z.literal("Space Grotesk"),
-    bodyFont: z.literal("DM Mono"),
-  }),
-  radius: z.literal("none"),
-  colorMode: z.literal("light"),
+  typography: z
+    .object({
+      headingFont: z.string().min(1),
+      bodyFont: z.string().min(1),
+    })
+    .default({ headingFont: "Space Grotesk", bodyFont: "DM Mono" }),
+  radius: z.enum(["none", "sm", "md"]).default("none"),
+  // The dashboard treats "dark" as a possible stored value
+  // (editor-state.ts reads it), but this template only renders light. Accept
+  // it rather than letting an unrendered flag discard the whole brand.
+  colorMode: z.enum(["light", "dark"]).default("light"),
 });
 
 export type NexahubV1ThemeTokens = z.infer<typeof nexahubV1ThemeTokensSchema>;

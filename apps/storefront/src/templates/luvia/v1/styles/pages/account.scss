@@ -134,7 +134,7 @@
 .account li::before {
   content: "✓";
   margin-right: $space-250;
-  color: var(--clr-text);
+  color: var(--clr-primary-text);
 }
 
 .account__auth {
@@ -515,7 +515,7 @@
 }
 
 .account__orders li>a:hover strong {
-  color: var(--clr-text);
+  color: var(--clr-primary-text);
 }
 
 .account__orders li>a:focus-visible {

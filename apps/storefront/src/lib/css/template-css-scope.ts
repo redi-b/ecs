@@ -116,7 +116,19 @@ export function templateCssScopePostcss() {
         "/",
       );
       const match = from.match(/\/src\/templates\/([a-z0-9-]+)\/v\d+\//);
-      if (!match) return;
+      if (!match) {
+        // Stylesheet outside src/templates/<name>/v<n>/ gets no scope and
+        // therefore applies to every template. That is occasionally intended
+        // (shared, template-agnostic CSS) but is also the one way a template's
+        // styles can bleed into the others, so say so instead of failing
+        // silently at review time.
+        if (/\/src\//.test(from) && /\.s?css$/.test(from.split("?")[0]!)) {
+          console.warn(
+            `[css-scope] ${from} is not under src/templates/<name>/v<n>/ so it is NOT scoped and applies to every template.`,
+          );
+        }
+        return;
+      }
       const scope = `.template-${match[1]!}`;
 
       if (root.raws[SCOPE_MARKER] === scope) return;

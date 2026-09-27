@@ -20,7 +20,7 @@ export const nexahubV1Defaults: NexahubV1Data = {
     featuredItem: {
       enabled: true,
       eyebrow: "FEATURED PRODUCTS",
-      title: "Lenovo Ideapad Gaming 3",
+      title: "Featured product",
       body: "A focused look at one of the latest products available from this store.",
       productIds: [],
     },
@@ -70,9 +70,13 @@ export const nexahubV1Defaults: NexahubV1Data = {
   },
   footer: {
     blurb: "Technology selected for work, creativity, and everyday life.",
-    phone: "+251 91 842 7255",
-    email: "info@nexahub.com",
-    address: "4th floor 1234 Innovation Avenue, Bole, Addis Ababa, Ethiopia",
+    // Left undefined on purpose. applyShopDetails overwrites these from
+    // Settings > Shop at read time, so a literal here means any legacy tenant
+    // without valid shopDetails publishes NexaHub's real contact details.
+    // Demo copy belongs in nexahub-fixture.ts.
+    phone: undefined,
+    email: undefined,
+    address: undefined,
     quickLinks: [
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },

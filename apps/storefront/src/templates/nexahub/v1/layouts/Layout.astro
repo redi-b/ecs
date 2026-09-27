@@ -102,6 +102,14 @@ const productLinks = [
     })),
 ];
 const socialIconNames = ["facebook", "instagram", "tiktok", "linkedin"] as const;
+const socialIconByLabel = new Map<string, (typeof socialIconNames)[number]>([
+  ["facebook", "facebook"],
+  ["instagram", "instagram"],
+  ["tiktok", "tiktok"],
+  ["linkedin", "linkedin"],
+]);
+const socialIconFor = (label: string, index: number) =>
+  socialIconByLabel.get(label.trim().toLowerCase()) ?? socialIconNames[index % socialIconNames.length]!;
 const nexahubClientMessages = {
   addFailed: m.product_add_failed({}, { locale }),
   added: m.product_added_to_cart({}, { locale }),
@@ -111,6 +119,10 @@ const nexahubClientMessages = {
   cartLoadFailed: m.cart_load_failed({}, { locale }),
   cartLoading: m.cart_loading({}, { locale }),
   cartUpdated: m.cart_updated({}, { locale }),
+  cartUpdateFailed: m.cart_update_failed({}, { locale }),
+  cartUpdating: m.cart_updating({}, { locale }),
+  decreaseQuantity: m.action_decrease_quantity({}, { locale }),
+  increaseQuantity: m.action_increase_quantity({}, { locale }),
   checkoutOpeningPayment: m.checkout_opening_payment({}, { locale }),
   checkoutPlacingOrder: m.checkout_placing_order({}, { locale }),
   closeNavigation: m.a11y_close_navigation({}, { locale }),
@@ -175,7 +187,7 @@ const nexahubClientMessages = {
         {footer.email && <p><a href={`mailto:${footer.email}`}>{footer.email}</a></p>}
         {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => <p><a href={`tel:${phone}`}>{phone}</a></p>)}
       </address>{editorMode && footer.socialLinks.length === 0 && <p class="site-footer__contact-missing type-body-xs-500" data-editor-section="footer">{m.footer_social_incomplete({}, { locale })}</p>}<div class="site-footer__social">{footer.socialLinks.map((item, index) => <a href={item.href} aria-label={item.label} target="_blank" rel="noopener noreferrer">
-        {footer.managedContact ? <span class="type-body-s-400">{item.label}</span> : <Icon name={socialIconNames[index % socialIconNames.length]} />}
+        {footer.managedContact ? <span class="type-body-s-400">{item.label}</span> : <Icon name={socialIconFor(item.label, index)} />}
         {!footer.managedContact && <span class="nexa-sr-only">{item.label}</span>}
       </a>)}</div></div>
     </div></footer>

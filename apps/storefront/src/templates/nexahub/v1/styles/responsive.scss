@@ -171,7 +171,7 @@
     .catalogue-section__footer,
     .products-section__header-right,
     .product-info__actions-row
-  ) .btn--small.btn--with-icon {
+  ) {
     padding-inline: $space-775;
   }
   :is(
@@ -180,7 +180,7 @@
     .catalogue-section__footer,
     .products-section__header-right,
     .product-info__actions-row
-  ) .btn--small.btn--with-icon .btn__icon {
+  ) .btn__icon {
     inset-inline-end: 4px;
   }
   .products-section__grid,

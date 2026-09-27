@@ -42,7 +42,7 @@ const {data,themeTokens,tenantName,deferCartCount=false}=Astro.props; const temp
 </header>
 <form class="nexa-inquiry-form" action="/actions/inquiries" method="post" data-inquiry-form>
 <input type="hidden" name="type" value="contact"/>
-<label class="nexa-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"/>
+<label class="nexa-honeypot">Website<input name="website" tabindex="-1" autocomplete="off"/>
 </label>
 <label class="is-wide">{m.contact_full_name({}, {locale})} *<input name="fullName" required autocomplete="name"/>
 </label>
@@ -50,8 +50,7 @@ const {data,themeTokens,tenantName,deferCartCount=false}=Astro.props; const temp
 </label>
 <label>{m.contact_whatsapp_optional({}, {locale})}<input name="whatsapp" type="tel" autocomplete="tel" inputmode="tel"/>
 </label>
-<label class="is-wide">{m.contact_message({}, {locale})} *<textarea name="message" required>
-</textarea>
+<label class="is-wide">{m.contact_message({}, {locale})} *<textarea name="message" required></textarea>
 </label>
 <Button text={m.contact_send({}, {locale})} type="submit" fullWidth />
 <p class:list={["nexa-inquiry-status",sent&&"is-success",submitError&&"is-error"]} role="status" aria-live="polite" data-inquiry-status>{sent?m.contact_received({}, {locale}):submitError?m.contact_failed({}, {locale}):""}</p>

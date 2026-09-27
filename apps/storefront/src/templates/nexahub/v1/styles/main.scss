@@ -71,10 +71,6 @@ body.nexa-body {
   place-items: center;
 }
 
-#page-wrapper {
-  min-height: 100vh;
-}
-
 .container {
   width: min(100% - 2rem, 1400px);
   margin-inline: auto;
@@ -106,11 +102,6 @@ body.no-scroll {
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
-}
-
-[data-text-anim],
-[data-fade-in] {
-  visibility: hidden;
 }
 
 :where(a, button, input, select, textarea, summary):focus-visible {
@@ -205,25 +196,8 @@ button[data-busy="true"] > .btn__icon {
   color: var(--nexa-primary-link);
 }
 
-.mask-lines,
-.mask-words,
-.mask-chars {
-  display: inline-block;
-  overflow: hidden;
-  position: relative;
-}
 
-.og-char {
-  display: inline-block;
-  position: relative;
-}
 
-.duplicate-char {
-  display: inline-block;
-  position: absolute;
-  inset: 0;
-  transform: translateY(100%);
-}
 
 :root {
   --nexa-motion-fast: 140ms;

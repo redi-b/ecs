@@ -133,7 +133,6 @@
     height: 335px;
     padding: $space-175 $space-175 $space-400;
     background: alpha(var(--nexa-ink), 0.77);
-    backdrop-filter: blur(29.5px);
     border-radius: $radius-75;
     box-sizing: border-box;
     color: #ffffff;
@@ -770,7 +769,7 @@
     margin: 0;
     color: #ffffff;
     font-family: $ff-header;
-    font-size: responsiveclamp(30px, 42px);
+    font-size: $fs-heading-4;
     line-height: 1.19;
     letter-spacing: -0.03em;
     font-weight: 400;
@@ -959,7 +958,7 @@
 
   &__acc-title {
     font-family: $ff-body;
-    font-size: responsiveclamp(18px, 24px);
+    font-size: $fs-heading-6;
     font-weight: 500;
     letter-spacing: -0.05em;
     color: alpha(var(--nexa-ink), 0.7);
@@ -1107,14 +1106,13 @@
     border-radius: $radius-50;
     color: var(--nexa-ink);
     box-sizing: border-box;
-    outline: none;
 
     &::placeholder {
       color: alpha(var(--nexa-ink), 0.4);
     }
 
     &:focus {
-      border-color: alpha(var(--nexa-primary), 0.08)0;
+      border-color: var(--nexa-primary);
     }
   }
 

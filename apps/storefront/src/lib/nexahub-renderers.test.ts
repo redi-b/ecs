@@ -331,7 +331,7 @@ test("NexaHub ports the reference listing controls and featured carousel structu
     assert.ok(home.includes(marker));
   assert.ok(client.includes('from "embla-carousel"'));
   assert.match(client, /prefers-reduced-motion: reduce/);
-  assert.match(client, /pointerenter.*stopAutoplay/);
+  assert.match(client, /pointerenter[\s\S]{0,80}?stopAutoplay/);
   assert.match(client, /visibilitychange/);
 });
 
@@ -484,14 +484,16 @@ test("NexaHub navigation, cart, and mobile product filters use bounded modal beh
   assert.doesNotMatch(client, /portalFilterMenu|document\.body\.append\(menu\)/);
   assert.match(productFilter, /event\.key !== "Tab"/);
   assert.match(productFilter, /panel\.querySelectorAll<HTMLElement>\(focusableSelector\)/);
+  // Whitespace-insensitive: the formatter is free to wrap this expression, and
+  // a line break is not a behaviour change.
   assert.match(
     client,
-    /const locked = Boolean\(header\?\.classList\.contains\("is-open"\) \|\| overlay\?\.classList\.contains\("is-visible"\)\)/,
+    /const locked = Boolean\([\s\S]{0,120}?header\?\.classList\.contains\("is-open"\)[\s\S]{0,80}?overlay\?\.classList\.contains\("is-visible"\)/,
   );
   assert.match(client, /navigationLastFocused/);
   assert.match(
     client,
-    /focusableElements\(overlay\?\.classList\.contains\("is-visible"\) \? drawer : header\)/,
+    /focusableElements\([\s\S]{0,120}?overlay\?\.classList\.contains\("is-visible"\)[\s\S]{0,60}?\? drawer : header/,
   );
   assert.match(headerStyles, /&__backdrop\.is-visible/);
   assert.match(filterStyles, /\.product-filter-backdrop/);
@@ -499,7 +501,7 @@ test("NexaHub navigation, cart, and mobile product filters use bounded modal beh
   assert.match(filterStyles, /env\(safe-area-inset-bottom\)/);
   assert.match(cartStyles, /translate3d\(102%,\s*0,\s*0\)/);
   assert.match(cartStyles, /&\.is-open\s*\{\s*transform:\s*translate3d\(0,\s*0,\s*0\)/);
-  assert.match(client, /requestAnimationFrame\(\(\) => window\.requestAnimationFrame/);
+  assert.match(client, /requestAnimationFrame\(\(\)[\s\S]{0,60}?window\.requestAnimationFrame/);
   assert.match(cartStyles, /cubic-bezier\(\.22,\s*\.75,\s*\.25,\s*1\)/);
   assert.doesNotMatch(
     homeStyles,

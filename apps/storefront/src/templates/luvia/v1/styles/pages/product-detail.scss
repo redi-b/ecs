@@ -176,7 +176,7 @@
 }
 
 .product-title small {
-  color: var(--clr-text);
+  color: var(--clr-primary-text);
 }
 
 .product-title small.is-out {
@@ -322,7 +322,7 @@
 .product-feedback {
   min-height: 18px;
   margin: calc($space-200 * -1) $space-100 0;
-  color: var(--clr-text);
+  color: var(--clr-primary-text);
 }
 
 .product-feedback.is-error {
@@ -352,7 +352,7 @@
 }
 
 .product-accordions summary:hover {
-  color: var(--clr-link);
+  color: var(--clr-primary-link);
 }
 
 .product-accordions summary:focus-visible {
@@ -409,7 +409,7 @@
 }
 
 .rich-text a {
-  color: var(--clr-link);
+  color: var(--clr-primary-link);
   text-underline-offset: 3px;
 }
 

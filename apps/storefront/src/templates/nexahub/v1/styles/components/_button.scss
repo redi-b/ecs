@@ -57,23 +57,13 @@
     }
   }
 
-  &--small {
-    min-height: 32px;
-    padding: $space-150 $space-350;
-    gap: $space-250;
+  .btn__icon {
+    width: 24px;
+    height: 24px;
 
-    &.btn--with-icon {
-      padding: $space-150 $space-100 $space-150 $space-350;
-    }
-
-    .btn__icon {
-      width: 24px;
-      height: 24px;
-
-      svg {
-        width: 13px;
-        height: 13px;
-      }
+    svg {
+      width: 13px;
+      height: 13px;
     }
   }
 

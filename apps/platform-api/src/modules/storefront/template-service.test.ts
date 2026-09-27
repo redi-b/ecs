@@ -136,15 +136,27 @@ test("accepts NexaHub catalog selections when saving and publishing", () => {
   assert.deepEqual(normalizedData.home.categories.categoryIds, ["pcat_selected"]);
 });
 
-test("rejects cross-template payloads instead of coercing them", () => {
-  assert.equal(
-    normalizeStorefrontDraftPayload({
-      data: luviaV1Defaults,
-      templateKey: "nexahub@1",
-      themeTokens: luviaV1ThemeTokens,
-    }),
-    undefined,
+test("accepts a NexaHub theme missing the non-visual keys instead of discarding the brand", () => {
+  // typography/radius/colorMode were z.literal with no .default(), so a payload
+  // missing them - or carrying any other value - failed the whole parse and
+  // silently reverted the tenant to the template's colours. None of the three is
+  // rendered, so none of them may take the brand down with them.
+  const legacy = { ...nexahubV1ThemeTokens } as Record<string, unknown>;
+  delete legacy.typography;
+  delete legacy.radius;
+  delete legacy.colorMode;
+  const normalized = normalizeStorefrontDraftPayload({
+    data: nexahubV1Defaults,
+    templateKey: "nexahub@1",
+    themeTokens: legacy,
+  });
+  assert.ok(normalized, "a legacy theme payload must not be rejected");
+  assert.deepEqual(
+    (normalized.themeTokens as { colors: unknown }).colors,
+    nexahubV1ThemeTokens.colors,
+    "the brand must survive a partial theme payload",
   );
+  assert.equal((normalized.themeTokens as { colorMode: string }).colorMode, "light");
 });
 
 test("normalizes a synthetic template through the generic template boundary", () => {

@@ -168,8 +168,18 @@ test("Afro exposes a clean editor schema and valid default contracts", () => {
   assert.deepEqual(manifest.theme?.editableColors, ["primary"]);
   assert.deepEqual(defaults.home.products.productIds, []);
   assert.deepEqual(defaults.home.categories.categoryIds, []);
-  assert.equal(defaults.footer.email, undefined);
-  assert.equal(defaults.footer.phone, undefined);
+  // Every template must leave contact details undefined in its defaults.
+  // applyShopDetails back-fills them from Settings > Shop at read time, so a
+  // literal here means a tenant without valid shopDetails publishes it.
+  for (const [name, data] of [
+    ["luvia", luviaV1Defaults],
+    ["nexahub", nexahubV1Defaults],
+    ["afro", afroV1Defaults],
+  ] as const) {
+    assert.equal(data.footer.email, undefined, `${name} default email must be undefined`);
+    assert.equal(data.footer.phone, undefined, `${name} default phone must be undefined`);
+    assert.equal(data.footer.address, undefined, `${name} default address must be undefined`);
+  }
   assert.deepEqual(defaults.footer.socialLinks, []);
   assert.equal(
     fields.some((field) => field.path.startsWith("footer.credit")),

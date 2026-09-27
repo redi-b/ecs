@@ -19,12 +19,10 @@ ol {
   list-style: none;
 }
 
-.sf-icon {
-  display: contents;
-}
-
-.sf-icon svg {
+// astro-icon renders a bare <svg data-icon="..."> with no wrapper element.
+svg[data-icon] {
   display: block;
+  max-width: none;
 }
 
 // Set core root defaults

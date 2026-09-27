@@ -10,7 +10,6 @@
   min-height: 460px;
   padding: $space-500 $space-300 $space-550;
   background: alpha(var(--nexa-surface), 0.92);
-  backdrop-filter: blur(40px);
   border-radius: $radius-100;
   box-sizing: border-box;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
