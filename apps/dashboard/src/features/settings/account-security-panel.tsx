@@ -103,6 +103,7 @@ export function AccountSecurityPanel({
     actor.avatar ?? defaultProfileAvatar,
   );
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const avatarDirty =
     avatar.color !== savedAvatar.color ||
     avatar.variation !== savedAvatar.variation ||
@@ -408,6 +409,30 @@ export function AccountSecurityPanel({
     router.refresh();
   }
 
+  async function saveAvatar() {
+    if (savingAvatar) return;
+    setSavingAvatar(true);
+    const nextAvatar = avatarDraft;
+    const response = await fetch("/dashboard/account/profile", {
+      body: JSON.stringify({ avatar: nextAvatar }),
+      headers: { accept: "application/json", "content-type": "application/json" },
+      method: "PATCH",
+    }).catch(() => null);
+    setSavingAvatar(false);
+
+    if (!response?.ok) {
+      toast.error(t("settings.accountSecurity.avatar.saveFailed"));
+      return;
+    }
+
+    setAvatar(nextAvatar);
+    setSavedAvatar(nextAvatar);
+    setActorAvatar(nextAvatar);
+    setAvatarDialogOpen(false);
+    toast.success(t("settings.accountSecurity.avatar.saved"));
+    router.refresh();
+  }
+
   async function savePassword() {
     if (!currentPassword || !newPassword) {
       toast.error(t("settings.accountSecurity.toast.passwordRequired"));
@@ -571,7 +596,7 @@ export function AccountSecurityPanel({
                   name={name}
                   value={avatarDraft}
                   onChange={setAvatarDraft}
-                  disabled={savingProfile}
+                  disabled={savingAvatar}
                 />
               </div>
               <DialogFooter className="mx-0 mb-0 rounded-none">
@@ -580,15 +605,10 @@ export function AccountSecurityPanel({
                     {t("common.cancel")}
                   </Button>
                 </DialogClose>
-                <Button
-                  disabled={savingProfile}
-                  onClick={() => {
-                    setAvatar(avatarDraft);
-                    setAvatarDialogOpen(false);
-                  }}
-                  type="button"
-                >
-                  {t("settings.accountSecurity.avatar.use")}
+                <Button disabled={savingAvatar} onClick={() => void saveAvatar()} type="button">
+                  {savingAvatar
+                    ? t("settings.accountSecurity.avatar.saving")
+                    : t("settings.accountSecurity.avatar.use")}
                 </Button>
               </DialogFooter>
             </DialogContent>

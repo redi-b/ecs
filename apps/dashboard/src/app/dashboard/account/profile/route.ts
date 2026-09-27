@@ -57,3 +57,28 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true as const, name, phone: phone.data });
 }
+
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as { avatar?: unknown } | null;
+  const avatar = profileAvatarSchema.safeParse(body?.avatar);
+  if (!avatar.success) {
+    return NextResponse.json({ error: "invalid_avatar" }, { status: 400 });
+  }
+
+  const result = await updateAccountProfile({
+    ...(await getAccountAuthRequestContext(request)),
+    avatarPreferences: JSON.stringify(avatar.data),
+  });
+  if (!result.ok) {
+    return NextResponse.json(
+      {
+        error: result.message.toLowerCase().includes("origin")
+          ? "auth_origin_rejected"
+          : "profile_update_failed",
+      },
+      { status: result.status },
+    );
+  }
+
+  return NextResponse.json({ ok: true as const, avatar: avatar.data });
+}

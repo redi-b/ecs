@@ -13,28 +13,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
 import { SettingsPanel } from "@/features/settings/settings-sections";
+import {
+  getStorefrontSeoEditorValues,
+  resolveStorefrontSeoPreview,
+} from "@/features/settings/storefront-seo-editor";
 import { useI18n } from "@/i18n/provider";
 
 export function StorefrontSeoSettingsForm({
   initialSeo,
   onDirtyChange,
   tenantId,
+  tenantDescription,
   tenantName,
 }: {
   initialSeo: StorefrontSeoSettings;
   onDirtyChange?: ((dirty: boolean) => void) | undefined;
   tenantId: string;
+  tenantDescription?: string | null | undefined;
   tenantName: string;
 }) {
   const { t } = useI18n();
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const form = useForm({
-    defaultValues: {
-      title: initialSeo.title ?? tenantName,
-      description: initialSeo.description ?? "",
-      socialImageUrl: initialSeo.socialImageUrl ?? "",
-    },
+    defaultValues: getStorefrontSeoEditorValues(initialSeo),
     onSubmit: async ({ value }) => {
       const response = await fetch("/dashboard/storefront/seo", {
         body: JSON.stringify({
@@ -98,6 +100,7 @@ export function StorefrontSeoSettingsForm({
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
+                placeholder={tenantName}
                 value={field.state.value}
               />
               <FieldDescription>{t("settings.storefront.seoPageTitleHint")}</FieldDescription>
@@ -129,6 +132,7 @@ export function StorefrontSeoSettingsForm({
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
+                placeholder={tenantDescription?.trim() || undefined}
                 rows={3}
                 value={field.state.value}
               />
@@ -154,11 +158,18 @@ export function StorefrontSeoSettingsForm({
                   </div>
                   <div className="space-y-1 p-3">
                     <p className="text-sm font-semibold">
-                      {form.getFieldValue("title") || t("settings.storefront.seoPreviewFallback")}
+                      {resolveStorefrontSeoPreview({
+                        fallbackDescription: tenantDescription,
+                        fallbackTitle: tenantName,
+                        values: form.state.values,
+                      }).title || t("settings.storefront.seoPreviewFallback")}
                     </p>
                     <p className="line-clamp-2 text-xs text-muted-foreground">
-                      {form.getFieldValue("description") ||
-                        t("settings.storefront.seoMetaDescriptionHint")}
+                      {resolveStorefrontSeoPreview({
+                        fallbackDescription: tenantDescription,
+                        fallbackTitle: tenantName,
+                        values: form.state.values,
+                      }).description || t("settings.storefront.seoMetaDescriptionHint")}
                     </p>
                   </div>
                 </div>

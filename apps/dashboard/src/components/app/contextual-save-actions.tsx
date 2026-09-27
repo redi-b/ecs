@@ -41,9 +41,9 @@ export function ContextualSaveActions({
     <section
       aria-label={t("common.unsaved.actionsLabel")}
       className={cn(
-        "flex flex-col gap-3 border-border/70 bg-card/95 px-3 py-3 text-card-foreground backdrop-blur-md sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 border-border/70 bg-card px-3 py-3 text-card-foreground sm:flex-row sm:items-center sm:justify-between",
         mode === "sticky" &&
-          "sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 -mx-3 -mb-3 mt-5 rounded-b-xl border-t shadow-[0_-8px_24px_-20px_rgb(0_0_0/0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
+          "sticky bottom-0 z-20 -mx-3 -mb-3 mt-5 rounded-b-xl border-t shadow-[0_-8px_24px_-20px_rgb(0_0_0/0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
         mode === "floating" &&
           "pointer-events-auto w-full max-w-xl rounded-2xl border shadow-2xl ring-1 ring-foreground/5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 sm:rounded-full sm:px-4 sm:py-2",
         className,
@@ -54,7 +54,13 @@ export function ContextualSaveActions({
         {t("common.unsaved.actionsLabel")}
       </output>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-        <Button disabled={pending} onClick={onDiscard} size="sm" type="button" variant="ghost">
+        <Button
+          disabled={pending}
+          onClick={onDiscard}
+          size="sm"
+          type="button"
+          variant="destructive"
+        >
           {t("common.discard")}
         </Button>
         <Button

@@ -161,6 +161,7 @@ export default async function StorefrontTranslationsPage({
         categoryReadiness={categoryReadiness.ok ? categoryReadiness.queue : null}
         collectionReadiness={collectionReadiness.ok ? collectionReadiness.queue : null}
         fields={fields}
+        languageSettings={draft.draft.languageSettings}
         locale={translationLocale}
         productReadiness={productReadiness.ok ? productReadiness.queue : null}
         shippingReadiness={shippingReadiness.ok ? shippingReadiness.queue : null}

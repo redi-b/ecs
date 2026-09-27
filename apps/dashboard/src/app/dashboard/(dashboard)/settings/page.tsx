@@ -113,13 +113,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           storefrontTemplates={templates?.ok ? templates.templates : []}
           storefrontSeo={
             storefrontSeo?.ok
-              ? {
-                  ...storefrontSeo.seo,
-                  description:
-                    storefrontSeo.seo.description ??
-                    result.access.tenant.shopDetails?.description?.trim().slice(0, 160) ??
-                    null,
-                }
+              ? storefrontSeo.seo
               : { title: null, description: null, socialImageUrl: null }
           }
           storefrontLanguageSettings={

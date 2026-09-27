@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
-import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -31,43 +30,40 @@ export function StorefrontLanguageSettingsPanel({
   const [settings, setSettings] = useState(initialSettings);
   const amharicId = useId();
   const { t } = useI18n();
-  const [saved, setSaved] = useState(initialSettings);
   const [pending, startTransition] = useTransition();
   const [languageChange, setLanguageChange] = useState<"enable" | "disable" | null>(null);
   const [defaultChange, setDefaultChange] = useState<"en" | "am" | null>(null);
   const amharicEnabled = settings.enabledLocales.includes("am");
-  const dirty = JSON.stringify(settings) !== JSON.stringify(saved);
 
   useEffect(() => {
-    onDirtyChange?.(dirty);
+    onDirtyChange?.(false);
     return () => onDirtyChange?.(false);
-  }, [dirty, onDirtyChange]);
+  }, [onDirtyChange]);
 
-  function setAmharicEnabled(enabled: boolean) {
-    setSettings((current) => ({
-      ...current,
-      enabledLocales: enabled ? ["en", "am"] : ["en"],
-      defaultLocale: enabled ? current.defaultLocale : "en",
-    }));
-  }
-
-  function save() {
-    if (!dirty || pending) return;
+  function save(nextSettings: StorefrontLanguageSettings) {
+    if (pending) return;
     startTransition(async () => {
       const result = await saveStorefrontLanguageSettings({
-        languageSettings: settings,
+        languageSettings: nextSettings,
         tenantId,
       });
       if (!result.ok) {
         toast.error(t("settings.storefront.languagesSaveFailed"));
         return;
       }
-      const nextSettings = result.languageSettings;
-      setSaved(nextSettings);
-      dispatchStorefrontLanguagesChanged(nextSettings.enabledLocales);
+      setSettings(result.languageSettings);
+      dispatchStorefrontLanguagesChanged(result.languageSettings.enabledLocales);
       router.refresh();
       toast.success(t("settings.storefront.languagesSaved"));
     });
+  }
+
+  function getAmharicSettings(enabled: boolean): StorefrontLanguageSettings {
+    return {
+      ...settings,
+      enabledLocales: enabled ? ["en", "am"] : ["en"],
+      defaultLocale: enabled ? settings.defaultLocale : "en",
+    };
   }
 
   return (
@@ -102,6 +98,7 @@ export function StorefrontLanguageSettingsPanel({
           </div>
           <Switch
             checked={amharicEnabled}
+            disabled={pending}
             id={amharicId}
             onCheckedChange={(enabled) => setLanguageChange(enabled ? "enable" : "disable")}
           />
@@ -132,7 +129,7 @@ export function StorefrontLanguageSettingsPanel({
       ) : null}
 
       <div className="border-t pt-4">
-        {saved.enabledLocales.includes("am") ? (
+        {amharicEnabled ? (
           <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
             <Link href={dashboardRoutes.storefrontTranslations}>
               <RiTranslate2 data-icon="inline-start" />
@@ -143,14 +140,6 @@ export function StorefrontLanguageSettingsPanel({
           <span />
         )}
       </div>
-      <ContextualSaveActions
-        dirty={dirty}
-        onDiscard={() => setSettings(saved)}
-        onSave={save}
-        pending={pending}
-        saveLabel={t("settings.storefront.languagesSave")}
-        savingLabel={t("settings.storefront.languagesSaving")}
-      />
       <ConfirmDialog
         cancelLabel={t("settings.storefront.languagesNotNow")}
         confirmLabel={
@@ -165,7 +154,7 @@ export function StorefrontLanguageSettingsPanel({
         }
         icon="question"
         onConfirm={() => {
-          setAmharicEnabled(languageChange === "enable");
+          save(getAmharicSettings(languageChange === "enable"));
           setLanguageChange(null);
         }}
         onOpenChange={(open) => !open && setLanguageChange(null)}
@@ -186,7 +175,7 @@ export function StorefrontLanguageSettingsPanel({
         icon="question"
         onConfirm={() => {
           if (defaultChange) {
-            setSettings((current) => ({ ...current, defaultLocale: defaultChange }));
+            save({ ...settings, defaultLocale: defaultChange });
           }
           setDefaultChange(null);
         }}

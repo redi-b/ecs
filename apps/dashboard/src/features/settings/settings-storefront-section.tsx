@@ -329,6 +329,7 @@ export function StorefrontSection({
         initialSeo={seo}
         onDirtyChange={onSeoDirtyChange}
         tenantId={summary.tenant.id}
+        tenantDescription={summary.tenant.shopDetails?.description}
         tenantName={summary.tenant.name}
       />
     </SettingsSectionBody>

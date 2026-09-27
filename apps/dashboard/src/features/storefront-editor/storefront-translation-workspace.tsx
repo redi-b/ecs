@@ -5,6 +5,7 @@ import type {
   CatalogTranslationQueueItem,
   CatalogTranslationStatus,
   MerchantProduct,
+  StorefrontLanguageSettings,
   StorefrontLocale,
 } from "@ecs/contracts";
 import { merchantProductSchema } from "@ecs/contracts";
@@ -18,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { HelpTip } from "@/components/app/help-tip";
 import Link from "@/components/app/link";
@@ -36,6 +38,8 @@ import {
 import { ProductTranslationSheet } from "@/features/products/product-translation-sheet";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
+import { saveStorefrontLanguageSettings } from "@/lib/storefront-languages-client";
 import type { StorefrontTranslationField } from "@/lib/storefront-localization-fields";
 import { cn } from "@/lib/utils";
 import { SectionNavigator } from "./section-navigator";
@@ -55,6 +59,7 @@ export function StorefrontTranslationWorkspace({
   categoryReadiness,
   collectionReadiness,
   fields,
+  languageSettings,
   locale,
   productReadiness,
   shippingReadiness,
@@ -63,6 +68,7 @@ export function StorefrontTranslationWorkspace({
   categoryReadiness: CatalogTranslationQueue | null;
   collectionReadiness: CatalogTranslationQueue | null;
   fields: WorkspaceField[];
+  languageSettings: StorefrontLanguageSettings;
   locale: Exclude<StorefrontLocale, "en">;
   productReadiness: CatalogTranslationQueue | null;
   shippingReadiness: CatalogTranslationQueue | null;
@@ -80,6 +86,8 @@ export function StorefrontTranslationWorkspace({
   const [toolsExpanded, setToolsExpanded] = useState(true);
   const [pending, startTransition] = useTransition();
   const [refreshing, startRefresh] = useTransition();
+  const [languagePending, startLanguageTransition] = useTransition();
+  const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
   const fieldRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const sectionRefs = useRef(new Map<string, HTMLElement>());
   const stickySentinelRef = useRef<HTMLDivElement>(null);
@@ -305,6 +313,28 @@ export function StorefrontTranslationWorkspace({
     });
   }
 
+  function disableAmharic() {
+    if (languagePending) return;
+    setDisableConfirmOpen(false);
+    startLanguageTransition(async () => {
+      const result = await saveStorefrontLanguageSettings({
+        languageSettings: {
+          ...languageSettings,
+          defaultLocale: "en",
+          enabledLocales: ["en"],
+        },
+        tenantId,
+      });
+      if (!result.ok) {
+        toast.error(t("editor.translations.disableFailed"));
+        return;
+      }
+      dispatchStorefrontLanguagesChanged(result.languageSettings.enabledLocales);
+      toast.success(t("editor.translations.disabled"));
+      router.refresh();
+    });
+  }
+
   return (
     <div className={cn("relative flex flex-col gap-5", dirty && "pb-24")}>
       <div
@@ -468,6 +498,20 @@ export function StorefrontTranslationWorkspace({
                   sections={groups}
                 />
               ) : null}
+            </div>
+            <div className="mt-2 flex justify-end border-t border-border/60 pt-2">
+              <Button
+                disabled={languagePending}
+                onClick={() => requestLeave(() => setDisableConfirmOpen(true))}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <RiTranslate2 data-icon="inline-start" />
+                {languagePending
+                  ? t("editor.translations.disabling")
+                  : t("editor.translations.disableAction")}
+              </Button>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -699,6 +743,17 @@ export function StorefrontTranslationWorkspace({
         pending={pending}
         saveLabel={t("editor.translations.save")}
         savingLabel={t("editor.translations.saving")}
+      />
+      <ConfirmDialog
+        cancelLabel={t("editor.translations.disableCancel")}
+        confirmLabel={t("editor.translations.disableConfirm")}
+        description={t("editor.translations.disableDescription")}
+        icon="question"
+        onConfirm={disableAmharic}
+        onOpenChange={(open) => !languagePending && setDisableConfirmOpen(open)}
+        open={disableConfirmOpen}
+        title={t("editor.translations.disableTitle")}
+        tone="default"
       />
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>
