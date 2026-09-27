@@ -14,6 +14,7 @@ import {
   RiArrowLeftLine,
   RiArrowRightLine,
   RiRefreshLine,
+  RiSettings4Line,
   RiTranslate2,
 } from "@remixicon/react";
 import { useRouter } from "next/navigation";
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
 import { HelpTip } from "@/components/app/help-tip";
+import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
@@ -39,6 +41,7 @@ import { ProductTranslationSheet } from "@/features/products/product-translation
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
+import { dashboardRoutes } from "@/lib/routes";
 import { saveStorefrontLanguageSettings } from "@/lib/storefront-languages-client";
 import type { StorefrontTranslationField } from "@/lib/storefront-localization-fields";
 import { cn } from "@/lib/utils";
@@ -330,13 +333,46 @@ export function StorefrontTranslationWorkspace({
         return;
       }
       dispatchStorefrontLanguagesChanged(result.languageSettings.enabledLocales);
-      toast.success(t("editor.translations.disabled"));
+      toast.success(t("editor.translations.disabled"), {
+        action: {
+          label: t("editor.translations.reviewAndPublish"),
+          onClick: () => router.push(dashboardRoutes.editor),
+        },
+        duration: 8_000,
+      });
       router.refresh();
     });
   }
 
   return (
-    <div className={cn("relative flex flex-col gap-5", dirty && "pb-24")}>
+    <div
+      aria-busy={languagePending}
+      className={cn("relative flex flex-col gap-5", dirty && "pb-24")}
+    >
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          disabled={languagePending}
+          onClick={() => requestLeave(() => setDisableConfirmOpen(true))}
+          size="sm"
+          type="button"
+          variant="destructive-outline"
+        >
+          {languagePending ? (
+            <AppIcons.loader className="animate-spin" data-icon="inline-start" />
+          ) : (
+            <RiTranslate2 data-icon="inline-start" />
+          )}
+          {languagePending
+            ? t("editor.translations.disabling")
+            : t("editor.translations.disableAction")}
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard/settings?section=storefront">
+            <RiSettings4Line data-icon="inline-start" />
+            {t("editor.translations.openSettings")}
+          </Link>
+        </Button>
+      </div>
       <div
         ref={stickySentinelRef}
         aria-hidden="true"
@@ -498,20 +534,6 @@ export function StorefrontTranslationWorkspace({
                   sections={groups}
                 />
               ) : null}
-            </div>
-            <div className="mt-2 flex justify-end border-t border-border/60 pt-2">
-              <Button
-                disabled={languagePending}
-                onClick={() => requestLeave(() => setDisableConfirmOpen(true))}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <RiTranslate2 data-icon="inline-start" />
-                {languagePending
-                  ? t("editor.translations.disabling")
-                  : t("editor.translations.disableAction")}
-              </Button>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -755,6 +777,14 @@ export function StorefrontTranslationWorkspace({
         title={t("editor.translations.disableTitle")}
         tone="default"
       />
+      {languagePending ? (
+        <div className="absolute inset-0 z-50 grid place-items-center rounded-xl bg-background/80 backdrop-blur-[2px]">
+          <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-md">
+            <AppIcons.loader className="size-4 animate-spin" />
+            {t("editor.translations.updatingLanguage")}
+          </div>
+        </div>
+      ) : null}
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </div>
   );

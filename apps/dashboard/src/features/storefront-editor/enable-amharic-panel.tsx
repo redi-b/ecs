@@ -7,12 +7,14 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useAccess } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { useI18n } from "@/i18n/provider";
 import { allows, merchantPolicies } from "@/lib/access-policy";
 import { dispatchStorefrontLanguagesChanged } from "@/lib/catalog-label-locale";
+import { dashboardRoutes } from "@/lib/routes";
 import { saveStorefrontLanguageSettings } from "@/lib/storefront-languages-client";
 
 export function EnableAmharicPanel({
@@ -46,14 +48,23 @@ export function EnableAmharicPanel({
         return;
       }
       dispatchStorefrontLanguagesChanged(result.languageSettings.enabledLocales);
-      toast.success(t("editor.translations.enabled"));
+      toast.success(t("editor.translations.enabled"), {
+        action: {
+          label: t("editor.translations.reviewAndPublish"),
+          onClick: () => router.push(dashboardRoutes.editor),
+        },
+        duration: 8_000,
+      });
       router.refresh();
     });
   }
 
   return (
-    <>
-      <Empty className="min-h-72 rounded-2xl border border-dashed">
+    <div aria-busy={pending} className="relative">
+      <Empty
+        className="min-h-72 rounded-2xl border border-dashed"
+        inert={pending ? true : undefined}
+      >
         <EmptyHeader>
           <RiTranslate2 className="size-5 text-muted-foreground" />
           <EmptyTitle>{t("editor.translations.disabledTitle")}</EmptyTitle>
@@ -92,6 +103,14 @@ export function EnableAmharicPanel({
         title={t("editor.translations.enableTitle")}
         tone="default"
       />
-    </>
+      {pending ? (
+        <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-background/80 backdrop-blur-[2px]">
+          <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-md">
+            <AppIcons.loader className="size-4 animate-spin" />
+            {t("editor.translations.updatingLanguage")}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -1,10 +1,7 @@
-import { RiSettings4Line } from "@remixicon/react";
 import { headers } from "next/headers";
 import { HelpTip } from "@/components/app/help-tip";
-import Link from "@/components/app/link";
 import { PageShell } from "@/components/app/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { EnableAmharicPanel } from "@/features/storefront-editor/enable-amharic-panel";
 import { StorefrontTranslationWorkspace } from "@/features/storefront-editor/storefront-translation-workspace";
 import { getTranslations } from "@/i18n/server";
@@ -141,14 +138,6 @@ export default async function StorefrontTranslationsPage({
 
   return (
     <PageShell
-      actions={
-        <Button asChild size="sm" variant="outline">
-          <Link href="/dashboard/settings?section=storefront">
-            <RiSettings4Line />
-            {t("editor.translations.openSettings")}
-          </Link>
-        </Button>
-      }
       title={t("editor.translations.title")}
       titleAccessory={
         <TranslationPageHelp

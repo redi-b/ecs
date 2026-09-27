@@ -54,7 +54,13 @@ export function StorefrontLanguageSettingsPanel({
       setSettings(result.languageSettings);
       dispatchStorefrontLanguagesChanged(result.languageSettings.enabledLocales);
       router.refresh();
-      toast.success(t("settings.storefront.languagesSaved"));
+      toast.success(t("settings.storefront.languagesSaved"), {
+        action: {
+          label: t("settings.storefront.languagesReviewAndPublish"),
+          onClick: () => router.push(dashboardRoutes.editor),
+        },
+        duration: 8_000,
+      });
     });
   }
 
