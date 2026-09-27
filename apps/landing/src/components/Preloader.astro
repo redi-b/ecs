@@ -1,0 +1,56 @@
+---
+import "../styles/components/_preloader.scss";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  class?: string;
+  progressPercent?: number;
+  headline?: string;
+  subheading?: string;
+}
+
+const {
+  class: className,
+  progressPercent = 0,
+  headline = "Build Your Online Store",
+  subheading = "A Simpler & quicker shopping experience for your customers.",
+} = Astro.props;
+---
+
+<aside class:list={["preloader", className]} aria-label="Loading site" role="status">
+  <div class="preloader__top-card">
+    <div class="preloader__container">
+      <div class="preloader__content">
+        <div class="preloader__brand">
+          <span class="preloader__logo" data-preloader-logo>
+            <Icon name="logomark" />
+          </span>
+          <span class="preloader__title type-header-1" data-text-anim="tl:headerAnimation">
+            {headline}
+          </span>
+        </div>
+
+        <p class="preloader__subtitle type-header-6" data-text-anim="tl:bodyAnimation">
+          {subheading}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="preloader__progress-group">
+    <div class="preloader__loading-text type-body-500">
+      <span>Loading</span>
+      <span class="preloader__loading-pct">{progressPercent}%</span>
+    </div>
+    <div
+      class="preloader__progress-bar"
+      role="progressbar"
+      aria-valuenow={progressPercent}
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="Loading progress"
+    >
+      <div class="preloader__progress-fill"></div>
+    </div>
+  </div>
+</aside>

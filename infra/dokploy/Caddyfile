@@ -23,6 +23,11 @@
 
 	respond /healthz 200
 
+	@landing host {$BASE_DOMAIN}
+	handle @landing {
+		reverse_proxy ecs-landing:4322
+	}
+
 	@platform host api.{$BASE_DOMAIN}
 	handle @platform {
 		reverse_proxy ecs-platform-api:3000

@@ -1,0 +1,136 @@
+---
+import "../styles/components/_cta-section.scss";
+import { Image } from "astro:assets";
+import ResponsivePicture from "./ResponsivePicture.astro";
+import Button from "./Button.astro";
+
+import avatar1Img from "../assets/customer-avatar-1.png";
+import avatar2Img from "../assets/customer-avatar-2.png";
+import avatar3Img from "../assets/customer-avatar-3.png";
+import ctaMockupImg from "../assets/cta-mockup.png";
+
+const placeholderPixel =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+interface Props {
+  class?: string;
+  badgeTextPrefix?: string;
+  badgeHighlight?: string;
+  badgeTextSuffix?: string;
+  heading?: string;
+}
+
+const {
+  class: className,
+  badgeTextPrefix = "Join ",
+  badgeHighlight = "30+",
+  badgeTextSuffix = " Happy Store Owners",
+  heading = "Need to Grow Your Business?",
+} = Astro.props;
+---
+
+<section id="contact" class:list={["cta-section", className]}>
+  <div class="cta-section__wrapper">
+    <!-- Left Gradient Card -->
+    <div class="cta-section__card" data-fade-in="tl:toRight:fade-3">
+      <div class="cta-section__content">
+        <!-- Customer Badge -->
+        <div class="cta-section__badge" data-fade-in="tl:toTop:fade-subtle">
+          <div class="cta-section__avatar-stack">
+            <div class="img-wrapper cta-section__avatar">
+              <Image
+                src={avatar1Img}
+                alt=""
+                width={32}
+                height={32}
+                class="cover"
+              />
+            </div>
+            <div class="img-wrapper cta-section__avatar">
+              <Image
+                src={avatar2Img}
+                alt=""
+                width={32}
+                height={32}
+                class="cover"
+              />
+            </div>
+            <div class="img-wrapper cta-section__avatar">
+              <Image
+                src={avatar3Img}
+                alt=""
+                width={32}
+                height={32}
+                class="cover"
+              />
+            </div>
+          </div>
+          <p class="cta-section__badge-text type-body-s-400">
+            {badgeTextPrefix}<strong>{badgeHighlight}</strong>{badgeTextSuffix}
+          </p>
+        </div>
+
+        <!-- Heading -->
+        <h2 class="cta-section__heading type-header-1" data-text-anim="tl:headerAnimation">{heading}</h2>
+      </div>
+
+      <!-- Contact / Request Form -->
+      <form class="cta-section__form" method="POST" action="/api/request-call">
+        <div class="cta-section__field">
+          <label for="cta-name" class="visually-hidden">Full Name</label>
+          <input
+            id="cta-name"
+            type="text"
+            name="fullName"
+            placeholder="Full Name"
+            required
+            class="cta-section__input type-body-l"
+          />
+        </div>
+
+        <div class="cta-section__field">
+          <label for="cta-phone" class="visually-hidden">Phone Number</label>
+          <input
+            id="cta-phone"
+            type="tel"
+            name="phoneNumber"
+            placeholder="Phone Number"
+            required
+            class="cta-section__input type-body-l"
+          />
+        </div>
+
+        <Button
+          text="Request a Call"
+          variant="primary"
+          size="large"
+          icon="link-arrow-icon"
+          type="submit"
+          class="cta-section__submit"
+        />
+      </form>
+    </div>
+
+    <!-- Right Mockup Visual -->
+    <div class="cta-section__visual" data-fade-in="tl:toLeft:fade-3">
+      <div class="img-wrapper cta-section__mockup">
+        <ResponsivePicture
+          sources={[
+            {
+              media: "(max-width: 1082px)",
+              src: placeholderPixel,
+              width: 1,
+              height: 1,
+            },
+            {
+              media: "(min-width: 1083px)",
+              src: ctaMockupImg,
+            },
+          ]}
+          alt="ECS e-commerce platform demo preview"
+          class="cover"
+        />
+      </div>
+    </div>
+  </div>
+</section>

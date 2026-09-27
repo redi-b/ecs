@@ -19,7 +19,16 @@ test("dashboard and Operations console receive the same public Operations URL", 
   const operationsUrl =
     /SUPERADMIN_PUBLIC_BASE_URL: \$\{SUPERADMIN_PUBLIC_BASE_URL:-https:\/\/ops\.\$\{BASE_DOMAIN\}\}/;
   assert.match(serviceBlock("dashboard", "superadmin"), operationsUrl);
-  assert.match(serviceBlock("superadmin", "storefront"), operationsUrl);
+  assert.match(serviceBlock("superadmin", "landing"), operationsUrl);
+});
+
+test("landing receives runtime public origins and is health checked", () => {
+  const landing = serviceBlock("landing", "storefront");
+  assert.match(landing, /PLATFORM_API_BASE_URL: http:\/\/platform-api:3000/);
+  assert.match(landing, /PUBLIC_PLATFORM_API_URL: https:\/\/api\.\$\{BASE_DOMAIN\}/);
+  assert.match(landing, /PUBLIC_DASHBOARD_URL: https:\/\/app\.\$\{BASE_DOMAIN\}/);
+  assert.match(landing, /PUBLIC_SITE_URL: https:\/\/\$\{BASE_DOMAIN\}/);
+  assert.match(landing, /4322\/healthz/);
 });
 
 test("storefront receives the branded demo host at runtime", () => {
@@ -30,6 +39,7 @@ test("storefront receives the branded demo host at runtime", () => {
 });
 
 test("Traefik requests certificates for the demo and seeded Afro storefront", () => {
+  assert.match(compose, /Host\(`\$\{BASE_DOMAIN\}`\)/);
   assert.match(compose, /Host\(`demo\.\$\{BASE_DOMAIN\}`\)/);
   assert.match(compose, /Host\(`afrostudio\.\$\{BASE_DOMAIN\}`\)/);
   assert.match(

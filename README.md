@@ -10,6 +10,7 @@ ECS is a pnpm and TypeScript monorepo.
 | --- | --- |
 | `apps/platform-api` | Tenant management, authentication boundaries, billing, analytics, notifications, operator tools, and the public Store API facade |
 | `apps/dashboard` | Merchant dashboard and public merchant-dashboard preview |
+| `apps/landing` | Public ECS landing page, pricing, templates, and authentication-aware calls to action |
 | `apps/superadmin` | Restricted standalone platform-operations console |
 | `apps/storefront` | Multi-tenant Astro storefront and storefront editor preview |
 | `apps/medusa` | Products, carts, orders, customers, inventory, payments, fulfillment, stores, and sales channels |
@@ -47,6 +48,7 @@ Create local environment files:
 cp .env.example .env
 cp apps/platform-api/.env.example apps/platform-api/.env
 cp apps/dashboard/.env.example apps/dashboard/.env
+cp apps/landing/.env.example apps/landing/.env
 cp apps/storefront/.env.example apps/storefront/.env
 cp apps/medusa/.env.example apps/medusa/.env
 ```
@@ -74,6 +76,7 @@ Development uses `lvh.me`, which resolves to localhost:
 - Platform API: `http://api.lvh.me`
 - Dashboard: `http://app.lvh.me` (`http://dashboard.lvh.me` redirects here)
 - Operations: `http://ops.lvh.me`
+- Landing page: `http://ecs.lvh.me`
 - Demo storefront: `http://bolestyle.lvh.me`
 - Demo merchant dashboard: `http://bolestyle.lvh.me/admin`
 

@@ -1,0 +1,38 @@
+---
+import "../styles/components/_demo-video.scss";
+import { Image } from "astro:assets";
+import demoPosterImg from "../assets/saas-demo-vid.png";
+
+interface Props {
+  title?: string;
+  videoSrc?: string;
+  class?: string;
+}
+
+const {
+  title = "Product Demo",
+  videoSrc,
+  class: className,
+} = Astro.props;
+---
+
+<div class:list={["demo-video", className]}>
+  <div class="img-wrapper demo-video__poster">
+    <Image
+      src={demoPosterImg}
+      alt={title}
+      width={299}
+      height={168}
+      class="cover"
+    />
+  </div>
+
+  <button
+    type="button"
+    class="demo-video__play-btn"
+    aria-label={`Play ${title}`}
+    data-video-src={videoSrc}
+  >
+    <span class="demo-video__play-text type-body-500">Play</span>
+  </button>
+</div>

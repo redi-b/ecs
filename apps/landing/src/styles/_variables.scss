@@ -1,0 +1,81 @@
+@use './utils/functions' as *;
+
+// -----------------------------------------------------------------------------
+// Color Tokens
+// -----------------------------------------------------------------------------
+
+// Primary Colors
+$clr-primary-100: #EDF7FF94;
+$clr-primary-400: #4169e1;
+$clr-primary-600: #303A56FF;
+
+// Secondary Colors
+$clr-secondary-50: #E3FFA2FF;
+$clr-secondary-100: #D9FF81FF;
+$clr-secondary-200: #AAD93BFF;
+$clr-secondary-300: #7D836EFF;
+$clr-secondary-550: #313F13FF;
+$clr-secondary-250: #313F1366;
+
+// Neutral Colors
+$clr-neutral-50: #FFFFFFFF;
+$clr-neutral-100: #FFFFFF42;
+$clr-neutral-150: #FFFFFF80;
+$clr-neutral-200: #F9FDFEFF;
+$clr-neutral-250: #EEF1F538;
+$clr-neutral-300: #FAFBFBFF;
+$clr-neutral-350: #F5F8F9FF;
+$clr-neutral-400: #F7F7F7FF;
+$clr-neutral-450: #F1F5F8FF;
+$clr-neutral-600: #EEF1F5FF;
+$clr-neutral-650: #E0E3ECFF;
+$clr-neutral-700: #D7D9D4FF;
+$clr-neutral-750: #BABABBFF;
+$clr-neutral-800: #878884FF;
+$clr-neutral-850: #191B1ECC;
+$clr-neutral-900: #3A4146FF;
+$clr-neutral-950: #191B1EFF;
+
+// -----------------------------------------------------------------------------
+// Typography Tokens
+// -----------------------------------------------------------------------------
+
+// Font Families
+$ff-header: "The Bold Font", sans-serif;
+$ff-body: "Neue Montreal", sans-serif;
+
+// Font Weights
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-bold: 700;
+
+// Font Sizes
+$fs-header-1: fluid(38px, 97px);
+$fs-header-2: fluid(24px, 46px);
+$fs-header-3: fluid(24px, 32px);
+$fs-header-5: fluid(20px, 24px);
+$fs-header-6: fluid(18px, 22px);
+$fs-body-l: fluid(14px, 18px);
+$fs-body-400: fluid(15px, 16px);
+$fs-body-500: fluid(15px, 16px);
+$fs-body-s-400: 14px;
+$fs-body-s-500: 14px;
+$fs-caption: 12px;
+
+// Line Heights
+$lh-header-1: fluid(38px, 97px);
+$lh-header-2: fluid(26px, 50px);
+$lh-header-3: normal;
+$lh-header-5: fluid(26px, 30px);
+$lh-header-6: fluid(26px, 31px);
+$lh-body-l: fluid(20px, 24px);
+$lh-body-400: fluid(20px, 22px);
+$lh-body-500: fluid(20px, 22px);
+$lh-body-s-400: fluid(14px, 19px);
+$lh-body-s-500: fluid(14px, 19px);
+$lh-caption: normal;
+
+// Letter Spacings
+$ls-heading: 0;
+$ls-body: -0.01em;
+$ls-zero: 0;

@@ -1,0 +1,33 @@
+# ECS (Ethiopian Commerce Solution)
+
+> The #1 E-commerce Builder Platform in Ethiopia — Make Shopping Easier For Your Buyers.
+
+ECS is a localized e-commerce storefront builder and retail management platform tailored for Ethiopian merchants and businesses. It enables store owners to launch a branded online store in minutes, synchronize inventory between physical retail and online channels, accept local payments (Telebirr, Chapa, local banks and digital wallets), sell inside Telegram with Telegram Mini Apps, and manage operations in Amharic.
+
+## Core Features
+
+- **Storefront Builder**: Branded mobile-responsive templates for fashion, cosmetics, electronics, and retail.
+- **Local Payment Gateways**: Integrated checkout with Telebirr, Chapa, local bank transfers, and cash on delivery.
+- **Amharic Language Support**: Native Amharic interface for both customer storefronts and merchant admin dashboards.
+- **Telegram & WhatsApp Integration**: Telegram Mini App storefronts and automated order alerts directly in chat.
+- **Unified Inventory & Orders**: Real-time stock tracking and combined records for online orders and in-store walk-in sales.
+- **Discounts & Marketing**: Promo codes, holiday flash sales, and automated pricing campaigns.
+- **Sales Insights**: Automated performance tracking, revenue metrics, and inventory turnover reports.
+
+## Pricing Plans
+
+- **Starter Plan**: 8,999 ETB / quarter (~3,000 ETB/mo) or 30,599 ETB / year (~2,550 ETB/mo with 15% discount) — Includes 7-day free trial.
+- **Standard Plan (Most Popular)**: 14,999 ETB / quarter (~5,000 ETB/mo) or 50,999 ETB / year (~4,250 ETB/mo with 15% discount) — Includes 7-day free trial.
+- **Enterprise Plan**: Custom one-time setup and monthly fee with dedicated branding, custom layout, and product photography.
+
+## Contact Information
+
+- **Website**: https://ecs.et
+- **Email**: support@ecs.et
+- **Phone**: +251 91 234 5678
+- **Address**: 4th Floor, Sunshine Tower #4, Stadium Area, Next to Marriott Hotel, Addis Ababa, Ethiopia
+
+## Full Documentation
+
+For detailed technical capabilities, feature breakdowns, and LLM context, see:
+- [Full LLM Context](https://ecs.et/llms-full.txt)

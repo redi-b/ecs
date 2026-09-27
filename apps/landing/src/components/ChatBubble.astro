@@ -1,0 +1,33 @@
+---
+import "../styles/components/_chat-bubble.scss";
+import { Image } from "astro:assets";
+import questionMarkImg from "../assets/faq-question-mark.png";
+
+interface Props {
+  question?: string;
+  time?: string;
+  class?: string;
+}
+
+const {
+  question = "Free delivery?",
+  time = "11:10 AM",
+  class: className,
+} = Astro.props;
+---
+
+<div class:list={["chat-bubble", className]}>
+  <div class="chat-bubble__content">
+    <div class="img-wrapper chat-bubble__avatar">
+      <Image
+        src={questionMarkImg}
+        alt=""
+        width={30}
+        height={30}
+        class="cover"
+      />
+    </div>
+    <span class="chat-bubble__text type-body-s-500">{question}</span>
+  </div>
+  <time class="chat-bubble__time">{time}</time>
+</div>

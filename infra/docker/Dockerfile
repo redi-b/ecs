@@ -10,6 +10,7 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY apps/landing/package.json apps/landing/package.json
 COPY apps/medusa/package.json apps/medusa/package.json
 COPY apps/platform-api/package.json apps/platform-api/package.json
 COPY apps/storefront/package.json apps/storefront/package.json
@@ -52,6 +53,18 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     test -d /out/storefront/node_modules/ioredis && \
     test -d /out/storefront/node_modules/sharp && \
     test -f /out/storefront/dist/server/entry.mjs
+
+FROM workspace AS landing-build
+ENV ASTRO_TELEMETRY_DISABLED=1
+ARG LANDING_PUBLIC_BASE_URL=https://aecs.eclipticcreative.com
+ENV PUBLIC_SITE_URL=${LANDING_PUBLIC_BASE_URL}
+RUN --mount=type=cache,id=landing-astro-cache,target=/workspace/apps/landing/node_modules/.astro \
+    pnpm --filter @ecs/landing build
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm --filter @ecs/landing deploy --prod /out/landing && \
+    rm -rf /out/landing/dist /out/landing/src && \
+    cp -R apps/landing/dist /out/landing/dist && \
+    test -f /out/landing/dist/server/entry.mjs
 
 FROM workspace AS platform-api-build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -112,6 +125,16 @@ ENV PORT=4321
 COPY --chown=node:node --from=storefront-build /out/storefront ./
 USER node
 EXPOSE 4321
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/server/entry.mjs"]
+
+FROM runtime AS landing
+ENV ASTRO_TELEMETRY_DISABLED=1
+ENV HOST=0.0.0.0
+ENV PORT=4322
+COPY --chown=node:node --from=landing-build /out/landing ./
+USER node
+EXPOSE 4322
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/server/entry.mjs"]
 

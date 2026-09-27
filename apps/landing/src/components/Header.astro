@@ -1,0 +1,162 @@
+---
+import "../styles/components/_header.scss";
+import { Image } from "astro:assets";
+import { Icon } from "astro-icon/components";
+import Button from "./Button.astro";
+import logoSvg from "../assets/logo.svg";
+
+interface Props {
+  class?: string;
+  navItems?: Array<{ text: string; href: string }>;
+  demoUrl: string;
+  signUpUrl: string;
+}
+
+const {
+  class: className,
+  navItems = [
+    { text: "Home", href: "/" },
+    { text: "Features", href: "#features" },
+    { text: "Templates", href: "#templates" },
+    { text: "Pricing", href: "#pricing" },
+    { text: "Contact", href: "#contact" },
+  ],
+  demoUrl,
+  signUpUrl,
+} = Astro.props;
+---
+
+<header class:list={["header", className]}>
+  <div class="header__inner">
+    <div class="header__main">
+      <div class="header__brand-wrapper">
+        <button
+          class="header__toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="header-menu"
+          aria-label="Toggle navigation menu"
+        >
+          <span class="header__toggle-line"></span>
+          <span class="header__toggle-line"></span>
+          <span class="header__toggle-line"></span>
+        </button>
+
+        <span class="header__divider" aria-hidden="true"></span>
+
+        <a href="/" class="header__brand" aria-label="ECS Home">
+          <div class="img-wrapper header__logo">
+            <Image src={logoSvg} alt="ECS" width={85} height={33} priority />
+          </div>
+        </a>
+      </div>
+
+      <div class="header__actions">
+        <Button
+          text="Live Demo"
+          href={demoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="small"
+          variant="neutral"
+          rounded={true}
+          data-fade-in="tl:fade-btn"
+        />
+        <Button
+          text="Join Now"
+          href={signUpUrl}
+          size="small"
+          variant="primary"
+          authAware={true}
+          authenticatedText="Dashboard"
+          data-fade-in="tl:fade-btn"
+        />
+      </div>
+    </div>
+
+    <!-- Dropdown Menu Panel -->
+    <div class="header__menu" id="header-menu" aria-hidden="true">
+      <div class="header__menu-content">
+        <nav class="header__menu-nav" aria-label="Expanded Navigation">
+          <ul class="header__menu-list">
+            {
+              navItems.map((item, index) => (
+                <li class="header__menu-item">
+                  <a href={item.href} class="header__menu-link">
+                    <span class="header__menu-num type-caption">0{index + 1}</span>
+                    <span class="header__menu-text type-body-500">{item.text}</span>
+                    <span class="header__menu-arrow" aria-hidden="true">
+                      <Icon name="link-arrow-icon" class="header__menu-arrow-icon" />
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <div class="header__menu-footer">
+          <Button
+            text="View Demo"
+            href={demoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="small"
+            variant="neutral"
+            rounded={true}
+            class="header__menu-cta header__menu-cta--demo"
+          />
+          <Button
+            text="Open Your Store"
+            href={signUpUrl}
+            size="small"
+            variant="primary"
+            authAware={true}
+            authenticatedText="Dashboard"
+            class="header__menu-cta header__menu-cta--primary"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="header__marquee" aria-label="Announcements">
+      <div class="header__marquee-track" aria-hidden="false">
+        {
+          Array.from({ length: 4 }).map(() => (
+            <span class="header__marquee-item">
+              <Icon name="leaf-decorative-icon" class="header__marquee-leaf" />
+              <span class="header__marquee-text type-body-s-500">
+                #1 E-commerce builder platform in Ethiopia
+              </span>
+            </span>
+          ))
+        }
+      </div>
+      <div class="header__marquee-track" aria-hidden="true">
+        {
+          Array.from({ length: 4 }).map(() => (
+            <span class="header__marquee-item">
+              <Icon name="leaf-decorative-icon" class="header__marquee-leaf" />
+              <span class="header__marquee-text type-body-s-500">
+                #1 E-commerce builder platform in Ethiopia
+              </span>
+            </span>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop overlay when menu is open -->
+  <div class="header__backdrop" aria-hidden="true"></div>
+</header>
+
+<script>
+  import { initHeader } from "../scripts/components/header";
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initHeader);
+  } else {
+    initHeader();
+  }
+</script>

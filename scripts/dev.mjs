@@ -71,6 +71,7 @@ box([
   "",
   "Dashboard   http://app.lvh.me/admin",
   "Operations  http://ops.lvh.me",
+  "Landing     http://ecs.lvh.me",
   "API         http://api.lvh.me",
   "Storefront  http://*.lvh.me (tenant hosts)",
   "Medusa      http://localhost:9000",

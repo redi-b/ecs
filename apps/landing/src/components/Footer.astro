@@ -1,0 +1,187 @@
+---
+import "../styles/components/_footer.scss";
+import { Image } from "astro:assets";
+import { Icon } from "astro-icon/components";
+import logoSvg from "../assets/logo.svg";
+import contactLocationImg from "../assets/contact-location.png";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const quickLinksCol1 = [
+  { text: "Home", href: "/" },
+  { text: "Storefront Features", href: "#storefront-details" },
+  { text: "Admin Features", href: "#dashboard-details" },
+];
+
+const quickLinksCol2 = [
+  { text: "Templates", href: "#templates" },
+  { text: "Pricing", href: "#pricing" },
+  { text: "Contact", href: "#contact" },
+];
+
+const socialLinksCol1 = [
+  { text: "Facebook", href: "https://www.facebook.com/ecliptic.creative.agency/" },
+  { text: "Instagram", href: "https://www.instagram.com/ecliptic_digital/" },
+];
+
+const socialLinksCol2 = [
+  { text: "TikTok", href: "https://www.tiktok.com/@eclipticcreative" },
+  { text: "Linkedin", href: "https://www.linkedin.com/company/ecliptic-creative-agency/" },
+];
+---
+
+<footer class:list={["footer", className]}>
+  <div class="container footer__container">
+    <div class="footer__shell">
+      <!-- Upper Contact Cards -->
+      <div class="footer__contacts">
+        <div class="footer__contact-card" data-fade-in="tl:toTop:fade-subtle">
+          <span class="footer__contact-icon-box">
+            <Icon name="contact-phone-icon" class="footer__contact-icon" />
+          </span>
+          <span class="footer__contact-text type-body-l">
+            <a href="tel:+251985367382" style="color: inherit; text-decoration: none;">+251 98 536 7382</a>
+            <a href="tel:+251910460568" style="color: inherit; text-decoration: none;">+251 91 046 0568</a>
+          </span>
+        </div>
+
+        <a href="mailto:support@ecs.et" class="footer__contact-card" data-fade-in="tl:toTop:fade-subtle">
+          <span class="footer__contact-icon-box">
+            <Icon name="contact-mail-icon" class="footer__contact-icon" />
+          </span>
+          <span class="footer__contact-text type-body-l">
+            <span>support@ecs.et</span>
+          </span>
+        </a>
+
+        <a href="https://maps.app.goo.gl/1TeisdxRnXnhAWSe8" target="_blank" rel="noopener noreferrer" class="footer__contact-card" data-fade-in="tl:toTop:fade-subtle">
+          <span class="footer__contact-icon-box">
+            <div class="img-wrapper footer__location-img">
+              <Image
+                src={contactLocationImg}
+                alt=""
+                width={24}
+                height={30}
+                class="contain"
+              />
+            </div>
+          </span>
+          <span class="footer__contact-text type-body-l">
+            <span>4th Floor, Sunshine Tower #4, Stadium Area, Next to Marriott Hotel</span>
+          </span>
+        </a>
+      </div>
+
+      <!-- Lower Content Card -->
+      <div class="footer__card" data-fade-in="tl:toTop:fade-scale">
+        <div class="footer__grid">
+          <!-- Brand & Tagline -->
+          <div class="footer__brand-col">
+            <a href="/" class="footer__brand" aria-label="ECS Home">
+              <div class="img-wrapper footer__logo">
+                <Image src={logoSvg} alt="ECS" width={85} height={33} />
+              </div>
+            </a>
+            <p class="footer__tagline type-body-s-400">
+              ECS is the simple way for businesses to sell online, manage inventory, and stay in control without the usual chaos.
+            </p>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer__nav-col">
+            <h3 class="footer__col-heading type-body-l">Quick Links</h3>
+            <div class="footer__link-cols">
+              <ul class="footer__link-list">
+                {
+                  quickLinksCol1.map((link) => (
+                    <li>
+                      <a href={link.href} class="footer__link type-body-l">
+                        {link.text}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+              <ul class="footer__link-list">
+                {
+                  quickLinksCol2.map((link) => (
+                    <li>
+                      <a href={link.href} class="footer__link type-body-l">
+                        {link.text}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </div>
+
+          <!-- Social Links -->
+          <div class="footer__nav-col">
+            <h3 class="footer__col-heading type-body-l">Social Links</h3>
+            <div class="footer__link-cols">
+              <ul class="footer__link-list">
+                {
+                  socialLinksCol1.map((link) => (
+                    <li>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="footer__link type-body-l"
+                      >
+                        {link.text}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+              <ul class="footer__link-list">
+                {
+                  socialLinksCol2.map((link) => (
+                    <li>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="footer__link type-body-l"
+                      >
+                        {link.text}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="footer__bottom">
+          <div class="footer__legal">
+            <a href="/terms" class="footer__legal-link type-body-s-400">Our Terms</a>
+            <a href="/privacy" class="footer__legal-link type-body-s-400">Privacy Policy</a>
+          </div>
+          <p class="footer__copyright type-body-s-400">
+            © <span id="current-year">2026</span> ECS. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function updateYear(): void {
+    const yearEl = document.getElementById("current-year");
+    if (yearEl) {
+      yearEl.textContent = new Date().getFullYear().toString();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", updateYear);
+</script>

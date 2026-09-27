@@ -1,0 +1,145 @@
+---
+import { Icon } from "astro-icon/components";
+import type { PublicPlan } from "../lib/platform";
+import Button from "./Button.astro";
+
+interface Props {
+  plans: PublicPlan[];
+  signUpUrl: string;
+}
+
+const { plans, signUpUrl } = Astro.props;
+const customPlan: PublicPlan = {
+  code: "custom",
+  name: "Enterprise Plan",
+  summary: "Best for established businesses",
+  description: "",
+  price: "Custom",
+  currency: "ETB",
+  billingInterval: "month",
+  badge: null,
+  featured: false,
+  displayOrder: 999,
+  ctaLabel: "Contact Us",
+  featureList: [
+    "Fully custom website design",
+    "Tailored layout and branding",
+    "Custom requirements",
+  ],
+  trial: { available: false },
+};
+const cards = [...plans, customPlan];
+
+function formatPrice(plan: PublicPlan) {
+  const amount = Number(plan.price);
+  if (!Number.isFinite(amount)) return plan.price;
+  if (amount === 0) return "Free";
+  return `${new Intl.NumberFormat("en-ET", { maximumFractionDigits: 2 }).format(amount)} ${plan.currency}`;
+}
+
+function formatInterval(interval: PublicPlan["billingInterval"]) {
+  return interval === "day" ? "day" : interval === "week" ? "week" : interval === "year" ? "year" : "month";
+}
+---
+
+<section class="pricing" id="pricing">
+  <div class="container pricing__wrapper">
+    <div class="pricing__header">
+      <h2 class="pricing__title type-header-2" data-text-anim="tl:headerAnimation">
+        SIMPLE PLANS THAT GROW WITH YOUR BUSINESS
+      </h2>
+      <div class="pricing__header-right">
+        <p class="pricing__header-desc type-body-400" data-text-anim="tl:bodyAnimation">
+          Choose the plan that fits your business and start selling today.
+        </p>
+        <Button
+          text="Register Now"
+          variant="primary"
+          size="large"
+          icon="link-arrow-icon"
+          href={signUpUrl}
+          authAware={true}
+          authenticatedText="Go to dashboard"
+          data-fade-in="tl:toTop:fade-btn"
+        />
+      </div>
+    </div>
+
+    <div class="pricing__board">
+      <div class="pricing__cycle-toggle" data-pricing-toggle-wrapper data-fade-in="tl:toBottom:fade-1">
+        <span class="pricing__cycle-label type-body-500">Quarterly</span>
+        <button type="button" class="pricing__switch" role="switch"
+          aria-checked="false" aria-label="Quarterly and yearly billing are not yet available"
+          title="Current published plans are billed monthly. Quarterly and yearly billing are not yet available."
+          disabled>
+          <span class="pricing__switch-knob"></span>
+        </button>
+        <div class="pricing__cycle-yearly">
+          <span class="pricing__cycle-label type-body-500">Yearly</span>
+        </div>
+      </div>
+
+      <div class="pricing__grid">
+        {
+          cards.map((plan) => (
+            <article
+              class:list={[
+                "pricing-card",
+                plan.featured && "pricing-card--standard",
+                plan.code === "custom" && "pricing-card--enterprise",
+                !plan.featured && plan.code !== "custom" && "pricing-card--starter",
+              ]}
+              data-fade-in="tl:toTop:fade-scale"
+            >
+              <div class="pricing-card__top">
+                <div class="pricing-card__header-info">
+                  <div class="pricing-card__badge-row">
+                    <h3 class="pricing-card__name type-body-l">{plan.name}</h3>
+                    {plan.badge && <span class="pricing-card__badge type-caption">{plan.badge}</span>}
+                  </div>
+                  <p class="pricing-card__sub type-caption">{plan.summary || plan.description}</p>
+                </div>
+                <div class="pricing-card__divider" aria-hidden="true"></div>
+                <div class="pricing-card__price-box">
+                  <span class="pricing-card__amount type-header-3">{formatPrice(plan)}</span>
+                  <span class="pricing-card__period type-body-s-400">
+                    {plan.code === "custom" ? "One time payment + monthly fee" : Number(plan.price) === 0 ? "No recurring charge" : `Billed every ${formatInterval(plan.billingInterval)}`}
+                  </span>
+                </div>
+                <Button
+                  text={plan.ctaLabel}
+                  variant={plan.code === "custom" ? "dark" : plan.featured ? "primary" : "outline"}
+                  size="small"
+                  class="pricing-card__cta"
+                  href={plan.code === "custom" ? "#contact" : signUpUrl}
+                  authAware={plan.code !== "custom"}
+                  authenticatedText="Manage plan"
+                />
+                {plan.trial.available && (
+                  <p class="pricing-card__trial type-caption">
+                    {plan.trial.durationDays}-day trial
+                    {plan.trial.paymentMethodRequired ? " · Payment method required" : " · No payment method required"}
+                  </p>
+                )}
+              </div>
+
+              <div class="pricing-card__bottom">
+                <h4 class="pricing-card__features-title type-body-s-400">What's Included</h4>
+                <ul class="pricing-card__list">
+                  {plan.featureList.map((feature) => (
+                    <li class="pricing-card__feature-item type-body-s-400">
+                      <span class="pricing-card__check-circle">
+                        <Icon name="checkmark" class="pricing-card__check" />
+                      </span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>

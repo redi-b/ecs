@@ -23,6 +23,10 @@ http://ops.lvh.me {
 	reverse_proxy host.docker.internal:3002
 }
 
+http://ecs.lvh.me {
+	reverse_proxy host.docker.internal:4322
+}
+
 http://*.lvh.me {
 	@dashboardAssets path /_next/* /__nextjs* /favicon.ico /favicon.svg /brand/*
 	handle @dashboardAssets {

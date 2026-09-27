@@ -1,0 +1,70 @@
+---
+import "../styles/components/_button.scss";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  text: string;
+  href?: string;
+  target?: "_blank" | "_self";
+  rel?: string;
+  variant?: "primary" | "outline" | "dark" | "light" | "neutral";
+  size?: "large" | "small";
+  icon?: string;
+  rounded?: boolean;
+  class?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  authAware?: boolean;
+  authenticatedText?: string;
+  guestOnly?: boolean;
+}
+
+const {
+  text,
+  href,
+  variant = "primary",
+  size = "large",
+  icon,
+  rounded = false,
+  class: className,
+  type = "button",
+  disabled = false,
+  authAware = false,
+  authenticatedText,
+  guestOnly = false,
+  ...rest
+} = Astro.props;
+
+const classes = [
+  "btn",
+  `btn--${variant}`,
+  `btn--${size}`,
+  rounded && "btn--rounded",
+  icon && "btn--with-icon",
+  className,
+].filter(Boolean);
+
+const Element = href ? "a" : "button";
+---
+
+<Element
+  href={href}
+  type={href ? undefined : type}
+  disabled={href ? undefined : disabled}
+  data-auth-cta={authAware ? "" : undefined}
+  data-authenticated-text={authAware ? authenticatedText : undefined}
+  data-auth-guest-only={guestOnly ? "" : undefined}
+  class:list={classes}
+  {...rest}
+>
+  <span class="btn__text type-body-500" data-text-anim="linkAnimation"
+    >{text}</span
+  >
+  {
+    icon && (
+      <span class="btn__icon-wrapper" aria-hidden="true">
+        <Icon name={icon} class="btn__icon" />
+      </span>
+    )
+  }
+</Element>

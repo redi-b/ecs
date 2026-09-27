@@ -1,0 +1,113 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import { Icon } from "astro-icon/components";
+import Button from "./Button.astro";
+
+type TemplateCard = {
+  description: string;
+  demoUrl: string | null;
+  image: ImageMetadata | string;
+  imageAlt: string;
+  name: string;
+};
+
+interface Props {
+  signUpUrl: string;
+  templates: TemplateCard[];
+}
+
+const { signUpUrl, templates } = Astro.props;
+---
+
+<section class="templates" id="templates">
+  <div class="templates__bg"></div>
+  <div class="container templates__wrapper">
+    <div class="templates__header">
+      <h2 class="templates__title type-header-2" data-text-anim="tl:headerAnimation">
+        FIND A WEBSITE DESIGN THAT FITS YOUR BUSINESS
+      </h2>
+      <p class="templates__subtitle type-body-400" data-text-anim="tl:bodyAnimation">
+        Choose a website design template that perfectly suits your brand.
+      </p>
+    </div>
+
+    <div class="templates__carousel-group">
+      <div class="templates__carousel">
+        <button type="button" class="templates__nav-btn templates__nav-btn--prev" aria-label="Previous template">
+          <Icon name="slider-arrow-icon" class="templates__arrow-icon templates__arrow-icon--prev" />
+        </button>
+
+        <div class="swiper templates__swiper">
+          <div class="swiper-wrapper">
+            {
+              templates.map((template) => (
+                <div class="swiper-slide templates__slide">
+                  <div class="templates__card">
+                    <div class="img-wrapper templates__card-img">
+                      {typeof template.image === "string" ? (
+                        <img
+                          src={template.image}
+                          alt={template.imageAlt}
+                          width="840"
+                          height="524"
+                          loading="lazy"
+                          decoding="async"
+                          class="cover"
+                        />
+                      ) : (
+                        <Image
+                          src={template.image}
+                          alt={template.imageAlt}
+                          width={840}
+                          loading="lazy"
+                          class="cover"
+                        />
+                      )}
+                    </div>
+                    <div class="templates__card-body">
+                      <div class="templates__card-info">
+                        <h3 class="templates__card-title">{template.name}</h3>
+                        <p class="templates__card-desc">{template.description}</p>
+                      </div>
+                      <div class="templates__card-actions">
+                        <Button
+                          text="Use Template"
+                          variant="primary"
+                          size="small"
+                          icon="open-link-icon"
+                          href={signUpUrl}
+                          authAware={true}
+                          authenticatedText="Open dashboard"
+                          class="templates__action-btn"
+                        />
+                        {template.demoUrl && (
+                          <Button
+                            text="Live Demo"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="dark"
+                            size="small"
+                            icon="live-demo-icon"
+                            href={template.demoUrl}
+                            class="templates__action-btn"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        <button type="button" class="templates__nav-btn templates__nav-btn--next" aria-label="Next template">
+          <Icon name="slider-arrow-icon" class="templates__arrow-icon templates__arrow-icon--next" />
+        </button>
+      </div>
+
+      <div class="templates__pagination" aria-label="Templates pagination"></div>
+    </div>
+  </div>
+</section>

@@ -10,8 +10,12 @@ variable "GIT_SHA" {
   default = "local"
 }
 
+variable "LANDING_PUBLIC_BASE_URL" {
+  default = "https://aecs.eclipticcreative.com"
+}
+
 group "default" {
-  targets = ["platform-api", "medusa", "dashboard", "superadmin", "storefront"]
+  targets = ["platform-api", "medusa", "dashboard", "superadmin", "storefront", "landing"]
 }
 
 target "common" {
@@ -67,5 +71,17 @@ target "storefront" {
   tags = [
     "${IMAGE_PREFIX}/storefront:${IMAGE_TAG}",
     "${IMAGE_PREFIX}/storefront:sha-${GIT_SHA}",
+  ]
+}
+
+target "landing" {
+  inherits = ["common"]
+  target   = "landing"
+  args = {
+    LANDING_PUBLIC_BASE_URL = LANDING_PUBLIC_BASE_URL
+  }
+  tags = [
+    "${IMAGE_PREFIX}/landing:${IMAGE_TAG}",
+    "${IMAGE_PREFIX}/landing:sha-${GIT_SHA}",
   ]
 }

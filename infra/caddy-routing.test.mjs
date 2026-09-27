@@ -31,3 +31,18 @@ for (const path of configs) {
     assert.match(source, /\/favicon\.svg/);
   });
 }
+
+test("local Caddy routes the landing hostname before tenant storefronts", async () => {
+  const source = await readFile("infra/caddy/Caddyfile", "utf8");
+  const landing = source.indexOf("http://ecs.lvh.me");
+  const storefronts = source.indexOf("http://*.lvh.me");
+  assert.ok(landing >= 0, "landing route is missing");
+  assert.ok(landing < storefronts, "landing route must precede the wildcard storefront route");
+  assert.match(source.slice(landing, storefronts), /host\.docker\.internal:4322/);
+});
+
+test("production Caddy routes the base domain to the landing service", async () => {
+  const source = await readFile("infra/dokploy/Caddyfile", "utf8");
+  assert.match(source, /@landing host \{\$BASE_DOMAIN\}/);
+  assert.match(source, /reverse_proxy ecs-landing:4322/);
+});

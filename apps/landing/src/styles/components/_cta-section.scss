@@ -1,0 +1,237 @@
+.cta-section {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  margin-bottom: -337px;
+
+  &__wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    width: min(100% - 2rem, 1400px);
+    margin-inline: auto;
+  }
+
+  &__card {
+    position: relative;
+    width: 100%;
+    max-width: 738px;
+    min-height: 670px;
+    border-radius: 32px;
+    background: linear-gradient(180deg, #4169E1 18.47%, #151E3B 66.32%, #16181F 100%);
+    border: 1px solid rgba(65, 105, 225, 0.3);
+    border-bottom: none;
+    padding: 50px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    width: 100%;
+    max-width: 583px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: $clr-secondary-50;
+    border-radius: 29px;
+    padding: 4px 14px 4px 4px;
+  }
+
+  &__avatar-stack {
+    display: flex;
+    align-items: center;
+    background: $clr-neutral-50;
+    border: 1px solid $clr-secondary-100;
+    border-radius: 58px;
+    padding: 4px 6px;
+  }
+
+  &__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: -17px;
+    flex-shrink: 0;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  &__badge-text {
+    color: $clr-secondary-550;
+    margin: 0;
+    max-width: 12ch;
+
+    strong {
+      font-weight: $fw-bold;
+    }
+  }
+
+  &__heading {
+    text-align: center;
+    color: $clr-neutral-200;
+    margin: 0;
+    max-width: 583px;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 348px;
+  }
+
+  &__field {
+    position: relative;
+    width: 100%;
+  }
+
+  &__input {
+    width: 100%;
+    height: 56px;
+    padding: 15px 16px;
+    background: transparent;
+    border: 1px solid $clr-neutral-100;
+    border-radius: 6px;
+    color: $clr-neutral-200;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+      color: $clr-neutral-800;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $clr-secondary-100;
+      box-shadow: 0 0 0 2px $clr-secondary-250;
+    }
+  }
+
+  &__submit {
+    width: 100% !important;
+    height: 50px !important;
+    justify-content: space-between !important;
+    border-radius: 4px !important;
+  }
+
+  &__visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__mockup {
+    max-width: 662px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  // Responsive Styles for CTA Section
+  @media (max-width: 1280px) {
+    margin-bottom: -280px;
+
+    &__card {
+      width: 58%;
+      max-width: 600px;
+      min-height: 580px;
+      padding: 40px 20px;
+    }
+  }
+
+  @media (max-width: 1082px) {
+    margin-bottom: -220px;
+
+    &__wrapper {
+      justify-content: center;
+    }
+
+    &__card {
+      width: 100%;
+      max-width: 680px;
+      min-height: auto;
+      padding: 44px 24px;
+      border-radius: 24px;
+    }
+
+    &__visual {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: -180px;
+
+    &__card {
+      padding: 36px 16px;
+      border-radius: 20px;
+      gap: 28px;
+    }
+
+    &__content {
+      gap: 20px;
+    }
+
+    &__form {
+      max-width: 100%;
+    }
+
+    &__input {
+      height: 50px;
+      font-size: 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: -160px;
+
+    &__card {
+      padding: 28px 14px;
+      border-radius: 16px;
+      gap: 22px;
+    }
+
+    &__content {
+      gap: 16px;
+    }
+
+    &__badge {
+      padding: 4px 10px 4px 4px;
+    }
+
+    &__avatar {
+      width: 28px;
+      height: 28px;
+      margin-right: -14px;
+    }
+  }
+}

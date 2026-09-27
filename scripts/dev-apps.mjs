@@ -83,6 +83,12 @@ const services = [
     title: "Storefront",
   },
   {
+    color: "cyan",
+    command: "pnpm --filter @ecs/landing dev",
+    name: "landing",
+    title: "Landing page",
+  },
+  {
     color: "green",
     command: splitMedusa ? "pnpm --filter @ecs/medusa dev:server" : "pnpm --filter @ecs/medusa dev",
     name: "medusa",
@@ -112,6 +118,7 @@ box([
   "  API         http://api.lvh.me  (localhost:3000)",
   "  Dashboard   http://app.lvh.me/admin",
   "  Operations  http://ops.lvh.me",
+  "  Landing     http://ecs.lvh.me",
   "  Storefront  http://<handle>.lvh.me",
   "  Medusa      http://localhost:9000",
 ]);

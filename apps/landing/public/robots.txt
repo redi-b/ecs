@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Disallow common sensitive paths
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_astro/
+Disallow: /*.json$
+
+# Sitemap
+Sitemap: https://example.com/sitemap-index.xml

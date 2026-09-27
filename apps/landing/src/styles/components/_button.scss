@@ -1,0 +1,336 @@
+@use "sass:color";
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $clr-primary-400;
+    outline-offset: 2px;
+  }
+
+  // Shimmer light sweep on hover
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -130%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.16) 50%,
+        transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.55s cubic-bezier(0.215, 0.61, 0.355, 1);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &:hover::before {
+    left: 150%;
+  }
+
+  &__text {
+    display: inline-block;
+    position: relative;
+    z-index: 2;
+  }
+
+  &__icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 2px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .btn__icon {
+    display: block;
+    width: 1em;
+    height: 1em;
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hover effects for Buttons WITHOUT Icon
+  // Morphs border-radius (normal <-> rounded) + rich shadow/glow
+  // ---------------------------------------------------------------------------
+  &:not(.btn--with-icon) {
+    &:hover {
+      border-radius: 36px;
+    }
+
+    &.btn--rounded {
+      border-radius: 36px;
+
+      &:hover {
+        border-radius: 4px;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hover effects for Buttons WITH Icon
+  // Smoothly slides the icon badge to far-left, shifts text to the right
+  // ---------------------------------------------------------------------------
+  &.btn--with-icon {
+    --icon-travel: 140px;
+    --text-shift: 40px;
+
+    .btn__text {
+      transition: transform 0.55s cubic-bezier(0.215, 0.61, 0.355, 1);
+      will-change: transform;
+    }
+
+    .btn__icon-wrapper {
+      transition:
+        transform 0.55s cubic-bezier(0.215, 0.61, 0.355, 1),
+        background-color 0.45s ease,
+        color 0.45s ease,
+        box-shadow 0.45s ease;
+      will-change: transform;
+    }
+
+    &:hover {
+      .btn__text {
+        transform: translateX(var(--text-shift));
+      }
+
+      .btn__icon-wrapper {
+        transform: translateX(calc(-1 * var(--icon-travel)));
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      }
+
+      .btn__icon {
+        transform: scale(1.12) translate(1px, -1px);
+      }
+    }
+  }
+
+  // Sizing
+  &--large {
+    min-height: 50px;
+    padding: 14px 20px;
+
+    &.btn--with-icon {
+      padding: 4px 4px 4px 20px;
+      gap: 12px;
+      --text-shift: 40px;
+
+      .btn__icon-wrapper {
+        width: 44px;
+        height: 42px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      min-height: 42px;
+      padding: 10px 16px;
+
+      .btn__text {
+        font-size: 14px;
+        line-height: 18px;
+      }
+
+      &.btn--with-icon {
+        padding: 3px 3px 3px 14px;
+        gap: 8px;
+        --text-shift: 33px;
+
+        .btn__icon-wrapper {
+          width: 36px;
+          height: 34px;
+        }
+      }
+    }
+  }
+
+  &--small {
+    min-height: 40px;
+    padding: 9px 20px;
+
+    &.btn--with-icon {
+      padding: 4px 4px 4px 16px;
+      gap: 10px;
+      --text-shift: 32px;
+
+      .btn__icon-wrapper {
+        width: 34px;
+        height: 32px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      min-height: 32px;
+      padding: 6px 12px;
+
+      .btn__text {
+        font-size: 13px;
+        line-height: 16px;
+      }
+
+      &.btn--with-icon {
+        padding: 2px 2px 2px 10px;
+        gap: 6px;
+        --text-shift: 24px;
+
+        .btn__icon-wrapper {
+          width: 26px;
+          height: 26px;
+        }
+      }
+    }
+  }
+
+  &--rounded {
+    border-radius: 36px;
+
+    &.btn--with-icon {
+      .btn__icon-wrapper {
+        border-radius: 36px;
+      }
+    }
+  }
+
+  // Variants
+  &--primary {
+    background: $clr-primary-400;
+    color: $clr-neutral-50;
+
+    &:hover {
+      background: color.adjust($clr-primary-400, $lightness: 3%);
+      box-shadow: 0 8px 24px -4px rgba(65, 105, 225, 0.45);
+    }
+
+    .btn__icon-wrapper {
+      background: $clr-neutral-50;
+      color: $clr-primary-400;
+
+      [data-icon] {
+        color: $clr-primary-400;
+        fill: currentColor;
+      }
+    }
+
+    &:hover .btn__icon-wrapper {
+      background: $clr-neutral-50;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    border-color: $clr-neutral-750;
+    color: $clr-neutral-900;
+
+    &:hover {
+      background: $clr-neutral-950;
+      border-color: $clr-neutral-950;
+      color: $clr-neutral-50;
+      box-shadow: 0 8px 24px -4px rgba(25, 27, 30, 0.25);
+    }
+  }
+
+  &--dark {
+    background: $clr-neutral-950;
+    color: $clr-neutral-50;
+
+    &:hover {
+      background: color.adjust($clr-neutral-950, $lightness: 4%);
+      box-shadow: 0 8px 24px -4px rgba(25, 27, 30, 0.38);
+    }
+
+    .btn__icon-wrapper {
+      background: $clr-neutral-200;
+      color: $clr-neutral-950;
+
+      [data-icon] {
+        color: $clr-neutral-950;
+        fill: currentColor;
+      }
+    }
+
+    &.btn--small .btn__icon-wrapper {
+      background: $clr-neutral-50;
+    }
+
+    &:hover .btn__icon-wrapper {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  &--light {
+    background: $clr-neutral-200;
+    border-color: $clr-neutral-650;
+    color: $clr-neutral-950;
+
+    &:hover {
+      border-color: $clr-neutral-750;
+      background: $clr-neutral-50;
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn__icon-wrapper {
+      background: $clr-neutral-950;
+      color: $clr-neutral-200;
+
+      [data-icon] {
+        color: $clr-neutral-200;
+        fill: currentColor;
+      }
+    }
+  }
+
+  &--neutral {
+    background: $clr-neutral-450;
+    color: $clr-neutral-900;
+
+    &:hover {
+      background: $clr-neutral-600;
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn__icon-wrapper {
+      background: $clr-neutral-50;
+      color: $clr-primary-400;
+
+      [data-icon] {
+        color: $clr-neutral-850;
+        fill: currentColor;
+      }
+    }
+
+    &:hover .btn__icon-wrapper {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  }
+}
+
+.btn[data-auth-guest-only][hidden] {
+  display: none !important;
+}
