@@ -4,24 +4,24 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
-  Bold,
-  Braces,
-  Check,
-  ChevronDown,
-  Clock3,
-  Eye,
-  Heading2,
-  Italic,
-  List,
-  MailCheck,
-  Monitor,
-  Redo2,
-  RotateCcw,
-  Save,
-  Send,
-  Smartphone,
-  Undo2,
-} from "lucide-react";
+  RiBold as Bold,
+  RiBracesLine as Braces,
+  RiCheckLine as Check,
+  RiArrowDownSLine as ChevronDown,
+  RiTimeLine as Clock3,
+  RiEyeLine as Eye,
+  RiH2 as Heading2,
+  RiItalic as Italic,
+  RiListUnordered as List,
+  RiMailCheckLine as MailCheck,
+  RiComputerLine as Monitor,
+  RiArrowGoForwardLine as Redo2,
+  RiRestartLine as RotateCcw,
+  RiSaveLine as Save,
+  RiSendPlane2Line as Send,
+  RiSmartphoneLine as Smartphone,
+  RiArrowGoBackLine as Undo2,
+} from "@remixicon/react";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { OperatorPlanCatalog } from "@ecs/contracts";
-import { ArrowRightLeft } from "lucide-react";
+import { RiArrowLeftRightLine as ArrowRightLeft } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

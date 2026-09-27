@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, XIcon } from "lucide-react";
+import { RiArrowDownSLine as ChevronDownIcon, RiCloseLine as XIcon } from "@remixicon/react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { type ActivityStatus, useGlobalActivities } from "@/components/app/activity-registry";

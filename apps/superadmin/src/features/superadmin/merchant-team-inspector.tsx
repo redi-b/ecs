@@ -1,5 +1,5 @@
 import type { SuperadminMerchantTeam } from "@ecs/contracts";
-import { ShieldCheck, UserRound } from "lucide-react";
+import { RiShieldCheckLine as ShieldCheck, RiUser3Line as UserRound } from "@remixicon/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

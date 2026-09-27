@@ -2,7 +2,7 @@
 
 import type { StorefrontSeoSettings } from "@ecs/contracts";
 import { useForm, useStore } from "@tanstack/react-form";
-import { ImageUpIcon } from "lucide-react";
+import { RiImageAddLine as ImageUpIcon } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ContextualSaveActions } from "@/components/app/contextual-save-actions";

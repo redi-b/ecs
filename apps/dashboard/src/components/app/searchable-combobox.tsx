@@ -23,7 +23,7 @@ import {
 } from "@/lib/nested-overlay";
 import { fuzzyMatches } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
-import { XIcon } from "lucide-react";
+import { RiCloseLine as XIcon } from "@remixicon/react";
 
 export type SearchableComboboxOption = {
   value: string;

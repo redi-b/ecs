@@ -1,7 +1,13 @@
 "use client";
 
 import type { InsightsTraffic } from "@ecs/contracts";
-import { LaptopIcon, Link2Icon, MonitorIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
+import {
+  RiMacbookLine as LaptopIcon,
+  RiLink as Link2Icon,
+  RiComputerLine as MonitorIcon,
+  RiSmartphoneLine as SmartphoneIcon,
+  RiTabletLine as TabletIcon,
+} from "@remixicon/react";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
 import { PaginationBar } from "@/components/app/pagination-bar";

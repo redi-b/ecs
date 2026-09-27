@@ -1,7 +1,14 @@
 "use client";
 
 import type { OperatorPlanCatalog } from "@ecs/contracts";
-import { Check, History, Megaphone, PencilLine, Plus, Rocket } from "lucide-react";
+import {
+  RiCheckLine as Check,
+  RiHistoryLine as History,
+  RiMegaphoneLine as Megaphone,
+  RiPencilLine as PencilLine,
+  RiAddLine as Plus,
+  RiRocketLine as Rocket,
+} from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { toast } from "sonner";

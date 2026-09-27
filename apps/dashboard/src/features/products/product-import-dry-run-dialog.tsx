@@ -1,6 +1,12 @@
 "use client";
 
-import { CopyIcon, DownloadIcon, FileSpreadsheetIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import {
+  RiFileCopyLine as CopyIcon,
+  RiDownload2Line as DownloadIcon,
+  RiFileExcel2Line as FileSpreadsheetIcon,
+  RiUploadCloud2Line as UploadCloudIcon,
+  RiCloseLine as XIcon,
+} from "@remixicon/react";
 import { type DragEvent, type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 

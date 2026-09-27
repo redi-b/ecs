@@ -1,7 +1,7 @@
 "use client";
 
 import type { InsightsProductsReport } from "@ecs/contracts";
-import { ChevronDownIcon, PackageIcon } from "lucide-react";
+import { RiArrowDownSLine as ChevronDownIcon, RiBox3Line as PackageIcon } from "@remixicon/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

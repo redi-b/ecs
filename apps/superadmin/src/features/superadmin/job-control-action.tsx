@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, RotateCcw } from "lucide-react";
+import { RiForbidLine as Ban, RiRestartLine as RotateCcw } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";

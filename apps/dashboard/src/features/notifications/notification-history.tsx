@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Check, Circle } from "lucide-react";
+import { RiArchiveLine as Archive, RiCheckLine as Check, RiCheckboxBlankCircleLine as Circle } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";

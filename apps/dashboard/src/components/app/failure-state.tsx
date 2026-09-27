@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftIcon, RefreshCwIcon } from "lucide-react";
+import { RiArrowLeftLine as ArrowLeftIcon, RiRefreshLine as RefreshCwIcon } from "@remixicon/react";
 import { useTransition } from "react";
 
 import Link from "@/components/app/link";

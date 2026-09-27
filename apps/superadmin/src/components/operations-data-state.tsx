@@ -1,5 +1,9 @@
-import type { LucideIcon } from "lucide-react";
-import { CircleAlert, Inbox, LockKeyhole } from "lucide-react";
+import {
+  type RemixiconComponentType as IconComponent,
+  RiErrorWarningLine as CircleAlert,
+  RiInbox2Line as Inbox,
+  RiLockPasswordLine as LockKeyhole,
+} from "@remixicon/react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,7 +19,7 @@ export function OperationsDataState({
   action?: ReactNode;
   className?: string;
   description?: ReactNode;
-  icon?: LucideIcon;
+  icon?: IconComponent;
   title: ReactNode;
   tone?: "default" | "destructive" | "restricted";
 }) {

@@ -8,16 +8,16 @@ import Suggestion, {
   type SuggestionProps,
 } from "@tiptap/suggestion";
 import {
-  Heading1,
-  Heading2,
-  Heading3,
-  ImageIcon,
-  List,
-  ListOrdered,
-  Pilcrow,
-  Quote,
-  SeparatorHorizontal,
-} from "lucide-react";
+  RiH1 as Heading1,
+  RiH2 as Heading2,
+  RiH3 as Heading3,
+  RiImageLine as ImageIcon,
+  RiListUnordered as List,
+  RiListOrdered2 as ListOrdered,
+  RiParagraph as Pilcrow,
+  RiDoubleQuotesL as Quote,
+  RiSeparator as SeparatorHorizontal,
+} from "@remixicon/react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { applyNestedOverlaySession, type NestedOverlaySession } from "@/lib/nested-overlay";

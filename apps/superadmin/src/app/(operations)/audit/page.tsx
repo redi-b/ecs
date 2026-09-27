@@ -1,4 +1,10 @@
-import { ChevronRight, FileClock, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  RiArrowRightSLine as ChevronRight,
+  RiFileHistoryLine as FileClock,
+  RiSearchLine as Search,
+  RiEqualizer2Line as SlidersHorizontal,
+  RiCloseLine as X,
+} from "@remixicon/react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";

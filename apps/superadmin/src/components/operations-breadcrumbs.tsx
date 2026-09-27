@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { RiArrowLeftLine as ArrowLeft } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

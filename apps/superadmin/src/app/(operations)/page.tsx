@@ -1,12 +1,12 @@
 import type { SuperadminOverview } from "@ecs/contracts";
 import {
-  ArrowRight,
-  Building2,
-  CircleAlert,
-  Clock3,
-  ExternalLink,
-  ShieldCheck,
-} from "lucide-react";
+  RiArrowRightLine as ArrowRight,
+  RiBuilding2Line as Building2,
+  RiErrorWarningLine as CircleAlert,
+  RiTimeLine as Clock3,
+  RiExternalLinkLine as ExternalLink,
+  RiShieldCheckLine as ShieldCheck,
+} from "@remixicon/react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";

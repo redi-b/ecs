@@ -1,7 +1,7 @@
 "use client";
 
 import type { InsightsSalesReport, MerchantDashboardSummary } from "@ecs/contracts";
-import { RefreshCwIcon } from "lucide-react";
+import { RiRefreshLine as RefreshCwIcon } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

@@ -1,7 +1,11 @@
 "use client";
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
-import { CheckIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
+import {
+  RiCheckLine as CheckIcon,
+  RiExternalLinkLine as ExternalLinkIcon,
+  RiLoader4Line as Loader2Icon,
+} from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState, useTransition } from "react";
 import { toast } from "sonner";

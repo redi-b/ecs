@@ -1,20 +1,20 @@
 "use client";
 
 import {
-  Activity,
-  Banknote,
-  Building2,
-  ChevronsUpDown,
-  ClipboardList,
-  FileClock,
-  Layers3,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  PanelsTopLeft,
-  ShieldCheck,
-  UsersRound,
-} from "lucide-react";
+  RiPulseLine as Activity,
+  RiMoneyDollarCircleLine as Banknote,
+  RiBuilding2Line as Building2,
+  RiArrowUpDownLine as ChevronsUpDown,
+  RiFileList3Line as ClipboardList,
+  RiFileHistoryLine as FileClock,
+  RiStackLine as Layers3,
+  RiDashboardLine as LayoutDashboard,
+  RiLogoutCircleRLine as LogOut,
+  RiMailLine as Mail,
+  RiLayout2Line as PanelsTopLeft,
+  RiShieldCheckLine as ShieldCheck,
+  RiTeamLine as UsersRound,
+} from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useId } from "react";

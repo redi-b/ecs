@@ -1,4 +1,4 @@
-import { ChevronRight, UsersRound } from "lucide-react";
+import { RiArrowRightSLine as ChevronRight, RiTeamLine as UsersRound } from "@remixicon/react";
 import { headers } from "next/headers";
 import { OperationsDataState } from "@/components/operations-data-state";
 import { OperationsListShell } from "@/components/operations-list-shell";

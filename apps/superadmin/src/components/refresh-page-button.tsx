@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { RiRefreshLine as RefreshCw } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 

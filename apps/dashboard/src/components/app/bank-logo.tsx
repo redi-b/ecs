@@ -1,6 +1,6 @@
 "use client";
 
-import { Landmark } from "lucide-react";
+import { RiBankLine as Landmark } from "@remixicon/react";
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";

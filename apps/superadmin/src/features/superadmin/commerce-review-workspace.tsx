@@ -1,7 +1,7 @@
 "use client";
 
 import type { SuperadminCommerceReview } from "@ecs/contracts";
-import { Banknote, FileCheck2 } from "lucide-react";
+import { RiMoneyDollarCircleLine as Banknote, RiFileCheckLine as FileCheck2 } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";

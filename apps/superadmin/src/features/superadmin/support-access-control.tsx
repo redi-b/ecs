@@ -1,7 +1,7 @@
 "use client";
 
 import type { SuperadminSupportAccess } from "@ecs/contracts";
-import { ExternalLink } from "lucide-react";
+import { RiExternalLinkLine as ExternalLink } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";

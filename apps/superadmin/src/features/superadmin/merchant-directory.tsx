@@ -8,7 +8,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { RefreshCw, Search } from "lucide-react";
+import { RiRefreshLine as RefreshCw, RiSearchLine as Search } from "@remixicon/react";
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
 import { OperationsDataState } from "@/components/operations-data-state";

@@ -2,7 +2,11 @@
 
 import type { SuperadminTenant } from "@ecs/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, type LucideIcon, Search } from "lucide-react";
+import {
+  RiBuilding2Line as Building2,
+  type RemixiconComponentType as IconComponent,
+  RiSearchLine as Search,
+} from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 
@@ -20,7 +24,7 @@ import {
 import { Kbd } from "@/components/ui/kbd";
 import { Spinner } from "@/components/ui/spinner";
 
-type CommandDestination = { href: string; icon: LucideIcon; label: string; shortcut: string };
+type CommandDestination = { href: string; icon: IconComponent; label: string; shortcut: string };
 
 export function OperatorCommand({ destinations }: { destinations: readonly CommandDestination[] }) {
   const router = useRouter();

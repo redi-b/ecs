@@ -1,17 +1,17 @@
 import {
-  Activity,
-  BellRing,
-  Building2,
-  CheckCircle2,
-  type Clock3,
-  Database,
-  HardDrive,
-  Images,
-  Layers3,
-  ServerCog,
-  ShoppingBag,
-  Store,
-} from "lucide-react";
+  RiPulseLine as Activity,
+  RiNotification3Line as BellRing,
+  RiBuilding2Line as Building2,
+  RiCheckboxCircleLine as CheckCircle2,
+  RiTimeLine as Clock3,
+  RiDatabase2Line as Database,
+  RiHardDrive3Line as HardDrive,
+  RiGalleryLine as Images,
+  RiStackLine as Layers3,
+  RiServerLine as ServerCog,
+  RiShoppingBag3Line as ShoppingBag,
+  RiStore2Line as Store,
+} from "@remixicon/react";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { OperationsListShell } from "@/components/operations-list-shell";

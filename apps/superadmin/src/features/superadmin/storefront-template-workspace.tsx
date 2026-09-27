@@ -4,15 +4,15 @@ import type { OperatorStorefrontTemplateCatalog } from "@ecs/contracts";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
 import {
-  ExternalLink,
-  ImageIcon,
-  ImagePlus,
-  PencilLine,
-  RefreshCw,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+  RiExternalLinkLine as ExternalLink,
+  RiImageLine as ImageIcon,
+  RiImageAddLine as ImagePlus,
+  RiPencilLine as PencilLine,
+  RiRefreshLine as RefreshCw,
+  RiDeleteBin6Line as Trash2,
+  RiUpload2Line as Upload,
+  RiCloseLine as X,
+} from "@remixicon/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {

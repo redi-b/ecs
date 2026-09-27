@@ -1,5 +1,5 @@
 import type { SuperadminOperationalSummary } from "@ecs/contracts";
-import { ExternalLink, Store } from "lucide-react";
+import { RiExternalLinkLine as ExternalLink, RiStore2Line as Store } from "@remixicon/react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { OperationsListShell } from "@/components/operations-list-shell";

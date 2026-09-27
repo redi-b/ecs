@@ -1,4 +1,4 @@
-import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
+import { RiArrowRightSLine as ChevronRightIcon, RiMoreLine as MoreHorizontalIcon } from "@remixicon/react";
 import { Slot } from "radix-ui";
 import type * as React from "react";
 import { cn } from "@/lib/utils";

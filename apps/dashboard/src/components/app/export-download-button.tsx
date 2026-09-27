@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadIcon, Loader2Icon } from "lucide-react";
+import { RiDownload2Line as DownloadIcon, RiLoader4Line as Loader2Icon } from "@remixicon/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { filenameFromContentDisposition } from "@/components/app/export-filename";

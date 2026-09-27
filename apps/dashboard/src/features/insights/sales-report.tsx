@@ -1,7 +1,11 @@
 "use client";
 
 import type { InsightsSalesReport } from "@ecs/contracts";
-import { DownloadIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
+import {
+  RiDownload2Line as DownloadIcon,
+  RiArrowDownLine as TrendingDownIcon,
+  RiArrowUpLine as TrendingUpIcon,
+} from "@remixicon/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useId, useState, useTransition } from "react";
 import { HelpTip } from "@/components/app/help-tip";

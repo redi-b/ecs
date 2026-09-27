@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Laptop, Moon, Sun } from "lucide-react";
+import { RiCheckLine as Check, RiMacbookLine as Laptop, RiMoonLine as Moon, RiSunLine as Sun } from "@remixicon/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 

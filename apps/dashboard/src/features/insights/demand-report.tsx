@@ -1,7 +1,12 @@
 "use client";
 
 import type { InsightsDemandReport } from "@ecs/contracts";
-import { EyeIcon, PackageIcon, RefreshCwIcon, ShoppingBagIcon } from "lucide-react";
+import {
+  RiEyeLine as EyeIcon,
+  RiBox3Line as PackageIcon,
+  RiRefreshLine as RefreshCwIcon,
+  RiShoppingBag3Line as ShoppingBagIcon,
+} from "@remixicon/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { HelpTip } from "@/components/app/help-tip";

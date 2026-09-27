@@ -1,7 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2Icon, Loader2Icon, PackageOpenIcon } from "lucide-react";
+import {
+  RiCheckboxCircleLine as CheckCircle2Icon,
+  RiLoader4Line as Loader2Icon,
+  RiInboxUnarchiveLine as PackageOpenIcon,
+} from "@remixicon/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { type GlobalActivity, useActivityRegistration } from "@/components/app/activity-registry";

@@ -1,7 +1,7 @@
 "use client";
 
 import { Command as CommandPrimitive } from "cmdk";
-import { CheckIcon, SearchIcon, XIcon } from "lucide-react";
+import { RiCheckLine as CheckIcon, RiSearchLine as SearchIcon, RiCloseLine as XIcon } from "@remixicon/react";
 import type * as React from "react";
 import {
   Dialog,

@@ -1,5 +1,5 @@
 import type { SuperadminDiagnostics } from "@ecs/contracts";
-import { CheckCircle2, CircleAlert } from "lucide-react";
+import { RiCheckboxCircleLine as CheckCircle2, RiErrorWarningLine as CircleAlert } from "@remixicon/react";
 import { OperationsListShell } from "@/components/operations-list-shell";
 import { Badge } from "@/components/ui/badge";
 

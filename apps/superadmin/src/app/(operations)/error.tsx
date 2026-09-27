@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import { RiRestartLine as RotateCcw } from "@remixicon/react";
 import Link from "next/link";
 import { useEffect } from "react";
 

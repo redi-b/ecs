@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { RiArrowLeftSLine as ChevronLeft, RiArrowRightSLine as ChevronRight } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";

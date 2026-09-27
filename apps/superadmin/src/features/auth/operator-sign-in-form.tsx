@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { RiArrowRightLine as ArrowRight } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
 

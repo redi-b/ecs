@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { RiEyeLine as Eye, RiEyeCloseLine as EyeOff } from "@remixicon/react";
 import { forwardRef, useState } from "react";
 
 import {

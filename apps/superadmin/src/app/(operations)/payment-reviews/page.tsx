@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { RiCheckboxCircleLine as CheckCircle2 } from "@remixicon/react";
 import { headers } from "next/headers";
 import Link from "next/link";
 

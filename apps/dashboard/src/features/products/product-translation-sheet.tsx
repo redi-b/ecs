@@ -8,7 +8,7 @@ import {
 } from "@ecs/contracts";
 import { RiArrowLeftLine, RiArrowRightLine } from "@remixicon/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { LanguagesIcon } from "lucide-react";
+import { RiTranslate2 as LanguagesIcon } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
