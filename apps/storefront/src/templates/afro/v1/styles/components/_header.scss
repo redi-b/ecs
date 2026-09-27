@@ -32,7 +32,7 @@
 
   &__promo-timer {
     background-color: $clr-neutral-100;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     padding: $space-100;
     border-radius: $radius-150;
     font-variant-numeric: tabular-nums;
@@ -188,7 +188,7 @@
     min-height: 44px;
     border-radius: $radius-700;
     border: 1px solid transparent;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     text-decoration: none;
     white-space: nowrap;
     transition:
@@ -216,7 +216,7 @@
         linear-gradient($clr-neutral-50, $clr-neutral-50) padding-box,
         linear-gradient(180deg, rgba($clr-primary-500, 0.05) 0%, rgba($clr-primary-500, 0.25) 100%) border-box;
       border: 1px solid transparent;
-      color: rgba($clr-neutral-900, 0.9);
+      color: rgba($clr-neutral-900, 0.72);
       box-shadow: 0 4px 13px rgba($clr-primary-200, 0.33);
     }
   }
@@ -301,7 +301,7 @@
 
       [data-icon="heart"],
       [data-icon="heart-filled"] {
-        color: $clr-primary-500;
+        color: $clr-primary-link;
       }
     }
   }

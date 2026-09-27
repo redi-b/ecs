@@ -63,6 +63,12 @@ $ls-none: 0;
   --nexa-muted: #f0f0f6;
   --nexa-accent: #b4cffd;
   --nexa-on-primary: #ffffff;
+  // Text roles derived from --nexa-primary. Layout.astro overrides these from
+  // the tenant theme; these are the designed-palette fallbacks.
+  // >=4.5:1 text, >=7:1 links and button labels.
+  --nexa-primary-text: #3064d5;
+  --nexa-primary-link: #234fae;
+  --nexa-primary-fill: #2553b6;
   --nexa-surface: #ffffff;
   --nexa-white: #ffffff;
   --nexa-black: #000000;

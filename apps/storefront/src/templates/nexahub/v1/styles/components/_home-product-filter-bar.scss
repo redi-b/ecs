@@ -9,12 +9,12 @@
   summary { min-height: 34px; padding: 0 $space-350; display: flex; align-items: center; gap: $space-550; border-radius: $radius-50; background: var(--nexa-surface); color: var(--nexa-ink); cursor: pointer; list-style: none; font-size: $fs-body; }
   summary::-webkit-details-marker { display: none; }
   summary svg { width: 8px; transition: transform var(--nexa-motion-fast) var(--nexa-ease-out); }
-  details[open] summary { color: var(--nexa-primary); }
+  details[open] summary { color: var(--nexa-primary-link); }
   details[open] summary svg { transform: rotate(180deg); }
   details > div { position: absolute; top: calc(100% + 6px); left: 0; width: 220px; padding: $space-150; display: grid; border: 1px solid alpha(var(--nexa-ink), 0.14); border-radius: $radius-75; background: var(--nexa-surface); box-shadow: 0 18px 42px alpha(var(--nexa-ink), 0.14); }
   a { min-height: 40px; padding: 0 $space-250; display: flex; align-items: center; border-radius: $radius-50; color: alpha(var(--nexa-ink), 0.7); font-size: $fs-body-s-400; text-decoration: none; }
-  a:hover, a:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
-  &__all { margin-top: $space-100; border-top: 1px solid alpha(var(--nexa-ink), 0.14); color: var(--nexa-primary) !important; }
+  a:hover, a:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary-link); }
+  &__all { margin-top: $space-100; border-top: 1px solid alpha(var(--nexa-ink), 0.14); color: var(--nexa-primary-link) !important; }
 }
 
 @media (max-width: 767px) {

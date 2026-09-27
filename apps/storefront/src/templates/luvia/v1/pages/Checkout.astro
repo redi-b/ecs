@@ -112,7 +112,7 @@ const clientMessages = {
   demoMode={demoMode}
   title={m.checkout_title({}, { locale })}
 >
-  <main class="checkout">
+  <main id="main-content" class="checkout">
     <header class="checkout__hero">
       <h1 class="type-display">{m.checkout_title({}, { locale })}</h1><p
         class="type-body-400"
@@ -754,7 +754,7 @@ const clientMessages = {
                   <dt class="type-body-l-500">
                     {m.checkout_estimated_total({}, { locale })}
                   </dt>
-                  <dd class="type-body-xl" data-summary-total>
+                  <dd class="type-body-xl" data-summary-total aria-live="polite">
                     {formatMoney(
                       baseTotal + initialShippingAmount,
                       cart?.currencyCode,

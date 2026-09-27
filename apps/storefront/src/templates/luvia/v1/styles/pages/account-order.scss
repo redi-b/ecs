@@ -9,7 +9,7 @@
 .account-order__back {
   display: inline-flex;
   margin-bottom: $space-550;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   text-underline-offset: 4px;
 }
 
@@ -33,7 +33,7 @@
 }
 
 .account-order__hero span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account-order__tracking {
@@ -103,7 +103,7 @@
 }
 
 .account-order__refresh-note {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 
@@ -187,7 +187,7 @@
 
 .account-order__items li span,
 .account-order__items li small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account-order__items li>b {
@@ -217,7 +217,7 @@
   display: flex;
   justify-content: space-between;
   gap: $space-500;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account-order dl dd {
@@ -227,7 +227,7 @@
 
 .account-order dl .is-saving,
 .account-order dl .is-saving dd {
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .account-order dl .is-total {
@@ -240,7 +240,7 @@
 .account-order__side section>span,
 .account-order__side section>small {
   display: block;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.45;
 }
 
@@ -263,7 +263,7 @@
 .account-order address {
   display: grid;
   gap: $space-150;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   font-style: normal;
 }
 

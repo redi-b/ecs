@@ -48,7 +48,7 @@ const isPickup = /pickup|pick up|collect/i.test(order.shippingMethod ?? "");
   cartCount={cartCount}
   title={m.order_title({ reference }, { locale })}
 >
-  <main
+  <main id="main-content"
     class="account-order container"
     data-checking-label={m.order_checking({}, { locale })}
     data-updated-label={m.order_updated_at({ time: "__TIME__" }, { locale })}

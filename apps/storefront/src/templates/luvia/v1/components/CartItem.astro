@@ -20,7 +20,7 @@ const productHref = item.productHandle
   <a class="cart-line__media type-body-xs" href={productHref}>
     {
       item.imageUrl || item.thumbnail ? (
-        <img src={item.imageUrl || item.thumbnail} alt="" />
+        <img src={item.imageUrl || item.thumbnail} alt={item.title ?? ""} />
       ) : (
         <ProductMediaPlaceholder label={m.catalog_no_image({}, { locale })} />
       )
@@ -37,12 +37,13 @@ const productHref = item.productHandle
   </div>
   <div
     class="cart-line__quantity type-body-s-500"
+    role="group"
     aria-label={m.cart_quantity_for(
       { item: item.title ?? m.cart_item_fallback({}, { locale }) },
       { locale },
     )}
   >
-    <form method="post" action="/actions/cart/update" data-cart-page-form>
+    <form method="post" action="/actions/cart/update" data-cart-page-form data-qty="dec">
       <input type="hidden" name="lineItemId" value={item.id} />
       <input type="hidden" name="quantity" value={Math.max(1, item.quantity - 1)} />
       <button
@@ -53,8 +54,8 @@ const productHref = item.productHandle
         −
       </button>
     </form>
-    <span data-line-quantity class="type-body-s-500">{item.quantity}</span>
-    <form method="post" action="/actions/cart/update" data-cart-page-form>
+    <span data-line-quantity class="type-body-s-500" aria-live="polite">{item.quantity}</span>
+    <form method="post" action="/actions/cart/update" data-cart-page-form data-qty="inc">
       <input type="hidden" name="lineItemId" value={item.id} />
       <input type="hidden" name="quantity" value={item.quantity + 1} />
       <button type="submit" aria-label={m.action_increase_quantity({}, { locale })}>
@@ -62,7 +63,7 @@ const productHref = item.productHandle
       </button>
     </form>
   </div>
-  <strong data-line-total class="type-body-l-500">
+  <strong data-line-total class="type-body-l-500" aria-live="polite">
     {formatMoney(item.total ?? item.unitPrice, currencyCode, locale)}
   </strong>
   <form method="post" action="/actions/cart/remove" class="cart-line__remove" data-cart-page-form>

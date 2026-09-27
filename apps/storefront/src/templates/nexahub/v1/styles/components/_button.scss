@@ -78,12 +78,12 @@
   }
 
   &--primary {
-    background: var(--nexa-primary);
+    background: var(--nexa-primary-fill);
     color: var(--nexa-on-primary);
 
     .btn__icon {
       background: var(--nexa-on-primary);
-      color: var(--nexa-primary);
+      color: var(--nexa-primary-link);
     }
   }
 

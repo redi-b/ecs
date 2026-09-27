@@ -1,0 +1,141 @@
+@use "../abstracts" as *;
+
+// Canonical ProductCard styles.
+//
+// These used to be duplicated in index.scss and product-list.scss with
+// conflicting values (media height vs aspect-ratio, two radii, two heart
+// offsets) and were missing entirely from the product detail page, whose
+// related-products rail rendered unstyled. One definition, imported by
+// ProductCard.astro, so every page that renders the component gets it.
+.product-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.product-card__media {
+  position: relative;
+  aspect-ratio: 342/372;
+  overflow: hidden;
+  border-radius: $radius-200;
+  background: var(--clr-soft);
+  color: alpha(var(--clr-ink), 0.72);
+}
+
+.product-card__media-link {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-card__media-link>img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 280ms ease;
+}
+
+.product-card:hover .product-card__media-link>img {
+  transform: scale(1.035);
+}
+
+.product-card__badge {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  left: 12px;
+  padding: $space-150 $space-200;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-100;
+  border-radius: $radius-pill;
+  background: var(--clr-accent);
+  color: var(--clr-ink);
+}
+
+.product-card__badge svg[data-icon] {
+  width: 12px;
+  height: 12px;
+}
+
+.product-card__badge.is-out-of-stock {
+  background: var(--clr-dark);
+  color: var(--clr-white);
+}
+
+.product-card__heart {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: $radius-full;
+  background: var(--clr-surface);
+  cursor: pointer;
+}
+
+.product-card__heart svg[data-icon] {
+  width: 15px;
+  height: 13px;
+}
+
+.product-card__heart[aria-pressed="true"] {
+  border-color: var(--clr-primary);
+  background: var(--clr-accent);
+}
+
+.product-card__cta {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 0;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 20px);
+  transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease;
+}
+
+.product-card:hover .product-card__cta,
+.product-card:focus-within .product-card__cta {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -16px);
+}
+
+.product-card__brand {
+  margin: $space-350 0 $space-100;
+  color: alpha(var(--clr-ink), 0.72);
+}
+
+.product-card__title {
+  display: block;
+  min-height: 21px;
+  overflow: hidden;
+  color: var(--clr-ink);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-card__price {
+  margin: $space-100 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: $space-150;
+  color: var(--clr-ink);
+}
+
+.product-card__price del {
+  color: alpha(var(--clr-ink), 0.72);
+}

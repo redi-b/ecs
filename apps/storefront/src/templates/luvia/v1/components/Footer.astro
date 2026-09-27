@@ -148,11 +148,12 @@ const categoryLinks = [
         </a>
       )}
       {(footer.address || (editorMode && !footer.managedContact)) && (
-        <p
+        // A <p> is flow content and was invalid inside this phrasing-only <span>.
+        <span
           class="type-body-s-400"
         >
           {footer.address}
-        </p>
+        </span>
       )}
     </span>
   </div>

@@ -50,9 +50,13 @@ export const luviaV1Defaults: LuviaV1Data = {
     credit: {
       enabled: true,
     },
-    phone: "+251 91 266 5485",
-    email: "hello@luviabeauty.com",
-    address: "Kassanchis, Addis Ababa, Ethiopia",
+    // Left undefined on purpose. applyShopDetails overwrites these from
+    // Settings > Shop at read time, so a literal here means any legacy tenant
+    // without valid shopDetails publishes these contact details instead of
+    // none. Demo copy belongs in luvia-fixture.ts.
+    phone: undefined,
+    email: undefined,
+    address: undefined,
     socialLinks: [
       { label: "Facebook", href: "https://facebook.com" },
       { label: "Instagram", href: "https://instagram.com" },

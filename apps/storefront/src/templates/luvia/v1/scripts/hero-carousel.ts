@@ -1,6 +1,8 @@
 const CAROUSEL_UPDATED_EVENT = "ecs:hero-carousel-updated";
 
 function mountHeroCarousel(root: HTMLElement) {
+  if (root.dataset.heroCarouselMounted === "true") return;
+  root.dataset.heroCarouselMounted = "true";
   const viewport = root.querySelector<HTMLElement>("[data-promo-viewport]");
   const prevBtn = root.querySelector<HTMLButtonElement>("[data-promo-prev]");
   const nextBtn = root.querySelector<HTMLButtonElement>("[data-promo-next]");
@@ -49,6 +51,9 @@ function mountHeroCarousel(root: HTMLElement) {
     slides.forEach((slide, index) => {
       const active = index === selectedIndex;
       slide.setAttribute("aria-hidden", String(!active));
+      // Hidden slides contain focusable controls (wishlist toggle, add to cart).
+      // aria-hidden does not remove them from the tab order; inert does.
+      slide.toggleAttribute("inert", !active);
       slide.classList.toggle("is-active", active);
     });
   };
@@ -61,6 +66,18 @@ function mountHeroCarousel(root: HTMLElement) {
   nextBtn?.addEventListener("click", () => {
     scrollNext();
     startAutoplay();
+  });
+
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      scrollPrev();
+      startAutoplay();
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      scrollNext();
+      startAutoplay();
+    }
   });
 
   root.addEventListener("pointerenter", stopAutoplay);

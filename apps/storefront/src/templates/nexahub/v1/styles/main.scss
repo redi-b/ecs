@@ -13,7 +13,7 @@
   justify-content: space-between;
   gap: .5rem 1rem;
   padding: .6rem 1rem;
-  background: var(--nexa-primary);
+  background: var(--nexa-primary-fill);
   color: var(--nexa-on-primary);
   font: 500 .68rem/1.2 "DM Mono", monospace;
   text-transform: uppercase;
@@ -202,7 +202,7 @@ button[data-busy="true"] > .btn__icon {
 }
 
 [data-wishlist-toggle][aria-pressed="true"] {
-  color: var(--nexa-primary);
+  color: var(--nexa-primary-link);
 }
 
 .mask-lines,

@@ -102,7 +102,7 @@ const pageWindow = Array.from({ length: totalPages }, (_, index) => index + 1).f
 ---
 
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} deferCartCount={deferCartCount} demoMode={demoMode} title={m.catalog_listing_title({}, { locale })} seo={seo}>
-  <main class="shop">
+  <main id="main-content" class="shop">
     <section class="shop-hero">
       <TemplateAsset class="shop-hero__media" fallback={heroBackground} alt="" widths={[480, 768, 1024, 1512, 2400]} sizes="100vw" loading="eager" fetchpriority="high" />
       <div class="shop-hero__wrapper container">

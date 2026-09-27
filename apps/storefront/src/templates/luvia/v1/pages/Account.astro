@@ -51,7 +51,7 @@ function formatOrderDate(value: string | null) {
   deferCartCount={deferCartCount}
   title={m.account_title({}, { locale })}
 >
-  <main
+  <main id="main-content"
     class:list={["account container", { "is-signed-in": account }]}
     data-add-address-label={m.account_add_address({}, { locale })}
     data-edit-label={m.account_edit({}, { locale })}

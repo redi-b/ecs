@@ -20,7 +20,7 @@
 
 .checkout__hero p {
   margin: $space-600 0 0;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout__layout,
@@ -64,7 +64,7 @@
 
 .checkout-form-wrap>header p {
   margin: 0;
-  color: alpha(var(--clr-ink), 0.55);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-form {
@@ -162,7 +162,7 @@
 
 .checkout-choice-group small,
 .checkout-payment small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.35;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .checkout-delivery-details>header span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-delivery-details>header a {
@@ -288,14 +288,14 @@
 
 .checkout-saved-addresses label small {
   overflow: hidden;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .checkout-saved-addresses>p {
   margin: $space-200 0 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-save-address {
@@ -327,7 +327,7 @@
 }
 
 .checkout-save-address>label:first-child small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-address-name {
@@ -371,7 +371,7 @@
 
 .checkout-fields>label>input::placeholder,
 .checkout-fields>label>textarea::placeholder {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-account {
@@ -390,7 +390,7 @@
 }
 
 .checkout-account:has(input:disabled) {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-account small {
@@ -416,7 +416,7 @@
 }
 
 .checkout-account.is-signed-in span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-payment {
@@ -438,7 +438,7 @@
   padding: $space-350;
   border-radius: $radius-250;
   background: var(--clr-soft);
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-actions {
@@ -450,7 +450,7 @@
   padding: 0 $space-450;
   border: 0;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   cursor: pointer;
   width: 100%;
@@ -508,7 +508,7 @@
   padding: $space-100 $space-250;
   border-radius: $radius-pill;
   background: var(--clr-soft);
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-summary ul {
@@ -558,7 +558,7 @@
 }
 
 .checkout-summary li span {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-summary li b {
@@ -579,7 +579,7 @@
 .checkout-summary dl>div {
   display: flex;
   justify-content: space-between;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .checkout-summary dd {
@@ -595,13 +595,13 @@
 }
 
 .checkout-summary dl>div.is-savings {
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .checkout-summary>small {
   margin-top: $space-350;
   display: block;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
   text-align: center;
 }
 

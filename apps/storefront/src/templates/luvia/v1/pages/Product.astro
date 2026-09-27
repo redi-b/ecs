@@ -150,7 +150,7 @@ const wishlistItem = product
 >
   {
     !product ? (
-      <main class="product-missing">
+      <main id="main-content" class="product-missing">
         <h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1>
         <p class="type-body-400">{m.product_unavailable({}, { locale })}</p>
         <a class="type-body-500" href="/products">
@@ -158,7 +158,7 @@ const wishlistItem = product
         </a>
       </main>
     ) : (
-      <main class="product-page" data-product-root data-product-detail>
+      <main id="main-content" class="product-page" data-product-root data-product-detail>
         <nav
           class="product-breadcrumb container type-body-s-400"
           aria-label={m.breadcrumb_label({}, { locale })}
@@ -184,7 +184,7 @@ const wishlistItem = product
         <section class="product-detail container">
           <div class="product-gallery">
             {gallery.length > 1 && (
-              <div class="product-gallery__thumbs" aria-label={m.product_images({}, { locale })}>
+              <div class="product-gallery__thumbs" role="group" aria-label={m.product_images({}, { locale })}>
                 {gallery.map((img, index) => {
                   const thumbSrc = resolveProductImage(img.variants, "w200", img.url);
                   const mainSrc = resolveProductImage(
@@ -302,7 +302,7 @@ const wishlistItem = product
                               data-option-title={axis.title}
                               data-option-value={value}
                               aria-pressed={selected ? "true" : "false"}
-                              aria-label={m.product_select_option({ option: value }, { locale })}
+                              aria-label={m.product_select_option({ option: `${axis.title}: ${value}` }, { locale })}
                               title={value}
                             >
                               <img
@@ -325,7 +325,7 @@ const wishlistItem = product
                               data-option-title={axis.title}
                               data-option-value={value}
                               aria-pressed={selected ? "true" : "false"}
-                              aria-label={m.product_select_option({ option: value }, { locale })}
+                              aria-label={m.product_select_option({ option: `${axis.title}: ${value}` }, { locale })}
                               title={value}
                             >
                               <span style={`background-color:${colorSwatch}`} aria-hidden="true" />

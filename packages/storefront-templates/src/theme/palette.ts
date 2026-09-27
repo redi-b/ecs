@@ -161,6 +161,129 @@ export function contrastingInk(fillHex: string): string {
   return contrastRatio(fill, white) >= contrastRatio(fill, black) ? white : black;
 }
 
+// ---------------------------------------------------------------------------
+// Text contrast guarantees
+//
+// Brand primaries are authored as *fills* — bright, desaturated pastels that
+// read well as a large shape but are near-invisible as 15px copy. A 1.6:1
+// fill-visibility floor (see ensurePaletteContrast) is not a text floor, so
+// using a primary directly as `color:` was never actually checked.
+//
+// These helpers derive dedicated text tokens instead of mutating the brand,
+// so the merchant's chosen color still drives fills/borders while every text
+// role is guaranteed legible. Hue and saturation are preserved; only lightness
+// moves, so a token stays recognisably the brand.
+// ---------------------------------------------------------------------------
+
+/** WCAG 2.2 minimum for body text (1.4.3). */
+export const MIN_TEXT_CONTRAST = 4.5;
+/** WCAG 2.2 AAA for body text; our bar for links and button labels. */
+export const MIN_LINK_CONTRAST = 7;
+
+const LABEL_WHITE = "#ffffff";
+const LABEL_INK = "#0b0f0d";
+
+/**
+ * Nudge `fg` lightness away from `bg` until it clears `target`, preserving hue
+ * and saturation. Returns the original color when it already passes.
+ *
+ * ponytail: linear walk in 100 steps. Fast enough for a once-per-request theme
+ * resolve; a binary search would be marginally tighter but buys nothing here.
+ */
+export function ensureContrast(fgHex: string, bgHex: string, target: number): string {
+  const fg = normalizeHex(fgHex, "#000000");
+  const bg = normalizeHex(bgHex, "#ffffff");
+  if (contrastRatio(fg, bg) >= target) return fg;
+
+  const bgIsLight = relativeLuminance(bg) > 0.5;
+  const { h, s, l } = hexToHsl(fg) ?? { h: 0, s: 0, l: 0 };
+  let best = fg;
+  let bestRatio = contrastRatio(fg, bg);
+
+  for (let step = 1; step <= 100; step += 1) {
+    const pct = step / 100;
+    const nextL = bgIsLight ? l * (1 - pct) : l + (100 - l) * pct;
+    const candidate = hslToHex(h, s, nextL);
+    const ratio = contrastRatio(candidate, bg);
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      best = candidate;
+    }
+    if (ratio >= target) return candidate;
+  }
+  return best;
+}
+
+/**
+ * Guarantee a label clears `target` on a solid fill.
+ *
+ * White and near-black are the extremes, so mid-tone fills (relative luminance
+ * roughly 0.10–0.34) cannot reach 7:1 with *any* label color — the label has to
+ * give, or the fill does. Two solutions exist: darken the fill under a white
+ * label, or lighten it under a near-black one. We take whichever shifts the
+ * fill's lightness least, because a solid brand button should keep reading as
+ * the brand. Ties go to the white label (conventional, and it survives a
+ * re-theme better than tinted dark ink).
+ */
+export function ensureFillLabelContrast(
+  fillHex: string,
+  target: number = MIN_LINK_CONTRAST,
+): { fill: string; label: string } {
+  const fill = normalizeHex(fillHex, "#0f766e");
+  const whiteRatio = contrastRatio(fill, LABEL_WHITE);
+  const inkRatio = contrastRatio(fill, LABEL_INK);
+  if (whiteRatio >= target) return { fill, label: LABEL_WHITE };
+  if (inkRatio >= target) return { fill, label: LABEL_INK };
+
+  const { h, s, l } = hexToHsl(fill) ?? { h: 0, s: 0, l: 0 };
+
+  // Darken under a white label.
+  let darkFill = fill;
+  let darkL = l;
+  for (let step = 1; step <= 100; step += 1) {
+    darkL = l * (1 - step / 100);
+    darkFill = hslToHex(h, s, darkL);
+    if (contrastRatio(darkFill, LABEL_WHITE) >= target) break;
+  }
+
+  // Lighten under a near-black label.
+  let lightFill = fill;
+  let lightL = l;
+  for (let step = 1; step <= 100; step += 1) {
+    lightL = l + (100 - l) * (step / 100);
+    lightFill = hslToHex(h, s, lightL);
+    if (contrastRatio(lightFill, LABEL_INK) >= target) break;
+  }
+
+  return l - darkL <= lightL - l
+    ? { fill: darkFill, label: LABEL_WHITE }
+    : { fill: lightFill, label: LABEL_INK };
+}
+
+export type TextContrastTokens = {
+  /** Brand color cleared for body-size accent text on `background` (>= 4.5:1). */
+  text: string;
+  /** Brand color cleared for links and button labels on `background` (>= 7:1). */
+  link: string;
+  /** Button fill, shifted only when needed so `onPrimary` can clear 7:1. */
+  fill: string;
+  /** Label color on `fill` (>= 7:1). */
+  onPrimary: string;
+};
+
+/** Derive the guaranteed-legible text roles for a brand primary on a surface. */
+export function deriveTextContrast(primaryHex: string, backgroundHex: string): TextContrastTokens {
+  const primary = normalizeHex(primaryHex, "#0f766e");
+  const background = normalizeHex(backgroundHex, "#ffffff");
+  const { fill, label } = ensureFillLabelContrast(primary, MIN_LINK_CONTRAST);
+  return {
+    text: ensureContrast(primary, background, MIN_TEXT_CONTRAST),
+    link: ensureContrast(primary, background, MIN_LINK_CONTRAST),
+    fill,
+    onPrimary: label,
+  };
+}
+
 /**
  * Infer light vs dark surface from an existing background color.
  * Used when migrating drafts that only have free-form colors.

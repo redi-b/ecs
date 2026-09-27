@@ -39,7 +39,7 @@ const inquiryMessages = {
   deferCartCount={deferCartCount}
   title={m.contact_title({}, { locale })}
 >
-  <main class="contact">
+  <main id="main-content" class="contact">
     <header class="contact__hero">
       <h1 class="type-display">{m.contact_title({}, { locale })}</h1><p
         class="type-body-400"
@@ -172,7 +172,7 @@ const inquiryMessages = {
         data-inquiry-form
       >
         <input type="hidden" name="type" value="contact" />
-        <label class="inquiry-honeypot" aria-hidden="true"
+        <label class="inquiry-honeypot"
           ><span>Website</span><input
             name="website"
             tabindex="-1"

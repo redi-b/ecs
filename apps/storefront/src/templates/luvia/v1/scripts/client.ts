@@ -1,16 +1,17 @@
 import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
 import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
+import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 import {
   $cart,
   $cartDrawerOpen,
-  initCartStore,
-  fetchCart,
   addToCart,
-  updateCartItemQuantity,
-  removeCartItem,
   applyPromotion,
+  fetchCart,
+  initCartStore,
+  removeCartItem,
+  updateCartItemQuantity,
 } from "../../../../lib/stores/cart";
-import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
+import { initHeroCarousels } from "./hero-carousel";
 
 function getClientMessages(): Record<string, string> {
   try {
@@ -20,7 +21,10 @@ function getClientMessages(): Record<string, string> {
   }
 }
 
-function formatCartMoney(amount: number | null | undefined, currency: string | null | undefined): string {
+function formatCartMoney(
+  amount: number | null | undefined,
+  currency: string | null | undefined,
+): string {
   if (amount == null) return "—";
   const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
   try {
@@ -41,6 +45,8 @@ export function initLuviaStorefront() {
   const demoPreview = document.body.dataset.demoMode === "true";
   const readOnlyPreview = editorPreview || demoPreview;
   const messages = getClientMessages();
+
+  initLuviaHome();
 
   // Header & Search
   const menu = document.querySelector<HTMLButtonElement>(".menu");
@@ -82,7 +88,10 @@ export function initLuviaStorefront() {
 
     if (surface && headerBackdrop) {
       headerBackdrop.hidden = false;
-      headerBackdrop.setAttribute("aria-label", surface === "menu" ? "Close navigation" : "Close search");
+      headerBackdrop.setAttribute(
+        "aria-label",
+        surface === "menu" ? "Close navigation" : "Close search",
+      );
       requestAnimationFrame(() => headerBackdrop.toggleAttribute("data-open", true));
     } else if (headerBackdrop) {
       headerBackdrop.removeAttribute("data-open");
@@ -158,8 +167,26 @@ export function initLuviaStorefront() {
     return el;
   };
 
+  // data-cart-status is a declared aria-live region; nothing ever wrote to it,
+  // so no cart mutation was ever announced to screen readers.
+  const announce = (message?: string) => {
+    const status = document.querySelector<HTMLElement>("[data-cart-status]");
+    if (status && message) status.textContent = message;
+  };
+
   const renderDrawerCart = (cart: any) => {
     if (!itemsRoot || !drawerFooter) return;
+    // The list is rebuilt wholesale on every mutation, which destroys the button
+    // the user just pressed and drops focus to <body> — taking the focus trap
+    // with it. Remember which control had focus and put it back afterwards.
+    const active = document.activeElement as HTMLElement | null;
+    const focusKey =
+      active && itemsRoot.contains(active)
+        ? {
+            lineId: active.closest<HTMLElement>("[data-line-item-id]")?.dataset.lineItemId,
+            action: active.dataset.cartAction,
+          }
+        : null;
     itemsRoot.replaceChildren();
     const cartItems = Array.isArray(cart?.items) ? cart.items : [];
     setCartCount(cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0));
@@ -171,10 +198,22 @@ export function initLuviaStorefront() {
         '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
       const copy = createNode("div", "empty-state__copy");
       copy.append(
-        createNode("h3", "empty-state__title type-heading-3", messages.cartEmpty || "Your cart is empty"),
-        createNode("p", "empty-state__text type-body-400", messages.cartEmptyHelp || "Add pieces to start your order."),
+        createNode(
+          "h3",
+          "empty-state__title type-heading-3",
+          messages.cartEmpty || "Your cart is empty",
+        ),
+        createNode(
+          "p",
+          "empty-state__text type-body-400",
+          messages.cartEmptyHelp || "Add pieces to start your order.",
+        ),
       );
-      const shop = createNode("a", "empty-state__action type-body-500", messages.continueShopping || "Continue shopping");
+      const shop = createNode(
+        "a",
+        "empty-state__action type-body-500",
+        messages.continueShopping || "Continue shopping",
+      );
       shop.href = "/products";
       empty.append(mark, copy, shop);
       itemsRoot.append(empty);
@@ -186,7 +225,9 @@ export function initLuviaStorefront() {
       const article = createNode("article", "cart-item");
       article.dataset.lineItemId = item.id;
       const media = createNode("a", "cart-item__media") as HTMLAnchorElement;
-      media.href = item.productHandle ? `/products/${encodeURIComponent(item.productHandle)}` : "/products";
+      media.href = item.productHandle
+        ? `/products/${encodeURIComponent(item.productHandle)}`
+        : "/products";
       const itemMedia = item.imageUrl || item.thumbnail;
       if (itemMedia) {
         const img = createNode("img") as HTMLImageElement;
@@ -196,29 +237,53 @@ export function initLuviaStorefront() {
       }
 
       const copy = createNode("div", "cart-item__copy");
-      copy.append(createNode("strong", "type-body-s-500", item.title || messages.product || "Product"));
+      copy.append(
+        createNode("strong", "type-body-s-500", item.title || messages.product || "Product"),
+      );
       if (item.variantTitle) copy.append(createNode("span", "type-body-xs", item.variantTitle));
-      copy.append(createNode("b", "type-body-s-500", formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode)));
+      copy.append(
+        createNode(
+          "b",
+          "type-body-s-500",
+          formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode),
+        ),
+      );
 
       const controls = createNode("div", "cart-item__actions");
       const quantity = createNode("div", "cart-quantity");
       const minus = createNode("button", "type-body-s-500", "−") as HTMLButtonElement;
       minus.type = "button";
+      minus.dataset.cartAction = "dec";
       minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1));
-      minus.setAttribute("aria-label", `${messages.decreaseQuantity || "Decrease"}: ${item.title || messages.product}`);
+      minus.setAttribute(
+        "aria-label",
+        `${messages.decreaseQuantity || "Decrease"}: ${item.title || messages.product}`,
+      );
       minus.disabled = Number(item.quantity) <= 1;
 
       const amount = createNode("span", "type-body-s-500", String(item.quantity));
       const plus = createNode("button", "type-body-s-500", "+") as HTMLButtonElement;
       plus.type = "button";
+      plus.dataset.cartAction = "inc";
       plus.dataset.cartQuantity = String(Number(item.quantity) + 1);
-      plus.setAttribute("aria-label", `${messages.increaseQuantity || "Increase"}: ${item.title || messages.product}`);
+      plus.setAttribute(
+        "aria-label",
+        `${messages.increaseQuantity || "Increase"}: ${item.title || messages.product}`,
+      );
 
       quantity.append(minus, amount, plus);
-      const remove = createNode("button", "cart-remove type-body-xs", messages.remove || "Remove") as HTMLButtonElement;
+      const remove = createNode(
+        "button",
+        "cart-remove type-body-xs",
+        messages.remove || "Remove",
+      ) as HTMLButtonElement;
       remove.type = "button";
+      remove.dataset.cartAction = "remove";
       remove.dataset.cartRemove = "";
-      remove.setAttribute("aria-label", `${messages.remove || "Remove"}: ${item.title || messages.product}`);
+      remove.setAttribute(
+        "aria-label",
+        `${messages.remove || "Remove"}: ${item.title || messages.product}`,
+      );
 
       controls.append(quantity, remove);
       article.append(media, copy, controls);
@@ -230,6 +295,13 @@ export function initLuviaStorefront() {
     const total = drawerFooter.querySelector<HTMLElement>("[data-cart-total]");
     if (subtotal) subtotal.textContent = formatCartMoney(cart.itemTotal, cart.currencyCode);
     if (total) total.textContent = formatCartMoney(cart.total, cart.currencyCode);
+
+    if (focusKey?.lineId && focusKey.action) {
+      const restored = itemsRoot.querySelector<HTMLElement>(
+        `[data-line-item-id="${CSS.escape(focusKey.lineId)}"] [data-cart-action="${focusKey.action}"]`,
+      );
+      if (restored && !restored.hasAttribute("disabled")) restored.focus();
+    }
   };
 
   const openCart = async (cartData?: any) => {
@@ -264,8 +336,10 @@ export function initLuviaStorefront() {
     setTimeout(() => {
       drawer.hidden = true;
       backdrop.hidden = true;
+      // Restore focus only once the drawer is actually out of the tab order,
+      // otherwise Tab can land inside a drawer that is about to be hidden.
+      lastFocused?.focus();
     }, 260);
-    lastFocused?.focus();
   };
 
   trigger?.addEventListener("click", (event) => {
@@ -292,9 +366,13 @@ export function initLuviaStorefront() {
 
     if (quantityButton) {
       const qty = Number(quantityButton.dataset.cartQuantity || "1");
-      await updateCartItemQuantity(lineItemId, qty);
+      announce(messages.cartUpdating);
+      const updated = await updateCartItemQuantity(lineItemId, qty);
+      announce(updated?.ok ? messages.cartUpdated : messages.cartUpdateFailed);
     } else if (removeButton) {
-      await removeCartItem(lineItemId);
+      announce(messages.cartUpdating);
+      const removed = await removeCartItem(lineItemId);
+      announce(removed?.ok ? messages.cartUpdated : messages.cartUpdateFailed);
     }
   });
 
@@ -324,7 +402,10 @@ export function initLuviaStorefront() {
 
   $cart.subscribe((cart) => {
     if (!readOnlyPreview && cart) {
-      renderDrawerCart(cart);
+      // Only rebuild the closed drawer on demand. Every page mounts this
+      // module, so an unguarded rebuild cost a full list re-render per
+      // mutation on pages that never open the drawer.
+      if (drawer?.hasAttribute("data-open")) renderDrawerCart(cart);
     }
   });
 
@@ -377,8 +458,7 @@ export function initLuviaStorefront() {
           : internalDemoRoot;
       const route = url.pathname.startsWith(internalDemoRoot)
         ? `${demoRoot}${url.pathname.slice(internalDemoRoot.length)}${url.search}`
-        : demoRoot === "/luvia" &&
-            (url.pathname === "/luvia" || url.pathname.startsWith("/luvia/"))
+        : demoRoot === "/luvia" && (url.pathname === "/luvia" || url.pathname.startsWith("/luvia/"))
           ? `${url.pathname}${url.search}`
           : url.pathname === "/"
             ? demoRoot
@@ -425,14 +505,20 @@ export function initLuviaCartPage() {
       const qty = line.querySelector<HTMLElement>("[data-line-quantity]");
       const total = line.querySelector<HTMLElement>("[data-line-total]");
       if (qty) qty.textContent = String(item.quantity);
-      if (total) total.textContent = formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode);
+      if (total)
+        total.textContent = formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode);
 
-      const forms = [...line.querySelectorAll<HTMLFormElement>('form[action="/actions/cart/update"]')];
-      const decrease = forms[0]?.querySelector<HTMLInputElement>('input[name="quantity"]');
-      const increase = forms[1]?.querySelector<HTMLInputElement>('input[name="quantity"]');
+      // Select by intent: forms[0]/forms[1] assumed a DOM order that one extra
+      // form would silently break.
+      const decrease = line.querySelector<HTMLInputElement>(
+        'form[data-qty="dec"] input[name="quantity"]',
+      );
+      const increase = line.querySelector<HTMLInputElement>(
+        'form[data-qty="inc"] input[name="quantity"]',
+      );
       if (decrease) decrease.value = String(Math.max(1, item.quantity - 1));
       if (increase) increase.value = String(item.quantity + 1);
-      const decreaseButton = forms[0]?.querySelector<HTMLButtonElement>("button");
+      const decreaseButton = line.querySelector<HTMLButtonElement>('form[data-qty="dec"] button');
       if (decreaseButton) decreaseButton.disabled = item.quantity <= 1;
     });
 
@@ -461,7 +547,8 @@ export function initLuviaCartPage() {
           : messages.deliveryAtCheckout || "Calculated at next step";
     }
     if (discountRow) discountRow.hidden = savings <= 0;
-    if (discountValue) discountValue.textContent = `−${formatCartMoney(savings, cart.currencyCode)}`;
+    if (discountValue)
+      discountValue.textContent = `−${formatCartMoney(savings, cart.currencyCode)}`;
 
     if (!items.length) {
       const layout = root.querySelector("[data-cart-page-layout]");
@@ -528,12 +615,18 @@ export function initLuviaProductPage() {
   const variantsData = root.querySelector<HTMLScriptElement>("[data-variants-data]");
   const variants: any[] = variantsData?.textContent ? JSON.parse(variantsData.textContent) : [];
 
+  // Seed from what the server actually rendered as selected. Product.astro
+  // emits aria-pressed on the chosen value; reading data-selected instead left
+  // `selected` empty, so every swatch lost aria-pressed and the price silently
+  // fell back to variants[0].
   const selected: Record<string, string> = {};
-  root.querySelectorAll<HTMLButtonElement>("[data-option-title][data-selected]").forEach((btn) => {
-    const title = btn.dataset.optionTitle;
-    const value = btn.dataset.optionValue;
-    if (title && value) selected[title] = value;
-  });
+  root
+    .querySelectorAll<HTMLButtonElement>('[data-option-title][aria-pressed="true"]')
+    .forEach((btn) => {
+      const title = btn.dataset.optionTitle;
+      const value = btn.dataset.optionValue;
+      if (title && value) selected[title] = value;
+    });
 
   const selectedVariant = () =>
     variants.find((v) =>
@@ -550,7 +643,9 @@ export function initLuviaProductPage() {
     if (variantInput) variantInput.value = variant.id;
 
     const price = root.querySelector<HTMLElement>("[data-product-price]");
-    if (price) price.textContent = formatCartMoney(variant.price, variant.currencyCode);
+    // The payload key is priceAmount (see Product.astro); reading `price` here
+    // resolved to undefined and overwrote the server price with an em dash.
+    if (price) price.textContent = formatCartMoney(variant.priceAmount, variant.currencyCode);
 
     root.querySelectorAll<HTMLButtonElement>("[data-option-title]").forEach((btn) => {
       const isSelected = selected[btn.dataset.optionTitle || ""] === btn.dataset.optionValue;
@@ -583,7 +678,9 @@ export function initLuviaProductPage() {
           main.removeAttribute("srcset");
         }
       }
-      root.querySelectorAll("[data-gallery-thumb]").forEach((item) => item.removeAttribute("aria-current"));
+      root.querySelectorAll("[data-gallery-thumb]").forEach((item) => {
+        item.removeAttribute("aria-current");
+      });
       thumb.setAttribute("aria-current", "true");
     }
   });
@@ -667,7 +764,10 @@ export function initLuviaProductPage() {
       updateButtons(true, messages.added || "Added!");
       setTimeout(() => {
         const inStock = Boolean(selectedVariant()?.inStock);
-        updateButtons(!inStock, inStock ? messages.addToCart || "Add to Cart" : messages.outOfStock || "Out of Stock");
+        updateButtons(
+          !inStock,
+          inStock ? messages.addToCart || "Add to Cart" : messages.outOfStock || "Out of Stock",
+        );
       }, 1400);
     } else {
       updateButtons(!selectedVariant()?.inStock, messages.addToCart || "Add to Cart");
@@ -705,4 +805,59 @@ export function initLuviaProductPage() {
   }
 
   refreshVariant();
+}
+
+/**
+ * Home page: hero carousel + the horizontally scrolling product rail.
+ *
+ * This used to live in a `<script>` at the bottom of index.astro, which Astro
+ * never collected into a client bundle, so none of it ran. client.ts is
+ * imported by the layout entry, so it ships on every page; the rail guard keeps
+ * it a no-op everywhere else.
+ */
+export function initLuviaHome() {
+  const rail = document.querySelector<HTMLElement>("[data-product-rail]");
+  const previous = document.querySelector<HTMLButtonElement>("[data-product-rail-prev]");
+  const next = document.querySelector<HTMLButtonElement>("[data-product-rail-next]");
+
+  if (!rail || !previous || !next) return;
+
+  initHeroCarousels();
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let frame = 0;
+  const updateRailControls = () => {
+    frame = 0;
+    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    previous.disabled = rail.scrollLeft <= 2;
+    next.disabled = rail.scrollLeft >= max - 2;
+  };
+  // Coalesce to one read/write per frame instead of per scroll event.
+  const onScroll = () => {
+    if (frame) return;
+    frame = window.requestAnimationFrame(updateRailControls);
+  };
+  const moveRail = (direction: -1 | 1) => {
+    const card = rail.querySelector<HTMLElement>(".product-card");
+    const distance = Math.max(
+      card?.offsetWidth ?? rail.clientWidth * 0.75,
+      rail.clientWidth * 0.72,
+    );
+    rail.scrollBy({
+      left: distance * direction,
+      behavior: prefersReducedMotion.matches ? "auto" : "smooth",
+    });
+  };
+
+  previous.addEventListener("click", () => moveRail(-1));
+  next.addEventListener("click", () => moveRail(1));
+  rail.addEventListener("scroll", onScroll, { passive: true });
+  rail.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      moveRail(event.key === "ArrowLeft" ? -1 : 1);
+    }
+  });
+  new ResizeObserver(onScroll).observe(rail);
+  updateRailControls();
 }

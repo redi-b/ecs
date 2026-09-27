@@ -55,7 +55,7 @@
 
 .discount-code form > small,
 .discount-code__applied small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .discount-code form > small {
@@ -105,7 +105,7 @@
 .discount-code__status {
   min-height: 0;
   margin: 0;
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .discount-code__status:empty {

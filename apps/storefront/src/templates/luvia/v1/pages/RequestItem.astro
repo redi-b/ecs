@@ -33,7 +33,7 @@ const inquiryMessages = {
   deferCartCount={deferCartCount}
   title={m.request_title({}, { locale })}
 >
-  <main class="request container">
+  <main id="main-content" class="request container">
     <section class="request__intro">
       <p class="type-body-xs">
         <Icon name="sparkle" />{m.request_title({}, { locale })}
@@ -52,7 +52,7 @@ const inquiryMessages = {
       </header>
       <form data-inquiry-form action="/actions/inquiries" method="post">
         <input type="hidden" name="type" value="product_request" />
-        <label class="inquiry-honeypot" aria-hidden="true"
+        <label class="inquiry-honeypot"
           ><span class="type-body-s-400">Website</span><input
             class="type-body-400"
             name="website"

@@ -73,7 +73,11 @@ export type StorefrontLanguageSettings = z.infer<typeof storefrontLanguageSettin
 
 export const storefrontLocalizedFieldSchema = z
   .object({
-    value: z.string(),
+    // Must be non-empty. localizedContent is merged onto tenant data *after*
+    // defaults are applied, and a blank value fails the template data schema
+    // (every .min(1) field), which reverted the whole localized page to
+    // template defaults and served it with a 200.
+    value: z.string().trim().min(1).max(2000),
     /** SHA-256 of the source value when this translation was last reviewed. */
     sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
   })

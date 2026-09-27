@@ -104,12 +104,16 @@ export const luviaV1ThemeTokensSchema = z.object({
     muted: z.string().min(1),
     accent: z.string().min(1),
   }),
-  typography: z.object({
-    headingFont: z.string().min(1),
-    bodyFont: z.string().min(1),
-  }),
-  radius: z.enum(["none", "sm", "md"]),
-  colorMode: z.literal("light"),
+  typography: z
+    .object({
+      headingFont: z.string().min(1),
+      bodyFont: z.string().min(1),
+    })
+    .default({ headingFont: "GC Molecule Demo", bodyFont: "GC Molecule Demo" }),
+  radius: z.enum(["none", "sm", "md"]).default("md"),
+  // These three had no .default(), so any themeTokens payload missing them made
+  // the whole parse fail and silently reverted the tenant to template defaults.
+  colorMode: z.literal("light").default("light"),
 });
 
 export type LuviaV1ThemeTokens = z.infer<typeof luviaV1ThemeTokensSchema>;

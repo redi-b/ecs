@@ -5,6 +5,14 @@ $clr-primary-200: #FFC599FF;
 $clr-primary-500: #FF720AFF;
 $clr-primary-800: #472E20FF;
 
+// Text roles derived from $clr-primary-500. The primary is authored as a fill
+// (2.66:1 on $clr-neutral-100), so it is never legible as copy. These are the
+// contrast-corrected equivalents produced by deriveTextContrast() in
+// @ecs/storefront-templates: >=4.5:1 for body text, >=7:1 for links/labels.
+$clr-primary-text: #C15200FF; // 4.56:1 on $clr-neutral-100
+$clr-primary-link: #923E00FF; // 7.01:1 on $clr-neutral-100
+$clr-on-primary: #0B0F0DFF; // 7.04:1 on $clr-primary-500, 12.59:1 on $clr-primary-200
+
 $clr-neutral-100: #FFFBF8FF;
 $clr-neutral-150: #FDFBF9FF;
 $clr-neutral-200: #FFFAF6FF;

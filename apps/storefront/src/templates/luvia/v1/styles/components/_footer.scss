@@ -191,7 +191,7 @@
   grid-column: 1 / -1;
   min-height: 1.25rem;
   margin: 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   transition: color 180ms ease;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .inquiry-status.is-success {
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .inquiry-status.is-error {

@@ -10,7 +10,7 @@
   header { min-height: 66px; padding: 0 $space-450; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid alpha(var(--nexa-ink), 0.14); }
   h2 { margin: 0; font-family: $ff-header; font-size: $fs-body-l; font-weight: $fw-bold; line-height: 1.2; letter-spacing: -.025em; }
   header > div { display: flex; align-items: center; gap: $space-200; }
-  header a { min-height: 32px; padding: 0 $space-250; display: inline-flex; align-items: center; border: 1px solid alpha(var(--nexa-primary), 0.22); border-radius: $radius-50; background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); font-size: $fs-body-xs-400; text-decoration: none; }
+  header a { min-height: 32px; padding: 0 $space-250; display: inline-flex; align-items: center; border: 1px solid alpha(var(--nexa-primary), 0.22); border-radius: $radius-50; background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary-link); font-size: $fs-body-xs-400; text-decoration: none; }
   header button { display: none; }
   &__scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: alpha(var(--nexa-ink), 0.2) transparent; }
   .product-filter-group { border-bottom: 1px solid alpha(var(--nexa-ink), 0.14); }
@@ -19,10 +19,10 @@
   .product-filter-group > fieldset { overflow: hidden; }
   .product-filter-group summary svg { width: 9px; flex: none; transition: transform var(--nexa-motion-fast) var(--nexa-ease-out); }
   .product-filter-group[open] summary svg { transform: rotate(180deg); }
-  .product-filter-group[open] summary { color: var(--nexa-primary); }
+  .product-filter-group[open] summary { color: var(--nexa-primary-link); }
   fieldset { margin: 0; padding: 0 $space-450 $space-400; display: grid; gap: $space-50; border: 0; }
   label { min-height: 39px; padding: 0 $space-200; display: flex; align-items: center; gap: $space-250; border-radius: $radius-75; cursor: pointer; color: alpha(var(--nexa-ink), 0.7); font-size: $fs-body-s-400; }
-  label:hover, label:has(input:checked) { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
+  label:hover, label:has(input:checked) { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary-link); }
   label small { margin-left: auto; color: alpha(var(--nexa-ink), 0.6); font: inherit; font-size: $fs-body-xs-400; }
   input[type="radio"], input[type="checkbox"] { width: 17px; height: 17px; margin: 0; flex: none; accent-color: var(--nexa-primary); }
   input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--nexa-primary); outline-offset: 2px; }
@@ -34,8 +34,8 @@
   &__price input:focus { border-color: var(--nexa-primary); }
   &__actions { position: relative; z-index: 3; padding: $space-350 $space-400; display: grid; border-top: 1px solid alpha(var(--nexa-ink), 0.14); background: var(--nexa-surface); box-shadow: 0 -12px 24px alpha(var(--nexa-ink), 0.04); }
   &__actions button, &__actions a { min-height: 44px; padding: 0 $space-350; display: flex; align-items: center; justify-content: center; border-radius: $radius-75; font-size: $fs-body-s-400; font-weight: $fw-bold; line-height: 1; text-decoration: none; cursor: pointer; }
-  &__actions button { border: 1px solid var(--nexa-primary); background: var(--nexa-primary); color: var(--nexa-on-primary); }
-  &__actions button:hover { background: var(--nexa-primary); }
+  &__actions button { border: 1px solid var(--nexa-primary); background: var(--nexa-primary-fill); color: var(--nexa-on-primary); }
+  &__actions button:hover { background: var(--nexa-primary-fill); }
 }
 
 @media (max-width: 767px) {

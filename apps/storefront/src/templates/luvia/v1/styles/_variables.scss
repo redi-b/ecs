@@ -37,7 +37,7 @@ $ls-none: 0;
   --clr-primary: #3ee272;
   --clr-soft: #edf8ee;
   --clr-accent: #b5ffa2;
-  --clr-on-primary: #0f3112;
+  --clr-on-primary: #0b0f0d;
   --clr-primary-edge: transparent;
   --clr-white: #ffffff;
   --clr-surface: #ffffff;
@@ -48,6 +48,22 @@ $ls-none: 0;
   --clr-warning-bg: #fff7eb;
   --clr-line: #{alpha(var(--clr-ink), 0.14)};
   --clr-primary-dark: #12671A;
+
+  // Text roles derived from --clr-primary. Layout.astro overrides these with
+  // values recomputed from the tenant's theme; the values here are the
+  // fallbacks for the designed palette and are contrast-checked by
+  // deriveTextContrast (>=4.5:1 text, >=7:1 link/label).
+  --clr-primary-text: #148739;
+  --clr-primary-link: #0f642a;
+  --clr-primary-fill: #3ee272;
+
+  // Motion. Without these every `transition` shorthand below is invalid at
+  // computed-value time and silently resolves to 0s.
+  --motion-fast: 0.16s;
+  --motion-base: 0.2s;
+  --motion-medium: 0.24s;
+  --motion-slow: 0.4s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 // Aliases must live on body: theme overrides (themeStyle / editor preview)

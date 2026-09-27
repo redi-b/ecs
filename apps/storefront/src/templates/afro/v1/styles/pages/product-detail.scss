@@ -76,11 +76,11 @@
     display: inline-flex;
     align-items: center;
     gap: $space-200;
-    color: rgba($clr-neutral-900, 0.4);
+    color: rgba($clr-neutral-900, 0.72);
   }
 
   &__link {
-    color: rgba($clr-neutral-900, 0.4);
+    color: rgba($clr-neutral-900, 0.72);
     text-decoration: none;
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
@@ -99,12 +99,12 @@
   }
 
   &__separator {
-    color: rgba($clr-neutral-900, 0.3);
+    color: rgba($clr-neutral-900, 0.72);
     user-select: none;
   }
 
   &__current {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
   }
 }
 
@@ -144,7 +144,7 @@
     top: $space-500;
     left: $space-500;
     background-color: $clr-neutral-50;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     padding: $space-200 $space-250;
     border-radius: $radius-550;
     line-height: 1;
@@ -233,7 +233,7 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
     max-width: 25ch;
   }
@@ -245,18 +245,18 @@
   }
 
   &__original-price {
-    color: rgba($clr-neutral-900, 0.6);
+    color: rgba($clr-neutral-900, 0.72);
     text-decoration: line-through;
     margin: 0;
   }
 
   &__price {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
   }
 
   &__description {
-    color: rgba($clr-neutral-900, 0.8);
+    color: rgba($clr-neutral-900, 0.72);
     max-width: 55ch;
     margin: 0;
   }
@@ -275,7 +275,7 @@
   }
 
   &__option-label {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
   }
 
@@ -323,7 +323,7 @@
     border-radius: $radius-250;
     border: none;
     background-color: $clr-neutral-300;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -375,7 +375,7 @@
     border-radius: $radius-500;
     border: none;
     background-color: $clr-neutral-100;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -400,7 +400,7 @@
   }
 
   &__qty-value {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     user-select: none;
   }
 
@@ -431,7 +431,7 @@
       &:hover {
         background-color: rgba($clr-primary-500, 0.1);
         border-color: rgba($clr-primary-500, 0.45);
-        color: $clr-primary-500;
+        color: $clr-primary-link;
       }
     }
 
@@ -449,7 +449,7 @@
 
     &--active {
       background-color: rgba($clr-primary-500, 0.1);
-      color: $clr-primary-500;
+      color: $clr-primary-link;
       border-color: $clr-primary-500;
     }
 
@@ -477,7 +477,7 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
     max-width: 20ch;
   }

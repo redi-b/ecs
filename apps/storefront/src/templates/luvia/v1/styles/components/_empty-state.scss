@@ -26,7 +26,7 @@
     border: 1px solid alpha(var(--clr-primary), 0.28);
     box-shadow: 0 $space-200 $space-400 alpha(var(--clr-primary), 0.12);
 
-    .sf-icon svg {
+    svg[data-icon] {
       width: $space-450;
       height: $space-450;
     }
@@ -46,7 +46,7 @@
   &__text {
     max-width: 34ch;
     margin: 0;
-    color: alpha(var(--clr-ink), 0.62);
+    color: alpha(var(--clr-ink), 0.72);
   }
 
   &__action {
@@ -56,7 +56,7 @@
     display: inline-flex;
     align-items: center;
     border-radius: $radius-pill;
-    background: var(--clr-primary);
+    background: var(--clr-primary-fill);
     color: var(--clr-on-primary);
     text-decoration: none;
   }

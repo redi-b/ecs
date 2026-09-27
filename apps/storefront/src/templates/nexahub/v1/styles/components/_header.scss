@@ -33,7 +33,7 @@
     width: 94px;
     height: 33px;
     padding: $space-150 $space-250;
-    background: var(--nexa-primary);
+    background: var(--nexa-primary-fill);
     backdrop-filter: blur(12px);
     border-radius: $radius-50;
     text-decoration: none;
@@ -235,7 +235,7 @@
     margin-top: $space-100;
     padding: $space-250;
     border-top: 1px solid alpha(var(--nexa-ink), 0.2);
-    color: var(--nexa-primary);
+    color: var(--nexa-primary-link);
     font-size: $fs-body-xs-400;
     text-decoration: none;
     text-transform: uppercase;
@@ -287,7 +287,7 @@
       height: 16px;
       padding-inline: $space-75;
       border-radius: $radius-pill;
-      background: var(--nexa-primary);
+      background: var(--nexa-primary-fill);
       color: var(--nexa-on-primary);
       font-size: 9px;
       line-height: 1;
@@ -345,7 +345,7 @@
         border-bottom-color: var(--nexa-muted);
 
         &:hover,
-        &:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary); }
+        &:focus-visible { background: alpha(var(--nexa-primary), 0.08); color: var(--nexa-primary-link); }
       }
     }
   }

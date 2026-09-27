@@ -79,7 +79,7 @@
     width: 100%;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.4);
+      color: rgba($clr-neutral-900, 0.72);
     }
   }
 
@@ -89,7 +89,7 @@
     min-width: 48px;
     border-radius: $radius-550;
     background-color: $clr-primary-500;
-    color: $clr-neutral-50;
+    color: $clr-on-primary;
     border: none;
     display: flex;
     align-items: center;
@@ -175,7 +175,7 @@
       @media (hover: hover) and (pointer: fine) {
         &:hover {
           background-color: $clr-primary-500;
-          color: $clr-neutral-50;
+          color: $clr-on-primary;
         }
       }
     }
@@ -248,7 +248,7 @@
 
       small {
         font-size: $fs-caption;
-        color: rgba($clr-neutral-900, 0.55);
+        color: rgba($clr-neutral-900, 0.72);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -258,7 +258,7 @@
     &__item b {
       font-size: $fs-body-s-700;
       font-weight: 700;
-      color: $clr-primary-500;
+      color: $clr-primary-link;
       white-space: nowrap;
     }
 
@@ -267,7 +267,7 @@
       margin-top: $space-100;
       padding: $space-200 $space-250;
       border-top: 1px solid rgba($clr-neutral-900, 0.06);
-      color: $clr-primary-500;
+      color: $clr-primary-link;
       font-size: $fs-body-s-500;
       font-weight: 600;
       text-decoration: none;

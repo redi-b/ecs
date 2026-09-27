@@ -1,14 +1,5 @@
 @use "../abstracts" as *;
 
-.sf-icon {
-  display: contents;
-}
-
-.sf-icon svg {
-  display: block;
-  max-width: none;
-}
-
 .header {
   position: absolute;
   z-index: 20;
@@ -130,8 +121,8 @@
   border: 0;
 }
 
-.search .sf-icon svg,
-.action .sf-icon svg {
+.search svg[data-icon],
+.action svg[data-icon] {
   width: 18px;
   height: 18px;
 }
@@ -207,7 +198,7 @@
 }
 
 .search .product-search-suggestions__copy small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .search .product-search-suggestions__item b {
@@ -219,7 +210,7 @@
   margin-top: $space-100;
   padding: $space-250 $space-300;
   border-top: 1px solid var(--clr-line);
-  color: var(--clr-primary);
+  color: var(--clr-link);
   text-decoration: none;
 }
 
@@ -237,7 +228,7 @@
   height: 8px;
   border: 2px solid var(--clr-bg);
   border-radius: $radius-full;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   opacity: 0;
   transform: scale(.65);
   transition: opacity 160ms ease, transform 160ms ease;
@@ -260,7 +251,7 @@
   box-sizing: border-box;
   border: 2px solid var(--clr-bg);
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   font-size: 10px;
   line-height: 1;

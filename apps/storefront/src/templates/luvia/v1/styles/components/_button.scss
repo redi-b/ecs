@@ -25,7 +25,7 @@
   align-items: center;
   justify-content: center;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   outline: 1px solid var(--clr-primary-edge);
   transition: filter 180ms ease, box-shadow 180ms ease;

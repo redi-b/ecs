@@ -68,7 +68,7 @@ const isActiveLink = (href: string) =>
           </a>
         ))
       }
-      <span class="nav__customer" aria-label={m.a11y_customer_links({}, { locale })}>
+      <span class="nav__customer" role="group" aria-label={m.a11y_customer_links({}, { locale })}>
         <a class="type-body-400" href="/wishlist">{m.nav_wishlist({}, { locale })}</a>
         <a class="type-body-400" href="/account">{m.nav_account({}, { locale })}</a>
       </span>

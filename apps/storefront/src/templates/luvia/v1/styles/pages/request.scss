@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .request__intro h1,
@@ -60,7 +60,7 @@
 .request__intro>span {
   max-width: 520px;
   display: block;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.5;
 }
 
@@ -94,7 +94,7 @@
 
 .request__panel header p {
   margin: 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .request form {
@@ -108,7 +108,7 @@
   min-width: 0;
   flex-direction: column;
   gap: $space-150;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .request label.is-wide,
@@ -142,7 +142,7 @@
   min-height: 54px;
   border: 0;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   cursor: pointer;
 }

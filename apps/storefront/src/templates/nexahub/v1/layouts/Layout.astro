@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { contrastingInk, type NexahubV1Data } from "@ecs/storefront-templates";
+import { deriveTextContrast, type NexahubV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
@@ -68,13 +68,20 @@ const navigationCategories =
 const theme = parseNexahubThemeTokens(themeTokens);
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
+// Brand primary is authored as a fill. Text/link/label roles are derived so
+// they are guaranteed legible (>=4.5:1 text, >=7:1 links and button labels).
+// See deriveTextContrast in @ecs/storefront-templates.
+const brandText = deriveTextContrast(theme.colors.primary, theme.colors.background);
 const themeStyle = [
   `--nexa-bg:${theme.colors.background}`,
   `--nexa-ink:${theme.colors.foreground}`,
   `--nexa-primary:${theme.colors.primary}`,
   `--nexa-muted:${theme.colors.muted}`,
   `--nexa-accent:${theme.colors.accent}`,
-  `--nexa-on-primary:${contrastingInk(theme.colors.primary)}`,
+  `--nexa-primary-text:${brandText.text}`,
+  `--nexa-primary-link:${brandText.link}`,
+  `--nexa-primary-fill:${brandText.fill}`,
+  `--nexa-on-primary:${brandText.onPrimary}`,
 ].join(";");
 // The signed editor is served from `/preview`, but it must retain the visual
 // route state of the page it renders. Never let the transport route choose a

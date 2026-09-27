@@ -5,7 +5,7 @@ import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
 import "../styles/components/_rail.scss";
 import "../styles/components/_demo-banner.scss";
-import { contrastingInk, contrastRatio, type LuviaV1Data } from "@ecs/storefront-templates";
+import { contrastRatio, deriveTextContrast, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
@@ -96,6 +96,7 @@ const clientMessages = {
   cartItemCount: m.cart_item_count({ count: "__COUNT__" }, { locale }),
   cartUpdateFailed: m.cart_update_failed({}, { locale }),
   cartUpdating: m.cart_updating({}, { locale }),
+  cartUpdated: m.cart_updated({}, { locale }),
   continueShopping: continueShoppingLabel,
   decreaseQuantity: m.action_decrease_quantity({}, { locale }),
   increaseQuantity: m.action_increase_quantity({}, { locale }),
@@ -106,13 +107,24 @@ const clientMessages = {
   retry: m.action_retry({}, { locale }),
 };
 
+// Brand primary is authored as a fill. Text and button roles are derived so
+// they are guaranteed legible: >=4.5:1 for accent text, >=7:1 for links and
+// button labels. See deriveTextContrast in @ecs/storefront-templates.
+const brandText = deriveTextContrast(theme.colors.primary, theme.colors.background);
+
 const themeStyle = [
   `--clr-bg:${theme.colors.background}`,
   `--clr-ink:${theme.colors.foreground}`,
   `--clr-primary:${theme.colors.primary}`,
   `--clr-soft:${theme.colors.muted}`,
   `--clr-accent:${theme.colors.accent}`,
-  `--clr-on-primary:${contrastingInk(theme.colors.primary)}`,
+  // Accent used as copy: >=4.5:1 on --clr-bg.
+  `--clr-primary-text:${brandText.text}`,
+  // Accent used as a link / interactive label: >=7:1 on --clr-bg.
+  `--clr-primary-link:${brandText.link}`,
+  // Solid button surface; only shifted when a >=7:1 label needs it.
+  `--clr-primary-fill:${brandText.fill}`,
+  `--clr-on-primary:${brandText.onPrimary}`,
   `--clr-primary-edge:${
     contrastRatio(theme.colors.primary, theme.colors.background) < 1.3
       ? theme.colors.foreground
@@ -155,6 +167,7 @@ const themeStyle = [
     }) : undefined}
     style={themeStyle}
   >
+    <a class="skip-link" href="#main-content">{m.a11y_skip_to_content({}, { locale })}</a>
     {demoMode ? (
       <div class="demo-banner type-body-xs" role="status">
         <strong>Template preview</strong>

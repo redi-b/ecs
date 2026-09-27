@@ -95,7 +95,7 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
-    color: rgba($clr-neutral-900, 0.6);
+    color: rgba($clr-neutral-900, 0.72);
     transition: color $dur-ui ease;
 
     @media (hover: hover) and (pointer: fine) {
@@ -141,7 +141,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: rgba($clr-neutral-900, 0.8);
+  color: rgba($clr-neutral-900, 0.72);
   cursor: pointer;
   user-select: none;
   transition: border-color $dur-ui ease, background-color $dur-ui ease;
@@ -159,12 +159,12 @@
     gap: $space-100;
 
     [data-icon] {
-      color: rgba($clr-neutral-900, 0.8);
+      color: rgba($clr-neutral-900, 0.72);
     }
   }
 
   [data-icon="chevron-down"] {
-    color: rgba($clr-neutral-900, 0.8);
+    color: rgba($clr-neutral-900, 0.72);
   }
 }
 
@@ -177,7 +177,7 @@
 .filter-price-separator {
   display: flex;
   align-items: center;
-  color: rgba($clr-neutral-900, 0.8);
+  color: rgba($clr-neutral-900, 0.72);
 }
 
 .filter-input-group {
@@ -190,11 +190,11 @@
   display: flex;
   align-items: center;
   gap: $space-100;
-  color: rgba($clr-neutral-900, 0.8);
+  color: rgba($clr-neutral-900, 0.72);
   cursor: text;
 
   [data-icon] {
-    color: rgba($clr-neutral-900, 0.8);
+    color: rgba($clr-neutral-900, 0.72);
   }
 
   &__field {
@@ -206,7 +206,7 @@
     outline: none;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.45);
+      color: rgba($clr-neutral-900, 0.72);
     }
   }
 

@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { contrastingInk, type AfroV1Data } from "@ecs/storefront-templates";
+import { deriveTextContrast, type AfroV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
@@ -109,13 +109,20 @@ const theme = parseAfroThemeTokens(themeTokens);
 const emptyLogoUrl = header?.useShopName ? null : logoImg.src;
 const logoUrl = header?.logoAssetId ?? emptyLogoUrl;
 
+// Brand primary is authored as a fill. Text/link/label roles are derived so
+// they are guaranteed legible (>=4.5:1 text, >=7:1 links and button labels).
+// See deriveTextContrast in @ecs/storefront-templates.
+const brandText = deriveTextContrast(theme.colors.primary, theme.colors.background);
 const themeStyle = [
   `--afro-bg:${theme.colors.background}`,
   `--afro-ink:${theme.colors.foreground}`,
   `--afro-primary:${theme.colors.primary}`,
   `--afro-muted:${theme.colors.muted}`,
   `--afro-accent:${theme.colors.accent}`,
-  `--afro-on-primary:${contrastingInk(theme.colors.primary)}`,
+  `--afro-primary-text:${brandText.text}`,
+  `--afro-primary-link:${brandText.link}`,
+  `--afro-primary-fill:${brandText.fill}`,
+  `--afro-on-primary:${brandText.onPrimary}`,
 ].join(";");
 
 const pathname = renderPath ?? Astro.url.pathname;
@@ -478,6 +485,6 @@ const afroClientMessages = {
   .demo-banner { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
   .demo-banner nav { display: flex; gap: 1rem; }
   .demo-banner nav a { color: #ff720a; text-decoration: underline; }
-  .wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary, #ff720a); line-height: 1; }
+  .wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary-link, #923e00); line-height: 1; }
   .wordmark--footer { color: inherit; font-size: 1.5rem; }
 </style>

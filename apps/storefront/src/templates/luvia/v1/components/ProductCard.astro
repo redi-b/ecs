@@ -19,7 +19,9 @@ const locale =
 const href = product.handle
   ? `/products/${encodeURIComponent(product.handle)}`
   : "/products";
-const brand = product.collectionTitle?.toUpperCase() || "LUVIA";
+const brand =
+  product.collectionTitle?.toUpperCase() ||
+  m.catalog_collection_fallback({}, { locale }).toUpperCase();
 const title = product.title ?? m.catalog_product_fallback({}, { locale });
 const wishlistItem = JSON.stringify({
   path: href,

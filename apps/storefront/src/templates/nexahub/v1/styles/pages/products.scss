@@ -74,7 +74,7 @@
     }
 
     a:hover {
-      color: var(--nexa-primary);
+      color: var(--nexa-primary-link);
     }
   }
 
@@ -189,7 +189,7 @@
     font-size: $fs-body-xs-400;
     text-transform: uppercase;
 
-    a { color: var(--nexa-primary); text-underline-offset: 3px; }
+    a { color: var(--nexa-primary-link); text-underline-offset: 3px; }
   }
 }
 
@@ -234,7 +234,7 @@
     background: alpha(var(--nexa-primary), 0.08);
     border: 1px solid alpha(var(--nexa-primary), 0.22);
     border-radius: $radius-150;
-    color: var(--nexa-primary);
+    color: var(--nexa-primary-link);
     font-family: $ff-body;
     font-size: $fs-body-l;
     font-weight: $fw-regular;
@@ -284,16 +284,16 @@
     &:hover {
       background: alpha(var(--nexa-primary), 0.08);
       border-color: var(--nexa-accent);
-      color: var(--nexa-primary);
+      color: var(--nexa-primary-link);
     }
 
     &--active {
-      background: var(--nexa-primary);
+      background: var(--nexa-primary-fill);
       border-color: var(--nexa-primary);
       color: var(--nexa-on-primary);
 
       &:hover {
-        background: var(--nexa-primary);
+        background: var(--nexa-primary-fill);
         border-color: var(--nexa-primary);
         color: var(--nexa-on-primary);
       }

@@ -62,7 +62,7 @@
   padding: $space-100 $space-200;
   border-radius: $radius-pill;
   background: var(--clr-soft);
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .cart-drawer>header button {
@@ -74,7 +74,7 @@
   border: 0;
   border-radius: $radius-full;
   background: var(--clr-soft);
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 0;
   cursor: pointer;
 }
@@ -92,7 +92,7 @@
   flex: none;
   min-height: 0;
   padding: 0 $space-600;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .cart-drawer__status:not(:empty) {
@@ -165,7 +165,7 @@
 }
 
 .cart-item__copy span {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .cart-item__copy b {
@@ -198,7 +198,7 @@
   height: 32px;
   border: 0;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   cursor: pointer;
 }
 
@@ -211,7 +211,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -239,7 +239,7 @@
   display: flex;
   justify-content: space-between;
   gap: $space-500;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .cart-drawer>footer dl>div:last-child {
@@ -260,7 +260,7 @@
   align-items: center;
   justify-content: center;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   text-decoration: none;
 }
@@ -283,7 +283,7 @@
   margin-top: $space-200;
   border: 0;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
   cursor: pointer;
 }
 

@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .request__intro h1,
@@ -78,7 +78,7 @@
 
 .account section>div {
   max-width: 620px;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.5;
 }
 
@@ -102,7 +102,7 @@
 
 .account__guest-actions a:first-child {
   border-color: var(--clr-primary);
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
 }
 
@@ -116,7 +116,7 @@
 
 .account aside>p {
   margin: 0 auto auto 0;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account ul {
@@ -134,7 +134,7 @@
 .account li::before {
   content: "✓";
   margin-right: $space-250;
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .account__auth {
@@ -159,7 +159,7 @@
 }
 
 .account__auth-heading span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account .account__auth-tabs {
@@ -180,7 +180,7 @@
   justify-content: center;
   border: 0;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account .account__auth-tabs a[aria-selected="true"] {
@@ -236,7 +236,7 @@
 }
 
 .account__auth small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__auth .account__field-error {
@@ -265,7 +265,7 @@
   border: 0;
   border-radius: $radius-full;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   cursor: pointer;
 }
 
@@ -294,7 +294,7 @@
 
 .account__auth-switch {
   margin: $space-450 0 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   text-align: center;
 }
 
@@ -308,7 +308,7 @@
   padding: 0 $space-500;
   border: 0;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   cursor: pointer;
 }
@@ -415,7 +415,7 @@
 
 .account__profile-form header p {
   margin: 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__profile-form>div {
@@ -431,7 +431,7 @@
 }
 
 .account__profile-form label>small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__profile-form input {
@@ -450,12 +450,12 @@
 }
 
 .account__profile-form input[readonly] {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   cursor: not-allowed;
 }
 
 .account__profile-form>small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.4;
 }
 
@@ -515,7 +515,7 @@
 }
 
 .account__orders li>a:hover strong {
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .account__orders li>a:focus-visible {
@@ -534,7 +534,7 @@
 }
 
 .account__orders li span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   text-transform: capitalize;
 }
 
@@ -573,7 +573,7 @@
 }
 
 .account__order-pages span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__empty {
@@ -585,7 +585,7 @@
 }
 
 .account__empty p {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__empty a {
@@ -612,7 +612,7 @@
 }
 
 .account__addresses>header div>span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__addresses>header>span {
@@ -665,7 +665,7 @@
 }
 
 .account__address-toggle small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .account__address-toggle em {

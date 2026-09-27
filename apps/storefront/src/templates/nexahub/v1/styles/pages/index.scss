@@ -651,7 +651,7 @@
   position: relative;
   width: 100%;
   padding-block: $space-950 $space-1000;
-  background-color: var(--nexa-primary);
+  background-color: var(--nexa-primary-fill);
   color: #ffffff;
   overflow: hidden;
 
@@ -681,7 +681,7 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background-color: var(--nexa-primary);
+    background-color: var(--nexa-primary-fill);
     opacity: 0.7;
 
     &--1 {
@@ -821,7 +821,7 @@
 
   &__divider {
     height: 1px;
-    background-color: var(--nexa-primary);
+    background-color: var(--nexa-primary-fill);
     opacity: 0.7;
     margin-block: $space-650 $space-500;
     width: 100%;
@@ -952,7 +952,7 @@
   &__acc-num {
     font-family: $ff-body;
     font-size: 12px;
-    color: var(--nexa-primary);
+    color: var(--nexa-primary-link);
     letter-spacing: -0.04em;
     flex-shrink: 0;
   }

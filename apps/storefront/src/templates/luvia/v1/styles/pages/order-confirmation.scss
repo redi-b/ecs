@@ -47,7 +47,7 @@
   display: grid;
   place-items: center;
   border-radius: $radius-full;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   box-shadow: 0 0 0 10px alpha(var(--clr-primary), 0.12), 0 18px 40px alpha(var(--clr-primary), 0.24);
 }
@@ -69,7 +69,7 @@
   stroke-linejoin: round;
 }
 
-.confirmation__mark .sf-icon svg {
+.confirmation__mark svg[data-icon] {
   position: absolute;
   right: -19px;
   top: -6px;
@@ -79,7 +79,7 @@
 
 .confirmation__eyebrow {
   margin: $space-750 0 $space-350;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .confirmation h1 {
@@ -90,7 +90,7 @@
 .confirmation__intro {
   max-width: 610px;
   margin: $space-600 0 $space-650;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
   line-height: 1.5;
 }
 
@@ -115,7 +115,7 @@
 }
 
 .confirmation__receipt span {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .confirmation__receipt strong {
@@ -135,7 +135,7 @@
 .confirmation__notice {
   min-height: 20px;
   margin: $space-450 $space-50 0;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .confirmation__actions {
@@ -157,7 +157,7 @@
 
 .confirmation__steps>p {
   margin: 0 auto auto 0;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .confirmation__steps ol {
@@ -191,7 +191,7 @@
   place-items: center;
   border: 1px solid alpha(var(--clr-primary), 0.3);
   border-radius: $radius-full;
-  color: var(--clr-primary);
+  color: var(--clr-text);
 }
 
 .confirmation__steps li div {

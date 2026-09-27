@@ -45,13 +45,13 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
     overflow: visible;
   }
 
   &__brand {
-    color: rgba($clr-neutral-900, 0.6);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
   }
 
@@ -63,13 +63,13 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: rgba($clr-neutral-900, 0.4);
+    color: rgba($clr-neutral-900, 0.72);
     transition: color $dur-ui ease, transform $dur-press $ease-out;
     flex-shrink: 0;
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        color: $clr-primary-500;
+        color: $clr-primary-link;
       }
     }
 
@@ -115,7 +115,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     transition:
       background-color $dur-ui ease,
       transform $dur-press $ease-out;
@@ -144,7 +144,7 @@
   }
 
   &__qty-val {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     min-width: 12px;
     text-align: center;
   }

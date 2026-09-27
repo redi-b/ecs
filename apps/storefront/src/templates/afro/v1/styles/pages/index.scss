@@ -21,7 +21,7 @@
 
   &__title {
     text-align: center;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     max-width: 16ch;
     margin-block-start: $space-750;
     margin-block-end: $space-750;
@@ -214,7 +214,7 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     max-width: 16ch;
     margin: 0;
   }
@@ -454,11 +454,11 @@
     }
 
     .category-card__title {
-      color: rgba($clr-neutral-900, 0.9);
+      color: rgba($clr-neutral-900, 0.72);
     }
 
     .category-card__count {
-      color: rgba($clr-neutral-900, 0.6);
+      color: rgba($clr-neutral-900, 0.72);
     }
 
     .category-card__action--active {
@@ -651,7 +651,7 @@
 
   &__title {
     text-align: center;
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     max-width: 18ch;
     margin: 0;
   }
@@ -821,7 +821,7 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     max-width: 16ch;
     margin: 0;
   }
@@ -857,7 +857,7 @@
     outline: none;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.4);
+      color: rgba($clr-neutral-900, 0.72);
     }
 
     &:focus {
@@ -878,7 +878,7 @@
     outline: none;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.4);
+      color: rgba($clr-neutral-900, 0.72);
     }
 
     &:focus {
@@ -896,7 +896,7 @@
   }
 
   &__upload-label {
-    color: rgba($clr-neutral-900, 0.9);
+    color: rgba($clr-neutral-900, 0.72);
     margin: 0;
   }
 
@@ -926,7 +926,7 @@
 
   &__upload-btn {
     background-color: rgba($clr-neutral-900, 0.05);
-    color: rgba($clr-neutral-900, 0.8);
+    color: rgba($clr-neutral-900, 0.72);
     padding: $space-150 $space-250;
     border-radius: $radius-150;
     height: fit-content;
@@ -990,11 +990,11 @@
     }
 
     span {
-      color: rgba($clr-neutral-900, 0.6);
+      color: rgba($clr-neutral-900, 0.72);
     }
 
     a {
-      color: rgba($clr-neutral-900, 0.9);
+      color: rgba($clr-neutral-900, 0.72);
       text-decoration: none;
       background-image: linear-gradient(currentColor, currentColor);
       background-repeat: no-repeat;

@@ -16,10 +16,10 @@
     display: flex;
     align-items: center;
     gap: $space-150;
-    color: rgba($clr-neutral-900, 0.6);
+    color: rgba($clr-neutral-900, 0.72);
 
     a {
-      color: rgba($clr-neutral-900, 0.6);
+      color: rgba($clr-neutral-900, 0.72);
       text-decoration: none;
       background-image: linear-gradient(currentColor, currentColor);
       background-repeat: no-repeat;
@@ -39,7 +39,7 @@
   }
 
   &__sep {
-    color: rgba($clr-neutral-900, 0.35);
+    color: rgba($clr-neutral-900, 0.72);
   }
 
   &__header {
@@ -55,7 +55,7 @@
 
   &__count {
     margin: 0;
-    color: rgba($clr-neutral-900, 0.6);
+    color: rgba($clr-neutral-900, 0.72);
   }
 
   &__empty[hidden] {

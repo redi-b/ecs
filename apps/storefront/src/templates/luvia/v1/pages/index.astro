@@ -121,7 +121,7 @@ const homeFilterCollections = collections.slice(0, 4);
   structuredData={structuredData}
   categories={categories}
 >
-  <main class="home">
+  <main id="main-content" class="home">
     {
       (editorMode || template.home.hero.enabled) && (
         <section
@@ -526,41 +526,3 @@ const homeFilterCollections = collections.slice(0, 4);
     }
   </main>
 </Layout>
-<script>
-  import { initHeroCarousels } from "../scripts/hero-carousel";
-  initHeroCarousels();
-
-  const rail = document.querySelector<HTMLElement>("[data-product-rail]");
-  const previous = document.querySelector<HTMLButtonElement>(
-    "[data-product-rail-prev]",
-  );
-  const next = document.querySelector<HTMLButtonElement>(
-    "[data-product-rail-next]",
-  );
-  const updateRailControls = () => {
-    if (!rail || !previous || !next) return;
-    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
-    previous.disabled = rail.scrollLeft <= 2;
-    next.disabled = rail.scrollLeft >= max - 2;
-  };
-  const moveRail = (direction: -1 | 1) => {
-    if (!rail) return;
-    const card = rail.querySelector<HTMLElement>(".product-card");
-    const distance = Math.max(
-      card?.offsetWidth ?? rail.clientWidth * 0.75,
-      rail.clientWidth * 0.72,
-    );
-    rail.scrollBy({ left: distance * direction, behavior: "smooth" });
-  };
-  previous?.addEventListener("click", () => moveRail(-1));
-  next?.addEventListener("click", () => moveRail(1));
-  rail?.addEventListener("scroll", updateRailControls, { passive: true });
-  rail?.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      moveRail(event.key === "ArrowLeft" ? -1 : 1);
-    }
-  });
-  if (rail) new ResizeObserver(updateRailControls).observe(rail);
-  updateRailControls();
-</script>

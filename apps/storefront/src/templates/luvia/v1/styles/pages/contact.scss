@@ -24,7 +24,7 @@
 
 .contact__hero p {
   margin: $space-600 0 0;
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .contact__layout {
@@ -82,7 +82,7 @@
   color: var(--clr-ink);
 }
 
-.contact-info p>span:first-child .sf-icon svg {
+.contact-info p>span:first-child svg[data-icon] {
   width: 17px;
   height: 17px;
 }
@@ -95,7 +95,7 @@
 }
 
 .contact-info small {
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .contact-info strong,
@@ -107,7 +107,7 @@
 
 .contact-info__empty {
   display: block !important;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .contact-map {
@@ -137,7 +137,7 @@
   display: flex;
   flex-direction: column;
   gap: $space-150;
-  color: alpha(var(--clr-ink), 0.62);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .contact-form label.is-wide {
@@ -169,7 +169,7 @@
 
 .contact-form input::placeholder,
 .contact-form textarea::placeholder {
-  color: alpha(var(--clr-ink), 0.45);
+  color: alpha(var(--clr-ink), 0.72);
 }
 
 .contact-form button {
@@ -178,7 +178,7 @@
   margin-top: $space-100;
   border: 0;
   border-radius: $radius-pill;
-  background: var(--clr-primary);
+  background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   cursor: pointer;
 }
