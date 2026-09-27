@@ -61,4 +61,41 @@ async function resolveCommitStats(commits, exec, core) {
   return results;
 }
 
-module.exports = { parseShortStat, resolveCommitStats, resolvePushStats };
+function resolveAuthorTag(author) {
+  const normalized = String(author || "")
+    .trim()
+    .toLowerCase();
+  if (
+    normalized === "redi-b" ||
+    normalized === "redytron" ||
+    normalized === "rediet berhanu" ||
+    normalized === "@rediet berhanu"
+  ) {
+    return "by _Rediet Berhanu_";
+  }
+  if (
+    normalized === "hosea174" ||
+    normalized === "hossaena" ||
+    normalized === "hossaena berhan" ||
+    normalized === "@hossaena berhan"
+  ) {
+    return "by _Hossaena Berhan_";
+  }
+  return "";
+}
+
+function formatPushTitle(repoFullName, author) {
+  const tag = resolveAuthorTag(author);
+  if (tag) {
+    return `**🚀 New Push ${tag} — ${repoFullName}**`;
+  }
+  return `**🚀 New Push — ${repoFullName}**`;
+}
+
+module.exports = {
+  formatPushTitle,
+  parseShortStat,
+  resolveAuthorTag,
+  resolveCommitStats,
+  resolvePushStats,
+};

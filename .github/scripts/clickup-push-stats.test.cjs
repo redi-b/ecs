@@ -2,7 +2,9 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 
 const {
+  formatPushTitle,
   parseShortStat,
+  resolveAuthorTag,
   resolveCommitStats,
   resolvePushStats,
 } = require("./clickup-push-stats.cjs");
@@ -112,18 +114,17 @@ describe("ClickUp push stats", () => {
         }
         return {
           exitCode: 0,
-          stdout: args.at(-2) === AFTER
-            ? " 2 files changed, 8 insertions(+), 3 deletions(-)"
-            : " 1 file changed, 2 insertions(+)",
+          stdout:
+            args.at(-2) === AFTER
+              ? " 2 files changed, 8 insertions(+), 3 deletions(-)"
+              : " 1 file changed, 2 insertions(+)",
         };
       },
     };
 
-    const results = await resolveCommitStats(
-      [{ id: AFTER }, { id: second }],
-      exec,
-      { warning() {} },
-    );
+    const results = await resolveCommitStats([{ id: AFTER }, { id: second }], exec, {
+      warning() {},
+    });
 
     assert.deepEqual(results, [
       {
@@ -137,5 +138,30 @@ describe("ClickUp push stats", () => {
     ]);
     assert.equal(calls.filter((args) => args[0] === "rev-parse").length, 2);
     assert.equal(calls.filter((args) => args[0] === "diff").length, 2);
+  });
+
+  it("resolves author tags correctly for known authors", () => {
+    assert.equal(resolveAuthorTag("redi-b"), "by _Rediet Berhanu_");
+    assert.equal(resolveAuthorTag("redytron"), "by _Rediet Berhanu_");
+    assert.equal(resolveAuthorTag("Rediet Berhanu"), "by _Rediet Berhanu_");
+    assert.equal(resolveAuthorTag("Hosea174"), "by _Hossaena Berhan_");
+    assert.equal(resolveAuthorTag("hossaena"), "by _Hossaena Berhan_");
+    assert.equal(resolveAuthorTag("Hossaena Berhan"), "by _Hossaena Berhan_");
+    assert.equal(resolveAuthorTag("someone-else"), "");
+    assert.equal(resolveAuthorTag(null), "");
+    assert.equal(resolveAuthorTag(undefined), "");
+  });
+
+  it("formats push notification title with author tag when known or without tag when unknown", () => {
+    assert.equal(
+      formatPushTitle("redi-b/ecs", "redi-b"),
+      "**🚀 New Push by _Rediet Berhanu_ — redi-b/ecs**",
+    );
+    assert.equal(
+      formatPushTitle("redi-b/ecs", "Hosea174"),
+      "**🚀 New Push by _Hossaena Berhan_ — redi-b/ecs**",
+    );
+    assert.equal(formatPushTitle("redi-b/ecs", "octocat"), "**🚀 New Push — redi-b/ecs**");
+    assert.equal(formatPushTitle("redi-b/ecs", null), "**🚀 New Push — redi-b/ecs**");
   });
 });

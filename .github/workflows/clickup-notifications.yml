@@ -127,7 +127,7 @@ jobs:
             async function sendToClickUp(title, content) {
               // ClickUp posts render as collapsed cards and the API does not expose
               // an initial expansion state. A regular message keeps the update visible.
-              const message = '**' + md(title) + '**\n\n' + content;
+              const message = title + '\n\n' + content;
               const url =
                 'https://api.clickup.com/api/v3/workspaces/' +
                 encodeURIComponent(workspaceId) +
@@ -174,8 +174,8 @@ jobs:
 
             // ---------- GitHub stats ----------
 
-            // Match the linked commit page by comparing the head to its first parent.
             const {
+              formatPushTitle,
               resolveCommitStats,
               resolvePushStats,
             } = require('./.github/scripts/clickup-push-stats.cjs');
@@ -255,6 +255,7 @@ jobs:
               const author =
                 (head.author && head.author.username) ||
                 (event.pusher && event.pusher.name) ||
+                (head.author && head.author.name) ||
                 (head.committer && head.committer.name) ||
                 'unknown';
               const commitUrl = safeUrl(repoHtmlUrl + '/commit/' + head.id);
@@ -300,7 +301,7 @@ jobs:
                 }
               }
 
-              await sendToClickUp('🚀 New Push — ' + repoFullName, lines.join('\n'));
+              await sendToClickUp(formatPushTitle(repoFullName, author), lines.join('\n'));
             }
 
             async function handleMergedPullRequest() {
@@ -370,7 +371,7 @@ jobs:
               }
 
               await sendToClickUp(
-                '🔀 Pull Request Merged — ' + repoFullName,
+                '**🔀 Pull Request Merged — ' + md(repoFullName) + '**',
                 lines.join('\n')
               );
             }
