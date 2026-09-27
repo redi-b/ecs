@@ -56,7 +56,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 FROM workspace AS landing-build
 ENV ASTRO_TELEMETRY_DISABLED=1
-ARG LANDING_PUBLIC_BASE_URL=https://aecs.eclipticcreative.com
+ARG LANDING_PUBLIC_BASE_URL=http://ecs.lvh.me
 ENV PUBLIC_SITE_URL=${LANDING_PUBLIC_BASE_URL}
 RUN --mount=type=cache,id=landing-astro-cache,target=/workspace/apps/landing/node_modules/.astro \
     pnpm --filter @ecs/landing build

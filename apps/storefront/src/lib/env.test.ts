@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { getStorefrontBaseDomain, getStorefrontDemoHost } from "./env.js";
+import {
+  getEcsLandingPageUrl,
+  getStorefrontBaseDomain,
+  getStorefrontDemoHost,
+} from "./env.js";
 
 test("runtime configuration wins over bundled storefront host values", () => {
   const environment = {
@@ -35,4 +39,25 @@ test("blank runtime values fall back to bundled configuration", () => {
 test("storefront domain resolution has a safe local default", () => {
   assert.equal(getStorefrontDemoHost(undefined, {}), undefined);
   assert.equal(getStorefrontBaseDomain({ environment: {} }), "lvh.me");
+});
+
+test("uses the configured ECS landing page URL", () => {
+  assert.equal(
+    getEcsLandingPageUrl({
+      ECS_LANDING_PAGE_URL: " https://ecs.example.et ",
+      NODE_ENV: "production",
+    }),
+    "https://ecs.example.et",
+  );
+});
+
+test("uses the local ECS domain outside production", () => {
+  assert.equal(getEcsLandingPageUrl({ NODE_ENV: "development" }), "http://ecs.lvh.me");
+});
+
+test("requires an explicit ECS landing page URL in production", () => {
+  assert.throws(
+    () => getEcsLandingPageUrl({ NODE_ENV: "production" }),
+    /ECS_LANDING_PAGE_URL is required in production/,
+  );
 });

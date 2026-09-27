@@ -11,7 +11,7 @@ variable "GIT_SHA" {
 }
 
 variable "LANDING_PUBLIC_BASE_URL" {
-  default = "https://aecs.eclipticcreative.com"
+  default = "http://ecs.lvh.me"
 }
 
 group "default" {

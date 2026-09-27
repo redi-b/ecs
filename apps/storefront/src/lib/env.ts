@@ -2,8 +2,11 @@ export function getPlatformApiBaseUrl() {
   return process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
 }
 
-export function getEcsLandingPageUrl() {
-  return process.env.ECS_LANDING_PAGE_URL?.trim() || "https://aecs.eclipticcreative.com";
+export function getEcsLandingPageUrl(environment: NodeJS.ProcessEnv = process.env) {
+  const configured = environment.ECS_LANDING_PAGE_URL?.trim();
+  if (configured) return configured;
+  if (environment.NODE_ENV !== "production") return "http://ecs.lvh.me";
+  throw new Error("ECS_LANDING_PAGE_URL is required in production");
 }
 
 function configuredValue(value: string | undefined) {
