@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   addCalendarMonths,
   formatCalendarDate,
+  formatCalendarDateTime,
   formatDualCalendarDate,
   fromEthiopianDateParts,
   getCalendarDateParts,
@@ -36,8 +37,17 @@ describe("calendar foundation", () => {
       calendar: "ethiopic",
       locale: "en",
     });
-    assert.equal(label, "Meskerem 14, 2019 ዓ.ም.");
+    assert.equal(label, "Meskerem 14, 2019 ዓ.ም");
     assert.doesNotMatch(label ?? "", /\bAM\b/);
+  });
+
+  it("keeps the Ethiopian era separator clean in date-time labels", () => {
+    const label = formatCalendarDateTime("2026-09-12T16:28:00.000Z", {
+      calendar: "ethiopic",
+      locale: "en",
+    });
+    assert.equal(label, "Meskerem 2, 2019 ዓ.ም, 7:28\u202fPM");
+    assert.doesNotMatch(label ?? "", /ዓ\.ም\.,/);
   });
 
   it("puts the month before the day in Amharic Ethiopian dates", () => {
@@ -46,7 +56,7 @@ describe("calendar foundation", () => {
         calendar: "ethiopic",
         locale: "am",
       }),
-      "መስከረም 14 2019 ዓ.ም.",
+      "መስከረም 14 2019 ዓ.ም",
     );
   });
 

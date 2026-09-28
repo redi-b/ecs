@@ -39,7 +39,7 @@ function formatWithEthiopianEra(
   if (calendar !== "ethiopic") return formatter.format(date);
   const parts = formatter
     .formatToParts(date)
-    .map((part) => (part.type === "era" ? { ...part, value: "ዓ.ም." } : part));
+    .map((part) => (part.type === "era" ? { ...part, value: "ዓ.ም" } : part));
   if (!locale.toLowerCase().startsWith("am")) {
     return parts.map((part) => part.value).join("");
   }
