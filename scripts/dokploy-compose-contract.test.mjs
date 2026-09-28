@@ -6,6 +6,10 @@ const compose = await readFile(
   new URL("../infra/dokploy/docker-compose.yml", import.meta.url),
   "utf8",
 );
+const dockerfile = await readFile(new URL("../infra/docker/Dockerfile", import.meta.url), "utf8");
+const landingPackage = JSON.parse(
+  await readFile(new URL("../apps/landing/package.json", import.meta.url), "utf8"),
+);
 
 function serviceBlock(service, nextService) {
   const start = compose.indexOf(`\n  ${service}:`);
@@ -29,6 +33,11 @@ test("landing receives runtime public origins and is health checked", () => {
   assert.match(landing, /PUBLIC_DASHBOARD_URL: https:\/\/app\.\$\{BASE_DOMAIN\}/);
   assert.match(landing, /PUBLIC_SITE_URL: https:\/\/\$\{BASE_DOMAIN\}/);
   assert.match(landing, /4322\/healthz/);
+});
+
+test("landing packages Sharp for Astro's runtime image endpoint", () => {
+  assert.match(landingPackage.dependencies.sharp, /^\^0\.35\./);
+  assert.match(dockerfile, /test -d \/out\/landing\/node_modules\/sharp/);
 });
 
 test("storefront receives the branded demo host at runtime", () => {

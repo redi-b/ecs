@@ -64,6 +64,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @ecs/landing deploy --prod /out/landing && \
     rm -rf /out/landing/dist /out/landing/src && \
     cp -R apps/landing/dist /out/landing/dist && \
+    test -d /out/landing/node_modules/sharp && \
     test -f /out/landing/dist/server/entry.mjs
 
 FROM workspace AS platform-api-build
