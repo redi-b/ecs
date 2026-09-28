@@ -2,9 +2,48 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  badgeLabel,
+  collectNotificationArrivals,
   formatInboxMoney,
   parseInboxDetails,
 } from "./notification-center.js";
+
+describe("notification arrival presentation", () => {
+  const item = (id: string, overrides: Record<string, unknown> = {}) => ({
+    id,
+    eventType: "order.created",
+    title: `Order ${id}`,
+    body: "A new order was placed",
+    href: `/dashboard/orders/${id}`,
+    readAt: null,
+    createdAt: new Date().toISOString(),
+    ...overrides,
+  });
+
+  it("caps the visual badge after nine while preserving exact small counts", () => {
+    assert.equal(badgeLabel(0), null);
+    assert.equal(badgeLabel(1), "1");
+    assert.equal(badgeLabel(9), "9");
+    assert.equal(badgeLabel(10), "9+");
+  });
+
+  it("seeds initial unseen items without announcing them", () => {
+    const known = new Set<string>();
+    assert.deepEqual(collectNotificationArrivals([item("1")], known, false), []);
+    assert.deepEqual(collectNotificationArrivals([item("1")], known, true), []);
+  });
+
+  it("announces each new occurrence once and ignores already-seen items", () => {
+    const known = new Set<string>(["1:1"]);
+    const arrivals = collectNotificationArrivals(
+      [item("2", { occurrenceCount: 1 }), item("1", { occurrenceCount: 2 }), item("3", { seenAt: new Date().toISOString() })],
+      known,
+      true,
+    );
+    assert.deepEqual(arrivals.map(({ id }) => id), ["2", "1"]);
+    assert.deepEqual(collectNotificationArrivals([item("2"), item("1", { occurrenceCount: 2 })], known, true), []);
+  });
+});
 
 describe("formatInboxMoney", () => {
   it("formats raw decimal totals as ETB", () => {

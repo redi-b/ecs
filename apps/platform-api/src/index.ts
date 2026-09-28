@@ -338,6 +338,7 @@ const app = createPlatformApp({
   listNotificationPreferences: notificationService.listNotificationPreferences,
   listInAppNotifications: notificationService.inbox.list,
   countInAppNotificationUnread: notificationService.inbox.unreadCount,
+  countInAppNotificationUnseen: notificationService.inbox.unseenCount,
   markInAppNotificationRead: notificationService.inbox.setRead,
   archiveInAppNotification: notificationService.inbox.archive,
   markAllInAppNotificationsRead: notificationService.inbox.markAllRead,

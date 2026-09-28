@@ -120,6 +120,25 @@ export function registerMerchantInboxNotificationRoutes(
       return context.json(result);
     });
 
+    app.get(`${base}/unseen-count`, async (context) => {
+      if (!options.countInAppNotificationUnseen) {
+        return context.json({ error: "notifications_unavailable" }, 503);
+      }
+      const auth = await resolveTenantContext(
+        context,
+        options,
+        helpers,
+        withTenant ? context.req.param("tenantId") : undefined,
+      );
+      if (!auth.ok) return auth.response;
+
+      const result = await options.countInAppNotificationUnseen({
+        tenantId: auth.tenantId,
+        actorUserId: auth.userId,
+      });
+      return context.json(result);
+    });
+
     app.post(`${base}/read-all`, async (context) => {
       if (!options.markAllInAppNotificationsRead) {
         return context.json({ error: "notifications_unavailable" }, 503);

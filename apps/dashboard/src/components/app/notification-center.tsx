@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ type InboxItem = {
   body: string;
   href: string | null;
   occurrenceCount?: number;
+  priority?: "high" | "normal";
   readAt: string | null;
   seenAt?: string | null;
   createdAt: string;
@@ -43,6 +45,8 @@ type InboxDetail = {
 };
 
 const POLL_MS = 45_000;
+const RECENT_ARRIVAL_LIMIT = 6;
+const INDIVIDUAL_ARRIVAL_LIMIT = 3;
 
 /** Compact popover: omit these detail labels. */
 const SKIP_BODY_PREFIXES = [
@@ -83,10 +87,26 @@ function formatRelativeTime(iso: string, locale: string, formatDate: (value: str
   return formatDate(iso);
 }
 
-function badgeLabel(count: number) {
+export function badgeLabel(count: number) {
   if (count <= 0) return null;
   if (count > 9) return "9+";
   return String(count);
+}
+
+export function collectNotificationArrivals(
+  items: InboxItem[],
+  knownSignatures: Set<string>,
+  announce: boolean,
+) {
+  const unseen = items.filter((item) => !item.seenAt);
+  const arrivals = unseen.filter((item) => {
+    const signature = `${item.id}:${item.occurrenceCount ?? 1}`;
+    return !knownSignatures.has(signature);
+  });
+  for (const item of unseen) {
+    knownSignatures.add(`${item.id}:${item.occurrenceCount ?? 1}`);
+  }
+  return announce ? arrivals : [];
 }
 
 /**
@@ -237,8 +257,57 @@ export function NotificationCenter() {
   /** Shift panel toward the viewport edge on small screens (lang + theme sit after the bell). */
   const [alignOffset, setAlignOffset] = useState(0);
   const openRef = useRef(open);
+  const countRef = useRef(0);
+  const arrivalBaselineReadyRef = useRef(false);
+  const knownArrivalSignaturesRef = useRef(new Set<string>());
   const syncRef = useRef<BroadcastChannel | null>(null);
   openRef.current = open;
+
+  const presentArrival = useCallback(
+    (item: InboxItem) => {
+      const href = item.href?.startsWith("/dashboard") ? item.href : null;
+      const description = item.body
+        .split("\n")
+        .map((line) => line.trim())
+        .find((line) => line && line.toLowerCase() !== item.title.trim().toLowerCase());
+      toast(item.title, {
+        ...(description ? { description } : {}),
+        duration: item.priority === "high" ? 10_000 : 6_000,
+        ...(href
+          ? {
+              action: {
+                label: t("common.inbox.open"),
+                onClick: () => {
+                  void fetch("/dashboard/notifications/inbox", {
+                    body: JSON.stringify({ action: "read", id: item.id }),
+                    headers: { "content-type": "application/json" },
+                    method: "POST",
+                  }).finally(() => {
+                    notifyInboxChanged();
+                  });
+                  router.push(href);
+                },
+              },
+            }
+          : {}),
+      });
+    },
+    [router, t],
+  );
+
+  const presentArrivalBurst = useCallback(
+    (count: number) => {
+      toast(t("common.inbox.newNotifications", { count }), {
+        description: t("common.inbox.newNotificationsDesc"),
+        duration: 10_000,
+        action: {
+          label: t("common.inbox.viewAll"),
+          onClick: () => router.push(dashboardRoutes.notifications),
+        },
+      });
+    },
+    [router, t],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -253,26 +322,55 @@ export function NotificationCenter() {
 
   const refreshCount = useCallback(async () => {
     try {
-      const response = await fetch("/dashboard/notifications/inbox?countOnly=true", {
+      const response = await fetch(
+        "/dashboard/notifications/inbox?countOnly=true&unseenOnly=true",
+        {
         headers: { accept: "application/json" },
         cache: "no-store",
-      });
+        },
+      );
       const data = await response.json().catch(() => undefined);
       if (!response.ok) return;
       if (typeof data?.count === "number") {
-        setCount(data.count);
-        syncRef.current?.postMessage({ count: data.count, type: "count" });
+        const nextCount = data.count;
+        const shouldCheckArrivals = !arrivalBaselineReadyRef.current || nextCount > countRef.current;
+        setCount(nextCount);
+        countRef.current = nextCount;
+        syncRef.current?.postMessage({ count: nextCount, type: "count" });
+
+        if (shouldCheckArrivals) {
+          const listResponse = await fetch(
+            `/dashboard/notifications/inbox?limit=${RECENT_ARRIVAL_LIMIT}`,
+            { cache: "no-store", headers: { accept: "application/json" } },
+          );
+          const listData = await listResponse.json().catch(() => undefined);
+          if (listResponse.ok && Array.isArray(listData?.items)) {
+            const arrivals = collectNotificationArrivals(
+              listData.items as InboxItem[],
+              knownArrivalSignaturesRef.current,
+              arrivalBaselineReadyRef.current,
+            );
+            if (arrivalBaselineReadyRef.current && document.hasFocus()) {
+              if (arrivals.length > INDIVIDUAL_ARRIVAL_LIMIT) {
+                presentArrivalBurst(arrivals.length);
+              } else {
+                for (const item of arrivals.reverse()) presentArrival(item);
+              }
+            }
+            arrivalBaselineReadyRef.current = true;
+          }
+        }
       }
     } catch {
       // ignore poll errors
     }
-  }, []);
+  }, [presentArrival, presentArrivalBurst]);
 
   const refreshList = useCallback(async () => {
     setLoadingList(true);
     setListError(false);
     try {
-      const response = await fetch("/dashboard/notifications/inbox?limit=6", {
+      const response = await fetch("/dashboard/notifications/inbox?limit=50", {
         headers: { accept: "application/json" },
         cache: "no-store",
       });
@@ -282,14 +380,18 @@ export function NotificationCenter() {
         return;
       }
       const list = Array.isArray(data?.items) ? (data.items as InboxItem[]) : [];
-      setItems(list);
+      setItems(list.slice(0, RECENT_ARRIVAL_LIMIT));
       const unseenIds = list.filter((item) => !item.seenAt).map((item) => item.id);
       if (openRef.current && unseenIds.length) {
-        void fetch("/dashboard/notifications/inbox", {
+        const seenResponse = await fetch("/dashboard/notifications/inbox", {
           body: JSON.stringify({ action: "seen", ids: unseenIds }),
           headers: { "content-type": "application/json" },
           method: "POST",
         }).catch(() => undefined);
+        if (seenResponse?.ok) {
+          const seenAt = new Date().toISOString();
+          setItems((current) => current.map((item) => ({ ...item, seenAt: item.seenAt ?? seenAt })));
+        }
       }
       await refreshCount();
     } catch {
@@ -343,7 +445,12 @@ export function NotificationCenter() {
       if (openRef.current) void refreshList();
     };
     syncRef.current = openNotificationSync((message) => {
-      if (message.type === "count") setCount(message.count);
+      if (message.type === "count") {
+        const increased = message.count > countRef.current;
+        setCount(message.count);
+        if (increased && document.hasFocus()) void refreshCount();
+        else countRef.current = message.count;
+      }
       if (message.type === "changed") refresh();
     });
     window.addEventListener(NOTIFICATION_CHANGED_EVENT, refresh);
@@ -361,18 +468,11 @@ export function NotificationCenter() {
   }, [open, refreshList]);
 
   async function markRead(id: string) {
-    const target = items.find((item) => item.id === id);
-    const wasUnread = Boolean(target && !target.readAt);
-
     setItems((current) =>
       current.map((item) =>
         item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
       ),
     );
-    if (wasUnread) {
-      setCount((current) => Math.max(0, current - 1));
-    }
-
     setBusy(true);
     try {
       const response = await fetch("/dashboard/notifications/inbox", {
@@ -385,6 +485,8 @@ export function NotificationCenter() {
       });
       if (!response.ok) {
         await refreshList();
+      } else {
+        await refreshCount();
       }
     } catch {
       await refreshList();
@@ -404,6 +506,7 @@ export function NotificationCenter() {
       })),
     );
     setCount(0);
+    countRef.current = 0;
 
     setBusy(true);
     try {
@@ -418,10 +521,12 @@ export function NotificationCenter() {
       if (!response.ok) {
         setItems(previousItems);
         setCount(previousCount);
+        countRef.current = previousCount;
       }
     } catch {
       setItems(previousItems);
       setCount(previousCount);
+      countRef.current = previousCount;
     } finally {
       setBusy(false);
       notifyInboxChanged();

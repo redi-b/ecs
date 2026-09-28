@@ -80,6 +80,10 @@ test(
       const notificationId = ownerPage.items[0]?.id;
       assert.ok(notificationId);
       assert.equal(
+        (await inbox.unseenCount({ actorUserId: ownerId, tenantId: tenant.id })).count,
+        1,
+      );
+      assert.equal(
         (
           await inbox.setRead({
             actorUserId: ownerId,
@@ -92,6 +96,10 @@ test(
       );
       assert.equal(
         (await inbox.unreadCount({ actorUserId: ownerId, tenantId: tenant.id })).count,
+        0,
+      );
+      assert.equal(
+        (await inbox.unseenCount({ actorUserId: ownerId, tenantId: tenant.id })).count,
         0,
       );
       assert.equal(

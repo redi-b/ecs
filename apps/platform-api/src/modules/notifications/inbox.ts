@@ -406,6 +406,26 @@ export function createInAppNotificationService(db: PlatformDb) {
       return { count: Number(row?.value ?? 0) };
     },
 
+    unseenCount: async (input: { tenantId: string; actorUserId: string }) => {
+      const [row] = await db
+        .select({ value: count() })
+        .from(inAppNotificationReceipts)
+        .innerJoin(
+          inAppNotifications,
+          eq(inAppNotifications.id, inAppNotificationReceipts.notificationId),
+        )
+        .where(
+          and(
+            eq(inAppNotificationReceipts.tenantId, input.tenantId),
+            eq(inAppNotificationReceipts.userId, input.actorUserId),
+            isNull(inAppNotificationReceipts.seenAt),
+            isNull(inAppNotificationReceipts.archivedAt),
+            or(isNull(inAppNotifications.expiresAt), gt(inAppNotifications.expiresAt, new Date())),
+          ),
+        );
+      return { count: Number(row?.value ?? 0) };
+    },
+
     setRead: async (input: {
       tenantId: string;
       id: string;
@@ -414,7 +434,11 @@ export function createInAppNotificationService(db: PlatformDb) {
     }) => {
       const [updated] = await db
         .update(inAppNotificationReceipts)
-        .set({ readAt: input.read ? new Date() : null })
+        .set(
+          input.read
+            ? { readAt: new Date(), seenAt: new Date() }
+            : { readAt: null },
+        )
         .where(
           and(
             eq(inAppNotificationReceipts.notificationId, input.id),
@@ -430,9 +454,10 @@ export function createInAppNotificationService(db: PlatformDb) {
     },
 
     markAllRead: async (input: { tenantId: string; actorUserId: string }) => {
+      const now = new Date();
       const updated = await db
         .update(inAppNotificationReceipts)
-        .set({ readAt: new Date() })
+        .set({ readAt: now, seenAt: now })
         .where(
           and(
             eq(inAppNotificationReceipts.tenantId, input.tenantId),

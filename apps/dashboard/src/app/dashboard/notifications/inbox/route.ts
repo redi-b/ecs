@@ -3,6 +3,7 @@ import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import {
   archiveInAppNotification,
   countInAppNotificationUnread,
+  countInAppNotificationUnseen,
   listInAppNotifications,
   markAllInAppNotificationsRead,
   markInAppNotificationRead,
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const unreadOnly = url.searchParams.get("unreadOnly") === "true";
     const countOnly = url.searchParams.get("countOnly") === "true";
+    const unseenOnly = url.searchParams.get("unseenOnly") === "true";
     const categoryValue = url.searchParams.get("category");
     const category = isInboxCategory(categoryValue) ? categoryValue : undefined;
     const cursor = url.searchParams.get("cursor")?.trim() || undefined;
@@ -28,7 +30,9 @@ export async function GET(request: Request) {
     };
 
     if (countOnly) {
-      const result = await countInAppNotificationUnread(common);
+      const result = unseenOnly
+        ? await countInAppNotificationUnseen(common)
+        : await countInAppNotificationUnread(common);
       if (!result.ok) {
         return {
           ok: false,

@@ -124,6 +124,21 @@ export async function countInAppNotificationUnread(
   return { ok: true, count };
 }
 
+export async function countInAppNotificationUnseen(
+  options: InboxRequestOptions,
+): Promise<{ ok: true; count: number } | { ok: false; message: string; status: number }> {
+  const response = await fetch(
+    inboxUrl(options.platformApiBaseUrl, options.tenantId, "unseen-count"),
+    { cache: "no-store", headers: platformHeaders(options) },
+  ).catch(() => null);
+
+  if (!response) return { ok: false, status: 503, message: "platform_request_failed" };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return parseError(response, data);
+  const count = typeof (data as { count?: unknown })?.count === "number" ? data.count : 0;
+  return { ok: true, count };
+}
+
 export async function markInAppNotificationRead(
   options: InboxRequestOptions & { id: string; read?: boolean },
 ): Promise<{ ok: true } | { ok: false; message: string; status: number }> {

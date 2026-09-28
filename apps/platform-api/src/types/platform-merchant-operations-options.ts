@@ -290,6 +290,9 @@ export type PlatformMerchantOperationsOptions = {
   countInAppNotificationUnread?:
     | ((input: { tenantId: string; actorUserId: string }) => Promise<{ count: number }>)
     | undefined;
+  countInAppNotificationUnseen?:
+    | ((input: { tenantId: string; actorUserId: string }) => Promise<{ count: number }>)
+    | undefined;
   markInAppNotificationRead?:
     | ((input: {
         tenantId: string;

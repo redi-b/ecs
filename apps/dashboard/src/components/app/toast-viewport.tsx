@@ -9,8 +9,18 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_DURATION = 6000;
+const DESKTOP_VISIBLE_TOASTS = 3;
+const MOBILE_VISIBLE_TOASTS = 2;
 const MAX_TIMER_DURATION = 2_147_483_647;
 const SWIPE_THRESHOLD = 48;
+
+export function visibleToastState<T>(toasts: T[], limit: number) {
+  const boundedLimit = Math.max(1, Math.floor(limit));
+  return {
+    overflow: Math.max(0, toasts.length - boundedLimit),
+    visible: toasts.slice(0, boundedLimit),
+  };
+}
 
 function content(value: ToastT["title"]) {
   return typeof value === "function" ? value() : value;
@@ -200,13 +210,26 @@ export function Toaster() {
   const { toasts } = useSonner();
   const { t } = useI18n();
   const [paused, setPaused] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(DESKTOP_VISIBLE_TOASTS);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const update = () => {
+      setVisibleLimit(query.matches ? MOBILE_VISIBLE_TOASTS : DESKTOP_VISIBLE_TOASTS);
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  const { overflow, visible } = visibleToastState(toasts, visibleLimit);
   return (
     <ToastPrimitive.Provider
       label={t("nav.notifications")}
       duration={DEFAULT_DURATION}
       swipeDirection="right"
     >
-      {toasts.slice(0, 4).map((notice) => (
+      {visible.map((notice) => (
         <ToastNotice
           key={`${notice.id}:${notice.type}:${notice.duration}`}
           notice={notice}
@@ -214,6 +237,11 @@ export function Toaster() {
           onResume={() => setPaused(false)}
         />
       ))}
+      {overflow > 0 ? (
+        <div aria-live="polite" className="ecs-notice-overflow" role="status">
+          {t("common.inbox.moreWaiting", { count: overflow })}
+        </div>
+      ) : null}
       <ToastPrimitive.Viewport
         className="ecs-notice-viewport"
         data-paused={paused}
