@@ -84,7 +84,8 @@ function ToastNotice({
           }
         }}
       >
-        {value.label}
+        <span>{value.label}</span>
+        {!secondary && <AppIcons.arrowRight className="ecs-notice-action-icon" aria-hidden="true" />}
       </button>
     );
   };
@@ -171,13 +172,13 @@ function ToastNotice({
                 {content(notice.description)}
               </ToastPrimitive.Description>
             )}
-            {(notice.action || notice.cancel) && (
-              <div className="ecs-notice-actions">
-                {action(notice.action)}
-                {action(notice.cancel, true)}
-              </div>
-            )}
           </div>
+          {(notice.action || notice.cancel) && (
+            <div className="ecs-notice-actions">
+              {action(notice.action)}
+              {action(notice.cancel, true)}
+            </div>
+          )}
         </>
       )}
       {dismissible && notice.closeButton !== false && (
