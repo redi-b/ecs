@@ -210,8 +210,7 @@ function productRule(productIds: string[]) {
   };
 }
 
-function toCreatePayload(input: MerchantPromotionInput) {
-  const code = input.code.trim().toUpperCase();
+function toApplicationMethodPayload(input: MerchantPromotionInput) {
   const promotionType = input.promotionType ?? "standard";
   const targetType = input.targetType ?? "order";
   const productIds = input.productIds ?? [];
@@ -268,6 +267,14 @@ function toCreatePayload(input: MerchantPromotionInput) {
     }
   }
 
+  return application_method;
+}
+
+function toCreatePayload(input: MerchantPromotionInput) {
+  const code = input.code.trim().toUpperCase();
+  const promotionType = input.promotionType ?? "standard";
+  const application_method = toApplicationMethodPayload(input);
+
   const campaignName = input.campaignName?.trim() || code;
   const campaign: Record<string, unknown> = {
     campaign_identifier: tenantCampaignIdentifier(input.tenantId, code),
@@ -300,30 +307,9 @@ function toCreatePayload(input: MerchantPromotionInput) {
 
 function toUpdatePayload(input: MerchantPromotionInput) {
   const code = input.code.trim().toUpperCase();
-  const targetType = input.targetType ?? "order";
-  const application_method: Record<string, unknown> = {
-    type: input.method,
-    target_type: targetType,
-    value: input.value,
-  };
-  if (input.method === "fixed") {
-    application_method.currency_code = (input.currencyCode ?? "etb").toLowerCase();
-  }
-  if (targetType === "items") {
-    const allocation = input.allocation ?? "each";
-    application_method.allocation = allocation;
-    if (allocation === "each") {
-      application_method.max_quantity =
-        input.maxQuantity !== undefined && input.maxQuantity != null ? input.maxQuantity : 1;
-    } else if (input.maxQuantity !== undefined && input.maxQuantity != null) {
-      application_method.max_quantity = input.maxQuantity;
-    }
-  } else if (input.maxQuantity !== undefined && input.maxQuantity != null) {
-    application_method.max_quantity = input.maxQuantity;
-  }
 
   return {
-    application_method,
+    application_method: toApplicationMethodPayload(input),
     code,
     is_automatic: input.isAutomatic ?? false,
     is_tax_inclusive: input.isTaxInclusive ?? false,

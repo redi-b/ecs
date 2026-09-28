@@ -107,3 +107,119 @@ describe("Medusa promotion listing", () => {
     });
   });
 });
+
+describe("Medusa promotion writes", () => {
+  it("preserves standard product targeting when updating", async () => {
+    let updateBody: Record<string, unknown> | undefined;
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/promotions/promo_owned" && init?.method === "POST") {
+          updateBody = JSON.parse(String(init.body));
+          return Response.json({ promotion: rawPromotion("promo_owned", "tenant_1", "items") });
+        }
+        return Response.json({
+          promotion: {
+            ...rawPromotion("promo_owned", "tenant_1", "items"),
+            application_method: {
+              allocation: "each",
+              max_quantity: 2,
+              target_rules: [
+                { attribute: "items.product.id", operator: "in", values: ["prod_1"] },
+              ],
+              target_type: "items",
+              type: "percentage",
+              value: 15,
+            },
+          },
+        });
+      },
+    });
+
+    const result = await service.updatePromotion({
+      allocation: "each",
+      code: "fall15",
+      isAutomatic: false,
+      isTaxInclusive: false,
+      maxQuantity: 2,
+      method: "percentage",
+      productIds: ["prod_1", " prod_2 "],
+      promotionId: "promo_owned",
+      promotionType: "standard",
+      status: "active",
+      targetType: "items",
+      tenantId: "tenant_1",
+      value: 15,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(updateBody?.application_method, {
+      allocation: "each",
+      max_quantity: 2,
+      target_rules: [
+        {
+          attribute: "items.product.id",
+          operator: "in",
+          values: ["prod_1", "prod_2"],
+        },
+      ],
+      target_type: "items",
+      type: "percentage",
+      value: 15,
+    });
+  });
+
+  it("preserves buy and target rules when updating a buy-get promotion", async () => {
+    let updateBody: Record<string, unknown> | undefined;
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/promotions/promo_buyget" && init?.method === "POST") {
+          updateBody = JSON.parse(String(init.body));
+        }
+        return Response.json({
+          promotion: {
+            ...rawPromotion("promo_buyget", "tenant_1", "items"),
+            type: "buyget",
+          },
+        });
+      },
+    });
+
+    const result = await service.updatePromotion({
+      allocation: "each",
+      applyToQuantity: 1,
+      buyMinQuantity: 2,
+      buyProductIds: ["prod_buy"],
+      code: "buy2get1",
+      maxQuantity: 1,
+      method: "percentage",
+      productIds: ["prod_get"],
+      promotionId: "promo_buyget",
+      promotionType: "buyget",
+      status: "active",
+      targetType: "items",
+      tenantId: "tenant_1",
+      value: 100,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(updateBody?.application_method, {
+      allocation: "each",
+      apply_to_quantity: 1,
+      buy_rules: [
+        { attribute: "items.product.id", operator: "in", values: ["prod_buy"] },
+      ],
+      buy_rules_min_quantity: 2,
+      max_quantity: 1,
+      target_rules: [
+        { attribute: "items.product.id", operator: "in", values: ["prod_get"] },
+      ],
+      target_type: "items",
+      type: "percentage",
+      value: 100,
+    });
+  });
+});
