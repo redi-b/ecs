@@ -8,6 +8,7 @@ import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
 import { resolveStoreFulfillmentOptions } from "../../../../lib/commerce/fulfillment";
 import type {
   StoreCart,
+  StoreCategory,
   StoreDeliveryOptions,
   StorePaymentOptions,
   StoreShippingOption,
@@ -34,6 +35,7 @@ interface Props {
   customer?: StoreCustomer | null;
   customerAddresses?: StoreCustomerAddress[];
   demoMode?: boolean;
+  categories?: StoreCategory[];
 }
 const {
   data,
@@ -49,6 +51,7 @@ const {
   customer = null,
   customerAddresses = [],
   demoMode = false,
+  categories,
 } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
@@ -111,14 +114,19 @@ const clientMessages = {
   cartCount={cartCount}
   demoMode={demoMode}
   title={m.checkout_title({}, { locale })}
+  categories={categories}
 >
   <main id="main-content" class="checkout">
     <header class="checkout__hero">
-      <h1 class="type-display">{m.checkout_title({}, { locale })}</h1><p
-        class="type-body-400"
-      >
-        {m.checkout_intro({}, { locale })}
-      </p>
+      <div class="container">
+        <h1 class="type-display">{m.checkout_title({}, { locale })}</h1>
+        <p class="type-body-400">{m.checkout_intro({}, { locale })}</p>
+        <ol class="checkout__steps" aria-label={m.checkout_title({}, { locale })}>
+          <li class="type-body-s-500"><span>1</span>{m.checkout_contact({}, { locale })}</li>
+          <li class="type-body-s-500"><span>2</span>{m.checkout_delivery({}, { locale })}</li>
+          <li class="type-body-s-500"><span>3</span>{m.checkout_payment({}, { locale })}</li>
+        </ol>
+      </div>
     </header>
     {
       error && (
@@ -169,7 +177,7 @@ const clientMessages = {
             <header>
               <>
                 <h2 class="type-heading-3">
-                  {m.checkout_payment_details({}, { locale })}
+                  {m.checkout_contact_delivery({}, { locale })}
                 </h2>
                 <p class="type-body-s-400">
                   {m.checkout_terms_notice({}, { locale })}
@@ -662,8 +670,13 @@ const clientMessages = {
                 <span class="type-body-xs">
                   {m.cart_item_count({ count: summary.itemCount }, { locale })}
                 </span>
+                <button class="checkout-summary__toggle" type="button" aria-expanded="false" aria-controls="checkout-summary-body">
+                  <span class="sr-only">{m.cart_order_summary({}, { locale })}</span>
+                  <Icon name="chevron-down" />
+                </button>
               </>
             </header>
+            <div class="checkout-summary__body" id="checkout-summary-body">
             <ul>
               {items.map((item) => (
                 <li>
@@ -767,6 +780,7 @@ const clientMessages = {
             <small class="type-body-xs">
               {m.checkout_final_total_note({}, { locale })}
             </small>
+            </div>
           </aside>
         </div>
       )
@@ -776,6 +790,13 @@ const clientMessages = {
 
 <script is:inline define:vars={{ clientMessages }}>
   (() => {
+    const summaryPanel = document.querySelector(".checkout-summary");
+    const summaryToggle = summaryPanel?.querySelector(".checkout-summary__toggle");
+    summaryToggle?.addEventListener("click", () => {
+      const expanded = summaryToggle.getAttribute("aria-expanded") === "true";
+      summaryToggle.setAttribute("aria-expanded", String(!expanded));
+      summaryPanel?.toggleAttribute("data-expanded", !expanded);
+    });
     const fulfillment = document.querySelector("[data-delivery-choice]");
     if (!fulfillment) return;
     const form = document.querySelector("[data-checkout-form]");

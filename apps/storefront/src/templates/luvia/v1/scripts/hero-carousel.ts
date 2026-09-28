@@ -11,6 +11,7 @@ function mountHeroCarousel(root: HTMLElement) {
 
   let selectedIndex = 0;
   let autoplayTimer: number | undefined;
+  let pointerStart: number | null = null;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const canScrollNext = () => selectedIndex < slides.length - 1;
@@ -79,6 +80,21 @@ function mountHeroCarousel(root: HTMLElement) {
       startAutoplay();
     }
   });
+
+  viewport.addEventListener("pointerdown", (event) => {
+    if ((event.target as Element | null)?.closest("button, a, input")) return;
+    pointerStart = event.clientX;
+    viewport.setPointerCapture(event.pointerId);
+    stopAutoplay();
+  });
+  viewport.addEventListener("pointerup", (event) => {
+    if (pointerStart === null) return;
+    const distance = event.clientX - pointerStart;
+    pointerStart = null;
+    if (Math.abs(distance) > 42) distance > 0 ? scrollPrev() : scrollNext();
+    startAutoplay();
+  });
+  viewport.addEventListener("pointercancel", () => { pointerStart = null; startAutoplay(); });
 
   root.addEventListener("pointerenter", stopAutoplay);
   root.addEventListener("pointerleave", startAutoplay);

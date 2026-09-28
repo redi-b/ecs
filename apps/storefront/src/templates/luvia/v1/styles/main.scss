@@ -32,7 +32,7 @@
     color: var(--clr-bg);
     text-decoration: underline;
     transform: translateY(-250%);
-    transition: transform var(--motion-fast) var(--ease-out);
+    transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 
     &:focus-visible {
       transform: translateY(0);

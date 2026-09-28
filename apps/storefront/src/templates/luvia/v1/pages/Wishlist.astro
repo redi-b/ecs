@@ -5,14 +5,18 @@ import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
+import type { StoreCategory, StoreProduct } from "../../../../lib/commerce/types";
 
 interface Props {
   data: unknown;
   themeTokens?: unknown;
   tenantName: string;
   deferCartCount?: boolean;
+  demoMode?: boolean;
+  categories?: StoreCategory[];
+  products?: StoreProduct[];
 }
-const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const { data, themeTokens, tenantName, deferCartCount = false, demoMode = false, categories, products = [] } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
   Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
@@ -24,7 +28,21 @@ const wishlistMessages = {
   productFallback: m.catalog_product_fallback({}, { locale }),
   remove: m.action_remove({}, { locale }),
   view: m.action_view_product({}, { locale }),
+  addToCart: m.action_add_to_cart({}, { locale }),
 };
+const wishlistProducts = products.flatMap((product) => {
+  if (!product.handle) return [];
+  const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
+  return [{
+    path: `/products/${product.handle}`,
+    title: product.title ?? m.catalog_product_fallback({}, { locale }),
+    thumbnail: product.thumbnail,
+    priceAmount: product.priceAmount,
+    currencyCode: product.currencyCode,
+    variantId: variant?.id ?? null,
+    inStock: variant?.inStock === true,
+  }];
+});
 ---
 
 <Layout
@@ -33,17 +51,18 @@ const wishlistMessages = {
   footer={template.footer}
   themeTokens={themeTokens}
   deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  categories={categories}
   title={m.wishlist_title({}, { locale })}
 >
   <main id="main-content"
     class="wishlist container"
     data-wishlist-page
     data-wishlist-messages={JSON.stringify(wishlistMessages)}
+    data-wishlist-products={JSON.stringify(wishlistProducts)}
   >
     <header>
-      <span><Icon name="wishlist" /></span><p class="type-body-xs">
-        {m.wishlist_saved_items({}, { locale })}
-      </p><h1 class="type-heading-1">
+      <h1 class="type-heading-1">
         {m.wishlist_title({}, { locale })}
       </h1><small class="type-body-400" data-wishlist-account-copy
         >{m.wishlist_intro({}, { locale })}</small>
@@ -54,6 +73,9 @@ const wishlistMessages = {
       </div>
     </section>
   </main>
+  <template data-wishlist-empty-icon><Icon name="wishlist" /></template>
+  <template data-wishlist-remove-icon><Icon name="trash" /></template>
+  <template data-wishlist-bag-icon><Icon name="bag" /></template>
 </Layout>
 <script>
   import {
@@ -70,6 +92,10 @@ const wishlistMessages = {
     const messages = JSON.parse(
       root?.dataset.wishlistMessages || "{}",
     ) as Record<string, string>;
+    const catalogByPath = new Map(
+      (JSON.parse(root?.dataset.wishlistProducts || "[]") as WishlistEntry[])
+        .map((product) => [product.path, product]),
+    );
     let items: WishlistEntry[] = [];
     let focusAfterRender: string | null = null;
     const money = (amount: number | null, currency: string | null) => {
@@ -90,8 +116,8 @@ const wishlistMessages = {
         empty.className = "wishlist__empty empty-state";
         const mark = document.createElement("span");
         mark.className = "empty-state__mark";
-        mark.innerHTML =
-          '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.6 12 20 12 20z"/></svg>';
+        const icon = document.querySelector<HTMLTemplateElement>("[data-wishlist-empty-icon]");
+        if (icon) mark.append(icon.content.cloneNode(true));
         const body = document.createElement("div");
         body.className = "empty-state__copy";
         const title = document.createElement("h2");
@@ -117,11 +143,14 @@ const wishlistMessages = {
       grid.className = "wishlist__grid";
       for (const item of items) {
         const card = document.createElement("article");
+        card.className = "product-card";
         card.dataset.wishlistPath = item.path;
         const itemPath = localizeBrowserPath(item.path);
+        const mediaWrap = document.createElement("div");
+        mediaWrap.className = "product-card__media";
         if (item.thumbnail) {
           const media = document.createElement("a");
-          media.className = "wishlist__media";
+          media.className = "product-card__media-link";
           media.href = itemPath;
           const image = document.createElement("img");
           image.src = item.thumbnail;
@@ -131,22 +160,25 @@ const wishlistMessages = {
           image.loading = "lazy";
           image.decoding = "async";
           media.append(image);
-          card.append(media);
+          mediaWrap.append(media);
         }
+        const remove = document.createElement("button");
+        remove.className = "wishlist__remove";
+        remove.type = "button";
+        const removeIcon = document.querySelector<HTMLTemplateElement>("[data-wishlist-remove-icon]");
+        if (removeIcon) remove.append(removeIcon.content.cloneNode(true));
+        remove.setAttribute("aria-label", `${messages.remove || "Remove"}: ${item.title}`);
+        mediaWrap.append(remove);
         const meta = document.createElement("span");
-        meta.className = "type-body-xs";
+        meta.className = "product-card__brand type-body-s-400";
         meta.textContent = messages.savedProduct || "";
         const link = document.createElement("a");
-        link.className = "type-heading-4";
+        link.className = "product-card__title type-body-l-400";
         link.href = itemPath;
         link.textContent = item.title || messages.productFallback || "";
         const price = document.createElement("strong");
-        price.className = "type-body-l-500";
+        price.className = "product-card__price type-body-xl";
         price.textContent = money(item.priceAmount, item.currencyCode);
-        const remove = document.createElement("button");
-        remove.className = "type-body-xs";
-        remove.type = "button";
-        remove.textContent = messages.remove || "";
         remove.addEventListener("click", () => {
           const index = items.findIndex((saved) => saved.path === item.path);
           focusAfterRender =
@@ -160,16 +192,26 @@ const wishlistMessages = {
             }),
           );
         });
-        card.append(meta, link);
+        card.append(mediaWrap, meta, link);
         if (price.textContent) card.append(price);
-        const actions = document.createElement("div");
-        actions.className = "wishlist__actions";
-        const view = document.createElement("a");
-        view.className = "type-body-xs";
-        view.href = itemPath;
-        view.textContent = messages.view || "";
-        actions.append(view, remove);
-        card.append(actions);
+        if (item.variantId && item.inStock) {
+          const form = document.createElement("form");
+          form.className = "wishlist__add";
+          form.method = "post";
+          form.action = "/actions/cart/add";
+          form.dataset.cardAddForm = "";
+          const variant = document.createElement("input");
+          variant.type = "hidden"; variant.name = "variantId"; variant.value = item.variantId;
+          const quantity = document.createElement("input");
+          quantity.type = "hidden"; quantity.name = "quantity"; quantity.value = "1";
+          const add = document.createElement("button");
+          add.type = "submit"; add.className = "type-body-s-500";
+          const addIcon = document.querySelector<HTMLTemplateElement>("[data-wishlist-bag-icon]");
+          if (addIcon) add.append(addIcon.content.cloneNode(true));
+          const addLabel = document.createElement("span");
+          addLabel.dataset.cardAddLabel = ""; addLabel.textContent = messages.addToCart || "Add to cart";
+          add.append(addLabel); form.append(variant, quantity, add); card.append(form);
+        }
         grid.append(card);
       }
       content.append(grid);
@@ -188,7 +230,7 @@ const wishlistMessages = {
       const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail
         ?.items;
       if (!Array.isArray(next)) return;
-      items = next;
+      items = next.map((item) => ({ ...item, ...catalogByPath.get(item.path) }));
       content.setAttribute("aria-busy", "false");
       render();
     });

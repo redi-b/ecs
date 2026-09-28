@@ -19,6 +19,8 @@ test("normalizes legacy paths and structured wishlist entries", () => {
     thumbnail: null,
     priceAmount: null,
     currencyCode: null,
+    variantId: null,
+    inStock: false,
   });
   assert.equal(normalizeWishlistEntry({ title: "Missing path" }), null);
 });
@@ -37,11 +39,13 @@ test("wishlist store migrates, de-duplicates, toggles, and removes entries", () 
     thumbnail: null,
     priceAmount: 1200,
     currencyCode: null,
+    variantId: null,
+    inStock: false,
   }]);
   assert.equal(store.toggle({ path: "/products/night-cream", title: "Night Cream" }).length, 2);
   assert.equal(store.toggle({ path: "/products/night-cream", title: "Night Cream" }).length, 1);
   assert.deepEqual(store.remove("/products/glow-serum"), []);
-  store.write([{ path: "/products/account-only", title: "Account only", thumbnail: null, priceAmount: null, currencyCode: null }]);
+  store.write([{ path: "/products/account-only", title: "Account only", thumbnail: null, priceAmount: null, currencyCode: null, variantId: null, inStock: false }]);
   store.clear();
   assert.equal(storage.getItem(key), null);
   assert.deepEqual(store.read(), []);

@@ -7,6 +7,8 @@ export interface WishlistEntry {
   thumbnail: string | null;
   priceAmount: number | null;
   currencyCode: string | null;
+  variantId: string | null;
+  inStock: boolean;
 }
 
 export interface WishlistStorage {
@@ -32,6 +34,8 @@ export const normalizeWishlistEntry = (value: unknown): WishlistEntry | null => 
       thumbnail: null,
       priceAmount: null,
       currencyCode: null,
+      variantId: null,
+      inStock: false,
     };
   }
   if (!value || typeof value !== "object") return null;
@@ -46,6 +50,8 @@ export const normalizeWishlistEntry = (value: unknown): WishlistEntry | null => 
         ? entry.priceAmount
         : null,
     currencyCode: typeof entry.currencyCode === "string" ? entry.currencyCode : null,
+    variantId: typeof entry.variantId === "string" ? entry.variantId : null,
+    inStock: entry.inStock === true,
   };
 };
 
@@ -255,11 +261,6 @@ export const initWishlistController = (options: WishlistControllerOptions = {}) 
     publish(next);
     if (!isSaved) {
       replayAnimation(target, "is-pop");
-      documentRef
-        .querySelectorAll<HTMLElement>("[data-wishlist-indicator]")
-        .forEach((indicator) => {
-          replayAnimation(indicator, "is-bump");
-        });
     }
   };
   const onUpdate = (event: Event) => {

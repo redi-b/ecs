@@ -72,7 +72,7 @@ body.body {
   }
 
   .type-body-l-400 {
-    @include type-token($ff-body, $fw-regular, $fs-body-l, normal, $ls-none, "cap-height");
+    @include type-token($ff-body, $fw-regular, $fs-body-l, normal, $ls-none);
   }
 
   .type-body-xl {

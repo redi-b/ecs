@@ -37,6 +37,76 @@ function formatCartMoney(
   }
 }
 
+function initCustomDropdowns() {
+  const dropdowns = [...document.querySelectorAll<HTMLElement>("[data-custom-dropdown]")];
+  const close = (dropdown: HTMLElement, restoreFocus = false) => {
+    const trigger = dropdown.querySelector<HTMLButtonElement>("[data-dropdown-trigger]");
+    const menu = dropdown.querySelector<HTMLElement>("[data-dropdown-menu]");
+    if (!menu || menu.hidden) return;
+    dropdown.removeAttribute("data-opening");
+    dropdown.setAttribute("data-closing", "");
+    dropdown.removeAttribute("data-open");
+    trigger?.setAttribute("aria-expanded", "false");
+    window.setTimeout(() => {
+      menu.hidden = true;
+      dropdown.removeAttribute("data-closing");
+    }, 130);
+    if (restoreFocus) trigger?.focus();
+  };
+  const open = (dropdown: HTMLElement) => {
+    dropdowns.forEach((candidate) => { if (candidate !== dropdown) close(candidate); });
+    const trigger = dropdown.querySelector<HTMLButtonElement>("[data-dropdown-trigger]");
+    const menu = dropdown.querySelector<HTMLElement>("[data-dropdown-menu]");
+    if (!menu) return;
+    menu.hidden = false;
+    dropdown.removeAttribute("data-closing");
+    dropdown.setAttribute("data-open", "");
+    dropdown.setAttribute("data-opening", "");
+    trigger?.setAttribute("aria-expanded", "true");
+    window.setTimeout(() => dropdown.removeAttribute("data-opening"), 180);
+  };
+
+  dropdowns.forEach((dropdown) => {
+    if (dropdown.dataset.dropdownReady === "true") return;
+    dropdown.dataset.dropdownReady = "true";
+    const trigger = dropdown.querySelector<HTMLButtonElement>("[data-dropdown-trigger]");
+    const options = () => [...dropdown.querySelectorAll<HTMLLabelElement>('[role="option"]')];
+    trigger?.addEventListener("click", () => dropdown.hasAttribute("data-open") ? close(dropdown) : open(dropdown));
+    trigger?.addEventListener("keydown", (event) => {
+      if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+      event.preventDefault();
+      open(dropdown);
+      const entries = options();
+      const target = event.key === "ArrowDown" ? entries[0] : entries.at(-1);
+      target?.querySelector<HTMLInputElement>("input")?.focus();
+    });
+    dropdown.addEventListener("change", (event) => {
+      const input = event.target instanceof HTMLInputElement ? event.target : null;
+      if (!input) return;
+      const selected = input.closest<HTMLLabelElement>('[role="option"]');
+      const label = selected?.querySelector("span")?.textContent;
+      const value = dropdown.querySelector<HTMLElement>("[data-dropdown-value]");
+      options().forEach((option) => option.setAttribute("aria-selected", String(option === selected)));
+      if (value && label) value.textContent = label;
+      close(dropdown, true);
+    });
+    dropdown.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { event.preventDefault(); close(dropdown, true); return; }
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const entries = options();
+      const current = event.target instanceof Element ? event.target.closest('[role="option"]') : null;
+      const index = entries.findIndex((entry) => entry === current);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? entries.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + entries.length) % entries.length;
+      event.preventDefault();
+      entries[next]?.querySelector<HTMLInputElement>("input")?.focus();
+    });
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!(event.target instanceof Node)) return;
+    dropdowns.forEach((dropdown) => { if (!dropdown.contains(event.target as Node)) close(dropdown); });
+  });
+}
+
 /**
  * Initializes global Luvia header, navigation, and cart drawer interactions.
  */
@@ -47,6 +117,7 @@ export function initLuviaStorefront() {
   const messages = getClientMessages();
 
   initLuviaHome();
+  initCustomDropdowns();
 
   // Header & Search
   const menu = document.querySelector<HTMLButtonElement>(".menu");
@@ -174,6 +245,10 @@ export function initLuviaStorefront() {
     if (text != null) el.textContent = text;
     return el;
   };
+  const appendTemplateIcon = (element: HTMLElement, selector: string) => {
+    const template = document.querySelector<HTMLTemplateElement>(selector);
+    if (template) element.append(template.content.cloneNode(true));
+  };
 
   // data-cart-status is a declared aria-live region; nothing ever wrote to it,
   // so no cart mutation was ever announced to screen readers.
@@ -202,8 +277,8 @@ export function initLuviaStorefront() {
     if (!cartItems.length) {
       const empty = createNode("div", "cart-empty empty-state");
       const mark = createNode("span", "empty-state__mark");
-      mark.innerHTML =
-        '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
+      const icon = document.querySelector<HTMLTemplateElement>("[data-cart-empty-icon]");
+      if (icon) mark.append(icon.content.cloneNode(true));
       const copy = createNode("div", "empty-state__copy");
       copy.append(
         createNode(
@@ -259,7 +334,8 @@ export function initLuviaStorefront() {
 
       const controls = createNode("div", "cart-item__actions");
       const quantity = createNode("div", "cart-quantity");
-      const minus = createNode("button", "type-body-s-500", "−") as HTMLButtonElement;
+      const minus = createNode("button", "type-body-s-500") as HTMLButtonElement;
+      appendTemplateIcon(minus, "[data-cart-minus-icon]");
       minus.type = "button";
       minus.dataset.cartAction = "dec";
       minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1));
@@ -270,7 +346,8 @@ export function initLuviaStorefront() {
       minus.disabled = Number(item.quantity) <= 1;
 
       const amount = createNode("span", "type-body-s-500", String(item.quantity));
-      const plus = createNode("button", "type-body-s-500", "+") as HTMLButtonElement;
+      const plus = createNode("button", "type-body-s-500") as HTMLButtonElement;
+      appendTemplateIcon(plus, "[data-cart-plus-icon]");
       plus.type = "button";
       plus.dataset.cartAction = "inc";
       plus.dataset.cartQuantity = String(Number(item.quantity) + 1);
@@ -280,11 +357,8 @@ export function initLuviaStorefront() {
       );
 
       quantity.append(minus, amount, plus);
-      const remove = createNode(
-        "button",
-        "cart-remove type-body-xs",
-        messages.remove || "Remove",
-      ) as HTMLButtonElement;
+      const remove = createNode("button", "cart-remove") as HTMLButtonElement;
+      appendTemplateIcon(remove, "[data-cart-remove-icon]");
       remove.type = "button";
       remove.dataset.cartAction = "remove";
       remove.dataset.cartRemove = "";
@@ -317,6 +391,7 @@ export function initLuviaStorefront() {
     setHeaderSurface(null);
     lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : trigger;
     drawer.hidden = false;
+    delete drawer.dataset.closing;
     backdrop.hidden = false;
     requestAnimationFrame(() => {
       drawer.dataset.open = "";
@@ -337,12 +412,14 @@ export function initLuviaStorefront() {
   const closeCart = () => {
     if (!drawer || !backdrop) return;
     delete drawer.dataset.open;
+    drawer.dataset.closing = "";
     delete backdrop.dataset.open;
     delete document.body.dataset.cartOpen;
     $cartDrawerOpen.set(false);
     syncPageScrollLock();
     setTimeout(() => {
       drawer.hidden = true;
+      delete drawer.dataset.closing;
       backdrop.hidden = true;
       // Restore focus only once the drawer is actually out of the tab order,
       // otherwise Tab can land inside a drawer that is about to be hidden.
@@ -434,21 +511,17 @@ export function initLuviaStorefront() {
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const label = form.querySelector<HTMLElement>("[data-card-add-label]");
     if (!button || button.disabled) return;
-    const originalLabel = label?.textContent ?? messages.addToCart ?? "Add to Cart";
-    button.disabled = true;
-    if (label) label.textContent = messages.adding ?? "Adding...";
-
-    const result = await addToCart({ form, openDrawer: true });
-    if (result.ok) {
-      if (label) label.textContent = messages.added ?? "Added!";
-    } else {
-      if (label) label.textContent = messages.retry ?? "Retry";
-    }
-
+    button.dataset.adding = "";
+    button.setAttribute("aria-busy", "true");
+    if ($cart.get()) $cartDrawerOpen.set(true);
+    const result = await addToCart({ form, openDrawer: !$cart.get() });
+    button.toggleAttribute("data-added", result.ok);
+    if (!result.ok && label) label.textContent = messages.retry ?? "Retry";
     window.setTimeout(() => {
-      button.disabled = false;
-      if (label) label.textContent = originalLabel;
-    }, 1200);
+      delete button.dataset.adding;
+      button.removeAttribute("aria-busy");
+      button.removeAttribute("data-added");
+    }, 520);
   });
 
   if (demoPreview) {
@@ -474,8 +547,8 @@ export function initLuviaStorefront() {
               ? `${demoRoot}/products${url.search}`
               : url.pathname.startsWith("/products/")
                 ? `${demoRoot}${url.pathname}`
-                : url.pathname === "/cart" || url.pathname === "/checkout"
-                  ? `${demoRoot}${url.pathname}`
+                : url.pathname === "/cart" || url.pathname === "/checkout" || url.pathname === "/contact" || url.pathname === "/wishlist"
+                  ? `${demoRoot}${url.pathname}${url.search}`
                   : null;
       if (route) window.location.assign(route);
     };
@@ -486,6 +559,7 @@ export function initLuviaStorefront() {
 
   if (!readOnlyPreview) {
     initStorefrontRuntime();
+    if (!$cart.get()) void fetchCart();
   }
 }
 
@@ -563,16 +637,24 @@ export function initLuviaCartPage() {
       layout?.remove();
       const empty = document.createElement("section");
       empty.className = "cart-page__empty empty-state container";
-      empty.innerHTML = `
-        <span class="empty-state__mark">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
-        </span>
-        <div class="empty-state__copy">
-          <h2 class="empty-state__title type-heading-3">${messages.cartEmpty || "Your cart is empty"}</h2>
-          <p class="empty-state__text type-body-400">${messages.cartEmptyHelp || "Add pieces from the shop to start your order."}</p>
-        </div>
-        <a class="empty-state__action type-body-500" href="/products">${messages.browseProducts || "Browse products"}</a>
-      `;
+      const mark = document.createElement("span");
+      mark.className = "empty-state__mark";
+      const icon = document.querySelector<HTMLTemplateElement>("[data-cart-empty-icon]");
+      if (icon) mark.append(icon.content.cloneNode(true));
+      const copy = document.createElement("div");
+      copy.className = "empty-state__copy";
+      const title = document.createElement("h2");
+      title.className = "empty-state__title type-heading-3";
+      title.textContent = messages.cartEmpty || "Your cart is empty";
+      const help = document.createElement("p");
+      help.className = "empty-state__text type-body-400";
+      help.textContent = messages.cartEmptyHelp || "Add pieces from the shop to start your order.";
+      copy.append(title, help);
+      const browse = document.createElement("a");
+      browse.className = "empty-state__action type-body-500";
+      browse.href = "/products";
+      browse.textContent = messages.browseProducts || "Browse products";
+      empty.append(mark, copy, browse);
       root.append(empty);
     }
   };
@@ -761,7 +843,10 @@ export function initLuviaProductPage() {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!form || !addButton || addButton.disabled) return;
-    updateButtons(true, messages.adding || "Adding...");
+    // Keep the action label stable while the optimistic cart update runs.
+    // The pressed/pulse state provides immediate feedback without noisy
+    // "Adding…" copy that makes a fast action feel slower than it is.
+    updateButtons(true, messages.addToCart || "Add to Cart");
     if (feedback) {
       feedback.textContent = "";
       feedback.classList.remove("is-error");
@@ -825,6 +910,7 @@ export function initLuviaProductPage() {
  */
 export function initLuviaHome() {
   const rail = document.querySelector<HTMLElement>("[data-product-rail]");
+  const railShell = document.querySelector<HTMLElement>("[data-product-rail-shell]");
   const previous = document.querySelector<HTMLButtonElement>("[data-product-rail-prev]");
   const next = document.querySelector<HTMLButtonElement>("[data-product-rail-next]");
 
@@ -839,6 +925,7 @@ export function initLuviaHome() {
     const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
     previous.disabled = rail.scrollLeft <= 2;
     next.disabled = rail.scrollLeft >= max - 2;
+    railShell?.toggleAttribute("data-overflow-right", max > 2 && rail.scrollLeft < max - 2);
   };
   // Coalesce to one read/write per frame instead of per scroll event.
   const onScroll = () => {

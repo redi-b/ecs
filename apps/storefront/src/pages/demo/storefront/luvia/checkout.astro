@@ -2,6 +2,7 @@
 import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
 import {
   luviaDemoCart,
+  luviaDemoCategories,
   luviaDemoDelivery,
   luviaDemoShippingOptions,
 } from "../../../../lib/demo/luvia-fixture";
@@ -17,5 +18,6 @@ import LuviaV1Checkout from "../../../../templates/luvia/v1/pages/Checkout.astro
   delivery={luviaDemoDelivery}
   payment={{ cod: true, chapa: true }}
   shippingOptions={luviaDemoShippingOptions}
+  categories={luviaDemoCategories}
   demoMode
 />

@@ -7,10 +7,8 @@
   justify-content: center;
   text-align: center;
   gap: $space-250;
-  padding: $space-650 $space-450;
-  background:
-    radial-gradient(circle at 50% 0%, alpha(var(--clr-primary), 0.14), transparent 58%),
-    var(--clr-soft);
+  padding: $space-600 $space-450;
+  background: var(--clr-soft);
   border: 1px solid var(--clr-line);
   border-radius: $radius-450;
 
@@ -24,7 +22,6 @@
     background: var(--clr-surface);
     color: var(--clr-primary-dark);
     border: 1px solid alpha(var(--clr-primary), 0.28);
-    box-shadow: 0 $space-200 $space-400 alpha(var(--clr-primary), 0.12);
 
     svg[data-icon] {
       width: $space-450;

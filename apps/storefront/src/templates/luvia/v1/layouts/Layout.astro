@@ -5,6 +5,7 @@ import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
 import "../styles/components/_rail.scss";
 import "../styles/components/_demo-banner.scss";
+import "../styles/components/_custom-dropdown.scss";
 import { contrastRatio, deriveTextContrast, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
@@ -70,12 +71,7 @@ const categories =
   suppliedCategories ??
   (categoriesResult && "categories" in categoriesResult ? categoriesResult.categories : []);
 
-const addToCartLabel = resolveTemplateVoiceMessage({
-  fallback: m.action_add_to_cart({}, { locale }),
-  locale,
-  messageId: "action_add_to_cart",
-  templateKey: "luvia.v1",
-});
+const addToCartLabel = m.action_add_to_cart({}, { locale });
 
 const continueShoppingLabel = resolveTemplateVoiceMessage({
   fallback: m.action_continue_shopping({}, { locale }),
@@ -130,7 +126,7 @@ const themeStyle = [
       ? theme.colors.foreground
       : "transparent"
   }`,
-  `--clr-primary-dark:color-mix(in srgb, var(--clr-primary), #000 65%)`,
+  `--clr-primary-dark:color-mix(in srgb, var(--clr-primary), var(--clr-black) 65%)`,
   `--clr-line:rgb(from var(--clr-ink) r g b / 0.14)`,
 ].join(";");
 ---

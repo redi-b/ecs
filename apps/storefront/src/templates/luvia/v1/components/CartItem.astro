@@ -3,6 +3,7 @@ import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPl
 import type { StoreCartItem } from "../../../../lib/commerce/types";
 import { formatMoney } from "../../../../lib/money";
 import * as m from "../../../../paraglide/messages.js";
+import { Icon } from "astro-icon/components";
 
 interface Props {
   item: StoreCartItem;
@@ -51,7 +52,7 @@ const productHref = item.productHandle
         aria-label={m.action_decrease_quantity({}, { locale })}
         disabled={item.quantity <= 1}
       >
-        −
+        <Icon name="minus" />
       </button>
     </form>
     <span data-line-quantity class="type-body-s-500" aria-live="polite">{item.quantity}</span>
@@ -59,7 +60,7 @@ const productHref = item.productHandle
       <input type="hidden" name="lineItemId" value={item.id} />
       <input type="hidden" name="quantity" value={item.quantity + 1} />
       <button type="submit" aria-label={m.action_increase_quantity({}, { locale })}>
-        +
+        <Icon name="plus" />
       </button>
     </form>
   </div>

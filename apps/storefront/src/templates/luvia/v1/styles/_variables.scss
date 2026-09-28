@@ -57,13 +57,6 @@ $ls-none: 0;
   --clr-primary-link: #0f642a;
   --clr-primary-fill: #3ee272;
 
-  // Motion. Without these every `transition` shorthand below is invalid at
-  // computed-value time and silently resolves to 0s.
-  --motion-fast: 0.16s;
-  --motion-base: 0.2s;
-  --motion-medium: 0.24s;
-  --motion-slow: 0.4s;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 // Aliases must live on body: theme overrides (themeStyle / editor preview)

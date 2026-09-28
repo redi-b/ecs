@@ -8,9 +8,17 @@
 
 .account-order__back {
   display: inline-flex;
+  align-items: center;
+  gap: $space-100;
   margin-bottom: $space-550;
   color: alpha(var(--clr-ink), 0.72);
   text-underline-offset: 4px;
+}
+
+.account-order__back svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(180deg);
 }
 
 .account-order__hero {

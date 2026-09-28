@@ -40,6 +40,8 @@ export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
   ([handle, title, priceAmount, thumbnail, collectionIndex], index) => {
     const collection = luviaDemoCollections[collectionIndex];
     const originalPriceAmount = index === 1 ? 2_050 : null;
+    const skinType = index % 3 === 0 ? "Dry" : index % 3 === 1 ? "Combination" : "All skin types";
+    const concern = index % 2 === 0 ? "Hydration" : "Radiance";
     return {
       id: `demo-product-${index + 1}`,
       title,
@@ -63,10 +65,16 @@ export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
           discountAmount: originalPriceAmount ? originalPriceAmount - priceAmount : null,
           discountPercentage: originalPriceAmount ? 13 : null,
           currencyCode: "ETB",
-          optionValues: [],
+          optionValues: [
+            { optionTitle: "Skin type", value: skinType },
+            { optionTitle: "Concern", value: concern },
+          ],
         },
       ],
-      options: [],
+      options: [
+        { id: `demo-skin-${index + 1}`, title: "Skin type", values: [skinType] },
+        { id: `demo-concern-${index + 1}`, title: "Concern", values: [concern] },
+      ],
       collectionId: collection?.id ?? null,
       collectionTitle: collection?.title ?? null,
       categoryIds: collection ? [`category-${collection.id}`] : [],

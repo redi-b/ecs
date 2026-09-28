@@ -17,12 +17,15 @@
   background: var(--clr-soft);
   color: var(--clr-ink);
   cursor: pointer;
-  transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
 
 .rail-controls button:hover:not(:disabled) {
   background: var(--clr-accent);
+  transform: translateY(-1px);
 }
+
+.rail-controls button:active:not(:disabled) { transform: scale(.96); }
 
 .rail-controls button:focus-visible {
   outline: 2px solid var(--clr-primary);

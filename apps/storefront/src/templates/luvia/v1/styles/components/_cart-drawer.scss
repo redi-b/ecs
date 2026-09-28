@@ -10,6 +10,7 @@
   opacity: 0;
   cursor: default;
   backdrop-filter: blur(2px);
+  transition: opacity 180ms ease;
 }
 
 .cart-backdrop[data-open] {
@@ -23,20 +24,26 @@
   right: 0;
   bottom: 0;
   width: min(510px, 100%);
+  max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overflow-x: clip;
+  contain: layout paint;
   background: var(--clr-surface);
   color: var(--clr-ink);
   box-shadow: -24px 0 70px alpha(var(--clr-ink), 0.16);
   transform: translateX(102%);
+  transition: transform 240ms cubic-bezier(.2, 0, 0, 1);
 }
 
 .cart-drawer[data-open] {
   transform: translateX(0);
 }
+
+.cart-drawer[data-closing] { transform: translateX(102%); }
 
 .cart-drawer>header {
   flex: none;
@@ -49,6 +56,7 @@
 }
 
 .cart-drawer>header>div {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: $space-250;
@@ -56,6 +64,9 @@
 
 .cart-drawer h2 {
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cart-drawer>header span {
@@ -119,15 +130,19 @@
 }
 
 .cart-item {
-  padding: $space-300;
+  min-width: 0;
+  padding: 0 0 $space-350;
   display: grid;
   grid-template-columns: 74px minmax(0, 1fr) auto;
   gap: $space-300;
   align-items: center;
-  border: 1px solid var(--clr-line);
-  border-radius: $radius-300;
+  border: 0;
+  border-bottom: 1px solid var(--clr-line);
+  border-radius: 0;
   background: var(--clr-surface);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
+.cart-item:hover { border-color: alpha(var(--clr-primary), .3); }
 
 .cart-item[data-updating] {
   opacity: .52;
@@ -200,21 +215,31 @@
   background: transparent;
   color: alpha(var(--clr-ink), 0.72);
   cursor: pointer;
+  border-radius: $radius-full;
+  transition: background-color 140ms ease, transform 140ms ease;
 }
+.cart-quantity button svg { width: 11px; height: 11px; }
+.cart-quantity button:hover:not(:disabled) { background: var(--clr-surface); }
+.cart-quantity button:active:not(:disabled) { transform: scale(.86); }
 
 .cart-quantity button:disabled {
   opacity: .35;
 }
 
 .cart-remove {
-  min-height: 30px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: alpha(var(--clr-ink), 0.72);
-  text-decoration: underline;
+  display: grid;
+  place-items: center;
+  border-radius: $radius-full;
+  color: var(--clr-danger);
   cursor: pointer;
 }
+.cart-remove:hover { background: var(--clr-danger-bg); }
+.cart-remove svg { width: 14px; height: 14px; }
 
 .cart-empty {
   margin: auto;
@@ -289,7 +314,7 @@
 
 @media (max-width: 760px) {
   .cart-drawer {  
-    width: min(100vw, 440px);  
+    width: min(100vw, 420px);
   }
 
   .cart-drawer>header {  

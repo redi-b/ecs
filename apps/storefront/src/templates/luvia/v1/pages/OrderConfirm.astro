@@ -4,6 +4,7 @@ import { Icon } from "astro-icon/components";
 import { formatMoney } from "../../../../lib/money";
 import { formatOrderReference } from "../../../../lib/order-reference";
 import type { LastOrderCookie } from "../../../../lib/session/cart-cookie";
+import type { StoreCategory } from "../../../../lib/commerce/types";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import ActionButton from "../components/ActionButton.astro";
@@ -19,6 +20,7 @@ interface Props {
   lastOrder: LastOrderCookie | null;
   hasCustomerSession?: boolean;
   demoMode?: boolean;
+  categories?: StoreCategory[];
 }
 const {
   data,
@@ -29,6 +31,7 @@ const {
   lastOrder,
   hasCustomerSession = false,
   demoMode = false,
+  categories,
 } = Astro.props;
 const template = parseLuviaData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
@@ -45,6 +48,7 @@ const locale =
   cartCount={cartCount}
   demoMode={demoMode}
   title={m.order_confirmed({}, { locale })}
+  categories={categories}
 >
   <main id="main-content"
     class="confirmation container"
@@ -59,9 +63,7 @@ const locale =
     <div class="confirmation__glow" aria-hidden="true"></div>
     <section class="confirmation__card" aria-labelledby="confirmation-title">
       <div class="confirmation__mark">
-        <span></span><svg viewBox="0 0 48 48" aria-hidden="true"
-          ><path d="m14 25 7 7 14-17"></path></svg
-        ><Icon name="sparkle" />
+        <span></span><Icon name="check" /><Icon name="sparkle" />
       </div>
       <p class="confirmation__eyebrow type-body-xs">
         {m.order_received({}, { locale })}

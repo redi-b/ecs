@@ -115,6 +115,7 @@ if (ctx.ok && Product && product) {
       notice={Astro.url.searchParams.get("notice")}
       error={Astro.url.searchParams.get("error")}
       relatedProducts={relatedProducts}
+      categories={ctx.categories}
       seo={seo}
       structuredData={structuredData}
     />

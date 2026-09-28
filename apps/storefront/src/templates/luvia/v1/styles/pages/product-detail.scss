@@ -293,7 +293,10 @@
   border: 2px solid alpha(var(--clr-ink), 0.25);
   border-top-color: var(--clr-ink);
   border-radius: $radius-full;
+  animation: product-spinner-turn 650ms linear infinite;
 }
+
+@keyframes product-spinner-turn { to { transform: rotate(360deg); } }
 
 .product-wishlist {
   width: 52px;
@@ -385,6 +388,8 @@
   margin: 0;
 }
 
+.rich-text { max-width: 100%; overflow: hidden; }
+.rich-text > * { max-width: 100%; }
 .rich-text>*+* {
   margin-top: $space-250;
 }
@@ -412,6 +417,22 @@
   color: var(--clr-primary-link);
   text-underline-offset: 3px;
 }
+
+.rich-text img,
+.rich-text video,
+.rich-text iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: $radius-250;
+}
+
+.rich-text figure { max-width: 100%; margin: $space-400 0; overflow: hidden; }
+.rich-text table { width: 100%; display: block; overflow-x: auto; border-collapse: collapse; }
+.rich-text pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; }
+
+.related .rail-controls button:first-child svg { transform: rotate(180deg); }
+.related .rail-controls button svg { width: 16px; height: 16px; }
 
 .related {
   margin: $space-1050 auto 0;

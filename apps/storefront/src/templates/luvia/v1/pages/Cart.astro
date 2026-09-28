@@ -2,7 +2,7 @@
 import "../styles/pages/cart.scss";
 import { Icon } from "astro-icon/components";
 import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
-import type { StoreCart } from "../../../../lib/commerce/types";
+import type { StoreCart, StoreCategory } from "../../../../lib/commerce/types";
 import { formatMoney } from "../../../../lib/money";
 import DiscountCode from "../components/DiscountCode.astro";
 import CartItem from "../components/CartItem.astro";
@@ -21,6 +21,7 @@ interface Props {
   error?: string | null;
   discountError?: string | null;
   demoMode?: boolean;
+  categories?: StoreCategory[];
 }
 
 const {
@@ -32,6 +33,7 @@ const {
   error,
   discountError,
   demoMode = false,
+  categories,
 } = Astro.props;
 
 const template = parseLuviaData(data);
@@ -77,6 +79,7 @@ const clientMessages = {
   cartCount={cartCount}
   demoMode={demoMode}
   title={m.cart_title({}, { locale })}
+  categories={categories}
 >
   <main id="main-content" class="cart-page" data-cart-page data-client-messages={JSON.stringify(clientMessages)}>
     <nav
@@ -133,7 +136,7 @@ const clientMessages = {
               <CartItem item={item} currencyCode={cart?.currencyCode} locale={locale} />
             ))}
             <a class="cart-page__continue type-body-s-500" href="/products">
-              ← {continueShoppingLabel}
+              <Icon name="arrow-right" /> {continueShoppingLabel}
             </a>
           </section>
 

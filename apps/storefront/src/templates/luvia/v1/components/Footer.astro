@@ -37,9 +37,10 @@ const categoryLinks = [
       href: categoryProductsHref(category),
     })),
 ];
+const navigationHref = (href: string) => href === "/request-item" ? "/contact?mode=request" : href;
 ---
 
-<footer class="footer" data-editor-section="footer">
+<footer class="footer container" data-editor-section="footer">
   <div class="footer__intro" data-editor-image-scope>
     <div class="footer__brand">
       <img
@@ -66,10 +67,10 @@ const categoryLinks = [
       class="footer__links"
     >
       {
-        footer.quickLinks.map((item) => (
+        footer.quickLinks.filter((item) => item.href !== "/request-item").map((item) => (
           <a
             class="type-body-s-400"
-            href={item.href}
+            href={navigationHref(item.href)}
           >
             {item.label}
           </a>
@@ -79,7 +80,7 @@ const categoryLinks = [
   </div>
 
   <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.catalog_all_categories({}, { locale })}</strong>
+    <strong class="type-body-s-500">{locale === "am" ? "ምድቦች" : "Categories"}</strong>
     <span
       class="footer__links"
     >
@@ -163,7 +164,7 @@ const categoryLinks = [
   </small>
 </footer>
 
-<aside class="inquiry" data-editor-section="footer.inquiry">
+<aside class="inquiry container" data-editor-section="footer.inquiry">
   <p
     class="type-heading-3"
     data-editor-path="footer.inquiry.title"

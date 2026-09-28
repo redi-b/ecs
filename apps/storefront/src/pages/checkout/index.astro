@@ -100,6 +100,7 @@ const Checkout = ctx.ok
       error={Astro.url.searchParams.get("error")}
       customer={customer}
       customerAddresses={customerAddresses}
+      categories={ctx.categories}
     />
   )
 }

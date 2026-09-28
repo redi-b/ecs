@@ -8,10 +8,7 @@ import type {
   StoreProduct,
   StoreProductsResponse,
 } from "../../../../lib/commerce/types";
-import {
-  categoryProductsHref,
-  collectionProductsHref,
-} from "../../../../lib/commerce/taxonomy-links";
+import { categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -25,6 +22,7 @@ import HeroProductSlide from "../components/HeroProductSlide.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData, storefrontAsset } from "../lib";
 import ProductCard from "../components/ProductCard.astro";
+import CustomDropdown from "../components/CustomDropdown.astro";
 import TemplateAsset from "../../../../components/media/TemplateAsset.astro";
 
 interface Props {
@@ -104,9 +102,9 @@ const selectedCategories = (
         .map((id) => categoryById.get(id))
         .filter((item): item is StoreCategory => Boolean(item))
     : categories
-).slice(0, 4);
-const collectionHref = collectionProductsHref;
+).slice(0, 5);
 const homeFilterCollections = collections.slice(0, 4);
+const homePriceMax = Math.ceil(Math.max(0, ...listing.map((product) => product.priceAmount ?? 0)));
 ---
 
 <Layout
@@ -268,30 +266,32 @@ const homeFilterCollections = collections.slice(0, 4);
                   data-product-rail-prev
                   aria-label={m.home_previous_products({}, { locale })}
                 >
-                  ←
+                  <Icon name="arrow-right" />
                 </button>
                 <button
                   type="button"
                   data-product-rail-next
                   aria-label={m.home_next_products({}, { locale })}
                 >
-                  →
+                  <Icon name="arrow-right" />
                 </button>
               </div>
             </header>
             {hasError ? (
               <p class="state">{m.catalog_load_error({}, { locale })}</p>
             ) : topPicks.length ? (
-              <div
-                class="product-rail"
-                data-product-rail
-                role="region"
-                aria-label={m.home_top_picks({}, { locale })}
-                tabindex="0"
-              >
-                {topPicks.map((product, index) => (
-                  <ProductCard product={product} eager={index < 4} />
-                ))}
+              <div class="product-rail-shell" data-product-rail-shell>
+                <div
+                  class="product-rail"
+                  data-product-rail
+                  role="region"
+                  aria-label={m.home_top_picks({}, { locale })}
+                  tabindex="0"
+                >
+                  {topPicks.map((product, index) => (
+                    <ProductCard product={product} eager={index < 4} />
+                  ))}
+                </div>
               </div>
             ) : (
               <p class="state">{m.home_products_coming({}, { locale })}</p>
@@ -328,31 +328,23 @@ const homeFilterCollections = collections.slice(0, 4);
                 {m.home_full_shop({}, { locale })}
               </ActionButton>
             </header>
-            <nav
-              class="filter"
-              aria-label={m.home_product_filters({}, { locale })}
-            >
-              <a class="is-active type-body-400" href="/products">
-                {m.catalog_all_products({}, { locale })}
-              </a>
-              {homeFilterCollections.map((collection) => (
-                <a class="type-body-400" href={collectionHref(collection)}>
-                  {collection.title ??
-                    m.catalog_collection_fallback({}, { locale })}
-                </a>
-              ))}
-              <span aria-hidden="true" />
-              <a class="type-body-400" href="/products?order=created_at">
-                {m.catalog_newest({}, { locale })}
-              </a>
-              <a class="type-body-400" href="/products?order=title">
-                {m.home_a_to_z({}, { locale })}
-              </a>
-            </nav>
+            <form class="home-discovery" data-home-discovery>
+              <div class="home-discovery__prices" role="group" aria-label={m.catalog_price_range({}, { locale })}>
+                <span class="home-discovery__price-label type-body-xs">{m.catalog_price_range({}, { locale })}</span>
+                <label><span class="type-body-xs">{m.catalog_from({}, { locale })}</span><span class="home-discovery__money"><b class="type-body-xs">ETB</b><input class="type-body-s-400" type="number" name="min" min="0" max={homePriceMax} placeholder="0" /></span></label>
+                <label><span class="type-body-xs">{m.catalog_to({}, { locale })}</span><span class="home-discovery__money"><b class="type-body-xs">ETB</b><input class="type-body-s-400" type="number" name="max" min="0" max={homePriceMax} placeholder={String(homePriceMax)} /></span></label>
+              </div>
+              <CustomDropdown name="collection" label={m.catalog_collection({}, { locale })} options={[{ value: "", label: m.catalog_all_collections({}, { locale }) }, ...homeFilterCollections.map((item) => ({ value: item.id, label: item.title ?? m.catalog_collection_fallback({}, { locale }) }))]} />
+              <CustomDropdown name="category" label={m.catalog_category({}, { locale })} options={[{ value: "", label: m.catalog_all_categories({}, { locale }) }, ...selectedCategories.map((item) => ({ value: item.id, label: item.name ?? m.catalog_category_fallback({}, { locale }) }))]} />
+              <CustomDropdown name="sort" label={m.catalog_sort_by({}, { locale })} options={[{ value: "featured", label: m.catalog_featured({}, { locale }) }, { value: "price-asc", label: m.catalog_price_low_high({}, { locale }) }, { value: "price-desc", label: m.catalog_price_high_low({}, { locale }) }, { value: "title", label: m.catalog_title_az({}, { locale }) }]} value="featured" />
+              <button class="home-discovery__clear type-body-s-500" type="reset">{m.catalog_clear_filters({}, { locale })}</button>
+            </form>
             {listing.length ? (
-              <div class="product-grid">
-                {listing.map((product) => (
-                  <ProductCard product={product} />
+              <div class="product-grid" data-home-products>
+                {listing.map((product, index) => (
+                  <div class="product-grid__item" data-home-product data-index={index} data-title={product.title ?? ""} data-price={product.priceAmount ?? ""} data-collection={product.collectionId ?? ""} data-categories={product.categoryIds.join(",")}>
+                    <ProductCard product={product} />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -390,7 +382,7 @@ const homeFilterCollections = collections.slice(0, 4);
     {
       (editorMode || template.home.categories.enabled) && (
         <section
-          class="categories"
+          class="categories container"
           data-editor-section="home.categories"
           data-editor-visible-path="home.categories.enabled"
           hidden={!template.home.categories.enabled}
@@ -416,7 +408,7 @@ const homeFilterCollections = collections.slice(0, 4);
                 >
                   {template.home.categories.title}
                 </h2>
-                <nav data-editor-categories-path="home.categories.categoryIds" data-editor-limit="4">
+                <nav data-editor-categories-path="home.categories.categoryIds" data-editor-limit="5">
                   {selectedCategories.length ? (
                     selectedCategories.map((category, index) => (
                       <a
@@ -447,7 +439,7 @@ const homeFilterCollections = collections.slice(0, 4);
     {
       (editorMode || template.home.cta.enabled) && (
         <section
-          class="cta"
+          class="cta container"
           data-editor-section="home.cta"
           data-editor-visible-path="home.cta.enabled"
           hidden={!template.home.cta.enabled}
@@ -530,3 +522,28 @@ const homeFilterCollections = collections.slice(0, 4);
     }
   </main>
 </Layout>
+
+<script>
+  const discovery = document.querySelector<HTMLFormElement>("[data-home-discovery]");
+  const productGrid = document.querySelector<HTMLElement>("[data-home-products]");
+  const applyDiscovery = () => {
+    if (!discovery || !productGrid) return;
+    const data = new FormData(discovery);
+    const min = Number(data.get("min") || 0);
+    const max = Number(data.get("max") || Number.POSITIVE_INFINITY);
+    const collection = String(data.get("collection") || "");
+    const category = String(data.get("category") || "");
+    const sort = String(data.get("sort") || "featured");
+    const items = [...productGrid.querySelectorAll<HTMLElement>("[data-home-product]")];
+    items.forEach((item) => {
+      const price = Number(item.dataset.price || 0);
+      const categories = (item.dataset.categories || "").split(",");
+      item.hidden = price < min || price > max || Boolean(collection && item.dataset.collection !== collection) || Boolean(category && !categories.includes(category));
+    });
+    items.sort((a, b) => sort === "price-asc" ? Number(a.dataset.price) - Number(b.dataset.price) : sort === "price-desc" ? Number(b.dataset.price) - Number(a.dataset.price) : sort === "title" ? (a.dataset.title || "").localeCompare(b.dataset.title || "") : Number(a.dataset.index) - Number(b.dataset.index));
+    items.forEach((item) => productGrid.append(item));
+  };
+  discovery?.addEventListener("input", applyDiscovery);
+  discovery?.addEventListener("change", applyDiscovery);
+  discovery?.addEventListener("reset", () => requestAnimationFrame(() => { discovery.querySelectorAll<HTMLElement>("[data-custom-dropdown]").forEach((dropdown) => { const checked = dropdown.querySelector<HTMLInputElement>('input:checked'); const label = checked?.closest("label")?.querySelector("span")?.textContent; const value = dropdown.querySelector<HTMLElement>("[data-dropdown-value]"); if (value && label) value.textContent = label; dropdown.querySelectorAll('[role="option"]').forEach((option) => option.setAttribute("aria-selected", String(option.contains(checked)))); }); applyDiscovery(); }));
+</script>

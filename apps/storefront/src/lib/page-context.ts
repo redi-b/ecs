@@ -6,7 +6,8 @@ import {
 } from "@ecs/contracts";
 import { getStorefrontTemplateTranslationDefaults } from "@ecs/storefront-templates";
 import { getStoreCart } from "./commerce/cart.js";
-import type { StoreCart, StorefrontError } from "./commerce/types.js";
+import { listStoreCategories } from "./commerce/catalog.js";
+import type { StoreCart, StoreCategory, StorefrontError } from "./commerce/types.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "./env.js";
 import { getStorefrontPublicOrigin } from "./seo-origin.js";
 import { getCartIdFromRequest } from "./session/cart-cookie.js";
@@ -27,6 +28,7 @@ export type PageContext =
       cartCount: number;
       locale: StorefrontLocale;
       commerceLocale: StorefrontCommerceLocale;
+      categories: StoreCategory[];
     }
   | {
       ok: false;
@@ -93,6 +95,14 @@ export async function loadPageContext(
     },
   };
 
+  const categoriesResult = await listStoreCategories({
+    platformApiBaseUrl,
+    requestHost,
+    locale: commerceLocale,
+    limit: 100,
+  });
+  const categories = isError(categoriesResult) ? [] : categoriesResult.categories;
+
   if (options?.skipCart) {
     return {
       ok: true,
@@ -105,6 +115,7 @@ export async function loadPageContext(
       cartCount: 0,
       locale,
       commerceLocale,
+      categories,
     };
   }
 
@@ -138,6 +149,7 @@ export async function loadPageContext(
     cartCount,
     locale,
     commerceLocale,
+    categories,
   };
 }
 

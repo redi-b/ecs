@@ -28,12 +28,15 @@ const {
   emptyLogoUrl,
 } = Astro.props;
 
-const pathname = Astro.url.pathname;
+const pathname = Astro.url.pathname
+  .replace(/^\/demo\/storefront\/luvia(?=\/|$)/, "")
+  .replace(/^\/luvia(?=\/|$)/, "") || "/";
+const navigationHref = (href: string) => href === "/request-item" ? "/contact?mode=request" : href;
 const isActiveLink = (href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 ---
 
-<header class="header container">
+<header class="header container" data-site-header>
   <div class="header__start">
     <a
       class="logo"
@@ -49,19 +52,19 @@ const isActiveLink = (href: string) =>
         hidden={!logoUrl}
       />
     </a>
-    <button class="menu" type="button" aria-expanded="false" aria-controls="navigation">
-      <span></span><span></span><span></span>
-      <span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span>
-    </button>
     <nav class="nav" id="navigation" aria-label={m.a11y_store_navigation({}, { locale })}>
+      <div class="nav__intro">
+        <span class="type-body-xs">{tenantName}</span>
+        <strong class="type-heading-4">{m.a11y_store_navigation({}, { locale })}</strong>
+      </div>
       {
-        header.navigation.map((item) => (
+        header.navigation.filter((item) => item.href !== "/request-item").map((item) => (
           <a
             class:list={[
               "type-body-400",
               { "is-active": isActiveLink(item.href), "type-body-500": isActiveLink(item.href) },
             ]}
-            href={item.href}
+            href={navigationHref(item.href)}
             aria-current={isActiveLink(item.href) ? "page" : undefined}
           >
             {item.label}
@@ -69,8 +72,12 @@ const isActiveLink = (href: string) =>
         ))
       }
       <span class="nav__customer" role="group" aria-label={m.a11y_customer_links({}, { locale })}>
-        <a class="type-body-400" href="/wishlist">{m.nav_wishlist({}, { locale })}</a>
-        <a class="type-body-400" href="/account">{m.nav_account({}, { locale })}</a>
+        <a class="nav__account type-body-400" href="/account">
+          <span class="nav__account-icon"><Icon name="user" /></span>
+          <span><strong class="type-body-500">{m.nav_account({}, { locale })}</strong><small class="type-body-xs">{m.a11y_customer_links({}, { locale })}</small></span>
+          <Icon name="arrow-right" />
+        </a>
+        <a class="nav__wishlist type-body-400" href="/wishlist"><Icon name="wishlist" />{m.nav_wishlist({}, { locale })}</a>
       </span>
     </nav>
   </div>
@@ -85,6 +92,8 @@ const isActiveLink = (href: string) =>
       data-search-suggestions-anchor
       data-search-view-all={m.search_view_all({ query: "{query}" }, { locale })}
       data-search-for={m.search_for({ query: "{query}" }, { locale })}
+      data-search-loading={locale === "am" ? "በመፈለግ ላይ…" : "Searching…"}
+      data-search-empty={m.catalog_no_match({}, { locale })}
     >
       <label class="sr-only" for="search-input">{m.search_products_label({}, { locale })}</label>
       <input
@@ -136,6 +145,10 @@ const isActiveLink = (href: string) =>
         <Icon name="user" />
       </a>
     </div>
+    <button class="menu" type="button" aria-expanded="false" aria-controls="navigation">
+      <span></span><span></span><span></span>
+      <span class="sr-only">{m.a11y_open_navigation({}, { locale })}</span>
+    </button>
   </div>
 </header>
 <button class="header-backdrop" type="button" data-header-backdrop aria-label={m.a11y_close_navigation({}, { locale })} hidden></button>

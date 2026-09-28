@@ -11,6 +11,7 @@ import { formatOrderReference } from "../../../../lib/order-reference";
 import { orderStatusLabel } from "../../../../lib/order-status-label";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
+import type { StoreCategory } from "../../../../lib/commerce/types";
 interface Props {
   data: unknown;
   themeTokens?: unknown;
@@ -20,6 +21,7 @@ interface Props {
   error?: string | null;
   success?: string | null;
   initialMode?: "login" | "register";
+  categories?: StoreCategory[];
 }
 const {
   data,
@@ -30,6 +32,7 @@ const {
   error = null,
   success = null,
   initialMode = "login",
+  categories,
 } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
@@ -49,6 +52,7 @@ function formatOrderDate(value: string | null) {
   footer={template.footer}
   themeTokens={themeTokens}
   deferCartCount={deferCartCount}
+  categories={categories}
   title={m.account_title({}, { locale })}
 >
   <main id="main-content"
@@ -779,16 +783,7 @@ function formatOrderDate(value: string | null) {
                       aria-pressed="false"
                       data-password-toggle
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <>
-                          <path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z" />
-                          <circle cx="12" cy="12" r="2.6" />
-                          <path
-                            class="account__password-slash"
-                            d="m4 4 16 16"
-                          />
-                        </>
-                      </svg>
+                      <Icon name="eye" />
                     </button>
                   </span>
                 </label>
@@ -864,16 +859,7 @@ function formatOrderDate(value: string | null) {
                       aria-pressed="false"
                       data-password-toggle
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <>
-                          <path d="M2.4 12s3.5-6 9.6-6 9.6 6 9.6 6-3.5 6-9.6 6-9.6-6Z" />
-                          <circle cx="12" cy="12" r="2.6" />
-                          <path
-                            class="account__password-slash"
-                            d="m4 4 16 16"
-                          />
-                        </>
-                      </svg>
+                      <Icon name="eye" />
                     </button>
                   </span>
                   <small class="type-body-xs">

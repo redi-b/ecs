@@ -1,6 +1,6 @@
 ---
 import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
-import { findLuviaDemoProduct, luviaDemoProducts } from "../../../../../lib/demo/luvia-fixture";
+import { findLuviaDemoProduct, luviaDemoCategories, luviaDemoProducts } from "../../../../../lib/demo/luvia-fixture";
 import LuviaV1Product from "../../../../../templates/luvia/v1/pages/Product.astro";
 
 const handle = Astro.params.handle ?? "";
@@ -18,5 +18,6 @@ const relatedProducts = luviaDemoProducts
   product={product}
   handle={handle}
   relatedProducts={relatedProducts}
+  categories={luviaDemoCategories}
   demoMode
 />

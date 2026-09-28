@@ -80,17 +80,44 @@
   border: 1px solid transparent;
   border-radius: $radius-full;
   background: var(--clr-surface);
+  color: var(--clr-ink);
   cursor: pointer;
+  transition: transform 150ms cubic-bezier(.2, 0, 0, 1), box-shadow 150ms ease;
 }
 
 .product-card__heart svg[data-icon] {
   width: 15px;
   height: 13px;
+  fill: transparent;
+  stroke: currentColor;
+  transition: fill 180ms ease, color 180ms ease, transform 240ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .product-card__heart[aria-pressed="true"] {
-  border-color: var(--clr-primary);
-  background: var(--clr-accent);
+  color: var(--clr-primary);
+}
+
+.product-card__heart[aria-pressed="true"] svg[data-icon] {
+  fill: currentColor;
+  transform: scale(1.08);
+}
+.product-card__heart[aria-pressed="true"] svg[data-icon] path { fill: currentColor; }
+
+.product-card__heart:hover {
+  box-shadow: 0 $space-100 $space-350 alpha(var(--clr-ink), .12);
+}
+
+.product-card__heart:active {
+  transform: scale(.92);
+}
+
+.product-card__heart.is-pop svg[data-icon] {
+  animation: wishlist-heart-pop 360ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes wishlist-heart-pop {
+  45% { transform: scale(1.34) rotate(-8deg); }
+  75% { transform: scale(.94) rotate(3deg); }
 }
 
 .product-card__cta {
@@ -138,4 +165,8 @@
 
 .product-card__price del {
   color: alpha(var(--clr-ink), 0.72);
+}
+
+@media (hover: none) {
+  .product-card__cta { opacity: 1; visibility: visible; transform: translate(-50%, -12px); }
 }

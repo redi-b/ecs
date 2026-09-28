@@ -13,9 +13,10 @@ test("production template search entry points use the shared accessible suggesti
     source("./product-search-suggestions.ts"),
   ]);
 
-  for (const entry of [luviaHeader, luviaListing, nexahubLayout]) {
+  for (const entry of [luviaHeader, nexahubLayout]) {
     assert.match(entry, /data-product-search-suggestions/);
   }
+  assert.doesNotMatch(luviaListing, /data-product-search-suggestions/);
   assert.match(luviaClient, /initProductSearchSuggestions/);
   assert.match(nexahubLayout, /initProductSearchSuggestions/);
   assert.match(controller, /aria-autocomplete/);

@@ -63,6 +63,17 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       active.scrollIntoView({ block: "nearest" });
     }
   };
+  const renderStatus = (message: string, state: "loading" | "empty") => {
+    list.replaceChildren();
+    activeIndex = -1;
+    const status = document.createElement("div");
+    status.className = `product-search-suggestions__status is-${state}`;
+    status.setAttribute("role", "status");
+    status.textContent = message;
+    list.append(status);
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  };
   const render = (query: string, suggestions: SearchSuggestion[]) => {
     renderedQuery = query;
     list.replaceChildren();
@@ -110,6 +121,15 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       list.append(link);
     }
 
+    if (!suggestions.length) {
+      const empty = document.createElement("div");
+      empty.className = "product-search-suggestions__status is-empty";
+      empty.setAttribute("role", "status");
+      empty.textContent = (form.dataset.searchEmpty ?? "No products found for {query}")
+        .replace("{query}", `“${query}”`);
+      list.append(empty);
+    }
+
     const all = document.createElement("a");
     all.className = "product-search-suggestions__all";
     const allParams = new URLSearchParams();
@@ -145,6 +165,7 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
     const requestController = new AbortController();
     controller = requestController;
     input.setAttribute("aria-busy", "true");
+    renderStatus(form.dataset.searchLoading ?? "Searching products…", "loading");
     try {
       const response = await fetch(`/search-suggestions?q=${encodeURIComponent(query)}`, {
         headers: { accept: "application/json" },

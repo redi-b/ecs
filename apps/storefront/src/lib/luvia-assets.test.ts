@@ -16,7 +16,7 @@ test("Luvia template raster assets stay web-ready and within budget", async () =
   assert.ok(sizes.reduce((total, size) => total + size, 0) < 3_000_000, "template raster assets must stay below 3 MB total");
 });
 
-test("Luvia static editorial images use the responsive Astro image boundary", async () => {
+test("Luvia static editorial images use responsive assets except the intentional CSS shop hero", async () => {
   const files = ["pages/index.astro", "pages/Contact.astro", "pages/ProductList.astro"];
   const sources = await Promise.all(files.map((file) => readFile(new URL(file, templateRoot), "utf8")));
   const styles = await Promise.all(
@@ -25,7 +25,9 @@ test("Luvia static editorial images use the responsive Astro image boundary", as
     ),
   );
 
-  assert.ok(sources.every((source) => source.includes("TemplateAsset")));
+  assert.ok(sources[0]?.includes("TemplateAsset"));
+  assert.ok(!sources[1]?.includes("contact-map-image"));
+  assert.match(sources[2] ?? "", /--shop-hero-bg:\s*url/);
   assert.ok(styles.every((source) => !/url\([^)]*\.(?:png|jpe?g|webp)/i.test(source)));
 });
 

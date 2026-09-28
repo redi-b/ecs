@@ -15,7 +15,7 @@ const title = product.title ?? m.catalog_product_fallback({}, { locale });
 const href = product.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const variant = product.variants.find((item) => item.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, variant);
-const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode });
+const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thumbnail, priceAmount: product.priceAmount, currencyCode: product.currencyCode, variantId: variant?.id ?? null, inStock: variant?.inStock === true });
 ---
 <section class="promo__slide" data-promo-slide aria-hidden={active ? "false" : "true"}>
   <div class="promo__media">

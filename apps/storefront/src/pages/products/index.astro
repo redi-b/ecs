@@ -1,6 +1,6 @@
 ---
 import StoreUnavailable from "../../components/shell/StoreUnavailable.astro";
-import { listStoreCategories, listStoreCollections } from "../../lib/commerce/catalog";
+import { listStoreCollections } from "../../lib/commerce/catalog";
 import { catalogHref, parseCatalogFilters } from "../../lib/commerce/catalog-filters";
 import { resolveTaxonomySelection, taxonomyHandle } from "../../lib/commerce/taxonomy-links";
 import { listStoreProducts } from "../../lib/commerce/products";
@@ -27,24 +27,18 @@ const collectionValue = filters.collectionId ?? "";
 const categoryValue = filters.categoryId ?? "";
 const order = filters.order ?? "";
 
-const [collectionsResult, categoriesResult] = ctx.ok
-  ? await Promise.all([listStoreCollections({
+const collectionsResult = ctx.ok
+  ? await listStoreCollections({
       platformApiBaseUrl: ctx.platformApiBaseUrl,
       requestHost: ctx.requestHost,
       locale: ctx.commerceLocale,
       limit: 50,
-    }), listStoreCategories({
-      platformApiBaseUrl: ctx.platformApiBaseUrl,
-      requestHost: ctx.requestHost,
-      locale: ctx.commerceLocale,
-      limit: 100,
-    })])
-  : [null, null];
+    })
+  : null;
 
 const collections: StoreCollection[] =
   collectionsResult && !isStoreError(collectionsResult) ? collectionsResult.collections : [];
-const categories: StoreCategory[] =
-  categoriesResult && !isStoreError(categoriesResult) ? categoriesResult.categories : [];
+const categories: StoreCategory[] = ctx.ok ? ctx.categories : [];
 const collectionSelection = resolveTaxonomySelection(collections, collectionValue);
 const categorySelection = resolveTaxonomySelection(categories, categoryValue);
 

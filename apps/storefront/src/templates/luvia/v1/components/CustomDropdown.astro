@@ -1,0 +1,16 @@
+---
+import { Icon } from "astro-icon/components";
+interface Option { value: string; label: string; }
+interface Props { name: string; label: string; options: Option[]; value?: string; class?: string; }
+const { name, label, options, value = "", class: className } = Astro.props;
+const selected = options.find((option) => option.value === value) ?? options[0];
+---
+<div class:list={["custom-dropdown", className]} data-custom-dropdown>
+  <button class="custom-dropdown__trigger type-body-s-500" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label={`${label}: ${selected?.label ?? label}`} data-dropdown-trigger>
+    <span><small class="type-body-xs">{label}</small><strong class="type-body-s-500" data-dropdown-value>{selected?.label ?? label}</strong></span>
+    <Icon name="chevron-down" />
+  </button>
+  <div class="custom-dropdown__menu" role="listbox" aria-label={label} data-dropdown-menu hidden>
+    {options.map((option) => <label class="type-body-s-400" role="option" aria-selected={option.value === value ? "true" : "false"}><input type="radio" name={name} value={option.value} checked={option.value === value} /><span>{option.label}</span><i aria-hidden="true"><Icon name="check" /></i></label>)}
+  </div>
+</div>

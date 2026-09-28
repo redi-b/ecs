@@ -37,4 +37,4 @@ if (accountResult && "ok" in accountResult && accountResult.status === 401) {
   Astro.response.headers.append("Set-Cookie", customerSessionClearCookie());
 }
 ---
-{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} account={account} error={error} success={success} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}
+{!ctx.ok || !Page ? <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} /> : <Page data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} categories={ctx.categories} account={account} error={error} success={success} initialMode={Astro.url.searchParams.get("mode") === "register" ? "register" : "login"} />}

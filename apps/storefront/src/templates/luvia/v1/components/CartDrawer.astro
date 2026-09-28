@@ -1,5 +1,6 @@
 ---
 import * as m from "../../../../paraglide/messages.js";
+import { Icon } from "astro-icon/components";
 
 interface Props {
   locale: "am" | "en";
@@ -33,9 +34,7 @@ const { locale, continueShoppingLabel } = Astro.props;
       </span>
     </div>
     <button type="button" data-cart-close aria-label={m.cart_close({}, { locale })}>
-      <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="m7 7 10 10M17 7 7 17" />
-      </svg>
+      <Icon name="close" />
     </button>
   </header>
   <div class="cart-drawer__status type-body-s-400" data-cart-status aria-live="polite"></div>
@@ -60,3 +59,7 @@ const { locale, continueShoppingLabel } = Astro.props;
     <button type="button" data-cart-continue class="type-body-s-500">{continueShoppingLabel}</button>
   </footer>
 </aside>
+<template data-cart-empty-icon><Icon name="bag" /></template>
+<template data-cart-plus-icon><Icon name="plus" /></template>
+<template data-cart-minus-icon><Icon name="minus" /></template>
+<template data-cart-remove-icon><Icon name="trash" /></template>

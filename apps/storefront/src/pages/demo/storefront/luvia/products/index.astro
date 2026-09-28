@@ -6,6 +6,30 @@ import {
   luviaDemoProducts,
 } from "../../../../../lib/demo/luvia-fixture";
 import LuviaV1ProductList from "../../../../../templates/luvia/v1/pages/ProductList.astro";
+import { parseCatalogFilters, parseOptionPair } from "../../../../../lib/commerce/catalog-filters";
+
+const filters = parseCatalogFilters(Astro.url.searchParams);
+const matchesOption = (product: (typeof luviaDemoProducts)[number], token: string) => {
+  const pair = parseOptionPair(token);
+  return pair ? product.variants.some((variant) => variant.optionValues.some((option) => option.optionTitle === pair.name && option.value === pair.value)) : true;
+};
+const filteredProducts = luviaDemoProducts
+  .filter((product) => !filters.collectionId || luviaDemoCollections.some((collection) => collection.id === product.collectionId && collection.handle === filters.collectionId))
+  .filter((product) => !filters.categoryId || luviaDemoCategories.some((category) => product.categoryIds.includes(category.id) && category.handle === filters.categoryId))
+  .filter((product) => filters.priceMin === undefined || (product.priceAmount ?? 0) >= filters.priceMin)
+  .filter((product) => filters.priceMax === undefined || (product.priceAmount ?? 0) <= filters.priceMax)
+  .filter((product) => filters.optionPairs.every((token) => matchesOption(product, token)))
+  .sort((a, b) => filters.order === "price" ? (a.priceAmount ?? 0) - (b.priceAmount ?? 0) : filters.order === "-price" ? (b.priceAmount ?? 0) - (a.priceAmount ?? 0) : filters.order === "title" ? (a.title ?? "").localeCompare(b.title ?? "") : filters.order === "-title" ? (b.title ?? "").localeCompare(a.title ?? "") : 0);
+const optionFacets = ["Skin type", "Concern"].map((name) => {
+  const values = luviaDemoProducts.flatMap((product) => product.options.filter((option) => option.title === name).flatMap((option) => option.values));
+  return { name, values: [...new Set(values)].map((value) => ({ value, token: JSON.stringify([name, value]), count: values.filter((candidate) => candidate === value).length })) };
+});
+const facets = {
+  price: { min: Math.min(...luviaDemoProducts.map((product) => product.priceAmount ?? 0)), max: Math.max(...luviaDemoProducts.map((product) => product.priceAmount ?? 0)) },
+  collections: Object.fromEntries(luviaDemoCollections.map((collection) => [collection.id, luviaDemoProducts.filter((product) => product.collectionId === collection.id).length])),
+  categories: Object.fromEntries(luviaDemoCategories.map((category) => [category.id, luviaDemoProducts.filter((product) => product.categoryIds.includes(category.id)).length])),
+  options: optionFacets,
+};
 ---
 
 <LuviaV1ProductList
@@ -13,12 +37,14 @@ import LuviaV1ProductList from "../../../../../templates/luvia/v1/pages/ProductL
   themeTokens={luviaV1ThemeTokens}
   tenantName="Luvia Beauty"
   cartCount={2}
-  products={luviaDemoProducts}
+  products={filteredProducts}
   collections={luviaDemoCollections}
   categories={luviaDemoCategories}
-  totalCount={luviaDemoProducts.length}
+  totalCount={filteredProducts.length}
   offset={0}
   limit={luviaDemoProducts.length}
+  facets={facets}
+  filters={filters}
   hasPrev={false}
   hasNext={false}
   demoMode
