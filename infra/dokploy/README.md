@@ -4,7 +4,9 @@ This stack is intended for a Dokploy Compose service. GitHub Actions builds the 
 
 ## DNS and routing
 
-Set `BASE_DOMAIN` to the delegated application domain, for example `ecs.example.com`. A DNS record for `*.ecs.example.com` covers hosts such as:
+Set `BASE_DOMAIN` to the application's public base domain. It can be an apex such as `example.com`
+(recommended now that ECS has a dedicated domain), or a delegated name such as `ecs.example.com`.
+A wildcard DNS record for `*.${BASE_DOMAIN}` covers hosts such as:
 
 - `api.ecs.example.com` for the platform API
 - `app.ecs.example.com` for the merchant dashboard (`dashboard` redirects here)
@@ -35,33 +37,41 @@ Public media (`media.${BASE_DOMAIN}`) gets a one-week cache with stale-while-rev
 
 Better Auth issues secure session cookies for the shared `.${BASE_DOMAIN}` parent domain. This allows the central dashboard, tenant dashboards, and platform API to use the same session while keeping cookies HTTP-only and same-site.
 
-The wildcard record does not cover the bare `ecs.example.com` host. Add that record separately only if the bare host will be used.
+The wildcard record does not cover `BASE_DOMAIN` itself. Create both records at the authoritative DNS
+provider:
+
+- `BASE_DOMAIN` (`@` when it is the zone apex) → the Dokploy/Traefik public IP.
+- `*.BASE_DOMAIN` → the same public IP (A/AAAA), or a CNAME to `BASE_DOMAIN` when the provider permits it.
 
 Wildcard **DNS** and wildcard **TLS** are separate concerns.
 
-**TLS (current deployed limitation):**
+**TLS:**
 
 | Hosts | Certificate |
 |-------|-------------|
-| Platform hosts, `demo`, and explicitly approved beta shops such as `afrostudio` | Explicit Traefik router + Let's Encrypt HTTP-01 (priority 100) |
-| Any other `{shop}.${BASE_DOMAIN}` | Catch-all router reaches ECS, but a regex-only host rule cannot supply a concrete ACME domain and Traefik serves its default certificate |
+| `BASE_DOMAIN` | Included explicitly as the certificate's main name (the landing page) |
+| `*.BASE_DOMAIN` | One wildcard SAN covers `app`, `api`, `media`, `ops`, `demo`, and every one-level merchant shop |
 
-Wildcard DNS routes shop traffic but does not provide wildcard TLS. Before relying on managed shop hosts, configure a DNS-01 resolver in Dokploy's static Traefik configuration and request one `*.BASE_DOMAIN` certificate explicitly from the catch-all router. DNS-01 requires API access to the authoritative DNS provider; the default HTTP-01 resolver cannot issue wildcard certificates.
+Wildcard DNS routes shop traffic but does not provide wildcard TLS. The Compose router now explicitly
+requests one certificate containing both `BASE_DOMAIN` and `*.BASE_DOMAIN` through
+`TLS_CERT_RESOLVER` (default `letsencrypt-dns`). That resolver must exist in Dokploy's static Traefik
+configuration. DNS-01 requires API access to the authoritative DNS provider; the default HTTP-01
+resolver cannot issue wildcard certificates.
 
 Requirements:
 
 1. DNS: `*.${BASE_DOMAIN}` A/AAAA (or CNAME) pointing at the Traefik entry (same as today).
 2. A Traefik DNS-01 certificate resolver backed by narrowly scoped authoritative-DNS credentials.
-3. Router TLS domains containing `*.${BASE_DOMAIN}` (and `${BASE_DOMAIN}` separately only when the apex is used).
+3. `TLS_CERT_RESOLVER=letsencrypt-dns` (or the exact resolver name you configured). The Compose labels
+   request both `${BASE_DOMAIN}` and `*.${BASE_DOMAIN}`; a wildcard alone never secures the landing host.
 4. Persistent, backed-up ACME storage and a staging issuance test before using Let's Encrypt production.
 
 Use a DNS provider credential restricted to editing DNS for the ECS zone. Do not keep a cPanel account API token in Traefik: cPanel account tokens are full-access tokens rather than DNS-scoped credentials. The cPanel ACME provider is acceptable only for a controlled one-time proof followed by immediate token revocation, not unattended production renewal.
 
-For the temporary staging environment only, known beta shops may be added as explicit `Host(...)` entries on `ecs-caddy-demo-certs`. They then use the existing HTTP-01 resolver without DNS API credentials. This is an allowlist, not dynamic provisioning, and must not be represented as the production shop-domain design.
-
 **Caveats:**
 
-- A `HostRegexp` catch-all plus HTTP-01 does **not** issue a certificate for each matched hostname. It serves Traefik's default certificate unless a matching certificate already exists.
+- A `HostRegexp` catch-all plus HTTP-01 does **not** issue a certificate for each matched hostname.
+- `*.example.com` covers `shop.example.com`, but not `example.com` and not `x.shop.example.com`.
 - A single wildcard certificate avoids per-shop cold issuance and the registered-domain issuance limit caused by creating one certificate per tenant.
 - Caddy only speaks **HTTP** internally; public TLS terminates at Traefik.
 
@@ -70,8 +80,10 @@ For the temporary staging environment only, known beta shops may be added as exp
 1. Create a Compose service from this repository and use `infra/dokploy/docker-compose.yml`.
 2. Copy the values from `infra/dokploy/.env.example` into the Dokploy environment editor and replace every placeholder.
 3. Configure GHCR credentials in Dokploy if the packages are private.
-4. Point wildcard DNS (`*.${BASE_DOMAIN}`) at the host / Traefik that fronts this stack. Do **not** create conflicting per-shop domain entries in Dokploy’s Domains UI for the same hosts (they duplicate routers). Traefik labels on `caddy` own routing + LE certs.
-5. Confirm Dokploy/Traefik has the DNS-01 wildcard resolver described above. The standard `letsencrypt` HTTP-01 resolver remains suitable only for explicit concrete hosts.
+4. Point both `BASE_DOMAIN` and `*.${BASE_DOMAIN}` at the host / Traefik that fronts this stack. Do
+   **not** create overlapping domain entries in Dokploy's Domains UI (they generate duplicate routers).
+5. Configure the DNS-01 resolver in Dokploy/Traefik static settings and set `TLS_CERT_RESOLVER` to its
+   exact name. The standard `letsencrypt` HTTP-01 resolver cannot be used for this router.
 6. Deploy with `IMAGE_TAG=main` after the GitHub Actions workflow has published the images.
 
 Before the first production deploy, copy `.env.example` to a private local file, replace every

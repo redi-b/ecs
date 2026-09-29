@@ -47,14 +47,23 @@ test("storefront receives the branded demo host at runtime", () => {
   );
 });
 
-test("Traefik requests certificates for the demo and seeded Afro storefront", () => {
-  assert.match(compose, /Host\(`\$\{BASE_DOMAIN\}`\)/);
-  assert.match(compose, /Host\(`demo\.\$\{BASE_DOMAIN\}`\)/);
-  assert.match(compose, /Host\(`afrostudio\.\$\{BASE_DOMAIN\}`\)/);
+test("Traefik requests one DNS-01 certificate for the base domain and wildcard", () => {
+  const caddyStart = compose.indexOf("\n  caddy:");
+  const caddy = compose.slice(caddyStart, compose.indexOf("\nvolumes:", caddyStart));
+  assert.match(caddy, /Host\(`\$\{BASE_DOMAIN\}`\) \|\| HostRegexp/);
   assert.match(
-    compose,
-    /traefik\.http\.routers\.ecs-caddy-demo-certs\.tls\.certresolver=letsencrypt/,
+    caddy,
+    /traefik\.http\.routers\.ecs-caddy-https\.tls\.certresolver=\$\{TLS_CERT_RESOLVER:-letsencrypt-dns\}/,
   );
+  assert.match(
+    caddy,
+    /traefik\.http\.routers\.ecs-caddy-https\.tls\.domains\[0\]\.main=\$\{BASE_DOMAIN\}/,
+  );
+  assert.match(
+    caddy,
+    /traefik\.http\.routers\.ecs-caddy-https\.tls\.domains\[0\]\.sans=\*\.\$\{BASE_DOMAIN\}/,
+  );
+  assert.doesNotMatch(caddy, /ecs-caddy-demo-certs/);
 });
 
 test("storefront receives the trusted public media base at runtime", () => {

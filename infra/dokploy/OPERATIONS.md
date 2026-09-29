@@ -24,6 +24,11 @@ Do not run demo seeds in production. Do not continue a release after either migr
 
 Keep these public host values in the Dokploy environment and under the same delegated base domain:
 
+- `BASE_DOMAIN` may now be the purchased apex domain. Create an apex (`@`) DNS record and a wildcard
+  (`*`) record to the same Traefik address; neither record replaces the other.
+- `TLS_CERT_RESOLVER` must name the static Traefik DNS-01 resolver. The ECS router requests one
+  certificate for both the base/landing host and `*.BASE_DOMAIN`.
+
 ```dotenv
 BASE_DOMAIN=ecs.example.et
 SUPERADMIN_PUBLIC_BASE_URL=https://ops.ecs.example.et

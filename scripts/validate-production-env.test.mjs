@@ -8,6 +8,7 @@ const validEnvironment = () => ({
   IMAGE_PREFIX: "ghcr.io/acme/ecs",
   IMAGE_TAG: "sha-0123456789abcdef0123456789abcdef01234567",
   BASE_DOMAIN: "ecs.acme.test",
+  TLS_CERT_RESOLVER: "letsencrypt-dns",
   SUPERADMIN_PUBLIC_BASE_URL: "https://ops.ecs.acme.test",
   STOREFRONT_DEMO_HOST: "demo.ecs.acme.test",
   POSTGRES_PASSWORD: secret("postgres"),
@@ -53,6 +54,13 @@ test("rejects placeholders, reused secrets, database drift, and partial provider
   assert.ok(errors.some((error) => error.includes("must not reuse")));
   assert.ok(errors.some((error) => error.includes("separate databases")));
   assert.ok(errors.some((error) => error.includes("EMAIL_FROM_ACCOUNTS")));
+});
+
+test("requires the static Traefik DNS-01 resolver name", () => {
+  const environment = validEnvironment();
+  environment.TLS_CERT_RESOLVER = "";
+  const { errors } = validateProductionEnvironment(environment);
+  assert.ok(errors.some((error) => error.includes("TLS_CERT_RESOLVER")));
 });
 
 test("rejects an email provider without an installed adapter", () => {

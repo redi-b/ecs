@@ -85,8 +85,13 @@ export function validateProductionEnvironment(environment) {
   const warnings = [];
   const baseDomain = environment.BASE_DOMAIN ?? "";
 
-  expect(errors, validHostname(baseDomain), "BASE_DOMAIN must be a valid delegated hostname");
+  expect(errors, validHostname(baseDomain), "BASE_DOMAIN must be a valid base hostname");
   expect(errors, !placeholderPattern.test(baseDomain), "BASE_DOMAIN still contains a placeholder");
+  expect(
+    errors,
+    /^[a-z0-9][a-z0-9-]{0,62}$/i.test(environment.TLS_CERT_RESOLVER ?? ""),
+    "TLS_CERT_RESOLVER must name the configured Traefik DNS-01 resolver",
+  );
   expect(
     errors,
     /^ghcr\.io\/[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(environment.IMAGE_PREFIX ?? ""),
