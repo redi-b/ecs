@@ -12,6 +12,11 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  createMerchantReturn?:
+    | ((input: import("../adapters/medusa/order/returns.js").MerchantReturnInput) => Promise<
+        import("./merchant-order.js").MerchantOrderReturnResult
+      >)
+    | undefined;
   createMerchantExpense?:
     | ((
         input: import("@ecs/contracts").MerchantExpenseInput & {

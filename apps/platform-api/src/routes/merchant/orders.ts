@@ -332,6 +332,62 @@ export function registerMerchantOrderRoutes(
     mutateResolvedMerchantOrder(context, "refund"),
   );
 
+  app.post("/platform/merchant/orders/:orderId/returns", async (context) => {
+    if (!options.createMerchantReturn || !options.executeMerchantMutation) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, { requireStockLocation: true });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const orderId = context.req.param("orderId");
+    const body = (await context.req.json().catch(() => null)) as Record<string, unknown> | null;
+    const items = Array.isArray(body?.items)
+      ? body.items.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const value = item as Record<string, unknown>;
+          if (typeof value.lineItemId !== "string" || typeof value.quantity !== "number") return [];
+          return [{
+            lineItemId: value.lineItemId,
+            quantity: value.quantity,
+            ...(typeof value.reasonId === "string" ? { reasonId: value.reasonId } : {}),
+            ...(typeof value.note === "string" ? { note: value.note } : {}),
+          }];
+        })
+      : [];
+    if (!orderId || items.length === 0 || items.length !== body?.items?.length) {
+      return context.json({ error: "order_return_invalid" }, 400);
+    }
+    const input = {
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      locationId: commerce.context.medusaStockLocationId ?? undefined,
+      items,
+      ...(typeof body?.note === "string" ? { note: body.note } : {}),
+    };
+    const execution = await options.executeMerchantMutation(
+      {
+        actorUserId: merchant.session.user.id,
+        idempotencyKey,
+        operation: "order.return.create",
+        payload: input,
+        requestId: context.get("requestId"),
+        resourceKeys: [`order:${orderId}`],
+        source: "assisted_sale",
+        tenantId: merchant.result.context.tenantId,
+      },
+      () => options.createMerchantReturn?.(input) as ReturnType<NonNullable<typeof options.createMerchantReturn>>,
+    );
+    if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+    context.header("x-idempotent-replay", String(execution.replayed));
+    if (!execution.value.ok) {
+      return context.json({ error: execution.value.error }, execution.value.status);
+    }
+    return context.json({ return: execution.value.orderReturn }, 201);
+  });
+
   app.post("/platform/merchant/orders/:orderId/settlement", async (context) => {
     if (!options.updateMerchantOrderSettlement) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);

@@ -15,6 +15,7 @@ import {
 } from "./actions.js";
 import { refundMerchantOrder } from "./refund-action.js";
 import type { MerchantRefundInput } from "./refunds.js";
+import { createMerchantReturn, type MerchantReturnInput } from "./returns.js";
 import { applyOrderListPostFilters, needsPostFilter } from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { normalizeOrder } from "./normalize.js";
@@ -83,6 +84,10 @@ export function createMedusaOrderService(options: {
   }
 
   return {
+    createMerchantReturn: async (input: MerchantReturnInput) => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      return createMerchantReturn(fetcher, options, input);
+    },
     getMerchantOrder: async (input: {
       orderId: string;
       salesChannelId: string;

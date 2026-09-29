@@ -38,6 +38,7 @@ type CommerceAppOptionKey =
   | "createMerchantProductCategory"
   | "createMerchantProductCollection"
   | "createMerchantProductOptionSet"
+  | "createMerchantReturn"
   | "createMerchantPromotion"
   | "deleteMerchantCustomerAddress"
   | "deleteMerchantProduct"
@@ -145,6 +146,7 @@ export function createCommerceAppOptions({
     createMerchantProductCategory: productService.createMerchantProductCategory,
     createMerchantProductCollection: productService.createMerchantProductCollection,
     createMerchantProductOptionSet: productOptionSetService.create,
+    createMerchantReturn: orderService.createMerchantReturn,
     createMerchantPromotion: promotionService.createPromotion,
     deleteMerchantCustomerAddress: customerService.deleteCustomerAddress,
     deleteMerchantProduct: productService.deleteMerchantProduct,

@@ -46,6 +46,27 @@ export type MerchantOrderRefund = {
   createdAt: string | null;
 };
 
+export type MerchantOrderReturnItem = {
+  id: string;
+  lineItemId: string;
+  quantity: number;
+  receivedQuantity: number;
+  damagedQuantity: number;
+  reasonId: string | null;
+  note: string | null;
+};
+
+export type MerchantOrderReturn = {
+  id: string;
+  status: string | null;
+  locationId: string | null;
+  items: MerchantOrderReturnItem[];
+  requestedAt: string | null;
+  receivedAt: string | null;
+  canceledAt: string | null;
+  createdAt: string | null;
+};
+
 /** Merchant-facing progress (not Medusa jargon). */
 export type MerchantOrderProgressFilter = "new" | "ready" | "completed" | "canceled" | "open";
 
@@ -93,6 +114,7 @@ export type MerchantOrder = {
   refundedTotal?: number;
   refundableTotal?: number;
   refunds?: MerchantOrderRefund[];
+  returns?: MerchantOrderReturn[];
   subtotal?: number | null;
   shippingTotal?: number | null;
   discountTotal?: number | null;
@@ -194,6 +216,21 @@ export type MerchantOrderAction =
   | "finish";
 
 export type MerchantOrderActionResult = MerchantOrderDetailResult;
+
+export type MerchantOrderReturnResult =
+  | { ok: true; orderReturn: MerchantOrderReturn }
+  | {
+      ok: false;
+      error:
+        | "commerce_backend_unavailable"
+        | "commerce_backend_error"
+        | "commerce_credentials_invalid"
+        | "commerce_credentials_missing"
+        | "order_not_found"
+        | "order_not_returnable"
+        | "order_return_invalid";
+      status: 400 | 401 | 404 | 409 | 502 | 503;
+    };
 
 export type MerchantOrderMutateInput = {
   action: MerchantOrderAction;

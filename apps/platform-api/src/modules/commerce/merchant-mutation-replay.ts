@@ -16,6 +16,7 @@ export type MerchantMutationOperation =
   | "inventory.stock.set"
   | "order.mark_paid"
   | "order.refund"
+  | "order.return.create"
   | "quotation.convert"
   | "quotation.issue"
   | "quotation.revise"

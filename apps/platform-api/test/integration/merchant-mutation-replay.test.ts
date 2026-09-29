@@ -111,6 +111,43 @@ describe("merchant mutation replay routes", () => {
     assert.deepEqual(await second.json(), await first.json());
   });
 
+  it("replays a merchant-created return without beginning a second Medusa return", async () => {
+    const replay = createMerchantMutationReplayService({
+      store: createInMemoryMerchantMutationStore(),
+    });
+    let creates = 0;
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        ...authorization,
+        executeMerchantMutation: replay.execute,
+        createMerchantReturn: async () => {
+          creates += 1;
+          return {
+            ok: true,
+            orderReturn: {
+              id: "return_1", status: "requested", locationId: "loc_1", items: [],
+              requestedAt: "2026-09-29T10:00:00.000Z", receivedAt: null,
+              canceledAt: null, createdAt: "2026-09-29T10:00:00.000Z",
+            },
+          };
+        },
+      },
+    );
+    const request = () => app.request("/platform/merchant/orders/order_1/returns", {
+      body: JSON.stringify({ items: [{ lineItemId: "item_1", quantity: 1 }], note: "Shop drop-off" }),
+      headers: { "content-type": "application/json", Host: "abebe.lvh.me", "Idempotency-Key": "return-route-1" },
+      method: "POST",
+    });
+    const first = await request();
+    const second = await request();
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    assert.equal(second.headers.get("x-idempotent-replay"), "true");
+    assert.equal(creates, 1);
+    assert.deepEqual(await second.json(), await first.json());
+  });
+
   it("replays mark-paid without capturing payment twice", async () => {
     const replay = createMerchantMutationReplayService({
       store: createInMemoryMerchantMutationStore(),
