@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { dashboardRoutes } from "@/lib/routes";
 
 type Row = {
@@ -90,7 +91,7 @@ export function BulkInventoryDialog({
     }));
     const payload = JSON.stringify(updates);
     if (mutationKey.current?.payload !== payload) {
-      mutationKey.current = { payload, value: crypto.randomUUID() };
+      mutationKey.current = { payload, value: createClientId("inventory-batch") };
     }
 
     setSaving(true);

@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -74,8 +75,7 @@ const SAMPLE_PRODUCT_CSV = [
   .join("\r\n");
 
 function createIdempotencyKey(artifactId: string) {
-  const randomPart = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-  return `product-import:${artifactId}:${randomPart}`;
+  return `product-import:${artifactId}:${createClientId("apply")}`;
 }
 
 export function ProductImportDryRunDialog({

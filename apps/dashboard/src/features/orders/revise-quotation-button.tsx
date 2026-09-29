@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function ReviseQuotationButton({
@@ -18,7 +19,7 @@ export function ReviseQuotationButton({
 }) {
   const { locale, t } = useI18n();
   const router = useRouter();
-  const key = useRef(crypto.randomUUID());
+  const key = useRef(createClientId("quotation-revise"));
   const [pending, setPending] = useState(false);
   async function revise() {
     setPending(true);

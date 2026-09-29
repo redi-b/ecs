@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
@@ -372,7 +373,8 @@ export function VariantStockPanel({
       }
 
       const mutationIdentity = `${variantId}:${parsedQuantity}`;
-      const idempotencyKey = mutationKeys.current.get(mutationIdentity) ?? crypto.randomUUID();
+      const idempotencyKey =
+        mutationKeys.current.get(mutationIdentity) ?? createClientId("inventory-stock");
       mutationKeys.current.set(mutationIdentity, idempotencyKey);
 
       const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {

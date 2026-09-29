@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { PermissionGate } from "@/components/app/access-context";
 import { ExportDownloadButton } from "@/components/app/export-download-button";
 import { ListSetupState } from "@/components/app/list-error-state";
@@ -7,10 +6,10 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
+import { OrdersViewSwitcher } from "@/features/orders/orders-view-switcher";
 import { QuotationsTable } from "@/features/orders/quotations-table";
 import { SaleDraftsTable } from "@/features/orders/sale-drafts-table";
 import { getTranslations } from "@/i18n/server";
@@ -45,26 +44,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const viewValue = resolvedSearchParams.view;
   const requestedView = Array.isArray(viewValue) ? viewValue[0] : viewValue;
   const view = requestedView === "drafts" || requestedView === "quotes" ? requestedView : "orders";
-  const viewSwitcher = (
-    <nav
-      aria-label={t("orders.views.aria")}
-      className="flex w-fit gap-1 rounded-full border bg-muted/40 p-1"
-    >
-      <Button asChild size="sm" variant={view === "orders" ? "secondary" : "ghost"}>
-        <Link href={dashboardRoutes.orders}>{t("orders.views.orders")}</Link>
-      </Button>
-      {!tenantId ? (
-        <>
-          <Button asChild size="sm" variant={view === "drafts" ? "secondary" : "ghost"}>
-            <Link href={`${dashboardRoutes.orders}?view=drafts`}>{t("orders.views.drafts")}</Link>
-          </Button>
-          <Button asChild size="sm" variant={view === "quotes" ? "secondary" : "ghost"}>
-            <Link href={`${dashboardRoutes.orders}?view=quotes`}>{t("orders.views.quotes")}</Link>
-          </Button>
-        </>
-      ) : null}
-    </nav>
-  );
+  const viewSwitcher = !tenantId ? <OrdersViewSwitcher value={view} /> : null;
 
   if (view === "drafts" && !tenantId) {
     const drafts = await listMerchantSaleDrafts({

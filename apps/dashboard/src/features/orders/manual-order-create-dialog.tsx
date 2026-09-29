@@ -38,6 +38,7 @@ import {
 import { normalizeProductOptionSwatch } from "@/features/products/product-swatch-popover";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { resolveProductColorSwatch } from "@/lib/product-color";
@@ -483,7 +484,7 @@ function ManualOrderCreateDialogInner() {
       return true;
     }
     if (draftIdempotencyRef.current?.fingerprint !== fingerprint) {
-      draftIdempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      draftIdempotencyRef.current = { fingerprint, key: createClientId("sale-draft") };
     }
     setDraftStatus("saving");
     const response = await fetch(
@@ -870,7 +871,7 @@ function ManualOrderCreateDialogInner() {
 
     const fingerprint = JSON.stringify(payload);
     if (idempotencyRef.current?.fingerprint !== fingerprint) {
-      idempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      idempotencyRef.current = { fingerprint, key: createClientId("assisted-sale") };
     }
     const response = await fetch("/dashboard/orders/actions/create", {
       body: JSON.stringify(payload),

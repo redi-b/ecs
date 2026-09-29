@@ -10,5 +10,5 @@ test("creates an upload id when crypto.randomUUID is unavailable", () => {
 });
 
 test("uses randomUUID when the runtime provides it", () => {
-  assert.equal(createMediaUploadId({ randomUUID: () => "stable-uuid" }), "stable-uuid");
+  assert.equal(createMediaUploadId({ randomUUID: () => "stable-uuid" }), "upload-stable-uuid");
 });

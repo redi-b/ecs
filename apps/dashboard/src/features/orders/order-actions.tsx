@@ -33,6 +33,7 @@ import {
 import { RefundOrderDialog, type RefundOrderPayload } from "@/features/orders/refund-order-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { cn } from "@/lib/utils";
 
 type PendingKind =
@@ -214,7 +215,7 @@ export function OrderActions({
     mutationFn: async (payload: MarkPaidSettlementPayload) => {
       const fingerprint = JSON.stringify(payload);
       if (markPaidIdempotencyRef.current?.fingerprint !== fingerprint) {
-        markPaidIdempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+        markPaidIdempotencyRef.current = { fingerprint, key: createClientId("mark-paid") };
       }
       await postOrderAction(
         action,
@@ -239,7 +240,7 @@ export function OrderActions({
     mutationFn: async (payload: RefundOrderPayload) => {
       const fingerprint = JSON.stringify(payload);
       if (refundIdempotencyRef.current?.fingerprint !== fingerprint) {
-        refundIdempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+        refundIdempotencyRef.current = { fingerprint, key: createClientId("refund") };
       }
       await postOrderAction(
         action,

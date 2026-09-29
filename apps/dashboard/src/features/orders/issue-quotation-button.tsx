@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { dashboardRoutes } from "@/lib/routes";
 
 export function IssueQuotationButton({
@@ -16,7 +17,7 @@ export function IssueQuotationButton({
 }) {
   const { locale, t } = useI18n();
   const router = useRouter();
-  const key = useRef(crypto.randomUUID());
+  const key = useRef(createClientId("quotation-issue"));
   const [pending, setPending] = useState(false);
   async function issue() {
     setPending(true);
