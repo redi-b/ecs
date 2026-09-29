@@ -6,6 +6,7 @@ export const merchantOperationChannels = [
   "pos",
   "quote_conversion",
   "telegram",
+  "dashboard",
 ] as const;
 export const merchantOperationChannelSchema = z.enum(merchantOperationChannels);
 export type MerchantOperationChannel = z.infer<typeof merchantOperationChannelSchema>;

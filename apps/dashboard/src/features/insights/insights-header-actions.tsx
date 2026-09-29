@@ -2,6 +2,7 @@
 
 import type { InsightsSalesReport, MerchantDashboardSummary } from "@ecs/contracts";
 import { RiRefreshLine as RefreshCwIcon } from "@remixicon/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -122,6 +123,11 @@ export function InsightsHeaderActions(
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
+      {props.report ? (
+        <Button asChild variant="outline">
+          <Link href="/dashboard/insights/expenses">{t("insights.expenses.title")}</Link>
+        </Button>
+      ) : null}
       <div className="text-right">
         <p className="text-xs font-medium">{qualityLabel(qualityStatus, t)}</p>
         <p className="text-xs text-muted-foreground">

@@ -6,6 +6,7 @@ import { registerMerchantCatalogTranslationRoutes } from "./catalog-translations
 import { createMerchantRouteHelpers } from "./context.js";
 import { registerMerchantCustomerRoutes } from "./customers.js";
 import { registerMerchantDashboardRoutes } from "./dashboard.js";
+import { registerMerchantExpenseRoutes } from "./expenses.js";
 import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.js";
 import { registerMerchantInquiryRoutes } from "./inquiries.js";
 import { registerInsightsRoutes } from "./insights.js";
@@ -30,6 +31,7 @@ export function registerMerchantRoutes(
 
   registerMerchantDashboardRoutes(app, options, helpers);
   registerInsightsRoutes(app, options, helpers);
+  registerMerchantExpenseRoutes(app, options, helpers);
   registerMerchantSearchRoutes(app, options, helpers);
   registerMerchantProductRoutes(app, options, helpers);
   registerMerchantOrderRoutes(app, options, helpers);

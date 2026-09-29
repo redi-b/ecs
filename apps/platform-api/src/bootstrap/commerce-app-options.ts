@@ -1,6 +1,7 @@
 import type { createPlatformDb } from "@ecs/db";
 import { attachCatalogNameTranslations } from "../lib/attach-catalog-name-translations.js";
 import { createProductCapacityWriter } from "../modules/billing/product-capacity.js";
+import { createMerchantExpenseStore } from "../modules/commerce/merchant-expenses.js";
 import { createMerchantInventoryMovementStore } from "../modules/commerce/merchant-inventory-movements.js";
 import {
   createMerchantMutationReplayService,
@@ -27,6 +28,7 @@ type CommerceAppOptionsInput = {
 
 type CommerceAppOptionKey =
   | "appendMerchantInventoryMovement"
+  | "createMerchantExpense"
   | "archiveMerchantSaleDraft"
   | "captureOrderPaymentByTxRef"
   | "createMerchantCustomer"
@@ -64,6 +66,7 @@ type CommerceAppOptionKey =
   | "listMerchantCustomers"
   | "listMerchantOrders"
   | "listMerchantInventoryMovements"
+  | "listMerchantExpenses"
   | "listMerchantProductCategories"
   | "listMerchantProductCollections"
   | "listMerchantProductOptionSets"
@@ -80,6 +83,7 @@ type CommerceAppOptionKey =
   | "markMerchantQuotationConverted"
   | "reviseMerchantQuotation"
   | "validateMerchantSaleDraft"
+  | "voidMerchantExpense"
   | "updateMerchantCatalogTranslation"
   | "updateMerchantCatalogTranslations"
   | "updateMerchantCollectionProducts"
@@ -120,6 +124,7 @@ export function createCommerceAppOptions({
   });
   const merchantQuotations = createMerchantQuotationStore(db);
   const merchantInventoryMovements = createMerchantInventoryMovementStore(db);
+  const merchantExpenses = createMerchantExpenseStore(db);
   const merchantSalesDocuments = createMerchantSalesDocumentStore(db);
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
@@ -130,6 +135,7 @@ export function createCommerceAppOptions({
 
   return {
     appendMerchantInventoryMovement: merchantInventoryMovements.append,
+    createMerchantExpense: merchantExpenses.create,
     archiveMerchantSaleDraft: merchantSaleDrafts.archive,
     captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
     createMerchantCustomer: customerService.createCustomer,
@@ -192,6 +198,7 @@ export function createCommerceAppOptions({
     listMerchantCustomerGroups: customerService.listGroups,
     listMerchantCustomers: customerService.listCustomers,
     listMerchantOrders: orderService.listMerchantOrders,
+    listMerchantExpenses: merchantExpenses.list,
     listMerchantInventoryMovements: merchantInventoryMovements.list,
     listMerchantProductCategories: async (input) => {
       const result = await productService.listMerchantProductCategories(input);
@@ -260,6 +267,7 @@ export function createCommerceAppOptions({
           };
     },
     validateMerchantSaleDraft,
+    voidMerchantExpense: merchantExpenses.void,
     updateMerchantCatalogTranslation: catalogTranslationService.write,
     updateMerchantCatalogTranslations: catalogTranslationService.writeMany,
     updateMerchantCollectionProducts: productService.updateMerchantCollectionProducts,

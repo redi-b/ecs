@@ -10,6 +10,8 @@ import { and, eq } from "drizzle-orm";
 
 export type MerchantMutationOperation =
   | "assisted_sale.create"
+  | "expense.create"
+  | "expense.void"
   | "inventory.stock.batch"
   | "inventory.stock.set"
   | "order.mark_paid"
@@ -303,6 +305,7 @@ export function createMerchantMutationReplayService(input: { store: MerchantMuta
 class MerchantMutationResourceConflict extends Error {}
 
 function getMutationAuditTargetType(operation: MerchantMutationOperation) {
+  if (operation.startsWith("expense.")) return "expense";
   if (operation === "order.refund") return "order_refund";
   if (operation.startsWith("inventory.")) return "inventory_stock";
   if (operation.startsWith("sale_draft.")) return "sale_draft";

@@ -296,6 +296,9 @@ export function appWithResolution(
     }) => Promise<MerchantOrderDetailResult>;
     createMerchantManualOrder?: PlatformAppOptions["createMerchantManualOrder"];
     executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
+    createMerchantExpense?: PlatformAppOptions["createMerchantExpense"];
+    listMerchantExpenses?: PlatformAppOptions["listMerchantExpenses"];
+    voidMerchantExpense?: PlatformAppOptions["voidMerchantExpense"];
     appendMerchantInventoryMovement?: PlatformAppOptions["appendMerchantInventoryMovement"];
     listMerchantInventoryMovements?: PlatformAppOptions["listMerchantInventoryMovements"];
     internalApiToken?: PlatformAppOptions["internalApiToken"];
@@ -640,6 +643,9 @@ export function appWithResolution(
       getMerchantOrder: options?.getMerchantOrder,
       createMerchantManualOrder: options?.createMerchantManualOrder,
       executeMerchantMutation: options?.executeMerchantMutation,
+      createMerchantExpense: options?.createMerchantExpense,
+      listMerchantExpenses: options?.listMerchantExpenses,
+      voidMerchantExpense: options?.voidMerchantExpense,
       appendMerchantInventoryMovement: options?.appendMerchantInventoryMovement,
       listMerchantInventoryMovements: options?.listMerchantInventoryMovements,
       internalApiToken: options?.internalApiToken,

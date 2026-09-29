@@ -12,6 +12,35 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  createMerchantExpense?:
+    | ((
+        input: import("@ecs/contracts").MerchantExpenseInput & {
+          actorUserId: string;
+          tenantId: string;
+        },
+      ) => Promise<{ expense: import("@ecs/contracts").MerchantExpense }>)
+    | undefined;
+  listMerchantExpenses?:
+    | ((
+        input: import("../modules/commerce/merchant-expenses.js").MerchantExpenseListInput,
+      ) => Promise<{
+        count: number;
+        expenses: import("@ecs/contracts").MerchantExpense[];
+        limit: number;
+        offset: number;
+        totalAmount: number;
+      }>)
+    | undefined;
+  voidMerchantExpense?:
+    | ((input: {
+        actorUserId: string;
+        expenseId: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; expense: import("@ecs/contracts").MerchantExpense }
+        | { ok: false; error: "expense_not_found"; status: 404 }
+      >)
+    | undefined;
   appendMerchantInventoryMovement?:
     | ((
         input: import("../modules/commerce/merchant-inventory-movements.js").AppendMerchantInventoryMovementInput,

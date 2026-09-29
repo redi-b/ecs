@@ -9,6 +9,7 @@ export * from "./email.js";
 export * from "./enums.js";
 export * from "./jobs.js";
 export * from "./media.js";
+export * from "./merchant-expenses.js";
 export * from "./merchant-inventory-movements.js";
 export * from "./merchant-mutations.js";
 export * from "./merchant-quotations.js";
