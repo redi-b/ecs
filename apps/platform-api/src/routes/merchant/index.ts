@@ -6,18 +6,19 @@ import { registerMerchantCatalogTranslationRoutes } from "./catalog-translations
 import { createMerchantRouteHelpers } from "./context.js";
 import { registerMerchantCustomerRoutes } from "./customers.js";
 import { registerMerchantDashboardRoutes } from "./dashboard.js";
+import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.js";
+import { registerMerchantInquiryRoutes } from "./inquiries.js";
+import { registerInsightsRoutes } from "./insights.js";
 import { registerMerchantManualOrderRoutes } from "./manual-orders.js";
 import { registerMerchantMediaRoutes } from "./media.js";
 import { registerMerchantOrderRoutes } from "./orders.js";
+import { registerMerchantPaymentRoutes } from "./payments.js";
 import { registerMerchantProductRoutes } from "./products.js";
 import { registerMerchantPromotionRoutes } from "./promotions.js";
+import { registerMerchantSaleDraftRoutes } from "./sale-drafts.js";
 import { registerMerchantSearchRoutes } from "./search.js";
-import { registerMerchantInboxNotificationRoutes } from "./inbox-notifications.js";
-import { registerMerchantInquiryRoutes } from "./inquiries.js";
-import { registerMerchantPaymentRoutes } from "./payments.js";
-import { registerMerchantTelegramNotificationRoutes } from "./telegram-notifications.js";
 import { registerMerchantTeamRoutes } from "./team.js";
-import { registerInsightsRoutes } from "./insights.js";
+import { registerMerchantTelegramNotificationRoutes } from "./telegram-notifications.js";
 
 export function registerMerchantRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
@@ -36,6 +37,7 @@ export function registerMerchantRoutes(
   registerMerchantMediaRoutes(app, options, helpers);
   registerMerchantCustomerRoutes(app, options, helpers);
   registerMerchantPromotionRoutes(app, options, helpers);
+  registerMerchantSaleDraftRoutes(app, options, helpers);
   registerMerchantTelegramNotificationRoutes(app, options, helpers);
   registerMerchantInboxNotificationRoutes(app, options, helpers);
   registerMerchantInquiryRoutes(app, options, helpers);

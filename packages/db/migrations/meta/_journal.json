@@ -477,6 +477,13 @@
       "when": 1790669344832,
       "tag": "0067_early_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1790673611690,
+      "tag": "0068_parallel_tarantula",
+      "breakpoints": true
     }
   ]
 }

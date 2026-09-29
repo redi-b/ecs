@@ -45,6 +45,9 @@ export const dashboardRoutes = {
     `/dashboard/products/collections/actions/${encodeURIComponent(collectionId)}/products`,
   productCollectionsBatchDeleteAction: "/dashboard/products/collections/actions/batch-delete",
   orders: "/dashboard/orders",
+  orderDraftsAction: "/dashboard/orders/actions/drafts",
+  orderDraftAction: (draftId: string) =>
+    `/dashboard/orders/actions/drafts/${encodeURIComponent(draftId)}`,
   ordersExportAction: "/dashboard/orders/actions/export",
   inquiries: "/dashboard/inquiries",
   inquiryAction: (inquiryId: string) =>

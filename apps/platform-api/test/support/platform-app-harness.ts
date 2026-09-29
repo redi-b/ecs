@@ -296,6 +296,10 @@ export function appWithResolution(
     }) => Promise<MerchantOrderDetailResult>;
     createMerchantManualOrder?: PlatformAppOptions["createMerchantManualOrder"];
     executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
+    archiveMerchantSaleDraft?: PlatformAppOptions["archiveMerchantSaleDraft"];
+    getMerchantSaleDraft?: PlatformAppOptions["getMerchantSaleDraft"];
+    listMerchantSaleDrafts?: PlatformAppOptions["listMerchantSaleDrafts"];
+    saveMerchantSaleDraft?: PlatformAppOptions["saveMerchantSaleDraft"];
     getMerchantProduct?: (input: {
       productId: string;
       salesChannelId: string;
@@ -623,6 +627,10 @@ export function appWithResolution(
       getMerchantOrder: options?.getMerchantOrder,
       createMerchantManualOrder: options?.createMerchantManualOrder,
       executeMerchantMutation: options?.executeMerchantMutation,
+      archiveMerchantSaleDraft: options?.archiveMerchantSaleDraft,
+      getMerchantSaleDraft: options?.getMerchantSaleDraft,
+      listMerchantSaleDrafts: options?.listMerchantSaleDrafts,
+      saveMerchantSaleDraft: options?.saveMerchantSaleDraft,
       getMerchantProduct: options?.getMerchantProduct,
       getMerchantProductStock: options?.getMerchantProductStock,
       getMerchantProductVariantStock: options?.getMerchantProductVariantStock,

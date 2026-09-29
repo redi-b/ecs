@@ -12,6 +12,56 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  archiveMerchantSaleDraft?:
+    | ((input: {
+        draftId: string;
+        expectedRevision: number;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true }
+        | { ok: false; error: "sale_draft_not_found"; status: 404 }
+        | { ok: false; error: "sale_draft_revision_conflict"; status: 409 }
+      >)
+    | undefined;
+  getMerchantSaleDraft?:
+    | ((input: {
+        draftId: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; draft: import("@ecs/contracts").MerchantSaleDraft }
+        | { ok: false; error: "sale_draft_not_found"; status: 404 }
+      >)
+    | undefined;
+  listMerchantSaleDrafts?:
+    | ((input: { limit: number; offset: number; tenantId: string }) => Promise<{
+        ok: true;
+        count: number;
+        drafts: import("@ecs/contracts").MerchantSaleDraftSummary[];
+        limit: number;
+        offset: number;
+      }>)
+    | undefined;
+  saveMerchantSaleDraft?:
+    | ((input: {
+        content: import("@ecs/contracts").MerchantSaleDraftContent;
+        draftId?: string | undefined;
+        expectedRevision?: number | undefined;
+        ownerUserId: string;
+        salesChannelId: string;
+        stockLocationId?: string | null | undefined;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; draft: import("@ecs/contracts").MerchantSaleDraft }
+        | {
+            ok: false;
+            error:
+              | "sale_draft_not_found"
+              | "sale_draft_revision_conflict"
+              | "sale_draft_validation_unavailable";
+            status: 404 | 409 | 503;
+          }
+      >)
+    | undefined;
   executeMerchantMutation?:
     | (<T>(
         input: import("../modules/commerce/merchant-mutation-replay.js").MerchantMutationEnvelope,

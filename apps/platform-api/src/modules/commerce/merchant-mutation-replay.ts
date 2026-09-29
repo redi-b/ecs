@@ -13,7 +13,9 @@ export type MerchantMutationOperation =
   | "inventory.stock.batch"
   | "inventory.stock.set"
   | "order.mark_paid"
-  | "order.refund";
+  | "order.refund"
+  | "sale_draft.delete"
+  | "sale_draft.save";
 
 export type MerchantMutationEnvelope = {
   actorUserId: string;
@@ -299,5 +301,6 @@ class MerchantMutationResourceConflict extends Error {}
 function getMutationAuditTargetType(operation: MerchantMutationOperation) {
   if (operation === "order.refund") return "order_refund";
   if (operation.startsWith("inventory.")) return "inventory_stock";
+  if (operation.startsWith("sale_draft.")) return "sale_draft";
   return "order";
 }

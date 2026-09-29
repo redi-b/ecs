@@ -1,6 +1,23 @@
 {
   "title": "Orders",
   "description": "Review orders, payment status, and fulfillment progress.",
+  "views": {
+    "aria": "Order workspace views",
+    "orders": "Orders",
+    "drafts": "Drafts"
+  },
+  "drafts": {
+    "customer": "Customer",
+    "customerPending": "Customer not selected",
+    "emptyTitle": "No saved drafts",
+    "emptyMessage": "Save an assisted sale when you need to pause and continue later.",
+    "itemCount": "{count} items",
+    "items": "Items",
+    "loadFailedTitle": "Drafts could not be loaded",
+    "loadFailedMessage": "Refresh the page or try again later. Your saved drafts have not been changed.",
+    "resume": "Resume",
+    "updated": "Updated"
+  },
   "export": {
     "label": "Export orders",
     "pending": "Preparing export…",
@@ -149,6 +166,14 @@
     "title": "Create order",
     "description": "Capture a phone or in-person cash sale. Choose a customer, add products, then confirm delivery.",
     "creating": "Creating…",
+    "saveDraftClose": "Save and close",
+    "draftLoading": "Loading draft…",
+    "draftSaving": "Saving…",
+    "draftSavedStatus": "Saved",
+    "draftSaveFailed": "Could not save. Your changes are still here; retry when ready.",
+    "draftSaved": "Draft saved.",
+    "draftConflictTitle": "Review catalog changes",
+    "draftConflictDescription": "{count} item change(s) need review before this order can be created.",
     "stepCustomer": "Customer",
     "stepItems": "Items",
     "stepDelivery": "Delivery",

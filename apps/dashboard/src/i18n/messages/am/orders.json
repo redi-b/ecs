@@ -1,6 +1,23 @@
 {
   "title": "ትዕዛዞች",
   "description": "ትዕዛዞችን፣ የክፍያ ሁኔታዎችን እና የማስረከብ ሂደትን ይገምግሙ።",
+  "views": {
+    "aria": "የትዕዛዝ የስራ ቦታ እይታዎች",
+    "orders": "ትዕዛዞች",
+    "drafts": "ረቂቆች"
+  },
+  "drafts": {
+    "customer": "ደንበኛ",
+    "customerPending": "ደንበኛ አልተመረጠም",
+    "emptyTitle": "የተቀመጠ ረቂቅ የለም",
+    "emptyMessage": "የሽያጭ ስራውን ቆም አድርገው በኋላ ለመቀጠል እንደ ረቂቅ ያስቀምጡት።",
+    "itemCount": "{count} እቃዎች",
+    "items": "እቃዎች",
+    "loadFailedTitle": "ረቂቆችን መክፈት አልተቻለም",
+    "loadFailedMessage": "ገጹን ያድሱ ወይም ቆይተው ይሞክሩ። የተቀመጡ ረቂቆችዎ አልተቀየሩም።",
+    "resume": "ቀጥል",
+    "updated": "የተሻሻለበት"
+  },
   "export": {
     "label": "ትዕዛዞችን ኤክስፖርት አድርግ",
     "pending": "ፋይሉን በማዘጋጀት ላይ…",
@@ -149,6 +166,14 @@
     "title": "አዲስ ትዕዛዝ",
     "description": "በስልክ ወይም በአካል የጥሬ ገንዘብ ሽያጭ ይመዝግቡ። ደንበኛ ይምረጡ፣ ምርቶችን ይጨምሩ፣ ከዚያ ደሊቨሪ ያረጋግጡ።",
     "creating": "በመመዝገብ ላይ…",
+    "saveDraftClose": "አስቀምጥና ዝጋ",
+    "draftLoading": "ረቂቁን በመክፈት ላይ…",
+    "draftSaving": "በማስቀመጥ ላይ…",
+    "draftSavedStatus": "ተቀምጧል",
+    "draftSaveFailed": "ማስቀመጥ አልተቻለም። ለውጦችዎ እዚሁ አሉ፤ ዝግጁ ሲሆኑ እንደገና ይሞክሩ።",
+    "draftSaved": "ረቂቁ ተቀምጧል።",
+    "draftConflictTitle": "የካታሎግ ለውጦችን ይገምግሙ",
+    "draftConflictDescription": "ትዕዛዙ ከመፈጠሩ በፊት {count} የንጥል ለውጥ(ዎች) መገምገም ያስፈልጋል።",
     "stepCustomer": "ደንበኛ",
     "stepItems": "እቃዎች",
     "stepDelivery": "ደሊቨሪ",

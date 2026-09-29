@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { PermissionGate } from "@/components/app/access-context";
 import { ExportDownloadButton } from "@/components/app/export-download-button";
 import { ListSetupState } from "@/components/app/list-error-state";
@@ -6,15 +7,17 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
+import { SaleDraftsTable } from "@/features/orders/sale-drafts-table";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { listDateRangeToTimestamps, parseListDateRange } from "@/lib/list-date-range";
 import { getListErrorState } from "@/lib/list-error-state";
 import { listExportPath } from "@/lib/list-export-path";
-import { getMerchantOrders } from "@/lib/merchant-orders";
+import { getMerchantOrders, listMerchantSaleDrafts } from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
@@ -34,6 +37,67 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
+  const viewValue = resolvedSearchParams.view;
+  const view =
+    (Array.isArray(viewValue) ? viewValue[0] : viewValue) === "drafts" ? "drafts" : "orders";
+  const viewSwitcher = (
+    <nav
+      aria-label={t("orders.views.aria")}
+      className="flex w-fit gap-1 rounded-full border bg-muted/40 p-1"
+    >
+      <Button asChild size="sm" variant={view === "orders" ? "secondary" : "ghost"}>
+        <Link href={dashboardRoutes.orders}>{t("orders.views.orders")}</Link>
+      </Button>
+      {!tenantId ? (
+        <Button asChild size="sm" variant={view === "drafts" ? "secondary" : "ghost"}>
+          <Link href={`${dashboardRoutes.orders}?view=drafts`}>{t("orders.views.drafts")}</Link>
+        </Button>
+      ) : null}
+    </nav>
+  );
+
+  if (view === "drafts" && !tenantId) {
+    const drafts = await listMerchantSaleDrafts({
+      cookieHeader: requestHeaders.get("cookie"),
+      limit: listParams.pageSize,
+      offset,
+      platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+      requestHost: requestHeaders.get("host"),
+    });
+    return (
+      <PageShell
+        actions={
+          <>
+            <RefreshButton />
+            <PermissionGate permission="orders.create">
+              <ManualOrderCreateDialog />
+            </PermissionGate>
+          </>
+        }
+        title={t("orders.title")}
+      >
+        {viewSwitcher}
+        {drafts.ok ? (
+          <>
+            <ListSummary count={drafts.count} page={listParams.page} pageSize={drafts.limit} />
+            <SaleDraftsTable drafts={drafts.drafts} />
+            <PaginationControls
+              basePath={dashboardRoutes.orders}
+              count={drafts.count}
+              page={listParams.page}
+              pageSize={drafts.limit}
+              searchParams={resolvedSearchParams}
+            />
+          </>
+        ) : (
+          <Alert variant="destructive">
+            <AlertTitle>{t("orders.drafts.loadFailedTitle")}</AlertTitle>
+            <AlertDescription>{t("orders.drafts.loadFailedMessage")}</AlertDescription>
+          </Alert>
+        )}
+      </PageShell>
+    );
+  }
 
   const dateRange = parseListDateRange(filters.createdFrom, filters.createdTo);
   const result = await getMerchantOrders({
@@ -75,6 +139,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
       }
       title={t("orders.title")}
     >
+      {viewSwitcher}
       {result.ok ? (
         <>
           <ListSummary
