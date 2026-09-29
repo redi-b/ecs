@@ -484,6 +484,13 @@
       "when": 1790673611690,
       "tag": "0068_parallel_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790676581542,
+      "tag": "0069_fearless_leech",
+      "breakpoints": true
     }
   ]
 }

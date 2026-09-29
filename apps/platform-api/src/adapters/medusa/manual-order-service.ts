@@ -42,6 +42,10 @@ export type ManualOrderCreateInput = {
   shippingOptionId?: string | null | undefined;
   tenantId: string;
   userId: string;
+  idempotencyKey?: string | undefined;
+  quotationId?: string | undefined;
+  quotationRevision?: number | undefined;
+  source?: "assisted_sale" | "quote_conversion" | undefined;
 };
 
 export type ManualOrderResult =
@@ -121,7 +125,10 @@ export function createMedusaManualOrderService(options: Options) {
         : {}),
       metadata: {
         created_by_user_id: input.userId,
-        created_from: "dashboard_manual_order",
+        created_from:
+          input.source === "quote_conversion" ? "quote_conversion" : "dashboard_manual_order",
+        quotation_id: input.quotationId ?? null,
+        quotation_revision: input.quotationRevision ?? null,
         note: input.note?.trim() || null,
         payment_method: "cod",
         checkout_type: "cod",
@@ -136,7 +143,10 @@ export function createMedusaManualOrderService(options: Options) {
 
     const created = await fetcher(`${base}/admin/draft-orders`, {
       body: JSON.stringify(createBody),
-      headers: headers(),
+      headers: {
+        ...headers(),
+        ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}),
+      },
       method: "POST",
     }).catch(() => null);
 
@@ -184,7 +194,12 @@ export function createMedusaManualOrderService(options: Options) {
         body: JSON.stringify({
           shipping_option_id: input.shippingOptionId,
         }),
-        headers: headers(),
+        headers: {
+          ...headers(),
+          ...(input.idempotencyKey
+            ? { "Idempotency-Key": `${input.idempotencyKey}:shipping` }
+            : {}),
+        },
         method: "POST",
       }).catch(() => null);
     }
@@ -199,7 +214,12 @@ export function createMedusaManualOrderService(options: Options) {
             tenant_id: input.tenantId,
             user_id: input.userId,
           }),
-          headers: headers(),
+          headers: {
+            ...headers(),
+            ...(input.idempotencyKey
+              ? { "Idempotency-Key": `${input.idempotencyKey}:discount` }
+              : {}),
+          },
           method: "POST",
         },
       ).catch(() => null);
@@ -217,7 +237,10 @@ export function createMedusaManualOrderService(options: Options) {
     const converted = await fetcher(
       `${base}/admin/draft-orders/${encodeURIComponent(draftId)}/convert-to-order`,
       {
-        headers: headers(),
+        headers: {
+          ...headers(),
+          ...(input.idempotencyKey ? { "Idempotency-Key": `${input.idempotencyKey}:convert` } : {}),
+        },
         method: "POST",
       },
     ).catch(() => null);

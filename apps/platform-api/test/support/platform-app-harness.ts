@@ -300,6 +300,12 @@ export function appWithResolution(
     getMerchantSaleDraft?: PlatformAppOptions["getMerchantSaleDraft"];
     listMerchantSaleDrafts?: PlatformAppOptions["listMerchantSaleDrafts"];
     saveMerchantSaleDraft?: PlatformAppOptions["saveMerchantSaleDraft"];
+    issueMerchantQuotation?: PlatformAppOptions["issueMerchantQuotation"];
+    getMerchantQuotation?: PlatformAppOptions["getMerchantQuotation"];
+    listMerchantQuotations?: PlatformAppOptions["listMerchantQuotations"];
+    reviseMerchantQuotation?: PlatformAppOptions["reviseMerchantQuotation"];
+    markMerchantQuotationConverted?: PlatformAppOptions["markMerchantQuotationConverted"];
+    validateMerchantSaleDraft?: PlatformAppOptions["validateMerchantSaleDraft"];
     getMerchantProduct?: (input: {
       productId: string;
       salesChannelId: string;
@@ -631,6 +637,12 @@ export function appWithResolution(
       getMerchantSaleDraft: options?.getMerchantSaleDraft,
       listMerchantSaleDrafts: options?.listMerchantSaleDrafts,
       saveMerchantSaleDraft: options?.saveMerchantSaleDraft,
+      issueMerchantQuotation: options?.issueMerchantQuotation,
+      getMerchantQuotation: options?.getMerchantQuotation,
+      listMerchantQuotations: options?.listMerchantQuotations,
+      reviseMerchantQuotation: options?.reviseMerchantQuotation,
+      markMerchantQuotationConverted: options?.markMerchantQuotationConverted,
+      validateMerchantSaleDraft: options?.validateMerchantSaleDraft,
       getMerchantProduct: options?.getMerchantProduct,
       getMerchantProductStock: options?.getMerchantProductStock,
       getMerchantProductVariantStock: options?.getMerchantProductVariantStock,

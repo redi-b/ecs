@@ -15,6 +15,7 @@ import { registerMerchantOrderRoutes } from "./orders.js";
 import { registerMerchantPaymentRoutes } from "./payments.js";
 import { registerMerchantProductRoutes } from "./products.js";
 import { registerMerchantPromotionRoutes } from "./promotions.js";
+import { registerMerchantQuotationRoutes } from "./quotations.js";
 import { registerMerchantSaleDraftRoutes } from "./sale-drafts.js";
 import { registerMerchantSearchRoutes } from "./search.js";
 import { registerMerchantTeamRoutes } from "./team.js";
@@ -37,6 +38,7 @@ export function registerMerchantRoutes(
   registerMerchantMediaRoutes(app, options, helpers);
   registerMerchantCustomerRoutes(app, options, helpers);
   registerMerchantPromotionRoutes(app, options, helpers);
+  registerMerchantQuotationRoutes(app, options, helpers);
   registerMerchantSaleDraftRoutes(app, options, helpers);
   registerMerchantTelegramNotificationRoutes(app, options, helpers);
   registerMerchantInboxNotificationRoutes(app, options, helpers);

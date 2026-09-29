@@ -5,6 +5,7 @@ import {
   createMerchantMutationReplayService,
   createPostgresMerchantMutationStore,
 } from "../modules/commerce/merchant-mutation-replay.js";
+import { createMerchantQuotationStore } from "../modules/commerce/merchant-quotations.js";
 import {
   createMerchantSaleDraftService,
   createMerchantSaleDraftValidator,
@@ -47,6 +48,7 @@ type CommerceAppOptionKey =
   | "getMerchantCatalogTranslation"
   | "getMerchantCatalogTranslations"
   | "getMerchantCustomer"
+  | "getMerchantQuotation"
   | "getMerchantOrder"
   | "getMerchantProduct"
   | "getMerchantProductStock"
@@ -63,9 +65,14 @@ type CommerceAppOptionKey =
   | "listMerchantProducts"
   | "listMerchantPromotions"
   | "listMerchantSaleDrafts"
+  | "listMerchantQuotations"
   | "mutateMerchantOrder"
   | "reorderMerchantProductCategories"
   | "saveMerchantSaleDraft"
+  | "issueMerchantQuotation"
+  | "markMerchantQuotationConverted"
+  | "reviseMerchantQuotation"
+  | "validateMerchantSaleDraft"
   | "updateMerchantCatalogTranslation"
   | "updateMerchantCatalogTranslations"
   | "updateMerchantCollectionProducts"
@@ -97,12 +104,14 @@ export function createCommerceAppOptions({
   const merchantMutationReplay = createMerchantMutationReplayService({
     store: createPostgresMerchantMutationStore(db),
   });
+  const validateMerchantSaleDraft = createMerchantSaleDraftValidator({
+    getProduct: productService.getMerchantProduct,
+  });
   const merchantSaleDrafts = createMerchantSaleDraftService({
     store: createPostgresMerchantSaleDraftStore(db),
-    validate: createMerchantSaleDraftValidator({
-      getProduct: productService.getMerchantProduct,
-    }),
+    validate: validateMerchantSaleDraft,
   });
+  const merchantQuotations = createMerchantQuotationStore(db);
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
     db,
@@ -154,6 +163,16 @@ export function createCommerceAppOptions({
         ? { ok: true as const, draft }
         : { ok: false as const, error: "sale_draft_not_found" as const, status: 404 as const };
     },
+    getMerchantQuotation: async (input) => {
+      const result = await merchantQuotations.get(input);
+      return result
+        ? { ok: true as const, ...result }
+        : { ok: false as const, error: "quotation_not_found" as const, status: 404 as const };
+    },
+    issueMerchantQuotation: async (input) => ({
+      ok: true as const,
+      quotation: await merchantQuotations.issue(input),
+    }),
     listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,
     listMerchantCollectionProducts: productService.listMerchantCollectionProducts,
     listMerchantCustomerGroups: customerService.listGroups,
@@ -203,9 +222,28 @@ export function createCommerceAppOptions({
       limit: input.limit,
       offset: input.offset,
     }),
+    listMerchantQuotations: async (input) => ({
+      ok: true as const,
+      ...(await merchantQuotations.list(input)),
+      limit: input.limit,
+      offset: input.offset,
+    }),
+    markMerchantQuotationConverted: async (input) =>
+      Boolean(await merchantQuotations.markConverted(input)),
     mutateMerchantOrder: orderService.mutateMerchantOrder,
     reorderMerchantProductCategories: productService.reorderMerchantProductCategories,
     saveMerchantSaleDraft: merchantSaleDrafts.save,
+    reviseMerchantQuotation: async (input) => {
+      const quotation = await merchantQuotations.revise(input);
+      return quotation
+        ? { ok: true as const, quotation }
+        : {
+            ok: false as const,
+            error: "quotation_revision_conflict" as const,
+            status: 409 as const,
+          };
+    },
+    validateMerchantSaleDraft,
     updateMerchantCatalogTranslation: catalogTranslationService.write,
     updateMerchantCatalogTranslations: catalogTranslationService.writeMany,
     updateMerchantCollectionProducts: productService.updateMerchantCollectionProducts,

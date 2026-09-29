@@ -12,6 +12,56 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  issueMerchantQuotation?:
+    | ((input: {
+        createdByUserId: string;
+        snapshot: import("@ecs/contracts").MerchantQuotationSnapshot;
+        tenantId: string;
+      }) => Promise<{ ok: true; quotation: import("@ecs/contracts").MerchantQuotation }>)
+    | undefined;
+  getMerchantQuotation?:
+    | ((input: { quotationId: string; tenantId: string }) => Promise<
+        | {
+            ok: true;
+            quotation: import("@ecs/contracts").MerchantQuotation;
+            revisions: import("@ecs/contracts").MerchantQuotationRevision[];
+          }
+        | { ok: false; error: "quotation_not_found"; status: 404 }
+      >)
+    | undefined;
+  listMerchantQuotations?:
+    | ((input: { limit: number; offset: number; tenantId: string }) => Promise<{
+        ok: true;
+        count: number;
+        limit: number;
+        offset: number;
+        quotations: import("@ecs/contracts").MerchantQuotationSummary[];
+      }>)
+    | undefined;
+  reviseMerchantQuotation?:
+    | ((input: {
+        createdByUserId: string;
+        expectedRevision: number;
+        quotationId: string;
+        snapshot: import("@ecs/contracts").MerchantQuotationSnapshot;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; quotation: import("@ecs/contracts").MerchantQuotation }
+        | { ok: false; error: "quotation_revision_conflict"; status: 409 }
+      >)
+    | undefined;
+  markMerchantQuotationConverted?:
+    | ((input: { orderId: string; quotationId: string; tenantId: string }) => Promise<boolean>)
+    | undefined;
+  validateMerchantSaleDraft?:
+    | ((input: {
+        content: import("@ecs/contracts").MerchantSaleDraftContent;
+        salesChannelId: string;
+        stockLocationId?: string | null | undefined;
+      }) => ReturnType<
+        import("../modules/commerce/merchant-sale-drafts.js").ValidateMerchantSaleDraft
+      >)
+    | undefined;
   archiveMerchantSaleDraft?:
     | ((input: {
         draftId: string;
@@ -121,6 +171,10 @@ export type PlatformMerchantOperationsOptions = {
         shippingOptionId?: string | null | undefined;
         tenantId: string;
         userId: string;
+        idempotencyKey?: string | undefined;
+        quotationId?: string | undefined;
+        quotationRevision?: number | undefined;
+        source?: "assisted_sale" | "quote_conversion" | undefined;
       }) => Promise<
         | {
             ok: true;

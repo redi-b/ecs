@@ -14,6 +14,9 @@ export type MerchantMutationOperation =
   | "inventory.stock.set"
   | "order.mark_paid"
   | "order.refund"
+  | "quotation.convert"
+  | "quotation.issue"
+  | "quotation.revise"
   | "sale_draft.delete"
   | "sale_draft.save";
 
@@ -302,5 +305,6 @@ function getMutationAuditTargetType(operation: MerchantMutationOperation) {
   if (operation === "order.refund") return "order_refund";
   if (operation.startsWith("inventory.")) return "inventory_stock";
   if (operation.startsWith("sale_draft.")) return "sale_draft";
+  if (operation.startsWith("quotation.")) return "quotation";
   return "order";
 }

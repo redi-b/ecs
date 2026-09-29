@@ -11,13 +11,18 @@ import { Button } from "@/components/ui/button";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
+import { QuotationsTable } from "@/features/orders/quotations-table";
 import { SaleDraftsTable } from "@/features/orders/sale-drafts-table";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { listDateRangeToTimestamps, parseListDateRange } from "@/lib/list-date-range";
 import { getListErrorState } from "@/lib/list-error-state";
 import { listExportPath } from "@/lib/list-export-path";
-import { getMerchantOrders, listMerchantSaleDrafts } from "@/lib/merchant-orders";
+import {
+  getMerchantOrders,
+  listMerchantQuotations,
+  listMerchantSaleDrafts,
+} from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
@@ -38,8 +43,8 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
   const viewValue = resolvedSearchParams.view;
-  const view =
-    (Array.isArray(viewValue) ? viewValue[0] : viewValue) === "drafts" ? "drafts" : "orders";
+  const requestedView = Array.isArray(viewValue) ? viewValue[0] : viewValue;
+  const view = requestedView === "drafts" || requestedView === "quotes" ? requestedView : "orders";
   const viewSwitcher = (
     <nav
       aria-label={t("orders.views.aria")}
@@ -49,9 +54,14 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
         <Link href={dashboardRoutes.orders}>{t("orders.views.orders")}</Link>
       </Button>
       {!tenantId ? (
-        <Button asChild size="sm" variant={view === "drafts" ? "secondary" : "ghost"}>
-          <Link href={`${dashboardRoutes.orders}?view=drafts`}>{t("orders.views.drafts")}</Link>
-        </Button>
+        <>
+          <Button asChild size="sm" variant={view === "drafts" ? "secondary" : "ghost"}>
+            <Link href={`${dashboardRoutes.orders}?view=drafts`}>{t("orders.views.drafts")}</Link>
+          </Button>
+          <Button asChild size="sm" variant={view === "quotes" ? "secondary" : "ghost"}>
+            <Link href={`${dashboardRoutes.orders}?view=quotes`}>{t("orders.views.quotes")}</Link>
+          </Button>
+        </>
       ) : null}
     </nav>
   );
@@ -93,6 +103,43 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
           <Alert variant="destructive">
             <AlertTitle>{t("orders.drafts.loadFailedTitle")}</AlertTitle>
             <AlertDescription>{t("orders.drafts.loadFailedMessage")}</AlertDescription>
+          </Alert>
+        )}
+      </PageShell>
+    );
+  }
+
+  if (view === "quotes" && !tenantId) {
+    const quotations = await listMerchantQuotations({
+      cookieHeader: requestHeaders.get("cookie"),
+      limit: listParams.pageSize,
+      offset,
+      platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+      requestHost: requestHeaders.get("host"),
+    });
+    return (
+      <PageShell actions={<RefreshButton />} title={t("orders.title")}>
+        {viewSwitcher}
+        {quotations.ok ? (
+          <>
+            <ListSummary
+              count={quotations.count}
+              page={listParams.page}
+              pageSize={quotations.limit}
+            />
+            <QuotationsTable quotations={quotations.quotations} />
+            <PaginationControls
+              basePath={dashboardRoutes.orders}
+              count={quotations.count}
+              page={listParams.page}
+              pageSize={quotations.limit}
+              searchParams={resolvedSearchParams}
+            />
+          </>
+        ) : (
+          <Alert variant="destructive">
+            <AlertTitle>{t("orders.quotes.loadFailedTitle")}</AlertTitle>
+            <AlertDescription>{t("orders.quotes.loadFailedMessage")}</AlertDescription>
           </Alert>
         )}
       </PageShell>

@@ -10,6 +10,13 @@ export {
   mutateMerchantOrder,
 } from "@/lib/platform-api/orders/client";
 export {
+  convertMerchantQuotation,
+  getMerchantQuotation,
+  issueMerchantQuotation,
+  listMerchantQuotations,
+  reviseMerchantQuotation,
+} from "@/lib/platform-api/orders/quotations";
+export {
   archiveMerchantSaleDraft,
   getMerchantSaleDraft,
   listMerchantSaleDrafts,

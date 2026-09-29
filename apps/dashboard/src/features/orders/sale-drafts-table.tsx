@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
+import { IssueQuotationButton } from "./issue-quotation-button";
 
 export function SaleDraftsTable({ drafts }: { drafts: MerchantSaleDraftSummary[] }) {
   const { formatDateTime, t } = useI18n();
@@ -55,11 +56,14 @@ export function SaleDraftsTable({ drafts }: { drafts: MerchantSaleDraftSummary[]
                 {formatDateTime(draft.updatedAt)}
               </TableCell>
               <TableCell className="text-right">
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`${dashboardRoutes.orders}?draft=${encodeURIComponent(draft.id)}`}>
-                    {t("orders.drafts.resume")}
-                  </Link>
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`${dashboardRoutes.orders}?draft=${encodeURIComponent(draft.id)}`}>
+                      {t("orders.drafts.resume")}
+                    </Link>
+                  </Button>
+                  <IssueQuotationButton disabled={draft.itemCount === 0} draftId={draft.id} />
+                </div>
               </TableCell>
             </TableRow>
           ))}

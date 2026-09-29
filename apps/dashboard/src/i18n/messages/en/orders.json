@@ -4,7 +4,8 @@
   "views": {
     "aria": "Order workspace views",
     "orders": "Orders",
-    "drafts": "Drafts"
+    "drafts": "Drafts",
+    "quotes": "Quotes"
   },
   "drafts": {
     "customer": "Customer",
@@ -17,6 +18,44 @@
     "loadFailedMessage": "Refresh the page or try again later. Your saved drafts have not been changed.",
     "resume": "Resume",
     "updated": "Updated"
+  },
+  "quotes": {
+    "changed": "Product price or stock changed. Review the draft and issue a new quote before converting.",
+    "convert": "Create order",
+    "converted": "Order created from quote.",
+    "convertFailed": "The order could not be created. The quote is unchanged.",
+    "converting": "Creating order…",
+    "customer": "Customer",
+    "emptyMessage": "Issue a quote from a saved draft when a customer needs a stable offer.",
+    "emptyTitle": "No quotations",
+    "eyebrow": "Quotation",
+    "history": "Revision history",
+    "issue": "Issue quote",
+    "issued": "Quotation issued.",
+    "issueFailed": "The quotation could not be issued. Review the draft and try again.",
+    "issuing": "Issuing…",
+    "items": "Items",
+    "lineLabel": "Item {number} × {quantity}",
+    "lines": "Quoted items",
+    "loadFailedMessage": "Refresh the page or try again later. Quotations have not been changed.",
+    "loadFailedTitle": "Quotations could not be loaded",
+    "notInvoice": "This is a quotation, not a tax invoice or proof of payment.",
+    "number": "Quote",
+    "open": "Open",
+    "revisionCount": "{count} immutable revisions",
+    "revise": "Issue revision",
+    "revised": "New quotation revision issued.",
+    "reviseFailed": "The revision could not be issued. Review the saved draft and try again.",
+    "revising": "Issuing revision…",
+    "status": {
+      "issued": "Issued",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "converted": "Converted",
+      "voided": "Voided"
+    },
+    "total": "Quoted total",
+    "validUntil": "Valid until"
   },
   "export": {
     "label": "Export orders",
