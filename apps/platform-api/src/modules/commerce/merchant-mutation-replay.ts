@@ -18,7 +18,8 @@ export type MerchantMutationOperation =
   | "quotation.issue"
   | "quotation.revise"
   | "sale_draft.delete"
-  | "sale_draft.save";
+  | "sale_draft.save"
+  | "sales-document.issue";
 
 export type MerchantMutationEnvelope = {
   actorUserId: string;
@@ -306,5 +307,6 @@ function getMutationAuditTargetType(operation: MerchantMutationOperation) {
   if (operation.startsWith("inventory.")) return "inventory_stock";
   if (operation.startsWith("sale_draft.")) return "sale_draft";
   if (operation.startsWith("quotation.")) return "quotation";
+  if (operation.startsWith("sales-document.")) return "sales_document";
   return "order";
 }

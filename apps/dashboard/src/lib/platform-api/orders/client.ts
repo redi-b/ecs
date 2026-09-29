@@ -1,5 +1,16 @@
-import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
-import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
+import type {
+  MerchantOrder,
+  MerchantOrders,
+  MerchantSalesDocument,
+  MerchantSalesDocumentKind,
+} from "@ecs/contracts";
+import {
+  merchantOrderSchema,
+  merchantOrdersSchema,
+  merchantSalesDocumentResponseSchema,
+  merchantSalesDocumentsResponseSchema,
+  platformErrorSchema,
+} from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
 export type MerchantOrderAction =
@@ -52,6 +63,14 @@ export type MerchantOrderResult =
     };
 
 export type MerchantOrderActionResult = MerchantOrderResult;
+
+export type MerchantSalesDocumentsResult =
+  | { ok: true; documents: MerchantSalesDocument[] }
+  | { ok: false; message: string; status: number };
+
+export type MerchantSalesDocumentResult =
+  | { ok: true; document: MerchantSalesDocument }
+  | { ok: false; message: string; status: number };
 
 export async function getMerchantOrders(
   options: {
@@ -158,6 +177,122 @@ export async function getMerchantOrder(options: {
     ok: true,
     order: parsed.data,
   };
+}
+
+export async function listMerchantSalesDocuments(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentsResult> {
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/orders/${encodeURIComponent(options.orderId)}/documents`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      cache: "no-store",
+      headers: getOrderHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: options.requestHost,
+      }),
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_documents_request_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentsResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, documents: parsed.data.documents }
+    : { ok: false, message: "invalid_sales_documents_response", status: 502 };
+}
+
+export async function getMerchantSalesDocument(options: {
+  cookieHeader?: string | null | undefined;
+  documentId: string;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentResult> {
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/sales-documents/${encodeURIComponent(options.documentId)}`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      cache: "no-store",
+      headers: getOrderHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: options.requestHost,
+      }),
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_document_request_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, document: parsed.data.document }
+    : { ok: false, message: "invalid_sales_document_response", status: 502 };
+}
+
+export async function issueMerchantSalesDocument(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  idempotencyKey: string;
+  kind: MerchantSalesDocumentKind;
+  language: "en" | "am";
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentResult> {
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
+  headers.set("idempotency-key", options.idempotencyKey);
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/orders/${encodeURIComponent(options.orderId)}/documents`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      body: JSON.stringify({ kind: options.kind, language: options.language }),
+      cache: "no-store",
+      headers,
+      method: "POST",
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_document_issue_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, document: parsed.data.document }
+    : { ok: false, message: "invalid_sales_document_response", status: 502 };
 }
 
 export type OrderSettlementPayload = {

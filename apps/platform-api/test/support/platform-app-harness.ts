@@ -305,6 +305,9 @@ export function appWithResolution(
     listMerchantQuotations?: PlatformAppOptions["listMerchantQuotations"];
     reviseMerchantQuotation?: PlatformAppOptions["reviseMerchantQuotation"];
     markMerchantQuotationConverted?: PlatformAppOptions["markMerchantQuotationConverted"];
+    issueMerchantSalesDocument?: PlatformAppOptions["issueMerchantSalesDocument"];
+    getMerchantSalesDocument?: PlatformAppOptions["getMerchantSalesDocument"];
+    listMerchantSalesDocuments?: PlatformAppOptions["listMerchantSalesDocuments"];
     validateMerchantSaleDraft?: PlatformAppOptions["validateMerchantSaleDraft"];
     getMerchantProduct?: (input: {
       productId: string;
@@ -642,6 +645,9 @@ export function appWithResolution(
       listMerchantQuotations: options?.listMerchantQuotations,
       reviseMerchantQuotation: options?.reviseMerchantQuotation,
       markMerchantQuotationConverted: options?.markMerchantQuotationConverted,
+      issueMerchantSalesDocument: options?.issueMerchantSalesDocument,
+      getMerchantSalesDocument: options?.getMerchantSalesDocument,
+      listMerchantSalesDocuments: options?.listMerchantSalesDocuments,
       validateMerchantSaleDraft: options?.validateMerchantSaleDraft,
       getMerchantProduct: options?.getMerchantProduct,
       getMerchantProductStock: options?.getMerchantProductStock,

@@ -7,6 +7,9 @@ export type {
 export {
   getMerchantOrder,
   getMerchantOrders,
+  getMerchantSalesDocument,
+  issueMerchantSalesDocument,
+  listMerchantSalesDocuments,
   mutateMerchantOrder,
 } from "@/lib/platform-api/orders/client";
 export {

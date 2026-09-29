@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantOrder } from "@ecs/contracts";
+import type { MerchantOrder, MerchantSalesDocument } from "@ecs/contracts";
 import {
   DetailActivityList,
   DetailField,
@@ -37,6 +37,7 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { OrderPaymentCell } from "@/features/orders/order-table-cells";
+import { SalesDocuments } from "@/features/orders/sales-documents";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -47,6 +48,8 @@ import { cn } from "@/lib/utils";
 type OrderDetailProps = {
   action: string;
   customerProfileAvailable?: boolean;
+  documents?: MerchantSalesDocument[];
+  documentsAction?: string;
   order: MerchantOrder;
   tenantId?: string | undefined;
 };
@@ -138,6 +141,8 @@ function buildActivity(order: MerchantOrder, t: Translate) {
 export function OrderDetail({
   action,
   customerProfileAvailable = false,
+  documents,
+  documentsAction,
   order,
   tenantId,
 }: OrderDetailProps) {
@@ -413,6 +418,11 @@ export function OrderDetail({
         </div>
 
         <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+          {documents && documentsAction ? (
+            <DetailSection title={t("orders.documents.title")}>
+              <SalesDocuments action={documentsAction} documents={documents} order={order} />
+            </DetailSection>
+          ) : null}
           <DetailSection
             help={{
               summary: t("orders.detail.paymentHelpSummary"),

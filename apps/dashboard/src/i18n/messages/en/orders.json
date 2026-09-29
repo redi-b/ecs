@@ -57,6 +57,31 @@
     "total": "Quoted total",
     "validUntil": "Valid until"
   },
+  "documents": {
+    "title": "Documents",
+    "optionalHint": "Optional paperwork for customers or packing. Orders work normally without it.",
+    "create": "Create document",
+    "createTitle": "Create operational document",
+    "createDescription": "Create a fixed snapshot of this order for printing or sharing manually.",
+    "kind": "Document type",
+    "language": "Document language",
+    "kinds": {
+      "order_summary": "Order summary",
+      "payment_receipt": "Payment receipt",
+      "packing_slip": "Packing slip"
+    },
+    "notTaxInvoice": "This document is operational only. It is not a tax invoice and cannot be used as a VAT input document.",
+    "empty": "No documents created for this order.",
+    "issue": "Create",
+    "issuing": "Creating…",
+    "issued": "Document {number} created.",
+    "issueFailed": "The document could not be created. The order was not changed.",
+    "paymentRequired": "Record the payment before creating a payment receipt.",
+    "print": "Print or save PDF",
+    "operationalOnly": "Operational only",
+    "order": "Order",
+    "disclaimerDetail": "This ECS document makes no fiscal-device, tax-authority approval, or legal tax-invoice claim."
+  },
   "export": {
     "label": "Export orders",
     "pending": "Preparing export…",

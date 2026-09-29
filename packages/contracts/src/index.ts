@@ -5,6 +5,7 @@ export * from "./domain";
 export * from "./merchant-operation-events";
 export * from "./merchant-quotations";
 export * from "./merchant-sale-drafts";
+export * from "./merchant-sales-documents";
 export * from "./notification";
 export * from "./operator";
 export * from "./order";

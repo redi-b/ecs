@@ -12,6 +12,25 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  issueMerchantSalesDocument?:
+    | ((input: {
+        createdByUserId: string;
+        snapshot: import("@ecs/contracts").MerchantSalesDocumentSnapshot;
+        tenantId: string;
+      }) => Promise<{ document: import("@ecs/contracts").MerchantSalesDocument }>)
+    | undefined;
+  getMerchantSalesDocument?:
+    | ((input: {
+        documentId: string;
+        tenantId: string;
+      }) => Promise<import("@ecs/contracts").MerchantSalesDocument | null>)
+    | undefined;
+  listMerchantSalesDocuments?:
+    | ((input: {
+        orderId: string;
+        tenantId: string;
+      }) => Promise<import("@ecs/contracts").MerchantSalesDocument[]>)
+    | undefined;
   issueMerchantQuotation?:
     | ((input: {
         createdByUserId: string;

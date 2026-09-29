@@ -12,6 +12,7 @@ export * from "./media.js";
 export * from "./merchant-mutations.js";
 export * from "./merchant-quotations.js";
 export * from "./merchant-sale-drafts.js";
+export * from "./merchant-sales-documents.js";
 export * from "./notifications.js";
 export * from "./onboarding.js";
 export * from "./payment-banks.js";

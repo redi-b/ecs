@@ -11,6 +11,7 @@ import {
   createMerchantSaleDraftValidator,
   createPostgresMerchantSaleDraftStore,
 } from "../modules/commerce/merchant-sale-drafts.js";
+import { createMerchantSalesDocumentStore } from "../modules/commerce/merchant-sales-documents.js";
 import { createProductOptionSetService } from "../modules/commerce/product-option-sets.js";
 import type { PlatformAppOptions } from "../types/platform-app.js";
 import type { createCommerceRuntime } from "./commerce.js";
@@ -49,6 +50,7 @@ type CommerceAppOptionKey =
   | "getMerchantCatalogTranslations"
   | "getMerchantCustomer"
   | "getMerchantQuotation"
+  | "getMerchantSalesDocument"
   | "getMerchantOrder"
   | "getMerchantProduct"
   | "getMerchantProductStock"
@@ -66,10 +68,12 @@ type CommerceAppOptionKey =
   | "listMerchantPromotions"
   | "listMerchantSaleDrafts"
   | "listMerchantQuotations"
+  | "listMerchantSalesDocuments"
   | "mutateMerchantOrder"
   | "reorderMerchantProductCategories"
   | "saveMerchantSaleDraft"
   | "issueMerchantQuotation"
+  | "issueMerchantSalesDocument"
   | "markMerchantQuotationConverted"
   | "reviseMerchantQuotation"
   | "validateMerchantSaleDraft"
@@ -112,6 +116,7 @@ export function createCommerceAppOptions({
     validate: validateMerchantSaleDraft,
   });
   const merchantQuotations = createMerchantQuotationStore(db);
+  const merchantSalesDocuments = createMerchantSalesDocumentStore(db);
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
     db,
@@ -169,9 +174,13 @@ export function createCommerceAppOptions({
         ? { ok: true as const, ...result }
         : { ok: false as const, error: "quotation_not_found" as const, status: 404 as const };
     },
+    getMerchantSalesDocument: merchantSalesDocuments.get,
     issueMerchantQuotation: async (input) => ({
       ok: true as const,
       quotation: await merchantQuotations.issue(input),
+    }),
+    issueMerchantSalesDocument: async (input) => ({
+      document: await merchantSalesDocuments.issue(input),
     }),
     listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,
     listMerchantCollectionProducts: productService.listMerchantCollectionProducts,
@@ -228,6 +237,7 @@ export function createCommerceAppOptions({
       limit: input.limit,
       offset: input.offset,
     }),
+    listMerchantSalesDocuments: merchantSalesDocuments.list,
     markMerchantQuotationConverted: async (input) =>
       Boolean(await merchantQuotations.markConverted(input)),
     mutateMerchantOrder: orderService.mutateMerchantOrder,

@@ -15,7 +15,7 @@
     "itemCount": "{count} እቃዎች",
     "items": "እቃዎች",
     "loadFailedTitle": "ረቂቆችን መክፈት አልተቻለም",
-    "loadFailedMessage": "ገጹን ያድሱ ወይም ቆይተው ይሞክሩ። የተቀመጡ ረቂቆችዎ አልተቀየሩም።",
+    "loadFailedMessage": "ገጹን እንደገና ይክፈቱ ወይም ቆይተው ይሞክሩ። የተቀመጡ ረቂቆችዎ አልተቀየሩም።",
     "resume": "ቀጥል",
     "updated": "የተሻሻለበት"
   },
@@ -37,7 +37,7 @@
     "items": "እቃዎች",
     "lineLabel": "እቃ {number} × {quantity}",
     "lines": "የቀረቡ እቃዎች",
-    "loadFailedMessage": "ገጹን ያድሱ ወይም ቆይተው ይሞክሩ። የዋጋ ማቅረቢያዎቹ አልተቀየሩም።",
+    "loadFailedMessage": "ገጹን እንደገና ይክፈቱ ወይም ቆይተው ይሞክሩ። የዋጋ ማቅረቢያዎቹ አልተቀየሩም።",
     "loadFailedTitle": "የዋጋ ማቅረቢያዎችን መክፈት አልተቻለም",
     "notInvoice": "ይህ የዋጋ ማቅረቢያ ነው፤ የታክስ ደረሰኝ ወይም የክፍያ ማረጋገጫ አይደለም።",
     "number": "ዋጋ ማቅረቢያ",
@@ -56,6 +56,31 @@
     },
     "total": "የቀረበ ድምር",
     "validUntil": "የሚያገለግልበት ቀን"
+  },
+  "documents": {
+    "title": "ሰነዶች",
+    "optionalHint": "ለደንበኛ ወይም ለእቃ ማሸጊያ የሚያገለግል አማራጭ ሰነድ። ያለ እሱም ትዕዛዞች በመደበኛነት ይሰራሉ።",
+    "create": "ሰነድ ፍጠር",
+    "createTitle": "የስራ ሰነድ ፍጠር",
+    "createDescription": "ለማተም ወይም በእጅ ለማጋራት የዚህን ትዕዛዝ የማይቀየር ቅጂ ይፍጠሩ።",
+    "kind": "የሰነድ አይነት",
+    "language": "የሰነድ ቋንቋ",
+    "kinds": {
+      "order_summary": "የትዕዛዝ ማጠቃለያ",
+      "payment_receipt": "የክፍያ ደረሰኝ",
+      "packing_slip": "የእቃ ማሸጊያ ዝርዝር"
+    },
+    "notTaxInvoice": "ይህ ሰነድ ለስራ አገልግሎት ብቻ ነው። የታክስ ደረሰኝ ወይም የVAT ግብዓት ሰነድ አይደለም።",
+    "empty": "ለዚህ ትዕዛዝ የተፈጠረ ሰነድ የለም።",
+    "issue": "ፍጠር",
+    "issuing": "በመፍጠር ላይ…",
+    "issued": "ሰነድ {number} ተፈጥሯል።",
+    "issueFailed": "ሰነዱን መፍጠር አልተቻለም። ትዕዛዙ አልተቀየረም።",
+    "paymentRequired": "የክፍያ ደረሰኝ ከመፍጠርዎ በፊት ክፍያውን ይመዝግቡ።",
+    "print": "አትም ወይም PDF አስቀምጥ",
+    "operationalOnly": "ለስራ ብቻ",
+    "order": "ትዕዛዝ",
+    "disclaimerDetail": "ይህ የECS ሰነድ በፊስካል መሣሪያ፣ በታክስ ባለሥልጣን የተፈቀደ ወይም ሕጋዊ የታክስ ደረሰኝ ነው የሚል ይገባኛል አያቀርብም።"
   },
   "export": {
     "label": "ትዕዛዞችን ኤክስፖርት አድርግ",
