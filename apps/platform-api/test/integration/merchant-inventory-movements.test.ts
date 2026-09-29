@@ -127,4 +127,61 @@ describe("merchant inventory movements", () => {
       },
     ]);
   });
+
+  it("projects only events with a stable occurrence and proven delta", async () => {
+    const movements: unknown[] = [];
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        appendMerchantInventoryMovement: async (input) => {
+          movements.push(input);
+          return {
+            movement: {
+              ...input,
+              createdAt: "2026-09-29T10:05:00.000Z",
+              id: "movement_event_1",
+            },
+          };
+        },
+        internalApiToken: "internal-test-token",
+        resolveTenantIdByMedusaSalesChannelId: async () => resolvedTenantContext.tenantId,
+      },
+    );
+    const request = (payload: Record<string, unknown>) =>
+      app.request("/platform/internal/inventory/events", {
+        body: JSON.stringify({
+          eventName: "reservation-item.updated",
+          inventoryItemId: "iitem_1",
+          locationId: "sloc_1",
+          medusaSalesChannelId: "sc_1",
+          reason: "reservation",
+          subjectId: "reservation_1",
+          subjectType: "reservation_item",
+          ...payload,
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-platform-internal-token": "internal-test-token",
+        },
+        method: "POST",
+      });
+
+    const unproven = await request({ delta: -2, observedAfter: 8, observedBefore: 9 });
+    const missingOccurrence = await request({ delta: -2, observedAfter: 8, observedBefore: 10 });
+    const accepted = await request({
+      delta: -2,
+      metadata: { created_at: "2026-09-29T10:05:00.000Z", eventGroupId: "order_1" },
+      observedAfter: 8,
+      observedBefore: 10,
+    });
+
+    assert.equal(unproven.status, 422);
+    assert.equal(missingOccurrence.status, 422);
+    assert.equal(accepted.status, 201);
+    assert.equal(movements.length, 1);
+    assert.match(
+      (movements[0] as { sourceId: string }).sourceId,
+      /^v1:medusa:reservation-item\.updated:reservation_item:reservation_1:/,
+    );
+  });
 });

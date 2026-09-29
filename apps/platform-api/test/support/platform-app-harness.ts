@@ -298,6 +298,8 @@ export function appWithResolution(
     executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
     appendMerchantInventoryMovement?: PlatformAppOptions["appendMerchantInventoryMovement"];
     listMerchantInventoryMovements?: PlatformAppOptions["listMerchantInventoryMovements"];
+    internalApiToken?: PlatformAppOptions["internalApiToken"];
+    resolveTenantIdByMedusaSalesChannelId?: PlatformAppOptions["resolveTenantIdByMedusaSalesChannelId"];
     archiveMerchantSaleDraft?: PlatformAppOptions["archiveMerchantSaleDraft"];
     getMerchantSaleDraft?: PlatformAppOptions["getMerchantSaleDraft"];
     listMerchantSaleDrafts?: PlatformAppOptions["listMerchantSaleDrafts"];
@@ -640,6 +642,8 @@ export function appWithResolution(
       executeMerchantMutation: options?.executeMerchantMutation,
       appendMerchantInventoryMovement: options?.appendMerchantInventoryMovement,
       listMerchantInventoryMovements: options?.listMerchantInventoryMovements,
+      internalApiToken: options?.internalApiToken,
+      resolveTenantIdByMedusaSalesChannelId: options?.resolveTenantIdByMedusaSalesChannelId,
       archiveMerchantSaleDraft: options?.archiveMerchantSaleDraft,
       getMerchantSaleDraft: options?.getMerchantSaleDraft,
       listMerchantSaleDrafts: options?.listMerchantSaleDrafts,
