@@ -39,7 +39,7 @@ body.nexa-body {
   padding: 0.75rem 1rem;
   border-radius: $radius-50;
   text-decoration: underline;
-  transition: transform var(--nexa-motion-fast) var(--nexa-ease-out);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
   &:focus,
   &:focus-visible {
@@ -107,7 +107,7 @@ body.no-scroll {
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--nexa-primary);
   outline-offset: 3px;
-  transition: outline-color var(--nexa-motion-fast) var(--nexa-ease-out), outline-offset var(--nexa-motion-fast) var(--nexa-ease-out), box-shadow var(--nexa-motion-fast) var(--nexa-ease-out), border-color var(--nexa-motion-fast) var(--nexa-ease-out);
+  transition: outline-color 140ms cubic-bezier(0.22, 1, 0.36, 1), outline-offset 140ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1), border-color 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .nexa-toast {
@@ -123,7 +123,7 @@ body.no-scroll {
   box-shadow: 8px 8px 0 alpha(var(--nexa-ink), 0.18);
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity var(--nexa-motion-base) var(--nexa-ease-out), transform var(--nexa-motion-base) var(--nexa-ease-out);
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .nexa-toast[data-tone="error"] { border-left: 4px solid var(--nexa-primary); }
@@ -178,9 +178,20 @@ button[data-busy="true"]::before {
 .nexa-save-icon svg { display: block; width: 15px; height: 15px; }
 .nexa-save-icon__filled { visibility: hidden; }
 
-:where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
-  .nexa-save-icon__outline { visibility: hidden; }
-  .nexa-save-icon__filled { visibility: visible; }
+[data-wishlist-toggle] {
+  transition: color 140ms cubic-bezier(0.22, 1, 0.36, 1), background-color 140ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &.is-pop {
+    animation: nexa-save-ring 480ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    .nexa-save-icon {
+      animation: nexa-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
 }
 
 button[data-busy="true"] > svg,
@@ -188,26 +199,53 @@ button[data-busy="true"] > .btn__icon {
   opacity: 0.35;
 }
 
-[data-wishlist-toggle] {
-  transition: color var(--nexa-motion-fast) var(--nexa-ease-out), background-color var(--nexa-motion-fast) var(--nexa-ease-out);
+[data-wishlist-indicator].is-bump {
+  animation: nexa-bag-bump 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-[data-wishlist-toggle][aria-pressed="true"] {
-  color: var(--nexa-primary-link);
-}
-
-
-
-
-:root {
-  --nexa-motion-fast: 140ms;
-  --nexa-motion-base: 220ms;
-  --nexa-motion-slow: 300ms;
-  --nexa-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+[data-cart-open].is-bump,
+.site-header__icon.is-bump {
+  animation: nexa-bag-bump 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes nexa-spin {
   to { transform: rotate(1turn); }
+}
+
+@keyframes nexa-heart-pop {
+  0% { transform: scale(1); }
+  42% { transform: scale(1.34); }
+  100% { transform: scale(1); }
+}
+
+@keyframes nexa-save-ring {
+  0% { box-shadow: 0 0 0 0 rgb(from var(--nexa-primary) r g b / 0.45); }
+  100% { box-shadow: 0 0 0 12px rgb(from var(--nexa-primary) r g b / 0); }
+}
+
+@keyframes nexa-bag-bump {
+  0% { transform: scale(1); }
+  38% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+@keyframes nexa-qty-tick {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.cart-drawer__quantity span.is-tick,
+.nexa-stepper span.is-tick,
+.nexa-quantity output.is-tick,
+[data-line-quantity].is-tick {
+  animation: nexa-qty-tick 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
+  color: var(--nexa-primary-link);
+
+  .nexa-save-icon__outline { visibility: hidden; }
+  .nexa-save-icon__filled { visibility: visible; }
 }
 
 @media (prefers-reduced-motion: reduce) {

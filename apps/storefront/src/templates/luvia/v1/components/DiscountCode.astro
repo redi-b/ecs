@@ -18,10 +18,10 @@ const locale =
 ---
 
 <section class="discount-code" aria-labelledby={labelId} data-discount-code>
-  <form method="post" action="/actions/cart/promotion" data-cart-promotion-form>
-    <label id={labelId} for={inputId} class="type-body-s-500"
-      >{m.cart_discount_question({}, { locale })}</label
-    >
+  <form method="post" action="/actions/cart/promotion" data-cart-promotion-form class="discount-code__form">
+    <label id={labelId} for={inputId} class="sr-only">
+      {m.cart_discount_question({}, { locale })}
+    </label>
     <div class="discount-code__field">
       <input
         id={inputId}
@@ -30,11 +30,11 @@ const locale =
         autocapitalize="characters"
         spellcheck="false"
         placeholder={m.cart_discount_placeholder({}, { locale })}
-        class="type-body-400"
+        class="discount-code__input type-body-400"
       />
-      <button type="submit" class="type-body-s-500"
-        >{m.action_apply({}, { locale })}</button
-      >
+      <button type="submit" class="discount-code__submit type-body-s-500">
+        {m.action_apply({}, { locale })}
+      </button>
     </div>
     {helper && <small class="type-body-xs">{helper}</small>}
   </form>
@@ -45,20 +45,19 @@ const locale =
           method="post"
           action="/actions/cart/promotion"
           data-cart-promotion-form
+          class="discount-code__applied-item"
         >
           <input type="hidden" name="intent" value="remove" />
           <input type="hidden" name="code" value={promotion.code ?? ""} />
-          <span>
-            <>
-              <b class="type-body-s-500">{promotion.code}</b>
-              <small class="type-body-xs">
-                {m.cart_discount_applied({}, { locale })}
-              </small>
-            </>
+          <span class="discount-code__applied-label">
+            <b class="type-body-s-500">{promotion.code}</b>
+            <small class="type-body-xs">
+              {m.cart_discount_applied({}, { locale })}
+            </small>
           </span>
           <button
             type="submit"
-            class="type-body-xs"
+            class="discount-code__remove-btn"
             aria-label={m.cart_discount_remove(
               { code: promotion.code ?? "" },
               { locale },

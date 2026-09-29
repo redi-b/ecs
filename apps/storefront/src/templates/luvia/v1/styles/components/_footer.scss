@@ -7,7 +7,6 @@
 
 .footer {
   position: relative;
-  width: calc(100% - 120px);
   min-height: 280px;
   margin: $space-950 auto $space-300;
   padding: $space-700 $space-600 $space-850;
@@ -88,7 +87,6 @@
 }
 
 .inquiry {
-  width: calc(100% - 120px);
   height: 76px;
   margin: 0 auto;
   padding: 0 $space-600;
@@ -109,18 +107,12 @@
 
 @media (max-width: 1100px) {
   .footer {
-      width: calc(100% - 40px);
       grid-template-columns: 2fr repeat(2, 1fr);
-    }
-
-  .inquiry {
-      width: calc(100% - 40px);
     }
 }
 
 @media (max-width: 760px) {
   .footer {
-      width: calc(100% - 24px);
       margin-top: $space-900;
       padding: $space-600 $space-500 $space-900;
       grid-template-columns: 1fr 1fr;
@@ -138,7 +130,6 @@
     }
 
   .inquiry {
-      width: calc(100% - 24px);
       height: auto;
       padding: $space-550;
       gap: $space-450;

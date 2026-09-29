@@ -2,6 +2,9 @@ html.template-luvia {
   background: var(--clr-bg);
   color: var(--clr-ink);
   scrollbar-gutter: stable;
+  // The header is pinned, so scroll-into-view (fragment links, focus, the skip
+  // link) has to reserve its footprint or the target lands underneath it.
+  scroll-padding-top: var(--header-offset);
 
   * {
     box-sizing: border-box;

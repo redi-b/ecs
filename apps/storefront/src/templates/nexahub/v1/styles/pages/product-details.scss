@@ -101,11 +101,16 @@
     color: var(--nexa-ink);
     cursor: pointer;
     z-index: 10;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
-    &:hover {
-      color: var(--nexa-primary-link);
-      transform: scale(1.05);
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: var(--nexa-primary-link);
+      }
+    }
+
+    &:active {
+      transform: scale(0.92);
     }
   }
 
@@ -262,7 +267,7 @@
     text-decoration: underline;
     text-underline-offset: 3px;
     cursor: pointer;
-    transition: color var(--nexa-motion-fast) var(--nexa-ease-out);
+    transition: color 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover { color: var(--nexa-primary-link); }
     &[hidden] { display: none; }
@@ -320,7 +325,7 @@
     padding: 0;
     cursor: pointer;
     box-sizing: border-box;
-    transition: border-color 0.2s ease, transform 0.2s ease;
+    transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
     span,
     img {
@@ -365,7 +370,7 @@
     letter-spacing: $ls-body-s-500;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
       border-color: alpha(var(--nexa-primary), 0.6);
@@ -501,11 +506,15 @@
     border-radius: $radius-50;
     color: alpha(var(--nexa-ink), 0.7);
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
       background: var(--nexa-primary-fill);
       color: var(--nexa-on-primary);
+    }
+
+    &:active {
+      transform: scale(0.94);
     }
   }
 

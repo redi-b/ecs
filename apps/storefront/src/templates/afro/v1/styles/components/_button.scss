@@ -12,7 +12,6 @@
     background-color $dur-ui ease,
     border-color $dur-ui ease,
     color $dur-ui ease,
-    box-shadow $dur-ui ease,
     transform $dur-press $ease-out;
 
   &:active:not(:disabled) {
@@ -51,7 +50,7 @@
       height: 32px;
       border-radius: $radius-700;
       background-color: $clr-primary-500;
-      color: $clr-on-primary;
+      color: $clr-neutral-50;
       flex-shrink: 0;
       transition: transform $dur-press $ease-out;
 
@@ -65,12 +64,8 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    &--with-icon:hover:not(:disabled) {
-      box-shadow: 0 4px 14px color-mix(in srgb, $clr-primary-800 16%, transparent);
-
-      .btn__icon-badge [data-icon="arrow"] {
-        transform: translateX($space-100);
-      }
+    &--with-icon:hover:not(:disabled) .btn__icon-badge [data-icon="arrow"] {
+      transform: translateX($space-100);
     }
   }
 
@@ -82,8 +77,8 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled) {
-        background-color: color-mix(in srgb, $clr-primary-500 86%, black);
-        box-shadow: 0 4px 14px rgba($clr-primary-500, 0.28);
+        filter: brightness(0.92);
+        box-shadow: 0 4px 14px alpha($clr-primary-500, 0.28);
       }
     }
   }
@@ -95,21 +90,21 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled) {
-        background-color: color-mix(in srgb, $clr-primary-800 82%, white);
-        box-shadow: 0 4px 14px color-mix(in srgb, $clr-primary-800 22%, transparent);
+        filter: brightness(1.15);
+        box-shadow: 0 4px 14px alpha($clr-primary-800, 0.22);
       }
     }
   }
 
   &--ghost {
     background-color: transparent;
-    border-color: color-mix(in srgb, $clr-primary-800 40%, transparent);
-    color: color-mix(in srgb, $clr-primary-800 90%, transparent);
+    border-color: alpha($clr-primary-800, 0.4);
+    color: alpha($clr-primary-800, 0.9);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled) {
-        background-color: color-mix(in srgb, $clr-primary-800 6%, transparent);
-        border-color: color-mix(in srgb, $clr-primary-800 70%, transparent);
+        background-color: alpha($clr-primary-800, 0.06);
+        border-color: alpha($clr-primary-800, 0.7);
       }
     }
   }
@@ -134,3 +129,4 @@
     background-color: $clr-primary-800;
   }
 }
+

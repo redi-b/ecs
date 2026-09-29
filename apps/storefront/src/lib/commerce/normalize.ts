@@ -428,6 +428,29 @@ export function normalizeProduct(value: unknown): StoreProduct {
 
 export const normalizeStoreProduct = normalizeProduct;
 
+export function cleanVariantTitle(
+  variantTitle?: string | null,
+  productTitle?: string | null,
+): string | null {
+  const rawVariant = variantTitle?.trim();
+  const rawTitle = productTitle?.trim();
+  if (!rawVariant || rawVariant === "Default Variant" || rawVariant === "Default") {
+    return null;
+  }
+  if (rawTitle) {
+    if (rawVariant === rawTitle) return null;
+    if (rawVariant.startsWith(rawTitle + " / ")) {
+      const clean = rawVariant.slice(rawTitle.length + 3).trim();
+      return clean && clean !== "Default Variant" && clean !== "Default" ? clean : null;
+    }
+    if (rawVariant.startsWith(rawTitle + " - ")) {
+      const clean = rawVariant.slice(rawTitle.length + 3).trim();
+      return clean && clean !== "Default Variant" && clean !== "Default" ? clean : null;
+    }
+  }
+  return rawVariant;
+}
+
 function normalizeCartItem(value: unknown): StoreCartItem | null {
   if (!isRecord(value)) return null;
   const id = getString(value.id);
@@ -451,10 +474,13 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
   );
 
   const imageUrl = resolveMediaUrl(variantImageUrl) ?? thumbnail;
+  const title = getString(value.title) ?? getString(value.product_title) ?? getString(product?.title);
+  const rawVariantTitle = getString(value.variant_title) ?? getString(variant?.title);
+  const variantTitle = cleanVariantTitle(rawVariantTitle, title);
 
   return {
     id,
-    title: getString(value.title) ?? getString(value.product_title) ?? getString(product?.title),
+    title,
     quantity: getNumber(value.quantity) ?? 0,
     unitPrice: getNumber(value.unit_price) ?? getNumber(value.unitPrice) ?? null,
     total: getNumber(value.total) ?? getNumber(value.subtotal) ?? null,
@@ -462,7 +488,7 @@ function normalizeCartItem(value: unknown): StoreCartItem | null {
     imageUrl,
     variantId: getString(value.variant_id) ?? getString(variant?.id),
     productHandle: getString(product?.handle) ?? getString(value.product_handle),
-    variantTitle: getString(value.variant_title) ?? getString(variant?.title),
+    variantTitle,
     subtotal: getNumber(value.subtotal) ?? null,
     discountTotal: getNumber(value.discount_total) ?? null,
     originalTotal: getNumber(value.original_total) ?? null,

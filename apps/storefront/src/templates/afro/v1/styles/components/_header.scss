@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background-color: rgba($clr-neutral-100, 0.92);
+  background-color: alpha($clr-neutral-100, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   transition: background-color $dur-ui ease, box-shadow $dur-ui ease;
@@ -32,7 +32,7 @@
 
   &__promo-timer {
     background-color: $clr-neutral-100;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
     padding: $space-100;
     border-radius: $radius-150;
     font-variant-numeric: tabular-nums;
@@ -62,7 +62,7 @@
     align-items: center;
     list-style: none;
     padding: $space-100;
-    border: 1px solid color-mix(in srgb, $clr-primary-800 20%, transparent);
+    border: 1px solid alpha($clr-primary-800, 0.2);
     border-radius: $radius-700;
     gap: 0;
     margin: 0;
@@ -94,8 +94,8 @@
     transform: translateX(-50%) translateY(4px);
     background-color: $clr-neutral-50;
     border-radius: $radius-250;
-    border: 1px solid rgba($clr-neutral-900, 0.08);
-    box-shadow: 0 10px 30px rgba($clr-neutral-900, 0.1);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
+    box-shadow: 0 10px 30px alpha($clr-neutral-900, 0.1);
     min-width: 220px;
     max-height: min(380px, 70vh);
     overflow-y: auto;
@@ -116,7 +116,7 @@
       visibility $dur-ui;
 
     scrollbar-width: thin;
-    scrollbar-color: rgba($clr-neutral-900, 0.22) transparent;
+    scrollbar-color: alpha($clr-neutral-900, 0.22) transparent;
 
     &::-webkit-scrollbar {
       width: 2px;
@@ -127,14 +127,14 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background-color: rgba($clr-neutral-900, 0.22);
+      background-color: alpha($clr-neutral-900, 0.22);
       border-radius: $radius-800;
       transition: background-color $dur-ui ease;
     }
 
     &:hover::-webkit-scrollbar-thumb,
     &::-webkit-scrollbar-thumb:hover {
-      background-color: rgba($clr-neutral-900, 0.45);
+      background-color: alpha($clr-neutral-900, 0.45);
     }
 
     li {
@@ -148,7 +148,7 @@
       align-items: center;
       padding: $space-200 $space-250;
       border-radius: $radius-150;
-      color: rgba($clr-neutral-900, 0.85);
+      color: alpha($clr-neutral-900, 0.85);
       font-size: $fs-body-s-400;
       line-height: 1.4;
       text-decoration: none;
@@ -159,7 +159,7 @@
 
       @media (hover: hover) and (pointer: fine) {
         &:hover {
-          background-color: rgba($clr-primary-500, 0.08);
+          background-color: alpha($clr-primary-500, 0.08);
           color: $clr-primary-800;
         }
       }
@@ -188,7 +188,7 @@
     min-height: 44px;
     border-radius: $radius-700;
     border: 1px solid transparent;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
     text-decoration: none;
     white-space: nowrap;
     transition:
@@ -202,7 +202,7 @@
       &:hover:not(&--active),
       .site-header__nav-item:hover > &:not(&--active),
       .site-header__nav-item:focus-within > &:not(&--active) {
-        background-color: rgba($clr-neutral-50, 0.86);
+        background-color: alpha($clr-neutral-50, 0.86);
         color: $clr-primary-800;
       }
     }
@@ -214,10 +214,10 @@
     &--active {
       background:
         linear-gradient($clr-neutral-50, $clr-neutral-50) padding-box,
-        linear-gradient(180deg, rgba($clr-primary-500, 0.05) 0%, rgba($clr-primary-500, 0.25) 100%) border-box;
+        linear-gradient(180deg, alpha($clr-primary-500, 0.05) 0%, alpha($clr-primary-500, 0.25) 100%) border-box;
       border: 1px solid transparent;
-      color: rgba($clr-neutral-900, 0.72);
-      box-shadow: 0 4px 13px color-mix(in srgb, $clr-primary-200 33%, transparent);
+      color: alpha($clr-neutral-900, 0.9);
+      box-shadow: 0 4px 13px alpha($clr-primary-200, 0.33);
     }
   }
 
@@ -264,7 +264,7 @@
     width: 52px;
     height: 52px;
     border-radius: $radius-700;
-    border: 1px solid color-mix(in srgb, $clr-primary-800 20%, transparent);
+    border: 1px solid alpha($clr-primary-800, 0.2);
     background-color: transparent;
     color: $clr-primary-800;
     text-decoration: none;
@@ -286,8 +286,8 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-500, 0.1);
-        border-color: rgba($clr-primary-500, 0.45);
+        background-color: alpha($clr-primary-500, 0.1);
+        border-color: alpha($clr-primary-500, 0.45);
       }
     }
 
@@ -296,12 +296,12 @@
     }
 
     &.is-active {
-      background-color: rgba($clr-primary-500, 0.12);
-      border-color: rgba($clr-primary-500, 0.45);
+      background-color: alpha($clr-primary-500, 0.12);
+      border-color: alpha($clr-primary-500, 0.45);
 
       [data-icon="heart"],
       [data-icon="heart-filled"] {
-        color: $clr-primary-link;
+        color: $clr-primary-500;
       }
     }
   }
@@ -399,7 +399,7 @@
       right: 0;
       background-color: $clr-neutral-50;
       padding: $space-400 $space-300;
-      box-shadow: 0 10px 30px rgba(28, 18, 13, 0.1);
+      box-shadow: 0 10px 30px alpha($clr-neutral-900, 0.1);
       display: none;
       justify-content: center;
       z-index: 99;

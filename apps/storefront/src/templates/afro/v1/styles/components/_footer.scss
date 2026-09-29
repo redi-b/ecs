@@ -25,7 +25,7 @@
     align-items: flex-start;
     gap: $space-400;
     padding-bottom: $space-550;
-    border-bottom: 1px solid rgba($clr-neutral-50, 0.3);
+    border-bottom: 1px solid alpha($clr-neutral-50, 0.3);
   }
 
   &__brand-col {
@@ -46,7 +46,7 @@
   }
 
   &__tagline {
-    color: rgba($clr-neutral-50, 0.7);
+    color: alpha($clr-neutral-50, 0.7);
     margin: 0;
     max-width: 40ch;
   }
@@ -54,9 +54,9 @@
   &__contact-missing {
     margin: 0;
     padding: $space-250 $space-300;
-    border: 1px dashed rgba($clr-neutral-50, 0.3);
+    border: 1px dashed alpha($clr-neutral-50, 0.3);
     border-radius: $radius-200;
-    color: rgba($clr-neutral-50, 0.78);
+    color: alpha($clr-neutral-50, 0.78);
     cursor: pointer;
   }
 
@@ -76,7 +76,7 @@
   }
 
   &__col-title {
-    color: rgba($clr-neutral-100, 0.9);
+    color: alpha($clr-neutral-100, 0.9);
     margin: 0;
   }
 
@@ -90,20 +90,20 @@
   }
 
   &__link {
-    color: rgba($clr-neutral-50, 0.7);
+    color: alpha($clr-neutral-50, 0.7);
     text-decoration: none;
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-position: 0 100%;
     background-size: 0 1px;
     transition:
-      color $dur-ui ease,
-      background-size $dur-hover $ease-out;
+      color 200ms ease,
+      background-size 280ms cubic-bezier(0.23, 1, 0.32, 1);
     width: fit-content;
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        color: $clr-primary-link;
+        color: $clr-primary-200;
         background-size: 100% 1px;
       }
     }
@@ -118,7 +118,7 @@
   }
 
   &__copyright {
-    color: rgba($clr-neutral-100, 0.5);
+    color: alpha($clr-neutral-100, 0.5);
     margin: 0;
   }
 

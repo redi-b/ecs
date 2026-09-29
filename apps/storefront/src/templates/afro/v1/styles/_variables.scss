@@ -8,10 +8,8 @@
 // Two properties make this safe:
 //   * Each var() keeps the original design literal as its fallback, so a page with
 //     no theme tokens renders byte-for-byte as it did before.
-//   * The theme schema restricts token values to hex, so `rgba($clr-neutral-900, …)`
-//     and color-mix() stay valid when a variable is overridden.
-// The color-mix ratios below were fitted so each derived step reproduces its
-// original value at the default tokens (max channel delta 1-10 of 255).
+//   * The theme schema restricts token values to hex, so `alpha($clr-neutral-900, …)`
+//     stays valid when a variable is overridden.
 
 // colors
 // $clr-primary-500 is the fill that sits behind labels and buttons, so it tracks
@@ -19,8 +17,8 @@
 // primary) rather than the raw brand value. At the default tokens fill === #ff720a,
 // so the rendered result is unchanged.
 $clr-primary-500: var(--afro-primary-fill, #ff720a);
-$clr-primary-200: color-mix(in oklab, var(--afro-primary, #ff720a) 45.4%, var(--afro-bg, #fffbf8));
-$clr-primary-800: color-mix(in oklab, var(--afro-primary, #ff720a) 27%, var(--afro-ink, #1c120d));
+$clr-primary-200: #FFC599;
+$clr-primary-800: #472E20;
 
 // Text roles derived from $clr-primary-500. The primary is authored as a fill
 // (2.66:1 on $clr-neutral-100), so it is never legible as copy. These are the
@@ -33,13 +31,11 @@ $clr-on-primary: var(--afro-on-primary, #0b0f0d); // 7.04:1 on $clr-primary-500,
 $clr-neutral-100: var(--afro-bg, #fffbf8);
 $clr-neutral-900: var(--afro-ink, #1c120d);
 
-// Neutral steps track the background so a custom bg does not sit on warm-white
-// cards. colorMode is light-only, so these stay high-key.
-$clr-neutral-150: color-mix(in oklab, var(--afro-ink, #1c120d) 0.5%, var(--afro-bg, #fffbf8));
-$clr-neutral-200: color-mix(in oklab, var(--afro-ink, #1c120d) 0.5%, var(--afro-bg, #fffbf8));
-$clr-neutral-300: color-mix(in oklab, var(--afro-ink, #1c120d) 3.6%, var(--afro-bg, #fffbf8));
-$clr-neutral-50: #FFFFFFFF;
-$clr-neutral-400: #EBEBEBFF;
+$clr-neutral-150: #FDFBF9;
+$clr-neutral-200: #FFFAF6;
+$clr-neutral-300: #F8F2ED;
+$clr-neutral-50: #FFFFFF;
+$clr-neutral-400: #EBEBEB;
 
 // font families
 $ff-header: 'Roobert TRIAL', sans-serif;
@@ -133,5 +129,4 @@ $ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 $dur-press: 140ms;
 $dur-ui: 200ms;
 $dur-hover: 280ms;
-$dur-modal: 260ms;
 $dur-image: 640ms;

@@ -8,7 +8,7 @@
 
 .contact__hero {
   min-height: 335px;
-  padding: $space-1100 $space-500 $space-650;
+  padding-block: $space-1100 $space-650;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -125,7 +125,7 @@
 
 .contact-form {
   position: sticky;
-  top: 110px;
+  top: var(--header-offset);
   padding: $space-650 $space-650 $space-650;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

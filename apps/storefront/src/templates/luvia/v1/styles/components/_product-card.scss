@@ -11,11 +11,15 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
+
+  &.is-deferred {
+    display: none;
+  }
 }
 
 .product-card__media {
   position: relative;
-  aspect-ratio: 342/372;
+  aspect-ratio: $ratio-product-media;
   overflow: hidden;
   border-radius: $radius-200;
   background: var(--clr-soft);
@@ -36,7 +40,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 280ms ease;
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .product-card:hover .product-card__media-link>img {
@@ -77,20 +81,38 @@
   padding: 0;
   display: grid;
   place-items: center;
-  border: 1px solid transparent;
+  border: 1px solid alpha(var(--clr-ink), 0.08);
   border-radius: $radius-full;
   background: var(--clr-surface);
+  color: var(--clr-ink);
   cursor: pointer;
-}
+  box-shadow: 0 2px 8px alpha(var(--clr-ink), 0.06);
+  transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1), background-color 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
 
-.product-card__heart svg[data-icon] {
-  width: 15px;
-  height: 13px;
-}
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: alpha(var(--clr-ink), 0.22);
+      color: var(--clr-primary);
+      box-shadow: 0 4px 12px alpha(var(--clr-ink), 0.12);
+    }
+  }
 
-.product-card__heart[aria-pressed="true"] {
-  border-color: var(--clr-primary);
-  background: var(--clr-accent);
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--clr-primary);
+    border-color: alpha(var(--clr-primary), 0.35);
+  }
+
+  &.is-pop {
+    animation: luvia-save-ring 480ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    .wishlist-heart {
+      animation: luvia-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
 }
 
 .product-card__cta {
@@ -102,7 +124,7 @@
   opacity: 0;
   visibility: hidden;
   transform: translate(-50%, 20px);
-  transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1), visibility 220ms ease;
 }
 
 .product-card:hover .product-card__cta,

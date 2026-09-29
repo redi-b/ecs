@@ -295,10 +295,6 @@
 }
 
 @media(max-width:900px) {
-  .account-order {
-    width: calc(100% - 40px)
-  }
-
   .account-order__layout {
     grid-template-columns: 1fr
   }

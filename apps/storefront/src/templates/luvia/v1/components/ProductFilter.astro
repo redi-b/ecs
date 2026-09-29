@@ -1,0 +1,186 @@
+---
+import { Icon } from "astro-icon/components";
+import type {
+  StoreCollection,
+  StoreCategory,
+} from "../../../../lib/commerce/types";
+import { taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import * as m from "../../../../paraglide/messages.js";
+import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
+import Dropdown from "./Dropdown.astro";
+import "../styles/components/_product-filter.scss";
+
+interface Props {
+  collections?: StoreCollection[];
+  categories?: StoreCategory[];
+  totalCount?: number;
+  shownCount?: number;
+  class?: string;
+}
+
+const {
+  collections = [],
+  categories = [],
+  totalCount = 0,
+  shownCount = 0,
+  class: className,
+} = Astro.props;
+
+const locale =
+  Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
+const categoryOptions = [
+  { value: "all", label: m.catalog_all_products({}, { locale }) },
+  ...categories.map((cat) => ({
+    value: taxonomyHandle(cat) || cat.name || cat.id,
+    label: cat.name || cat.id,
+  })),
+];
+
+const collectionOptions = [
+  { value: "all", label: m.catalog_all_products({}, { locale }) },
+  ...collections.map((col) => ({
+    value: taxonomyHandle(col) || col.title || col.id,
+    label: col.title || col.handle || col.id,
+  })),
+];
+
+const sortOptions = [
+  { value: "created_at", label: m.catalog_newest({}, { locale }) },
+  { value: "price-low", label: m.catalog_price_low_high({}, { locale }) },
+  { value: "price-high", label: m.catalog_price_high_low({}, { locale }) },
+  { value: "title", label: m.home_a_to_z({}, { locale }) },
+];
+---
+
+<div class:list={["product-filter", className]} id="luvia-product-filter">
+  <!-- Top Row: Filter text on left, Count + Clear on right -->
+  <div class="product-filter__header">
+    <div class="product-filter__indicator">
+      <span class="product-filter__title type-body-s-500">
+        {m.catalog_filters({}, { locale })}
+      </span>
+    </div>
+    <div class="product-filter__header-end">
+      <span
+        class="product-filter__count type-body-s-400"
+        id="luvia-filter-count"
+        data-template={m.catalog_showing({ shown: "{shown}", total: "{total}" }, { locale })}
+      >
+        {m.catalog_showing({ shown: shownCount, total: totalCount }, { locale })}
+      </span>
+      <button
+        type="button"
+        class="product-filter__clear type-body-s-400"
+        id="luvia-clear-filters"
+        aria-label="Clear"
+      >
+        <Icon name="plus" />
+        <span>Clear</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Controls Row: Dropdowns + Price Range + Search Button -->
+  <div class="product-filter__controls">
+    <div class="product-filter__group product-filter__group--filters">
+      {categories.length > 0 && (
+        <div class="product-filter__field">
+          <label class="product-filter__label type-body-xs" for="luvia-filter-category">
+            {m.catalog_category({}, { locale })}
+          </label>
+          <Dropdown
+            id="luvia-filter-category"
+            label={m.catalog_category({}, { locale })}
+            icon="grid-view"
+            options={categoryOptions}
+            defaultValue="all"
+          />
+        </div>
+      )}
+
+      {collections.length > 0 && (
+        <div class="product-filter__field">
+          <label class="product-filter__label type-body-xs" for="luvia-filter-collection">
+            {m.catalog_collection({}, { locale })}
+          </label>
+          <Dropdown
+            id="luvia-filter-collection"
+            label={m.catalog_collection({}, { locale })}
+            icon="layers"
+            options={collectionOptions}
+            defaultValue="all"
+          />
+        </div>
+      )}
+
+      <div class="product-filter__field">
+        <span class="product-filter__label type-body-xs">
+          {m.catalog_price_range({}, { locale })}
+        </span>
+        <div class="product-filter__price" id="luvia-price-range">
+          <label class="product-filter__price-field">
+            <span class="product-filter__price-icon" aria-hidden="true">
+              <Icon name="coins" />
+            </span>
+            <input
+              id="luvia-price-min"
+              class="type-body-s-400"
+              type="number"
+              min="0"
+              max="100000"
+              step="100"
+              placeholder={m.catalog_from({}, { locale })}
+              aria-label={m.catalog_from({}, { locale })}
+            />
+          </label>
+          <span class="product-filter__price-sep" aria-hidden="true">
+            <Icon name="minus" />
+          </span>
+          <label class="product-filter__price-field">
+            <span class="product-filter__price-icon" aria-hidden="true">
+              <Icon name="coins" />
+            </span>
+            <input
+              id="luvia-price-max"
+              class="type-body-s-400"
+              type="number"
+              min="0"
+              max="100000"
+              step="100"
+              placeholder={m.catalog_to({}, { locale })}
+              aria-label={m.catalog_to({}, { locale })}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="product-filter__field">
+        <label class="product-filter__label type-body-xs" for="luvia-filter-sort">
+          {m.catalog_sort_by({}, { locale })}
+        </label>
+        <Dropdown
+          id="luvia-filter-sort"
+          label={m.catalog_sort_by({}, { locale })}
+          icon="sort"
+          options={sortOptions}
+          defaultValue="created_at"
+        />
+      </div>
+    </div>
+
+    <div class="product-filter__group product-filter__group--actions">
+      <a
+        href="/products"
+        class="button button--primary button--small button--small-icon product-filter__search"
+        id="luvia-filter-search"
+        aria-label={m.action_search({}, { locale })}
+      >
+        <span class="button__text type-body-400">{m.action_search({}, { locale })}</span>
+        <span class="button__icon" aria-hidden="true">
+          <Icon name="search" />
+        </span>
+      </a>
+    </div>
+  </div>
+</div>

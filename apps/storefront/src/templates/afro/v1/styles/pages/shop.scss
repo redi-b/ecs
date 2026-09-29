@@ -27,7 +27,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba($clr-neutral-900, 0.06);
+    box-shadow: 0 4px 20px alpha($clr-neutral-900, 0.06);
 
     &::after {
       content: "";
@@ -36,10 +36,10 @@
       z-index: 2;
       background: linear-gradient(
         180deg,
-        rgba($clr-neutral-900, 0.75) 0%,
-        rgba($clr-neutral-900, 0.55) 45%,
-        rgba($clr-primary-500, 0.6) 90%,
-        rgba($clr-primary-500, 0.8) 100%
+        alpha($clr-neutral-900, 0.75) 0%,
+        alpha($clr-neutral-900, 0.55) 45%,
+        alpha($clr-primary-500, 0.6) 90%,
+        alpha($clr-primary-500, 0.8) 100%
       );
       pointer-events: none;
     }
@@ -72,10 +72,10 @@
     display: inline-flex;
     align-items: center;
     gap: $space-150;
-    color: rgba($clr-neutral-50, 0.85);
+    color: alpha($clr-neutral-50, 0.85);
 
     a {
-      color: rgba($clr-neutral-50, 0.85);
+      color: alpha($clr-neutral-50, 0.85);
       text-decoration: none;
       background-image: linear-gradient(currentColor, currentColor);
       background-repeat: no-repeat;
@@ -106,15 +106,15 @@
     color: $clr-neutral-50;
     max-width: 18ch;
     margin: 0;
-    text-shadow: 0 2px 16px rgba($clr-neutral-900, 0.4);
+    text-shadow: 0 2px 16px alpha($clr-neutral-900, 0.4);
     letter-spacing: -0.02em;
   }
 
   &__description {
-    color: rgba($clr-neutral-50, 0.75);
+    color: alpha($clr-neutral-50, 0.75);
     max-width: 41ch;
     margin: 0;
-    text-shadow: 0 1px 8px rgba($clr-neutral-900, 0.35);
+    text-shadow: 0 1px 8px alpha($clr-neutral-900, 0.35);
   }
 }
 
@@ -145,7 +145,7 @@
 // 3. Shop Sidebar Filter
 .shop-sidebar {
   background-color: $clr-neutral-100;
-  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border: 1px solid alpha($clr-neutral-900, 0.06);
   border-radius: $radius-400;
   padding: $space-400;
   position: sticky;
@@ -155,7 +155,7 @@
   overscroll-behavior: auto;
 
   scrollbar-width: thin;
-  scrollbar-color: rgba($clr-neutral-900, 0.22) transparent;
+  scrollbar-color: alpha($clr-neutral-900, 0.22) transparent;
 
   &::-webkit-scrollbar {
     width: 2px;
@@ -166,14 +166,14 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba($clr-neutral-900, 0.22);
+    background-color: alpha($clr-neutral-900, 0.22);
     border-radius: $radius-800;
     transition: background-color $dur-ui ease;
   }
 
   &:hover::-webkit-scrollbar-thumb,
   &::-webkit-scrollbar-thumb:hover {
-    background-color: rgba($clr-neutral-900, 0.45);
+    background-color: alpha($clr-neutral-900, 0.45);
   }
   display: flex;
   flex-direction: column;
@@ -204,7 +204,7 @@
     justify-content: space-between;
     gap: $space-200;
     padding-block-end: $space-300;
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.08);
   }
 
   &__header-title {
@@ -224,9 +224,9 @@
   &__reset-btn {
     margin-left: auto;
     background: transparent;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     border-radius: $radius-800;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.72);
     cursor: pointer;
     padding: $space-100 $space-250;
     text-decoration: none;
@@ -239,14 +239,14 @@
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         color: $clr-primary-800;
-        background-color: rgba($clr-primary-500, 0.08);
-        border-color: rgba($clr-primary-500, 0.4);
+        background-color: alpha($clr-primary-500, 0.08);
+        border-color: alpha($clr-primary-500, 0.4);
       }
     }
 
     &:active {
       transform: scale(0.97);
-      background-color: rgba($clr-primary-500, 0.16);
+      background-color: alpha($clr-primary-500, 0.16);
     }
 
     &:focus-visible {
@@ -262,7 +262,7 @@
     width: 40px;
     height: 40px;
     border-radius: $radius-700;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     background-color: $clr-neutral-50;
     color: $clr-neutral-900;
     cursor: pointer;
@@ -273,14 +273,14 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-500, 0.1);
-        border-color: rgba($clr-primary-500, 0.4);
+        background-color: alpha($clr-primary-500, 0.1);
+        border-color: alpha($clr-primary-500, 0.4);
       }
     }
 
     &:active {
       transform: scale(0.94);
-      background-color: rgba($clr-primary-500, 0.18);
+      background-color: alpha($clr-primary-500, 0.18);
     }
 
     &:focus-visible {
@@ -303,7 +303,7 @@
     align-items: center;
     width: 100%;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     border-radius: $radius-250;
     padding: $space-100 $space-100 $space-100 $space-250;
     box-sizing: border-box;
@@ -313,7 +313,7 @@
 
     &:focus-within {
       border-color: $clr-primary-500;
-      box-shadow: 0 0 0 2px rgba($clr-primary-500, 0.15);
+      box-shadow: 0 0 0 2px alpha($clr-primary-500, 0.15);
     }
   }
 
@@ -328,7 +328,7 @@
     padding: $space-50 0;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.4);
     }
   }
 
@@ -340,9 +340,9 @@
     height: 32px;
     min-width: 32px;
     border-radius: $radius-200;
-    background-color: rgba($clr-primary-500, 0.12);
+    background-color: alpha($clr-primary-500, 0.12);
     color: $clr-primary-800;
-    border: 1px solid rgba($clr-primary-500, 0.22);
+    border: 1px solid alpha($clr-primary-500, 0.22);
     cursor: pointer;
     transition:
       background-color $dur-hover ease,
@@ -352,15 +352,15 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-500, 0.2);
-        border-color: rgba($clr-primary-500, 0.4);
+        background-color: alpha($clr-primary-500, 0.2);
+        border-color: alpha($clr-primary-500, 0.4);
         color: $clr-primary-800;
       }
     }
 
     &:active {
       transform: scale(0.94);
-      background-color: rgba($clr-primary-500, 0.28);
+      background-color: alpha($clr-primary-500, 0.28);
     }
 
     [data-icon="search"],
@@ -380,10 +380,10 @@
     width: 100%;
     padding: $space-100;
     overflow: hidden;
-    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
     border-radius: $radius-250;
     background-color: $clr-neutral-50;
-    box-shadow: 0 12px 32px rgba($clr-neutral-900, 0.14);
+    box-shadow: 0 12px 32px alpha($clr-neutral-900, 0.14);
 
     &[hidden] {
       display: none;
@@ -403,7 +403,7 @@
 
       &:hover,
       &[data-active] {
-        background-color: rgba($clr-primary-500, 0.08);
+        background-color: alpha($clr-primary-500, 0.08);
       }
     }
 
@@ -438,7 +438,7 @@
 
       small {
         font-size: $fs-caption;
-        color: rgba($clr-neutral-900, 0.72);
+        color: alpha($clr-neutral-900, 0.72);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -456,7 +456,7 @@
       display: block;
       margin-top: $space-50;
       padding: $space-150 $space-200;
-      border-top: 1px solid rgba($clr-neutral-900, 0.06);
+      border-top: 1px solid alpha($clr-neutral-900, 0.06);
       color: $clr-primary-link;
       font-size: $fs-body-xs-500;
       font-weight: 600;
@@ -466,7 +466,7 @@
       transition: background-color $dur-hover ease, color $dur-hover ease;
 
       &:hover {
-        background-color: rgba($clr-primary-500, 0.08);
+        background-color: alpha($clr-primary-500, 0.08);
         color: $clr-primary-800;
       }
     }
@@ -477,7 +477,7 @@
     flex-direction: column;
     gap: $space-200;
     padding-block-end: $space-300;
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.06);
 
     &:last-child {
       border-bottom: none;
@@ -486,7 +486,7 @@
   }
 
   &__group-title {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.72);
     margin: 0;
   }
 
@@ -510,7 +510,7 @@
       width: 10px;
       height: $space-150;
       flex-shrink: 0;
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.55);
       transition: transform $dur-ui $ease-out;
     }
 
@@ -564,11 +564,11 @@
     touch-action: pan-y;
     padding: $space-100;
     background-color: transparent;
-    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
     border-radius: $radius-250;
 
     scrollbar-width: thin;
-    scrollbar-color: rgba($clr-neutral-900, 0.22) transparent;
+    scrollbar-color: alpha($clr-neutral-900, 0.22) transparent;
 
     &::-webkit-scrollbar {
       width: 1.5px;
@@ -580,14 +580,14 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background-color: rgba($clr-neutral-900, 0.22);
+      background-color: alpha($clr-neutral-900, 0.22);
       border-radius: $radius-800;
       transition: background-color $dur-ui ease;
     }
 
     &:hover::-webkit-scrollbar-thumb,
     &::-webkit-scrollbar-thumb:hover {
-      background-color: rgba($clr-neutral-900, 0.45);
+      background-color: alpha($clr-neutral-900, 0.45);
     }
   }
 
@@ -606,24 +606,24 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: color-mix(in srgb, $clr-primary-200 35%, transparent);
+        background-color: alpha($clr-primary-200, 0.35);
       }
     }
 
     &:active {
-      background-color: rgba($clr-primary-500, 0.1);
+      background-color: alpha($clr-primary-500, 0.1);
     }
 
     &:has(input:checked) {
-      background-color: rgba($clr-primary-500, 0.1);
-      border-color: rgba($clr-primary-500, 0.28);
+      background-color: alpha($clr-primary-500, 0.1);
+      border-color: alpha($clr-primary-500, 0.28);
 
       .shop-sidebar__category-label {
         color: $clr-neutral-900;
       }
 
       .shop-sidebar__category-count {
-        background-color: rgba($clr-primary-500, 0.16);
+        background-color: alpha($clr-primary-500, 0.16);
         color: $clr-primary-800;
       }
 
@@ -647,7 +647,7 @@
       width: $space-350;
       height: $space-350;
       margin: 0;
-      border: 1px solid rgba($clr-neutral-900, 0.28);
+      border: 1px solid alpha($clr-neutral-900, 0.28);
       border-radius: $radius-700;
       background-color: $clr-neutral-50;
       display: grid;
@@ -680,7 +680,7 @@
     align-items: center;
     gap: $space-200;
     min-width: 0;
-    color: rgba($clr-neutral-900, 0.78);
+    color: alpha($clr-neutral-900, 0.78);
     cursor: pointer;
     user-select: none;
   }
@@ -690,8 +690,8 @@
     min-width: $space-500;
     padding: $space-50 $space-150;
     border-radius: $radius-800;
-    background-color: rgba($clr-neutral-900, 0.05);
-    color: rgba($clr-neutral-900, 0.72);
+    background-color: alpha($clr-neutral-900, 0.05);
+    color: alpha($clr-neutral-900, 0.5);
     text-align: center;
   }
 
@@ -714,7 +714,7 @@
     gap: $space-100;
 
     .type-caption {
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.5);
     }
   }
 
@@ -723,7 +723,7 @@
     height: 40px;
     padding: 0 $space-200;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     border-radius: $radius-200;
     color: $clr-neutral-900;
     outline: none;
@@ -734,13 +734,13 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        border-color: rgba($clr-primary-500, 0.45);
+        border-color: alpha($clr-primary-500, 0.45);
       }
     }
 
     &:focus {
       border-color: $clr-primary-500;
-      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.14);
+      box-shadow: 0 0 0 3px alpha($clr-primary-500, 0.14);
     }
   }
 
@@ -757,7 +757,7 @@
     height: $space-100;
     transform: translateY(-50%);
     border-radius: $radius-800;
-    background-color: rgba($clr-neutral-900, 0.12);
+    background-color: alpha($clr-neutral-900, 0.12);
     pointer-events: none;
   }
 
@@ -794,7 +794,7 @@
       border-radius: $radius-700;
       border: $space-50 solid $clr-neutral-50;
       background-color: $clr-primary-500;
-      box-shadow: 0 0 0 1px rgba($clr-primary-500, 0.35);
+      box-shadow: 0 0 0 1px alpha($clr-primary-500, 0.35);
       cursor: grab;
     }
 
@@ -822,7 +822,7 @@
     }
 
     &:focus-visible::-webkit-slider-thumb {
-      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.28);
+      box-shadow: 0 0 0 3px alpha($clr-primary-500, 0.28);
     }
   }
 
@@ -841,13 +841,13 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: color-mix(in srgb, $clr-primary-200 35%, transparent);
+        background-color: alpha($clr-primary-200, 0.35);
       }
     }
 
     &:has(input:checked) {
-      background-color: rgba($clr-primary-500, 0.1);
-      border-color: rgba($clr-primary-500, 0.28);
+      background-color: alpha($clr-primary-500, 0.1);
+      border-color: alpha($clr-primary-500, 0.28);
     }
 
     &:has(input:focus-visible) {
@@ -862,7 +862,7 @@
     height: 20px;
     margin: 0;
     border-radius: $radius-800;
-    background-color: rgba($clr-neutral-900, 0.16);
+    background-color: alpha($clr-neutral-900, 0.16);
     position: relative;
     cursor: pointer;
     flex-shrink: 0;
@@ -882,7 +882,7 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-neutral-900, 0.28);
+        background-color: alpha($clr-neutral-900, 0.28);
       }
     }
 
@@ -914,7 +914,7 @@
     justify-content: space-between;
     padding: $space-200 $space-300;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
     border-radius: $radius-300;
     box-sizing: border-box;
     flex-wrap: wrap;
@@ -922,7 +922,7 @@
   }
 
   &__count {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.7);
     margin: 0;
   }
 
@@ -937,7 +937,7 @@
     align-items: center;
     gap: $space-100;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     border-radius: $radius-800;
     padding: $space-150 $space-250;
     cursor: pointer;
@@ -950,15 +950,15 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-primary-500, 0.08);
-        border-color: rgba($clr-primary-500, 0.4);
+        background-color: alpha($clr-primary-500, 0.08);
+        border-color: alpha($clr-primary-500, 0.4);
         color: $clr-primary-800;
       }
     }
 
     &:active {
       transform: scale(0.97);
-      background-color: rgba($clr-primary-500, 0.16);
+      background-color: alpha($clr-primary-500, 0.16);
     }
 
     &:focus-visible {
@@ -978,7 +978,7 @@
   }
 
   &__sort-label {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     margin: 0;
   }
 
@@ -1003,7 +1003,7 @@
     gap: $space-150;
     padding: $space-100 $space-100 $space-100 $space-250;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     border-radius: $radius-800;
     color: $clr-neutral-900;
     text-decoration: none;
@@ -1015,14 +1015,14 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: color-mix(in srgb, $clr-primary-200 45%, transparent);
-        border-color: rgba($clr-primary-500, 0.4);
+        background-color: alpha($clr-primary-200, 0.45);
+        border-color: alpha($clr-primary-500, 0.4);
         color: $clr-primary-800;
       }
     }
 
     &:active {
-      background-color: rgba($clr-primary-500, 0.16);
+      background-color: alpha($clr-primary-500, 0.16);
     }
 
     &:focus-visible {
@@ -1038,8 +1038,8 @@
       height: 18px;
       flex-shrink: 0;
       border-radius: 50%;
-      background-color: rgba($clr-neutral-900, 0.06);
-      color: rgba($clr-neutral-900, 0.72);
+      background-color: alpha($clr-neutral-900, 0.06);
+      color: alpha($clr-neutral-900, 0.7);
       font-size: 14px;
       line-height: 1;
       transform-origin: 50% 50%;
@@ -1053,7 +1053,7 @@
     &:hover .shop-main__tag-remove,
     &:focus-visible .shop-main__tag-remove {
       background-color: $clr-primary-500;
-      color: $clr-on-primary;
+      color: $clr-neutral-50;
       transform: rotate(90deg);
     }
   }
@@ -1062,7 +1062,7 @@
     display: inline-flex;
     align-items: center;
     padding: $space-100 $space-200;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     text-decoration: underline;
     cursor: pointer;
     transition: color $dur-ui ease;
@@ -1109,7 +1109,7 @@
     gap: $space-200;
     margin-block-start: $space-400;
     padding-block-start: $space-400;
-    border-top: 1px solid rgba($clr-neutral-900, 0.08);
+    border-top: 1px solid alpha($clr-neutral-900, 0.08);
   }
 
   &__page-btn {
@@ -1117,7 +1117,7 @@
     height: 40px;
     padding: 0 $space-150;
     border-radius: $radius-200;
-    border: 1px solid rgba($clr-neutral-900, 0.12);
+    border: 1px solid alpha($clr-neutral-900, 0.12);
     background-color: $clr-neutral-50;
     color: $clr-neutral-900;
     display: flex;
@@ -1133,14 +1133,14 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover:not(:disabled):not(.is-active) {
-        background-color: rgba($clr-primary-500, 0.08);
-        border-color: rgba($clr-primary-500, 0.35);
+        background-color: alpha($clr-primary-500, 0.08);
+        border-color: alpha($clr-primary-500, 0.35);
         color: $clr-primary-800;
       }
     }
 
     &:active:not(:disabled):not(.is-active) {
-      background-color: rgba($clr-primary-500, 0.16);
+      background-color: alpha($clr-primary-500, 0.16);
       transform: scale(0.96);
     }
 

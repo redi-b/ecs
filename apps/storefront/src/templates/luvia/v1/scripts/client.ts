@@ -4,6 +4,7 @@ import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtim
 import {
   $cart,
   $cartDrawerOpen,
+  $isCartMutating,
   addToCart,
   applyPromotion,
   fetchCart,
@@ -11,6 +12,7 @@ import {
   removeCartItem,
   updateCartItemQuantity,
 } from "../../../../lib/stores/cart";
+import { cleanVariantTitle } from "../../../../lib/commerce/normalize";
 import { initHeroCarousels } from "./hero-carousel";
 
 function getClientMessages(): Record<string, string> {
@@ -46,6 +48,7 @@ export function initLuviaStorefront() {
   const readOnlyPreview = editorPreview || demoPreview;
   const messages = getClientMessages();
 
+  initCartStore();
   initLuviaHome();
 
   // Header & Search
@@ -142,6 +145,26 @@ export function initLuviaStorefront() {
   window.matchMedia("(min-width: 761px)").addEventListener("change", (event) => {
     if (event.matches && headerSurface === "menu") setHeaderSurface(null);
   });
+
+  // The header is pinned, so page content eventually scrolls under the pill.
+  // Deepen its edge once that happens. Read work is coalesced to one frame.
+  const header = document.querySelector<HTMLElement>(".header");
+  if (header) {
+    let headerFrame = 0;
+    const syncHeaderState = () => {
+      headerFrame = 0;
+      header.toggleAttribute("data-scrolled", window.scrollY > 8);
+    };
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (headerFrame) return;
+        headerFrame = window.requestAnimationFrame(syncHeaderState);
+      },
+      { passive: true },
+    );
+    syncHeaderState();
+  }
 
   // Cart Drawer
   const trigger = document.querySelector<HTMLAnchorElement>("[data-cart-trigger]");
@@ -245,10 +268,12 @@ export function initLuviaStorefront() {
       }
 
       const copy = createNode("div", "cart-item__copy");
+      const titleText = item.title || messages.product || "Product";
       copy.append(
-        createNode("strong", "type-body-s-500", item.title || messages.product || "Product"),
+        createNode("strong", "type-body-s-500", titleText),
       );
-      if (item.variantTitle) copy.append(createNode("span", "type-body-xs", item.variantTitle));
+      const cleanVariant = cleanVariantTitle(item.variantTitle, titleText);
+      if (cleanVariant) copy.append(createNode("span", "type-body-xs", cleanVariant));
       copy.append(
         createNode(
           "b",
@@ -374,13 +399,9 @@ export function initLuviaStorefront() {
 
     if (quantityButton) {
       const qty = Number(quantityButton.dataset.cartQuantity || "1");
-      announce(messages.cartUpdating);
-      const updated = await updateCartItemQuantity(lineItemId, qty);
-      announce(updated?.ok ? messages.cartUpdated : messages.cartUpdateFailed);
+      await updateCartItemQuantity(lineItemId, qty);
     } else if (removeButton) {
-      announce(messages.cartUpdating);
-      const removed = await removeCartItem(lineItemId);
-      announce(removed?.ok ? messages.cartUpdated : messages.cartUpdateFailed);
+      await removeCartItem(lineItemId);
     }
   });
 
@@ -417,6 +438,12 @@ export function initLuviaStorefront() {
     }
   });
 
+  $isCartMutating.subscribe((isMutating) => {
+    if (drawer) {
+      drawer.toggleAttribute("data-mutating", isMutating);
+    }
+  });
+
   $cartDrawerOpen.subscribe((isOpen) => {
     if (isOpen && !drawer?.hasAttribute("data-open")) {
       void openCart();
@@ -432,23 +459,14 @@ export function initLuviaStorefront() {
     if (!form || event.defaultPrevented || readOnlyPreview) return;
     event.preventDefault();
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-    const label = form.querySelector<HTMLElement>("[data-card-add-label]");
     if (!button || button.disabled) return;
-    const originalLabel = label?.textContent ?? messages.addToCart ?? "Add to Cart";
     button.disabled = true;
-    if (label) label.textContent = messages.adding ?? "Adding...";
+    button.classList.add("is-bump");
 
-    const result = await addToCart({ form, openDrawer: true });
-    if (result.ok) {
-      if (label) label.textContent = messages.added ?? "Added!";
-    } else {
-      if (label) label.textContent = messages.retry ?? "Retry";
-    }
+    await addToCart({ form, openDrawer: true });
 
-    window.setTimeout(() => {
-      button.disabled = false;
-      if (label) label.textContent = originalLabel;
-    }, 1200);
+    button.disabled = false;
+    button.classList.remove("is-bump");
   });
 
   if (demoPreview) {
@@ -512,7 +530,12 @@ export function initLuviaCartPage() {
       }
       const qty = line.querySelector<HTMLElement>("[data-line-quantity]");
       const total = line.querySelector<HTMLElement>("[data-line-total]");
-      if (qty) qty.textContent = String(item.quantity);
+      if (qty) {
+        qty.textContent = String(item.quantity);
+        qty.classList.remove("is-tick");
+        void qty.offsetWidth;
+        qty.classList.add("is-tick");
+      }
       if (total)
         total.textContent = formatCartMoney(item.total ?? item.unitPrice, cart.currencyCode);
 
@@ -761,28 +784,24 @@ export function initLuviaProductPage() {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!form || !addButton || addButton.disabled) return;
-    updateButtons(true, messages.adding || "Adding...");
+    addButton.disabled = true;
+    if (stickyAdd) stickyAdd.disabled = true;
     if (feedback) {
       feedback.textContent = "";
       feedback.classList.remove("is-error");
     }
 
     const result = await addToCart({ form, openDrawer: true });
-    if (result.ok) {
-      updateButtons(true, messages.added || "Added!");
-      setTimeout(() => {
-        const inStock = Boolean(selectedVariant()?.inStock);
-        updateButtons(
-          !inStock,
-          inStock ? messages.addToCart || "Add to Cart" : messages.outOfStock || "Out of Stock",
-        );
-      }, 1400);
-    } else {
-      updateButtons(!selectedVariant()?.inStock, messages.addToCart || "Add to Cart");
-      if (feedback) {
-        feedback.textContent = result.error || messages.addFailed || "Failed to add to cart";
-        feedback.classList.add("is-error");
+    const inStock = Boolean(selectedVariant()?.inStock);
+    [addButton, stickyAdd].forEach((btn) => {
+      if (btn instanceof HTMLButtonElement) {
+        btn.disabled = !inStock;
       }
+    });
+
+    if (!result.ok && feedback) {
+      feedback.textContent = result.error || messages.addFailed || "Failed to add to cart";
+      feedback.classList.add("is-error");
     }
   });
 
@@ -828,44 +847,309 @@ export function initLuviaHome() {
   const previous = document.querySelector<HTMLButtonElement>("[data-product-rail-prev]");
   const next = document.querySelector<HTMLButtonElement>("[data-product-rail-next]");
 
-  if (!rail || !previous || !next) return;
+  if (rail && previous && next) {
+    initHeroCarousels();
 
-  initHeroCarousels();
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let frame = 0;
+    const updateRailControls = () => {
+      frame = 0;
+      const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+      previous.disabled = rail.scrollLeft <= 2;
+      next.disabled = rail.scrollLeft >= max - 2;
+    };
+    // Coalesce to one read/write per frame instead of per scroll event.
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateRailControls);
+    };
+    const moveRail = (direction: -1 | 1) => {
+      const card = rail.querySelector<HTMLElement>(".product-card");
+      const distance = Math.max(
+        card?.offsetWidth ?? rail.clientWidth * 0.75,
+        rail.clientWidth * 0.72,
+      );
+      rail.scrollBy({
+        left: distance * direction,
+        behavior: prefersReducedMotion.matches ? "auto" : "smooth",
+      });
+    };
 
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let frame = 0;
-  const updateRailControls = () => {
-    frame = 0;
-    const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
-    previous.disabled = rail.scrollLeft <= 2;
-    next.disabled = rail.scrollLeft >= max - 2;
-  };
-  // Coalesce to one read/write per frame instead of per scroll event.
-  const onScroll = () => {
-    if (frame) return;
-    frame = window.requestAnimationFrame(updateRailControls);
-  };
-  const moveRail = (direction: -1 | 1) => {
-    const card = rail.querySelector<HTMLElement>(".product-card");
-    const distance = Math.max(
-      card?.offsetWidth ?? rail.clientWidth * 0.75,
-      rail.clientWidth * 0.72,
-    );
-    rail.scrollBy({
-      left: distance * direction,
-      behavior: prefersReducedMotion.matches ? "auto" : "smooth",
+    previous.addEventListener("click", () => moveRail(-1));
+    next.addEventListener("click", () => moveRail(1));
+    rail.addEventListener("scroll", onScroll, { passive: true });
+    rail.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        moveRail(event.key === "ArrowLeft" ? -1 : 1);
+      }
     });
+    new ResizeObserver(onScroll).observe(rail);
+    updateRailControls();
+  }
+
+  // Initialize dropdowns and home product filters
+  initLuviaDropdowns();
+  initLuviaHomeFilters();
+}
+
+// ---------------------------------------------------------------------------
+// Reusable Dropdown – mirrors Dropdown.astro markup
+// ---------------------------------------------------------------------------
+export function initLuviaDropdowns(root: ParentNode = document) {
+  const dropdowns = root.querySelectorAll<HTMLElement>("[data-dropdown]");
+
+  dropdowns.forEach((dropdown) => {
+    if (dropdown.dataset.dropdownReady === "true") return;
+    dropdown.dataset.dropdownReady = "true";
+
+    const trigger = dropdown.querySelector<HTMLButtonElement>(".luvia-dropdown__trigger");
+    const menu = dropdown.querySelector<HTMLElement>(".luvia-dropdown__menu");
+    const label = dropdown.querySelector<HTMLElement>("[data-dropdown-label]");
+    const options = Array.from(
+      dropdown.querySelectorAll<HTMLButtonElement>(".luvia-dropdown__option"),
+    );
+    if (!trigger || !menu || options.length === 0) return;
+
+    const selected =
+      options.find((opt) => opt.getAttribute("aria-selected") === "true") ?? options[0];
+    dropdown.dataset.value = selected.dataset.value ?? "";
+    if (label) label.textContent = selected.textContent?.trim() ?? "";
+
+    function close() {
+      trigger?.setAttribute("aria-expanded", "false");
+      if (menu) menu.hidden = true;
+    }
+
+    function open() {
+      // Close all other dropdowns first
+      document.querySelectorAll<HTMLElement>("[data-dropdown]").forEach((other) => {
+        if (other === dropdown) return;
+        other.querySelector(".luvia-dropdown__trigger")?.setAttribute("aria-expanded", "false");
+        const otherMenu = other.querySelector<HTMLElement>(".luvia-dropdown__menu");
+        if (otherMenu) otherMenu.hidden = true;
+      });
+      trigger?.setAttribute("aria-expanded", "true");
+      if (menu) menu.hidden = false;
+    }
+
+    function setValue(value: string, text: string, silent = false) {
+      dropdown.dataset.value = value;
+      if (label) label.textContent = text;
+      options.forEach((opt) => {
+        opt.setAttribute("aria-selected", String(opt.dataset.value === value));
+      });
+      if (!silent) {
+        dropdown.dispatchEvent(
+          new CustomEvent("dropdown:change", { bubbles: true, detail: { value } }),
+        );
+      }
+    }
+
+    trigger.addEventListener("click", () => {
+      if (trigger.getAttribute("aria-expanded") === "true") close();
+      else open();
+    });
+
+    options.forEach((opt) => {
+      opt.addEventListener("click", () => {
+        setValue(opt.dataset.value ?? "", opt.textContent?.trim() ?? "");
+        close();
+      });
+    });
+
+    // Programmatic set (for clear button)
+    dropdown.addEventListener("dropdown:set", ((event: Event) => {
+      const value = (event as CustomEvent<{ value: string }>).detail?.value;
+      const match = options.find((opt) => opt.dataset.value === value);
+      if (!match) return;
+      setValue(value, match.textContent?.trim() ?? "", true);
+      close();
+    }) as EventListener);
+
+    // Close on outside click
+    document.addEventListener("click", (event) => {
+      if (!dropdown.contains(event.target as Node)) close();
+    });
+
+    // Close on Escape
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") close();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Home Product Filters — client-side filtering, sorting, price range
+// ---------------------------------------------------------------------------
+export function initLuviaHomeFilters() {
+  const grid = document.getElementById("luvia-product-grid");
+  if (!grid) return;
+  const productGrid = grid;
+
+  const cards = Array.from(productGrid.querySelectorAll<HTMLElement>(".product-card"));
+  const initialIndexMap = new Map(cards.map((card, i) => [card, i]));
+  const countEl = document.getElementById("luvia-filter-count");
+  const categoryMenu = document.getElementById("luvia-filter-category");
+  const collectionMenu = document.getElementById("luvia-filter-collection");
+  const sortMenu = document.getElementById("luvia-filter-sort");
+  const searchLink = document.getElementById("luvia-filter-search") as HTMLAnchorElement | null;
+  const minInput = document.getElementById("luvia-price-min") as HTMLInputElement | null;
+  const maxInput = document.getElementById("luvia-price-max") as HTMLInputElement | null;
+  const clearBtn = document.getElementById("luvia-clear-filters");
+
+  const MAX_PRICE = 100000;
+  const DEFAULT_SHOWN = 12;
+
+  const state = {
+    category: "all",
+    collection: "all",
+    sort: "created_at",
+    min: 0,
+    max: MAX_PRICE,
   };
 
-  previous.addEventListener("click", () => moveRail(-1));
-  next.addEventListener("click", () => moveRail(1));
-  rail.addEventListener("scroll", onScroll, { passive: true });
-  rail.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      moveRail(event.key === "ArrowLeft" ? -1 : 1);
+  function parsePrice(card: HTMLElement): number {
+    const text = card.querySelector(".product-card__price")?.textContent || "0";
+    return parseFloat(text.replace(/[^0-9.]/g, "")) || 0;
+  }
+
+  function isDefault(): boolean {
+    return (
+      state.category === "all" &&
+      state.collection === "all" &&
+      state.sort === "created_at" &&
+      state.min <= 0 &&
+      state.max >= MAX_PRICE
+    );
+  }
+
+  function updateSearchUrl() {
+    if (!searchLink) return;
+    const params = new URLSearchParams();
+    if (state.category && state.category !== "all") {
+      params.set("category", state.category);
     }
+    if (state.collection && state.collection !== "all") {
+      params.set("collection", state.collection);
+    }
+    if (state.min > 0) {
+      params.set("price_min", String(state.min));
+    }
+    if (state.max < MAX_PRICE) {
+      params.set("price_max", String(state.max));
+    }
+    if (state.sort && state.sort !== "created_at") {
+      if (state.sort === "price-low") params.set("order", "price");
+      else if (state.sort === "price-high") params.set("order", "-price");
+      else if (state.sort === "title") params.set("order", "title");
+    }
+    searchLink.href = params.size ? `/products?${params.toString()}` : "/products";
+  }
+
+  function apply() {
+    const matches = cards.filter((card) => {
+      const category = (card.dataset.category || "").toLowerCase();
+      const collection = (card.dataset.collection || "").toLowerCase();
+
+      if (state.category !== "all" && !category.includes(state.category.toLowerCase()))
+        return false;
+      if (state.collection !== "all" && !collection.includes(state.collection.toLowerCase()))
+        return false;
+
+      const price = parsePrice(card);
+      if (price < state.min || price > state.max) return false;
+      return true;
+    });
+
+    // Sort
+    if (state.sort === "price-low") {
+      matches.sort((a, b) => parsePrice(a) - parsePrice(b));
+    } else if (state.sort === "price-high") {
+      matches.sort((a, b) => parsePrice(b) - parsePrice(a));
+    } else if (state.sort === "title") {
+      matches.sort((a, b) =>
+        (a.querySelector(".product-card__title")?.textContent || "").localeCompare(
+          b.querySelector(".product-card__title")?.textContent || "",
+        ),
+      );
+    } else if (state.sort === "created_at") {
+      matches.sort((a, b) => (initialIndexMap.get(a) ?? 0) - (initialIndexMap.get(b) ?? 0));
+    }
+
+    // When no filters active, only show the default count
+    const visible = isDefault() ? matches.slice(0, DEFAULT_SHOWN) : matches;
+
+    // Hide all, then show matched in sort order
+    cards.forEach((card) => {
+      card.classList.add("is-deferred");
+    });
+    visible.forEach((card) => {
+      card.classList.remove("is-deferred");
+      productGrid.appendChild(card); // re-appending reorders the DOM
+    });
+
+    if (countEl) {
+      const template = countEl.dataset.template;
+      if (template) {
+        countEl.textContent = template
+          .replace("{shown}", String(visible.length))
+          .replace("{total}", String(cards.length));
+      } else {
+        countEl.textContent = `Showing ${visible.length} of ${cards.length} products`;
+      }
+    }
+
+    updateSearchUrl();
+  }
+
+  // Event listeners for dropdowns
+  categoryMenu?.addEventListener("dropdown:change", (event) => {
+    state.category = (event as CustomEvent<{ value: string }>).detail.value;
+    apply();
   });
-  new ResizeObserver(onScroll).observe(rail);
-  updateRailControls();
+
+  collectionMenu?.addEventListener("dropdown:change", (event) => {
+    state.collection = (event as CustomEvent<{ value: string }>).detail.value;
+    apply();
+  });
+
+  sortMenu?.addEventListener("dropdown:change", (event) => {
+    state.sort = (event as CustomEvent<{ value: string }>).detail.value;
+    apply();
+  });
+
+  // Price inputs
+  function readPrice(input: HTMLInputElement | null, fallback: number): number {
+    if (!input || input.value.trim() === "") return fallback;
+    const value = Number(input.value);
+    return Number.isFinite(value) ? Math.max(0, Math.min(MAX_PRICE, value)) : fallback;
+  }
+
+  function onPriceChange() {
+    state.min = readPrice(minInput, 0);
+    state.max = readPrice(maxInput, MAX_PRICE);
+    if (state.min > state.max) state.max = state.min;
+    apply();
+  }
+
+  minInput?.addEventListener("change", onPriceChange);
+  maxInput?.addEventListener("change", onPriceChange);
+
+  // Clear button
+  clearBtn?.addEventListener("click", () => {
+    state.category = "all";
+    state.collection = "all";
+    state.sort = "created_at";
+    state.min = 0;
+    state.max = MAX_PRICE;
+    if (minInput) minInput.value = "";
+    if (maxInput) maxInput.value = "";
+    categoryMenu?.dispatchEvent(new CustomEvent("dropdown:set", { detail: { value: "all" } }));
+    collectionMenu?.dispatchEvent(new CustomEvent("dropdown:set", { detail: { value: "all" } }));
+    sortMenu?.dispatchEvent(new CustomEvent("dropdown:set", { detail: { value: "created_at" } }));
+    apply();
+  });
+
+  updateSearchUrl();
 }

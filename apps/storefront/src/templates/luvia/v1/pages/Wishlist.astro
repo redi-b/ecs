@@ -35,26 +35,37 @@ const wishlistMessages = {
   deferCartCount={deferCartCount}
   title={m.wishlist_title({}, { locale })}
 >
-  <main id="main-content"
+  <main
+    id="main-content"
     class="wishlist container"
     data-wishlist-page
     data-wishlist-messages={JSON.stringify(wishlistMessages)}
   >
-    <header>
-      <span><Icon name="wishlist" /></span><p class="type-body-xs">
-        {m.wishlist_saved_items({}, { locale })}
-      </p><h1 class="type-heading-1">
+    <header class="wishlist__header" data-wishlist-header>
+      <div class="wishlist__meta">
+        <span class="wishlist__tag type-body-xs-500">
+          <Icon name="wishlist" />
+          <span>{m.wishlist_saved_items({}, { locale })}</span>
+        </span>
+        <span class="wishlist__count-pill type-body-xs-500" data-wishlist-count-badge hidden></span>
+      </div>
+      <h1 class="wishlist__title type-heading-1">
         {m.wishlist_title({}, { locale })}
-      </h1><small class="type-body-400" data-wishlist-account-copy
-        >{m.wishlist_intro({}, { locale })}</small>
-    </header><section data-wishlist-content aria-live="polite" aria-busy="true">
+      </h1>
+      <p class="wishlist__subtitle type-body-400" data-wishlist-account-copy>
+        {m.wishlist_intro({}, { locale })}
+      </p>
+    </header>
+
+    <section data-wishlist-content class="wishlist__content" aria-live="polite" aria-busy="true">
       <div class="wishlist__loading">
-        <span aria-hidden="true"></span><strong class="type-body-l-500"
-          >{m.wishlist_loading({}, { locale })}</strong>
+        <span aria-hidden="true"></span>
+        <strong class="type-body-l-500">{m.wishlist_loading({}, { locale })}</strong>
       </div>
     </section>
   </main>
 </Layout>
+
 <script>
   import {
     WISHLIST_REQUEST_EVENT,
@@ -66,45 +77,59 @@ const wishlistMessages = {
   (() => {
     const root = document.querySelector<HTMLElement>("[data-wishlist-page]");
     const content = root?.querySelector("[data-wishlist-content]");
+    const header = root?.querySelector<HTMLElement>("[data-wishlist-header]");
+    const countBadge = root?.querySelector<HTMLElement>("[data-wishlist-count-badge]");
     if (!content) return;
+
     const messages = JSON.parse(
       root?.dataset.wishlistMessages || "{}",
     ) as Record<string, string>;
     let items: WishlistEntry[] = [];
     let focusAfterRender: string | null = null;
+
     const money = (amount: number | null, currency: string | null) => {
       if (typeof amount !== "number") return "";
+      const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
       try {
-        return new Intl.NumberFormat(
-          document.documentElement.lang === "am" ? "am-ET" : "en-ET",
-          { style: "currency", currency: (currency || "ETB").toUpperCase() },
-        ).format(amount);
+        return new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: (currency || "ETB").toUpperCase(),
+        }).format(amount);
       } catch {
         return String(amount);
       }
     };
+
     const render = () => {
       content.replaceChildren();
+
+      if (countBadge) {
+        countBadge.textContent = `${items.length} ${items.length === 1 ? "piece" : "pieces"}`;
+        countBadge.hidden = items.length === 0;
+      }
+
       if (!items.length) {
+        if (header) header.classList.add("is-empty");
         const empty = document.createElement("div");
         empty.className = "wishlist__empty empty-state";
         const mark = document.createElement("span");
         mark.className = "empty-state__mark";
         mark.innerHTML =
-          '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.6 12 20 12 20z"/></svg>';
+          '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
         const body = document.createElement("div");
         body.className = "empty-state__copy";
         const title = document.createElement("h2");
         title.className = "empty-state__title type-heading-3";
-        title.textContent = messages.emptyTitle || "";
+        title.textContent = messages.emptyTitle || "Your wishlist is empty";
         const copy = document.createElement("p");
         copy.className = "empty-state__text type-body-400";
-        copy.textContent = messages.emptyHelp || "";
+        copy.textContent =
+          messages.emptyHelp || "Save pieces you love while exploring the shop.";
         body.append(title, copy);
         const link = document.createElement("a");
         link.className = "empty-state__action type-body-500";
         link.href = localizeBrowserPath("/products");
-        link.textContent = messages.browse || "";
+        link.textContent = messages.browse || "Browse products";
         empty.append(mark, body, link);
         content.append(empty);
         if (focusAfterRender) {
@@ -113,41 +138,63 @@ const wishlistMessages = {
         }
         return;
       }
+
+      if (header) header.classList.remove("is-empty");
       const grid = document.createElement("div");
       grid.className = "wishlist__grid";
+
       for (const item of items) {
         const card = document.createElement("article");
+        card.className = "product-card";
         card.dataset.wishlistPath = item.path;
         const itemPath = localizeBrowserPath(item.path);
+
+        const media = document.createElement("div");
+        media.className = "product-card__media";
+
+        const mediaLink = document.createElement("a");
+        mediaLink.className = "product-card__media-link";
+        mediaLink.href = itemPath;
+        mediaLink.setAttribute("aria-label", `${messages.view || "View"}: ${item.title}`);
+
         if (item.thumbnail) {
-          const media = document.createElement("a");
-          media.className = "wishlist__media";
-          media.href = itemPath;
           const image = document.createElement("img");
           image.src = item.thumbnail;
           image.alt = item.title;
-          image.width = 900;
-          image.height = 900;
+          image.width = 400;
+          image.height = 400;
           image.loading = "lazy";
           image.decoding = "async";
-          media.append(image);
-          card.append(media);
+          mediaLink.append(image);
+        } else {
+          const placeholder = document.createElement("div");
+          placeholder.className = "product-card__placeholder";
+          placeholder.innerHTML =
+            '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
+          mediaLink.append(placeholder);
         }
-        const meta = document.createElement("span");
-        meta.className = "type-body-xs";
-        meta.textContent = messages.savedProduct || "";
-        const link = document.createElement("a");
-        link.className = "type-heading-4";
-        link.href = itemPath;
-        link.textContent = item.title || messages.productFallback || "";
-        const price = document.createElement("strong");
-        price.className = "type-body-l-500";
-        price.textContent = money(item.priceAmount, item.currencyCode);
-        const remove = document.createElement("button");
-        remove.className = "type-body-xs";
-        remove.type = "button";
-        remove.textContent = messages.remove || "";
-        remove.addEventListener("click", () => {
+        media.append(mediaLink);
+
+        const heartBtn = document.createElement("button");
+        heartBtn.className = "product-card__heart";
+        heartBtn.type = "button";
+        heartBtn.setAttribute("data-wishlist-toggle", "");
+        heartBtn.dataset.wishlistItem = JSON.stringify(item);
+        heartBtn.setAttribute("aria-pressed", "true");
+        heartBtn.setAttribute(
+          "aria-label",
+          `${messages.remove || "Remove"} ${item.title}`,
+        );
+        heartBtn.innerHTML = `
+          <span class="wishlist-heart" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+          </span>
+        `;
+
+        heartBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const index = items.findIndex((saved) => saved.path === item.path);
           focusAfterRender =
             items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__";
@@ -160,19 +207,29 @@ const wishlistMessages = {
             }),
           );
         });
-        card.append(meta, link);
-        if (price.textContent) card.append(price);
-        const actions = document.createElement("div");
-        actions.className = "wishlist__actions";
-        const view = document.createElement("a");
-        view.className = "type-body-xs";
-        view.href = itemPath;
-        view.textContent = messages.view || "";
-        actions.append(view, remove);
-        card.append(actions);
+        media.append(heartBtn);
+
+        const brand = document.createElement("p");
+        brand.className = "product-card__brand type-body-s-400";
+        brand.textContent = messages.savedProduct || "COLLECTION";
+
+        const title = document.createElement("a");
+        title.className = "product-card__title type-body-l-400";
+        title.href = itemPath;
+        title.textContent = item.title || messages.productFallback || "Product";
+
+        const price = document.createElement("p");
+        price.className = "product-card__price type-body-xl";
+        const priceStrong = document.createElement("strong");
+        priceStrong.textContent = money(item.priceAmount, item.currencyCode);
+        price.append(priceStrong);
+
+        card.append(media, brand, title, price);
         grid.append(card);
       }
+
       content.append(grid);
+
       if (focusAfterRender) {
         const target =
           focusAfterRender === "__empty__"
@@ -184,6 +241,7 @@ const wishlistMessages = {
         target?.focus();
       }
     };
+
     window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
       const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail
         ?.items;
@@ -192,6 +250,7 @@ const wishlistMessages = {
       content.setAttribute("aria-busy", "false");
       render();
     });
+
     window.dispatchEvent(new CustomEvent(WISHLIST_REQUEST_EVENT));
   })();
 </script>

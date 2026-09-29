@@ -31,7 +31,7 @@
   &__backdrop {
     position: absolute;
     inset: 0;
-    background-color: rgba($clr-neutral-900, 0.6);
+    background-color: alpha($clr-neutral-900, 0.6);
     opacity: 0;
     transition: opacity 0.3s ease;
     backdrop-filter: blur(8px);
@@ -65,8 +65,8 @@
     background-color: $clr-neutral-50;
     border-radius: $radius-550;
     padding: $space-100 $space-100 $space-100 $space-400;
-    box-shadow: 0 $space-300 $space-600 rgba($clr-neutral-900, 0.25);
-    border: 1px solid rgba($clr-neutral-900, 0.08);
+    box-shadow: 0 $space-300 $space-600 alpha($clr-neutral-900, 0.25);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
   }
 
   &__input {
@@ -79,7 +79,7 @@
     width: 100%;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.72);
     }
   }
 
@@ -95,7 +95,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 $space-100 $space-250 rgba($clr-primary-500, 0.35);
+    box-shadow: 0 $space-100 $space-250 alpha($clr-primary-500, 0.35);
     transition:
       background-color $dur-hover ease,
       transform $dur-press $ease-out,
@@ -105,7 +105,7 @@
       &:hover {
         background-color: #ff852e;
         transform: scale(1.05);
-        box-shadow: 0 $space-150 $space-350 rgba($clr-primary-500, 0.45);
+        box-shadow: 0 $space-150 $space-350 alpha($clr-primary-500, 0.45);
       }
     }
 
@@ -127,9 +127,9 @@
     width: 36px;
     height: 36px;
     border-radius: $radius-550;
-    background-color: rgba($clr-neutral-50, 0.15);
+    background-color: alpha($clr-neutral-50, 0.15);
     color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-50, 0.25);
+    border: 1px solid alpha($clr-neutral-50, 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -140,7 +140,7 @@
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        background-color: rgba($clr-neutral-50, 0.3);
+        background-color: alpha($clr-neutral-50, 0.3);
         transform: scale(1.08);
       }
     }
@@ -155,17 +155,17 @@
     flex-wrap: wrap;
     align-items: center;
     gap: $space-150;
-    color: rgba($clr-neutral-50, 0.75);
+    color: alpha($clr-neutral-50, 0.75);
     padding-inline: $space-200;
 
     span {
-      color: rgba($clr-neutral-50, 0.5);
+      color: alpha($clr-neutral-50, 0.5);
     }
 
     a {
       color: $clr-neutral-50;
       text-decoration: none;
-      background-color: rgba($clr-neutral-50, 0.12);
+      background-color: alpha($clr-neutral-50, 0.12);
       padding: $space-50 $space-200;
       border-radius: $radius-550;
       transition:
@@ -190,10 +190,10 @@
     width: 100%;
     padding: $space-150;
     overflow: hidden;
-    border: 1px solid rgba($clr-neutral-900, 0.08);
+    border: 1px solid alpha($clr-neutral-900, 0.08);
     border-radius: $radius-300;
     background-color: $clr-neutral-50;
-    box-shadow: 0 16px 40px rgba($clr-neutral-900, 0.16);
+    box-shadow: 0 16px 40px alpha($clr-neutral-900, 0.16);
 
     &[hidden] {
       display: none;
@@ -213,7 +213,7 @@
 
       &:hover,
       &[data-active] {
-        background-color: rgba($clr-primary-500, 0.08);
+        background-color: alpha($clr-primary-500, 0.08);
       }
     }
 
@@ -248,7 +248,7 @@
 
       small {
         font-size: $fs-caption;
-        color: rgba($clr-neutral-900, 0.72);
+        color: alpha($clr-neutral-900, 0.72);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -266,7 +266,7 @@
       display: block;
       margin-top: $space-100;
       padding: $space-200 $space-250;
-      border-top: 1px solid rgba($clr-neutral-900, 0.06);
+      border-top: 1px solid alpha($clr-neutral-900, 0.06);
       color: $clr-primary-link;
       font-size: $fs-body-s-500;
       font-weight: 600;
@@ -276,7 +276,7 @@
       transition: background-color $dur-hover ease, color $dur-hover ease;
 
       &:hover {
-        background-color: rgba($clr-primary-500, 0.08);
+        background-color: alpha($clr-primary-500, 0.08);
         color: $clr-primary-800;
       }
     }

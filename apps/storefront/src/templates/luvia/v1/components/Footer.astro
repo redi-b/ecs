@@ -39,7 +39,7 @@ const categoryLinks = [
 ];
 ---
 
-<footer class="footer" data-editor-section="footer">
+<footer class="footer container" data-editor-section="footer">
   <div class="footer__intro" data-editor-image-scope>
     <div class="footer__brand">
       <img
@@ -79,7 +79,7 @@ const categoryLinks = [
   </div>
 
   <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.catalog_all_categories({}, { locale })}</strong>
+    <strong class="type-body-s-500">{m.catalog_category({}, { locale })}</strong>
     <span
       class="footer__links"
     >
@@ -163,7 +163,7 @@ const categoryLinks = [
   </small>
 </footer>
 
-<aside class="inquiry" data-editor-section="footer.inquiry">
+<aside class="inquiry container" data-editor-section="footer.inquiry">
   <p
     class="type-heading-3"
     data-editor-path="footer.inquiry.title"

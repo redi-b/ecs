@@ -1,4 +1,7 @@
-import EmblaCarousel, { type EmblaCarouselType } from "embla-carousel";
+import EmblaCarousel, { type EmblaCarouselType, type EmblaOptionsType } from "embla-carousel";
+import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
 import {
   $cart,
@@ -10,6 +13,283 @@ import {
 } from "../../../../lib/stores/cart";
 import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.config({
+    ignoreMobileResize: true,
+  });
+  gsap.defaults({
+    duration: 0.8,
+    ease: "power3.out",
+  });
+}
+
+export function responsiveClamp(
+  minValue: number,
+  maxValue: number,
+  minScreen = 350,
+  maxScreen = 1450,
+): number {
+  if (typeof window === "undefined") return minValue;
+  const map = gsap.utils.mapRange(minScreen, maxScreen, minValue, maxValue);
+  const clamp = gsap.utils.clamp(minValue, maxValue);
+  return Math.round(clamp(map(window.innerWidth)) * 100) / 100;
+}
+
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+let lenis: Lenis | null = null;
+if (typeof window !== "undefined" && !prefersReducedMotion()) {
+  try {
+    lenis = new Lenis({
+      lerp: 0.08,
+      smoothWheel: true,
+      syncTouch: true,
+      touchMultiplier: 1,
+      anchors: true,
+      allowNestedScroll: true,
+    });
+    (window as any).lenis = lenis;
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add((time) => {
+      lenis?.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(0);
+  } catch {
+    // Graceful fallback if Lenis fails to initialize
+  }
+}
+
+export type FadeDirection = "toTop" | "toBottom" | "toLeft" | "toRight";
+
+export const fadePresets = {
+  "fade-1": {
+    autoAlpha: 0,
+    y: () => responsiveClamp(22, 36),
+    duration: 0.75,
+    ease: "power3.out",
+    clearProps: "transform",
+  },
+  "fade-2": {
+    autoAlpha: 0,
+    y: () => responsiveClamp(32, 52),
+    scale: 0.97,
+    duration: 0.85,
+    ease: "power3.out",
+    clearProps: "transform",
+  },
+  "fade-3": {
+    autoAlpha: 0,
+    x: () => -responsiveClamp(28, 48),
+    duration: 0.75,
+    ease: "power3.out",
+    clearProps: "transform",
+  },
+  "fade-subtle": {
+    autoAlpha: 0,
+    y: () => responsiveClamp(12, 18),
+    duration: 0.55,
+    ease: "power2.out",
+    clearProps: "transform",
+  },
+  "fade-scale": {
+    autoAlpha: 0,
+    scale: 0.94,
+    y: () => responsiveClamp(14, 24),
+    duration: 0.75,
+    ease: "back.out(1.3)",
+    clearProps: "transform",
+  },
+  "fade-btn": {
+    autoAlpha: 0,
+    y: () => responsiveClamp(14, 20),
+    duration: 0.5,
+    ease: "power2.inOut",
+    clearProps: "transform",
+  },
+} satisfies Record<string, gsap.TweenVars>;
+
+export type FadePresetName = keyof typeof fadePresets;
+
+const fadeDirections = new Set<FadeDirection>([
+  "toTop",
+  "toBottom",
+  "toLeft",
+  "toRight",
+]);
+
+interface TextAnimations {
+  headerAnimation: (
+    el: HTMLElement,
+    staggerValue?: number,
+    durationValue?: number,
+  ) => gsap.core.Tween | undefined;
+  bodyAnimation: (
+    el: HTMLElement,
+    staggerValue?: number,
+    durationValue?: number,
+  ) => gsap.core.Tween | undefined;
+  linkAnimation: (
+    el: HTMLElement,
+    staggerValue?: number,
+    durationValue?: number,
+  ) => void;
+}
+
+const textAnimations: TextAnimations = {
+  headerAnimation: (el, staggerValue = 0.055, durationValue = 0.9) => {
+    const rawText = el.innerText || el.textContent || "";
+    const words = rawText.split(/\s+/).filter(Boolean);
+    if (words.length > 0) {
+      el.innerHTML = words
+        .map(
+          (w) =>
+            `<span style="display:inline-block;overflow:hidden;vertical-align:top;"><span class="split-word" style="display:inline-block;">${w}</span></span>`,
+        )
+        .join(" ");
+    }
+    gsap.set(el, { visibility: "visible" });
+    const targetSpans = el.querySelectorAll<HTMLElement>(".split-word");
+    if (targetSpans.length > 0) {
+      return gsap.from(targetSpans, {
+        yPercent: 110,
+        duration: durationValue,
+        stagger: staggerValue,
+        ease: "power4.out",
+      });
+    }
+  },
+  bodyAnimation: (el, staggerValue = 0.04, durationValue = 0.7) => {
+    gsap.set(el, { visibility: "visible" });
+    return gsap.from(el, {
+      yPercent: 30,
+      opacity: 0,
+      duration: durationValue,
+      stagger: staggerValue,
+      ease: "power3.out",
+    });
+  },
+  linkAnimation: (el) => {
+    gsap.set(el, { visibility: "visible" });
+  },
+};
+
+export function animateText(
+  el: gsap.DOMTarget,
+  staggerValue?: number,
+  durationValue?: number,
+): gsap.core.Tween | void | undefined {
+  const targetEl =
+    typeof el === "string"
+      ? document.querySelector<HTMLElement>(el)
+      : (el as HTMLElement | null);
+  const animType = targetEl?.dataset?.textAnim as keyof TextAnimations | undefined;
+  const animFunc = animType ? textAnimations[animType] : undefined;
+  return animFunc && targetEl ? animFunc(targetEl, staggerValue, durationValue) : undefined;
+}
+
+export function getFadeVars(
+  direction: FadeDirection = "toTop",
+  presetName: FadePresetName = "fade-1",
+): gsap.TweenVars {
+  const preset = fadePresets[presetName] ?? fadePresets["fade-1"];
+  const tweenVars: gsap.TweenVars = { ...preset };
+  const resolveVal = (val: unknown) =>
+    typeof val === "function" ? (val as () => number)() : val;
+
+  const presetRecord = preset as Record<string, unknown>;
+  const rawDist = resolveVal(presetRecord.y) ?? resolveVal(presetRecord.x) ?? 32;
+  const distance = Math.abs(Number(rawDist) || 32);
+
+  if (direction === "toLeft" || direction === "toRight") {
+    tweenVars.x = () => (direction === "toLeft" ? distance : -distance);
+    delete (tweenVars as any).y;
+  } else {
+    tweenVars.y = () => (direction === "toTop" ? distance : -distance);
+    delete (tweenVars as any).x;
+  }
+
+  delete (tweenVars as any).yPercent;
+  delete (tweenVars as any).xPercent;
+  tweenVars.clearProps = tweenVars.clearProps ?? "transform";
+
+  return tweenVars;
+}
+
+export function animateFadeIn(
+  el: gsap.DOMTarget,
+  direction: FadeDirection = "toTop",
+  presetName: FadePresetName = "fade-1",
+  scrollTriggerValue: gsap.DOMTarget | object | null = null,
+): gsap.core.Tween | undefined {
+  const targetEl =
+    typeof el === "string"
+      ? document.querySelector<HTMLElement>(el)
+      : (el as HTMLElement | null);
+  if (!targetEl) return undefined;
+
+  const tweenVars = getFadeVars(direction, presetName);
+  if (scrollTriggerValue) {
+    tweenVars.scrollTrigger = scrollTriggerValue as gsap.TweenVars["scrollTrigger"];
+  }
+
+  return gsap.from(targetEl, tweenVars);
+}
+
+export function initGlobalFadeIns(): void {
+  document.querySelectorAll<HTMLElement>('[data-fade-in^="st"]').forEach((el) => {
+    const parts = el.dataset.fadeIn?.split(":") ?? [];
+    const presetName =
+      parts[1] && parts[1] in fadePresets
+        ? (parts[1] as FadePresetName)
+        : "fade-1";
+    const direction =
+      parts[2] && fadeDirections.has(parts[2] as FadeDirection)
+        ? (parts[2] as FadeDirection)
+        : "toTop";
+
+    animateFadeIn(el, direction, presetName, {
+      trigger: el,
+      start: "top 90%",
+      once: true,
+      invalidateOnRefresh: true,
+    });
+  });
+}
+
+export function initGlobalTextAnimations(): void {
+  document.querySelectorAll<HTMLElement>("[data-text-anim]").forEach((el) => {
+    if (el.dataset.textAnim?.startsWith("tl:")) return;
+    animateText(el);
+  });
+}
+
+export function revealAnimationTargets(): void {
+  gsap.set("[data-text-anim]", { visibility: "visible" });
+  gsap.set("[data-fade-in]", { autoAlpha: 1 });
+}
+
+let animationContext: gsap.Context | undefined;
+
+export function initAnimationLayer(): void {
+  animationContext?.revert();
+
+  animationContext = gsap.context(() => {
+    if (prefersReducedMotion()) {
+      revealAnimationTargets();
+      ScrollTrigger.refresh();
+      return;
+    }
+
+    initGlobalFadeIns();
+    initGlobalTextAnimations();
+    ScrollTrigger.refresh();
+  });
+}
 
 export function initAfroStorefront() {
   const readOnly =
@@ -65,6 +345,9 @@ export function initAfroStorefront() {
   // --- Product Detail Controls ---
   initProductDetail();
 
+  // --- Wishlist Management ---
+  initWishlist();
+
   // --- Promo Countdown ---
   initCountdown();
 
@@ -73,6 +356,9 @@ export function initAfroStorefront() {
 
   // --- Inquiries Form ---
   initInquiryForms({ readOnly, clientMessage });
+
+  // --- GSAP Animation Layer ---
+  initAnimationLayer();
 
   if (!readOnly) {
     initStorefrontRuntime();
@@ -219,7 +505,11 @@ export function initHeaderNavigation() {
         ) {
           e.preventDefault();
           if (navId) setActiveNav(navId);
-          targetEl.scrollIntoView({ behavior: "smooth" });
+          if (lenis) {
+            lenis.scrollTo(targetEl, { offset: -90 });
+          } else {
+            targetEl.scrollIntoView({ behavior: "smooth" });
+          }
           history.pushState(null, "", hash);
         }
 
@@ -461,29 +751,17 @@ export function initHeroCarousel(): EmblaCarouselType | undefined {
   const nextBtn = document.getElementById("hero-carousel-next") as HTMLButtonElement | null;
   if (!viewportNode) return undefined;
 
-  const emblaApi = EmblaCarousel(viewportNode, {
+  const options: EmblaOptionsType = {
     align: "start",
-    loop: false,
+    loop: true,
     skipSnaps: false,
     dragFree: false,
-  });
-
-  const syncButtons = () => {
-    if (!emblaApi) return;
-    if (prevBtn) {
-      prevBtn.disabled = !emblaApi.canScrollPrev();
-    }
-    if (nextBtn) {
-      nextBtn.disabled = !emblaApi.canScrollNext();
-    }
   };
+
+  const emblaApi = EmblaCarousel(viewportNode, options);
 
   prevBtn?.addEventListener("click", () => emblaApi.scrollPrev());
   nextBtn?.addEventListener("click", () => emblaApi.scrollNext());
-
-  emblaApi.on("select", syncButtons);
-  emblaApi.on("init", syncButtons);
-  syncButtons();
 
   return emblaApi;
 }
@@ -769,6 +1047,112 @@ export function initProductDetail() {
       replay(qtyValue, "is-tick");
     });
   }
+}
+
+const WISHLIST_STORAGE_KEY = "afro-wishlist";
+
+export function readWishlist(): string[] {
+  try {
+    const raw = localStorage.getItem(WISHLIST_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeWishlist(ids: string[]) {
+  try {
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+  document.dispatchEvent(new CustomEvent("wishlist:change", { detail: ids }));
+}
+
+function paintWishlistButton(button: HTMLButtonElement, saved: boolean) {
+  button.classList.toggle("is-wishlisted", saved);
+  button.classList.toggle(
+    "product-card__wishlist-btn--active",
+    saved && button.classList.contains("product-card__wishlist-btn"),
+  );
+  button.classList.toggle(
+    "product-details__wishlist-btn--active",
+    saved && button.classList.contains("product-details__wishlist-btn"),
+  );
+  button.setAttribute("aria-pressed", String(saved));
+  const label = button.getAttribute("aria-label") ?? "";
+  const named = label.match(/^(?:Add|Remove|Save) (.+) (?:to|from) wishlist$/i);
+  if (named && named[1].toLowerCase() !== "to") {
+    const name = named[1];
+    button.setAttribute(
+      "aria-label",
+      saved ? `Remove ${name} from wishlist` : `Add ${name} to wishlist`,
+    );
+  }
+}
+
+export function initWishlistPage() {
+  const grid = document.getElementById("wishlist-grid");
+  if (!grid) return;
+  const empty = document.getElementById("wishlist-empty");
+  const count = document.getElementById("wishlist-count");
+  const cards = Array.from(grid.querySelectorAll<HTMLElement>(".product-card"));
+
+  function render() {
+    const ids = new Set(readWishlist());
+    let visible = 0;
+    cards.forEach((card) => {
+      const cardId = card.dataset.productId || "";
+      const saved = ids.has(cardId);
+      card.classList.toggle("is-saved", saved);
+      if (saved) {
+        visible += 1;
+        grid?.appendChild(card);
+      }
+    });
+    if (empty) empty.hidden = visible > 0;
+    if (count) {
+      count.textContent =
+        visible === 0
+          ? "Saved pieces stay on this device."
+          : `${visible} saved on this device.`;
+    }
+  }
+
+  render();
+  document.addEventListener("wishlist:change", render);
+}
+
+export function initWishlist() {
+  const saved = new Set(readWishlist());
+
+  document.querySelectorAll<HTMLButtonElement>("[data-wishlist-id]").forEach((button) => {
+    const id = button.dataset.wishlistId;
+    if (!id || button.dataset.wishlistBound === "true") return;
+    button.dataset.wishlistBound = "true";
+    paintWishlistButton(button, saved.has(id));
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const ids = new Set(readWishlist());
+      if (ids.has(id)) ids.delete(id);
+      else ids.add(id);
+      const savedNow = ids.has(id);
+      writeWishlist([...ids]);
+      document
+        .querySelectorAll<HTMLButtonElement>(`[data-wishlist-id="${CSS.escape(id)}"]`)
+        .forEach((peer) => {
+          paintWishlistButton(peer, savedNow);
+          if (savedNow) replay(peer, "is-pop");
+        });
+      if (savedNow) {
+        const headerHeart = document.querySelector(".site-header__actions a[href='/wishlist']");
+        if (headerHeart) replay(headerHeart, "is-bump");
+      }
+    });
+  });
+
+  initWishlistPage();
 }
 
 function initInquiryForms({

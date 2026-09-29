@@ -55,7 +55,7 @@ const Element = href ? "a" : "button";
   data-editor-related-paths={editorRelatedPaths?.join(",")}
   {...rest}
 >
-  <span class="btn__text type-body-500" contenteditable={editorMode && editorPath ? "plaintext-only" : undefined}>{text}</span>
+  <span class="btn__text type-body-500" data-text-anim="linkAnimation" contenteditable={editorMode && editorPath ? "plaintext-only" : undefined}>{text}</span>
   {
     icon && (
       <span class="btn__icon-badge" aria-hidden="true">

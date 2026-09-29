@@ -114,11 +114,13 @@ const clientMessages = {
 >
   <main id="main-content" class="checkout">
     <header class="checkout__hero">
-      <h1 class="type-display">{m.checkout_title({}, { locale })}</h1><p
-        class="type-body-400"
-      >
-        {m.checkout_intro({}, { locale })}
-      </p>
+      <div class="container">
+        <h1 class="type-display">{m.checkout_title({}, { locale })}</h1><p
+          class="type-body-400"
+        >
+          {m.checkout_intro({}, { locale })}
+        </p>
+      </div>
     </header>
     {
       error && (
@@ -654,47 +656,79 @@ const clientMessages = {
             data-base-total={baseTotal}
             data-locale={locale === "am" ? "am-ET" : "en-ET"}
           >
-            <header>
-              <>
-                <h2 class="type-heading-3">
-                  {m.cart_order_summary({}, { locale })}
-                </h2>
-                <span class="type-body-xs">
-                  {m.cart_item_count({ count: summary.itemCount }, { locale })}
-                </span>
-              </>
+            <header class="checkout-summary__header">
+              <h2 class="type-heading-3">
+                {m.cart_order_summary({}, { locale })}
+              </h2>
+              <span class="checkout-summary__count type-body-xs">
+                {m.cart_item_count({ count: summary.itemCount }, { locale })}
+              </span>
             </header>
-            <ul>
-              {items.map((item) => (
-                <li>
-                  <div>
-                    {item.imageUrl || item.thumbnail ? (
-                      <img src={item.imageUrl || item.thumbnail} alt="" />
-                    ) : null}
-                  </div>
-                  <p class="type-body-s-400">
-                    <strong class="type-body-s-500">
-                      {item.title ?? m.product_fallback_name({}, { locale })}
-                    </strong>
-                    <span class="type-body-xs">
-                      {item.variantTitle ?? ""}
-                      {item.quantity > 1 ? ` × ${item.quantity}` : ""}
-                    </span>
-                  </p>
-                  <b class="type-body-s-500">
-                    {formatMoney(
-                      item.total ?? item.unitPrice,
-                      cart?.currencyCode,
-                      locale,
-                    )}
-                  </b>
-                </li>
-              ))}
-            </ul>
-            <DiscountCode
-              appliedCodes={summary.appliedCodes}
-              idPrefix="checkout"
-            />
+            <div class="checkout-summary__items-container">
+              <ul class="checkout-summary__items-list">
+                {items.map((item) => {
+                  const rawTitle = item.title?.trim() || "";
+                  const rawVariant = item.variantTitle?.trim() || "";
+                  let variantLabel: string | null = null;
+                  if (rawVariant && rawVariant !== "Default Variant" && rawVariant !== "Default" && rawVariant !== rawTitle) {
+                    if (rawTitle && rawVariant.startsWith(rawTitle + " / ")) {
+                      const clean = rawVariant.slice(rawTitle.length + 3).trim();
+                      if (clean && clean !== "Default Variant" && clean !== "Default") variantLabel = clean;
+                    } else if (rawTitle && rawVariant.startsWith(rawTitle + " - ")) {
+                      const clean = rawVariant.slice(rawTitle.length + 3).trim();
+                      if (clean && clean !== "Default Variant" && clean !== "Default") variantLabel = clean;
+                    } else {
+                      variantLabel = rawVariant;
+                    }
+                  }
+                  return (
+                    <li class="checkout-summary__item">
+                      <div class="checkout-summary__thumb-wrap">
+                        {item.imageUrl || item.thumbnail ? (
+                          <img src={item.imageUrl || item.thumbnail} alt="" loading="lazy" />
+                        ) : (
+                          <div class="checkout-summary__thumb-placeholder" />
+                        )}
+                        <span class="checkout-summary__qty-badge" aria-label={`Quantity: ${item.quantity}`}>
+                          {item.quantity}
+                        </span>
+                      </div>
+                      <div class="checkout-summary__item-info">
+                        <span class="checkout-summary__item-title" title={item.title ?? m.product_fallback_name({}, { locale })}>
+                          {item.title ?? m.product_fallback_name({}, { locale })}
+                        </span>
+                        <div class="checkout-summary__item-meta">
+                          {variantLabel && (
+                            <span class="checkout-summary__variant-name">
+                              {variantLabel}
+                            </span>
+                          )}
+                          {variantLabel && (
+                            <span class="checkout-summary__meta-dot" aria-hidden="true">·</span>
+                          )}
+                          <span class="checkout-summary__qty-text">
+                            Qty: {item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                      <span class="checkout-summary__item-price">
+                        {formatMoney(
+                          item.total ?? item.unitPrice,
+                          cart?.currencyCode,
+                          locale,
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div class="checkout-summary__discount-wrap">
+              <DiscountCode
+                appliedCodes={summary.appliedCodes}
+                idPrefix="checkout"
+              />
+            </div>
             <dl>
               <div>
                 <>
@@ -962,7 +996,7 @@ const clientMessages = {
           label.append(strong, small);
           const button = document.createElement("button");
           button.type = "submit";
-          button.textContent = clientMessages.remove;
+          button.innerHTML = '<span aria-hidden="true">✕</span>';
           button.setAttribute(
             "aria-label",
             clientMessages.removeDiscount.replace("__CODE__", promotion.code),

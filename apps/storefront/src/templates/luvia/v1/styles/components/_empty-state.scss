@@ -6,29 +6,31 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: $space-250;
-  padding: $space-650 $space-450;
-  background:
-    radial-gradient(circle at 50% 0%, alpha(var(--clr-primary), 0.14), transparent 58%),
-    var(--clr-soft);
-  border: 1px solid var(--clr-line);
-  border-radius: $radius-450;
+  gap: $space-350;
+  padding: $space-900 $space-500;
+  margin: 0 auto;
+  max-width: 580px;
 
   &__mark {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: $space-750;
-    height: $space-750;
+    width: 64px;
+    height: 64px;
     border-radius: $radius-full;
-    background: var(--clr-surface);
-    color: var(--clr-primary-dark);
-    border: 1px solid alpha(var(--clr-primary), 0.28);
-    box-shadow: 0 $space-200 $space-400 alpha(var(--clr-primary), 0.12);
+    background: var(--clr-soft);
+    color: var(--clr-ink);
+    border: 1px solid alpha(var(--clr-ink), 0.08);
+
+    svg {
+      width: 26px;
+      height: 26px;
+      stroke: currentColor;
+    }
 
     svg[data-icon] {
-      width: $space-450;
-      height: $space-450;
+      width: 26px;
+      height: 26px;
     }
   }
 
@@ -36,28 +38,48 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: $space-150;
+    gap: $space-200;
   }
 
   &__title {
     margin: 0;
+    font-family: $ff-body;
+    font-size: $fs-heading-3;
+    font-weight: $fw-medium;
+    letter-spacing: $ls-heading;
+    color: var(--clr-ink);
   }
 
   &__text {
-    max-width: 34ch;
+    max-width: 38ch;
     margin: 0;
-    color: alpha(var(--clr-ink), 0.72);
+    font-size: $fs-body;
+    line-height: 1.55;
+    color: alpha(var(--clr-ink), 0.68);
   }
 
   &__action {
-    min-height: 50px;
-    margin-top: $space-150;
-    padding: 0 $space-550;
+    min-height: 48px;
+    margin-top: $space-200;
+    padding: 0 $space-650;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     border-radius: $radius-pill;
     background: var(--clr-primary-fill);
     color: var(--clr-on-primary);
+    font-size: $fs-body;
+    font-weight: $fw-medium;
     text-decoration: none;
+    transition: transform 180ms ease, filter 180ms ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
   }
 }

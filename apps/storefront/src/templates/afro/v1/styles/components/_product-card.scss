@@ -8,7 +8,7 @@
   width: 100%;
   max-width: 270px;
   position: relative;
-  box-shadow: 0 $space-100 9px rgba($clr-neutral-400, 0.7);
+  box-shadow: 0 $space-100 9px alpha($clr-neutral-400, 0.7);
 
   @media (hover: hover) and (pointer: fine) {
     &:hover &__media img {
@@ -42,7 +42,7 @@
     padding: $space-200 $space-250;
     border-radius: $radius-550;
     background-color: $clr-neutral-50;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
     pointer-events: none;
     z-index: 2;
   }
@@ -61,8 +61,8 @@
     justify-content: center;
     cursor: pointer;
     z-index: 2;
-    box-shadow: 0 $space-50 $space-200 rgba($clr-neutral-900, 0.08);
-    color: rgba($clr-neutral-900, 0.72);
+    box-shadow: 0 $space-50 $space-200 alpha($clr-neutral-900, 0.08);
+    color: alpha($clr-neutral-900, 0.9);
     transition:
       background-color $dur-ui ease,
       color $dur-ui ease,
@@ -78,7 +78,7 @@
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         background-color: $clr-neutral-100;
-        color: $clr-primary-link;
+        color: $clr-primary-500;
       }
     }
 
@@ -88,7 +88,7 @@
 
     &--active,
     &[aria-pressed="true"] {
-      color: $clr-primary-link;
+      color: $clr-primary-500;
     }
 
     &.is-pop {
@@ -114,7 +114,7 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
     margin: 0;
   }
 
@@ -135,7 +135,7 @@
   }
 
   &__brand {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     margin: 0;
   }
 
@@ -146,12 +146,12 @@
   }
 
   &__original-price {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     text-decoration: line-through;
   }
 
   &__price {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
   }
 
   &__quick-add-btn {
@@ -246,10 +246,10 @@
     bottom: calc(100% + #{$space-200});
     padding: $space-150 $space-250;
     border-radius: $radius-150;
-    border: 1px solid rgba($clr-neutral-900, 0.1);
+    border: 1px solid alpha($clr-neutral-900, 0.1);
     background-color: $clr-neutral-50;
     color: $clr-primary-800;
-    box-shadow: 0 $space-100 $space-300 rgba($clr-neutral-900, 0.08);
+    box-shadow: 0 $space-100 $space-300 alpha($clr-neutral-900, 0.08);
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
@@ -273,7 +273,7 @@
     }
 
     &::before {
-      border-top: $space-200 solid rgba($clr-neutral-900, 0.1);
+      border-top: $space-200 solid alpha($clr-neutral-900, 0.1);
     }
 
     &::after {
@@ -300,3 +300,4 @@
     }
   }
 }
+

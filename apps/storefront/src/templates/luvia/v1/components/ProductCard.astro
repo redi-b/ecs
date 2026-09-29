@@ -12,8 +12,10 @@ import ActionButton from "./ActionButton.astro";
 interface Props {
   product: StoreProduct;
   eager?: boolean;
+  class?: string;
+  [key: string]: any;
 }
-const { product, eager = false } = Astro.props;
+const { product, eager = false, class: className, ...rest } = Astro.props;
 const locale =
   Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const href = product.handle
@@ -41,7 +43,7 @@ const cardThumbnail = product.thumbnailVariants?.w400 ?? product.thumbnail;
 const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
 ---
 
-<article class="product-card">
+<article class:list={["product-card", className]} {...rest}>
   <div class="product-card__media">
     <a
       class="product-card__media-link"
@@ -83,8 +85,12 @@ const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
       data-wishlist-item={wishlistItem}
       aria-pressed="false"
       aria-label={m.action_add_to_wishlist({}, { locale })}
-      ><Icon name="wishlist" /></button
     >
+      <span class="wishlist-heart" aria-hidden="true">
+        <Icon name="heart" />
+        <Icon name="heart-filled" />
+      </span>
+    </button>
     {
       purchasableVariant ? (
         <form

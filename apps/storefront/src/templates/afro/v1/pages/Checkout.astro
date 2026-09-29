@@ -369,29 +369,49 @@ const CITIES = [
 
             <!-- Items List -->
             <div class="checkout-summary__items-list">
-              {items.map((item) => (
-                <div class="checkout-summary__item">
-                  <div class="checkout-summary__item-thumb">
-                    <div class="img-wrapper">
-                      {item.thumbnail ? (
-                        <img src={item.thumbnail} alt={item.title || ""} class="cover" width="64" height="64" />
-                      ) : (
-                        <div style="width: 64px; height: 64px; background: #f8f2ed;"></div>
-                      )}
+              {items.map((item) => {
+                const rawTitle = item.title?.trim() || "";
+                const rawVariant = item.variantTitle?.trim() || "";
+                let variantLabel: string | null = null;
+                if (rawVariant && rawVariant !== "Default Variant" && rawVariant !== "Default" && rawVariant !== rawTitle) {
+                  if (rawTitle && rawVariant.startsWith(rawTitle + " / ")) {
+                    const clean = rawVariant.slice(rawTitle.length + 3).trim();
+                    if (clean && clean !== "Default Variant" && clean !== "Default") variantLabel = clean;
+                  } else if (rawTitle && rawVariant.startsWith(rawTitle + " - ")) {
+                    const clean = rawVariant.slice(rawTitle.length + 3).trim();
+                    if (clean && clean !== "Default Variant" && clean !== "Default") variantLabel = clean;
+                  } else {
+                    variantLabel = rawVariant;
+                  }
+                }
+                return (
+                  <div class="checkout-summary__item">
+                    <div class="checkout-summary__item-thumb">
+                      <div class="img-wrapper">
+                        {item.thumbnail ? (
+                          <img src={item.thumbnail} alt={item.title || ""} class="cover" width="52" height="52" />
+                        ) : (
+                          <div style="width: 52px; height: 52px; background: #f8f2ed;"></div>
+                        )}
+                      </div>
+                      <span class="checkout-summary__qty-badge" aria-label={`Quantity: ${item.quantity}`}>
+                        {item.quantity}
+                      </span>
                     </div>
+                    <div class="checkout-summary__item-details">
+                      <h3 class="checkout-summary__item-title type-body-500">{item.title ?? "Piece"}</h3>
+                      <div class="checkout-summary__item-meta type-body-xs-500">
+                        {variantLabel && <span class="checkout-summary__variant-name">{variantLabel}</span>}
+                        {variantLabel && <span class="checkout-summary__meta-dot" aria-hidden="true">·</span>}
+                        <span class="checkout-summary__qty-text">Qty {item.quantity}</span>
+                      </div>
+                    </div>
+                    <span class="checkout-summary__item-price type-body-500">
+                      {formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}
+                    </span>
                   </div>
-                  <div class="checkout-summary__item-details">
-                    <h3 class="checkout-summary__item-title type-body-500">{item.title ?? "Piece"}</h3>
-                    <p class="checkout-summary__item-meta type-body-xs-500">
-                      {item.variantTitle && <span>Variant: {item.variantTitle}</span>}
-                      <span>Qty: {item.quantity}</span>
-                    </p>
-                  </div>
-                  <span class="checkout-summary__item-price type-body-500">
-                    {formatMoney(item.total ?? item.unitPrice, cart?.currencyCode, locale)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <!-- Totals Breakdown -->

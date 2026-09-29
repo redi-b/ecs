@@ -21,7 +21,12 @@ const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thum
   <div class="promo__media">
     {product.thumbnail ? <img src={product.thumbnail} alt={title} /> : <ProductMediaPlaceholder label={m.product_no_image_named({ product: title }, { locale })} />}
     {badge ? <small class="type-body-xs">{badge.label}</small> : null}
-    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}><Icon name="wishlist" /></button>
+    <button type="button" data-wishlist-toggle data-wishlist-item={wishlistItem} aria-pressed="false" aria-label={m.product_save({ product: title }, { locale })}>
+      <span class="wishlist-heart" aria-hidden="true">
+        <Icon name="heart" />
+        <Icon name="heart-filled" />
+      </span>
+    </button>
   </div>
   <div class="promo__copy">
     <strong class="type-promo-title" title={title}>{title}</strong>

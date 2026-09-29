@@ -630,8 +630,8 @@
 
   .catalog-filter {
     position: sticky;
-    top: 22px;
-    height: min(730px, calc(100dvh - 44px));
+    top: var(--header-offset);
+    height: min(730px, calc(100dvh - var(--header-offset) - #{$space-500}));
     min-height: 440px;
     padding: 0;
     display: grid;
@@ -797,9 +797,6 @@
 }
 
 @media (max-width: 1180px) {
-  .shop-products {
-  }
-
   .catalog-filter__controls {
     flex-wrap: wrap;
   }

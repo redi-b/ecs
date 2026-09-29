@@ -28,7 +28,7 @@
   background: var(--clr-primary-fill);
   color: var(--clr-on-primary);
   outline: 1px solid var(--clr-primary-edge);
-  transition: filter 180ms ease, box-shadow 180ms ease;
+  transition: filter 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .button__text {
@@ -73,11 +73,13 @@
 .button__icon svg {
   width: 18px;
   height: 18px;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.button--small-icon .button__icon svg {
-  width: 13px;
-  height: 13px;
+.button--small-icon .button__icon svg,
+.button--small .button__icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .button--secondary .button__text,
@@ -96,6 +98,22 @@
 .button:hover:not(:disabled) .button__icon {
   filter: brightness(.97);
   box-shadow: 0 5px 14px alpha(var(--clr-ink), 0.1);
+  transform: translateY(-1px);
+}
+
+.button:hover:not(:disabled) .button__icon svg {
+  transform: translateX(1px);
+}
+
+.button:active:not(:disabled) .button__text,
+.button:active:not(:disabled) .button__icon {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+  filter: brightness(1);
+}
+
+.button:active:not(:disabled) .button__icon svg {
+  transform: translateX(0);
 }
 
 .button:focus-visible {

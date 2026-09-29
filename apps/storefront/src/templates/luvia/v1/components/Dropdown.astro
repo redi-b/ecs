@@ -1,0 +1,74 @@
+---
+import { Icon } from "astro-icon/components";
+import "../styles/components/_dropdown.scss";
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  id: string;
+  label: string;
+  icon?: string;
+  options: DropdownOption[];
+  defaultValue?: string;
+  class?: string;
+}
+
+const {
+  id,
+  label,
+  icon,
+  options,
+  defaultValue,
+  class: className,
+} = Astro.props;
+
+const selectedOption = options.find((opt) => opt.value === defaultValue) ?? options[0];
+---
+
+<div
+  class:list={["luvia-dropdown", className]}
+  id={id}
+  data-dropdown
+  data-value={selectedOption?.value ?? ""}
+>
+  <button
+    type="button"
+    class="luvia-dropdown__trigger"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    aria-label={label}
+  >
+    {icon && (
+      <span class="luvia-dropdown__icon" aria-hidden="true">
+        <Icon name={icon} />
+      </span>
+    )}
+    <span class="luvia-dropdown__label type-body-s-400" data-dropdown-label>
+      {selectedOption?.label ?? label}
+    </span>
+    <span class="luvia-dropdown__chevron" aria-hidden="true">
+      <Icon name="chevron-down" />
+    </span>
+  </button>
+  <ul class="luvia-dropdown__menu" role="listbox" aria-label={label} hidden>
+    {options.map((option) => (
+      <li>
+        <button
+          type="button"
+          class="luvia-dropdown__option type-body-s-400"
+          role="option"
+          data-value={option.value}
+          aria-selected={option.value === selectedOption?.value ? "true" : "false"}
+        >
+          <span class="luvia-dropdown__option-text">{option.label}</span>
+          <span class="luvia-dropdown__option-check" aria-hidden="true">
+            <Icon name="check" />
+          </span>
+        </button>
+      </li>
+    ))}
+  </ul>
+</div>

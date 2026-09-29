@@ -123,7 +123,12 @@ const clientMessages = {
         }
         const quantity = line.querySelector<HTMLElement>("[data-line-quantity]");
         const total = line.querySelector<HTMLElement>("[data-line-total]");
-        if (quantity) quantity.textContent = String(item.quantity);
+        if (quantity) {
+          quantity.textContent = String(item.quantity);
+          quantity.classList.remove("is-tick");
+          void quantity.offsetWidth;
+          quantity.classList.add("is-tick");
+        }
         if (total) total.textContent = money(item.total ?? item.unitPrice, cart.currencyCode);
 
         // Select by intent; forms[0]/forms[1] assumed a DOM order one extra

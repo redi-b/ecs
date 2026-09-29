@@ -71,8 +71,8 @@ export const afroV1DataSchema = z.object({
 export type AfroV1Data = z.infer<typeof afroV1DataSchema>;
 
 // These land in inline `--afro-*` custom properties that the stylesheet then
-// feeds to rgba() and color-mix(). Restricting them to 6-digit hex keeps those
-// combinations valid in every engine instead of relying on rgba(8-digit-hex).
+// feeds to alpha(). Restricting them to 6-digit hex keeps those
+// combinations valid in every engine.
 const hexColor = z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Expected a hex colour such as #1c120d");

@@ -1,0 +1,185 @@
+@use "../abstracts" as *;
+
+// ---------------------------------------------------------------------------
+// Luvia Dropdown — reusable custom select
+// ---------------------------------------------------------------------------
+// Uses design-tokens only. Positioned absolute from its wrapper so the menu
+// overlaps content below. Keyboard-accessible with Escape & arrow support.
+
+.luvia-dropdown {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+// ── Trigger ────────────────────────────────────────────────────────────
+.luvia-dropdown__trigger {
+  height: 40px;
+  padding: 0 $space-350 0 $space-400;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-200;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-pill;
+  background: var(--clr-surface);
+  color: var(--clr-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    border-color: alpha(var(--clr-ink), 0.28);
+    background: alpha(var(--clr-ink), 0.03);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
+
+  &[aria-expanded="true"] {
+    border-color: var(--clr-primary);
+    background: alpha(var(--clr-primary), 0.06);
+    box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.10);
+
+    .luvia-dropdown__chevron {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// ── Trigger sub-elements ──────────────────────────────────────────────
+.luvia-dropdown__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: alpha(var(--clr-ink), 0.48);
+
+  svg[data-icon] {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.luvia-dropdown__label {
+  pointer-events: none;
+}
+
+.luvia-dropdown__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: $space-100;
+  color: alpha(var(--clr-ink), 0.38);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  svg[data-icon] {
+    width: 10px;
+    height: 6px;
+  }
+}
+
+// ── Menu ──────────────────────────────────────────────────────────────
+.luvia-dropdown__menu {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + $space-150);
+  left: 0;
+  min-width: 100%;
+  max-height: 280px;
+  margin: 0;
+  padding: $space-100;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-200;
+  background: var(--clr-surface);
+  box-shadow:
+    0 8px 24px alpha(var(--clr-ink), 0.10),
+    0 2px 6px alpha(var(--clr-ink), 0.06);
+  scrollbar-width: thin;
+
+  // Entry animation
+  opacity: 1;
+  transform: translateY(0);
+  animation: luvia-dropdown-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &[hidden] {
+    display: none;
+  }
+
+  li {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@keyframes luvia-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── Option ────────────────────────────────────────────────────────────
+.luvia-dropdown__option {
+  width: 100%;
+  min-height: 36px;
+  padding: $space-200 $space-350;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-300;
+  border: 0;
+  border-radius: $radius-100;
+  background: transparent;
+  color: var(--clr-ink);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 120ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover,
+  &:focus-visible {
+    background: alpha(var(--clr-ink), 0.05);
+    outline: none;
+  }
+
+  &[aria-selected="true"] {
+    color: var(--clr-primary-text);
+    font-weight: $fw-medium;
+
+    .luvia-dropdown__option-check {
+      opacity: 1;
+    }
+  }
+}
+
+.luvia-dropdown__option-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.luvia-dropdown__option-check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  color: var(--clr-primary-text);
+  transition: opacity 140ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  svg[data-icon] {
+    width: 12px;
+    height: 12px;
+  }
+}

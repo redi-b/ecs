@@ -150,7 +150,7 @@ const wishlistItem = product
 >
   {
     !product ? (
-      <main id="main-content" class="product-missing">
+      <main id="main-content" class="product-missing container">
         <h1 class="type-heading-2">{m.product_not_found({}, { locale })}</h1>
         <p class="type-body-400">{m.product_unavailable({}, { locale })}</p>
         <a class="type-body-500" href="/products">
@@ -369,7 +369,10 @@ const wishlistItem = product
                   aria-pressed="false"
                   aria-label={m.action_add_to_wishlist({}, { locale })}
                 >
-                  <Icon name="wishlist" />
+                  <span class="wishlist-heart" aria-hidden="true">
+                    <Icon name="heart" />
+                    <Icon name="heart-filled" />
+                  </span>
                 </button>
               </div>
               <p class="product-feedback type-body-xs" data-add-feedback aria-live="polite" />
@@ -402,10 +405,14 @@ const wishlistItem = product
               </h2>
               <div class="rail-controls">
                 <button type="button" data-related-prev aria-label={m.product_related_previous({}, { locale })}>
-                  ←
+                  <span class="rail-controls__icon rail-controls__icon--prev" aria-hidden="true">
+                    <Icon name="diagonal-arrow" />
+                  </span>
                 </button>
                 <button type="button" data-related-next aria-label={m.product_related_next({}, { locale })}>
-                  →
+                  <span class="rail-controls__icon rail-controls__icon--next" aria-hidden="true">
+                    <Icon name="diagonal-arrow" />
+                  </span>
                 </button>
               </div>
             </header>

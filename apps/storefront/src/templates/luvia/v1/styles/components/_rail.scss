@@ -7,29 +7,86 @@
 }
 
 .rail-controls button {
-  width: 48px;
+  width: 44px;
   height: 44px;
   padding: 0;
   display: grid;
   place-items: center;
-  border: 0;
-  border-radius: $radius-pill;
-  background: var(--clr-soft);
+  border: 1px solid alpha(var(--clr-ink), 0.14);
+  border-radius: $radius-full;
+  background: var(--clr-surface);
   color: var(--clr-ink);
+  box-shadow: 0 2px 8px alpha(var(--clr-ink), 0.08);
   cursor: pointer;
-  transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
+  transition:
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: alpha(var(--clr-primary), 0.12);
+      border-color: alpha(var(--clr-primary), 0.38);
+      color: var(--clr-ink);
+      box-shadow: 0 4px 12px alpha(var(--clr-ink), 0.08);
+      transform: translateY(-1px);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.93);
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+    box-shadow: none;
+    background: alpha(var(--clr-ink), 0.04);
+    border-color: alpha(var(--clr-ink), 0.08);
+    transform: none;
+  }
 }
 
-.rail-controls button:hover:not(:disabled) {
-  background: var(--clr-accent);
+.rail-controls__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  svg,
+  svg[data-icon] {
+    width: 13px;
+    height: 13px;
+    display: block;
+    color: currentColor;
+  }
+
+  &--prev {
+    transform: rotate(-135deg);
+  }
+
+  &--next {
+    transform: rotate(45deg);
+  }
 }
 
-.rail-controls button:focus-visible {
-  outline: 2px solid var(--clr-primary);
-  outline-offset: 3px;
-}
+@media (hover: hover) and (pointer: fine) {
+  .rail-controls button:hover:not(:disabled) .rail-controls__icon--prev {
+    transform: rotate(-135deg) translateX(1.5px);
+  }
 
-.rail-controls button:disabled {
-  cursor: default;
-  opacity: .35;
+  .rail-controls button:hover:not(:disabled) .rail-controls__icon--next {
+    transform: rotate(45deg) translateX(1.5px);
+  }
 }

@@ -7,7 +7,7 @@
   padding: $space-250;
   width: 100%;
   max-width: 410px;
-  box-shadow: 0 4px 10px rgba(210, 210, 210, 0.22);
+  box-shadow: 0 4px 10px alpha(#d2d2d2, 0.22);
   box-sizing: border-box;
 
   &__thumb {
@@ -45,13 +45,13 @@
   }
 
   &__title {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
     margin: 0;
     overflow: visible;
   }
 
   &__brand {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     margin: 0;
   }
 
@@ -63,13 +63,13 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.4);
     transition: color $dur-ui ease, transform $dur-press $ease-out;
     flex-shrink: 0;
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        color: $clr-primary-link;
+        color: $clr-primary-500;
       }
     }
 
@@ -96,18 +96,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    gap: $space-200;
+    gap: $space-150;
     background-color: $clr-neutral-300;
     border-radius: $radius-700;
     padding: 3px $space-100;
-    height: 32px;
-    min-width: 80px;
+    height: 34px;
+    min-width: 88px;
     flex-shrink: 0;
+    box-shadow: inset 0 1px 2px alpha(#000, 0.04);
   }
 
   &__qty-btn {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: $radius-500;
     background-color: $clr-neutral-100;
     border: none;
@@ -115,19 +116,29 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.9);
+    box-shadow: 0 1px 2px alpha(#000, 0.05);
     transition:
       background-color $dur-ui ease,
-      transform $dur-press $ease-out;
+      transform $dur-press $ease-out,
+      box-shadow $dur-ui ease;
 
     @media (hover: hover) and (pointer: fine) {
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: $clr-neutral-50;
+        box-shadow: 0 2px 4px alpha(#000, 0.08);
       }
     }
 
-    &:active {
-      transform: scale(0.9);
+    &:active:not(:disabled) {
+      transform: scale(0.92);
+      box-shadow: none;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
     }
 
     [data-icon="minus"] {
@@ -144,13 +155,15 @@
   }
 
   &__qty-val {
-    color: rgba($clr-neutral-900, 0.72);
-    min-width: 12px;
+    color: alpha($clr-neutral-900, 0.9);
+    min-width: 16px;
     text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
   }
 
   &__price {
-    color: color-mix(in srgb, $clr-primary-800 90%, transparent);
+    color: alpha($clr-primary-800, 0.9);
     margin: 0;
     padding-bottom: $space-150;
     white-space: nowrap;

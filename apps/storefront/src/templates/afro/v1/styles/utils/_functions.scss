@@ -53,3 +53,7 @@
     #{$end-rem}
   );
 }
+
+@function alpha($color, $opacity) {
+  @return rgb(from #{$color} r g b / #{$opacity});
+}

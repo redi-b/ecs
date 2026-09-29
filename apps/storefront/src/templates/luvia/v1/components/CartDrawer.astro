@@ -56,7 +56,9 @@ const { locale, continueShoppingLabel } = Astro.props;
       </div>
     </dl>
     <a class="cart-checkout type-body-500" href="/checkout">{m.action_checkout({}, { locale })}</a>
-    <a class="cart-view type-body-s-500" href="/cart">{m.cart_view({}, { locale })}</a>
-    <button type="button" data-cart-continue class="type-body-s-500">{continueShoppingLabel}</button>
+    <div class="cart-drawer__secondary-actions">
+      <a class="cart-view type-body-s-500" href="/cart">{m.cart_view({}, { locale })}</a>
+      <button type="button" data-cart-continue class="cart-continue type-body-s-500">{continueShoppingLabel}</button>
+    </div>
   </footer>
 </aside>

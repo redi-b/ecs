@@ -11,11 +11,13 @@ import type {
 import {
   categoryProductsHref,
   collectionProductsHref,
+  taxonomyHandle,
 } from "../../../../lib/commerce/taxonomy-links";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 import ActionButton from "../components/ActionButton.astro";
+import ProductFilter from "../components/ProductFilter.astro";
 import categoryImage from "../assets/categories-hero-image.webp";
 import ctaImage from "../assets/cta-layer-image.webp";
 import heroBg from "../assets/hero-bg-alt-image.webp";
@@ -104,9 +106,9 @@ const selectedCategories = (
         .map((id) => categoryById.get(id))
         .filter((item): item is StoreCategory => Boolean(item))
     : categories
-).slice(0, 4);
-const collectionHref = collectionProductsHref;
-const homeFilterCollections = collections.slice(0, 4);
+).slice(0, 5);
+const defaultShown = Math.min(listing.length, 12);
+const collectionById = new Map(collections.map((col) => [col.id, col]));
 ---
 
 <Layout
@@ -134,7 +136,7 @@ const homeFilterCollections = collections.slice(0, 4);
           style={`--hero-bg: url('${heroBackground}');`}
           hidden={!template.home.hero.enabled}
         >
-          <div class="hero__container container">
+          <div class="hero__inner container">
             <div class="hero__copy">
               <>
                 <h1
@@ -253,7 +255,7 @@ const homeFilterCollections = collections.slice(0, 4);
           data-editor-visible-path="home.featuredProducts.enabled"
           hidden={!template.home.featuredProducts.enabled}
         >
-          <div class="section__wrapper container">
+          <div class="section__inner container">
             <header>
               <h2
                 class="type-heading-3"
@@ -268,30 +270,36 @@ const homeFilterCollections = collections.slice(0, 4);
                   data-product-rail-prev
                   aria-label={m.home_previous_products({}, { locale })}
                 >
-                  ←
+                  <span class="rail-controls__icon rail-controls__icon--prev" aria-hidden="true">
+                    <Icon name="diagonal-arrow" />
+                  </span>
                 </button>
                 <button
                   type="button"
                   data-product-rail-next
                   aria-label={m.home_next_products({}, { locale })}
                 >
-                  →
+                  <span class="rail-controls__icon rail-controls__icon--next" aria-hidden="true">
+                    <Icon name="diagonal-arrow" />
+                  </span>
                 </button>
               </div>
             </header>
             {hasError ? (
               <p class="state">{m.catalog_load_error({}, { locale })}</p>
             ) : topPicks.length ? (
-              <div
-                class="product-rail"
-                data-product-rail
-                role="region"
-                aria-label={m.home_top_picks({}, { locale })}
-                tabindex="0"
-              >
-                {topPicks.map((product, index) => (
-                  <ProductCard product={product} eager={index < 4} />
-                ))}
+              <div class="product-rail-frame">
+                <div
+                  class="product-rail"
+                  data-product-rail
+                  role="region"
+                  aria-label={m.home_top_picks({}, { locale })}
+                  tabindex="0"
+                >
+                  {topPicks.map((product, index) => (
+                    <ProductCard product={product} eager={index < 4} />
+                  ))}
+                </div>
               </div>
             ) : (
               <p class="state">{m.home_products_coming({}, { locale })}</p>
@@ -309,7 +317,7 @@ const homeFilterCollections = collections.slice(0, 4);
           data-editor-visible-path="home.products.enabled"
           hidden={!template.home.products.enabled}
         >
-          <div class="section__wrapper container">
+          <div class="section__inner container">
             <header>
               <h2
                 class="type-heading-3"
@@ -328,43 +336,44 @@ const homeFilterCollections = collections.slice(0, 4);
                 {m.home_full_shop({}, { locale })}
               </ActionButton>
             </header>
-            <nav
-              class="filter"
-              aria-label={m.home_product_filters({}, { locale })}
-            >
-              <a class="is-active type-body-400" href="/products">
-                {m.catalog_all_products({}, { locale })}
-              </a>
-              {homeFilterCollections.map((collection) => (
-                <a class="type-body-400" href={collectionHref(collection)}>
-                  {collection.title ??
-                    m.catalog_collection_fallback({}, { locale })}
-                </a>
-              ))}
-              <span aria-hidden="true" />
-              <a class="type-body-400" href="/products?order=created_at">
-                {m.catalog_newest({}, { locale })}
-              </a>
-              <a class="type-body-400" href="/products?order=title">
-                {m.home_a_to_z({}, { locale })}
-              </a>
-            </nav>
+            <ProductFilter
+              collections={collections}
+              categories={categories}
+              totalCount={listing.length}
+              shownCount={defaultShown}
+            />
             {listing.length ? (
-              <div class="product-grid">
-                {listing.map((product) => (
-                  <ProductCard product={product} />
-                ))}
+              <div class="product-grid" id="luvia-product-grid">
+                {listing.map((product, index) => {
+                  const productCollection = product.collectionId ? collectionById.get(product.collectionId) : null;
+                  const productCategoryIds = product.categoryIds ?? [];
+                  const productCategoryNames = productCategoryIds
+                    .map((cid) => categoryById.get(cid))
+                    .filter((c): c is StoreCategory => Boolean(c))
+                    .map((c) => c.name || c.id)
+                    .join(",");
+                  const productCategoryHandles = productCategoryIds
+                    .map((cid) => categoryById.get(cid))
+                    .filter((c): c is StoreCategory => Boolean(c))
+                    .map((c) => taxonomyHandle(c))
+                    .filter(Boolean)
+                    .join(",");
+                  const collectionHandle = productCollection ? taxonomyHandle(productCollection) : "";
+                  return (
+                    <ProductCard
+                      product={product}
+                      data-category={`${productCategoryNames},${productCategoryHandles}`}
+                      data-collection={`${productCollection?.title || productCollection?.handle || product.collectionTitle || ""},${collectionHandle}`}
+                      class={index >= defaultShown ? "is-deferred" : undefined}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <p class="state">{m.catalog_empty({}, { locale })}</p>
             )}
             {listing.length > 0 && (
-              <div
-                class:list={[
-                  "load-more",
-                  { "is-overflowing": listing.length > 8 },
-                ]}
-              >
+              <div class="load-more">
                 <p class="type-body-400">
                   {m.catalog_result_count(
                     { count: listing.length },
@@ -390,7 +399,7 @@ const homeFilterCollections = collections.slice(0, 4);
     {
       (editorMode || template.home.categories.enabled) && (
         <section
-          class="categories"
+          class="categories container"
           data-editor-section="home.categories"
           data-editor-visible-path="home.categories.enabled"
           hidden={!template.home.categories.enabled}
@@ -407,8 +416,8 @@ const homeFilterCollections = collections.slice(0, 4);
               sizes="(max-width: 900px) 100vw, 50vw"
               data-editor-image-path="home.categories.imageAssetId"
             />
-            <div>
-              <>
+            <div class="categories__panel">
+              <div class="categories__main">
                 <h2
                   class="type-heading-2"
                   data-editor-path="home.categories.title"
@@ -416,7 +425,7 @@ const homeFilterCollections = collections.slice(0, 4);
                 >
                   {template.home.categories.title}
                 </h2>
-                <nav data-editor-categories-path="home.categories.categoryIds" data-editor-limit="4">
+                <nav data-editor-categories-path="home.categories.categoryIds" data-editor-limit="5">
                   {selectedCategories.length ? (
                     selectedCategories.map((category, index) => (
                       <a
@@ -437,7 +446,18 @@ const homeFilterCollections = collections.slice(0, 4);
                     </a>
                   )}
                 </nav>
-              </>
+              </div>
+              <div class="categories__action">
+                <ActionButton
+                  href="/products"
+                  icon="diagonal-arrow"
+                  iconSize="small"
+                  tone="light"
+                  size="small"
+                >
+                  {m.catalog_view_all_products({}, { locale })}
+                </ActionButton>
+              </div>
             </div>
           </>
         </section>
@@ -447,7 +467,7 @@ const homeFilterCollections = collections.slice(0, 4);
     {
       (editorMode || template.home.cta.enabled) && (
         <section
-          class="cta"
+          class="cta container"
           data-editor-section="home.cta"
           data-editor-visible-path="home.cta.enabled"
           hidden={!template.home.cta.enabled}
@@ -461,7 +481,7 @@ const homeFilterCollections = collections.slice(0, 4);
               fallback={ctaImage}
               alt="Cosmetics store"
               widths={[480, 768, 1024, 1440, 1920]}
-              sizes="(max-width: 900px) calc(100vw - 40px), calc(100vw - 310px)"
+              sizes="(max-width: 1200px) calc(100vw - 40px), 1160px"
               data-editor-image-path="home.cta.imageAssetId"
             />
             <div>
@@ -473,7 +493,7 @@ const homeFilterCollections = collections.slice(0, 4);
                 >
                   {template.home.cta.title}
                 </h2>
-                <p>
+                <div class="cta__actions">
                   {template.home.cta.primary.enabled && (
                     <ActionButton
                       href={template.home.cta.primary.href}
@@ -499,7 +519,7 @@ const homeFilterCollections = collections.slice(0, 4);
                       {template.home.cta.secondary.label}
                     </ActionButton>
                   )}
-                </p>
+                </div>
               </>
             </div>
           </>

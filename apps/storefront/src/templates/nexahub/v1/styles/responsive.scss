@@ -95,7 +95,7 @@
 
   .site-header__link { justify-content: space-between; padding-inline: $space-350; }
   .site-header__dropdown-item { display: flex; align-items: center; padding: $space-250 $space-350; }
-  .site-header__dropdown { max-height: 0; margin-top: 0; border-width: 0; opacity: 0; visibility: hidden; overflow: hidden; transform: none; transition: max-height var(--nexa-motion-slow) var(--nexa-ease-out), opacity var(--nexa-motion-base) var(--nexa-ease-out), margin var(--nexa-motion-base) var(--nexa-ease-out); }
+  .site-header__dropdown { max-height: 0; margin-top: 0; border-width: 0; opacity: 0; visibility: hidden; overflow: hidden; transform: none; transition: max-height 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), margin 220ms cubic-bezier(0.22, 1, 0.36, 1); }
   .site-header__dropdown.is-open { max-height: min(44vh, 22rem); margin-top: $space-100; border-width: 1px; opacity: 1; visibility: visible; overflow-y: auto; }
   .site-header__search { display: none; }
   .site-header.is-open .site-header__search {

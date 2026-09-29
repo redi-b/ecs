@@ -50,7 +50,7 @@ body, main {
   color: $clr-neutral-100;
   text-decoration: underline;
   transform: translateY(-250%);
-  transition: transform $dur-ui $ease-out;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 
   &:focus-visible {
     transform: translateY(0);
@@ -68,6 +68,10 @@ body.no-scroll {
   }
 }
 
+[data-text-anim] {
+  visibility: hidden;
+}
+
 .wishlist-heart {
   position: relative;
   display: inline-flex;
@@ -76,7 +80,7 @@ body.no-scroll {
 
   [data-icon="heart"],
   [data-icon="heart-filled"] {
-    transition: opacity $dur-ui ease;
+    transition: opacity 200ms ease;
   }
 
   [data-icon="heart-filled"] {
@@ -99,6 +103,7 @@ body.no-scroll {
 
     [data-icon="heart-filled"] {
       opacity: 1;
+      color: $clr-primary-500;
     }
   }
 }
@@ -125,20 +130,20 @@ body.no-scroll {
 
 .site-header__action-circle.is-bump,
 .site-header__cart-badge.is-bump {
-  animation: bag-bump 420ms $ease-out;
+  animation: bag-bump 420ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .cart-item__qty-val.is-tick,
 .product-details__qty-value.is-tick {
-  animation: qty-tick $dur-ui $ease-out;
+  animation: qty-tick 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .cart-drawer__items > .is-entering {
-  animation: line-in 320ms $ease-out;
+  animation: line-in 320ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .cart-item.is-flash {
-  animation: line-flash 560ms $ease-out;
+  animation: line-flash 560ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @keyframes heart-pop {
@@ -148,8 +153,8 @@ body.no-scroll {
 }
 
 @keyframes save-ring {
-  0% { box-shadow: 0 0 0 0 rgba($clr-primary-500, 0.45); }
-  100% { box-shadow: 0 0 0 $space-300 rgba($clr-primary-500, 0); }
+  0% { box-shadow: 0 0 0 0 alpha($clr-primary-500, 0.45); }
+  100% { box-shadow: 0 0 0 $space-300 alpha($clr-primary-500, 0); }
 }
 
 @keyframes bag-bump {
@@ -181,7 +186,7 @@ body.no-scroll {
 }
 
 @keyframes line-flash {
-  0% { background-color: color-mix(in srgb, $clr-primary-200 70%, transparent); }
+  0% { background-color: alpha($clr-primary-200, 0.7); }
   100% { background-color: $clr-neutral-150; }
 }
 

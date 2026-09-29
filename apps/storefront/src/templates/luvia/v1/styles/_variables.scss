@@ -1,3 +1,4 @@
+@use "sass:math";
 @use "./utils/functions" as *;
 
 $ff-hero: "Right Grotesk", "Noto Sans Ethiopic", sans-serif;
@@ -56,14 +57,6 @@ $ls-none: 0;
   --clr-primary-text: #148739;
   --clr-primary-link: #0f642a;
   --clr-primary-fill: #3ee272;
-
-  // Motion. Without these every `transition` shorthand below is invalid at
-  // computed-value time and silently resolves to 0s.
-  --motion-fast: 0.16s;
-  --motion-base: 0.2s;
-  --motion-medium: 0.24s;
-  --motion-slow: 0.4s;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 // Aliases must live on body: theme overrides (themeStyle / editor preview)
@@ -74,6 +67,10 @@ body {
   --clr-primary-dark: color-mix(in srgb, var(--clr-primary), #000 65%);
 }
 
+
+// Product imagery ratio (4:5). One source of truth so a catalogue tile, a rail
+// card and a search suggestion all present the same crop.
+$ratio-product-media: math.div(4, 5);
 
 $space-50: 2px;
 $space-100: 4px;
@@ -115,3 +112,14 @@ $radius-600: fluid(36px, 48px);
 $radius-650: 100px;
 $radius-pill: 999px;
 $radius-full: 50%;
+
+// Floating header geometry (components/_header.scss). It sits below the spacing
+// scale because the clearance offset is derived from a spacing token. The bar is
+// pinned to the viewport for the whole page load, so anything that sticks below
+// it offsets from --header-offset instead of inventing its own clearance; the
+// 760px overrides live with the header's own breakpoint rules.
+:root {
+  --header-top: 26px;
+  --header-height: 64px;
+  --header-offset: calc(var(--header-top) + var(--header-height) + #{$space-500});
+}

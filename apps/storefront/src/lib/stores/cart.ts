@@ -42,8 +42,36 @@ function broadcastCartUpdate(cart: StoreCart | null, openDrawer = false) {
   );
 }
 
+const CART_STORAGE_KEY = "ecs_cart_cache";
+
+function saveCartToStorage(cart: StoreCart | null) {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    if (cart) {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } else {
+      window.localStorage.removeItem(CART_STORAGE_KEY);
+    }
+  } catch {
+    // ignore quota/storage issues
+  }
+}
+
+function readCartFromStorage(): StoreCart | null {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function setCart(cart: StoreCart | null, broadcast = true) {
   $cart.set(cart);
+  saveCartToStorage(cart);
   if (broadcast) {
     broadcastCartUpdate(cart);
   }
@@ -307,6 +335,14 @@ export function initCartStore(initialCart?: StoreCart | null) {
         }
       } catch {
         // Fallback to async fetch
+      }
+    }
+
+    // If cart is still null, hydrate from localStorage cache
+    if (!$cart.get()) {
+      const cached = readCartFromStorage();
+      if (cached) {
+        setCart(cached, false);
       }
     }
   }

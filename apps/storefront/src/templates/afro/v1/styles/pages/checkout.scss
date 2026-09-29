@@ -13,7 +13,7 @@
   &__wrapper {
     display: flex;
     flex-direction: column;
-    gap: $space-550;
+    gap: $space-450;
   }
 }
 
@@ -26,10 +26,10 @@
   display: flex;
   align-items: center;
   gap: $space-150;
-  color: rgba($clr-neutral-900, 0.72);
+  color: alpha($clr-neutral-900, 0.6);
 
   a {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.6);
     text-decoration: none;
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
@@ -58,7 +58,7 @@
 
 .checkout-title {
   color: $clr-neutral-900;
-  margin: $space-350 0 0;
+  margin: $space-250 0 0;
 }
 
 // Main 2-Column Checkout Layout
@@ -85,7 +85,7 @@
   flex-direction: column;
   gap: $space-550;
   background-color: $clr-neutral-50;
-  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border: 1px solid alpha($clr-neutral-900, 0.06);
   border-radius: $radius-450;
   padding: $space-550;
   box-sizing: border-box;
@@ -100,7 +100,7 @@
     flex-direction: column;
     gap: $space-350;
     padding-block-end: $space-550;
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.08);
 
     &:last-child {
       padding-block-end: 0;
@@ -145,13 +145,13 @@
   }
 
   &__label {
-    color: rgba($clr-neutral-900, 0.85);
+    color: alpha($clr-neutral-900, 0.85);
     display: flex;
     align-items: center;
     margin-bottom: $space-200;
 
     .required-star {
-      color: $clr-primary-link;
+      color: $clr-primary-500;
       margin-inline-start: $space-150;
     }
   }
@@ -161,7 +161,7 @@
     width: 100%;
     height: 48px;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.15);
+    border: 1px solid alpha($clr-neutral-900, 0.15);
     border-radius: $radius-200;
     padding: 0 $space-250;
     color: $clr-neutral-900;
@@ -170,16 +170,16 @@
     transition: border-color $dur-ui ease, box-shadow $dur-ui ease;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.35);
     }
 
     &:hover {
-      border-color: rgba($clr-neutral-900, 0.28);
+      border-color: alpha($clr-neutral-900, 0.28);
     }
 
     &:focus {
       border-color: $clr-primary-500;
-      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+      box-shadow: 0 0 0 3px alpha($clr-primary-500, 0.12);
     }
   }
 
@@ -189,7 +189,7 @@
     &__trigger {
       height: 48px;
       min-height: 48px;
-      border: 1px solid rgba($clr-neutral-900, 0.15);
+      border: 1px solid alpha($clr-neutral-900, 0.15);
       border-radius: $radius-200;
       padding: 0 $space-250;
       box-sizing: border-box;
@@ -198,7 +198,7 @@
       &:focus-visible,
       &[aria-expanded="true"] {
         border-color: $clr-primary-500;
-        box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+        box-shadow: 0 0 0 3px alpha($clr-primary-500, 0.12);
         outline: none;
       }
     }
@@ -227,7 +227,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba($clr-neutral-900, 0.28);
+    border: 1px solid alpha($clr-neutral-900, 0.28);
     border-radius: $radius-100;
     background-color: $clr-neutral-50;
     color: $clr-neutral-50;
@@ -273,7 +273,7 @@
   }
 
   &__checkbox-label {
-    color: rgba($clr-neutral-900, 0.75);
+    color: alpha($clr-neutral-900, 0.75);
     margin-inline-start: $space-200;
   }
 
@@ -283,7 +283,7 @@
     grid-template-columns: 1fr 1fr;
     gap: $space-100;
     padding: $space-100;
-    background-color: rgba($clr-neutral-900, 0.04);
+    background-color: alpha($clr-neutral-900, 0.04);
     border-radius: $radius-300;
 
     @media (max-width: 580px) {
@@ -309,11 +309,11 @@
       transform $dur-press $ease-out;
 
     &:hover:not(.is-selected) {
-      background-color: rgba($clr-neutral-50, 0.72);
+      background-color: alpha($clr-neutral-50, 0.72);
     }
 
     &:active:not(.is-selected) {
-      background-color: rgba($clr-primary-500, 0.1);
+      background-color: alpha($clr-primary-500, 0.1);
       transform: scale(0.98);
     }
 
@@ -324,7 +324,7 @@
 
     &.is-selected {
       background-color: $clr-neutral-50;
-      border-color: rgba($clr-primary-500, 0.4);
+      border-color: alpha($clr-primary-500, 0.4);
     }
   }
 
@@ -343,7 +343,7 @@
   }
 
   &__payment-sub {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.55);
     margin: 0;
   }
 
@@ -360,7 +360,7 @@
 
     p {
       margin: 0 0 $space-150;
-      color: rgba($clr-neutral-900, 0.65);
+      color: alpha($clr-neutral-900, 0.65);
 
       &:last-child {
         margin-bottom: 0;
@@ -369,7 +369,7 @@
   }
 
   &__payment-note {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.5);
   }
 }
 
@@ -378,7 +378,7 @@
   position: sticky;
   top: 90px;
   background-color: $clr-neutral-50;
-  border: 1px solid rgba($clr-neutral-900, 0.06);
+  border: 1px solid alpha($clr-neutral-900, 0.06);
   border-radius: $radius-450;
   padding: $space-500;
   display: flex;
@@ -396,7 +396,7 @@
     justify-content: space-between;
     gap: $space-300;
     padding-block-end: $space-300;
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.08);
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.08);
     box-sizing: border-box;
   }
 
@@ -406,7 +406,7 @@
   }
 
   &__items-count {
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.5);
     margin-inline-start: $space-300;
   }
 
@@ -414,33 +414,67 @@
   &__items-list {
     display: flex;
     flex-direction: column;
-    gap: $space-200;
+    gap: 0;
+    max-height: 225px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-inline-end: 18px;
+    scroll-snap-type: y proximity;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: alpha($clr-neutral-900, 0.25) transparent;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: alpha($clr-neutral-900, 0.22);
+      border-radius: $radius-700;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: alpha($clr-neutral-900, 0.4);
+    }
   }
 
   &__item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: $space-300;
     align-items: center;
-    gap: $space-250;
-    padding-block-end: $space-200;
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+    padding-block: $space-200;
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.08);
+    scroll-snap-align: start;
+
+    &:first-child {
+      padding-block-start: $space-50;
+    }
 
     &:last-child {
       border-bottom: none;
-      padding-block-end: 0;
+      padding-block-end: $space-50;
     }
   }
 
   &__item-thumb {
-    width: 60px;
-    height: 60px;
+    position: relative;
+    width: 52px;
+    height: 52px;
     border-radius: $radius-200;
-    overflow: hidden;
     background-color: $clr-neutral-300;
     flex-shrink: 0;
 
     .img-wrapper {
       width: 100%;
       height: 100%;
+      border-radius: inherit;
+      overflow: hidden;
     }
 
     img {
@@ -450,34 +484,83 @@
     }
   }
 
+  &__qty-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    border-radius: $radius-700;
+    background: $clr-neutral-900;
+    color: $clr-neutral-50;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 1px 3px alpha(#000, 0.25);
+    border: 1.5px solid $clr-neutral-50;
+    z-index: 2;
+  }
+
   &__item-details {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+    gap: 4px;
   }
 
   &__item-title {
     color: $clr-neutral-900;
-    margin: 0 0 $space-200;
-    overflow: visible;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   &__item-meta {
     display: flex;
-    flex-wrap: wrap;
-    color: rgba($clr-neutral-900, 0.72);
+    align-items: center;
+    gap: 6px;
+    color: alpha($clr-neutral-900, 0.6);
+    font-size: 12px;
     margin: 0;
+  }
 
-    span + span {
-      margin-inline-start: $space-300;
-    }
+  &__variant-name {
+    color: alpha($clr-neutral-900, 0.8);
+    font-weight: 450;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: alpha($clr-neutral-900, 0.05);
+    padding: 1px 6px;
+    border-radius: $radius-100;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  &__meta-dot {
+    color: alpha($clr-neutral-900, 0.35);
+  }
+
+  &__qty-text {
+    color: alpha($clr-neutral-900, 0.6);
+    font-variant-numeric: tabular-nums;
   }
 
   &__item-price {
     color: $clr-neutral-900;
     flex-shrink: 0;
-    margin-inline-start: $space-250;
+    white-space: nowrap;
+    font-weight: 500;
+    font-size: 14px;
+    text-align: right;
+    padding-inline-start: 8px;
   }
 
   // Coupon Field
@@ -490,23 +573,23 @@
     flex: 1;
     height: 42px;
     background-color: $clr-neutral-50;
-    border: 1px solid rgba($clr-neutral-900, 0.15);
+    border: 1px solid alpha($clr-neutral-900, 0.15);
     border-radius: $radius-200;
     padding: 0 $space-200;
     color: $clr-neutral-900;
     outline: none;
 
     &::placeholder {
-      color: rgba($clr-neutral-900, 0.72);
+      color: alpha($clr-neutral-900, 0.35);
     }
 
     &:hover {
-      border-color: rgba($clr-neutral-900, 0.28);
+      border-color: alpha($clr-neutral-900, 0.28);
     }
 
     &:focus {
       border-color: $clr-primary-500;
-      box-shadow: 0 0 0 3px rgba($clr-primary-500, 0.12);
+      box-shadow: 0 0 0 3px alpha($clr-primary-500, 0.12);
     }
   }
 
@@ -515,7 +598,7 @@
     padding: 0 $space-300;
     background-color: transparent;
     color: $clr-neutral-900;
-    border: 1px solid rgba($clr-neutral-900, 0.16);
+    border: 1px solid alpha($clr-neutral-900, 0.16);
     border-radius: $radius-200;
     cursor: pointer;
     transition:
@@ -525,12 +608,12 @@
       transform $dur-press $ease-out;
 
     &:hover {
-      background-color: rgba($clr-neutral-900, 0.04);
-      border-color: rgba($clr-neutral-900, 0.32);
+      background-color: alpha($clr-neutral-900, 0.04);
+      border-color: alpha($clr-neutral-900, 0.32);
     }
 
     &:active {
-      background-color: rgba($clr-primary-500, 0.12);
+      background-color: alpha($clr-primary-500, 0.12);
       transform: scale(0.97);
     }
 
@@ -540,7 +623,7 @@
     }
 
     &.is-applied {
-      background-color: rgba($clr-primary-500, 0.12);
+      background-color: alpha($clr-primary-500, 0.12);
       color: $clr-primary-800;
       border-color: transparent;
     }
@@ -552,19 +635,19 @@
     flex-direction: column;
     gap: $space-150;
     padding-block: $space-250;
-    border-top: 1px solid rgba($clr-neutral-900, 0.06);
-    border-bottom: 1px solid rgba($clr-neutral-900, 0.06);
+    border-top: 1px solid alpha($clr-neutral-900, 0.06);
+    border-bottom: 1px solid alpha($clr-neutral-900, 0.06);
   }
 
   &__totals-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.7);
 
     &--discount {
       display: none;
-      color: $clr-primary-link;
+      color: $clr-primary-500;
 
       &.is-visible {
         display: flex;
@@ -575,7 +658,7 @@
       color: $clr-neutral-900;
       margin-top: $space-150;
       padding-top: $space-250;
-      border-top: 1px solid rgba($clr-neutral-900, 0.08);
+      border-top: 1px solid alpha($clr-neutral-900, 0.08);
 
       .checkout-summary__total-value {
         color: $clr-primary-800;
@@ -589,7 +672,7 @@
 
   &__trust {
     margin: 0;
-    color: rgba($clr-neutral-900, 0.72);
+    color: alpha($clr-neutral-900, 0.5);
     text-align: center;
   }
 }

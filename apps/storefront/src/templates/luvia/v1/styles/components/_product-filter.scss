@@ -1,0 +1,291 @@
+@use "../abstracts" as *;
+
+// ---------------------------------------------------------------------------
+// Luvia Product Filter — homepage product toolbar
+// ---------------------------------------------------------------------------
+// Replaces the flat pill row with a two-row toolbar: indicator bar on top,
+// controls row below. Uses Luvia tokens exclusively.
+
+.product-filter {
+  margin-bottom: $space-700;
+  padding: $space-350 $space-450;
+  display: flex;
+  flex-direction: column;
+  gap: $space-350;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-300;
+  background: var(--clr-surface);
+}
+
+// ── Header row (filter title on left, count + clear on right) ───────
+.product-filter__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-300;
+  padding-bottom: $space-300;
+  border-bottom: 1px solid alpha(var(--clr-ink), 0.07);
+}
+
+.product-filter__indicator {
+  display: flex;
+  align-items: center;
+}
+
+.product-filter__title {
+  color: var(--clr-ink);
+  font-size: $fs-body-s;
+  font-weight: $fw-semi-bold;
+  letter-spacing: $ls-heading;
+}
+
+.product-filter__header-end {
+  display: flex;
+  align-items: center;
+  gap: $space-300;
+}
+
+.product-filter__count {
+  color: alpha(var(--clr-ink), 0.56);
+  font-size: $fs-body-xs;
+  white-space: nowrap;
+}
+
+// Clear button — subtle, rotated-plus icon with visible border
+.product-filter__clear {
+  height: 30px;
+  padding: 0 $space-300;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-150;
+  border: 1px solid alpha(var(--clr-ink), 0.14);
+  border-radius: $radius-pill;
+  background: var(--clr-surface);
+  color: alpha(var(--clr-ink), 0.65);
+  cursor: pointer;
+  transition:
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  svg[data-icon] {
+    width: 8px;
+    height: 8px;
+    transform: rotate(45deg);
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--clr-danger);
+      background: alpha(var(--clr-danger), 0.06);
+      border-color: alpha(var(--clr-danger), 0.28);
+
+      svg[data-icon] {
+        transform: rotate(135deg);
+      }
+    }
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
+  }
+}
+
+// ── Controls row ──────────────────────────────────────────────────────
+.product-filter__controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: $space-300;
+  flex-wrap: wrap;
+}
+
+.product-filter__group {
+  display: flex;
+  align-items: flex-end;
+  gap: $space-250;
+  flex-wrap: wrap;
+}
+
+.product-filter__group--filters {
+  flex: 1 1 auto;
+}
+
+.product-filter__group--actions {
+  flex: none;
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+.product-filter__search {
+  height: 40px;
+  text-decoration: none;
+}
+
+.product-filter__field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-150;
+}
+
+.product-filter__label {
+  color: alpha(var(--clr-ink), 0.62);
+  font-size: $fs-body-xs;
+  font-weight: $fw-medium;
+  letter-spacing: $ls-heading;
+  padding-left: $space-100;
+}
+
+// ── Price range inputs ────────────────────────────────────────────────
+.product-filter__price {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-150;
+}
+
+.product-filter__price-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 $space-300 0 $space-700;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-pill;
+  background: var(--clr-surface);
+  cursor: text;
+  transition:
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:focus-within {
+    border-color: var(--clr-primary);
+    box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.10);
+  }
+
+  input {
+    width: 72px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--clr-ink);
+    outline: none;
+
+    // Remove spinner arrows
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    -moz-appearance: textfield;
+    appearance: textfield;
+
+    &::placeholder {
+      color: alpha(var(--clr-ink), 0.36);
+    }
+  }
+}
+
+.product-filter__price-icon {
+  position: absolute;
+  left: $space-300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: alpha(var(--clr-ink), 0.36);
+  pointer-events: none;
+
+  svg[data-icon] {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.product-filter__price-sep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: alpha(var(--clr-ink), 0.24);
+
+  svg[data-icon] {
+    width: 8px;
+    height: 2px;
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────────
+@media (max-width: 900px) {
+  .product-filter__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .product-filter__group--actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .product-filter__search {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .product-filter__group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .product-filter__field {
+    flex: 1 1 0;
+    min-width: 160px;
+  }
+
+  .product-filter__price {
+    width: 100%;
+  }
+
+  .product-filter__price-field {
+    flex: 1 1 0;
+    min-width: 0;
+
+    input {
+      width: 100%;
+    }
+  }
+
+  // Allow dropdowns to take full width on mobile
+  .product-filter__group .luvia-dropdown {
+    width: 100%;
+  }
+
+  .product-filter__group .luvia-dropdown__trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .product-filter__group .luvia-dropdown__menu {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-filter {
+    padding: $space-300;
+    gap: $space-300;
+  }
+
+  .product-filter__group {
+    gap: $space-150;
+  }
+
+  .product-filter__field {
+    min-width: 100%;
+  }
+}
