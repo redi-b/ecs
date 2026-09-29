@@ -2,6 +2,7 @@ import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { productListFiltersSchema } from "../../modules/commerce/product-list-filters.js";
+import { runProductWriteCommand } from "../../modules/commerce/product-write-command.js";
 import {
   exportProductsToCsv,
   productExportFilename,
@@ -16,7 +17,6 @@ import {
   applyBulkInventoryUpdates,
   parseBulkInventoryUpdates,
 } from "../../modules/inventory/bulk-adjustment.js";
-import { runProductWriteCommand } from "../../modules/commerce/product-write-command.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -244,6 +244,7 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductVariantStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateVariantStock = options.updateMerchantProductVariantStock;
 
     const body = await getJsonBody(context.req.raw);
     const parsed = parseBulkInventoryUpdates(body.updates);
@@ -253,12 +254,39 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "inventory_location_unavailable" }, 503);
     }
 
-    const result = await applyBulkInventoryUpdates({
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      stockLocationId,
-      updates: parsed.updates,
-      updateStock: options.updateMerchantProductVariantStock,
-    });
+    const applyUpdates = () =>
+      applyBulkInventoryUpdates({
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+        updates: parsed.updates,
+        updateStock: updateVariantStock,
+      });
+    let result: Awaited<ReturnType<typeof applyUpdates>>;
+    if (options.executeMerchantMutation) {
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: merchant.session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.batch",
+          payload: { stockLocationId, updates: parsed.updates },
+          requestId: context.get("requestId"),
+          resourceKeys: parsed.updates.flatMap((update) => [
+            `inventory:${stockLocationId}:${update.productId}`,
+            `inventory:${stockLocationId}:${update.productId}:${update.variantId}`,
+          ]),
+          source: "assisted_sale",
+          tenantId: merchant.result.context.tenantId,
+        },
+        applyUpdates,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      result = execution.value;
+    } else {
+      result = await applyUpdates();
+    }
     return context.json(result);
   });
 
@@ -472,6 +500,7 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateProductStock = options.updateMerchantProductStock;
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
@@ -487,12 +516,36 @@ export function registerMerchantProductRoutes(
     }
 
     const productId = context.req.param("productId");
-    const stock = await options.updateMerchantProductStock({
+    const mutationInput = {
       productId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId,
       stockedQuantity,
-    });
+    };
+    const updateStock = () => updateProductStock(mutationInput);
+    let stock: Awaited<ReturnType<typeof updateStock>>;
+    if (options.executeMerchantMutation) {
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.set",
+          payload: mutationInput,
+          requestId: context.get("requestId"),
+          resourceKeys: [`inventory:${stockLocationId}:${productId}`],
+          source: "assisted_sale",
+          tenantId: result.context.tenantId,
+        },
+        updateStock,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      stock = execution.value;
+    } else {
+      stock = await updateStock();
+    }
 
     if (!stock.ok) {
       return context.json({ error: stock.error }, stock.status);
@@ -600,6 +653,7 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductVariantStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateVariantStock = options.updateMerchantProductVariantStock;
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
@@ -620,13 +674,40 @@ export function registerMerchantProductRoutes(
 
     const productId = context.req.param("productId");
     const variantId = context.req.param("variantId");
-    const stock = await options.updateMerchantProductVariantStock({
+    const mutationInput = {
       productId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId,
       stockedQuantity,
       variantId,
-    });
+    };
+    const updateStock = () => updateVariantStock(mutationInput);
+    let stock: Awaited<ReturnType<typeof updateStock>>;
+    if (options.executeMerchantMutation) {
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.set",
+          payload: mutationInput,
+          requestId: context.get("requestId"),
+          resourceKeys: [
+            `inventory:${stockLocationId}:${productId}`,
+            `inventory:${stockLocationId}:${productId}:${variantId}`,
+          ],
+          source: "assisted_sale",
+          tenantId: result.context.tenantId,
+        },
+        updateStock,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      stock = execution.value;
+    } else {
+      stock = await updateStock();
+    }
 
     if (!stock.ok) {
       return context.json({ error: stock.error }, stock.status);

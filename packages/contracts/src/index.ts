@@ -2,6 +2,7 @@ export * from "./account";
 export * from "./billing";
 export * from "./dashboard";
 export * from "./domain";
+export * from "./merchant-operation-events";
 export * from "./notification";
 export * from "./operator";
 export * from "./order";

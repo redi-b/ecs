@@ -19,6 +19,7 @@ export async function POST(
 
     const result = await updateMerchantProductStock({
       cookieHeader: context.cookieHeader,
+      idempotencyKey: context.request.headers.get("idempotency-key")?.trim() || crypto.randomUUID(),
       platformApiBaseUrl: context.platformApiBaseUrl,
       productId,
       requestHost: context.requestHost,

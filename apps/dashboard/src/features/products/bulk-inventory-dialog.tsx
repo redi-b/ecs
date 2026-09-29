@@ -1,7 +1,7 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -52,6 +52,7 @@ export function BulkInventoryDialog({
     [products],
   );
   const [rows, setRows] = useState(initialRows);
+  const mutationKey = useRef<{ payload: string; value: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tooLarge = rows.length > 50;
@@ -87,13 +88,21 @@ export function BulkInventoryDialog({
       variantId: row.variantId,
       stockedQuantity: Number(row.stockedQuantity.trim()),
     }));
+    const payload = JSON.stringify(updates);
+    if (mutationKey.current?.payload !== payload) {
+      mutationKey.current = { payload, value: crypto.randomUUID() };
+    }
 
     setSaving(true);
     setError(null);
     try {
       const response = await fetch(dashboardRoutes.productsBatchInventoryAction, {
         method: "POST",
-        headers: { accept: "application/json", "content-type": "application/json" },
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "idempotency-key": mutationKey.current.value,
+        },
         body: JSON.stringify({ updates }),
       });
       const data = await response.json().catch(() => ({}));
@@ -115,6 +124,7 @@ export function BulkInventoryDialog({
         toast.warning(t("products.stock.bulkPartial", { failed, succeeded }));
         onSaved();
       } else {
+        mutationKey.current = null;
         toast.success(t("products.stock.bulkUpdated", { count: succeeded }));
         onOpenChange(false);
         onSaved();

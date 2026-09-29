@@ -12,6 +12,14 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  executeMerchantMutation?:
+    | (<T>(
+        input: import("../modules/commerce/merchant-mutation-replay.js").MerchantMutationEnvelope,
+        mutation: () => Promise<T>,
+      ) => Promise<
+        import("../modules/commerce/merchant-mutation-replay.js").MerchantMutationExecutionResult<T>
+      >)
+    | undefined;
   listMerchantOrders?:
     | ((
         input: import("./merchant-order.js").MerchantOrderListQuery,

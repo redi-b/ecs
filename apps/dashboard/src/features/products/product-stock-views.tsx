@@ -4,7 +4,7 @@ import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -275,6 +275,7 @@ export function VariantStockPanel({
     });
   }, [stockByVariantId, stockedQuantityByVariantId, variants]);
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(multiStockDirty);
+  const mutationKeys = useRef(new Map<string, string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -370,6 +371,10 @@ export function VariantStockPanel({
         throw new Error(t("products.stock.enterWholeNumber"));
       }
 
+      const mutationIdentity = `${variantId}:${parsedQuantity}`;
+      const idempotencyKey = mutationKeys.current.get(mutationIdentity) ?? crypto.randomUUID();
+      mutationKeys.current.set(mutationIdentity, idempotencyKey);
+
       const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {
         body: JSON.stringify({
           stockedQuantity: parsedQuantity,
@@ -377,6 +382,7 @@ export function VariantStockPanel({
         headers: {
           accept: "application/json",
           "content-type": "application/json",
+          "idempotency-key": idempotencyKey,
         },
         method: "POST",
       });
@@ -392,6 +398,9 @@ export function VariantStockPanel({
       return data.stock;
     },
     onSuccess: async (nextStock) => {
+      for (const key of mutationKeys.current.keys()) {
+        if (key.startsWith(`${nextStock.variantId}:`)) mutationKeys.current.delete(key);
+      }
       setStockByVariantId((current) => ({
         ...current,
         [nextStock.variantId]: nextStock,

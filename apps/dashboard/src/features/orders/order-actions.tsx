@@ -4,14 +4,13 @@ import type { MerchantOrder, MerchantOrderSettlementMethod } from "@ecs/contract
 import { RiMore2Fill } from "@remixicon/react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +33,7 @@ import {
 import { RefundOrderDialog, type RefundOrderPayload } from "@/features/orders/refund-order-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
 type PendingKind =
   | { kind: "next"; type: OrderNextActionType }
@@ -86,10 +86,17 @@ function nextActionCopy(type: OrderNextActionType, t: Translate) {
   return { label: t(values[type].label), description: t(values[type].description) };
 }
 
-async function postOrderAction(actionUrl: string, body: Record<string, unknown>) {
+async function postOrderAction(
+  actionUrl: string,
+  body: Record<string, unknown>,
+  idempotencyKey?: string,
+) {
   const response = await fetch(actionUrl, {
     body: JSON.stringify(body),
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {}),
+    },
     method: "POST",
   });
   const data = await response.json().catch(() => ({}));
@@ -151,7 +158,9 @@ export function OrderActions({
   const [pending, setPending] = useState<PendingKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const markPaidIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const [refundOpen, setRefundOpen] = useState(false);
+  const refundIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const [accounts, setAccounts] = useState<ReceivingAccountOption[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
 
@@ -203,7 +212,15 @@ export function OrderActions({
   });
   const markPaidMutation = useMutation({
     mutationFn: async (payload: MarkPaidSettlementPayload) => {
-      await postOrderAction(action, { action: "mark-paid", ...payload });
+      const fingerprint = JSON.stringify(payload);
+      if (markPaidIdempotencyRef.current?.fingerprint !== fingerprint) {
+        markPaidIdempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      await postOrderAction(
+        action,
+        { action: "mark-paid", ...payload },
+        markPaidIdempotencyRef.current.key,
+      );
       return t("orders.actions.toastPaid");
     },
     onError: (error) =>
@@ -211,6 +228,7 @@ export function OrderActions({
         mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
       ),
     onSuccess: (message) => {
+      markPaidIdempotencyRef.current = null;
       setActionError(null);
       setMarkPaidOpen(false);
       toast.success(message);
@@ -219,7 +237,15 @@ export function OrderActions({
   });
   const refundMutation = useMutation({
     mutationFn: async (payload: RefundOrderPayload) => {
-      await postOrderAction(action, { action: "refund", ...payload });
+      const fingerprint = JSON.stringify(payload);
+      if (refundIdempotencyRef.current?.fingerprint !== fingerprint) {
+        refundIdempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      await postOrderAction(
+        action,
+        { action: "refund", ...payload },
+        refundIdempotencyRef.current.key,
+      );
       return t("orders.actions.toastRefunded");
     },
     onError: (error) =>
@@ -227,6 +253,7 @@ export function OrderActions({
         mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
       ),
     onSuccess: (message) => {
+      refundIdempotencyRef.current = null;
       setActionError(null);
       setRefundOpen(false);
       toast.success(message);
@@ -243,10 +270,7 @@ export function OrderActions({
   const isMarkPaidPrimary = !hasNextAction && showMarkPaid;
   const isActionable = hasNextAction || isMarkPaidPrimary;
   const hasPrecedingActions =
-    hasNextAction ||
-    (showMarkPaid && !isMarkPaidPrimary) ||
-    showRecheck ||
-    showRefund;
+    hasNextAction || (showMarkPaid && !isMarkPaidPrimary) || showRecheck || showRefund;
   const hasMenu = hasPrecedingActions || showCancel;
 
   const menu = hasMenu ? (

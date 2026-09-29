@@ -190,6 +190,7 @@ export async function mutateMerchantOrder(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   fulfillmentId?: string | null | undefined;
+  idempotencyKey?: string | null | undefined;
   orderId: string;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
@@ -209,14 +210,16 @@ export async function mutateMerchantOrder(options: {
     Object.assign(body, options.refund);
   }
 
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+  });
+  if (options.idempotencyKey?.trim()) headers.set("idempotency-key", options.idempotencyKey.trim());
   const response = await fetcher(getOrderActionUrl(options), {
     body: JSON.stringify(body),
     cache: "no-store",
-    headers: getOrderHeaders({
-      contentType: "application/json",
-      cookieHeader: options.cookieHeader,
-      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
-    }),
+    headers,
     method: "POST",
   }).catch(() => null);
 

@@ -463,6 +463,20 @@
       "when": 1790362638329,
       "tag": "0065_certain_prodigy",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1790665429292,
+      "tag": "0066_silent_justice",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1790669344832,
+      "tag": "0067_early_alex_power",
+      "breakpoints": true
     }
   ]
 }

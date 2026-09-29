@@ -26,6 +26,7 @@ export async function updateMerchantInventoryBatch(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   requestHost?: string | null | undefined;
   updates: BulkInventoryUpdate[];
 }): Promise<BulkInventoryActionResult> {
@@ -34,11 +35,14 @@ export async function updateMerchantInventoryBatch(options: {
     {
       body: JSON.stringify({ updates: options.updates }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -83,6 +87,7 @@ export async function updateMerchantProductStock(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   productId: string;
   requestHost?: string | null | undefined;
   stockedQuantity: number;
@@ -101,11 +106,14 @@ export async function updateMerchantProductStock(options: {
         stockedQuantity: options.stockedQuantity,
       }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: tenantId ? undefined : options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: tenantId ? undefined : options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -163,6 +171,7 @@ export async function updateMerchantProductVariantStock(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   productId: string;
   requestHost?: string | null | undefined;
   stockedQuantity: number;
@@ -183,11 +192,14 @@ export async function updateMerchantProductVariantStock(options: {
         stockedQuantity: options.stockedQuantity,
       }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: tenantId ? undefined : options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: tenantId ? undefined : options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -201,4 +213,9 @@ export async function updateMerchantProductVariantStock(options: {
   }
 
   return parseProductStockResponse(response);
+}
+
+function withIdempotencyKey(headers: Headers, idempotencyKey: string) {
+  headers.set("idempotency-key", idempotencyKey);
+  return headers;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   DialogStepPanel,
@@ -43,12 +43,12 @@ import {
   type AddressForm,
   addressFormFromSaved,
   buildManualOrderPayload,
-  calculateManualOrderPricing,
-  canContinueFromManualOrderCustomer,
-  canContinueFromManualOrderItems,
   type CatalogVariant,
   type CustomerAddressOption,
   type CustomerOption,
+  calculateManualOrderPricing,
+  canContinueFromManualOrderCustomer,
+  canContinueFromManualOrderItems,
   emptyAddress,
   formatCustomerAddressLabel,
   formatPrice,
@@ -72,6 +72,7 @@ function ManualOrderCreateDialogInner() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useCreateQueryOpen({
@@ -653,11 +654,16 @@ function ManualOrderCreateDialogInner() {
       { hasPriceAdjustment, parsedDiscountValue },
     );
 
+    const fingerprint = JSON.stringify(payload);
+    if (idempotencyRef.current?.fingerprint !== fingerprint) {
+      idempotencyRef.current = { fingerprint, key: crypto.randomUUID() };
+    }
     const response = await fetch("/dashboard/orders/actions/create", {
       body: JSON.stringify(payload),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
+        "idempotency-key": idempotencyRef.current.key,
       },
       method: "POST",
     }).catch(() => null);
@@ -678,6 +684,7 @@ function ManualOrderCreateDialogInner() {
     const data = (await response.json().catch(() => ({}))) as {
       order?: { displayId?: string | number | null; id?: string };
     };
+    idempotencyRef.current = null;
 
     toast.success(
       data.order?.id

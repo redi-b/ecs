@@ -294,6 +294,8 @@ export function appWithResolution(
       orderId: string;
       salesChannelId: string;
     }) => Promise<MerchantOrderDetailResult>;
+    createMerchantManualOrder?: PlatformAppOptions["createMerchantManualOrder"];
+    executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
     getMerchantProduct?: (input: {
       productId: string;
       salesChannelId: string;
@@ -619,6 +621,8 @@ export function appWithResolution(
       getOperatorSupportHistory: options?.getOperatorSupportHistory,
       listSupportAccessGrants: options?.listSupportAccessGrants,
       getMerchantOrder: options?.getMerchantOrder,
+      createMerchantManualOrder: options?.createMerchantManualOrder,
+      executeMerchantMutation: options?.executeMerchantMutation,
       getMerchantProduct: options?.getMerchantProduct,
       getMerchantProductStock: options?.getMerchantProductStock,
       getMerchantProductVariantStock: options?.getMerchantProductVariantStock,

@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     }
     const result = await updateMerchantInventoryBatch({
       cookieHeader: context.cookieHeader,
+      idempotencyKey: context.request.headers.get("idempotency-key")?.trim() || crypto.randomUUID(),
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       updates: body.updates as Array<{

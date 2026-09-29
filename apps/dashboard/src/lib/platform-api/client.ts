@@ -105,6 +105,7 @@ export async function platformFetch(
     body?: BodyInit | null | undefined;
     contentType?: "json" | string | false | undefined;
     fetcher?: typeof fetch;
+    headers?: HeadersInit | undefined;
     method?: string | undefined;
     searchParams?: Record<string, string | number | undefined | null>;
   } = {},
@@ -119,6 +120,9 @@ export async function platformFetch(
       requestHost: options.requestHost,
     }),
   };
+  const headers = new Headers(init.headers);
+  for (const [name, value] of new Headers(options.headers)) headers.set(name, value);
+  init.headers = headers;
 
   if (options.method !== undefined) {
     init.method = options.method;

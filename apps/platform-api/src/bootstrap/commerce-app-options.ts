@@ -1,6 +1,10 @@
 import type { createPlatformDb } from "@ecs/db";
 import { attachCatalogNameTranslations } from "../lib/attach-catalog-name-translations.js";
 import { createProductCapacityWriter } from "../modules/billing/product-capacity.js";
+import {
+  createMerchantMutationReplayService,
+  createPostgresMerchantMutationStore,
+} from "../modules/commerce/merchant-mutation-replay.js";
 import { createProductOptionSetService } from "../modules/commerce/product-option-sets.js";
 import type { PlatformAppOptions } from "../types/platform-app.js";
 import type { createCommerceRuntime } from "./commerce.js";
@@ -33,6 +37,7 @@ type CommerceAppOptionKey =
   | "deleteMerchantProductsBatch"
   | "deleteMerchantPromotion"
   | "ensureMerchantCustomer"
+  | "executeMerchantMutation"
   | "getMerchantCatalogTranslation"
   | "getMerchantCatalogTranslations"
   | "getMerchantCustomer"
@@ -80,6 +85,9 @@ export function createCommerceAppOptions({
     promotionService,
   } = runtime;
   const productOptionSetService = createProductOptionSetService(db);
+  const merchantMutationReplay = createMerchantMutationReplayService({
+    store: createPostgresMerchantMutationStore(db),
+  });
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
     db,
@@ -107,6 +115,7 @@ export function createCommerceAppOptions({
     deleteMerchantProductsBatch: productService.deleteMerchantProductsBatch,
     deleteMerchantPromotion: promotionService.deletePromotion,
     ensureMerchantCustomer: customerService.ensureCustomer,
+    executeMerchantMutation: merchantMutationReplay.execute,
     getMerchantCatalogTranslation: catalogTranslationService.read,
     getMerchantCatalogTranslations: catalogTranslationService.readMany,
     getMerchantCustomer: customerService.getCustomer,
