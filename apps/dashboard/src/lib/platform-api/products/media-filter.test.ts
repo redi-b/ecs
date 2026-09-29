@@ -8,6 +8,7 @@ test("image filter is forwarded on merchant and tenant product requests", () => 
       platformApiBaseUrl: "http://platform.local",
       tenantId,
       media: "without_media",
+      inventory: "low_stock",
       status: "draft",
       categoryId: "cat_1",
       collectionId: "col_1",
@@ -16,6 +17,7 @@ test("image filter is forwarded on merchant and tenant product requests", () => 
       limit: 10,
     });
     assert.equal(url.searchParams.get("media"), "without_media");
+    assert.equal(url.searchParams.get("inventory"), "low_stock");
     assert.equal(url.searchParams.get("status"), "draft");
     assert.equal(url.searchParams.get("categoryId"), "cat_1");
     assert.equal(url.searchParams.get("collectionId"), "col_1");
@@ -26,6 +28,13 @@ test("image filter is forwarded on merchant and tenant product requests", () => 
     getProductsUrl({ platformApiBaseUrl: "http://platform.local", media: "all" }).searchParams.has(
       "media",
     ),
+    false,
+  );
+  assert.equal(
+    getProductsUrl({
+      platformApiBaseUrl: "http://platform.local",
+      inventory: "all",
+    }).searchParams.has("inventory"),
     false,
   );
 });

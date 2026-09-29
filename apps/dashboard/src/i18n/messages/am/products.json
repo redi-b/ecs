@@ -213,6 +213,12 @@
       "with_media": "ሚዲያ ያለው",
       "without_media": "ሚዲያ የሌለው"
     },
+    "inventory": {
+      "label": "ክምችት",
+      "all": "ሁሉም የክምችት ደረጃዎች",
+      "lowStock": "ክምችት ያነሰ",
+      "outOfStock": "ክምችት ያለቀ"
+    },
     "collection": {
       "label": "ስብስብ",
       "all": "ሁሉም ስብስቦች",

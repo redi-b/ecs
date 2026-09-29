@@ -1,4 +1,4 @@
-import { merchantInventoryMovementReasonSchema } from "@ecs/contracts";
+import { type MerchantProduct, merchantInventoryMovementReasonSchema } from "@ecs/contracts";
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
@@ -18,6 +18,8 @@ import {
   applyBulkInventoryUpdates,
   parseBulkInventoryUpdates,
 } from "../../modules/inventory/bulk-adjustment.js";
+import { filterProductsByInventory } from "../../modules/inventory/low-stock-products.js";
+import { getLowStockThreshold } from "../../modules/notifications/inventory-low.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -182,13 +184,26 @@ export function registerMerchantProductRoutes(
 
     const filters = productListFiltersSchema.safeParse(context.req.query());
     if (!filters.success) return context.json({ error: "invalid_product_filter" }, 400);
-    const products = await options.listMerchantProducts({
-      ...filters.data,
-      limit: getPaginationValue(context.req.query("limit"), 20, 100),
-      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      stockLocationId: result.context.medusaStockLocationId,
-    });
+    const { inventory, ...catalogFilters } = filters.data;
+    const limit = getPaginationValue(context.req.query("limit"), 20, 100);
+    const offset = getPaginationValue(context.req.query("offset"), 0, 10_000);
+    const products = inventory
+      ? await listProductsByInventory({
+          filter: inventory,
+          filters: catalogFilters,
+          listProducts: options.listMerchantProducts,
+          limit,
+          offset,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          stockLocationId: result.context.medusaStockLocationId,
+        })
+      : await options.listMerchantProducts({
+          ...catalogFilters,
+          limit,
+          offset,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          stockLocationId: result.context.medusaStockLocationId,
+        });
 
     if (!products.ok) {
       return context.json({ error: products.error }, products.status);
@@ -1054,4 +1069,41 @@ export function registerMerchantProductRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json({ ok: true });
   });
+}
+
+async function listProductsByInventory(input: {
+  filter: "low_stock" | "out_of_stock";
+  filters: Omit<
+    import("../../modules/commerce/product-list-filters.js").ProductListFilters,
+    "inventory"
+  >;
+  limit: number;
+  listProducts: NonNullable<PlatformAppOptions["listMerchantProducts"]>;
+  offset: number;
+  salesChannelId: string;
+  stockLocationId?: string | null | undefined;
+}) {
+  const all: MerchantProduct[] = [];
+  let scanOffset = 0;
+  for (;;) {
+    const page = await input.listProducts({
+      ...input.filters,
+      limit: 100,
+      offset: scanOffset,
+      salesChannelId: input.salesChannelId,
+      stockLocationId: input.stockLocationId,
+    });
+    if (!page.ok) return page;
+    all.push(...page.products);
+    scanOffset += page.products.length;
+    if (page.products.length === 0 || scanOffset >= page.count) break;
+  }
+  const filtered = filterProductsByInventory(all, input.filter, getLowStockThreshold());
+  return {
+    count: filtered.length,
+    limit: input.limit,
+    offset: input.offset,
+    ok: true as const,
+    products: filtered.slice(input.offset, input.offset + input.limit),
+  };
 }

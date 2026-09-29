@@ -213,6 +213,12 @@
       "with_media": "With media",
       "without_media": "Without media"
     },
+    "inventory": {
+      "label": "Inventory",
+      "all": "All stock levels",
+      "lowStock": "Low stock",
+      "outOfStock": "Out of stock"
+    },
     "collection": {
       "label": "Collection",
       "all": "All collections",

@@ -4,6 +4,7 @@ export function getProductsUrl(options: {
   categoryId?: string | undefined;
   collectionId?: string | undefined;
   media?: string | undefined;
+  inventory?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
@@ -34,6 +35,9 @@ export function getProductsUrl(options: {
     url.searchParams.set("collectionId", options.collectionId.trim());
   }
   if (options.media && options.media !== "all") url.searchParams.set("media", options.media);
+  if (options.inventory && options.inventory !== "all") {
+    url.searchParams.set("inventory", options.inventory);
+  }
   if (options.categoryId?.trim() && options.categoryId !== "all") {
     url.searchParams.set("categoryId", options.categoryId.trim());
   }

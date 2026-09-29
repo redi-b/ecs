@@ -53,6 +53,7 @@ export type OrderLineForLowStock = {
   variantId: string;
   productTitle: string | null;
   variantTitle: string | null;
+  quantity: number;
 };
 
 export type VariantInventoryMeta = {
@@ -81,6 +82,10 @@ export function selectLowStockCandidates(
   availabilityByVariant: Record<string, { availability?: number | null } | undefined>,
   threshold: number,
 ): LowStockCandidate[] {
+  const soldByVariant = new Map<string, number>();
+  for (const line of lines) {
+    soldByVariant.set(line.variantId, (soldByVariant.get(line.variantId) ?? 0) + line.quantity);
+  }
   const seen = new Set<string>();
   const out: LowStockCandidate[] = [];
 
@@ -96,7 +101,15 @@ export function selectLowStockCandidates(
     }
 
     const availability = getNumber(availabilityByVariant[line.variantId]?.availability);
-    if (availability == null || availability > threshold) {
+    const soldQuantity = soldByVariant.get(line.variantId) ?? 0;
+    // An order creates an alert only when its stock decrement crosses the
+    // merchant-wide threshold. Later sales while already low stay quiet.
+    if (
+      availability == null ||
+      availability > threshold ||
+      soldQuantity <= 0 ||
+      availability + soldQuantity <= threshold
+    ) {
       continue;
     }
 
@@ -212,6 +225,7 @@ async function loadOrderLinesForLowStock(
       "items.title",
       "items.variant_title",
       "items.product_title",
+      "items.quantity",
     ],
     filters: { id: orderId },
   });
@@ -233,6 +247,7 @@ async function loadOrderLinesForLowStock(
       productId: getString(item.product_id),
       productTitle: getString(item.product_title) ?? getString(item.title),
       variantTitle: getString(item.variant_title),
+      quantity: getNumber(item.quantity) ?? 0,
     });
   }
   return lines;

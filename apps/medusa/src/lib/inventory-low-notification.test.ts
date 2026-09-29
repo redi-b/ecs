@@ -3,9 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   getLowStockThreshold,
+  type OrderLineForLowStock,
   selectLowStockCandidates,
   shouldNotifyLowStock,
-  type OrderLineForLowStock,
   type VariantInventoryMeta,
 } from "./inventory-low-notification";
 
@@ -46,18 +46,21 @@ describe("selectLowStockCandidates", () => {
       productId: "prod_1",
       productTitle: "Tee",
       variantTitle: "M",
+      quantity: 1,
     },
     {
       variantId: "var_ok",
       productId: "prod_2",
       productTitle: "Hoodie",
       variantTitle: "L",
+      quantity: 1,
     },
     {
       variantId: "var_unmanaged",
       productId: "prod_3",
       productTitle: "Digital",
       variantTitle: null,
+      quantity: 1,
     },
     // duplicate line for same variant — should only emit once
     {
@@ -65,6 +68,7 @@ describe("selectLowStockCandidates", () => {
       productId: "prod_1",
       productTitle: "Tee",
       variantTitle: "M",
+      quantity: 1,
     },
   ];
 
@@ -106,7 +110,7 @@ describe("selectLowStockCandidates", () => {
       lines,
       meta,
       {
-        var_low: { availability: 3 },
+        var_low: { availability: 5 },
         var_ok: { availability: 20 },
         // getVariantAvailability reports 0 for unmanaged — must not alert
         var_unmanaged: { availability: 0 },
@@ -116,7 +120,7 @@ describe("selectLowStockCandidates", () => {
 
     assert.equal(candidates.length, 1);
     assert.equal(candidates[0]?.variantId, "var_low");
-    assert.equal(candidates[0]?.availableQuantity, 3);
+    assert.equal(candidates[0]?.availableQuantity, 5);
   });
 
   it("returns empty when all above threshold", () => {
@@ -125,6 +129,21 @@ describe("selectLowStockCandidates", () => {
       meta,
       {
         var_low: { availability: 10 },
+        var_ok: { availability: 20 },
+        var_unmanaged: { availability: 0 },
+      },
+      5,
+    );
+    assert.equal(candidates.length, 0);
+  });
+
+  it("does not repeat after a variant is already below the threshold", () => {
+    const candidates = selectLowStockCandidates(
+      lines,
+      meta,
+      {
+        // Two units were sold, so the inferred pre-order availability was 5.
+        var_low: { availability: 3 },
         var_ok: { availability: 20 },
         var_unmanaged: { availability: 0 },
       },
