@@ -1,3 +1,4 @@
+import { merchantInventoryMovementReasonSchema } from "@ecs/contracts";
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
@@ -245,6 +246,11 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
     const updateVariantStock = options.updateMerchantProductVariantStock;
+    const getVariantStock = options.getMerchantProductVariantStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getVariantStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const parsed = parseBulkInventoryUpdates(body.updates);
@@ -253,24 +259,54 @@ export function registerMerchantProductRoutes(
     if (!stockLocationId) {
       return context.json({ error: "inventory_location_unavailable" }, 503);
     }
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
 
     const applyUpdates = () =>
       applyBulkInventoryUpdates({
         salesChannelId: commerce.context.medusaSalesChannelId,
         stockLocationId,
         updates: parsed.updates,
-        updateStock: updateVariantStock,
+        updateStock: async (update) => {
+          const before = await getVariantStock(update);
+          if (!before.ok) return before;
+          if (!before.stock.inventoryItemId) {
+            return {
+              ok: false as const,
+              error: "product_inventory_unavailable",
+              status: 409 as const,
+            };
+          }
+          const updated = await updateVariantStock(update);
+          if (!updated.ok) return updated;
+          await appendMovement({
+            actorUserId: merchant.session.user.id,
+            delta:
+              (updated.stock.stockedQuantity ?? update.stockedQuantity) -
+              (before.stock.stockedQuantity ?? 0),
+            inventoryItemId: before.stock.inventoryItemId,
+            locationId: stockLocationId,
+            note: null,
+            observedAfter: updated.stock.stockedQuantity ?? update.stockedQuantity,
+            observedBefore: before.stock.stockedQuantity,
+            productId: update.productId,
+            reason: "manual_count",
+            sourceId: `${idempotencyKey}:${update.productId}:${update.variantId}`,
+            sourceType: "manual_adjustment",
+            tenantId: merchant.result.context.tenantId,
+            variantId: update.variantId,
+          });
+          return updated;
+        },
       });
     let result: Awaited<ReturnType<typeof applyUpdates>>;
     if (options.executeMerchantMutation) {
-      const idempotencyKey = context.req.header("idempotency-key")?.trim();
-      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
       const execution = await options.executeMerchantMutation(
         {
           actorUserId: merchant.session.user.id,
           idempotencyKey,
           operation: "inventory.stock.batch",
-          payload: { stockLocationId, updates: parsed.updates },
+          payload: { reason: "manual_count", stockLocationId, updates: parsed.updates },
           requestId: context.get("requestId"),
           resourceKeys: parsed.updates.flatMap((update) => [
             `inventory:${stockLocationId}:${update.productId}`,
@@ -463,6 +499,30 @@ export function registerMerchantProductRoutes(
     });
   });
 
+  app.get("/platform/merchant/products/:productId/inventory-movements", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, { requireStockLocation: true });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.listMerchantInventoryMovements) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
+    const locationId = commerce.context.medusaStockLocationId;
+    if (!locationId) return context.json({ error: "inventory_location_unavailable" }, 503);
+    return context.json(
+      await options.listMerchantInventoryMovements({
+        limit: getPaginationValue(context.req.query("limit"), 25, 100),
+        locationId,
+        offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+        productId: context.req.param("productId"),
+        tenantId: merchant.result.context.tenantId,
+        ...(context.req.query("variantId")?.trim()
+          ? { variantId: context.req.query("variantId")?.trim() }
+          : {}),
+      }),
+    );
+  });
+
   app.post("/platform/merchant/products/:productId/stock", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -501,12 +561,24 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
     const updateProductStock = options.updateMerchantProductStock;
+    const getProductStock = options.getMerchantProductStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getProductStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+    const reason = merchantInventoryMovementReasonSchema.safeParse(
+      getOptionalBodyString(body, "reason") ?? "manual_count",
+    );
+    const note = getOptionalBodyString(body, "note")?.trim() || null;
 
-    if (stockedQuantity === undefined || stockedQuantity < 0) {
+    if (stockedQuantity === undefined || stockedQuantity < 0 || !reason.success) {
       return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
+    if (["correction_add", "correction_remove"].includes(reason.data) && !note) {
+      return context.json({ error: "inventory_movement_note_required" }, 400);
     }
 
     const stockLocationId = commerce.context.medusaStockLocationId;
@@ -522,17 +594,46 @@ export function registerMerchantProductRoutes(
       stockLocationId,
       stockedQuantity,
     };
-    const updateStock = () => updateProductStock(mutationInput);
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const updateStock = async () => {
+      const before = await getProductStock({
+        productId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+      });
+      if (!before.ok) return before;
+      if (!before.stock.inventoryItemId) {
+        return { ok: false as const, error: "product_inventory_unavailable", status: 409 as const };
+      }
+      const updated = await updateProductStock(mutationInput);
+      if (!updated.ok) return updated;
+      await appendMovement({
+        actorUserId: session.user.id,
+        delta:
+          (updated.stock.stockedQuantity ?? stockedQuantity) - (before.stock.stockedQuantity ?? 0),
+        inventoryItemId: before.stock.inventoryItemId,
+        locationId: stockLocationId,
+        note,
+        observedAfter: updated.stock.stockedQuantity ?? stockedQuantity,
+        observedBefore: before.stock.stockedQuantity,
+        productId,
+        reason: reason.data,
+        sourceId: idempotencyKey,
+        sourceType: "manual_adjustment",
+        tenantId: result.context.tenantId,
+        variantId: before.stock.variantId,
+      });
+      return updated;
+    };
     let stock: Awaited<ReturnType<typeof updateStock>>;
     if (options.executeMerchantMutation) {
-      const idempotencyKey = context.req.header("idempotency-key")?.trim();
-      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
       const execution = await options.executeMerchantMutation(
         {
           actorUserId: session.user.id,
           idempotencyKey,
           operation: "inventory.stock.set",
-          payload: mutationInput,
+          payload: { ...mutationInput, note, reason: reason.data },
           requestId: context.get("requestId"),
           resourceKeys: [`inventory:${stockLocationId}:${productId}`],
           source: "assisted_sale",
@@ -654,16 +755,29 @@ export function registerMerchantProductRoutes(
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
     const updateVariantStock = options.updateMerchantProductVariantStock;
+    const getVariantStock = options.getMerchantProductVariantStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getVariantStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+    const reason = merchantInventoryMovementReasonSchema.safeParse(
+      getOptionalBodyString(body, "reason") ?? "manual_count",
+    );
+    const note = getOptionalBodyString(body, "note")?.trim() || null;
 
     if (
       stockedQuantity === undefined ||
       stockedQuantity < 0 ||
-      !Number.isInteger(stockedQuantity)
+      !Number.isInteger(stockedQuantity) ||
+      !reason.success
     ) {
       return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
+    if (["correction_add", "correction_remove"].includes(reason.data) && !note) {
+      return context.json({ error: "inventory_movement_note_required" }, 400);
     }
 
     const stockLocationId = commerce.context.medusaStockLocationId;
@@ -681,17 +795,47 @@ export function registerMerchantProductRoutes(
       stockedQuantity,
       variantId,
     };
-    const updateStock = () => updateVariantStock(mutationInput);
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const updateStock = async () => {
+      const before = await getVariantStock({
+        productId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+        variantId,
+      });
+      if (!before.ok) return before;
+      if (!before.stock.inventoryItemId) {
+        return { ok: false as const, error: "product_inventory_unavailable", status: 409 as const };
+      }
+      const updated = await updateVariantStock(mutationInput);
+      if (!updated.ok) return updated;
+      await appendMovement({
+        actorUserId: session.user.id,
+        delta:
+          (updated.stock.stockedQuantity ?? stockedQuantity) - (before.stock.stockedQuantity ?? 0),
+        inventoryItemId: before.stock.inventoryItemId,
+        locationId: stockLocationId,
+        note,
+        observedAfter: updated.stock.stockedQuantity ?? stockedQuantity,
+        observedBefore: before.stock.stockedQuantity,
+        productId,
+        reason: reason.data,
+        sourceId: idempotencyKey,
+        sourceType: "manual_adjustment",
+        tenantId: result.context.tenantId,
+        variantId,
+      });
+      return updated;
+    };
     let stock: Awaited<ReturnType<typeof updateStock>>;
     if (options.executeMerchantMutation) {
-      const idempotencyKey = context.req.header("idempotency-key")?.trim();
-      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
       const execution = await options.executeMerchantMutation(
         {
           actorUserId: session.user.id,
           idempotencyKey,
           operation: "inventory.stock.set",
-          payload: mutationInput,
+          payload: { ...mutationInput, note, reason: reason.data },
           requestId: context.get("requestId"),
           resourceKeys: [
             `inventory:${stockLocationId}:${productId}`,

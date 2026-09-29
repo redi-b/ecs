@@ -111,6 +111,23 @@ export function getProductStockUrl(options: {
   );
 }
 
+export function getProductInventoryMovementsUrl(options: {
+  limit?: number | undefined;
+  offset?: number | undefined;
+  platformApiBaseUrl: string;
+  productId: string;
+  variantId?: string | undefined;
+}) {
+  const url = new URL(
+    `/platform/merchant/products/${encodeURIComponent(options.productId)}/inventory-movements`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
+  url.searchParams.set("limit", String(options.limit ?? 25));
+  url.searchParams.set("offset", String(options.offset ?? 0));
+  if (options.variantId) url.searchParams.set("variantId", options.variantId);
+  return url;
+}
+
 export function getBulkInventoryUrl(platformApiBaseUrl: string) {
   return new URL(
     "/platform/merchant/products/inventory/batch",

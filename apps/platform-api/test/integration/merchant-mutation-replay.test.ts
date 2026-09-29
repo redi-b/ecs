@@ -167,11 +167,29 @@ describe("merchant mutation replay routes", () => {
       store: createInMemoryMerchantMutationStore(),
     });
     let writes = 0;
+    let movements = 0;
     const app = appWithResolution(
       { ok: true, context: resolvedTenantContext },
       {
         ...authorization,
+        appendMerchantInventoryMovement: async (input) => {
+          movements += 1;
+          return { movement: { ...input, createdAt: "2026-09-29T10:00:00.000Z", id: "movement_1" } };
+        },
         executeMerchantMutation: replay.execute,
+        getMerchantProductVariantStock: async (input) => ({
+          ok: true,
+          stock: {
+            availableQuantity: 10,
+            incomingQuantity: 0,
+            inventoryItemId: "iitem_1",
+            locationId: input.stockLocationId,
+            productId: input.productId,
+            reservedQuantity: 0,
+            stockedQuantity: 10,
+            variantId: input.variantId,
+          },
+        }),
         updateMerchantProductVariantStock: async (input) => {
           writes += 1;
           return {
@@ -208,6 +226,7 @@ describe("merchant mutation replay routes", () => {
     assert.equal(second.status, 200);
     assert.equal(second.headers.get("x-idempotent-replay"), "true");
     assert.equal(writes, 1);
+    assert.equal(movements, 1);
     assert.deepEqual(await second.json(), await first.json());
   });
 
@@ -216,11 +235,29 @@ describe("merchant mutation replay routes", () => {
       store: createInMemoryMerchantMutationStore(),
     });
     let writes = 0;
+    let movements = 0;
     const app = appWithResolution(
       { ok: true, context: resolvedTenantContext },
       {
         ...authorization,
+        appendMerchantInventoryMovement: async (input) => {
+          movements += 1;
+          return { movement: { ...input, createdAt: "2026-09-29T10:00:00.000Z", id: `movement_${movements}` } };
+        },
         executeMerchantMutation: replay.execute,
+        getMerchantProductVariantStock: async (input) => ({
+          ok: true,
+          stock: {
+            availableQuantity: 2,
+            incomingQuantity: 0,
+            inventoryItemId: `iitem_${input.variantId}`,
+            locationId: input.stockLocationId,
+            productId: input.productId,
+            reservedQuantity: 0,
+            stockedQuantity: 2,
+            variantId: input.variantId,
+          },
+        }),
         updateMerchantProductVariantStock: async (input) => {
           writes += 1;
           if (input.variantId === "variant_bad") {
@@ -265,6 +302,7 @@ describe("merchant mutation replay routes", () => {
     assert.equal(second.status, 200);
     assert.equal(second.headers.get("x-idempotent-replay"), "true");
     assert.equal(writes, 2);
+    assert.equal(movements, 1);
     assert.deepEqual(await second.json(), await first.json());
   });
 });

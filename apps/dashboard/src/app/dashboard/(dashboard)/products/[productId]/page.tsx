@@ -15,7 +15,11 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
-import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
+import {
+  getMerchantProduct,
+  getMerchantProductStock,
+  listMerchantInventoryMovements,
+} from "@/lib/merchant-products";
 import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { dashboardRoutes } from "@/lib/routes";
 import { getAllStorefrontTranslationReadiness } from "@/lib/storefront-translation-readiness";
@@ -43,7 +47,7 @@ export default async function MerchantProductDetailPage({
   };
   // Product + stock only. Categories/collections resolve client-side for org labels
   // and the organization edit dialog (shared react-query cache with list page).
-  const [productResult, stockResult, access] = await Promise.all([
+  const [productResult, stockResult, movementResult, access] = await Promise.all([
     getMerchantProduct({
       ...requestOptions,
       productId,
@@ -52,6 +56,9 @@ export default async function MerchantProductDetailPage({
       ...requestOptions,
       productId,
     }),
+    tenantId
+      ? Promise.resolve(null)
+      : listMerchantInventoryMovements({ ...requestOptions, limit: 25, productId }),
     getMerchantDashboardAccessShell(requestOptions),
   ]);
   const storefrontDraft = access.ok
@@ -133,6 +140,7 @@ export default async function MerchantProductDetailPage({
             productId={productResult.product.id}
             stockError={stockResult.ok ? undefined : stockResult.message}
             tenantId={tenantId}
+            {...(movementResult?.ok ? { initialMovements: movementResult.movements } : {})}
           />
         </>
       ) : (

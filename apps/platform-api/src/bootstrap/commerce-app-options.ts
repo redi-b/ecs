@@ -1,6 +1,7 @@
 import type { createPlatformDb } from "@ecs/db";
 import { attachCatalogNameTranslations } from "../lib/attach-catalog-name-translations.js";
 import { createProductCapacityWriter } from "../modules/billing/product-capacity.js";
+import { createMerchantInventoryMovementStore } from "../modules/commerce/merchant-inventory-movements.js";
 import {
   createMerchantMutationReplayService,
   createPostgresMerchantMutationStore,
@@ -25,6 +26,7 @@ type CommerceAppOptionsInput = {
 };
 
 type CommerceAppOptionKey =
+  | "appendMerchantInventoryMovement"
   | "archiveMerchantSaleDraft"
   | "captureOrderPaymentByTxRef"
   | "createMerchantCustomer"
@@ -61,6 +63,7 @@ type CommerceAppOptionKey =
   | "listMerchantCustomerGroups"
   | "listMerchantCustomers"
   | "listMerchantOrders"
+  | "listMerchantInventoryMovements"
   | "listMerchantProductCategories"
   | "listMerchantProductCollections"
   | "listMerchantProductOptionSets"
@@ -116,6 +119,7 @@ export function createCommerceAppOptions({
     validate: validateMerchantSaleDraft,
   });
   const merchantQuotations = createMerchantQuotationStore(db);
+  const merchantInventoryMovements = createMerchantInventoryMovementStore(db);
   const merchantSalesDocuments = createMerchantSalesDocumentStore(db);
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
@@ -125,6 +129,7 @@ export function createCommerceAppOptions({
   });
 
   return {
+    appendMerchantInventoryMovement: merchantInventoryMovements.append,
     archiveMerchantSaleDraft: merchantSaleDrafts.archive,
     captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
     createMerchantCustomer: customerService.createCustomer,
@@ -187,6 +192,7 @@ export function createCommerceAppOptions({
     listMerchantCustomerGroups: customerService.listGroups,
     listMerchantCustomers: customerService.listCustomers,
     listMerchantOrders: orderService.listMerchantOrders,
+    listMerchantInventoryMovements: merchantInventoryMovements.list,
     listMerchantProductCategories: async (input) => {
       const result = await productService.listMerchantProductCategories(input);
       if (!result.ok) return result;

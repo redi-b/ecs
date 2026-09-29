@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -62,12 +63,16 @@ export function SingleVariantStockPanel({
       : String(initialStock.stockedQuantity),
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [adjustmentTask, setAdjustmentTask] = useState<"add" | "remove" | "set">("set");
+  const [adjustmentNote, setAdjustmentNote] = useState("");
+  const mutationKey = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const baselineQuantity =
     stock?.stockedQuantity === null || stock?.stockedQuantity === undefined
       ? ""
       : String(stock.stockedQuantity);
-  const stockDirty = stockedQuantity !== baselineQuantity;
+  const stockDirty =
+    adjustmentTask === "set" ? stockedQuantity !== baselineQuantity : stockedQuantity !== "";
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(stockDirty);
 
   const mutation = useMutation({
@@ -77,14 +82,38 @@ export function SingleVariantStockPanel({
       if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
         throw new Error(t("products.stock.enterWholeNumber"));
       }
+      const current = stock?.stockedQuantity ?? 0;
+      const target =
+        adjustmentTask === "add"
+          ? current + parsedQuantity
+          : adjustmentTask === "remove"
+            ? current - parsedQuantity
+            : parsedQuantity;
+      if (target < 0) throw new Error(t("products.stock.removeTooMany"));
+      if (adjustmentTask === "remove" && !adjustmentNote.trim()) {
+        throw new Error(t("products.stock.noteRequired"));
+      }
+      const reason =
+        adjustmentTask === "add"
+          ? "stock_received"
+          : adjustmentTask === "remove"
+            ? "correction_remove"
+            : "manual_count";
+      const fingerprint = `${adjustmentTask}:${target}:${adjustmentNote.trim()}`;
+      if (mutationKey.current?.fingerprint !== fingerprint) {
+        mutationKey.current = { fingerprint, key: createClientId("inventory-stock") };
+      }
 
       const response = await fetch(action, {
         body: JSON.stringify({
-          stockedQuantity: parsedQuantity,
+          note: adjustmentNote.trim() || undefined,
+          reason,
+          stockedQuantity: target,
         }),
         headers: {
           accept: "application/json",
           "content-type": "application/json",
+          "idempotency-key": mutationKey.current.key,
         },
         method: "POST",
       });
@@ -100,6 +129,9 @@ export function SingleVariantStockPanel({
       return data.stock;
     },
     onSuccess: async (nextStock) => {
+      mutationKey.current = null;
+      setAdjustmentTask("set");
+      setAdjustmentNote("");
       setStock(nextStock);
       setStockedQuantity(
         nextStock.stockedQuantity === null || nextStock.stockedQuantity === undefined
@@ -164,24 +196,68 @@ export function SingleVariantStockPanel({
               mutation.mutate();
             }}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <Field className="max-w-xs flex-1">
-                <FieldLabel htmlFor={stockedQuantityInputId}>
-                  {t("products.stock.setStockedQuantity")}
-                </FieldLabel>
-                <Input
-                  id={stockedQuantityInputId}
-                  min="0"
-                  onChange={(event) => setStockedQuantity(event.target.value)}
-                  step="1"
-                  type="number"
-                  value={stockedQuantity}
-                />
-                <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
-              </Field>
-              <Button disabled={mutation.isPending} type="submit">
-                {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
-              </Button>
+            <div className="space-y-3">
+              <SegmentedControl
+                active="muted"
+                ariaLabel={t("products.stock.adjustmentTask")}
+                onChange={(task) => {
+                  setAdjustmentTask(task);
+                  setStockedQuantity(task === "set" ? baselineQuantity : "");
+                }}
+                options={[
+                  { id: "add", label: t("products.stock.addStock") },
+                  { id: "remove", label: t("products.stock.removeStock") },
+                  { id: "set", label: t("products.stock.setCount") },
+                ]}
+                size="sm"
+                value={adjustmentTask}
+              />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <Field className="max-w-xs flex-1">
+                  <FieldLabel htmlFor={stockedQuantityInputId}>
+                    {adjustmentTask === "set"
+                      ? t("products.stock.countedQuantity")
+                      : t("products.stock.adjustmentQuantity")}
+                  </FieldLabel>
+                  <Input
+                    id={stockedQuantityInputId}
+                    min="0"
+                    onChange={(event) => setStockedQuantity(event.target.value)}
+                    step="1"
+                    type="number"
+                    value={stockedQuantity}
+                  />
+                  <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
+                </Field>
+                <Button disabled={mutation.isPending} type="submit">
+                  {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+                </Button>
+              </div>
+              {adjustmentTask === "remove" ? (
+                <Field>
+                  <FieldLabel htmlFor={`${stockedQuantityInputId}-note`}>
+                    {t("products.stock.adjustmentNote")}
+                  </FieldLabel>
+                  <Input
+                    id={`${stockedQuantityInputId}-note`}
+                    onChange={(event) => setAdjustmentNote(event.target.value)}
+                    placeholder={t("products.stock.adjustmentNotePlaceholder")}
+                    value={adjustmentNote}
+                  />
+                </Field>
+              ) : null}
+              {stockedQuantity !== "" && Number.isInteger(Number(stockedQuantity)) ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("products.stock.afterPreview", {
+                    count:
+                      adjustmentTask === "add"
+                        ? (stock?.stockedQuantity ?? 0) + Number(stockedQuantity)
+                        : adjustmentTask === "remove"
+                          ? (stock?.stockedQuantity ?? 0) - Number(stockedQuantity)
+                          : Number(stockedQuantity),
+                  })}
+                </p>
+              ) : null}
             </div>
           </form>
         ) : null}
@@ -379,6 +455,7 @@ export function VariantStockPanel({
 
       const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {
         body: JSON.stringify({
+          reason: "manual_count",
           stockedQuantity: parsedQuantity,
         }),
         headers: {

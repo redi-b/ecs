@@ -9,6 +9,8 @@ export async function POST(
 
   return withMerchantAction(request, async (context) => {
     const body = (await context.request.json().catch(() => ({}))) as {
+      note?: unknown;
+      reason?: unknown;
       stockedQuantity?: unknown;
     };
     const stockedQuantity = getStockedQuantity(body.stockedQuantity);
@@ -23,6 +25,8 @@ export async function POST(
       platformApiBaseUrl: context.platformApiBaseUrl,
       productId,
       requestHost: context.requestHost,
+      ...(typeof body.note === "string" ? { note: body.note } : {}),
+      ...(typeof body.reason === "string" ? { reason: body.reason as "manual_count" } : {}),
       stockedQuantity,
       tenantId: context.tenantId,
     });

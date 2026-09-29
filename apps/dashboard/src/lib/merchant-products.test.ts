@@ -644,6 +644,7 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.method, "POST");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
     assert.deepEqual(await forwardedRequest?.json(), {
+      reason: "manual_count",
       stockedQuantity: 15,
     });
   });
@@ -708,6 +709,7 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.method, "POST");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
     assert.deepEqual(await forwardedRequest?.json(), {
+      reason: "manual_count",
       stockedQuantity: 18,
     });
   });

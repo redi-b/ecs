@@ -12,6 +12,27 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  appendMerchantInventoryMovement?:
+    | ((
+        input: import("../modules/commerce/merchant-inventory-movements.js").AppendMerchantInventoryMovementInput,
+      ) => Promise<{ movement: import("@ecs/contracts").MerchantInventoryMovement }>)
+    | undefined;
+  listMerchantInventoryMovements?:
+    | ((input: {
+        inventoryItemId?: string | undefined;
+        limit: number;
+        locationId: string;
+        offset: number;
+        productId?: string | undefined;
+        tenantId: string;
+        variantId?: string | undefined;
+      }) => Promise<{
+        count: number;
+        limit: number;
+        movements: import("@ecs/contracts").MerchantInventoryMovement[];
+        offset: number;
+      }>)
+    | undefined;
   issueMerchantSalesDocument?:
     | ((input: {
         createdByUserId: string;

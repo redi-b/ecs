@@ -296,6 +296,8 @@ export function appWithResolution(
     }) => Promise<MerchantOrderDetailResult>;
     createMerchantManualOrder?: PlatformAppOptions["createMerchantManualOrder"];
     executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
+    appendMerchantInventoryMovement?: PlatformAppOptions["appendMerchantInventoryMovement"];
+    listMerchantInventoryMovements?: PlatformAppOptions["listMerchantInventoryMovements"];
     archiveMerchantSaleDraft?: PlatformAppOptions["archiveMerchantSaleDraft"];
     getMerchantSaleDraft?: PlatformAppOptions["getMerchantSaleDraft"];
     listMerchantSaleDrafts?: PlatformAppOptions["listMerchantSaleDrafts"];
@@ -636,6 +638,8 @@ export function appWithResolution(
       getMerchantOrder: options?.getMerchantOrder,
       createMerchantManualOrder: options?.createMerchantManualOrder,
       executeMerchantMutation: options?.executeMerchantMutation,
+      appendMerchantInventoryMovement: options?.appendMerchantInventoryMovement,
+      listMerchantInventoryMovements: options?.listMerchantInventoryMovements,
       archiveMerchantSaleDraft: options?.archiveMerchantSaleDraft,
       getMerchantSaleDraft: options?.getMerchantSaleDraft,
       listMerchantSaleDrafts: options?.listMerchantSaleDrafts,
