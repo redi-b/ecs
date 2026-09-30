@@ -17,6 +17,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -920,19 +922,23 @@ function ReceivingAccountsCard() {
 
           {/* p-0 content: cancel DialogFooter negative margins (same as mark-paid / create dialogs). */}
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
-            <Button
-              disabled={isPending}
-              onClick={() => requestCloseDialog()}
-              type="button"
-              variant="outline"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={!canSave} onClick={saveAccount} type="button">
-              {isPending
-                ? t("settings.payments.receiving.saving")
-                : t("settings.payments.receiving.save")}
-            </Button>
+            <DialogFooterLeading>
+              <Button
+                disabled={isPending}
+                onClick={() => requestCloseDialog()}
+                type="button"
+                variant="outline"
+              >
+                {t("common.cancel")}
+              </Button>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button disabled={!canSave} onClick={saveAccount} type="button">
+                {isPending
+                  ? t("settings.payments.receiving.saving")
+                  : t("settings.payments.receiving.save")}
+              </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

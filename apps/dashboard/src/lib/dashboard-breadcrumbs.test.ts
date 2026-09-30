@@ -185,6 +185,40 @@ describe("getDashboardBreadcrumbTrail", () => {
     ]);
   });
 
+  it("labels quotation and operational document pages by their own resource type", () => {
+    assert.deepEqual(
+      getDashboardBreadcrumbTrail("/dashboard/orders/quotations/quote_1", {
+        "quotation-details": "Q-000001",
+      }),
+      [
+        { href: "/dashboard/orders", id: "orders", title: "Orders" },
+        { href: "/dashboard/orders?view=quotes", id: "quotations", title: "Quotations" },
+        {
+          href: "/dashboard/orders/quotations/quote_1",
+          id: "quotation-details",
+          title: "Q-000001",
+        },
+      ],
+    );
+    assert.deepEqual(
+      getDashboardBreadcrumbTrail("/dashboard/orders/documents/document_1", {
+        "order-details": "Order #1024",
+        "sales-document-order-id": "order_1",
+        "sales-document-details": "Order summary DOC-000001",
+      }),
+      [
+        { href: "/dashboard/orders", id: "orders", title: "Orders" },
+        { href: "/dashboard/orders/order_1", id: "order-details", title: "Order #1024" },
+        { href: null, id: "sales-documents", title: "Documents" },
+        {
+          href: "/dashboard/orders/documents/document_1",
+          id: "sales-document-details",
+          title: "Order summary DOC-000001",
+        },
+      ],
+    );
+  });
+
   it("labels customer detail pages as a child of customers", () => {
     assert.deepEqual(getDashboardBreadcrumbTrail("/dashboard/customers/cus_1"), [
       { href: "/dashboard/customers", id: "customers", title: "Customers" },

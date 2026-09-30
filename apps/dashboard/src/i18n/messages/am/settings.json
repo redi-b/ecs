@@ -10,6 +10,10 @@
       "label": "ሱቅ",
       "description": "ስም፣ መለያ እና የሱቅ አድራሻ"
     },
+    "documents": {
+      "label": "ሰነዶች",
+      "description": "ለሚታተሙ ሰነዶች የመደብር መለያ"
+    },
     "preferences": {
       "label": "ምርጫዎች",
       "description": "የዳሽቦርድ እና የሱቅ መደበኛ ቅንብሮች"
@@ -286,6 +290,27 @@
     "related": "ተዛማጅ",
     "billingPlan": "ሂሳብ እና ዕቅድ",
     "storefrontEditor": "የመደብር ዲዛይን"
+  },
+  "documents": {
+    "title": "የሰነድ መለያ",
+    "description": "በአዲስ የዋጋ ማቅረቢያና የትዕዛዝ ሰነዶች ላይ የሚታይ አርማ፣ ቀለም እና የግርጌ ማስታወሻ።",
+    "logo": "አርማ",
+    "noLogo": "አርማ አልተመረጠም",
+    "logoHelp": "በነጭ ዳራ ላይ PNG ወይም WebP የተሻለ ይታያል።",
+    "accent": "ማድመቂያ ቀለም",
+    "accentHex": "የማድመቂያ ቀለም ኮድ",
+    "resetAccent": "ቀለሙን መልስ",
+    "footerNote": "የግርጌ ማስታወሻ",
+    "footerPlaceholder": "አማራጭ የምስጋና ወይም የመገናኛ መልዕክት",
+    "showContact": "የመደብሩን አድራሻ እና ስልክ አሳይ",
+    "showContactHelp": "በመደብር ማስተካከያ ውስጥ ያለውን አድራሻ እና ስልክ ይጠቀማል።",
+    "save": "ሰነዶችን አስቀምጥ",
+    "preview": "የሰነድ ቅድመ እይታ",
+    "previewItem": "እቃ",
+    "previewQty": "ብዛት",
+    "previewTotal": "ጠቅላላ",
+    "previewItemOne": "የጥጥ ሸሚዝ",
+    "previewItemTwo": "የቆዳ ቀበቶ"
   },
   "preferences": {
     "intro": "የዳሽቦርድ እና የትዕዛዝ መደበኛ ቅንብሮች ለዕለታዊ ስራ።",

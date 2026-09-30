@@ -138,6 +138,7 @@ export type MerchantProductWriteInput = {
         priceAmount: number;
         sku?: string | null | undefined;
         stockedQuantity?: number | undefined;
+        unitCostAmount?: number | null | undefined;
       }>
     | undefined;
 };

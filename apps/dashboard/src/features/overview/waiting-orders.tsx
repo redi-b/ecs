@@ -1,9 +1,10 @@
 "use client";
 
 import type { MerchantDashboardSummary } from "@ecs/contracts";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatOrderReference, getDisplayOrderEmail } from "@/features/orders/order-domain";
 import { formatMoney } from "@/features/overview/overview-helpers";
 import { useI18n } from "@/i18n/provider";
@@ -28,6 +29,76 @@ function ProductPreview({ src }: { src: string | null }) {
     />
   ) : (
     <AppIcons.products className="size-5 text-muted-foreground" aria-hidden />
+  );
+}
+
+function WaitingOrderProducts({ order }: { order: WaitingOrder }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overflow = Math.max(0, order.productCount - 1);
+  const unlisted = Math.max(0, order.productCount - order.products.length);
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  function show() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  }
+
+  function scheduleClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <button
+          aria-label={t("overview.attention.showProducts", { count: order.productCount })}
+          className="pointer-events-auto relative z-20 shrink-0 rounded-md px-1 py-0.5 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          onPointerEnter={(event) => event.pointerType === "mouse" && show()}
+          onPointerLeave={(event) => event.pointerType === "mouse" && scheduleClose()}
+          type="button"
+        >
+          {t("overview.attention.moreProducts", { count: overflow })}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-72 gap-2 p-2"
+        onPointerEnter={(event) => event.pointerType === "mouse" && show()}
+        onPointerLeave={(event) => event.pointerType === "mouse" && scheduleClose()}
+        sideOffset={6}
+      >
+        <p className="px-1 pb-0.5 text-xs font-medium text-muted-foreground">
+          {t("overview.attention.productsInOrder")}
+        </p>
+        <ul className="flex flex-col gap-0.5">
+          {order.products.map((product) => (
+            <li
+              className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1.5"
+              key={product.id}
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                <ProductPreview src={product.thumbnail} />
+              </span>
+              <span className="min-w-0 truncate text-sm">{product.title}</span>
+            </li>
+          ))}
+        </ul>
+        {unlisted > 0 ? (
+          <p className="border-t px-1 pt-2 text-xs text-muted-foreground">
+            {t("overview.attention.additionalProducts", { count: unlisted })}
+          </p>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -69,12 +140,17 @@ export function WaitingOrders({
               const customer = order.customerName || getDisplayOrderEmail(order.email);
               return (
                 <li key={order.id}>
-                  <Link
-                    href={href(dashboardRoutes.orderDetail(order.id))}
-                    prefetch={false}
-                    className="group grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-sm transition-colors first:rounded-t-[calc(var(--radius)-1px)] last:rounded-b-[calc(var(--radius)-1px)] hover:bg-muted/45 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <span className="relative isolate block h-11 w-16 shrink-0" aria-hidden>
+                  <div className="group relative grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 text-sm transition-colors first:rounded-t-[calc(var(--radius)-1px)] last:rounded-b-[calc(var(--radius)-1px)] hover:bg-muted/45 focus-within:bg-muted/45">
+                    <Link
+                      aria-label={`${formatOrderReference(order)} · ${first?.title || t("overview.attention.orderItems")}`}
+                      className="absolute inset-0 z-10 rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      href={href(dashboardRoutes.orderDetail(order.id))}
+                      prefetch={false}
+                    />
+                    <span
+                      className="pointer-events-none relative isolate block h-11 w-16 shrink-0"
+                      aria-hidden
+                    >
                       {(order.products.length ? order.products : [{ id: "empty", thumbnail: null }])
                         .slice(0, 3)
                         .map((product, index) => (
@@ -87,18 +163,12 @@ export function WaitingOrders({
                           </span>
                         ))}
                     </span>
-                    <span className="min-w-0 flex-1">
+                    <span className="pointer-events-none relative z-10 min-w-0 flex-1">
                       <span className="flex items-baseline gap-x-1.5">
                         <span className="truncate text-sm font-medium">
                           {first?.title || t("overview.attention.orderItems")}
                         </span>
-                        {order.productCount > 1 ? (
-                          <span className="shrink-0 text-xs text-muted-foreground">
-                            {t("overview.attention.moreProducts", {
-                              count: order.productCount - 1,
-                            })}
-                          </span>
-                        ) : null}
+                        {order.productCount > 1 ? <WaitingOrderProducts order={order} /> : null}
                       </span>
                       <span className="mt-0.5 flex min-w-0 items-center gap-x-2 text-xs text-muted-foreground">
                         {customer ? <span className="truncate">{customer}</span> : null}
@@ -110,7 +180,7 @@ export function WaitingOrders({
                         ) : null}
                       </span>
                     </span>
-                    <span className="flex min-w-0 flex-col items-end gap-1 text-xs">
+                    <span className="pointer-events-none relative z-10 flex min-w-0 flex-col items-end gap-1 text-xs">
                       <span className="font-medium tabular-nums">
                         {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
                       </span>
@@ -133,7 +203,7 @@ export function WaitingOrders({
                         ))}
                       </span>
                     </span>
-                  </Link>
+                  </div>
                 </li>
               );
             })}

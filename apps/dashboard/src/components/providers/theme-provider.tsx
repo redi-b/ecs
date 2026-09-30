@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import {
   getSharedThemeFromCookie,
+  getSharedThemePresentation,
   persistSharedTheme,
   type SharedTheme,
 } from "@/lib/shared-theme";
@@ -35,11 +36,13 @@ export function ThemeProvider({ children, ...props }: ComponentProps<typeof Next
 
 function applyThemeClass(theme: SharedTheme) {
   const root = document.documentElement;
-  const prefersDark = typeof window.matchMedia !== "function" ||
+  const prefersDark =
+    typeof window.matchMedia !== "function" ||
     window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const dark = theme === "dark" || (theme === "system" && prefersDark);
-  root.classList.toggle("dark", dark);
-  root.style.colorScheme = dark ? "dark" : "light";
+  const presentation = getSharedThemePresentation(theme, prefersDark);
+  root.classList.toggle("dark", presentation.dark);
+  root.style.colorScheme = presentation.colorScheme;
+  root.style.backgroundColor = presentation.backgroundColor;
 }
 
 function SharedThemeBridge() {

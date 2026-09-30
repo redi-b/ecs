@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { MerchantProduct, ProductOptionMediaBindings } from "@ecs/contracts";
-import { createElement } from "react";
 import { NextIntlClientProvider } from "next-intl";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   isColorOptionTitle,
@@ -49,6 +49,7 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
     imageUrls: "https://example.com/red-1.jpg\nhttps://example.com/blue-1.jpg",
     status: "draft",
     priceAmount: "500",
+    unitCostAmount: "",
     currencyCode: "etb",
     hasVariants: true,
     initialStock: "10",
@@ -144,7 +145,11 @@ describe("Product Variant Image Picker & Smart Auto-Assignment", () => {
         mappings: { Red: ["https://example.com/new.jpg"] },
       },
     });
-    assert.deepEqual(Object.keys(payload).sort(), ["imageUrls", "optionMediaBindings", "thumbnail"]);
+    assert.deepEqual(Object.keys(payload).sort(), [
+      "imageUrls",
+      "optionMediaBindings",
+      "thumbnail",
+    ]);
     assert.equal("variants" in payload, false);
   });
   it("updates option-assigned photos while preserving manual variant photos", () => {

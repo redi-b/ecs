@@ -1,11 +1,13 @@
 "use client";
 
 import type { ProductOptionSwatch } from "@ecs/contracts";
+// biome-ignore lint/correctness/noUnusedImports: Server-render tests use the classic JSX runtime.
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { ColorPickerField } from "@/components/ui/color-picker-field";
 import {
   Command,
   CommandGroup,
@@ -19,7 +21,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
 import { uploadMediaFile } from "@/features/media/upload-media-file";
-import { ColorPickerField } from "@/features/storefront-editor/editor-theme";
 import { useI18n } from "@/i18n/provider";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";

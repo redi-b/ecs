@@ -15,7 +15,7 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
   return (
     <header
       data-slot="app-header"
-      className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 dark:border-sidebar-border dark:bg-sidebar dark:backdrop-blur-none dark:supports-backdrop-filter:bg-sidebar sm:gap-3 sm:px-6"
+      className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 print:hidden dark:border-sidebar-border dark:bg-sidebar dark:backdrop-blur-none dark:supports-backdrop-filter:bg-sidebar sm:gap-3 sm:px-6"
     >
       <SidebarTrigger
         aria-label={t("common.toggleSidebar")}

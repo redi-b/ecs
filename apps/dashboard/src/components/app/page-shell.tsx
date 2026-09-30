@@ -39,14 +39,14 @@ export function PageShell({
   return (
     <main
       className={cn(
-        "flex min-h-0 min-w-0 flex-col gap-5 overflow-x-clip p-4 sm:gap-6 sm:p-5 md:gap-7 md:p-8",
+        "flex min-h-0 min-w-0 flex-col gap-5 overflow-x-clip p-4 print:block print:min-h-0 print:overflow-visible print:p-0 sm:gap-6 sm:p-5 md:gap-7 md:p-8",
         "flex-1",
         className,
       )}
     >
       {!hideHeader && headerMode === "sr-only" ? <h1 className="sr-only">{title}</h1> : null}
       {!hideHeader && headerMode === "visible" ? (
-        <header className="flex flex-col gap-3 border-b border-border/80 pb-5 sm:pb-6 md:flex-row md:items-start md:justify-between md:gap-6">
+        <header className="flex flex-col gap-3 border-b border-border/80 pb-5 print:hidden sm:pb-6 md:flex-row md:items-start md:justify-between md:gap-6">
           <div className="flex min-w-0 max-w-3xl flex-col gap-1.5">
             {eyebrow ? <p className="type-eyebrow">{eyebrow}</p> : null}
             <div className="flex min-w-0 items-center gap-1.5">

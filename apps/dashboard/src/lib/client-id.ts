@@ -3,7 +3,10 @@ type CryptoLike = {
   randomUUID?: (() => string) | undefined;
 };
 
-export function createClientId(prefix: string, cryptoLike: CryptoLike | undefined = globalThis.crypto) {
+export function createClientId(
+  prefix: string,
+  cryptoLike: CryptoLike | undefined = globalThis.crypto,
+) {
   if (typeof cryptoLike?.randomUUID === "function") return `${prefix}-${cryptoLike.randomUUID()}`;
 
   const values = new Uint32Array(2);

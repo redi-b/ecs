@@ -78,7 +78,7 @@ export function MediaSortControl({
 }) {
   const { t } = useI18n();
   return (
-    <Select value={value} onValueChange={(value) => onChange(value as MediaSort)}>
+    <Select size="sm" value={value} onValueChange={(value) => onChange(value as MediaSort)}>
       <SelectTrigger aria-label={t("media.sort")} className="w-auto min-w-36" size="sm">
         <SelectValue />
       </SelectTrigger>

@@ -1,9 +1,11 @@
 "use client";
 
+import { RiCloseLine as XIcon } from "@remixicon/react";
 import type * as React from "react";
 import { useEffect, useMemo, useRef } from "react";
-
 import { BankLogo } from "@/components/app/bank-logo";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -14,16 +16,13 @@ import {
   ComboboxTrigger,
   ComboboxValue,
 } from "@/components/ui/combobox";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { fuzzyMatches } from "@/lib/fuzzy-search";
 import {
   applyNestedOverlaySession,
-  releaseNestedOverlayIfOpen,
   type NestedOverlaySession,
+  releaseNestedOverlayIfOpen,
 } from "@/lib/nested-overlay";
-import { fuzzyMatches } from "@/lib/fuzzy-search";
 import { cn } from "@/lib/utils";
-import { RiCloseLine as XIcon } from "@remixicon/react";
 
 export type SearchableComboboxOption = {
   value: string;
@@ -188,7 +187,7 @@ export function SearchableCombobox({
           trigger ?? (
             <Button
               className={cn(
-                "h-9 w-full justify-between px-3 font-normal shadow-none",
+                "h-8 w-full justify-between px-3 font-normal shadow-none",
                 !selected && "text-muted-foreground",
                 className,
               )}
@@ -318,7 +317,7 @@ export function MultiSearchableCombobox({
           render={
             <Button
               className={cn(
-                "h-9 w-full justify-between px-3 font-normal shadow-none",
+                "h-8 w-full justify-between px-3 font-normal shadow-none",
                 selectedOptions.length === 0 && "text-muted-foreground",
                 className,
               )}

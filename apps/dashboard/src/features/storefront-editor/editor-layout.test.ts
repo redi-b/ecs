@@ -38,7 +38,7 @@ describe("storefront editor workspace containment", () => {
 
   it("keeps compact page tabs and falls back to a scalable page select", () => {
     assert.match(chromeSource, /pages\.length <= 3/);
-    assert.match(chromeSource, /<Select onValueChange=\{onChange\} value=\{value\}>/);
+    assert.match(chromeSource, /<Select size="sm" onValueChange=\{onChange\} value=\{value\}>/);
   });
 
   it("keeps draft saving visible on mobile and uses compact viewport glyphs", () => {

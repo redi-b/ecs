@@ -4,6 +4,7 @@ export function getProductsUrl(options: {
   categoryId?: string | undefined;
   collectionId?: string | undefined;
   media?: string | undefined;
+  inventory?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
   platformApiBaseUrl: string;
@@ -34,6 +35,9 @@ export function getProductsUrl(options: {
     url.searchParams.set("collectionId", options.collectionId.trim());
   }
   if (options.media && options.media !== "all") url.searchParams.set("media", options.media);
+  if (options.inventory && options.inventory !== "all") {
+    url.searchParams.set("inventory", options.inventory);
+  }
   if (options.categoryId?.trim() && options.categoryId !== "all") {
     url.searchParams.set("categoryId", options.categoryId.trim());
   }
@@ -109,6 +113,23 @@ export function getProductStockUrl(options: {
     `${basePath}/${encodeURIComponent(options.productId)}/stock`,
     normalizeBaseUrl(options.platformApiBaseUrl),
   );
+}
+
+export function getProductInventoryMovementsUrl(options: {
+  limit?: number | undefined;
+  offset?: number | undefined;
+  platformApiBaseUrl: string;
+  productId: string;
+  variantId?: string | undefined;
+}) {
+  const url = new URL(
+    `/platform/merchant/products/${encodeURIComponent(options.productId)}/inventory-movements`,
+    normalizeBaseUrl(options.platformApiBaseUrl),
+  );
+  url.searchParams.set("limit", String(options.limit ?? 25));
+  url.searchParams.set("offset", String(options.offset ?? 0));
+  if (options.variantId) url.searchParams.set("variantId", options.variantId);
+  return url;
 }
 
 export function getBulkInventoryUrl(platformApiBaseUrl: string) {

@@ -163,7 +163,7 @@ export function DateRangePicker({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "h-9 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
+            "h-8 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
             "hover:border-foreground/20 hover:bg-background",
             open && "border-ring ring-3 ring-ring/30",
             !selectedStart && "text-muted-foreground",

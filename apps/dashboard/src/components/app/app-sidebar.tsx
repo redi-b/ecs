@@ -6,6 +6,7 @@ import { AccountMenu } from "@/components/app/account-menu";
 import { CommandCenter } from "@/components/app/command-center";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
+import { StorefrontDock } from "@/components/app/storefront-dock";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -217,11 +218,16 @@ export function AppSidebar({
   centralDashboardUrl,
   demoMode = false,
   landingPageUrl,
+  storefrontUrl,
 }: {
-  access: Pick<MerchantDashboardAccess, "actor" | "permissions" | "shopAccess" | "tenant">;
+  access: Pick<
+    MerchantDashboardAccess,
+    "actor" | "permissions" | "shopAccess" | "storefront" | "tenant"
+  >;
   centralDashboardUrl?: string;
   demoMode?: boolean;
   landingPageUrl?: string;
+  storefrontUrl?: string;
 }) {
   const pathname = usePathname();
   const closeMobileSidebar = useCloseMobileSidebar();
@@ -270,7 +276,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 pt-2 pb-0 md:pt-0"}>
+      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 pt-2 pb-2 md:pt-0"}>
         {!demoMode ? (
           <>
             <div className="hidden px-3 py-3 md:block group-data-[collapsible=icon]:px-2">
@@ -305,6 +311,13 @@ export function AppSidebar({
           );
         })}
       </SidebarContent>
+
+      {storefrontUrl ? (
+        <StorefrontDock
+          storefrontPublished={access.storefront.isPublished}
+          storefrontUrl={storefrontUrl}
+        />
+      ) : null}
 
       <SidebarFooter className="border-t border-sidebar-border px-2 py-2 group-data-[collapsible=icon]:p-2">
         <AccountMenu

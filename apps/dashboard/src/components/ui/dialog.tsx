@@ -117,6 +117,29 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 const dialogFooterActionsClassName =
   "flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto";
 
+function DialogFooterLeading({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer-leading"
+      className={cn(
+        "flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row [&>button]:w-full sm:[&>button]:w-auto",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function DialogFooterActions({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer-actions"
+      className={cn(dialogFooterActionsClassName, className)}
+      {...props}
+    />
+  );
+}
+
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -130,7 +153,7 @@ function DialogFooter({
       data-slot="dialog-footer"
       className={cn(
         // Default assumes dialog content has padding; p-0 dialogs should pass m-0 rounded-b-xl.
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 sm:flex-row sm:justify-end",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 sm:flex-row sm:justify-end has-[>[data-slot=dialog-footer-leading]]:sm:justify-between",
         "[&>button]:w-full sm:[&>button]:w-auto",
         className,
       )}
@@ -178,6 +201,8 @@ export {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogOverlay,
   DialogPortal,

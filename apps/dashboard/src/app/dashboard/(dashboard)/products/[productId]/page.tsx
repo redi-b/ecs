@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { PermissionGate } from "@/components/app/access-context";
 import { DashboardBreadcrumbLabel } from "@/components/app/breadcrumb-labels";
 import { ListSetupState } from "@/components/app/list-error-state";
+import { PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,7 +16,11 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState, type ListErrorState } from "@/lib/list-error-state";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
-import { getMerchantProduct, getMerchantProductStock } from "@/lib/merchant-products";
+import {
+  getMerchantProduct,
+  getMerchantProductStock,
+  listMerchantInventoryMovements,
+} from "@/lib/merchant-products";
 import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { dashboardRoutes } from "@/lib/routes";
 import { getAllStorefrontTranslationReadiness } from "@/lib/storefront-translation-readiness";
@@ -32,6 +37,8 @@ export default async function MerchantProductDetailPage({
   const t = await getTranslations();
   const [{ productId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
+  const movementPage = getPositivePage(resolvedSearchParams?.page);
+  const movementPageSize = 25;
   const cookieStore = await cookies();
   const requestHeaders = await headers();
   const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
@@ -43,7 +50,7 @@ export default async function MerchantProductDetailPage({
   };
   // Product + stock only. Categories/collections resolve client-side for org labels
   // and the organization edit dialog (shared react-query cache with list page).
-  const [productResult, stockResult, access] = await Promise.all([
+  const [productResult, stockResult, movementResult, access] = await Promise.all([
     getMerchantProduct({
       ...requestOptions,
       productId,
@@ -52,6 +59,14 @@ export default async function MerchantProductDetailPage({
       ...requestOptions,
       productId,
     }),
+    tenantId
+      ? Promise.resolve(null)
+      : listMerchantInventoryMovements({
+          ...requestOptions,
+          limit: movementPageSize,
+          offset: (movementPage - 1) * movementPageSize,
+          productId,
+        }),
     getMerchantDashboardAccessShell(requestOptions),
   ]);
   const storefrontDraft = access.ok
@@ -129,10 +144,22 @@ export default async function MerchantProductDetailPage({
               tenantId,
             )}
             initialStock={stockResult.ok ? stockResult.stock : undefined}
+            movementFooter={
+              movementResult?.ok ? (
+                <PaginationControls
+                  basePath={dashboardRoutes.productDetail(productId)}
+                  count={movementResult.count}
+                  page={movementPage}
+                  pageSize={movementResult.limit}
+                  searchParams={resolvedSearchParams ?? {}}
+                />
+              ) : undefined
+            }
             product={productResult.product}
             productId={productResult.product.id}
             stockError={stockResult.ok ? undefined : stockResult.message}
             tenantId={tenantId}
+            {...(movementResult?.ok ? { initialMovements: movementResult.movements } : {})}
           />
         </>
       ) : (
@@ -140,6 +167,11 @@ export default async function MerchantProductDetailPage({
       )}
     </PageShell>
   );
+}
+
+function getPositivePage(value: string | string[] | undefined) {
+  const candidate = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isSafeInteger(candidate) && candidate > 0 ? candidate : 1;
 }
 
 function translationQueueNavigation(

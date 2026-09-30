@@ -8,6 +8,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -179,29 +181,33 @@ export function RefundOrderDialog({
           </div>
         </div>
         <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Button
-            disabled={pending}
-            onClick={() => onOpenChange(false)}
-            type="button"
-            variant="outline"
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={pending || !amountValid}
-            onClick={() =>
-              onConfirm({
-                amount: numericAmount,
-                method,
-                reason,
-                ...(reference.trim() ? { reference: reference.trim() } : {}),
-                ...(note.trim() ? { note: note.trim() } : {}),
-              })
-            }
-            type="button"
-          >
-            {pending ? t("orders.actions.working") : t("orders.refund.confirm")}
-          </Button>
+          <DialogFooterLeading>
+            <Button
+              disabled={pending}
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
+              {t("common.cancel")}
+            </Button>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            <Button
+              disabled={pending || !amountValid}
+              onClick={() =>
+                onConfirm({
+                  amount: numericAmount,
+                  method,
+                  reason,
+                  ...(reference.trim() ? { reference: reference.trim() } : {}),
+                  ...(note.trim() ? { note: note.trim() } : {}),
+                })
+              }
+              type="button"
+            >
+              {pending ? t("orders.actions.working") : t("orders.refund.confirm")}
+            </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>

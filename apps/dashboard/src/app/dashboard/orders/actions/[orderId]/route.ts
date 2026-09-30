@@ -107,6 +107,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       action: action as MerchantOrderAction,
       cookieHeader: context.cookieHeader,
       fulfillmentId: typeof body.fulfillmentId === "string" ? body.fulfillmentId : undefined,
+      idempotencyKey:
+        action === "refund" || action === "mark-paid"
+          ? (context.request.headers.get("idempotency-key") ?? crypto.randomUUID())
+          : undefined,
       orderId,
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,

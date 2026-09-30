@@ -24,6 +24,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -600,16 +602,20 @@ export function AccountSecurityPanel({
                 />
               </div>
               <DialogFooter className="mx-0 mb-0 rounded-none">
-                <DialogClose asChild>
-                  <Button variant="outline" type="button">
-                    {t("common.cancel")}
+                <DialogFooterLeading>
+                  <DialogClose asChild>
+                    <Button variant="outline" type="button">
+                      {t("common.cancel")}
+                    </Button>
+                  </DialogClose>
+                </DialogFooterLeading>
+                <DialogFooterActions>
+                  <Button disabled={savingAvatar} onClick={() => void saveAvatar()} type="button">
+                    {savingAvatar
+                      ? t("settings.accountSecurity.avatar.saving")
+                      : t("settings.accountSecurity.avatar.use")}
                   </Button>
-                </DialogClose>
-                <Button disabled={savingAvatar} onClick={() => void saveAvatar()} type="button">
-                  {savingAvatar
-                    ? t("settings.accountSecurity.avatar.saving")
-                    : t("settings.accountSecurity.avatar.use")}
-                </Button>
+                </DialogFooterActions>
               </DialogFooter>
             </DialogContent>
           </Dialog>

@@ -21,7 +21,7 @@ export function DashboardDemoShell({ children }: { children: ReactNode }) {
         <SidebarProvider>
           <ActorProvider actor={dashboardDemoFixture.actor}>
             <AccessProvider access={{ permissions: allMerchantPermissions }} refreshOnFocus={false}>
-              <AppSidebar access={dashboardDemoFixture} demoMode />
+              <AppSidebar access={dashboardDemoFixture} demoMode storefrontUrl="/demo/storefront" />
               <SidebarInset>
                 <BreadcrumbLabelsProvider>
                   <AppHeader demoMode />

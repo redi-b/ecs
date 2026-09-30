@@ -4,14 +4,13 @@ import type { MerchantOrder, MerchantOrderSettlementMethod } from "@ecs/contract
 import { RiMore2Fill } from "@remixicon/react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { usePermission } from "@/components/app/access-context";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,8 +31,15 @@ import {
   type OrderNextActionType,
 } from "@/features/orders/order-domain";
 import { RefundOrderDialog, type RefundOrderPayload } from "@/features/orders/refund-order-dialog";
+import {
+  getReturnableOrderItems,
+  ReturnOrderDialog,
+  type ReturnOrderPayload,
+} from "@/features/orders/return-order-dialog";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
+import { cn } from "@/lib/utils";
 
 type PendingKind =
   | { kind: "next"; type: OrderNextActionType }
@@ -50,6 +56,10 @@ function mapActionError(message: string, t: Translate) {
   if (message === "order_not_cancelable") return t("orders.actions.errNotCancelable");
   if (message === "order_refund_required") return t("orders.actions.errRefundRequired");
   if (message === "order_refund_amount_invalid") return t("orders.actions.errRefundAmount");
+  if (message === "order_return_invalid") return t("orders.actions.errReturnInvalid");
+  if (message === "order_not_returnable") return t("orders.actions.errNotReturnable");
+  if (message === "mutation_repair_required") return t("orders.actions.errRepairRequired");
+  if (message === "idempotency_conflict") return t("orders.actions.errIdempotencyConflict");
   return message || t("orders.actions.errGeneric");
 }
 
@@ -86,10 +96,17 @@ function nextActionCopy(type: OrderNextActionType, t: Translate) {
   return { label: t(values[type].label), description: t(values[type].description) };
 }
 
-async function postOrderAction(actionUrl: string, body: Record<string, unknown>) {
+async function postOrderAction(
+  actionUrl: string,
+  body: Record<string, unknown>,
+  idempotencyKey?: string,
+) {
   const response = await fetch(actionUrl, {
     body: JSON.stringify(body),
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {}),
+    },
     method: "POST",
   });
   const data = await response.json().catch(() => ({}));
@@ -151,7 +168,11 @@ export function OrderActions({
   const [pending, setPending] = useState<PendingKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const markPaidIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const [refundOpen, setRefundOpen] = useState(false);
+  const refundIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const returnIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const [accounts, setAccounts] = useState<ReceivingAccountOption[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
 
@@ -203,7 +224,15 @@ export function OrderActions({
   });
   const markPaidMutation = useMutation({
     mutationFn: async (payload: MarkPaidSettlementPayload) => {
-      await postOrderAction(action, { action: "mark-paid", ...payload });
+      const fingerprint = JSON.stringify(payload);
+      if (markPaidIdempotencyRef.current?.fingerprint !== fingerprint) {
+        markPaidIdempotencyRef.current = { fingerprint, key: createClientId("mark-paid") };
+      }
+      await postOrderAction(
+        action,
+        { action: "mark-paid", ...payload },
+        markPaidIdempotencyRef.current.key,
+      );
       return t("orders.actions.toastPaid");
     },
     onError: (error) =>
@@ -211,6 +240,7 @@ export function OrderActions({
         mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
       ),
     onSuccess: (message) => {
+      markPaidIdempotencyRef.current = null;
       setActionError(null);
       setMarkPaidOpen(false);
       toast.success(message);
@@ -219,7 +249,15 @@ export function OrderActions({
   });
   const refundMutation = useMutation({
     mutationFn: async (payload: RefundOrderPayload) => {
-      await postOrderAction(action, { action: "refund", ...payload });
+      const fingerprint = JSON.stringify(payload);
+      if (refundIdempotencyRef.current?.fingerprint !== fingerprint) {
+        refundIdempotencyRef.current = { fingerprint, key: createClientId("refund") };
+      }
+      await postOrderAction(
+        action,
+        { action: "refund", ...payload },
+        refundIdempotencyRef.current.key,
+      );
       return t("orders.actions.toastRefunded");
     },
     onError: (error) =>
@@ -227,8 +265,40 @@ export function OrderActions({
         mapActionError(error instanceof Error ? error.message : "order_action_failed", t),
       ),
     onSuccess: (message) => {
+      refundIdempotencyRef.current = null;
       setActionError(null);
       setRefundOpen(false);
+      toast.success(message);
+      router.refresh();
+    },
+  });
+  const returnMutation = useMutation({
+    mutationFn: async (payload: ReturnOrderPayload) => {
+      const fingerprint = JSON.stringify(payload);
+      if (returnIdempotencyRef.current?.fingerprint !== fingerprint) {
+        returnIdempotencyRef.current = { fingerprint, key: createClientId("return") };
+      }
+      const response = await fetch(action.replace("/actions/", "/returns/"), {
+        body: JSON.stringify(payload),
+        headers: {
+          "content-type": "application/json",
+          "idempotency-key": returnIdempotencyRef.current.key,
+        },
+        method: "POST",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(typeof data?.error === "string" ? data.error : "order_return_failed");
+      return t("orders.returns.toastCreated");
+    },
+    onError: (error) =>
+      setActionError(
+        mapActionError(error instanceof Error ? error.message : "order_return_failed", t),
+      ),
+    onSuccess: (message) => {
+      returnIdempotencyRef.current = null;
+      setActionError(null);
+      setReturnOpen(false);
       toast.success(message);
       router.refresh();
     },
@@ -237,6 +307,10 @@ export function OrderActions({
   const showMarkPaid = canUpdate && canMarkPaid(order);
   const showRecheck = canUpdate && canRecheckPayment(order);
   const showRefund = canRefund && (order.refundableTotal ?? 0) > 0;
+  const showReturn =
+    canUpdate &&
+    (order.fulfillmentStatus ?? "").toLowerCase().includes("deliver") &&
+    getReturnableOrderItems(order).length > 0;
   const canceled = (order.status ?? "").toLowerCase().includes("cancel");
   const showCancel = canCancel && !canceled && (next.type !== "none" || showMarkPaid);
   const hasNextAction = canUpdate && next.type !== "none";
@@ -246,7 +320,8 @@ export function OrderActions({
     hasNextAction ||
     (showMarkPaid && !isMarkPaidPrimary) ||
     showRecheck ||
-    showRefund;
+    showRefund ||
+    showReturn;
   const hasMenu = hasPrecedingActions || showCancel;
 
   const menu = hasMenu ? (
@@ -281,6 +356,11 @@ export function OrderActions({
         {showRefund ? (
           <DropdownMenuItem onSelect={() => setRefundOpen(true)}>
             {t("orders.actions.refundPayment")}
+          </DropdownMenuItem>
+        ) : null}
+        {showReturn ? (
+          <DropdownMenuItem onSelect={() => setReturnOpen(true)}>
+            {t("orders.actions.recordReturn")}
           </DropdownMenuItem>
         ) : null}
         {showCancel ? (
@@ -404,6 +484,13 @@ export function OrderActions({
         onOpenChange={setRefundOpen}
         open={refundOpen}
         pending={refundMutation.isPending}
+      />
+      <ReturnOrderDialog
+        onConfirm={(payload) => returnMutation.mutate(payload)}
+        onOpenChange={setReturnOpen}
+        open={returnOpen}
+        order={order}
+        pending={returnMutation.isPending}
       />
       <ConfirmDialog
         cancelDisabled={mutation.isPending}

@@ -44,6 +44,12 @@ export function getProductDefaultValues(
       .join("\n"),
     status: normalizeStatus(product?.status),
     priceAmount: firstPrice?.amount === undefined ? "" : String(firstPrice.amount),
+    unitCostAmount:
+      simpleVariant?.unitCostAmount == null
+        ? product?.variants?.[0]?.unitCostAmount == null
+          ? ""
+          : String(product.variants[0].unitCostAmount)
+        : String(simpleVariant.unitCostAmount),
     currencyCode: "etb",
     hasVariants: Boolean(product && initialOptions.length),
     initialStock: String(simpleVariant?.stock?.stockedQuantity ?? 0),
@@ -270,6 +276,9 @@ export function getProductVariantsPayload(values: ProductFormValues) {
         priceAmount: parseWholeNumber(values.priceAmount) ?? 0,
         currencyCode: values.currencyCode,
         stockedQuantity: parseWholeNumber(values.initialStock) ?? 0,
+        unitCostAmount: values.unitCostAmount.trim()
+          ? parseWholeNumber(values.unitCostAmount)
+          : null,
       },
     ];
   }
@@ -291,6 +300,9 @@ export function getProductVariantsPayload(values: ProductFormValues) {
         priceAmount: row.priceAmount,
         currencyCode: row.currencyCode,
         stockedQuantity: row.stockedQuantity,
+        unitCostAmount: values.unitCostAmount.trim()
+          ? parseWholeNumber(values.unitCostAmount)
+          : null,
       };
     });
 }

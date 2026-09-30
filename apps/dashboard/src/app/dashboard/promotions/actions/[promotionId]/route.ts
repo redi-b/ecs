@@ -14,6 +14,7 @@ export async function POST(
       body: await context.request.text(),
       contentType: "json",
       cookieHeader: context.cookieHeader,
+      headers: { "idempotency-key": context.request.headers.get("idempotency-key") ?? "" },
       method: "POST",
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
@@ -36,6 +37,7 @@ export async function DELETE(
   return withMerchantAction(request, async (context) => {
     const response = await platformFetch(path(promotionId), {
       cookieHeader: context.cookieHeader,
+      headers: { "idempotency-key": context.request.headers.get("idempotency-key") ?? "" },
       method: "DELETE",
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,

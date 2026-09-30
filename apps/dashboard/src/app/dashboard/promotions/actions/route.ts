@@ -6,6 +6,7 @@ export async function POST(request: Request) {
       body: await context.request.text(),
       contentType: "json",
       cookieHeader: context.cookieHeader,
+      headers: { "idempotency-key": context.request.headers.get("idempotency-key") ?? "" },
       method: "POST",
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,

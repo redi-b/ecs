@@ -355,6 +355,7 @@ export function CollectionEditSheet({
               </Field>
 
               <MediaImageReferenceControl
+                compact
                 label={t("taxonomy.form.mediaLabel")}
                 onChange={(value) => setMediaUrl(value ?? "")}
                 value={mediaUrl}

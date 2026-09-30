@@ -8,6 +8,9 @@ export async function POST(request: Request) {
       contentType: "json",
       cookieHeader: context.cookieHeader,
       method: "POST",
+      headers: {
+        "idempotency-key": context.request.headers.get("idempotency-key") ?? crypto.randomUUID(),
+      },
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
     });

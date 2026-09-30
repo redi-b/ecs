@@ -28,6 +28,7 @@ export {
   getMerchantProductStock,
   getMerchantProducts,
   getMerchantProductVariantStock,
+  listMerchantInventoryMovements,
   reorderMerchantProductCategories,
   updateMerchantCollectionProducts,
   updateMerchantInventoryBatch,

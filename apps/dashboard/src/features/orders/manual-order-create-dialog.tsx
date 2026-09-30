@@ -1,7 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import type {
+  MerchantSaleDraft,
+  MerchantSaleDraftConflict,
+  MerchantSaleDraftContent,
+} from "@ecs/contracts";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   DialogStepPanel,
@@ -18,6 +23,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,6 +40,7 @@ import {
 import { normalizeProductOptionSwatch } from "@/features/products/product-swatch-popover";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { getDisplayCustomerEmail } from "@/lib/customer-identity";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { resolveProductColorSwatch } from "@/lib/product-color";
@@ -43,12 +51,12 @@ import {
   type AddressForm,
   addressFormFromSaved,
   buildManualOrderPayload,
-  calculateManualOrderPricing,
-  canContinueFromManualOrderCustomer,
-  canContinueFromManualOrderItems,
   type CatalogVariant,
   type CustomerAddressOption,
   type CustomerOption,
+  calculateManualOrderPricing,
+  canContinueFromManualOrderCustomer,
+  canContinueFromManualOrderItems,
   emptyAddress,
   formatCustomerAddressLabel,
   formatPrice,
@@ -69,9 +77,20 @@ export function ManualOrderCreateDialog() {
 function ManualOrderCreateDialogInner() {
   const { t } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const draftIdempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  const draftProductIdsRef = useRef(new Map<string, string>());
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftRevision, setDraftRevision] = useState<number | null>(null);
+  const [draftConflicts, setDraftConflicts] = useState<MerchantSaleDraftConflict[]>([]);
+  const [draftStatus, setDraftStatus] = useState<"idle" | "loading" | "saving" | "saved" | "error">(
+    "idle",
+  );
+  const lastSavedFingerprintRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useCreateQueryOpen({
@@ -109,6 +128,32 @@ function ManualOrderCreateDialogInner() {
   const [productPickerOpen, setProductPickerOpen] = useState(false);
 
   const CATALOG_PAGE = 40;
+
+  // Loading is keyed to the URL; restoreDraft intentionally applies the returned snapshot once.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: URL draft identity is the effect boundary.
+  useEffect(() => {
+    const resumeDraftId = searchParams.get("draft")?.trim();
+    if (!resumeDraftId) return;
+    let cancelled = false;
+    setDraftStatus("loading");
+    void fetch(dashboardRoutes.orderDraftAction(resumeDraftId), {
+      headers: { accept: "application/json" },
+    })
+      .then(async (response) => {
+        const data = (await response.json().catch(() => ({}))) as { draft?: MerchantSaleDraft };
+        if (!response.ok || !data.draft) throw new Error("sale_draft_load_failed");
+        if (cancelled) return;
+        restoreDraft(data.draft);
+        setOpen(true);
+        setDraftStatus("saved");
+      })
+      .catch(() => {
+        if (!cancelled) setDraftStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   async function loadProductCatalog(offset: number, append: boolean) {
     if (append) setCatalogLoadingMore(true);
@@ -207,6 +252,9 @@ function ManualOrderCreateDialogInner() {
           } satisfies CatalogVariant;
         }),
       );
+      for (const variant of nextVariants) {
+        draftProductIdsRef.current.set(variant.id, variant.productId);
+      }
 
       setVariants((current) => (append ? [...current, ...nextVariants] : nextVariants));
       const total = typeof data.count === "number" ? data.count : offset + data.products.length;
@@ -346,6 +394,137 @@ function ManualOrderCreateDialogInner() {
     return [...byProduct.values()];
   }, [variants]);
 
+  function restoreDraft(draft: MerchantSaleDraft) {
+    setDraftId(draft.id);
+    setDraftRevision(draft.revision);
+    setDraftConflicts(draft.conflicts);
+    setStep(draft.currentStep);
+    setCustomerMode(draft.customer.id ? "existing" : "new");
+    setCustomerId(draft.customer.id ?? null);
+    setCustomerEmail(draft.customer.email ?? "");
+    setCustomerFirstName(draft.customer.firstName ?? "");
+    setCustomerLastName(draft.customer.lastName ?? "");
+    setCustomerPhone(draft.customer.phone ?? "");
+    setLines(
+      draft.items.map((item) => ({
+        quantity: item.quantity,
+        unitPrice: item.unitPrice ?? null,
+        variantId: item.variantId,
+      })),
+    );
+    for (const item of draft.items) {
+      draftProductIdsRef.current.set(item.variantId, item.productId);
+    }
+    setDiscountType(draft.discount?.type ?? "none");
+    setDiscountValue(draft.discount ? String(draft.discount.value) : "");
+    setAdjustmentReason(draft.adjustmentReason ?? "");
+    setNote(draft.note ?? "");
+    setIncludeAddress(Boolean(draft.shippingAddress));
+    setAddress({
+      address1: draft.shippingAddress?.address1 ?? "",
+      city: draft.shippingAddress?.city ?? "",
+      firstName: draft.shippingAddress?.firstName ?? "",
+      lastName: draft.shippingAddress?.lastName ?? "",
+      phone: draft.shippingAddress?.phone ?? "",
+      province: draft.shippingAddress?.province ?? "",
+    });
+    const fingerprint = JSON.stringify(toDraftContent(draft));
+    lastSavedFingerprintRef.current = fingerprint;
+  }
+
+  function draftContentFromState(currentStep = step): MerchantSaleDraftContent | null {
+    const items = lines.flatMap((line) => {
+      const productId =
+        variantById.get(line.variantId)?.productId ??
+        draftProductIdsRef.current.get(line.variantId);
+      return productId ? [{ ...line, productId }] : [];
+    });
+    if (items.length !== lines.length) return null;
+    const discountValueNumber = Number(discountValue);
+    return {
+      adjustmentReason: adjustmentReason.trim() || null,
+      currencyCode: "etb",
+      currentStep,
+      customer: {
+        email: customerEmail.trim().toLowerCase() || null,
+        firstName: customerFirstName.trim() || null,
+        id: customerMode === "existing" ? customerId : null,
+        lastName: customerLastName.trim() || null,
+        phone: customerPhone.trim() || null,
+      },
+      discount:
+        discountType !== "none" && Number.isFinite(discountValueNumber) && discountValueNumber > 0
+          ? { type: discountType, value: discountValueNumber }
+          : null,
+      items,
+      note: note.trim() || null,
+      shippingAddress: includeAddress
+        ? {
+            address1: address.address1.trim() || null,
+            city: address.city.trim() || null,
+            countryCode: "et",
+            firstName: address.firstName.trim() || null,
+            lastName: address.lastName.trim() || null,
+            phone: address.phone.trim() || null,
+            province: address.province.trim() || null,
+          }
+        : null,
+      shippingOptionId: null,
+    };
+  }
+
+  async function saveDraft(options: { close?: boolean } = {}) {
+    const content = draftContentFromState();
+    if (!content) return false;
+    const fingerprint = JSON.stringify(content);
+    if (lastSavedFingerprintRef.current === fingerprint) {
+      if (options.close) {
+        setOpen(false);
+        reset();
+        router.push(`${dashboardRoutes.orders}?view=drafts`);
+      }
+      return true;
+    }
+    if (draftIdempotencyRef.current?.fingerprint !== fingerprint) {
+      draftIdempotencyRef.current = { fingerprint, key: createClientId("sale-draft") };
+    }
+    setDraftStatus("saving");
+    const response = await fetch(
+      draftId ? dashboardRoutes.orderDraftAction(draftId) : dashboardRoutes.orderDraftsAction,
+      {
+        body: JSON.stringify({ ...content, expectedRevision: draftRevision }),
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "idempotency-key": draftIdempotencyRef.current.key,
+        },
+        method: "POST",
+      },
+    ).catch(() => null);
+    const data = (await response?.json().catch(() => ({}))) as {
+      draft?: MerchantSaleDraft;
+      error?: string;
+    };
+    if (!response?.ok || !data.draft) {
+      setDraftStatus("error");
+      return false;
+    }
+    setDraftId(data.draft.id);
+    setDraftRevision(data.draft.revision);
+    setDraftConflicts(data.draft.conflicts);
+    setDraftStatus("saved");
+    lastSavedFingerprintRef.current = fingerprint;
+    draftIdempotencyRef.current = null;
+    if (options.close) {
+      toast.success(t("orders.create.draftSaved"));
+      setOpen(false);
+      reset();
+      router.push(`${dashboardRoutes.orders}?view=drafts`);
+      router.refresh();
+    }
+    return true;
+  }
+
   function reset() {
     setStep(0);
     setSaving(false);
@@ -365,6 +544,13 @@ function ManualOrderCreateDialogInner() {
     setIncludeAddress(true);
     setAddress(emptyAddress);
     setSavedAddressId(MANUAL_ADDRESS_NEW);
+    setDraftId(null);
+    setDraftRevision(null);
+    setDraftConflicts([]);
+    setDraftStatus("idle");
+    lastSavedFingerprintRef.current = null;
+    draftIdempotencyRef.current = null;
+    draftProductIdsRef.current.clear();
   }
 
   const isDirty = useMemo(
@@ -397,15 +583,47 @@ function ManualOrderCreateDialogInner() {
       discountType,
       discountValue,
       includeAddress,
-      lines.length,
+      lines,
       note,
       savedAddressId,
     ],
   );
+  const currentDraftContent = draftContentFromState();
+  const currentDraftFingerprint = currentDraftContent ? JSON.stringify(currentDraftContent) : null;
+  const hasUnacknowledgedChanges =
+    isDirty && currentDraftFingerprint !== lastSavedFingerprintRef.current;
 
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } = useUnsavedChangesGuard(
-    isDirty && open,
+    hasUnacknowledgedChanges && open,
   );
+
+  // The canonical fingerprint is the autosave trigger; saveDraft reads that same state snapshot.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: debounce only canonical draft changes.
+  useEffect(() => {
+    if (!open || !hasUnacknowledgedChanges || draftStatus === "loading" || draftStatus === "saving")
+      return;
+    const timer = window.setTimeout(() => {
+      void saveDraft();
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [
+    address,
+    adjustmentReason,
+    customerEmail,
+    customerFirstName,
+    customerId,
+    customerLastName,
+    customerMode,
+    customerPhone,
+    discountType,
+    discountValue,
+    includeAddress,
+    hasUnacknowledgedChanges,
+    lines,
+    note,
+    open,
+    step,
+  ]);
 
   function requestClose() {
     requestLeave(() => {
@@ -653,11 +871,16 @@ function ManualOrderCreateDialogInner() {
       { hasPriceAdjustment, parsedDiscountValue },
     );
 
+    const fingerprint = JSON.stringify(payload);
+    if (idempotencyRef.current?.fingerprint !== fingerprint) {
+      idempotencyRef.current = { fingerprint, key: createClientId("assisted-sale") };
+    }
     const response = await fetch("/dashboard/orders/actions/create", {
       body: JSON.stringify(payload),
       headers: {
         accept: "application/json",
         "content-type": "application/json",
+        "idempotency-key": idempotencyRef.current.key,
       },
       method: "POST",
     }).catch(() => null);
@@ -678,6 +901,7 @@ function ManualOrderCreateDialogInner() {
     const data = (await response.json().catch(() => ({}))) as {
       order?: { displayId?: string | number | null; id?: string };
     };
+    idempotencyRef.current = null;
 
     toast.success(
       data.order?.id
@@ -720,6 +944,17 @@ function ManualOrderCreateDialogInner() {
             <DialogDescription className="sr-only">
               {t("orders.create.description")}
             </DialogDescription>
+            {draftStatus !== "idle" ? (
+              <p aria-live="polite" className="type-meta text-muted-foreground">
+                {draftStatus === "loading"
+                  ? t("orders.create.draftLoading")
+                  : draftStatus === "saving"
+                    ? t("orders.create.draftSaving")
+                    : draftStatus === "saved"
+                      ? t("orders.create.draftSavedStatus")
+                      : t("orders.create.draftSaveFailed")}
+              </p>
+            ) : null}
           </DialogHeader>
           <DialogStepRail
             ariaLabel={t("orders.create.stepsAria")}
@@ -745,6 +980,16 @@ function ManualOrderCreateDialogInner() {
               <Alert className="mb-4" variant="destructive">
                 <AlertTitle>{t("orders.create.notCreatedTitle")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
+            {draftConflicts.length > 0 ? (
+              <Alert className="mb-4">
+                <AlertTitle>{t("orders.create.draftConflictTitle")}</AlertTitle>
+                <AlertDescription>
+                  {t("orders.create.draftConflictDescription", {
+                    count: draftConflicts.length,
+                  })}
+                </AlertDescription>
               </Alert>
             ) : null}
 
@@ -1239,44 +1484,73 @@ function ManualOrderCreateDialogInner() {
 
           {/* p-0 dialogs: no negative footer margins (avoids weird bottom corner clip). */}
           <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {step > 0 ? (
-              <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
-                {t("common.back")}
-              </Button>
-            ) : (
-              <Button onClick={() => requestClose()} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-            )}
-            {step < 2 ? (
+            <DialogFooterLeading>
+              {step > 0 ? (
+                <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
+                  {t("common.back")}
+                </Button>
+              ) : (
+                <Button onClick={() => requestClose()} type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+              )}
+            </DialogFooterLeading>
+            <DialogFooterActions>
               <Button
-                disabled={
-                  (step === 0 && !canContinueFromCustomer()) ||
-                  (step === 1 && !canContinueFromItems())
-                }
-                onClick={() => goToStep(step + 1)}
+                disabled={saving || draftStatus === "saving" || !isDirty}
+                onClick={() => void saveDraft({ close: true })}
                 type="button"
+                variant="secondary"
               >
-                {t("common.continue")}
+                {draftStatus === "saving"
+                  ? t("orders.create.draftSaving")
+                  : t("orders.create.saveDraftClose")}
               </Button>
-            ) : (
-              <Button
-                disabled={
-                  saving ||
-                  !canContinueFromCustomer() ||
-                  !canContinueFromItems() ||
-                  !adjustmentIsValid
-                }
-                onClick={() => void create()}
-                type="button"
-              >
-                {saving ? t("orders.create.creating") : t("orders.create.trigger")}
-              </Button>
-            )}
+              {step < 2 ? (
+                <Button
+                  disabled={
+                    (step === 0 && !canContinueFromCustomer()) ||
+                    (step === 1 && !canContinueFromItems())
+                  }
+                  onClick={() => goToStep(step + 1)}
+                  type="button"
+                >
+                  {t("common.continue")}
+                </Button>
+              ) : (
+                <Button
+                  disabled={
+                    saving ||
+                    !canContinueFromCustomer() ||
+                    !canContinueFromItems() ||
+                    draftConflicts.length > 0 ||
+                    !adjustmentIsValid
+                  }
+                  onClick={() => void create()}
+                  type="button"
+                >
+                  {saving ? t("orders.create.creating") : t("orders.create.trigger")}
+                </Button>
+              )}
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <UnsavedChangesDialog onLeave={confirmLeave} onStay={cancelLeave} open={leaveDialogOpen} />
     </>
   );
+}
+
+function toDraftContent(draft: MerchantSaleDraft): MerchantSaleDraftContent {
+  return {
+    adjustmentReason: draft.adjustmentReason ?? null,
+    currencyCode: "etb",
+    currentStep: draft.currentStep,
+    customer: draft.customer,
+    discount: draft.discount ?? null,
+    items: draft.items,
+    note: draft.note ?? null,
+    shippingAddress: draft.shippingAddress ?? null,
+    shippingOptionId: draft.shippingOptionId ?? null,
+  };
 }

@@ -16,6 +16,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -975,12 +977,16 @@ function PaymentEvidenceDialog({
           </Alert>
         </div>
         <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Button disabled={busy} onClick={() => setOpen(false)} type="button" variant="outline">
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={busy || !referenceValid} onClick={() => void submit()}>
-            {busy ? t("billing.transfer.submitting") : t("billing.transfer.submit")}
-          </Button>
+          <DialogFooterLeading>
+            <Button disabled={busy} onClick={() => setOpen(false)} type="button" variant="outline">
+              {t("common.cancel")}
+            </Button>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            <Button disabled={busy || !referenceValid} onClick={() => void submit()}>
+              {busy ? t("billing.transfer.submitting") : t("billing.transfer.submit")}
+            </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>

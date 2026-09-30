@@ -10,6 +10,10 @@
       "label": "Shop",
       "description": "Name, handle, and store URL"
     },
+    "documents": {
+      "label": "Documents",
+      "description": "Branding for printable documents"
+    },
     "preferences": {
       "label": "Preferences",
       "description": "Workspace and shop defaults"
@@ -286,6 +290,27 @@
     "related": "Related",
     "billingPlan": "Billing & plan",
     "storefrontEditor": "Storefront editor"
+  },
+  "documents": {
+    "title": "Branding",
+    "description": "Logo, color, and footer used on new quotations and order documents.",
+    "logo": "Logo",
+    "noLogo": "No logo selected",
+    "logoHelp": "PNG or WebP works best on a light background.",
+    "accent": "Accent color",
+    "accentHex": "Accent color hex value",
+    "resetAccent": "Reset accent",
+    "footerNote": "Footer note",
+    "footerPlaceholder": "Optional thank-you or contact note",
+    "showContact": "Show public contact details",
+    "showContactHelp": "Uses the public details in Shop settings.",
+    "save": "Save documents",
+    "preview": "Document preview",
+    "previewItem": "Item",
+    "previewQty": "Qty",
+    "previewTotal": "Total",
+    "previewItemOne": "Cotton shirt",
+    "previewItemTwo": "Leather belt"
   },
   "preferences": {
     "intro": "Browser and checkout defaults for day-to-day work.",

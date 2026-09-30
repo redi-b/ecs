@@ -758,7 +758,7 @@ function PreviewPageSwitcher({
   }
 
   return (
-    <Select onValueChange={onChange} value={value}>
+    <Select size="sm" onValueChange={onChange} value={value}>
       <SelectTrigger aria-label={ariaLabel} className="w-[min(13rem,55vw)]" size="sm">
         <SelectValue />
       </SelectTrigger>

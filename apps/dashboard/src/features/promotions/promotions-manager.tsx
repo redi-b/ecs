@@ -12,17 +12,19 @@ import {
   DataTableFilters,
 } from "@/components/app/data-table-filters";
 import { DataTableHeader } from "@/components/app/data-table-header";
-import { AppIcons } from "@/components/app/icons";
 import { EcsArtwork } from "@/components/app/ecs-brand";
+import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
 import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PromotionCodeBatchDialog } from "@/features/promotions/promotion-code-batch-dialog";
 import { PromotionEditSheet } from "@/features/promotions/promotion-edit-sheet";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import type { MerchantPromotion } from "@/lib/merchant-promotions";
 import { mapPlatformErrorMessage, readPlatformErrorMessage } from "@/lib/platform-api/errors";
@@ -111,6 +113,7 @@ export function PromotionsManager({
   const [deleteTarget, setDeleteTarget] = useState<MerchantPromotion | null>(null);
   const [bulkDeleteTargets, setBulkDeleteTargets] = useState<MerchantPromotion[]>([]);
   const [editing, setEditing] = useState<MerchantPromotion | null>(null);
+  const [batchTarget, setBatchTarget] = useState<MerchantPromotion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -174,6 +177,16 @@ export function PromotionsManager({
                 label: t("promotions.action.copy"),
                 onSelect: () =>
                   void copyToClipboard(item.code, t("promotions.table.promotionCode"), t),
+                type: "button" as const,
+              },
+            ]
+          : []),
+        ...(canManage && !item.isAutomatic && !item.hasUnsupportedRules
+          ? [
+              {
+                icon: AppIcons.add,
+                label: t("promotions.action.createBatch"),
+                onSelect: () => setBatchTarget(item),
                 type: "button" as const,
               },
             ]
@@ -260,6 +273,7 @@ export function PromotionsManager({
     let lastFailureMessage: string | null = null;
     for (const item of targets) {
       const response = await fetch(`/dashboard/promotions/actions/${encodeURIComponent(item.id)}`, {
+        headers: { "idempotency-key": createClientId("promotion-delete") },
         method: "DELETE",
       }).catch(() => null);
       if (response?.ok) {
@@ -422,7 +436,7 @@ export function PromotionsManager({
         enableSorting: false,
       },
     ],
-    [promotionRowActions, t],
+    [formatDate, promotionRowActions, t],
   );
 
   const deleteTargets = deleteTarget ? [deleteTarget] : bulkDeleteTargets;
@@ -522,6 +536,14 @@ export function PromotionsManager({
         }}
         open={Boolean(editing)}
         promotion={editing}
+      />
+
+      <PromotionCodeBatchDialog
+        onOpenChange={(next) => {
+          if (!next) setBatchTarget(null);
+        }}
+        open={Boolean(batchTarget)}
+        promotion={batchTarget}
       />
 
       <ConfirmDialog

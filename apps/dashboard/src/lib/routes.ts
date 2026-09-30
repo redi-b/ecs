@@ -45,6 +45,16 @@ export const dashboardRoutes = {
     `/dashboard/products/collections/actions/${encodeURIComponent(collectionId)}/products`,
   productCollectionsBatchDeleteAction: "/dashboard/products/collections/actions/batch-delete",
   orders: "/dashboard/orders",
+  orderDraftsAction: "/dashboard/orders/actions/drafts",
+  orderDraftAction: (draftId: string) =>
+    `/dashboard/orders/actions/drafts/${encodeURIComponent(draftId)}`,
+  orderQuotationsAction: "/dashboard/orders/actions/quotations",
+  orderQuotation: (quotationId: string) =>
+    `/dashboard/orders/quotations/${encodeURIComponent(quotationId)}`,
+  orderQuotationConvertAction: (quotationId: string) =>
+    `/dashboard/orders/actions/quotations/${encodeURIComponent(quotationId)}/convert`,
+  orderQuotationReviseAction: (quotationId: string) =>
+    `/dashboard/orders/actions/quotations/${encodeURIComponent(quotationId)}/revise`,
   ordersExportAction: "/dashboard/orders/actions/export",
   inquiries: "/dashboard/inquiries",
   inquiryAction: (inquiryId: string) =>

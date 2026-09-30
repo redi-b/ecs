@@ -66,8 +66,8 @@ import {
   getRemovedExistingVariants,
   getVariantRows,
   isInitialHandleLocked,
-  reconcileOptionMediaBindings,
   ProductMutationError,
+  reconcileOptionMediaBindings,
   slugifyProductHandle,
   suggestAvailableProductHandle,
   validateInitialStock,
@@ -823,6 +823,35 @@ export function ProductForm({
                                     errors={field.state.meta.errors}
                                     touched={field.state.meta.isTouched}
                                   />
+                                </Field>
+                              )}
+                            </form.Field>
+
+                            <form.Field name="unitCostAmount">
+                              {(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor={field.name}>
+                                    {t("products.composer.fieldUnitCost")}
+                                  </FieldLabel>
+                                  <InputGroup>
+                                    <InputGroupAddon>ETB</InputGroupAddon>
+                                    <InputGroupInput
+                                      id={field.name}
+                                      inputMode="numeric"
+                                      min="0"
+                                      name={field.name}
+                                      onBlur={field.handleBlur}
+                                      onChange={(event) =>
+                                        field.handleChange(event.target.value.replace(/\D/g, ""))
+                                      }
+                                      placeholder={t("products.composer.unitCostOptional")}
+                                      type="text"
+                                      value={field.state.value}
+                                    />
+                                  </InputGroup>
+                                  <FieldDescription>
+                                    {t("products.composer.unitCostHelp")}
+                                  </FieldDescription>
                                 </Field>
                               )}
                             </form.Field>

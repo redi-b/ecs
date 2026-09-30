@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,9 +24,9 @@ import {
   NotificationChannelHeader,
   NotificationChannelUnavailable,
 } from "@/features/settings/notification-channel-ui";
-import type { TelegramOperatorBinding } from "@/lib/platform-api/notifications/telegram-client";
 import { useI18n } from "@/i18n/provider";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+import type { TelegramOperatorBinding } from "@/lib/platform-api/notifications/telegram-client";
 import { cn } from "@/lib/utils";
 
 type LinkSession = {
@@ -539,15 +541,26 @@ export function TelegramShopToolsPanel({
             ))}
           </ol>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button className="rounded-full" type="button" variant="outline">
-                {t("common.cancel")}
+            <DialogFooterLeading>
+              <DialogClose asChild>
+                <Button className="rounded-full" type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+              </DialogClose>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button
+                className="rounded-full"
+                disabled={isPending}
+                type="button"
+                onClick={startLink}
+              >
+                {isPending
+                  ? t("settings.telegram.opening")
+                  : t("settings.telegram.continueTelegram")}
+                {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
               </Button>
-            </DialogClose>
-            <Button className="rounded-full" disabled={isPending} type="button" onClick={startLink}>
-              {isPending ? t("settings.telegram.opening") : t("settings.telegram.continueTelegram")}
-              {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
-            </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

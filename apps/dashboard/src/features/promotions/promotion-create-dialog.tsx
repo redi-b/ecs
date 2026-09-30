@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -10,6 +10,7 @@ import {
   getDialogStepStatus,
 } from "@/components/app/dialog-step-rail";
 import { AppIcons } from "@/components/app/icons";
+import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
 import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
@@ -18,6 +19,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -40,6 +43,7 @@ import {
 } from "@/features/products/product-catalog-picker-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { readPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { useCreateQueryOpen } from "@/lib/use-create-query-open";
 import { cn } from "@/lib/utils";
@@ -118,7 +122,9 @@ const emptyForm = {
   campaignBudgetLimit: "",
   campaignBudgetType: "none" as "none" | "usage" | "spend",
   campaignName: "",
+  categoryIds: [] as string[],
   code: "",
+  collectionIds: [] as string[],
   currencyCode: "ETB",
   endsAt: "",
   isAutomatic: false,
@@ -126,6 +132,7 @@ const emptyForm = {
   maxQuantity: "",
   offerKind: "percentage_order" as OfferKind,
   productIds: [] as string[],
+  registeredCustomersOnly: false,
   startsAt: "",
   status: "active" as "active" | "inactive" | "draft",
   usageLimit: "",
@@ -155,6 +162,13 @@ function PromotionCreateDialogInner() {
   const [form, setForm] = useState(emptyForm);
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [collections, setCollections] = useState<Array<{ id: string; title: string }>>([]);
+  const [targetKind, setTargetKind] = useState<"products" | "categories" | "collections">(
+    "products",
+  );
+  const idempotencyKey = useRef(createClientId("promotion"));
+  const fieldId = useId();
 
   const isDirty =
     open &&
@@ -213,6 +227,34 @@ function PromotionCreateDialogInner() {
       .finally(() => setCatalogLoading(false));
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    void Promise.all([
+      fetch("/dashboard/products/categories/actions/list?limit=100").then((response) =>
+        response.ok ? response.json() : {},
+      ),
+      fetch("/dashboard/products/collections/actions/list?limit=100").then((response) =>
+        response.ok ? response.json() : {},
+      ),
+    ])
+      .then(([categoryData, collectionData]: Array<Record<string, unknown>>) => {
+        setCategories(
+          Array.isArray(categoryData?.categories)
+            ? (categoryData.categories as Array<{ id: string; name: string }>)
+            : [],
+        );
+        setCollections(
+          Array.isArray(collectionData?.collections)
+            ? (collectionData.collections as Array<{ id: string; title: string }>)
+            : [],
+        );
+      })
+      .catch(() => {
+        setCategories([]);
+        setCollections([]);
+      });
+  }, [open]);
+
   const needsProducts =
     form.offerKind === "percentage_items" ||
     form.offerKind === "fixed_items" ||
@@ -267,6 +309,8 @@ function PromotionCreateDialogInner() {
 
   function reset() {
     setForm(emptyForm);
+    setTargetKind("products");
+    idempotencyKey.current = createClientId("promotion");
     setStep(0);
   }
 
@@ -351,7 +395,15 @@ function PromotionCreateDialogInner() {
             : null,
         campaignBudgetType: form.campaignBudgetType === "none" ? null : form.campaignBudgetType,
         campaignName: form.campaignName.trim() || null,
+        categoryIds:
+          needsProducts && form.offerKind !== "buyget" && targetKind === "categories"
+            ? form.categoryIds
+            : [],
         code: form.code,
+        collectionIds:
+          needsProducts && form.offerKind !== "buyget" && targetKind === "collections"
+            ? form.collectionIds
+            : [],
         currencyCode: derived.method === "fixed" ? form.currencyCode : null,
         endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
         isAutomatic: form.isAutomatic,
@@ -364,15 +416,19 @@ function PromotionCreateDialogInner() {
               : null
             : null,
         method: derived.method,
-        productIds: needsProducts ? form.productIds : [],
+        productIds:
+          needsProducts && (form.offerKind === "buyget" || targetKind === "products")
+            ? form.productIds
+            : [],
         promotionType: derived.promotionType,
+        registeredCustomersOnly: form.registeredCustomersOnly,
         startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : null,
         status: form.status,
         targetType: derived.targetType,
         usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
         value: derived.value,
       }),
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "idempotency-key": idempotencyKey.current },
       method: "POST",
     }).catch(() => null);
     setSaving(false);
@@ -533,7 +589,7 @@ function PromotionCreateDialogInner() {
                     </Field>
                     <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
                       <div className="min-w-0 space-y-1">
-                        <FieldLabel className="text-sm" htmlFor="promo-automatic">
+                        <FieldLabel className="text-sm" htmlFor={`${fieldId}-automatic`}>
                           {t("promotions.create.autoLabel")}
                         </FieldLabel>
                         <FieldDescription className="text-xs">
@@ -542,14 +598,14 @@ function PromotionCreateDialogInner() {
                       </div>
                       <Switch
                         checked={form.isAutomatic}
-                        id="promo-automatic"
+                        id={`${fieldId}-automatic`}
                         onCheckedChange={(isAutomatic) => setForm({ ...form, isAutomatic })}
                       />
                     </Field>
                     {form.offerKind !== "buyget" && form.offerKind !== "free_shipping" ? (
                       <Field className="flex flex-row items-center justify-between gap-4 rounded-xl border px-3.5 py-3 sm:col-span-2">
                         <div className="min-w-0 space-y-1">
-                          <FieldLabel className="text-sm" htmlFor="promo-tax">
+                          <FieldLabel className="text-sm" htmlFor={`${fieldId}-tax`}>
                             {t("promotions.create.taxLabel")}
                           </FieldLabel>
                           <FieldDescription className="text-xs">
@@ -558,7 +614,7 @@ function PromotionCreateDialogInner() {
                         </div>
                         <Switch
                           checked={form.isTaxInclusive}
-                          id="promo-tax"
+                          id={`${fieldId}-tax`}
                           onCheckedChange={(isTaxInclusive) => setForm({ ...form, isTaxInclusive })}
                         />
                       </Field>
@@ -676,12 +732,58 @@ function PromotionCreateDialogInner() {
                           {form.offerKind === "buyget" ? t("promotions.create.prodDescBuyGet") : ""}
                         </p>
                       </div>
-                      <ProductMultiPicker
-                        catalog={catalog}
-                        loading={catalogLoading}
-                        onChange={(productIds) => setForm({ ...form, productIds })}
-                        selectedIds={form.productIds}
-                      />
+                      {form.offerKind !== "buyget" ? (
+                        <Select
+                          onValueChange={(next: "products" | "categories" | "collections") =>
+                            setTargetKind(next)
+                          }
+                          value={targetKind}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="products">
+                                {t("promotions.target.products")}
+                              </SelectItem>
+                              <SelectItem value="categories">
+                                {t("promotions.target.categories")}
+                              </SelectItem>
+                              <SelectItem value="collections">
+                                {t("promotions.target.collections")}
+                              </SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      ) : null}
+                      {form.offerKind === "buyget" || targetKind === "products" ? (
+                        <ProductMultiPicker
+                          catalog={catalog}
+                          loading={catalogLoading}
+                          onChange={(productIds) => setForm({ ...form, productIds })}
+                          selectedIds={form.productIds}
+                        />
+                      ) : targetKind === "categories" ? (
+                        <MultiSearchableCombobox
+                          emptyLabel={t("promotions.target.noCategories")}
+                          onChange={(categoryIds) => setForm({ ...form, categoryIds })}
+                          options={categories.map((item) => ({ label: item.name, value: item.id }))}
+                          placeholder={t("promotions.target.selectCategories")}
+                          values={form.categoryIds}
+                        />
+                      ) : (
+                        <MultiSearchableCombobox
+                          emptyLabel={t("promotions.target.noCollections")}
+                          onChange={(collectionIds) => setForm({ ...form, collectionIds })}
+                          options={collections.map((item) => ({
+                            label: item.title,
+                            value: item.id,
+                          }))}
+                          placeholder={t("promotions.target.selectCollections")}
+                          values={form.collectionIds}
+                        />
+                      )}
                       {form.offerKind === "buyget" ? (
                         <div className="space-y-2">
                           <p className="text-sm font-medium">
@@ -700,6 +802,23 @@ function PromotionCreateDialogInner() {
                       ) : null}
                     </section>
                   ) : null}
+                  <Field className="flex flex-row items-center justify-between gap-4 border-t pt-5">
+                    <div className="space-y-1">
+                      <FieldLabel htmlFor={`${fieldId}-registered-only`}>
+                        {t("promotions.target.registeredOnly")}
+                      </FieldLabel>
+                      <FieldDescription>
+                        {t("promotions.target.registeredOnlyHelp")}
+                      </FieldDescription>
+                    </div>
+                    <Switch
+                      checked={form.registeredCustomersOnly}
+                      id={`${fieldId}-registered-only`}
+                      onCheckedChange={(registeredCustomersOnly) =>
+                        setForm({ ...form, registeredCustomersOnly })
+                      }
+                    />
+                  </Field>
                 </div>
               ) : null}
 
@@ -801,32 +920,36 @@ function PromotionCreateDialogInner() {
           </div>
 
           <DialogFooter className="m-0 shrink-0 rounded-b-xl border-t border-border/70 bg-muted/40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {step > 0 ? (
-              <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
-                {t("common.back")}
-              </Button>
-            ) : (
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-            )}
-            {step < 2 ? (
-              <Button
-                disabled={step === 1 && !canContinueFromDetails()}
-                onClick={() => goToStep(step + 1)}
-                type="button"
-              >
-                {t("common.continue")}
-              </Button>
-            ) : (
-              <Button
-                disabled={saving || !canContinueFromDetails()}
-                onClick={() => void create()}
-                type="button"
-              >
-                {saving ? t("promotions.create.creating") : t("promotions.create.trigger")}
-              </Button>
-            )}
+            <DialogFooterLeading>
+              {step > 0 ? (
+                <Button onClick={() => goToStep(step - 1)} type="button" variant="outline">
+                  {t("common.back")}
+                </Button>
+              ) : (
+                <Button onClick={() => setOpen(false)} type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+              )}
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              {step < 2 ? (
+                <Button
+                  disabled={step === 1 && !canContinueFromDetails()}
+                  onClick={() => goToStep(step + 1)}
+                  type="button"
+                >
+                  {t("common.continue")}
+                </Button>
+              ) : (
+                <Button
+                  disabled={saving || !canContinueFromDetails()}
+                  onClick={() => void create()}
+                  type="button"
+                >
+                  {saving ? t("promotions.create.creating") : t("promotions.create.trigger")}
+                </Button>
+              )}
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

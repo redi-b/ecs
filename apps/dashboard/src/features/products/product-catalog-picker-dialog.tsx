@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -527,8 +529,8 @@ export function ProductCatalogPickerDialog({
           </div>
         </div>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 flex-col gap-2 rounded-none border-t bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4">
+          <DialogFooterLeading>
             {isMultiple && selectedIds.length > 0 ? (
               <Button onClick={clearAll} type="button" variant="ghost">
                 {t("common.clearSelection")}
@@ -536,8 +538,8 @@ export function ProductCatalogPickerDialog({
             ) : (
               <span className="hidden sm:block" />
             )}
-          </div>
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+          </DialogFooterLeading>
+          <DialogFooterActions>
             <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
               {t("common.cancel")}
             </Button>
@@ -558,7 +560,7 @@ export function ProductCatalogPickerDialog({
                         count: selectedIds.length,
                       })}
             </Button>
-          </div>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -596,7 +598,7 @@ export function ProductCatalogPickerTrigger({
   return (
     <Button
       className={cn(
-        "h-9 w-full justify-between px-3 font-normal shadow-none",
+        "h-8 w-full justify-between px-3 font-normal shadow-none",
         selectedCount === 0 && "text-muted-foreground",
       )}
       disabled={disabled}

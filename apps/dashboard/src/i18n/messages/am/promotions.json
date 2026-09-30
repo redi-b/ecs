@@ -79,7 +79,40 @@
   },
   "action": {
     "edit": "ቅናሹን አስተካክል",
-    "copy": "ኮዱን ኮፒ አድርግ"
+    "copy": "ኮዱን ኮፒ አድርግ",
+    "createBatch": "ብዙ ኮዶችን ፍጠር"
+  },
+  "batch": {
+    "title": "የቅናሽ ኮዶችን ፍጠር",
+    "description": "እንደ {code} ተመሳሳይ ቅናሽ ያላቸው እስከ 50 ልዩ ኮዶችን ፍጠር።",
+    "prefix": "የኮድ መጀመሪያ",
+    "prefixHelp": "ፊደሎችና ቁጥሮች ብቻ። ለእያንዳንዱ ኮድ 8 ተጨማሪ ፊደላትና ቁጥሮች በራሱ ይጨመራሉ።",
+    "count": "የኮዶች ብዛት",
+    "usageLimit": "ለእያንዳንዱ ኮድ አጠቃቀም",
+    "unlimited": "ገደብ የለሽ",
+    "create": "ኮዶችን ፍጠር",
+    "creating": "በመፍጠር ላይ…",
+    "copy": "ሁሉንም ኮፒ አድርግ",
+    "close": "ዝጋ",
+    "download": "CSV አውርድ",
+    "created": "{count} የቅናሽ ኮዶች ተፈጥረዋል።",
+    "copied": "የቅናሽ ኮዶች ኮፒ ተደርገዋል።",
+    "partial": "ከ{requested} ኮዶች {failed} መፍጠር አልተቻለም። ከመዝጋትዎ በፊት የተፈጠሩትን ኮፒ ያድርጉ ወይም ያውርዱ።",
+    "invalidCount": "ከ2 እስከ 50 ኮዶችን ይምረጡ።",
+    "invalidLimit": "የአጠቃቀም ገደቡ ከዜሮ በላይ የሆነ ሙሉ ቁጥር መሆን አለበት።",
+    "failed": "የቅናሽ ኮዶቹን መፍጠር አልተቻለም።"
+  },
+  "target": {
+    "products": "የተወሰኑ ምርቶች",
+    "categories": "የምርት ምድቦች",
+    "collections": "የምርት ስብስቦች",
+    "selectCategories": "ምድቦችን ይምረጡ…",
+    "selectCollections": "ስብስቦችን ይምረጡ…",
+    "noCategories": "ምድብ አልተገኘም።",
+    "noCollections": "ስብስብ አልተገኘም።",
+    "registeredOnly": "ለተመዘገቡ ደንበኞች ብቻ",
+    "registeredOnlyHelp": "እንግዶች ይህን ቅናሽ መጠቀም አይችሉም። ለሁሉም የሆነ ቅናሽ ከሆነ ይህን ያጥፉ።",
+    "unsupportedRules": "ይህ ቅናሽ ECS በአስተማማኝ ሁኔታ ገና ማስተካከል የማይችላቸው የላቁ ደንቦች አሉት። በMedusa ውስጥ እንዳለ ይቀጥላል፤ ባህሪው እንዳይቀየር እዚህ ማስተካከል ተዘግቷል።"
   },
   "toast": {
     "deleted": "ቅናሹ ጠፍቷል።",
