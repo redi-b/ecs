@@ -35,6 +35,45 @@ describe("merchant expenses routes", () => {
     assert.equal(response.status, 200);
   });
 
+  it("forwards validated workspace search and filters to the tenant-scoped store", async () => {
+    const app = appWithResolution(
+      { ok: true, context: resolvedTenantContext },
+      {
+        getSession: async () => session,
+        authorizeDashboardForTenant: async () => ({
+          ok: true,
+          actor: { ...session.user, role: "viewer" },
+        }),
+        listMerchantExpenses: async (input) => {
+          assert.deepEqual(input, {
+            category: "delivery_transport",
+            from: "2026-09-01",
+            limit: 25,
+            offset: 50,
+            q: "Meskel",
+            status: "active",
+            tenantId: resolvedTenantContext.tenantId,
+            to: "2026-09-30",
+          });
+          return {
+            count: 0,
+            expenses: [],
+            limit: input.limit,
+            offset: input.offset,
+            totalAmount: 0,
+          };
+        },
+      },
+    );
+
+    const response = await app.request(
+      "/platform/merchant/expenses?q=Meskel&category=delivery_transport&status=active&from=2026-09-01&to=2026-09-30&limit=25&offset=50",
+      { headers: { host: resolvedTenantContext.hostname } },
+    );
+
+    assert.equal(response.status, 200);
+  });
+
   it("binds estimated profit to the resolved tenant and commerce channel", async () => {
     const app = appWithResolution(
       { ok: true, context: resolvedTenantContext },

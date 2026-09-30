@@ -68,6 +68,11 @@ export const dashboardRoutes = {
   orderAction: (orderId: string) => `/dashboard/orders/actions/${encodeURIComponent(orderId)}`,
   orderDetail: (orderId: string) => `/dashboard/orders/${encodeURIComponent(orderId)}`,
   editor: "/dashboard/editor",
+  expenses: "/dashboard/expenses",
+  expensesCreateAction: "/dashboard/expenses/actions",
+  expensesExportAction: "/dashboard/expenses/export",
+  expenseVoidAction: (expenseId: string) =>
+    `/dashboard/expenses/actions/${encodeURIComponent(expenseId)}/void`,
   insights: "/dashboard/insights",
   notifications: "/dashboard/notifications",
   billing: "/dashboard/billing",

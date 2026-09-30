@@ -1,0 +1,66 @@
+{
+  "title": "ወጪዎች",
+  "add": "ወጪ ይመዝግቡ",
+  "export": "CSV ያውርዱ",
+  "activeTotal": "ያልተሰረዙ ወጪዎች",
+  "searchLabel": "ወጪዎችን ይፈልጉ",
+  "searchPlaceholder": "ተቀባይ፣ ማጣቀሻ ወይም ማስታወሻ ይፈልጉ",
+  "date": "የተከፈለበት ቀን",
+  "category": "ምድብ",
+  "payee": "ተቀባይ",
+  "reference": "ማጣቀሻ",
+  "note": "ማስታወሻ",
+  "amount": "መጠን",
+  "status": "ሁኔታ",
+  "active": "ያልተሰረዘ",
+  "voided": "የተሰረዘ",
+  "details": "ዝርዝር",
+  "rowActions": "የወጪ አማራጮች",
+  "emptyTitle": "የተመዘገበ ወጪ የለም",
+  "emptyMessage": "ሲያስፈልግ የንግድ ወጪን ይመዝግቡ። ወጪ መመዝገብ አማራጭ ነው።",
+  "filteredEmptyTitle": "ከፍለጋው ጋር የሚዛመድ ወጪ የለም",
+  "filteredEmptyMessage": "ሌሎች መዝገቦችን ለማየት ፍለጋውን ወይም ማጣሪያውን ይቀይሩ።",
+  "loadFailed": "ወጪዎችን መክፈት አልተቻለም",
+  "loadFailedHelp": "እንደገና ይሞክሩ። ምንም መዝገብ አልተቀየረም።",
+  "form": {
+    "title": "ወጪ ይመዝግቡ",
+    "description": "በዚህ መደብር የተከፈለ ወጪ ይመዝግቡ።",
+    "amount": "መጠን (ብር)",
+    "category": "ምድብ",
+    "date": "የተከፈለበት ቀን",
+    "payee": "ተቀባይ (አማራጭ)",
+    "reference": "ማጣቀሻ (አማራጭ)",
+    "note": "ማስታወሻ (አማራጭ)",
+    "save": "ወጪውን ያስቀምጡ",
+    "saving": "ወጪው እየተቀመጠ ነው"
+  },
+  "toast": {
+    "created": "ወጪው ተመዝግቧል",
+    "createFailed": "ወጪውን መመዝገብ አልተቻለም",
+    "voided": "ወጪው ተሰርዟል",
+    "voidFailed": "ወጪውን መሰረዝ አልተቻለም"
+  },
+  "void": {
+    "action": "ወጪውን ሰርዝ",
+    "title": "ይህ ወጪ ይሰረዝ?",
+    "description": "መዝገቡ በታሪክ ውስጥ ይቆያል፤ በወጪ ድምር ውስጥ ግን አይቆጠርም።",
+    "confirm": "ወጪውን ሰርዝ"
+  },
+  "filter": {
+    "status": "ሁኔታ",
+    "allStatuses": "ሁሉም ሁኔታዎች",
+    "category": "ምድብ",
+    "allCategories": "ሁሉም ምድቦች",
+    "date": "የተከፈለበት ቀን"
+  },
+  "categories": {
+    "stock_supplies": "ክምችት እና እቃዎች",
+    "delivery_transport": "ማድረሻ እና ትራንስፖርት",
+    "rent_utilities": "ኪራይ እና መገልገያዎች",
+    "marketing": "ማስታወቂያ",
+    "fees": "ክፍያዎች",
+    "wages": "ደመወዝ",
+    "tax": "የተከፈለ ግብር",
+    "other": "ሌላ"
+  }
+}

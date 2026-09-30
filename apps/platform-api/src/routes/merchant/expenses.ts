@@ -11,6 +11,35 @@ import type { MerchantRouteHelpers } from "./context.js";
 
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 
+function parseExpenseFilters(context: { req: { query: (key: string) => string | undefined } }) {
+  const category = context.req.query("category");
+  const parsedCategory = category ? merchantExpenseCategorySchema.safeParse(category) : null;
+  const status = context.req.query("status");
+  const parsedStatus: "active" | "void" | undefined =
+    status === "active" || status === "void" ? status : undefined;
+  const from = context.req.query("from");
+  const to = context.req.query("to");
+  const q = context.req.query("q")?.trim();
+  const invalid =
+    (parsedCategory && !parsedCategory.success) ||
+    (status && status !== "active" && status !== "void") ||
+    (from && !isoDate.test(from)) ||
+    (to && !isoDate.test(to)) ||
+    (from && to && from > to) ||
+    (q && q.length > 120);
+
+  return {
+    invalid: Boolean(invalid),
+    filters: {
+      ...(parsedCategory?.success ? { category: parsedCategory.data } : {}),
+      ...(from ? { from } : {}),
+      ...(q ? { q } : {}),
+      ...(parsedStatus ? { status: parsedStatus } : {}),
+      ...(to ? { to } : {}),
+    },
+  };
+}
+
 export function registerMerchantExpenseRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: PlatformAppOptions,
@@ -22,28 +51,15 @@ export function registerMerchantExpenseRoutes(
     if (!options.listMerchantExpenses) {
       return context.json({ error: "expenses_unavailable" }, 503);
     }
-    const category = context.req.query("category");
-    const parsedCategory = category ? merchantExpenseCategorySchema.safeParse(category) : null;
-    const status = context.req.query("status");
-    const from = context.req.query("from");
-    const to = context.req.query("to");
-    if (
-      (parsedCategory && !parsedCategory.success) ||
-      (status && status !== "active" && status !== "void") ||
-      (from && !isoDate.test(from)) ||
-      (to && !isoDate.test(to)) ||
-      (from && to && from > to)
-    ) {
+    const parsed = parseExpenseFilters(context);
+    if (parsed.invalid) {
       return context.json({ error: "invalid_expense_filter" }, 400);
     }
     const result = await options.listMerchantExpenses({
-      ...(parsedCategory?.success ? { category: parsedCategory.data } : {}),
-      ...(from ? { from } : {}),
+      ...parsed.filters,
       limit: getPaginationValue(context.req.query("limit"), 20, 100),
       offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      ...(status === "active" || status === "void" ? { status } : {}),
       tenantId: merchant.result.context.tenantId,
-      ...(to ? { to } : {}),
     });
     return context.json(result);
   });
@@ -79,7 +95,12 @@ export function registerMerchantExpenseRoutes(
     if (!options.listMerchantExpenses) {
       return context.json({ error: "expenses_unavailable" }, 503);
     }
+    const parsed = parseExpenseFilters(context);
+    if (parsed.invalid) {
+      return context.json({ error: "invalid_expense_filter" }, 400);
+    }
     const first = await options.listMerchantExpenses({
+      ...parsed.filters,
       limit: 100,
       offset: 0,
       tenantId: merchant.result.context.tenantId,
@@ -90,6 +111,7 @@ export function registerMerchantExpenseRoutes(
     const expenses = [...first.expenses];
     for (let offset = first.expenses.length; offset < first.count; offset += 100) {
       const page = await options.listMerchantExpenses({
+        ...parsed.filters,
         limit: 100,
         offset,
         tenantId: merchant.result.context.tenantId,

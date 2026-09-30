@@ -57,6 +57,11 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
     requirement: merchantPolicies.insights,
   },
   {
+    matches: (pathname) =>
+      pathname === dashboardRoutes.expenses || pathname.startsWith("/dashboard/expenses/"),
+    requirement: merchantPolicies.insights,
+  },
+  {
     matches: (pathname) => pathname === dashboardRoutes.billing,
     requirement: merchantPolicies.billing,
   },
