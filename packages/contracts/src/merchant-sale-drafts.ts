@@ -14,6 +14,7 @@ export const merchantSaleDraftAddressSchema = z.object({
 
 export const merchantSaleDraftContentSchema = z.object({
   adjustmentReason: z.string().trim().max(240).nullable().optional(),
+  channel: z.enum(["assisted_sale", "pos"]).optional(),
   currencyCode: z.literal("etb").default("etb"),
   currentStep: z.number().int().min(0).max(2),
   customer: z.object({
@@ -80,7 +81,7 @@ export const merchantSaleDraftSchema = merchantSaleDraftContentSchema.extend({
 
 export type MerchantSaleDraftSummary = Pick<
   MerchantSaleDraft,
-  "createdAt" | "currentStep" | "id" | "ownerUserId" | "revision" | "updatedAt"
+  "channel" | "createdAt" | "currentStep" | "id" | "ownerUserId" | "revision" | "updatedAt"
 > & {
   customerLabel: string | null;
   itemCount: number;
@@ -89,6 +90,7 @@ export type MerchantSaleDraftSummary = Pick<
 export const merchantSaleDraftSummarySchema = merchantSaleDraftSchema
   .pick({
     createdAt: true,
+    channel: true,
     currentStep: true,
     id: true,
     ownerUserId: true,

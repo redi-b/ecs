@@ -5,7 +5,7 @@ import type {
   MerchantSaleDraftSummary,
 } from "@ecs/contracts";
 import { type createPlatformDb, merchantSaleDrafts } from "@ecs/db";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 
 type DraftWriteResult =
   | { ok: true; draft: MerchantSaleDraft }
@@ -30,6 +30,7 @@ export type MerchantSaleDraftStore = {
   >;
   get(input: { draftId: string; tenantId: string }): Promise<MerchantSaleDraft | null>;
   list(input: {
+    channel?: "assisted_sale" | "pos" | undefined;
     limit: number;
     offset: number;
     tenantId: string;
@@ -201,12 +202,18 @@ export function createInMemoryMerchantSaleDraftStore(): MerchantSaleDraftStore {
     },
     async list(input) {
       const matches = [...rows.values()]
-        .filter((row) => row.tenantId === input.tenantId && row.status === "active")
+        .filter(
+          (row) =>
+            row.tenantId === input.tenantId &&
+            row.status === "active" &&
+            (!input.channel || row.channel === input.channel),
+        )
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
       return {
         count: matches.length,
         drafts: matches.slice(input.offset, input.offset + input.limit).map((row) => ({
           createdAt: row.createdAt,
+          channel: row.channel,
           currentStep: row.currentStep,
           customerLabel: getCustomerLabel(row),
           id: row.id,
@@ -300,6 +307,9 @@ export function createPostgresMerchantSaleDraftStore(db: PlatformDatabase): Merc
       const where = and(
         eq(merchantSaleDrafts.tenantId, input.tenantId),
         eq(merchantSaleDrafts.status, "active"),
+        ...(input.channel
+          ? [sql`${merchantSaleDrafts.content}->>'channel' = ${input.channel}`]
+          : []),
       );
       const [rows, totals] = await Promise.all([
         db
@@ -315,6 +325,7 @@ export function createPostgresMerchantSaleDraftStore(db: PlatformDatabase): Merc
         count: totals[0]?.value ?? 0,
         drafts: rows.map((row) => ({
           createdAt: row.createdAt.toISOString(),
+          channel: (row.content as MerchantSaleDraftContent).channel,
           currentStep: row.currentStep,
           customerLabel: row.customerLabel,
           id: row.id,

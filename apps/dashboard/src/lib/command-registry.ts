@@ -71,6 +71,23 @@ const actionDefs: ActionDef[] = [
     permission: "orders.create",
   },
   {
+    id: "action.pos",
+    labelKey: "commandCenter.actions.quickSale",
+    keywords: [
+      "pos",
+      "point of sale",
+      "quick sale",
+      "ፈጣን ሽያጭ",
+      "cashier",
+      "checkout",
+      "counter",
+      "sale",
+    ],
+    icon: AppIcons.quickSale,
+    href: dashboardRoutes.pos,
+    permission: "orders.create",
+  },
+  {
     id: "action.customers",
     labelKey: "commandCenter.actions.openCustomers",
     keywords: ["buyers", "people", "contacts", "customers"],

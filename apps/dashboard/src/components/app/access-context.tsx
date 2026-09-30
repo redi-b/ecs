@@ -15,6 +15,7 @@ import { type AccessRequirement, allows } from "@/lib/access-policy";
 
 type AccessContextValue = {
   permissions: ReadonlySet<string>;
+  tenant: MerchantDashboardAccess["tenant"] | null;
   can: (permission: MerchantPermission) => boolean;
   allows: (requirement: AccessRequirement) => boolean;
 };
@@ -26,7 +27,8 @@ export function AccessProvider({
   children,
   refreshOnFocus = true,
 }: {
-  access: Pick<MerchantDashboardAccess, "permissions">;
+  access: Pick<MerchantDashboardAccess, "permissions"> &
+    Partial<Pick<MerchantDashboardAccess, "tenant">>;
   children: ReactNode;
   refreshOnFocus?: boolean;
 }) {
@@ -37,10 +39,11 @@ export function AccessProvider({
     const permissions = new Set(access.permissions ?? []);
     return {
       permissions,
+      tenant: access.tenant ?? null,
       can: (permission) => permissions.has(permission),
       allows: (requirement) => allows(permissions, requirement),
     };
-  }, [access.permissions]);
+  }, [access.permissions, access.tenant]);
 
   const refreshAccess = useCallback(
     async (force = false) => {

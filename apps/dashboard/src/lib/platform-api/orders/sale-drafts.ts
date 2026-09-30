@@ -28,7 +28,11 @@ const listSchema = z.object({
 });
 
 export async function listMerchantSaleDrafts(
-  options: RequestContext & { limit?: number; offset?: number },
+  options: RequestContext & {
+    channel?: "assisted_sale" | "pos";
+    limit?: number;
+    offset?: number;
+  },
 ): Promise<
   | { ok: true; count: number; drafts: MerchantSaleDraftSummary[]; limit: number; offset: number }
   | { ok: false; message: string; status: number }
@@ -39,6 +43,7 @@ export async function listMerchantSaleDrafts(
   );
   url.searchParams.set("limit", String(options.limit ?? 20));
   url.searchParams.set("offset", String(options.offset ?? 0));
+  if (options.channel) url.searchParams.set("channel", options.channel);
   const response = await (options.fetcher ?? fetch)(url, {
     cache: "no-store",
     headers: headersFor(options),

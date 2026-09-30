@@ -16,11 +16,12 @@
   "insights": "የንግድ መረጃዎች",
   "documents": "ሰነዶች",
   "expenses": "ወጪዎች",
+  "quickSale": "POS",
   "billing": "ሂሳብ እና ክፍያ",
   "settings": "ማስተካከያዎች",
   "section": {
     "commerce": "ንግድ",
-    "operations": "ኦፕሬሽኖች",
+    "operations": "የሥራ እንቅስቃሴዎች",
     "storefront": "የመደብር ገጽ",
     "insights": "ሪፖርቶች"
   },

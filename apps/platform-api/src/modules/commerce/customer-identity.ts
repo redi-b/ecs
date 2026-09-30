@@ -31,6 +31,15 @@ export function getOperationalCustomerEmail(input: {
   return `${phone}.${tenantKey || "shop"}@customers.local`;
 }
 
+/** Internal Medusa identity for a walk-in sale; never presented as customer contact data. */
+export function getWalkInCustomerEmail(tenantId: string): string {
+  const tenantKey = tenantId
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 40);
+  return `walk-in@${tenantKey || "shop"}.orders.local`;
+}
+
 export function isSyntheticCustomerEmail(value: string | null | undefined): boolean {
   const email = value?.trim().toLowerCase() ?? "";
   return (

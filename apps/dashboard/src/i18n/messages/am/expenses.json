@@ -1,7 +1,7 @@
 {
   "title": "ወጪዎች",
-  "add": "ወጪ ይመዝግቡ",
-  "export": "CSV ያውርዱ",
+  "add": "ወጪ መዝግብ",
+  "export": "CSV አውርድ",
   "activeTotal": "ያልተሰረዙ ወጪዎች",
   "searchLabel": "ወጪዎችን ይፈልጉ",
   "searchPlaceholder": "ተቀባይ፣ ማጣቀሻ ወይም ማስታወሻ ይፈልጉ",
@@ -16,6 +16,13 @@
   "voided": "የተሰረዘ",
   "details": "ዝርዝር",
   "rowActions": "የወጪ አማራጮች",
+  "selectAll": "በዚህ ገጽ ያሉ ያልተሰረዙ ወጪዎችን ይምረጡ",
+  "selectExpense": "ወጪ {name}ን ይምረጡ",
+  "selected": "ወጪዎች ተመርጠዋል",
+  "bulkVoid": "{count} ወጪዎችን ሰርዝ",
+  "bulkVoidTitle": "የተመረጡት ወጪዎች ይሰረዙ?",
+  "bulkVoidDescription": "{count} የተሰረዙ ወጪዎች እዚሁ ይቀመጣሉ፤ በወጪ ድምር ውስጥ ግን አይቆጠሩም።",
+  "bulkVoidConfirm": "የተመረጡትን ሰርዝ",
   "emptyTitle": "የተመዘገበ ወጪ የለም",
   "emptyMessage": "ሲያስፈልግ የንግድ ወጪን ይመዝግቡ። ወጪ መመዝገብ አማራጭ ነው።",
   "filteredEmptyTitle": "ከፍለጋው ጋር የሚዛመድ ወጪ የለም",
@@ -23,7 +30,7 @@
   "loadFailed": "ወጪዎችን መክፈት አልተቻለም",
   "loadFailedHelp": "እንደገና ይሞክሩ። ምንም መዝገብ አልተቀየረም።",
   "form": {
-    "title": "ወጪ ይመዝግቡ",
+    "title": "ወጪ መዝግብ",
     "description": "በዚህ መደብር የተከፈለ ወጪ ይመዝግቡ።",
     "amount": "መጠን (ብር)",
     "category": "ምድብ",
@@ -31,19 +38,21 @@
     "payee": "ተቀባይ (አማራጭ)",
     "reference": "ማጣቀሻ (አማራጭ)",
     "note": "ማስታወሻ (አማራጭ)",
-    "save": "ወጪውን ያስቀምጡ",
-    "saving": "ወጪው እየተቀመጠ ነው"
+    "save": "ወጪውን አስቀምጥ",
+    "saving": "በማስቀመጥ ላይ…"
   },
   "toast": {
     "created": "ወጪው ተመዝግቧል",
     "createFailed": "ወጪውን መመዝገብ አልተቻለም",
     "voided": "ወጪው ተሰርዟል",
-    "voidFailed": "ወጪውን መሰረዝ አልተቻለም"
+    "voidFailed": "ወጪውን መሰረዝ አልተቻለም",
+    "bulkVoided": "{count} ወጪዎች ተሰርዘዋል",
+    "bulkVoidFailed": "{count} ወጪዎችን መሰረዝ አልተቻለም"
   },
   "void": {
     "action": "ወጪውን ሰርዝ",
     "title": "ይህ ወጪ ይሰረዝ?",
-    "description": "መዝገቡ በታሪክ ውስጥ ይቆያል፤ በወጪ ድምር ውስጥ ግን አይቆጠርም።",
+    "description": "የተሰረዘው ወጪ እዚሁ ይቀመጣል፤ በወጪ ድምር ውስጥ ግን አይቆጠርም።",
     "confirm": "ወጪውን ሰርዝ"
   },
   "filter": {

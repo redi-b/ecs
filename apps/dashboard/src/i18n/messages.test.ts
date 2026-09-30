@@ -102,6 +102,7 @@ describe("i18n message catalogs", () => {
       "100 KB – 1 MB",
       "IP",
       "Mac",
+      "POS",
       "SEO",
       "SKU",
       "SKU {sku}",
@@ -185,8 +186,7 @@ describe("i18n message catalogs", () => {
       if (fs.existsSync(sfEnPath) && fs.existsSync(sfAmPath)) {
         const sfEn = JSON.parse(fs.readFileSync(sfEnPath, "utf8")) as Record<string, string>;
         const sfAm = JSON.parse(fs.readFileSync(sfAmPath, "utf8")) as Record<string, string>;
-        for (const [key, enVal] of Object.entries(sfEn)) {
-          const en = String(enVal);
+        for (const key of Object.keys(sfEn)) {
           const am = String(sfAm[key] ?? "");
           const sfKey = `storefront.${key}`;
 

@@ -276,7 +276,11 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className={demoMode ? "gap-0 py-2" : "gap-0 pt-2 pb-2 md:pt-0"}>
+      <SidebarContent
+        className={
+          demoMode ? "gap-0 overscroll-contain py-2" : "gap-0 overscroll-contain pt-2 pb-2 md:pt-0"
+        }
+      >
         {!demoMode ? (
           <>
             <div className="hidden px-3 py-3 md:block group-data-[collapsible=icon]:px-2">

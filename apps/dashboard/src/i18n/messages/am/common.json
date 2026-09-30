@@ -50,10 +50,10 @@
     "copy": "ሊንኩን ኮፒ አድርግ",
     "copied": "ኮፒ ተደርጓል",
     "copyFailed": "የመደብሩን ሊንክ ኮፒ ማድረግ አልተቻለም።",
-    "published": "ታትሟል",
-    "notPublished": "አልታተመም",
+    "published": "ተለቋል",
+    "notPublished": "አልተለቀቀም",
     "publishedDescription": "ደንበኞች ይህን የመደብር ገጽ መጎብኘት ይችላሉ።",
-    "notPublishedDescription": "ይህን ሊንክ ከማጋራትዎ በፊት የመደብር ገጹን ያትሙ።"
+    "notPublishedDescription": "ይህን ሊንክ ከማጋራትዎ በፊት የመደብር ገጹን ይልቀቁት።"
   },
   "themeToLight": "ወደ ብሩህ ገጽታ ቀይር",
   "themeToDark": "ወደ ጨለማ ገጽታ ቀይር",

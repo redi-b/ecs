@@ -250,7 +250,7 @@ export async function markMerchantOrderPaid(
   input: {
     orderId: string;
     salesChannelId: string;
-    source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+    source?: "dashboard" | "pos" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
     paymentReference?: string | null | undefined;
     settlement?: OrderSettlementInput | null | undefined;
   },
@@ -264,7 +264,10 @@ export async function markMerchantOrderPaid(
     return existing;
   }
 
-  if (input.source === "dashboard" && existing.order.paymentMethod === "chapa") {
+  if (
+    (input.source === "dashboard" || input.source === "pos") &&
+    existing.order.paymentMethod === "chapa"
+  ) {
     return {
       ok: false,
       error: "order_action_invalid",

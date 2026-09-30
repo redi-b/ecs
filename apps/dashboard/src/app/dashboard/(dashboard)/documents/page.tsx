@@ -7,6 +7,7 @@ import { ListSummary, PaginationControls } from "@/components/app/list-page-cont
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DocumentsCreateMenu } from "@/features/documents/documents-create-menu";
 import { DocumentsTable } from "@/features/documents/documents-table";
 import { getTranslations } from "@/i18n/server";
 import type { DashboardSearchParams } from "@/lib/dashboard-tenant-context";
@@ -38,7 +39,15 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
   const t = await getTranslations();
 
   return (
-    <PageShell actions={<RefreshButton />} title={t("documents.title")}>
+    <PageShell
+      actions={
+        <>
+          <RefreshButton />
+          <DocumentsCreateMenu />
+        </>
+      }
+      title={t("documents.title")}
+    >
       {result.ok ? (
         <>
           <ListSummary

@@ -25,8 +25,8 @@ export type AppRoute = {
 export const appRouteSections: ReadonlyArray<{ id: AppRouteSection; label: string | null }> = [
   { id: "main", label: null },
   { id: "commerce", label: "Commerce" },
-  { id: "operations", label: "Operations" },
   { id: "storefront", label: "Storefront" },
+  { id: "operations", label: "Operations" },
   { id: "insights", label: "Insights" },
 ];
 

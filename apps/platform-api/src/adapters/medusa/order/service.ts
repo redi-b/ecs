@@ -149,7 +149,7 @@ export function createMedusaOrderService(options: {
       orderId: string;
       paymentReference?: string | null | undefined;
       salesChannelId: string;
-      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+      source?: "dashboard" | "pos" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
       settlement?: import("../../../lib/settlement.js").OrderSettlementInput | null | undefined;
     }): Promise<MerchantOrderActionResult> => {
       if (!options.adminApiToken?.trim()) {
@@ -201,7 +201,7 @@ export function createMedusaOrderService(options: {
       shippingOptionId?: string | undefined;
       stockLocationId?: string | undefined;
       paymentReference?: string | null | undefined;
-      source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+      source?: "dashboard" | "pos" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
       settlement?: import("../../../lib/settlement.js").OrderSettlementInput | null | undefined;
       refund?: MerchantRefundInput | undefined;
     }): Promise<MerchantOrderActionResult> => {

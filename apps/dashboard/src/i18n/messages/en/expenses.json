@@ -16,6 +16,13 @@
   "voided": "Voided",
   "details": "Details",
   "rowActions": "Expense actions",
+  "selectAll": "Select active expenses on this page",
+  "selectExpense": "Select expense {name}",
+  "selected": "expenses selected",
+  "bulkVoid": "Void {count}",
+  "bulkVoidTitle": "Void selected expenses?",
+  "bulkVoidDescription": "{count} expense records will stay in history and stop counting toward active totals.",
+  "bulkVoidConfirm": "Void selected",
   "emptyTitle": "No expenses yet",
   "emptyMessage": "Record a business cost when it is useful. Expenses are optional.",
   "filteredEmptyTitle": "No matching expenses",
@@ -38,7 +45,9 @@
     "created": "Expense recorded",
     "createFailed": "Expense could not be recorded",
     "voided": "Expense voided",
-    "voidFailed": "Expense could not be voided"
+    "voidFailed": "Expense could not be voided",
+    "bulkVoided": "{count} expenses voided",
+    "bulkVoidFailed": "{count} expenses could not be voided"
   },
   "void": {
     "action": "Void expense",
