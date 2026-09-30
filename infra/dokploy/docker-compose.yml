@@ -533,7 +533,8 @@ services:
       - traefik.docker.network=dokploy-network
       - traefik.http.services.ecs-caddy.loadbalancer.server.port=80
       # HTTP → HTTPS for the landing apex and every managed one-level host.
-      # Wildcard issuance uses DNS-01, so no HTTP challenge bypass is required.
+      # TLS is terminated at Traefik. Dokploy's shared certificate store supplies
+      # the matching certificate; this application does not run ACME issuance.
       - traefik.http.routers.ecs-caddy-http.rule=Host(`${BASE_DOMAIN}`) || HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-http.ruleSyntax=v2
       - traefik.http.routers.ecs-caddy-http.entrypoints=web
@@ -542,17 +543,13 @@ services:
       - traefik.http.routers.ecs-caddy-http.service=ecs-caddy
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.ecs-caddy-https-redirect.redirectscheme.permanent=true
-      # One certificate covers the landing apex plus every managed one-level host.
-      # TLS_CERT_RESOLVER must name a DNS-01 resolver configured in Dokploy's
-      # static Traefik settings. HTTP-01 cannot issue wildcard certificates.
+      # Traefik selects a matching certificate by SNI and otherwise uses its
+      # configured/generated default certificate.
       - traefik.http.routers.ecs-caddy-https.rule=Host(`${BASE_DOMAIN}`) || HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)
       - traefik.http.routers.ecs-caddy-https.ruleSyntax=v2
       - traefik.http.routers.ecs-caddy-https.entrypoints=websecure
       - traefik.http.routers.ecs-caddy-https.priority=10
       - traefik.http.routers.ecs-caddy-https.tls=true
-      - traefik.http.routers.ecs-caddy-https.tls.certresolver=${TLS_CERT_RESOLVER:-letsencrypt-dns}
-      - traefik.http.routers.ecs-caddy-https.tls.domains[0].main=${BASE_DOMAIN}
-      - traefik.http.routers.ecs-caddy-https.tls.domains[0].sans=*.${BASE_DOMAIN}
       - traefik.http.routers.ecs-caddy-https.service=ecs-caddy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]

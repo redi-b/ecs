@@ -6,6 +6,10 @@ const compose = await readFile(
   new URL("../infra/dokploy/docker-compose.yml", import.meta.url),
   "utf8",
 );
+const environmentExample = await readFile(
+  new URL("../infra/dokploy/.env.example", import.meta.url),
+  "utf8",
+);
 const dockerfile = await readFile(new URL("../infra/docker/Dockerfile", import.meta.url), "utf8");
 const landingPackage = JSON.parse(
   await readFile(new URL("../apps/landing/package.json", import.meta.url), "utf8"),
@@ -47,22 +51,15 @@ test("storefront receives the branded demo host at runtime", () => {
   );
 });
 
-test("Traefik requests one DNS-01 certificate for the base domain and wildcard", () => {
+test("Traefik uses the shared certificate store without application ACME labels", () => {
   const caddyStart = compose.indexOf("\n  caddy:");
   const caddy = compose.slice(caddyStart, compose.indexOf("\nvolumes:", caddyStart));
   assert.match(caddy, /Host\(`\$\{BASE_DOMAIN\}`\) \|\| HostRegexp/);
-  assert.match(
-    caddy,
-    /traefik\.http\.routers\.ecs-caddy-https\.tls\.certresolver=\$\{TLS_CERT_RESOLVER:-letsencrypt-dns\}/,
-  );
-  assert.match(
-    caddy,
-    /traefik\.http\.routers\.ecs-caddy-https\.tls\.domains\[0\]\.main=\$\{BASE_DOMAIN\}/,
-  );
-  assert.match(
-    caddy,
-    /traefik\.http\.routers\.ecs-caddy-https\.tls\.domains\[0\]\.sans=\*\.\$\{BASE_DOMAIN\}/,
-  );
+  assert.match(caddy, /traefik\.http\.routers\.ecs-caddy-https\.tls=true/);
+  assert.doesNotMatch(caddy, /tls\.certresolver=/);
+  assert.doesNotMatch(caddy, /tls\.domains\[/);
+  assert.doesNotMatch(compose, /TLS_CERT_RESOLVER/);
+  assert.doesNotMatch(environmentExample, /TLS_CERT_RESOLVER/);
   assert.doesNotMatch(caddy, /ecs-caddy-demo-certs/);
 });
 
