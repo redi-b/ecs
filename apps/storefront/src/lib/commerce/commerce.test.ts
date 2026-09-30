@@ -100,7 +100,10 @@ test("listStoreProducts hydrates ranked search ids and preserves their order", a
   assert.ok(requests[0]?.url.includes("category_id=pcat_1"));
   assert.ok(requests[0]?.url.includes("collection_id=pcol_1"));
   assert.ok(requests[0]?.url.includes("order=created_at"));
-  assert.deepEqual("products" in result ? result.products.map((product) => product.id) : [], ["p2", "p1"]);
+  assert.deepEqual("products" in result ? result.products.map((product) => product.id) : [], [
+    "p2",
+    "p1",
+  ]);
   assert.deepEqual("products" in result ? result.facets : undefined, {
     categories: { pcat_1: 2 },
     collections: { pcol_1: 2 },
@@ -294,6 +297,30 @@ test("normalizeProduct maps calculated prices and variants", () => {
   assert.equal(product.discountPercentage, 29);
   assert.equal(product.variants[0]?.inStock, true);
   assert.equal(product.variants[0]?.optionValues[0]?.value, "M");
+});
+
+test("normalizeProduct applies a core-projected automatic merchandising offer", () => {
+  const product = normalizeProduct({
+    id: "prod_1",
+    variants: [
+      {
+        id: "var_1",
+        calculated_price: {
+          calculated_amount: 100,
+          original_amount: 100,
+          currency_code: "etb",
+        },
+        ecs_merchandising: {
+          discount_percentage: 15,
+          promotion_id: "promo_1",
+        },
+      },
+    ],
+  });
+
+  assert.equal(product.priceAmount, 85);
+  assert.equal(product.originalPriceAmount, 100);
+  assert.equal(product.discountPercentage, 15);
 });
 
 test("normalizeProduct exposes only valid explicit option-value swatches", () => {
