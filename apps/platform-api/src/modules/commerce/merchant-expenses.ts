@@ -4,7 +4,7 @@ import type {
   MerchantExpenseInput,
 } from "@ecs/contracts";
 import { type createPlatformDb, merchantExpenses, merchantOrderCostSnapshots } from "@ecs/db";
-import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 
 type PlatformDatabase = ReturnType<typeof createPlatformDb>["db"];
 type ExpenseRow = typeof merchantExpenses.$inferSelect;
@@ -34,6 +34,7 @@ export type MerchantExpenseListInput = {
   from?: string | undefined;
   limit: number;
   offset: number;
+  q?: string | undefined;
   status?: "active" | "void" | undefined;
   tenantId: string;
   to?: string | undefined;
@@ -54,6 +55,16 @@ export function createMerchantExpenseStore(db: PlatformDatabase) {
       if (input.category) predicates.push(eq(merchantExpenses.category, input.category));
       if (input.from) predicates.push(gte(merchantExpenses.occurredOn, input.from));
       if (input.to) predicates.push(lte(merchantExpenses.occurredOn, input.to));
+      if (input.q) {
+        const escaped = input.q.replace(/[\\%_]/g, "\\$&");
+        const pattern = `%${escaped}%`;
+        const search = or(
+          ilike(merchantExpenses.vendorLabel, pattern),
+          ilike(merchantExpenses.reference, pattern),
+          ilike(merchantExpenses.note, pattern),
+        );
+        if (search) predicates.push(search);
+      }
       const where = and(...predicates);
       const [rows, totals] = await Promise.all([
         db

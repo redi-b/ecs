@@ -1,4 +1,5 @@
 import {
+  type MerchantExpenseCategory,
   type MerchantExpenseInput,
   merchantExpenseSchema,
   merchantExpensesResponseSchema,
@@ -21,12 +22,24 @@ function headers(options: Context, json = false) {
 }
 
 export async function getMerchantExpenses(
-  options: Context & { limit?: number; offset?: number; status?: "active" | "void" },
+  options: Context & {
+    category?: MerchantExpenseCategory;
+    from?: string;
+    limit?: number;
+    offset?: number;
+    q?: string;
+    status?: "active" | "void";
+    to?: string;
+  },
 ) {
   const url = new URL("/platform/merchant/expenses", normalizeBaseUrl(options.platformApiBaseUrl));
   url.searchParams.set("limit", String(options.limit ?? 50));
   url.searchParams.set("offset", String(options.offset ?? 0));
   if (options.status) url.searchParams.set("status", options.status);
+  if (options.category) url.searchParams.set("category", options.category);
+  if (options.from) url.searchParams.set("from", options.from);
+  if (options.q) url.searchParams.set("q", options.q);
+  if (options.to) url.searchParams.set("to", options.to);
   const response = await fetch(url, { cache: "no-store", headers: headers(options) }).catch(
     () => null,
   );

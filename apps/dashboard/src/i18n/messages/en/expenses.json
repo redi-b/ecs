@@ -1,0 +1,66 @@
+{
+  "title": "Expenses",
+  "add": "Add expense",
+  "export": "Export CSV",
+  "activeTotal": "Active total",
+  "searchLabel": "Search expenses",
+  "searchPlaceholder": "Search payee, reference, or note",
+  "date": "Date paid",
+  "category": "Category",
+  "payee": "Payee",
+  "reference": "Reference",
+  "note": "Note",
+  "amount": "Amount",
+  "status": "Status",
+  "active": "Active",
+  "voided": "Voided",
+  "details": "Details",
+  "rowActions": "Expense actions",
+  "emptyTitle": "No expenses yet",
+  "emptyMessage": "Record a business cost when it is useful. Expenses are optional.",
+  "filteredEmptyTitle": "No matching expenses",
+  "filteredEmptyMessage": "Change the search or filters to see other records.",
+  "loadFailed": "Expenses could not be loaded",
+  "loadFailedHelp": "Try again. No record was changed.",
+  "form": {
+    "title": "Add expense",
+    "description": "Record a cost paid by this shop.",
+    "amount": "Amount (ETB)",
+    "category": "Category",
+    "date": "Date paid",
+    "payee": "Payee (optional)",
+    "reference": "Reference (optional)",
+    "note": "Note (optional)",
+    "save": "Save expense",
+    "saving": "Saving expense"
+  },
+  "toast": {
+    "created": "Expense recorded",
+    "createFailed": "Expense could not be recorded",
+    "voided": "Expense voided",
+    "voidFailed": "Expense could not be voided"
+  },
+  "void": {
+    "action": "Void expense",
+    "title": "Void this expense?",
+    "description": "The record will stay in history and will no longer count toward active totals.",
+    "confirm": "Void expense"
+  },
+  "filter": {
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "category": "Category",
+    "allCategories": "All categories",
+    "date": "Date paid"
+  },
+  "categories": {
+    "stock_supplies": "Stock and supplies",
+    "delivery_transport": "Delivery and transport",
+    "rent_utilities": "Rent and utilities",
+    "marketing": "Marketing",
+    "fees": "Fees",
+    "wages": "Wages",
+    "tax": "Tax paid",
+    "other": "Other"
+  }
+}

@@ -89,7 +89,7 @@ test("expenses remain unavailable until the operations workspace owns the workfl
   );
   assert.equal(existsSync(join(sourceRoot, "app/dashboard/insights/expenses/page.tsx")), false);
 
-  const actions = read("features/insights/insights-header-actions.tsx");
+  const actions = source("features/insights/insights-header-actions.tsx");
   assert.doesNotMatch(actions, /dashboard\/insights\/expenses/);
 });
 
