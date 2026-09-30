@@ -7,6 +7,27 @@ import {
   getProductWriteBody,
   splitProductOptionBatchBody,
 } from "./write.js";
+
+test("stores an optional ETB unit cost on each variant for sale-time capture", () => {
+  const body = getProductWriteBody({
+    currencyCode: "etb",
+    salesChannelId: "sc_1",
+    variants: [
+      {
+        currencyCode: "etb",
+        optionValues: { Default: "Default" },
+        priceAmount: 150,
+        unitCostAmount: 90,
+      },
+    ],
+  });
+
+  assert.deepEqual((body.variants as Array<Record<string, unknown>>)[0]?.metadata, {
+    ecs_unit_cost_amount: 90,
+    ecs_unit_cost_currency: "etb",
+  });
+});
+
 test("variant updates retain unrelated Medusa metadata", () => {
   const completed = completeVariantOptionsForCurrentProduct(
     {

@@ -9,6 +9,10 @@ import type {
 type TenantOrderRouteDependencies = Pick<
   PlatformAppOptions,
   | "authorizeDashboardForTenant"
+  | "appendMerchantInventoryMovement"
+  | "createMerchantReturn"
+  | "receiveMerchantReturn"
+  | "executeMerchantMutation"
   | "getMerchantOrder"
   | "getSession"
   | "getTenantCommerceContext"
@@ -18,7 +22,10 @@ type TenantOrderRouteDependencies = Pick<
 >;
 
 import { parseOrderRefundInput } from "../../../lib/order-refund-input.js";
+import { parseOrderReturnInput } from "../../../lib/order-return-input.js";
+import { parseOrderReturnReceiptInput } from "../../../lib/order-return-receipt-input.js";
 import { parseOrderSettlementInput } from "../../../lib/order-settlement-input.js";
+import { recordReturnMovements } from "../../../lib/record-return-movements.js";
 import { getPaginationValue } from "../../shared.js";
 
 export function registerPlatformTenantOrdersRoutes(
@@ -239,6 +246,149 @@ export function registerPlatformTenantOrdersRoutes(
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/refund", (context) =>
     mutateSelectedTenantOrder(context, "refund"),
+  );
+
+  app.post("/platform/tenants/:tenantId/orders/:orderId/returns", async (context) => {
+    if (
+      !options.getTenantCommerceContext ||
+      !options.createMerchantReturn ||
+      !options.executeMerchantMutation
+    ) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+
+    const tenantId = context.req.param("tenantId");
+    const orderId = context.req.param("orderId");
+    if (!tenantId || !orderId) return context.json({ error: "order_not_found" }, 404);
+
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+      permission: { orders: ["update"] },
+    });
+    if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+
+    const commerce = await options.getTenantCommerceContext({ tenantId, userId: session.user.id });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!commerce.context.medusaStockLocationId) {
+      return context.json({ error: "inventory_location_unavailable" }, 503);
+    }
+
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const body = parseOrderReturnInput(await context.req.json().catch(() => null));
+    if (!body) return context.json({ error: "order_return_invalid" }, 400);
+
+    const input = {
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      locationId: commerce.context.medusaStockLocationId,
+      items: body.items,
+      ...(body.note ? { note: body.note } : {}),
+    };
+    const execution = await options.executeMerchantMutation(
+      {
+        actorUserId: session.user.id,
+        idempotencyKey,
+        operation: "order.return.create",
+        payload: input,
+        requestId: context.get("requestId"),
+        resourceKeys: [`order:${orderId}`],
+        source: "assisted_sale",
+        tenantId,
+      },
+      () =>
+        options.createMerchantReturn?.(input) as ReturnType<
+          NonNullable<typeof options.createMerchantReturn>
+        >,
+    );
+    if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+    context.header("x-idempotent-replay", String(execution.replayed));
+    if (!execution.value.ok) {
+      return context.json({ error: execution.value.error }, execution.value.status);
+    }
+    return context.json({ return: execution.value.orderReturn }, 201);
+  });
+
+  app.post(
+    "/platform/tenants/:tenantId/orders/:orderId/returns/:returnId/receive",
+    async (context) => {
+      if (
+        !options.getTenantCommerceContext ||
+        !options.receiveMerchantReturn ||
+        !options.executeMerchantMutation ||
+        !options.appendMerchantInventoryMovement
+      ) {
+        return context.json({ error: "commerce_backend_unavailable" }, 503);
+      }
+      const session = await options.getSession?.(context.req.raw.headers);
+      if (!session) return context.json({ error: "auth_required" }, 401);
+      const tenantId = context.req.param("tenantId");
+      const orderId = context.req.param("orderId");
+      const returnId = context.req.param("returnId");
+      if (!tenantId || !orderId || !returnId) {
+        return context.json({ error: "order_not_found" }, 404);
+      }
+      const authorization = await options.authorizeDashboardForTenant?.({
+        tenantId,
+        userId: session.user.id,
+        permission: { orders: ["update"] },
+      });
+      if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+      const commerce = await options.getTenantCommerceContext({
+        tenantId,
+        userId: session.user.id,
+      });
+      if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+      const locationId = commerce.context.medusaStockLocationId;
+      if (!locationId) return context.json({ error: "inventory_location_unavailable" }, 503);
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const body = parseOrderReturnReceiptInput(await context.req.json().catch(() => null));
+      if (!body) return context.json({ error: "order_return_invalid" }, 400);
+      const input = {
+        orderId,
+        returnId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        items: body.items,
+      };
+      const actorUserId = session.user.id;
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId,
+          idempotencyKey,
+          operation: "order.return.receive",
+          payload: input,
+          requestId: context.get("requestId"),
+          resourceKeys: [`order:${orderId}`, `return:${returnId}`],
+          source: "assisted_sale",
+          tenantId,
+        },
+        async () => {
+          const result = await options.receiveMerchantReturn?.(input);
+          if (result?.ok) {
+            await recordReturnMovements({
+              actorUserId,
+              append: options.appendMerchantInventoryMovement as NonNullable<
+                typeof options.appendMerchantInventoryMovement
+              >,
+              locationId,
+              result,
+              tenantId,
+            });
+          }
+          return result as Awaited<ReturnType<NonNullable<typeof options.receiveMerchantReturn>>>;
+        },
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      if (!execution.value.ok) {
+        return context.json({ error: execution.value.error }, execution.value.status);
+      }
+      return context.json({ return: execution.value.orderReturn });
+    },
   );
 
   app.post("/platform/tenants/:tenantId/orders/:orderId/finish", async (context) => {

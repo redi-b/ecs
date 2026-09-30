@@ -13,10 +13,15 @@ export type MerchantPromotion = {
   isTaxInclusive: boolean;
   promotionType: "standard" | "buyget";
   targetType: "order" | "items" | "shipping_methods";
+  allocation: "each" | "across" | null;
   maxQuantity: number | null;
   buyMinQuantity: number | null;
   applyToQuantity: number | null;
   productIds: string[];
+  categoryIds: string[];
+  collectionIds: string[];
+  registeredCustomersOnly: boolean;
+  hasUnsupportedRules: boolean;
   buyProductIds: string[];
   campaignName: string | null;
   campaignBudgetType: "usage" | "spend" | null;
@@ -43,6 +48,10 @@ export type MerchantPromotionInput = {
   buyMinQuantity?: number | null | undefined;
   applyToQuantity?: number | null | undefined;
   productIds?: string[] | undefined;
+  categoryIds?: string[] | undefined;
+  collectionIds?: string[] | undefined;
+  registeredCustomersOnly?: boolean | undefined;
+  salesChannelId?: string | undefined;
   buyProductIds?: string[] | undefined;
   campaignName?: string | null | undefined;
   campaignBudgetType?: "usage" | "spend" | null | undefined;
@@ -60,4 +69,23 @@ export type MerchantPromotionResult =
 
 export type MerchantPromotionDeleteResult =
   | { ok: true; id: string; deleted: true }
+  | { ok: false; error: string; status: number };
+
+export type MerchantPromotionCodeBatchInput = {
+  count: number;
+  prefix: string;
+  promotionId: string;
+  suffixLength: number;
+  tenantId: string;
+  usageLimit?: number | null | undefined;
+};
+
+export type MerchantPromotionCodeBatchResult =
+  | {
+      ok: true;
+      promotionId: string;
+      requested: number;
+      codes: string[];
+      failed: number;
+    }
   | { ok: false; error: string; status: number };

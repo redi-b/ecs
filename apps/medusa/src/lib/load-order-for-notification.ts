@@ -23,7 +23,13 @@ export type LoadedOrderForNotification = {
     phone?: string | null;
     city?: string | null;
   } | null;
-  items: Array<{ id?: string; quantity?: number | null }> | null;
+  created_at?: string | null;
+  items: Array<{
+    id?: string;
+    quantity?: number | null;
+    variant_id?: string | null;
+    unit_cost_amount?: number | null;
+  }> | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -40,17 +46,26 @@ function normalizeLoadedOrder(row: unknown): LoadedOrderForNotification | null {
 
   const shipping = asRecord(raw.shipping_address);
   const metadata = asRecord(raw.metadata);
-  const items: Array<{ id?: string; quantity?: number | null }> | null = Array.isArray(raw.items)
+  const items: LoadedOrderForNotification["items"] = Array.isArray(raw.items)
     ? raw.items.flatMap((entry) => {
         if (!entry || typeof entry !== "object") return [];
         const item = entry as Record<string, unknown>;
-        const next: { id?: string; quantity?: number | null } = {};
+        const next: NonNullable<LoadedOrderForNotification["items"]>[number] = {};
         if (typeof item.id === "string") next.id = item.id;
         if (typeof item.quantity === "number" && Number.isFinite(item.quantity)) {
           next.quantity = item.quantity;
         } else if (item.quantity === null) {
           next.quantity = null;
         }
+        next.variant_id = typeof item.variant_id === "string" ? item.variant_id : null;
+        const variant = asRecord(item.variant);
+        const variantMetadata = asRecord(variant?.metadata);
+        const cost = variantMetadata?.ecs_unit_cost_amount;
+        const currency = variantMetadata?.ecs_unit_cost_currency;
+        next.unit_cost_amount =
+          typeof cost === "number" && Number.isInteger(cost) && cost >= 0 && currency === "etb"
+            ? cost
+            : null;
         return [next];
       })
     : null;
@@ -69,6 +84,7 @@ function normalizeLoadedOrder(row: unknown): LoadedOrderForNotification | null {
     status: typeof raw.status === "string" ? raw.status : null,
     payment_status: typeof raw.payment_status === "string" ? raw.payment_status : null,
     metadata,
+    created_at: typeof raw.created_at === "string" ? raw.created_at : null,
     shipping_address: shipping
       ? {
           first_name: typeof shipping.first_name === "string" ? shipping.first_name : null,
@@ -92,12 +108,15 @@ const ORDER_NOTIFICATION_FIELDS = [
   "status",
   "payment_status",
   "metadata",
+  "created_at",
   "shipping_address.first_name",
   "shipping_address.last_name",
   "shipping_address.phone",
   "shipping_address.city",
   "items.id",
   "items.quantity",
+  "items.variant_id",
+  "items.variant.metadata",
 ] as const;
 
 export async function loadOrderForNotification(

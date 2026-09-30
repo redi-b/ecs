@@ -5,7 +5,9 @@ import { registerPlatformBillingCatalogRoutes } from "./billing-catalog.js";
 import { registerDeliveryRoutes } from "./delivery-routes.js";
 import { registerPlatformHealthAuthRoutes } from "./health-auth.js";
 import { registerPlatformInquiryRoutes } from "./inquiries.js";
+import { registerPlatformInternalInventoryEventRoutes } from "./internal-inventory-events.js";
 import { registerPlatformInternalNotificationRoutes } from "./internal-notifications.js";
+import { registerPlatformInternalOrderCostRoutes } from "./internal-order-costs.js";
 import { registerLaunchReadinessRoutes } from "./launch-readiness.js";
 import { registerPlatformOnboardingRoutes } from "./onboarding.js";
 import { registerPlatformOperatorBillingRoutes } from "./operator-billing.js";
@@ -24,6 +26,8 @@ export function registerPlatformRoutes(
   registerPlatformHealthAuthRoutes(app, options);
   registerPlatformBillingCatalogRoutes(app, options);
   registerPlatformInternalNotificationRoutes(app, options);
+  registerPlatformInternalInventoryEventRoutes(app, options);
+  registerPlatformInternalOrderCostRoutes(app, options);
   registerPlatformOnboardingRoutes(app, options);
   registerPlatformTenantCommerceRoutes(app, options);
   registerPlatformTenantRoutes(app, options);

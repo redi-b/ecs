@@ -140,6 +140,28 @@ export const shopDetailsSchema = z
       })
       .strict()
       .optional(),
+    documentBranding: z
+      .object({
+        accentColor: z
+          .string()
+          .regex(/^#[0-9a-f]{6}$/i)
+          .default("#18181b"),
+        footerNote: z.string().trim().max(240).default(""),
+        logoUrl: z
+          .union([
+            z.literal(""),
+            z
+              .string()
+              .trim()
+              .url()
+              .max(2_000)
+              .regex(/^https?:\/\//i),
+          ])
+          .default(""),
+        showContactDetails: z.boolean().default(true),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((details, context) => {

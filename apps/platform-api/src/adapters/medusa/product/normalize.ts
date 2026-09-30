@@ -223,6 +223,13 @@ export function getProductVariants(value: unknown) {
         (variant.metadata.image_source === "option" || variant.metadata.image_source === "manual")
           ? { imageSource: variant.metadata.image_source as "option" | "manual" }
           : {}),
+        ...(isRecord(variant.metadata) &&
+        typeof variant.metadata.ecs_unit_cost_amount === "number" &&
+        Number.isInteger(variant.metadata.ecs_unit_cost_amount) &&
+        variant.metadata.ecs_unit_cost_amount >= 0 &&
+        variant.metadata.ecs_unit_cost_currency === "etb"
+          ? { unitCostAmount: variant.metadata.ecs_unit_cost_amount }
+          : { unitCostAmount: null }),
         ...(optionValues.length === 0 ? {} : { optionValues }),
         prices: getProductPrices(variant.prices),
       },

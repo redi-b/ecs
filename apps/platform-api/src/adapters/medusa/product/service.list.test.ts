@@ -77,6 +77,7 @@ describe("createMedusaProductService: product listing and search", () => {
               inventoryItemId: null,
               title: "Default",
               sku: "COFFEE-1",
+              unitCostAmount: null,
               prices: [
                 {
                   amount: 350,

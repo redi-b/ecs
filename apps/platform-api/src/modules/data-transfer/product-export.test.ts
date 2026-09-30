@@ -83,6 +83,52 @@ describe("product CSV export", () => {
     assert.deepEqual(result, { ok: false, error: "export_results_changed", status: 409 });
   });
 
+  it("applies the availability filter after a stable full-catalog scan", async () => {
+    const result = await exportProductsToCsv({
+      salesChannelId: "sc_1",
+      filters: { inventory: "low_stock" },
+      listProducts: async ({ inventory, limit, offset }) => {
+        assert.equal(inventory, undefined);
+        const makeProduct = (id: string, availableQuantity: number) => ({
+          id,
+          title: id,
+          handle: id,
+          status: "published",
+          thumbnail: null,
+          createdAt: null,
+          updatedAt: null,
+          variants: [
+            {
+              id: `${id}_variant`,
+              title: null,
+              sku: null,
+              prices: [],
+              stock: {
+                availableQuantity,
+                incomingQuantity: 0,
+                locationId: "sloc_1",
+                reservedQuantity: 0,
+                stockedQuantity: availableQuantity,
+              },
+            },
+          ],
+        });
+        return {
+          ok: true,
+          products: [makeProduct("low", 3), makeProduct("healthy", 8)],
+          count: 2,
+          limit,
+          offset,
+        };
+      },
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.productCount, 1);
+    assert.match(result.csv, /"low"/);
+    assert.doesNotMatch(result.csv, /"healthy"/);
+  });
+
   it("uses a second-precise UTC timestamp in filenames", () => {
     assert.equal(
       productExportFilename(new Date("2026-08-26T14:30:15.987Z")),

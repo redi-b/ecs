@@ -430,6 +430,12 @@ export function getProductVariantWriteBody(
       ? { image_url: variant.imageUrl ? variant.imageUrl.trim() : null }
       : {}),
     ...(variant.imageSource !== undefined ? { image_source: variant.imageSource } : {}),
+    ...(variant.unitCostAmount !== undefined
+      ? {
+          ecs_unit_cost_amount: variant.unitCostAmount,
+          ecs_unit_cost_currency: variant.currencyCode.trim().toLowerCase(),
+        }
+      : {}),
   };
 
   return {

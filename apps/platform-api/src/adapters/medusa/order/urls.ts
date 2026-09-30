@@ -21,6 +21,7 @@ const LIST_FIELDS = [
   // Line items for list column + Telegram order cards (include variant when available).
   "*items",
   "*items.variant",
+  "*items.variant.inventory_items",
   "*items.variant.options",
   "*items.product",
   "created_at",
@@ -57,6 +58,8 @@ const DETAIL_FIELDS = [
   "*payment_collections.payments",
   "*payment_collections.payments.captures",
   "*payment_collections.payments.refunds",
+  "*returns",
+  "*returns.items",
   "created_at",
   "updated_at",
 ].join(",");
@@ -214,6 +217,52 @@ export function getOrderActionUrl(
 export function getPaymentRefundUrl(medusaInternalUrl: string, paymentId: string) {
   return new URL(
     `/admin/payments/${encodeURIComponent(paymentId)}/refund`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnsUrl(medusaInternalUrl: string) {
+  return new URL("/admin/returns", normalizeBaseUrl(medusaInternalUrl));
+}
+
+export function getReturnRequestItemsUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/request-items`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnConfirmRequestUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/request`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnReceiveUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/receive`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnReceiveItemsUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/receive-items`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnDismissItemsUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/dismiss-items`,
+    normalizeBaseUrl(medusaInternalUrl),
+  );
+}
+
+export function getReturnConfirmReceiveUrl(medusaInternalUrl: string, returnId: string) {
+  return new URL(
+    `/admin/returns/${encodeURIComponent(returnId)}/receive/confirm`,
     normalizeBaseUrl(medusaInternalUrl),
   );
 }

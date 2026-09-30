@@ -12,6 +12,220 @@ import type {
 } from "./notifications.js";
 
 export type PlatformMerchantOperationsOptions = {
+  captureMerchantOrderCosts?:
+    | ((input: {
+        items: import("../modules/commerce/merchant-expenses.js").MerchantOrderCostSnapshotInput[];
+        tenantId: string;
+      }) => Promise<{ captured: number }>)
+    | undefined;
+  listMerchantOrderCosts?:
+    | ((input: {
+        orderIds: string[];
+        tenantId: string;
+      }) => Promise<Array<{ orderId: string; quantity: number; unitCostAmount: number | null }>>)
+    | undefined;
+  getMerchantEstimatedProfit?:
+    | ((input: { from: string; salesChannelId: string; tenantId: string; to: string }) => Promise<
+        | {
+            computedAt: string;
+            currencyCode: "etb";
+            from: string;
+            ok: true;
+            summary: ReturnType<
+              typeof import("../modules/commerce/merchant-expenses.js").summarizeEstimatedProfit
+            >;
+            to: string;
+          }
+        | { error: string; ok: false; status: number }
+      >)
+    | undefined;
+  createMerchantReturn?:
+    | ((
+        input: import("../adapters/medusa/order/returns.js").MerchantReturnInput,
+      ) => Promise<import("./merchant-order.js").MerchantOrderReturnResult>)
+    | undefined;
+  receiveMerchantReturn?:
+    | ((
+        input: import("../adapters/medusa/order/returns.js").MerchantReturnReceiptInput,
+      ) => Promise<import("./merchant-order.js").MerchantOrderReturnReceiptResult>)
+    | undefined;
+  createMerchantExpense?:
+    | ((
+        input: import("@ecs/contracts").MerchantExpenseInput & {
+          actorUserId: string;
+          tenantId: string;
+        },
+      ) => Promise<{ expense: import("@ecs/contracts").MerchantExpense }>)
+    | undefined;
+  listMerchantExpenses?:
+    | ((
+        input: import("../modules/commerce/merchant-expenses.js").MerchantExpenseListInput,
+      ) => Promise<{
+        count: number;
+        expenses: import("@ecs/contracts").MerchantExpense[];
+        limit: number;
+        offset: number;
+        totalAmount: number;
+      }>)
+    | undefined;
+  voidMerchantExpense?:
+    | ((input: {
+        actorUserId: string;
+        expenseId: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; expense: import("@ecs/contracts").MerchantExpense }
+        | { ok: false; error: "expense_not_found"; status: 404 }
+      >)
+    | undefined;
+  appendMerchantInventoryMovement?:
+    | ((
+        input: import("../modules/commerce/merchant-inventory-movements.js").AppendMerchantInventoryMovementInput,
+      ) => Promise<{ movement: import("@ecs/contracts").MerchantInventoryMovement }>)
+    | undefined;
+  listMerchantInventoryMovements?:
+    | ((input: {
+        inventoryItemId?: string | undefined;
+        limit: number;
+        locationId: string;
+        offset: number;
+        productId?: string | undefined;
+        tenantId: string;
+        variantId?: string | undefined;
+      }) => Promise<{
+        count: number;
+        limit: number;
+        movements: import("@ecs/contracts").MerchantInventoryMovement[];
+        offset: number;
+      }>)
+    | undefined;
+  issueMerchantSalesDocument?:
+    | ((input: {
+        createdByUserId: string;
+        snapshot: import("@ecs/contracts").MerchantSalesDocumentSnapshot;
+        tenantId: string;
+      }) => Promise<{ document: import("@ecs/contracts").MerchantSalesDocument }>)
+    | undefined;
+  getMerchantSalesDocument?:
+    | ((input: {
+        documentId: string;
+        tenantId: string;
+      }) => Promise<import("@ecs/contracts").MerchantSalesDocument | null>)
+    | undefined;
+  listMerchantSalesDocuments?:
+    | ((input: {
+        orderId: string;
+        tenantId: string;
+      }) => Promise<import("@ecs/contracts").MerchantSalesDocument[]>)
+    | undefined;
+  issueMerchantQuotation?:
+    | ((input: {
+        createdByUserId: string;
+        snapshot: import("@ecs/contracts").MerchantQuotationSnapshot;
+        tenantId: string;
+      }) => Promise<{ ok: true; quotation: import("@ecs/contracts").MerchantQuotation }>)
+    | undefined;
+  getMerchantQuotation?:
+    | ((input: { quotationId: string; tenantId: string }) => Promise<
+        | {
+            ok: true;
+            quotation: import("@ecs/contracts").MerchantQuotation;
+            revisions: import("@ecs/contracts").MerchantQuotationRevision[];
+          }
+        | { ok: false; error: "quotation_not_found"; status: 404 }
+      >)
+    | undefined;
+  listMerchantQuotations?:
+    | ((input: { limit: number; offset: number; tenantId: string }) => Promise<{
+        ok: true;
+        count: number;
+        limit: number;
+        offset: number;
+        quotations: import("@ecs/contracts").MerchantQuotationSummary[];
+      }>)
+    | undefined;
+  reviseMerchantQuotation?:
+    | ((input: {
+        createdByUserId: string;
+        expectedRevision: number;
+        quotationId: string;
+        snapshot: import("@ecs/contracts").MerchantQuotationSnapshot;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; quotation: import("@ecs/contracts").MerchantQuotation }
+        | { ok: false; error: "quotation_revision_conflict"; status: 409 }
+      >)
+    | undefined;
+  markMerchantQuotationConverted?:
+    | ((input: { orderId: string; quotationId: string; tenantId: string }) => Promise<boolean>)
+    | undefined;
+  validateMerchantSaleDraft?:
+    | ((input: {
+        content: import("@ecs/contracts").MerchantSaleDraftContent;
+        salesChannelId: string;
+        stockLocationId?: string | null | undefined;
+      }) => ReturnType<
+        import("../modules/commerce/merchant-sale-drafts.js").ValidateMerchantSaleDraft
+      >)
+    | undefined;
+  archiveMerchantSaleDraft?:
+    | ((input: {
+        draftId: string;
+        expectedRevision: number;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true }
+        | { ok: false; error: "sale_draft_not_found"; status: 404 }
+        | { ok: false; error: "sale_draft_revision_conflict"; status: 409 }
+      >)
+    | undefined;
+  getMerchantSaleDraft?:
+    | ((input: {
+        draftId: string;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; draft: import("@ecs/contracts").MerchantSaleDraft }
+        | { ok: false; error: "sale_draft_not_found"; status: 404 }
+      >)
+    | undefined;
+  listMerchantSaleDrafts?:
+    | ((input: { limit: number; offset: number; tenantId: string }) => Promise<{
+        ok: true;
+        count: number;
+        drafts: import("@ecs/contracts").MerchantSaleDraftSummary[];
+        limit: number;
+        offset: number;
+      }>)
+    | undefined;
+  saveMerchantSaleDraft?:
+    | ((input: {
+        content: import("@ecs/contracts").MerchantSaleDraftContent;
+        draftId?: string | undefined;
+        expectedRevision?: number | undefined;
+        ownerUserId: string;
+        salesChannelId: string;
+        stockLocationId?: string | null | undefined;
+        tenantId: string;
+      }) => Promise<
+        | { ok: true; draft: import("@ecs/contracts").MerchantSaleDraft }
+        | {
+            ok: false;
+            error:
+              | "sale_draft_not_found"
+              | "sale_draft_revision_conflict"
+              | "sale_draft_validation_unavailable";
+            status: 404 | 409 | 503;
+          }
+      >)
+    | undefined;
+  executeMerchantMutation?:
+    | (<T>(
+        input: import("../modules/commerce/merchant-mutation-replay.js").MerchantMutationEnvelope,
+        mutation: () => Promise<T>,
+      ) => Promise<
+        import("../modules/commerce/merchant-mutation-replay.js").MerchantMutationExecutionResult<T>
+      >)
+    | undefined;
   listMerchantOrders?:
     | ((
         input: import("./merchant-order.js").MerchantOrderListQuery,
@@ -63,6 +277,10 @@ export type PlatformMerchantOperationsOptions = {
         shippingOptionId?: string | null | undefined;
         tenantId: string;
         userId: string;
+        idempotencyKey?: string | undefined;
+        quotationId?: string | undefined;
+        quotationRevision?: number | undefined;
+        source?: "assisted_sale" | "quote_conversion" | undefined;
       }) => Promise<
         | {
             ok: true;

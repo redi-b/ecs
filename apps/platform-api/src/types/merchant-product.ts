@@ -48,6 +48,7 @@ export type MerchantProductVariant = {
   sku: string | null;
   imageUrl?: string | null;
   imageSource?: "option" | "manual" | null;
+  unitCostAmount?: number | null;
   optionValues?: MerchantProductVariantOptionValue[];
   prices: MerchantProductPrice[];
   stock?: Omit<MerchantProductStock, "productId" | "variantId" | "inventoryItemId"> | null;

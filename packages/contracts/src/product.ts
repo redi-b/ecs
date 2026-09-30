@@ -11,6 +11,7 @@ export const merchantProductVariantWriteSchema = z.object({
   stockedQuantity: z.number().int().nonnegative().optional(),
   imageUrl: z.string().url().nullable().optional(),
   imageSource: z.enum(["option", "manual"]).nullable().optional(),
+  unitCostAmount: z.number().int().nonnegative().nullable().optional(),
 });
 
 export const PRODUCT_OPTION_VALUE_PRESENTATION_METADATA_KEY =
@@ -161,6 +162,7 @@ export const merchantProductSchema = z.object({
         sku: z.string().min(1).nullable(),
         imageUrl: z.string().url().nullable().optional(),
         imageSource: z.enum(["option", "manual"]).nullable().optional(),
+        unitCostAmount: z.number().int().nonnegative().nullable().optional(),
         optionValues: z
           .array(
             z.object({

@@ -61,6 +61,7 @@ export function registerMerchantManualOrderRoutes(
     if (!options.createMerchantManualOrder) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const createMerchantManualOrder = options.createMerchantManualOrder;
 
     const commerce = helpers.getResolvedCommerce(merchant.result.context, {
       requireRegion: true,
@@ -68,6 +69,10 @@ export function registerMerchantManualOrderRoutes(
     if (!commerce.ok) {
       return context.json({ error: commerce.error }, commerce.status);
     }
+    if (!commerce.context.medusaRegionId) {
+      return context.json({ error: "commerce_region_unavailable" }, 503);
+    }
+    const regionId = commerce.context.medusaRegionId;
 
     const shippingAddress = parsed.data.shippingAddress
       ? {
@@ -115,20 +120,44 @@ export function registerMerchantManualOrderRoutes(
       // If ensure fails, still attempt the order with email only.
     }
 
-    const result = await options.createMerchantManualOrder({
-      customerEmail,
-      customerId,
-      items: parsed.data.items,
-      discount: parsed.data.discount ?? null,
-      adjustmentReason: parsed.data.adjustmentReason ?? null,
-      note: parsed.data.note ?? null,
-      regionId: commerce.context.medusaRegionId!,
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      shippingAddress,
-      shippingOptionId: merchant.result.context.medusaShippingOptionId,
-      tenantId: merchant.result.context.tenantId,
-      userId: merchant.session.user.id,
-    });
+    const createOrder = () =>
+      createMerchantManualOrder({
+        customerEmail,
+        customerId,
+        items: parsed.data.items,
+        discount: parsed.data.discount ?? null,
+        adjustmentReason: parsed.data.adjustmentReason ?? null,
+        note: parsed.data.note ?? null,
+        regionId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        shippingAddress,
+        shippingOptionId: merchant.result.context.medusaShippingOptionId,
+        tenantId: merchant.result.context.tenantId,
+        userId: merchant.session.user.id,
+      });
+    let result: Awaited<ReturnType<typeof createOrder>>;
+    if (options.executeMerchantMutation) {
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: merchant.session.user.id,
+          idempotencyKey,
+          operation: "assisted_sale.create",
+          payload: parsed.data,
+          requestId: context.get("requestId"),
+          resourceKeys: [`assisted-sale:${idempotencyKey}`],
+          source: "assisted_sale",
+          tenantId: merchant.result.context.tenantId,
+        },
+        createOrder,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      result = execution.value;
+    } else {
+      result = await createOrder();
+    }
 
     return result.ok
       ? context.json(result, 201)

@@ -181,6 +181,20 @@ describe("merchant inventory", () => {
             name: "Abebe Owner",
           },
         }),
+        getMerchantProductVariantStock: async (input) => ({
+          ok: true,
+          stock: {
+            productId: input.productId,
+            variantId: input.variantId,
+            inventoryItemId: "iitem_1",
+            locationId: input.stockLocationId,
+            stockedQuantity: 12,
+            reservedQuantity: 0,
+            incomingQuantity: 0,
+            availableQuantity: 12,
+          },
+        }),
+        appendMerchantInventoryMovement: async (input) => ({ ok: true, movement: input }) as never,
         updateMerchantProductVariantStock: async (input) => {
           stockInput = input;
 
@@ -210,6 +224,7 @@ describe("merchant inventory", () => {
         headers: {
           "content-type": "application/json",
           Host: "abebe.lvh.me",
+          "idempotency-key": "set-variant-stock-1",
         },
         method: "POST",
       },
@@ -255,6 +270,20 @@ describe("merchant inventory", () => {
         getSession: async () => ({
           user: { id: "user_1", email: "owner@abebe.local", name: "Abebe" },
         }),
+        getMerchantProductVariantStock: async (input) => ({
+          ok: true,
+          stock: {
+            productId: input.productId,
+            variantId: input.variantId,
+            inventoryItemId: `ii_${input.variantId}`,
+            locationId: input.stockLocationId,
+            stockedQuantity: 0,
+            reservedQuantity: 0,
+            incomingQuantity: 0,
+            availableQuantity: 0,
+          },
+        }),
+        appendMerchantInventoryMovement: async (input) => ({ ok: true, movement: input }) as never,
         updateMerchantProductVariantStock: async (input) => {
           stockInputs.push(input);
           return input.productId === "prod_1"
@@ -283,7 +312,11 @@ describe("merchant inventory", () => {
           { productId: "prod_missing", variantId: "var_2", stockedQuantity: 3 },
         ],
       }),
-      headers: { "content-type": "application/json", Host: "abebe.lvh.me" },
+      headers: {
+        "content-type": "application/json",
+        Host: "abebe.lvh.me",
+        "idempotency-key": "batch-stock-1",
+      },
       method: "POST",
     });
 

@@ -18,5 +18,9 @@ export const productListFiltersSchema = z.object({
     (value) => (value === "all" || value === "" ? undefined : value),
     z.string().trim().min(1).max(255).optional(),
   ),
+  inventory: z.preprocess(
+    (value) => (value === "all" || value === "" ? undefined : value),
+    z.enum(["low_stock", "out_of_stock"]).optional(),
+  ),
 });
 export type ProductListFilters = z.output<typeof productListFiltersSchema>;

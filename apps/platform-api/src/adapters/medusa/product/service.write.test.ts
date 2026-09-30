@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createMedusaProductService } from "./service.js";
-import { getProductsUrl, PRODUCT_LIST_FIELDS } from "./urls.js";
 
 describe("createMedusaProductService: product writes and ownership", () => {
   it("does not label a product query failure as a commerce outage", async () => {
@@ -152,6 +151,7 @@ describe("createMedusaProductService: product writes and ownership", () => {
             inventoryItemId: null,
             title: "Default",
             sku: null,
+            unitCostAmount: null,
             optionValues: [{ optionTitle: "Default", value: "Default" }],
             prices: [
               {
@@ -738,6 +738,7 @@ describe("createMedusaProductService: product writes and ownership", () => {
             inventoryItemId: "iitem_1",
             title: "Default",
             sku: "COF-1",
+            unitCostAmount: null,
             prices: [
               {
                 amount: 350,

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   buildOrderNotificationPayload,
   emitPlatformNotificationEvent,
+  emitPlatformOrderCostSnapshot,
   medusaToPlatformNotificationEvent,
 } from "./platform-notifications";
 
@@ -15,6 +16,31 @@ describe("medusaToPlatformNotificationEvent", () => {
     assert.equal(medusaToPlatformNotificationEvent["shipment.created"], "order.out_for_delivery");
     assert.equal(medusaToPlatformNotificationEvent["delivery.created"], "order.delivered");
     assert.equal(medusaToPlatformNotificationEvent["payment.captured"], "payment.paid");
+  });
+});
+
+describe("emitPlatformOrderCostSnapshot", () => {
+  it("posts immutable line costs to the internal platform seam", async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    process.env.PLATFORM_API_INTERNAL_URL = "http://platform.test";
+    process.env.PLATFORM_INTERNAL_API_TOKEN = "test-token";
+    const result = await emitPlatformOrderCostSnapshot(
+      {
+        items: [{ lineItemId: "item_1", quantity: 2, unitCostAmount: 90, variantId: "variant_1" }],
+        medusaSalesChannelId: "sc_1",
+        orderId: "order_1",
+        orderPlacedAt: "2026-09-30T10:00:00.000Z",
+      },
+      {
+        fetchImpl: async (url, init) => {
+          calls.push({ url: String(url), init: init ?? {} });
+          return Response.json({ captured: 1 }, { status: 201 });
+        },
+      },
+    );
+    assert.equal(result.ok, true);
+    assert.equal(calls[0]?.url, "http://platform.test/platform/internal/orders/cost-snapshots");
+    assert.equal(JSON.parse(String(calls[0]?.init.body)).items[0].unitCostAmount, 90);
   });
 });
 

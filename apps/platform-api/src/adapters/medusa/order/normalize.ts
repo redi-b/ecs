@@ -1,7 +1,8 @@
 import { settlementFromMetadata } from "../../../lib/settlement.js";
 import type { MerchantOrder, MerchantOrderPaymentMethod } from "../../../types/index.js";
-import { getNumber, getString, isRecord } from "./values.js";
 import { getOrderRefundSummary } from "./refunds.js";
+import { getOrderReturns } from "./returns.js";
+import { getNumber, getString, isRecord } from "./values.js";
 
 export function normalizeOrder(value: unknown, salesChannelId: string): MerchantOrder[] {
   if (!isRecord(value)) {
@@ -57,6 +58,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       : isPaidPaymentStatus(paymentStatus) && typeof total === "number" && total > 0
         ? { refundableTotal: total, refundedTotal: 0, refunds: [] }
         : nativeRefundSummary;
+  const returns = getOrderReturns(value.returns);
 
   return [
     {
@@ -78,6 +80,7 @@ export function normalizeOrder(value: unknown, salesChannelId: string): Merchant
       currencyCode: getString(value.currency_code),
       total,
       ...(refundSummary ?? {}),
+      ...(returns.length ? { returns } : {}),
       subtotal: getNumber(value.subtotal) ?? null,
       shippingTotal: getNumber(value.shipping_total) ?? null,
       discountTotal: getNumber(value.discount_total) ?? null,
@@ -291,6 +294,15 @@ export function getLineItems(value: unknown) {
         : (computedTotal ?? reportedTotal ?? null);
 
     const variantRecord = isRecord(item.variant) ? item.variant : null;
+    const inventoryItemId = variantRecord
+      ? Array.isArray(variantRecord.inventory_items)
+        ? variantRecord.inventory_items.flatMap((entry) =>
+            isRecord(entry) && getString(entry.inventory_item_id)
+              ? [getString(entry.inventory_item_id) as string]
+              : [],
+          )[0]
+        : undefined
+      : undefined;
     const productRecord = isRecord(item.product) ? item.product : null;
     const productTitle =
       getString(item.product_title) ??
@@ -314,6 +326,7 @@ export function getLineItems(value: unknown) {
     return [
       {
         id,
+        ...(inventoryItemId ? { inventoryItemId } : {}),
         ...(getString(item.product_id) ? { productId: getString(item.product_id) } : {}),
         ...(getString(item.variant_id) ? { variantId: getString(item.variant_id) } : {}),
         title,
