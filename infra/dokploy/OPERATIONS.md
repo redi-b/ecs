@@ -25,9 +25,15 @@ Do not run demo seeds in production. Do not continue a release after either migr
 Keep these public host values in the Dokploy environment and under the same delegated base domain:
 
 - `BASE_DOMAIN` may now be the purchased apex domain. Create an apex (`@`) DNS record and a wildcard
-  (`*`) record to the same Traefik address; neither record replaces the other.
-- `TLS_CERT_RESOLVER` must name the static Traefik DNS-01 resolver. The ECS router requests one
-  certificate for both the base/landing host and `*.BASE_DOMAIN`.
+  (`*`) record to the same Traefik address; neither record replaces the other. Both records must be
+  proxied through Cloudflare.
+- Dokploy/Traefik must have one Cloudflare Origin CA certificate containing `BASE_DOMAIN` and
+  `*.BASE_DOMAIN`. Keep Cloudflare in **Full (strict)** mode. The certificate and private key belong
+  in Dokploy's certificate store, never in this repository or the ECS Compose environment.
+
+Before the Origin CA certificate is installed, Traefik may serve its generated default certificate
+behind Cloudflare **Full** mode as a short-lived bootstrap fallback. Do not treat that as release
+ready: Full (strict) must succeed before serving merchants.
 
 ```dotenv
 BASE_DOMAIN=ecs.example.et
@@ -44,6 +50,8 @@ from the merchant prefix.
 
 DNS and TLS must cover `dashboard`, `ops`, `api`, `shop`, `media`, `demo`, and the managed shop
 wildcard under the base domain before those public routes are accepted for testing.
+An Origin CA certificate is intentionally not trusted by browsers connecting directly to the
+server. A public hostname bypassing the Cloudflare proxy is a deployment error.
 
 ## Initial operator access
 

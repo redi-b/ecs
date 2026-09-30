@@ -89,11 +89,6 @@ export function validateProductionEnvironment(environment) {
   expect(errors, !placeholderPattern.test(baseDomain), "BASE_DOMAIN still contains a placeholder");
   expect(
     errors,
-    /^[a-z0-9][a-z0-9-]{0,62}$/i.test(environment.TLS_CERT_RESOLVER ?? ""),
-    "TLS_CERT_RESOLVER must name the configured Traefik DNS-01 resolver",
-  );
-  expect(
-    errors,
     /^ghcr\.io\/[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(environment.IMAGE_PREFIX ?? ""),
     "IMAGE_PREFIX must identify a GHCR repository namespace",
   );

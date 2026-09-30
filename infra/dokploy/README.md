@@ -52,27 +52,45 @@ Wildcard **DNS** and wildcard **TLS** are separate concerns.
 | `BASE_DOMAIN` | Included explicitly as the certificate's main name (the landing page) |
 | `*.BASE_DOMAIN` | One wildcard SAN covers `app`, `api`, `media`, `ops`, `demo`, and every one-level merchant shop |
 
-Wildcard DNS routes shop traffic but does not provide wildcard TLS. The Compose router now explicitly
-requests one certificate containing both `BASE_DOMAIN` and `*.BASE_DOMAIN` through
-`TLS_CERT_RESOLVER` (default `letsencrypt-dns`). That resolver must exist in Dokploy's static Traefik
-configuration. DNS-01 requires API access to the authoritative DNS provider; the default HTTP-01
-resolver cannot issue wildcard certificates.
+Wildcard DNS routes shop traffic but does not provide wildcard TLS. Certificate ownership belongs
+to the shared Dokploy/Traefik edge, not the ECS Compose stack. The Compose router enables TLS but
+intentionally declares no ACME certificate resolver. Traefik selects a matching certificate from its
+shared store by SNI and falls back to its configured/generated default certificate when none exists.
+
+The current `ecset.dev` deployment uses a Cloudflare Origin CA certificate between Cloudflare and
+Dokploy/Traefik. It contains both `BASE_DOMAIN` and `*.BASE_DOMAIN`. Cloudflare serves the publicly
+trusted visitor certificate; Traefik serves the Origin CA certificate to Cloudflare.
 
 Requirements:
 
-1. DNS: `*.${BASE_DOMAIN}` A/AAAA (or CNAME) pointing at the Traefik entry (same as today).
-2. A Traefik DNS-01 certificate resolver backed by narrowly scoped authoritative-DNS credentials.
-3. `TLS_CERT_RESOLVER=letsencrypt-dns` (or the exact resolver name you configured). The Compose labels
-   request both `${BASE_DOMAIN}` and `*.${BASE_DOMAIN}`; a wildcard alone never secures the landing host.
-4. Persistent, backed-up ACME storage and a staging issuance test before using Let's Encrypt production.
+1. Create proxied Cloudflare DNS records for both `BASE_DOMAIN` and `*.BASE_DOMAIN`, pointing to the
+   Dokploy/Traefik public address.
+2. In Cloudflare, create one PEM Origin CA certificate with SANs for `BASE_DOMAIN` and
+   `*.BASE_DOMAIN`.
+3. Add the certificate and private key through Dokploy's **Certificates** UI for the target server.
+   Confirm Traefik's dynamic configuration recognizes it. Do not commit the key or place either PEM
+   value in the ECS environment.
+4. Set Cloudflare SSL/TLS encryption mode to **Full (strict)** only after the origin certificate is
+   installed. A missing, expired, or hostname-mismatched origin certificate produces Cloudflare 526.
+5. Track the certificate expiry independently. Cloudflare does not send Origin CA expiry notices.
 
-Use a DNS provider credential restricted to editing DNS for the ECS zone. Do not keep a cPanel account API token in Traefik: cPanel account tokens are full-access tokens rather than DNS-scoped credentials. The cPanel ACME provider is acceptable only for a controlled one-time proof followed by immediate token revocation, not unattended production renewal.
+During initial setup, Traefik's self-signed/generated default certificate is an acceptable temporary
+fallback behind Cloudflare **Full** mode. It is not valid for **Full (strict)** and is not a
+production-complete state. Installing the Origin CA certificate in Dokploy requires no ECS Compose
+change or redeploy of certificate material; the shared Traefik file provider loads it independently.
+
+See the official [Cloudflare Origin CA](https://developers.cloudflare.com/ssl/origin-configuration/origin-ca/),
+[Cloudflare Full (strict)](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/),
+and [Dokploy Cloudflare](https://docs.dokploy.com/docs/core/domains/cloudflare) guidance.
 
 **Caveats:**
 
-- A `HostRegexp` catch-all plus HTTP-01 does **not** issue a certificate for each matched hostname.
 - `*.example.com` covers `shop.example.com`, but not `example.com` and not `x.shop.example.com`.
-- A single wildcard certificate avoids per-shop cold issuance and the registered-domain issuance limit caused by creating one certificate per tenant.
+- Cloudflare Origin CA certificates are not publicly trusted. All public ECS records must remain
+  proxied; direct browser access to the origin is not a supported path.
+- Traefik's generated certificate is a bootstrap fallback only. Cloudflare Full accepts it without
+  validating trust; Full (strict) correctly rejects it.
+- A single apex + wildcard Origin CA certificate avoids per-shop certificate work.
 - Caddy only speaks **HTTP** internally; public TLS terminates at Traefik.
 
 ## Dokploy configuration
@@ -80,10 +98,12 @@ Use a DNS provider credential restricted to editing DNS for the ECS zone. Do not
 1. Create a Compose service from this repository and use `infra/dokploy/docker-compose.yml`.
 2. Copy the values from `infra/dokploy/.env.example` into the Dokploy environment editor and replace every placeholder.
 3. Configure GHCR credentials in Dokploy if the packages are private.
-4. Point both `BASE_DOMAIN` and `*.${BASE_DOMAIN}` at the host / Traefik that fronts this stack. Do
-   **not** create overlapping domain entries in Dokploy's Domains UI (they generate duplicate routers).
-5. Configure the DNS-01 resolver in Dokploy/Traefik static settings and set `TLS_CERT_RESOLVER` to its
-   exact name. The standard `letsencrypt` HTTP-01 resolver cannot be used for this router.
+4. Point proxied Cloudflare records for both `BASE_DOMAIN` and `*.${BASE_DOMAIN}` at the host /
+   Traefik that fronts this stack. Do **not** create overlapping domain entries in Dokploy's Domains
+   UI because they generate duplicate routers.
+5. Add the apex + wildcard Cloudflare Origin CA certificate in Dokploy and confirm Traefik loads it.
+   Use Cloudflare Full only during bootstrap, then switch to Full (strict). No DNS-provider API
+   credential, certificate secret, or ACME resolver belongs in ECS Compose.
 6. Deploy with `IMAGE_TAG=main` after the GitHub Actions workflow has published the images.
 
 Before the first production deploy, copy `.env.example` to a private local file, replace every
@@ -107,7 +127,9 @@ uses Umami's `admin` / `umami` bootstrap login. Change that password immediately
 
 For backup, restore, rollback, and post-deploy gates, follow [`OPERATIONS.md`](./OPERATIONS.md).
 
-After deploy, verify that a never-before-used `https://<new-shop>.${BASE_DOMAIN}` hostname is immediately covered by the wildcard certificate. It must not require a first-visit issuance attempt.
+After deploy, verify the apex and a never-before-used `https://<new-shop>.${BASE_DOMAIN}` hostname
+through Cloudflare. Both must succeed immediately without a first-visit issuance attempt or a 526
+response.
 
 Use URL-safe database passwords or percent-encode reserved characters in both database URLs. The two database URLs must use the same credentials configured for the Postgres service.
 
