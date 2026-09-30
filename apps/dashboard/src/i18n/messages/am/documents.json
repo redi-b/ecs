@@ -1,0 +1,27 @@
+{
+  "title": "ሰነዶች",
+  "searchLabel": "ሰነዶችን ይፈልጉ",
+  "searchPlaceholder": "ሰነድ፣ ትዕዛዝ ወይም ደንበኛ ይፈልጉ",
+  "document": "ሰነድ",
+  "type": "ዓይነት",
+  "customer": "ደንበኛ",
+  "issued": "የተዘጋጀበት",
+  "total": "ድምር",
+  "source": "ምንጭ",
+  "openSource": "ምንጩን ክፈት",
+  "viewPrint": "ይመልከቱ / ያትሙ",
+  "rowActions": "የሰነድ አማራጮች",
+  "emptyTitle": "ሰነድ የለም",
+  "emptyMessage": "የተዘጋጁ የዋጋ ማቅረቢያዎች፣ ደረሰኞች፣ ማጠቃለያዎች እና የማሸጊያ ዝርዝሮች እዚህ ይታያሉ።",
+  "filteredEmptyTitle": "የሚዛመድ ሰነድ የለም",
+  "filteredEmptyMessage": "ሌሎች ሰነዶችን ለማየት ፍለጋውን ወይም ማጣሪያውን ይቀይሩ።",
+  "loadFailed": "ሰነዶችን መክፈት አልተቻለም",
+  "loadFailedHelp": "እንደገና ይሞክሩ። ያሉት ሰነዶች አልተቀየሩም።",
+  "allTypes": "ሁሉም ዓይነቶች",
+  "types": {
+    "quotation": "የዋጋ ማቅረቢያ",
+    "order_summary": "የትዕዛዝ ማጠቃለያ",
+    "payment_receipt": "የክፍያ ደረሰኝ",
+    "packing_slip": "የማሸጊያ ዝርዝር"
+  }
+}

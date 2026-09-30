@@ -114,7 +114,7 @@ export function ExpenseCreateDialog() {
           {t("expenses.add")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className="gap-0 p-0 sm:max-w-lg">
         <DialogHeader className="gap-1.5 border-b px-4 py-4 pr-12 text-left sm:px-5">
           <DialogTitle>{t("expenses.form.title")}</DialogTitle>
           <DialogDescription>{t("expenses.form.description")}</DialogDescription>

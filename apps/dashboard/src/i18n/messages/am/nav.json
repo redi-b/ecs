@@ -14,10 +14,13 @@
   "editor": "የመደብር ዲዛይን",
   "translations": "ትርጉሞች",
   "insights": "የንግድ መረጃዎች",
+  "documents": "ሰነዶች",
+  "expenses": "ወጪዎች",
   "billing": "ሂሳብ እና ክፍያ",
   "settings": "ማስተካከያዎች",
   "section": {
     "commerce": "ንግድ",
+    "operations": "ኦፕሬሽኖች",
     "storefront": "የመደብር ገጽ",
     "insights": "ሪፖርቶች"
   },

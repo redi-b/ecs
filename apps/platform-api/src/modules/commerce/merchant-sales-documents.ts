@@ -60,17 +60,15 @@ export function createMerchantSalesDocumentStore(db: PlatformDatabase) {
         return mapDocument(row);
       });
     },
-    async list(input: { orderId: string; tenantId: string }) {
+    async list(input: { limit?: number; orderId?: string; tenantId: string }) {
+      const conditions = [eq(merchantSalesDocuments.tenantId, input.tenantId)];
+      if (input.orderId) conditions.push(eq(merchantSalesDocuments.orderId, input.orderId));
       const rows = await db
         .select()
         .from(merchantSalesDocuments)
-        .where(
-          and(
-            eq(merchantSalesDocuments.tenantId, input.tenantId),
-            eq(merchantSalesDocuments.orderId, input.orderId),
-          ),
-        )
-        .orderBy(desc(merchantSalesDocuments.createdAt));
+        .where(and(...conditions))
+        .orderBy(desc(merchantSalesDocuments.createdAt))
+        .limit(input.limit ?? 10_001);
       return rows.map(mapDocument);
     },
     async get(input: { documentId: string; tenantId: string }) {

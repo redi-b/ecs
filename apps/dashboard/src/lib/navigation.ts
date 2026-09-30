@@ -2,7 +2,13 @@ import type { AppIcon } from "@/components/app/icons";
 import { AppIcons } from "@/components/app/icons";
 import { type DashboardRouteHref, dashboardRoutes } from "@/lib/routes";
 
-export type AppRouteSection = "main" | "commerce" | "storefront" | "insights" | "account";
+export type AppRouteSection =
+  | "main"
+  | "commerce"
+  | "operations"
+  | "storefront"
+  | "insights"
+  | "account";
 
 export type AppRoute = {
   id: string;
@@ -19,6 +25,7 @@ export type AppRoute = {
 export const appRouteSections: ReadonlyArray<{ id: AppRouteSection; label: string | null }> = [
   { id: "main", label: null },
   { id: "commerce", label: "Commerce" },
+  { id: "operations", label: "Operations" },
   { id: "storefront", label: "Storefront" },
   { id: "insights", label: "Insights" },
 ];
@@ -121,6 +128,22 @@ export const appRoutes: AppRoute[] = [
     icon: AppIcons.image,
     section: "commerce",
     keywords: ["images", "files", "uploads", "library"],
+  },
+  {
+    id: "documents",
+    title: "Documents",
+    href: dashboardRoutes.documents,
+    icon: AppIcons.documents,
+    section: "operations",
+    keywords: ["documents", "quotations", "receipts", "packing slips"],
+  },
+  {
+    id: "expenses",
+    title: "Expenses",
+    href: dashboardRoutes.expenses,
+    icon: AppIcons.wallet,
+    section: "operations",
+    keywords: ["expenses", "costs", "spending"],
   },
   {
     id: "editor",

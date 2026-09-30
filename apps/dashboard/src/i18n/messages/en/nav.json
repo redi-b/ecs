@@ -14,10 +14,13 @@
   "editor": "Editor",
   "translations": "Translations",
   "insights": "Insights",
+  "documents": "Documents",
+  "expenses": "Expenses",
   "billing": "Billing",
   "settings": "Settings",
   "section": {
     "commerce": "Commerce",
+    "operations": "Operations",
     "storefront": "Storefront",
     "insights": "Insights"
   },

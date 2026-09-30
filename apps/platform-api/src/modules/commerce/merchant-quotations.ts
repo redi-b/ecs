@@ -148,6 +148,8 @@ export function createMerchantQuotationStore(db: PlatformDatabase) {
           currentRevision: row.currentRevision,
           customerLabel: customerLabel(snapshot),
           expiresAt: snapshot.expiresAt,
+          issuedAt: snapshot.issuedAt,
+          language: snapshot.language,
           id: row.id,
           number: row.number,
           pricingComplete: snapshot.items.every((item) => item.unitPrice != null),

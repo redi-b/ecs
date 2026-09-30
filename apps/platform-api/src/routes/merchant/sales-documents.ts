@@ -1,8 +1,14 @@
-import { formatPublicOrderReference, merchantSalesDocumentKindSchema } from "@ecs/contracts";
+import {
+  formatPublicOrderReference,
+  type MerchantOperationsDocumentSummary,
+  merchantOperationsDocumentKindSchema,
+  merchantSalesDocumentKindSchema,
+} from "@ecs/contracts";
 import type { Hono } from "hono";
 import { z } from "zod";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { snapshotMerchantDocumentBranding } from "../../modules/commerce/merchant-document-branding.js";
+import { getPaginationValue } from "../shared.js";
 import type { MerchantRouteHelpers } from "./context.js";
 
 const issueSchema = z.object({
@@ -23,6 +29,87 @@ export function registerMerchantSalesDocumentRoutes(
   helpers: MerchantRouteHelpers,
 ) {
   const { getAuthorizedMerchantContext, getResolvedCommerce } = helpers;
+
+  app.get("/platform/merchant/documents", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["read"] });
+    if (!merchant.ok) return merchant.response;
+    if (!options.listMerchantSalesDocuments || !options.listMerchantQuotations) {
+      return context.json({ error: "documents_unavailable" }, 503);
+    }
+    const q = context.req.query("q")?.trim();
+    const kindValue = context.req.query("kind");
+    const kind = kindValue ? merchantOperationsDocumentKindSchema.safeParse(kindValue) : null;
+    const from = context.req.query("from");
+    const to = context.req.query("to");
+    if (
+      (q && q.length > 120) ||
+      (kind && !kind.success) ||
+      (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) ||
+      (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) ||
+      (from && to && from > to)
+    ) {
+      return context.json({ error: "invalid_document_filter" }, 400);
+    }
+
+    const tenantId = merchant.result.context.tenantId;
+    const [salesDocuments, quotationResult] = await Promise.all([
+      options.listMerchantSalesDocuments({ limit: 10_001, tenantId }),
+      options.listMerchantQuotations({ limit: 10_001, offset: 0, tenantId }),
+    ]);
+    if (salesDocuments.length > 10_000 || quotationResult.count > 10_000) {
+      return context.json({ error: "document_workspace_too_large" }, 413);
+    }
+
+    const documents: MerchantOperationsDocumentSummary[] = [
+      ...salesDocuments.map((document) => ({
+        createdAt: document.createdAt,
+        customerLabel: salesDocumentCustomerLabel(document.snapshot.order),
+        id: document.id,
+        issuedAt: document.snapshot.issuedAt,
+        kind: document.kind,
+        language: document.language,
+        number: document.number,
+        orderId: document.orderId,
+        orderReference: document.snapshot.orderReference,
+        status: null,
+        total: document.snapshot.order.total,
+      })),
+      ...quotationResult.quotations.map((quotation) => ({
+        createdAt: quotation.createdAt,
+        customerLabel: quotation.customerLabel,
+        id: quotation.id,
+        issuedAt: quotation.issuedAt,
+        kind: "quotation" as const,
+        language: quotation.language,
+        number: quotation.number,
+        orderId: quotation.convertedOrderId,
+        orderReference: null,
+        status: quotation.status,
+        total: quotation.total,
+      })),
+    ];
+    const normalizedQuery = q?.toLocaleLowerCase();
+    const filtered = documents
+      .filter((document) => !kind?.success || document.kind === kind.data)
+      .filter((document) => !from || document.issuedAt.slice(0, 10) >= from)
+      .filter((document) => !to || document.issuedAt.slice(0, 10) <= to)
+      .filter(
+        (document) =>
+          !normalizedQuery ||
+          [document.number, document.orderReference, document.customerLabel]
+            .filter(Boolean)
+            .some((value) => value?.toLocaleLowerCase().includes(normalizedQuery)),
+      )
+      .sort((left, right) => right.issuedAt.localeCompare(left.issuedAt));
+    const limit = getPaginationValue(context.req.query("limit"), 20, 100);
+    const offset = getPaginationValue(context.req.query("offset"), 0, 10_000);
+    return context.json({
+      count: filtered.length,
+      documents: filtered.slice(offset, offset + limit),
+      limit,
+      offset,
+    });
+  });
 
   app.get("/platform/merchant/orders/:orderId/documents", async (context) => {
     const merchant = await getAuthorizedMerchantContext(context, { orders: ["read"] });
@@ -114,4 +201,28 @@ export function registerMerchantSalesDocumentRoutes(
     context.header("x-idempotent-replay", String(execution.replayed));
     return context.json(execution.value, 201);
   });
+}
+
+function salesDocumentCustomerLabel(order: {
+  delivery?: { customerName: string | null; customerPhone: string | null } | undefined;
+  email: string | null;
+  shippingAddress?:
+    | {
+        firstName: string | null;
+        lastName: string | null;
+        phone: string | null;
+      }
+    | undefined;
+}) {
+  const shippingName = [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    order.delivery?.customerName ||
+    shippingName ||
+    order.email ||
+    order.delivery?.customerPhone ||
+    order.shippingAddress?.phone ||
+    null
+  );
 }

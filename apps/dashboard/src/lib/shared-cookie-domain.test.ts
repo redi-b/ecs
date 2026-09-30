@@ -28,8 +28,8 @@ describe("getSharedParentCookieDomain", () => {
   it("maps lvh.me shop hosts to .lvh.me", () => {
     assert.equal(
       getSharedParentCookieDomain({
-        authCookieDomain: null,
-        dashboardPublicBaseUrl: null,
+        authCookieDomain: "",
+        dashboardPublicBaseUrl: "",
         hostname: "addis-tech.lvh.me",
       }),
       ".lvh.me",
@@ -39,8 +39,8 @@ describe("getSharedParentCookieDomain", () => {
   it("returns null for localhost", () => {
     assert.equal(
       getSharedParentCookieDomain({
-        authCookieDomain: null,
-        dashboardPublicBaseUrl: null,
+        authCookieDomain: "",
+        dashboardPublicBaseUrl: "",
         hostname: "localhost",
       }),
       null,

@@ -54,6 +54,8 @@ export const merchantQuotationSummarySchema = merchantQuotationSchema
   .extend({
     customerLabel: z.string().nullable(),
     expiresAt: z.string().datetime(),
+    issuedAt: z.string().datetime(),
+    language: z.enum(["en", "am"]),
     pricingComplete: z.boolean(),
     total: z.number().nonnegative(),
   });

@@ -114,7 +114,8 @@ export type PlatformMerchantOperationsOptions = {
     | undefined;
   listMerchantSalesDocuments?:
     | ((input: {
-        orderId: string;
+        limit?: number;
+        orderId?: string;
         tenantId: string;
       }) => Promise<import("@ecs/contracts").MerchantSalesDocument[]>)
     | undefined;

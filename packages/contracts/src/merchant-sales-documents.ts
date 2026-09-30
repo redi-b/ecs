@@ -58,3 +58,35 @@ export const merchantSalesDocumentResponseSchema = z.object({
 export const merchantSalesDocumentsResponseSchema = z.object({
   documents: z.array(merchantSalesDocumentSchema),
 });
+
+export const merchantOperationsDocumentKindSchema = z.enum([
+  "quotation",
+  "order_summary",
+  "payment_receipt",
+  "packing_slip",
+]);
+export type MerchantOperationsDocumentKind = z.infer<typeof merchantOperationsDocumentKindSchema>;
+
+export const merchantOperationsDocumentSummarySchema = z.object({
+  createdAt: z.string().datetime(),
+  customerLabel: z.string().nullable(),
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  kind: merchantOperationsDocumentKindSchema,
+  language: z.enum(["en", "am"]),
+  number: z.string().min(1),
+  orderId: z.string().min(1).nullable(),
+  orderReference: z.string().min(1).nullable(),
+  status: z.string().min(1).nullable(),
+  total: z.number().nonnegative().nullable(),
+});
+export type MerchantOperationsDocumentSummary = z.infer<
+  typeof merchantOperationsDocumentSummarySchema
+>;
+
+export const merchantOperationsDocumentsResponseSchema = z.object({
+  count: z.number().int().nonnegative(),
+  documents: z.array(merchantOperationsDocumentSummarySchema),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
