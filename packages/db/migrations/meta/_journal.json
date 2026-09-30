@@ -463,6 +463,62 @@
       "when": 1790362638329,
       "tag": "0065_certain_prodigy",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1790665429292,
+      "tag": "0066_silent_justice",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1790669344832,
+      "tag": "0067_early_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1790673611690,
+      "tag": "0068_parallel_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790676581542,
+      "tag": "0069_fearless_leech",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1790685719832,
+      "tag": "0070_stale_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1790687373508,
+      "tag": "0071_last_tiger_shark",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1790703795493,
+      "tag": "0072_plain_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1790721365151,
+      "tag": "0073_cold_aaron_stack",
+      "breakpoints": true
     }
   ]
 }

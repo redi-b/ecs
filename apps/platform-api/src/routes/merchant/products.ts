@@ -1,7 +1,9 @@
+import { type MerchantProduct, merchantInventoryMovementReasonSchema } from "@ecs/contracts";
 import type { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import { productListFiltersSchema } from "../../modules/commerce/product-list-filters.js";
+import { runProductWriteCommand } from "../../modules/commerce/product-write-command.js";
 import {
   exportProductsToCsv,
   productExportFilename,
@@ -16,7 +18,8 @@ import {
   applyBulkInventoryUpdates,
   parseBulkInventoryUpdates,
 } from "../../modules/inventory/bulk-adjustment.js";
-import { runProductWriteCommand } from "../../modules/commerce/product-write-command.js";
+import { filterProductsByInventory } from "../../modules/inventory/low-stock-products.js";
+import { getLowStockThreshold } from "../../modules/notifications/inventory-low.js";
 import {
   getJsonBody,
   getOptionalBodyNumber,
@@ -181,13 +184,26 @@ export function registerMerchantProductRoutes(
 
     const filters = productListFiltersSchema.safeParse(context.req.query());
     if (!filters.success) return context.json({ error: "invalid_product_filter" }, 400);
-    const products = await options.listMerchantProducts({
-      ...filters.data,
-      limit: getPaginationValue(context.req.query("limit"), 20, 100),
-      offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      stockLocationId: result.context.medusaStockLocationId,
-    });
+    const { inventory, ...catalogFilters } = filters.data;
+    const limit = getPaginationValue(context.req.query("limit"), 20, 100);
+    const offset = getPaginationValue(context.req.query("offset"), 0, 10_000);
+    const products = inventory
+      ? await listProductsByInventory({
+          filter: inventory,
+          filters: catalogFilters,
+          listProducts: options.listMerchantProducts,
+          limit,
+          offset,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          stockLocationId: result.context.medusaStockLocationId,
+        })
+      : await options.listMerchantProducts({
+          ...catalogFilters,
+          limit,
+          offset,
+          salesChannelId: commerce.context.medusaSalesChannelId,
+          stockLocationId: result.context.medusaStockLocationId,
+        });
 
     if (!products.ok) {
       return context.json({ error: products.error }, products.status);
@@ -244,6 +260,12 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductVariantStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateVariantStock = options.updateMerchantProductVariantStock;
+    const getVariantStock = options.getMerchantProductVariantStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getVariantStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const parsed = parseBulkInventoryUpdates(body.updates);
@@ -252,13 +274,70 @@ export function registerMerchantProductRoutes(
     if (!stockLocationId) {
       return context.json({ error: "inventory_location_unavailable" }, 503);
     }
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
 
-    const result = await applyBulkInventoryUpdates({
-      salesChannelId: commerce.context.medusaSalesChannelId,
-      stockLocationId,
-      updates: parsed.updates,
-      updateStock: options.updateMerchantProductVariantStock,
-    });
+    const applyUpdates = () =>
+      applyBulkInventoryUpdates({
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+        updates: parsed.updates,
+        updateStock: async (update) => {
+          const before = await getVariantStock(update);
+          if (!before.ok) return before;
+          if (!before.stock.inventoryItemId) {
+            return {
+              ok: false as const,
+              error: "product_inventory_unavailable",
+              status: 409 as const,
+            };
+          }
+          const updated = await updateVariantStock(update);
+          if (!updated.ok) return updated;
+          await appendMovement({
+            actorUserId: merchant.session.user.id,
+            delta:
+              (updated.stock.stockedQuantity ?? update.stockedQuantity) -
+              (before.stock.stockedQuantity ?? 0),
+            inventoryItemId: before.stock.inventoryItemId,
+            locationId: stockLocationId,
+            note: null,
+            observedAfter: updated.stock.stockedQuantity ?? update.stockedQuantity,
+            observedBefore: before.stock.stockedQuantity,
+            productId: update.productId,
+            reason: "manual_count",
+            sourceId: `${idempotencyKey}:${update.productId}:${update.variantId}`,
+            sourceType: "manual_adjustment",
+            tenantId: merchant.result.context.tenantId,
+            variantId: update.variantId,
+          });
+          return updated;
+        },
+      });
+    let result: Awaited<ReturnType<typeof applyUpdates>>;
+    if (options.executeMerchantMutation) {
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: merchant.session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.batch",
+          payload: { reason: "manual_count", stockLocationId, updates: parsed.updates },
+          requestId: context.get("requestId"),
+          resourceKeys: parsed.updates.flatMap((update) => [
+            `inventory:${stockLocationId}:${update.productId}`,
+            `inventory:${stockLocationId}:${update.productId}:${update.variantId}`,
+          ]),
+          source: "assisted_sale",
+          tenantId: merchant.result.context.tenantId,
+        },
+        applyUpdates,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      result = execution.value;
+    } else {
+      result = await applyUpdates();
+    }
     return context.json(result);
   });
 
@@ -435,6 +514,30 @@ export function registerMerchantProductRoutes(
     });
   });
 
+  app.get("/platform/merchant/products/:productId/inventory-movements", async (context) => {
+    const merchant = await getAuthorizedMerchantContext(context, { products: ["read"] });
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, { requireStockLocation: true });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    if (!options.listMerchantInventoryMovements) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
+    const locationId = commerce.context.medusaStockLocationId;
+    if (!locationId) return context.json({ error: "inventory_location_unavailable" }, 503);
+    return context.json(
+      await options.listMerchantInventoryMovements({
+        limit: getPaginationValue(context.req.query("limit"), 25, 100),
+        locationId,
+        offset: getPaginationValue(context.req.query("offset"), 0, 10_000),
+        productId: context.req.param("productId"),
+        tenantId: merchant.result.context.tenantId,
+        ...(context.req.query("variantId")?.trim()
+          ? { variantId: context.req.query("variantId")?.trim() }
+          : {}),
+      }),
+    );
+  });
+
   app.post("/platform/merchant/products/:productId/stock", async (context) => {
     const session = await options.getSession?.(context.req.raw.headers);
 
@@ -472,12 +575,25 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateProductStock = options.updateMerchantProductStock;
+    const getProductStock = options.getMerchantProductStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getProductStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+    const reason = merchantInventoryMovementReasonSchema.safeParse(
+      getOptionalBodyString(body, "reason") ?? "manual_count",
+    );
+    const note = getOptionalBodyString(body, "note")?.trim() || null;
 
-    if (stockedQuantity === undefined || stockedQuantity < 0) {
+    if (stockedQuantity === undefined || stockedQuantity < 0 || !reason.success) {
       return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
+    if (["correction_add", "correction_remove"].includes(reason.data) && !note) {
+      return context.json({ error: "inventory_movement_note_required" }, 400);
     }
 
     const stockLocationId = commerce.context.medusaStockLocationId;
@@ -487,12 +603,65 @@ export function registerMerchantProductRoutes(
     }
 
     const productId = context.req.param("productId");
-    const stock = await options.updateMerchantProductStock({
+    const mutationInput = {
       productId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId,
       stockedQuantity,
-    });
+    };
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const updateStock = async () => {
+      const before = await getProductStock({
+        productId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+      });
+      if (!before.ok) return before;
+      if (!before.stock.inventoryItemId) {
+        return { ok: false as const, error: "product_inventory_unavailable", status: 409 as const };
+      }
+      const updated = await updateProductStock(mutationInput);
+      if (!updated.ok) return updated;
+      await appendMovement({
+        actorUserId: session.user.id,
+        delta:
+          (updated.stock.stockedQuantity ?? stockedQuantity) - (before.stock.stockedQuantity ?? 0),
+        inventoryItemId: before.stock.inventoryItemId,
+        locationId: stockLocationId,
+        note,
+        observedAfter: updated.stock.stockedQuantity ?? stockedQuantity,
+        observedBefore: before.stock.stockedQuantity,
+        productId,
+        reason: reason.data,
+        sourceId: idempotencyKey,
+        sourceType: "manual_adjustment",
+        tenantId: result.context.tenantId,
+        variantId: before.stock.variantId,
+      });
+      return updated;
+    };
+    let stock: Awaited<ReturnType<typeof updateStock>>;
+    if (options.executeMerchantMutation) {
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.set",
+          payload: { ...mutationInput, note, reason: reason.data },
+          requestId: context.get("requestId"),
+          resourceKeys: [`inventory:${stockLocationId}:${productId}`],
+          source: "assisted_sale",
+          tenantId: result.context.tenantId,
+        },
+        updateStock,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      stock = execution.value;
+    } else {
+      stock = await updateStock();
+    }
 
     if (!stock.ok) {
       return context.json({ error: stock.error }, stock.status);
@@ -600,16 +769,30 @@ export function registerMerchantProductRoutes(
     if (!options.updateMerchantProductVariantStock) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const updateVariantStock = options.updateMerchantProductVariantStock;
+    const getVariantStock = options.getMerchantProductVariantStock;
+    const appendMovement = options.appendMerchantInventoryMovement;
+    if (!getVariantStock || !appendMovement) {
+      return context.json({ error: "inventory_movement_ledger_unavailable" }, 503);
+    }
 
     const body = await getJsonBody(context.req.raw);
     const stockedQuantity = getOptionalBodyNumber(body, "stockedQuantity");
+    const reason = merchantInventoryMovementReasonSchema.safeParse(
+      getOptionalBodyString(body, "reason") ?? "manual_count",
+    );
+    const note = getOptionalBodyString(body, "note")?.trim() || null;
 
     if (
       stockedQuantity === undefined ||
       stockedQuantity < 0 ||
-      !Number.isInteger(stockedQuantity)
+      !Number.isInteger(stockedQuantity) ||
+      !reason.success
     ) {
       return context.json({ error: "invalid_stocked_quantity" }, 400);
+    }
+    if (["correction_add", "correction_remove"].includes(reason.data) && !note) {
+      return context.json({ error: "inventory_movement_note_required" }, 400);
     }
 
     const stockLocationId = commerce.context.medusaStockLocationId;
@@ -620,13 +803,70 @@ export function registerMerchantProductRoutes(
 
     const productId = context.req.param("productId");
     const variantId = context.req.param("variantId");
-    const stock = await options.updateMerchantProductVariantStock({
+    const mutationInput = {
       productId,
       salesChannelId: commerce.context.medusaSalesChannelId,
       stockLocationId,
       stockedQuantity,
       variantId,
-    });
+    };
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const updateStock = async () => {
+      const before = await getVariantStock({
+        productId,
+        salesChannelId: commerce.context.medusaSalesChannelId,
+        stockLocationId,
+        variantId,
+      });
+      if (!before.ok) return before;
+      if (!before.stock.inventoryItemId) {
+        return { ok: false as const, error: "product_inventory_unavailable", status: 409 as const };
+      }
+      const updated = await updateVariantStock(mutationInput);
+      if (!updated.ok) return updated;
+      await appendMovement({
+        actorUserId: session.user.id,
+        delta:
+          (updated.stock.stockedQuantity ?? stockedQuantity) - (before.stock.stockedQuantity ?? 0),
+        inventoryItemId: before.stock.inventoryItemId,
+        locationId: stockLocationId,
+        note,
+        observedAfter: updated.stock.stockedQuantity ?? stockedQuantity,
+        observedBefore: before.stock.stockedQuantity,
+        productId,
+        reason: reason.data,
+        sourceId: idempotencyKey,
+        sourceType: "manual_adjustment",
+        tenantId: result.context.tenantId,
+        variantId,
+      });
+      return updated;
+    };
+    let stock: Awaited<ReturnType<typeof updateStock>>;
+    if (options.executeMerchantMutation) {
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: session.user.id,
+          idempotencyKey,
+          operation: "inventory.stock.set",
+          payload: { ...mutationInput, note, reason: reason.data },
+          requestId: context.get("requestId"),
+          resourceKeys: [
+            `inventory:${stockLocationId}:${productId}`,
+            `inventory:${stockLocationId}:${productId}:${variantId}`,
+          ],
+          source: "assisted_sale",
+          tenantId: result.context.tenantId,
+        },
+        updateStock,
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      stock = execution.value;
+    } else {
+      stock = await updateStock();
+    }
 
     if (!stock.ok) {
       return context.json({ error: stock.error }, stock.status);
@@ -829,4 +1069,41 @@ export function registerMerchantProductRoutes(
     if (!result.ok) return context.json({ error: result.error }, result.status);
     return context.json({ ok: true });
   });
+}
+
+async function listProductsByInventory(input: {
+  filter: "low_stock" | "out_of_stock";
+  filters: Omit<
+    import("../../modules/commerce/product-list-filters.js").ProductListFilters,
+    "inventory"
+  >;
+  limit: number;
+  listProducts: NonNullable<PlatformAppOptions["listMerchantProducts"]>;
+  offset: number;
+  salesChannelId: string;
+  stockLocationId?: string | null | undefined;
+}) {
+  const all: MerchantProduct[] = [];
+  let scanOffset = 0;
+  for (;;) {
+    const page = await input.listProducts({
+      ...input.filters,
+      limit: 100,
+      offset: scanOffset,
+      salesChannelId: input.salesChannelId,
+      stockLocationId: input.stockLocationId,
+    });
+    if (!page.ok) return page;
+    all.push(...page.products);
+    scanOffset += page.products.length;
+    if (page.products.length === 0 || scanOffset >= page.count) break;
+  }
+  const filtered = filterProductsByInventory(all, input.filter, getLowStockThreshold());
+  return {
+    count: filtered.length,
+    limit: input.limit,
+    offset: input.offset,
+    ok: true as const,
+    products: filtered.slice(input.offset, input.offset + input.limit),
+  };
 }

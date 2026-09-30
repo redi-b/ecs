@@ -1,6 +1,23 @@
 import type { createPlatformDb } from "@ecs/db";
 import { attachCatalogNameTranslations } from "../lib/attach-catalog-name-translations.js";
 import { createProductCapacityWriter } from "../modules/billing/product-capacity.js";
+import {
+  createMerchantExpenseStore,
+  createMerchantOrderCostSnapshotStore,
+  getMerchantEstimatedProfit,
+} from "../modules/commerce/merchant-expenses.js";
+import { createMerchantInventoryMovementStore } from "../modules/commerce/merchant-inventory-movements.js";
+import {
+  createMerchantMutationReplayService,
+  createPostgresMerchantMutationStore,
+} from "../modules/commerce/merchant-mutation-replay.js";
+import { createMerchantQuotationStore } from "../modules/commerce/merchant-quotations.js";
+import {
+  createMerchantSaleDraftService,
+  createMerchantSaleDraftValidator,
+  createPostgresMerchantSaleDraftStore,
+} from "../modules/commerce/merchant-sale-drafts.js";
+import { createMerchantSalesDocumentStore } from "../modules/commerce/merchant-sales-documents.js";
 import { createProductOptionSetService } from "../modules/commerce/product-option-sets.js";
 import type { PlatformAppOptions } from "../types/platform-app.js";
 import type { createCommerceRuntime } from "./commerce.js";
@@ -14,6 +31,10 @@ type CommerceAppOptionsInput = {
 };
 
 type CommerceAppOptionKey =
+  | "appendMerchantInventoryMovement"
+  | "captureMerchantOrderCosts"
+  | "createMerchantExpense"
+  | "archiveMerchantSaleDraft"
   | "captureOrderPaymentByTxRef"
   | "createMerchantCustomer"
   | "createMerchantCustomerAddress"
@@ -22,7 +43,10 @@ type CommerceAppOptionKey =
   | "createMerchantProductCategory"
   | "createMerchantProductCollection"
   | "createMerchantProductOptionSet"
+  | "createMerchantReturn"
+  | "receiveMerchantReturn"
   | "createMerchantPromotion"
+  | "createMerchantPromotionCodeBatch"
   | "deleteMerchantCustomerAddress"
   | "deleteMerchantProduct"
   | "deleteMerchantProductCategoriesBatch"
@@ -33,25 +57,43 @@ type CommerceAppOptionKey =
   | "deleteMerchantProductsBatch"
   | "deleteMerchantPromotion"
   | "ensureMerchantCustomer"
+  | "executeMerchantMutation"
   | "getMerchantCatalogTranslation"
+  | "getMerchantEstimatedProfit"
   | "getMerchantCatalogTranslations"
   | "getMerchantCustomer"
+  | "getMerchantQuotation"
+  | "getMerchantSalesDocument"
   | "getMerchantOrder"
   | "getMerchantProduct"
   | "getMerchantProductStock"
   | "getMerchantProductVariantStock"
+  | "getMerchantSaleDraft"
   | "listMerchantCatalogTranslationReadiness"
   | "listMerchantCollectionProducts"
   | "listMerchantCustomerGroups"
   | "listMerchantCustomers"
   | "listMerchantOrders"
+  | "listMerchantOrderCosts"
+  | "listMerchantInventoryMovements"
+  | "listMerchantExpenses"
   | "listMerchantProductCategories"
   | "listMerchantProductCollections"
   | "listMerchantProductOptionSets"
   | "listMerchantProducts"
   | "listMerchantPromotions"
+  | "listMerchantSaleDrafts"
+  | "listMerchantQuotations"
+  | "listMerchantSalesDocuments"
   | "mutateMerchantOrder"
   | "reorderMerchantProductCategories"
+  | "saveMerchantSaleDraft"
+  | "issueMerchantQuotation"
+  | "issueMerchantSalesDocument"
+  | "markMerchantQuotationConverted"
+  | "reviseMerchantQuotation"
+  | "validateMerchantSaleDraft"
+  | "voidMerchantExpense"
   | "updateMerchantCatalogTranslation"
   | "updateMerchantCatalogTranslations"
   | "updateMerchantCollectionProducts"
@@ -80,6 +122,21 @@ export function createCommerceAppOptions({
     promotionService,
   } = runtime;
   const productOptionSetService = createProductOptionSetService(db);
+  const merchantMutationReplay = createMerchantMutationReplayService({
+    store: createPostgresMerchantMutationStore(db),
+  });
+  const validateMerchantSaleDraft = createMerchantSaleDraftValidator({
+    getProduct: productService.getMerchantProduct,
+  });
+  const merchantSaleDrafts = createMerchantSaleDraftService({
+    store: createPostgresMerchantSaleDraftStore(db),
+    validate: validateMerchantSaleDraft,
+  });
+  const merchantQuotations = createMerchantQuotationStore(db);
+  const merchantInventoryMovements = createMerchantInventoryMovementStore(db);
+  const merchantExpenses = createMerchantExpenseStore(db);
+  const merchantOrderCosts = createMerchantOrderCostSnapshotStore(db);
+  const merchantSalesDocuments = createMerchantSalesDocumentStore(db);
   const createCapacityLimitedProduct = createProductCapacityWriter({
     createProduct: productService.createMerchantProduct,
     db,
@@ -88,6 +145,10 @@ export function createCommerceAppOptions({
   });
 
   return {
+    captureMerchantOrderCosts: merchantOrderCosts.capture,
+    appendMerchantInventoryMovement: merchantInventoryMovements.append,
+    createMerchantExpense: merchantExpenses.create,
+    archiveMerchantSaleDraft: merchantSaleDrafts.archive,
     captureOrderPaymentByTxRef: orderService.capturePaymentByTxRef,
     createMerchantCustomer: customerService.createCustomer,
     createMerchantCustomerAddress: customerService.createCustomerAddress,
@@ -96,7 +157,10 @@ export function createCommerceAppOptions({
     createMerchantProductCategory: productService.createMerchantProductCategory,
     createMerchantProductCollection: productService.createMerchantProductCollection,
     createMerchantProductOptionSet: productOptionSetService.create,
+    createMerchantReturn: orderService.createMerchantReturn,
+    receiveMerchantReturn: orderService.receiveMerchantReturn,
     createMerchantPromotion: promotionService.createPromotion,
+    createMerchantPromotionCodeBatch: promotionService.createPromotionCodeBatch,
     deleteMerchantCustomerAddress: customerService.deleteCustomerAddress,
     deleteMerchantProduct: productService.deleteMerchantProduct,
     deleteMerchantProductCategoriesBatch: productService.deleteMerchantProductCategoriesBatch,
@@ -107,6 +171,7 @@ export function createCommerceAppOptions({
     deleteMerchantProductsBatch: productService.deleteMerchantProductsBatch,
     deleteMerchantPromotion: promotionService.deletePromotion,
     ensureMerchantCustomer: customerService.ensureCustomer,
+    executeMerchantMutation: merchantMutationReplay.execute,
     getMerchantCatalogTranslation: catalogTranslationService.read,
     getMerchantCatalogTranslations: catalogTranslationService.readMany,
     getMerchantCustomer: customerService.getCustomer,
@@ -123,11 +188,41 @@ export function createCommerceAppOptions({
     },
     getMerchantProductStock: productService.getMerchantProductStock,
     getMerchantProductVariantStock: productService.getMerchantProductVariantStock,
+    getMerchantSaleDraft: async (input) => {
+      const draft = await merchantSaleDrafts.get(input);
+      return draft
+        ? { ok: true as const, draft }
+        : { ok: false as const, error: "sale_draft_not_found" as const, status: 404 as const };
+    },
+    getMerchantQuotation: async (input) => {
+      const result = await merchantQuotations.get(input);
+      return result
+        ? { ok: true as const, ...result }
+        : { ok: false as const, error: "quotation_not_found" as const, status: 404 as const };
+    },
+    getMerchantSalesDocument: merchantSalesDocuments.get,
+    getMerchantEstimatedProfit: (input) =>
+      getMerchantEstimatedProfit({
+        ...input,
+        listCosts: merchantOrderCosts.list,
+        listExpenses: merchantExpenses.list,
+        listOrders: orderService.listMerchantOrders,
+      }),
+    issueMerchantQuotation: async (input) => ({
+      ok: true as const,
+      quotation: await merchantQuotations.issue(input),
+    }),
+    issueMerchantSalesDocument: async (input) => ({
+      document: await merchantSalesDocuments.issue(input),
+    }),
     listMerchantCatalogTranslationReadiness: catalogTranslationService.readiness,
     listMerchantCollectionProducts: productService.listMerchantCollectionProducts,
     listMerchantCustomerGroups: customerService.listGroups,
     listMerchantCustomers: customerService.listCustomers,
     listMerchantOrders: orderService.listMerchantOrders,
+    listMerchantExpenses: merchantExpenses.list,
+    listMerchantOrderCosts: merchantOrderCosts.list,
+    listMerchantInventoryMovements: merchantInventoryMovements.list,
     listMerchantProductCategories: async (input) => {
       const result = await productService.listMerchantProductCategories(input);
       if (!result.ok) return result;
@@ -166,8 +261,36 @@ export function createCommerceAppOptions({
       };
     },
     listMerchantPromotions: promotionService.listPromotions,
+    listMerchantSaleDrafts: async (input) => ({
+      ok: true as const,
+      ...(await merchantSaleDrafts.list(input)),
+      limit: input.limit,
+      offset: input.offset,
+    }),
+    listMerchantQuotations: async (input) => ({
+      ok: true as const,
+      ...(await merchantQuotations.list(input)),
+      limit: input.limit,
+      offset: input.offset,
+    }),
+    listMerchantSalesDocuments: merchantSalesDocuments.list,
+    markMerchantQuotationConverted: async (input) =>
+      Boolean(await merchantQuotations.markConverted(input)),
     mutateMerchantOrder: orderService.mutateMerchantOrder,
     reorderMerchantProductCategories: productService.reorderMerchantProductCategories,
+    saveMerchantSaleDraft: merchantSaleDrafts.save,
+    reviseMerchantQuotation: async (input) => {
+      const quotation = await merchantQuotations.revise(input);
+      return quotation
+        ? { ok: true as const, quotation }
+        : {
+            ok: false as const,
+            error: "quotation_revision_conflict" as const,
+            status: 409 as const,
+          };
+    },
+    validateMerchantSaleDraft,
+    voidMerchantExpense: merchantExpenses.void,
     updateMerchantCatalogTranslation: catalogTranslationService.write,
     updateMerchantCatalogTranslations: catalogTranslationService.writeMany,
     updateMerchantCollectionProducts: productService.updateMerchantCollectionProducts,

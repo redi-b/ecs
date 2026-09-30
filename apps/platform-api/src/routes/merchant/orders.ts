@@ -2,8 +2,11 @@ import type { Context, Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { parseMerchantOrderListQuery } from "../../adapters/medusa/order/list-query.js";
 import type { MerchantOrderAction, PlatformAppOptions, PlatformAppVariables } from "../../app.js";
-import { parseOrderSettlementInput } from "../../lib/order-settlement-input.js";
 import { parseOrderRefundInput } from "../../lib/order-refund-input.js";
+import { parseOrderReturnInput } from "../../lib/order-return-input.js";
+import { parseOrderReturnReceiptInput } from "../../lib/order-return-receipt-input.js";
+import { parseOrderSettlementInput } from "../../lib/order-settlement-input.js";
+import { recordReturnMovements } from "../../lib/record-return-movements.js";
 import type { OrderSettlementInput } from "../../lib/settlement.js";
 import {
   exportOrdersToCsv,
@@ -211,6 +214,7 @@ export function registerMerchantOrderRoutes(
     if (!options.mutateMerchantOrder) {
       return context.json({ error: "commerce_backend_unavailable" }, 503);
     }
+    const mutateMerchantOrder = options.mutateMerchantOrder;
 
     const merchant = await getAuthorizedMerchantContext(context, {
       orders: [action === "cancel" ? "cancel" : action === "refund" ? "refund" : "update"],
@@ -253,7 +257,7 @@ export function registerMerchantOrderRoutes(
       return context.json({ error: "order_refund_amount_invalid" }, 400);
     }
 
-    const order = await options.mutateMerchantOrder({
+    const mutationInput = {
       action,
       ...(action === "deliver" || action === "ship" ? { fulfillmentId } : {}),
       orderId,
@@ -269,7 +273,30 @@ export function registerMerchantOrderRoutes(
       ...(typeof body.paymentReference === "string"
         ? { paymentReference: body.paymentReference }
         : {}),
-    });
+    } as const;
+    let order: Awaited<ReturnType<NonNullable<typeof options.mutateMerchantOrder>>>;
+    if ((action === "refund" || action === "mark-paid") && options.executeMerchantMutation) {
+      const idempotencyKey = context.req.header("idempotency-key")?.trim();
+      if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+      const execution = await options.executeMerchantMutation(
+        {
+          actorUserId: merchant.session.user.id,
+          idempotencyKey,
+          operation: action === "refund" ? "order.refund" : "order.mark_paid",
+          payload: mutationInput,
+          requestId: context.get("requestId"),
+          resourceKeys: [`order:${orderId}`],
+          source: "assisted_sale",
+          tenantId: merchant.result.context.tenantId,
+        },
+        () => mutateMerchantOrder(mutationInput),
+      );
+      if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+      context.header("x-idempotent-replay", String(execution.replayed));
+      order = execution.value;
+    } else {
+      order = await mutateMerchantOrder(mutationInput);
+    }
 
     if (!order.ok) {
       return context.json({ error: order.error }, order.status);
@@ -307,6 +334,116 @@ export function registerMerchantOrderRoutes(
   app.post("/platform/merchant/orders/:orderId/refund", (context) =>
     mutateResolvedMerchantOrder(context, "refund"),
   );
+
+  app.post("/platform/merchant/orders/:orderId/returns", async (context) => {
+    if (!options.createMerchantReturn || !options.executeMerchantMutation) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, { requireStockLocation: true });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const orderId = context.req.param("orderId");
+    const body = parseOrderReturnInput(await context.req.json().catch(() => null));
+    if (!orderId || !body) {
+      return context.json({ error: "order_return_invalid" }, 400);
+    }
+    const input = {
+      orderId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      locationId: commerce.context.medusaStockLocationId ?? undefined,
+      items: body.items,
+      ...(body.note ? { note: body.note } : {}),
+    };
+    const execution = await options.executeMerchantMutation(
+      {
+        actorUserId: merchant.session.user.id,
+        idempotencyKey,
+        operation: "order.return.create",
+        payload: input,
+        requestId: context.get("requestId"),
+        resourceKeys: [`order:${orderId}`],
+        source: "assisted_sale",
+        tenantId: merchant.result.context.tenantId,
+      },
+      () =>
+        options.createMerchantReturn?.(input) as ReturnType<
+          NonNullable<typeof options.createMerchantReturn>
+        >,
+    );
+    if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+    context.header("x-idempotent-replay", String(execution.replayed));
+    if (!execution.value.ok) {
+      return context.json({ error: execution.value.error }, execution.value.status);
+    }
+    return context.json({ return: execution.value.orderReturn }, 201);
+  });
+
+  app.post("/platform/merchant/orders/:orderId/returns/:returnId/receive", async (context) => {
+    if (
+      !options.receiveMerchantReturn ||
+      !options.executeMerchantMutation ||
+      !options.appendMerchantInventoryMovement
+    ) {
+      return context.json({ error: "commerce_backend_unavailable" }, 503);
+    }
+    const merchant = await getAuthorizedMerchantContext(context, { orders: ["update"] });
+    if (!merchant.ok) return merchant.response;
+    const commerce = getResolvedCommerce(merchant.result.context, { requireStockLocation: true });
+    if (!commerce.ok) return context.json({ error: commerce.error }, commerce.status);
+    const idempotencyKey = context.req.header("idempotency-key")?.trim();
+    if (!idempotencyKey) return context.json({ error: "idempotency_key_required" }, 400);
+    const orderId = context.req.param("orderId");
+    const returnId = context.req.param("returnId");
+    const body = parseOrderReturnReceiptInput(await context.req.json().catch(() => null));
+    if (!orderId || !returnId || !body) {
+      return context.json({ error: "order_return_invalid" }, 400);
+    }
+    const input = {
+      orderId,
+      returnId,
+      salesChannelId: commerce.context.medusaSalesChannelId,
+      items: body.items,
+    };
+    const actorUserId = merchant.session.user.id;
+    const tenantId = merchant.result.context.tenantId;
+    const locationId = commerce.context.medusaStockLocationId as string;
+    const execution = await options.executeMerchantMutation(
+      {
+        actorUserId,
+        idempotencyKey,
+        operation: "order.return.receive",
+        payload: input,
+        requestId: context.get("requestId"),
+        resourceKeys: [`order:${orderId}`, `return:${returnId}`],
+        source: "assisted_sale",
+        tenantId,
+      },
+      async () => {
+        const result = await options.receiveMerchantReturn?.(input);
+        if (result?.ok) {
+          await recordReturnMovements({
+            actorUserId,
+            append: options.appendMerchantInventoryMovement as NonNullable<
+              typeof options.appendMerchantInventoryMovement
+            >,
+            locationId,
+            result,
+            tenantId,
+          });
+        }
+        return result as Awaited<ReturnType<NonNullable<typeof options.receiveMerchantReturn>>>;
+      },
+    );
+    if (!execution.ok) return context.json({ error: execution.error }, execution.status);
+    context.header("x-idempotent-replay", String(execution.replayed));
+    if (!execution.value.ok) {
+      return context.json({ error: execution.value.error }, execution.value.status);
+    }
+    return context.json({ return: execution.value.orderReturn });
+  });
 
   app.post("/platform/merchant/orders/:orderId/settlement", async (context) => {
     if (!options.updateMerchantOrderSettlement) {

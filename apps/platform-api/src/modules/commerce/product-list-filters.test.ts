@@ -8,12 +8,24 @@ test("list and export product filters share validation", () => {
     productListFiltersSchema.parse({
       status: "all",
       media: "without_media",
+      inventory: "low_stock",
       categoryId: "none",
       q: " Coffee ",
     }),
-    { status: undefined, media: "without_media", categoryId: "none", q: "Coffee" },
+    {
+      status: undefined,
+      media: "without_media",
+      inventory: "low_stock",
+      categoryId: "none",
+      q: "Coffee",
+    },
   );
-  for (const value of [{ status: "deleted" }, { media: "video" }, { q: "x".repeat(201) }])
+  for (const value of [
+    { status: "deleted" },
+    { media: "video" },
+    { inventory: "nearly_empty" },
+    { q: "x".repeat(201) },
+  ])
     assert.equal(productListFiltersSchema.safeParse(value).success, false);
 });
 test("taxonomy filter validation rejects unsupported visibility", () => {

@@ -107,3 +107,225 @@ describe("Medusa promotion listing", () => {
     });
   });
 });
+
+describe("Medusa promotion writes", () => {
+  it("creates category targeting for registered tenant customers", async () => {
+    let createBody: Record<string, unknown> | undefined;
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/product-categories/cat_1") {
+          return Response.json({
+            product_category: { id: "cat_1", metadata: { platform_tenant_id: "tenant_1" } },
+          });
+        }
+        if (url.pathname === "/admin/platform-customer-group") {
+          return Response.json({
+            count: 1,
+            customer_groups: [
+              { id: "cusgrp_1", metadata: { tenant_id: "tenant_1" }, name: "Shop customers" },
+            ],
+          });
+        }
+        if (url.pathname === "/admin/promotions" && init?.method === "POST") {
+          createBody = JSON.parse(String(init.body));
+          return Response.json({ promotion: rawPromotion("promo_1", "tenant_1", "items") });
+        }
+        throw new Error(`Unexpected request ${url.pathname}`);
+      },
+    });
+
+    const result = await service.createPromotion({
+      categoryIds: ["cat_1"],
+      code: "COFFEE10",
+      method: "percentage",
+      registeredCustomersOnly: true,
+      status: "active",
+      targetType: "items",
+      tenantId: "tenant_1",
+      value: 10,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(createBody?.application_method, {
+      allocation: "each",
+      max_quantity: 1,
+      target_rules: [
+        { attribute: "items.product.categories.id", operator: "in", values: ["cat_1"] },
+      ],
+      target_type: "items",
+      type: "percentage",
+      value: 10,
+    });
+    assert.deepEqual(createBody?.rules, [
+      { attribute: "customer.groups.id", operator: "in", values: ["cusgrp_1"] },
+    ]);
+  });
+
+  it("preserves standard product targeting when updating", async () => {
+    let updateBody: Record<string, unknown> | undefined;
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/promotions/promo_owned" && init?.method === "POST") {
+          updateBody = JSON.parse(String(init.body));
+          return Response.json({ promotion: rawPromotion("promo_owned", "tenant_1", "items") });
+        }
+        return Response.json({
+          promotion: {
+            ...rawPromotion("promo_owned", "tenant_1", "items"),
+            application_method: {
+              allocation: "each",
+              max_quantity: 2,
+              target_rules: [{ attribute: "items.product.id", operator: "in", values: ["prod_1"] }],
+              target_type: "items",
+              type: "percentage",
+              value: 15,
+            },
+          },
+        });
+      },
+    });
+
+    const result = await service.updatePromotion({
+      allocation: "each",
+      code: "fall15",
+      isAutomatic: false,
+      isTaxInclusive: false,
+      maxQuantity: 2,
+      method: "percentage",
+      productIds: ["prod_1", " prod_2 "],
+      promotionId: "promo_owned",
+      promotionType: "standard",
+      status: "active",
+      targetType: "items",
+      tenantId: "tenant_1",
+      value: 15,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(updateBody?.application_method, {
+      allocation: "each",
+      max_quantity: 2,
+      target_rules: [
+        {
+          attribute: "items.product.id",
+          operator: "in",
+          values: ["prod_1", "prod_2"],
+        },
+      ],
+      target_type: "items",
+      type: "percentage",
+      value: 15,
+    });
+  });
+
+  it("preserves buy and target rules when updating a buy-get promotion", async () => {
+    let updateBody: Record<string, unknown> | undefined;
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/promotions/promo_buyget" && init?.method === "POST") {
+          updateBody = JSON.parse(String(init.body));
+        }
+        return Response.json({
+          promotion: {
+            ...rawPromotion("promo_buyget", "tenant_1", "items"),
+            type: "buyget",
+          },
+        });
+      },
+    });
+
+    const result = await service.updatePromotion({
+      allocation: "each",
+      applyToQuantity: 1,
+      buyMinQuantity: 2,
+      buyProductIds: ["prod_buy"],
+      code: "buy2get1",
+      maxQuantity: 1,
+      method: "percentage",
+      productIds: ["prod_get"],
+      promotionId: "promo_buyget",
+      promotionType: "buyget",
+      status: "active",
+      targetType: "items",
+      tenantId: "tenant_1",
+      value: 100,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(updateBody?.application_method, {
+      allocation: "each",
+      apply_to_quantity: 1,
+      buy_rules: [{ attribute: "items.product.id", operator: "in", values: ["prod_buy"] }],
+      buy_rules_min_quantity: 2,
+      max_quantity: 1,
+      target_rules: [{ attribute: "items.product.id", operator: "in", values: ["prod_get"] }],
+      target_type: "items",
+      type: "percentage",
+      value: 100,
+    });
+  });
+
+  it("creates a bounded code batch under the owned promotion campaign", async () => {
+    const created: Array<Record<string, unknown>> = [];
+    const service = createMedusaPromotionService({
+      medusaInternalUrl: "http://medusa",
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.pathname === "/admin/promotions/promo_owned") {
+          return Response.json({
+            promotion: {
+              ...rawPromotion("promo_owned", "tenant_1", "items"),
+              campaign_id: "camp_1",
+              application_method: {
+                allocation: "each",
+                max_quantity: 1,
+                target_rules: [
+                  { attribute: "items.product.id", operator: "in", values: ["prod_1"] },
+                ],
+                target_type: "items",
+                type: "percentage",
+                value: 10,
+              },
+            },
+          });
+        }
+        if (url.pathname === "/admin/promotions" && init?.method === "POST") {
+          const body = JSON.parse(String(init.body));
+          created.push(body);
+          return Response.json({ promotion: { ...rawPromotion(body.code, "tenant_1"), ...body } });
+        }
+        throw new Error(`Unexpected request ${url.pathname}`);
+      },
+    });
+
+    const result = await service.createPromotionCodeBatch({
+      count: 3,
+      prefix: "BUNA",
+      promotionId: "promo_owned",
+      suffixLength: 8,
+      tenantId: "tenant_1",
+      usageLimit: 1,
+    });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.codes.length, 3);
+    assert.equal(new Set(result.codes).size, 3);
+    assert.ok(result.codes.every((code) => /^BUNA-[A-Z2-9]{8}$/.test(code)));
+    assert.ok(created.every((body) => body.campaign_id === "camp_1" && body.limit === 1));
+    assert.deepEqual(created[0]?.application_method, {
+      allocation: "each",
+      max_quantity: 1,
+      target_rules: [{ attribute: "items.product.id", operator: "in", values: ["prod_1"] }],
+      target_type: "items",
+      type: "percentage",
+      value: 10,
+    });
+  });
+});

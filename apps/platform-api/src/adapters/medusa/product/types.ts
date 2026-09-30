@@ -52,6 +52,7 @@ export type ProductVariantWriteInput = {
   prices?: Array<{ amount: number; currencyCode: string }> | undefined;
   sku?: string | null | undefined;
   stockedQuantity?: number | undefined;
+  unitCostAmount?: number | null | undefined;
 };
 
 export type ProductUpdateInput = ProductWriteInput & {

@@ -98,6 +98,48 @@ export async function emitPlatformNotificationEvent(
   }
 }
 
+export async function emitPlatformOrderCostSnapshot(
+  input: {
+    items: Array<{
+      lineItemId: string;
+      quantity: number;
+      unitCostAmount: number | null;
+      variantId: string | null;
+    }>;
+    medusaSalesChannelId: string;
+    orderId: string;
+    orderPlacedAt: string;
+  },
+  options?: { fetchImpl?: typeof fetch },
+): Promise<PlatformNotificationEmitResult> {
+  const token = getInternalToken();
+  if (!token) return { ok: false, error: "platform_internal_token_missing" };
+  const fetchImpl = options?.fetchImpl ?? fetch;
+  try {
+    const response = await fetchImpl(
+      `${getPlatformApiBaseUrl().replace(/\/$/, "")}/platform/internal/orders/cost-snapshots`,
+      {
+        body: JSON.stringify(input),
+        headers: {
+          "content-type": "application/json",
+          "x-platform-internal-token": token,
+        },
+        method: "POST",
+      },
+    );
+    const body = await response.json().catch(() => null);
+    return response.ok
+      ? { body, ok: true, status: response.status }
+      : {
+          error: `platform_order_cost_http_${response.status}`,
+          ok: false,
+          status: response.status,
+        };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error), ok: false };
+  }
+}
+
 /** Map Medusa workflow event names → platform notification event types. */
 export const medusaToPlatformNotificationEvent: Record<string, string> = {
   "order.placed": "order.created",

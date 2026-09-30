@@ -53,6 +53,27 @@ export const merchantOrderRefundSchema = z.object({
 
 export type MerchantOrderRefund = z.infer<typeof merchantOrderRefundSchema>;
 
+export const merchantOrderReturnSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1).nullable(),
+  locationId: z.string().min(1).nullable(),
+  items: z.array(z.object({
+    id: z.string().min(1),
+    lineItemId: z.string().min(1),
+    quantity: z.number().int().positive(),
+    receivedQuantity: z.number().int().nonnegative(),
+    damagedQuantity: z.number().int().nonnegative(),
+    reasonId: z.string().min(1).nullable(),
+    note: z.string().min(1).nullable(),
+  })),
+  requestedAt: z.string().min(1).nullable(),
+  receivedAt: z.string().min(1).nullable(),
+  canceledAt: z.string().min(1).nullable(),
+  createdAt: z.string().min(1).nullable(),
+});
+
+export type MerchantOrderReturn = z.infer<typeof merchantOrderReturnSchema>;
+
 /** Tenant-safe public reference; never expose Medusa's shared global display_id. */
 export function formatPublicOrderReference(
   orderId: string,
@@ -102,6 +123,7 @@ export const merchantOrderSchema = z.object({
   refundedTotal: z.number().nonnegative().optional(),
   refundableTotal: z.number().nonnegative().optional(),
   refunds: z.array(merchantOrderRefundSchema).optional(),
+  returns: z.array(merchantOrderReturnSchema).optional(),
   subtotal: z.number().nullable().optional(),
   shippingTotal: z.number().nullable().optional(),
   discountTotal: z.number().nullable().optional(),

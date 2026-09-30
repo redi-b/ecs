@@ -5,6 +5,8 @@ import type {
   PlatformPermission,
 } from "../context/platform-authorization.js";
 import type {
+  MerchantPromotionCodeBatchInput,
+  MerchantPromotionCodeBatchResult,
   MerchantPromotionDeleteResult,
   MerchantPromotionInput,
   MerchantPromotionResult,
@@ -149,6 +151,9 @@ export type PlatformAdministrationOptions = {
     | undefined;
   createMerchantPromotion?:
     | ((input: MerchantPromotionInput) => Promise<MerchantPromotionResult>)
+    | undefined;
+  createMerchantPromotionCodeBatch?:
+    | ((input: MerchantPromotionCodeBatchInput) => Promise<MerchantPromotionCodeBatchResult>)
     | undefined;
   updateMerchantPromotion?:
     | ((

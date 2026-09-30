@@ -13,8 +13,6 @@ import {
   getMerchantOrderForAction,
   shipMerchantOrderFulfillment,
 } from "./actions.js";
-import { refundMerchantOrder } from "./refund-action.js";
-import type { MerchantRefundInput } from "./refunds.js";
 import { applyOrderListPostFilters, needsPostFilter } from "./list-query.js";
 import { getAdminHeaders, missingCredentials, requestMedusa } from "./medusa-http.js";
 import { normalizeOrder } from "./normalize.js";
@@ -24,6 +22,14 @@ import {
   markMerchantOrderPaid,
   updateMerchantOrderSettlement,
 } from "./payment-actions.js";
+import { refundMerchantOrder } from "./refund-action.js";
+import type { MerchantRefundInput } from "./refunds.js";
+import {
+  createMerchantReturn,
+  type MerchantReturnInput,
+  type MerchantReturnReceiptInput,
+  receiveMerchantReturn,
+} from "./returns.js";
 import { getOrderActionUrl, getOrdersUrl, getOrderUrl } from "./urls.js";
 import { getNumber } from "./values.js";
 
@@ -83,6 +89,14 @@ export function createMedusaOrderService(options: {
   }
 
   return {
+    createMerchantReturn: async (input: MerchantReturnInput) => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      return createMerchantReturn(fetcher, options, input);
+    },
+    receiveMerchantReturn: async (input: MerchantReturnReceiptInput) => {
+      if (!options.adminApiToken?.trim()) return missingCredentials();
+      return receiveMerchantReturn(fetcher, options, input);
+    },
     getMerchantOrder: async (input: {
       orderId: string;
       salesChannelId: string;

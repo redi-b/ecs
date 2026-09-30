@@ -294,6 +294,33 @@ export function appWithResolution(
       orderId: string;
       salesChannelId: string;
     }) => Promise<MerchantOrderDetailResult>;
+    createMerchantManualOrder?: PlatformAppOptions["createMerchantManualOrder"];
+    createMerchantReturn?: PlatformAppOptions["createMerchantReturn"];
+    receiveMerchantReturn?: PlatformAppOptions["receiveMerchantReturn"];
+    createMerchantPromotionCodeBatch?: PlatformAppOptions["createMerchantPromotionCodeBatch"];
+    listMerchantPromotions?: PlatformAppOptions["listMerchantPromotions"];
+    executeMerchantMutation?: PlatformAppOptions["executeMerchantMutation"];
+    createMerchantExpense?: PlatformAppOptions["createMerchantExpense"];
+    getMerchantEstimatedProfit?: PlatformAppOptions["getMerchantEstimatedProfit"];
+    listMerchantExpenses?: PlatformAppOptions["listMerchantExpenses"];
+    voidMerchantExpense?: PlatformAppOptions["voidMerchantExpense"];
+    appendMerchantInventoryMovement?: PlatformAppOptions["appendMerchantInventoryMovement"];
+    listMerchantInventoryMovements?: PlatformAppOptions["listMerchantInventoryMovements"];
+    internalApiToken?: PlatformAppOptions["internalApiToken"];
+    resolveTenantIdByMedusaSalesChannelId?: PlatformAppOptions["resolveTenantIdByMedusaSalesChannelId"];
+    archiveMerchantSaleDraft?: PlatformAppOptions["archiveMerchantSaleDraft"];
+    getMerchantSaleDraft?: PlatformAppOptions["getMerchantSaleDraft"];
+    listMerchantSaleDrafts?: PlatformAppOptions["listMerchantSaleDrafts"];
+    saveMerchantSaleDraft?: PlatformAppOptions["saveMerchantSaleDraft"];
+    issueMerchantQuotation?: PlatformAppOptions["issueMerchantQuotation"];
+    getMerchantQuotation?: PlatformAppOptions["getMerchantQuotation"];
+    listMerchantQuotations?: PlatformAppOptions["listMerchantQuotations"];
+    reviseMerchantQuotation?: PlatformAppOptions["reviseMerchantQuotation"];
+    markMerchantQuotationConverted?: PlatformAppOptions["markMerchantQuotationConverted"];
+    issueMerchantSalesDocument?: PlatformAppOptions["issueMerchantSalesDocument"];
+    getMerchantSalesDocument?: PlatformAppOptions["getMerchantSalesDocument"];
+    listMerchantSalesDocuments?: PlatformAppOptions["listMerchantSalesDocuments"];
+    validateMerchantSaleDraft?: PlatformAppOptions["validateMerchantSaleDraft"];
     getMerchantProduct?: (input: {
       productId: string;
       salesChannelId: string;
@@ -619,6 +646,33 @@ export function appWithResolution(
       getOperatorSupportHistory: options?.getOperatorSupportHistory,
       listSupportAccessGrants: options?.listSupportAccessGrants,
       getMerchantOrder: options?.getMerchantOrder,
+      createMerchantManualOrder: options?.createMerchantManualOrder,
+      createMerchantReturn: options?.createMerchantReturn,
+      receiveMerchantReturn: options?.receiveMerchantReturn,
+      createMerchantPromotionCodeBatch: options?.createMerchantPromotionCodeBatch,
+      listMerchantPromotions: options?.listMerchantPromotions,
+      executeMerchantMutation: options?.executeMerchantMutation,
+      createMerchantExpense: options?.createMerchantExpense,
+      getMerchantEstimatedProfit: options?.getMerchantEstimatedProfit,
+      listMerchantExpenses: options?.listMerchantExpenses,
+      voidMerchantExpense: options?.voidMerchantExpense,
+      appendMerchantInventoryMovement: options?.appendMerchantInventoryMovement,
+      listMerchantInventoryMovements: options?.listMerchantInventoryMovements,
+      internalApiToken: options?.internalApiToken,
+      resolveTenantIdByMedusaSalesChannelId: options?.resolveTenantIdByMedusaSalesChannelId,
+      archiveMerchantSaleDraft: options?.archiveMerchantSaleDraft,
+      getMerchantSaleDraft: options?.getMerchantSaleDraft,
+      listMerchantSaleDrafts: options?.listMerchantSaleDrafts,
+      saveMerchantSaleDraft: options?.saveMerchantSaleDraft,
+      issueMerchantQuotation: options?.issueMerchantQuotation,
+      getMerchantQuotation: options?.getMerchantQuotation,
+      listMerchantQuotations: options?.listMerchantQuotations,
+      reviseMerchantQuotation: options?.reviseMerchantQuotation,
+      markMerchantQuotationConverted: options?.markMerchantQuotationConverted,
+      issueMerchantSalesDocument: options?.issueMerchantSalesDocument,
+      getMerchantSalesDocument: options?.getMerchantSalesDocument,
+      listMerchantSalesDocuments: options?.listMerchantSalesDocuments,
+      validateMerchantSaleDraft: options?.validateMerchantSaleDraft,
       getMerchantProduct: options?.getMerchantProduct,
       getMerchantProductStock: options?.getMerchantProductStock,
       getMerchantProductVariantStock: options?.getMerchantProductVariantStock,

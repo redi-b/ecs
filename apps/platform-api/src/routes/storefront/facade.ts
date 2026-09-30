@@ -1,9 +1,10 @@
 import type { Hono } from "hono";
-import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 import {
   getPublicProductHandle,
   getTenantProductHandle,
 } from "../../adapters/medusa/product/handles.js";
+import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
+import type { MerchantPromotion } from "../../types/index.js";
 import {
   getForwardHeaders,
   getForwardUrl,
@@ -366,6 +367,29 @@ export function registerStoreFacadeRoutes(
 
       if (medusaResponse.ok && method === "GET" && path.startsWith("/store/products")) {
         responseBody = rewriteStoreProductHandles(responseBody, result.context.tenantId);
+        if (options.listMerchantPromotions) {
+          const promotions = await options
+            .listMerchantPromotions({
+              apply: "automatic",
+              limit: 100,
+              offer: "products",
+              offset: 0,
+              status: "active",
+              tenantId: result.context.tenantId,
+            })
+            .catch(() => null);
+          if (
+            promotions?.ok &&
+            promotions.count === promotions.promotions.length &&
+            promotions.count <= promotions.limit
+          ) {
+            responseBody = projectStorefrontMerchandising(
+              responseBody,
+              promotions.promotions,
+              new Date(),
+            );
+          }
+        }
       }
 
       // Medusa Store API returns global collections/categories. Scope to this tenant via metadata.
@@ -427,6 +451,91 @@ function rewriteStoreProductHandles(body: ArrayBuffer, tenantId: string) {
   } catch {
     return body;
   }
+}
+
+function projectStorefrontMerchandising(
+  body: ArrayBuffer,
+  promotions: MerchantPromotion[],
+  now: Date,
+) {
+  const eligible = promotions.filter((promotion) => isMerchandisingPromotion(promotion, now));
+  if (!eligible.length) return body;
+
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(body)) as Record<string, unknown>;
+    const project = (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return;
+      const product = value as Record<string, unknown>;
+      const matching = eligible
+        .filter((promotion) => promotionMatchesProduct(promotion, product))
+        .sort((left, right) => right.value - left.value)[0];
+      if (!matching || !Array.isArray(product.variants)) return;
+      for (const value of product.variants) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+        (value as Record<string, unknown>).ecs_merchandising = {
+          discount_percentage: matching.value,
+          promotion_id: matching.id,
+        };
+      }
+    };
+    if (Array.isArray(parsed.products)) parsed.products.forEach(project);
+    project(parsed.product);
+    return new TextEncoder().encode(JSON.stringify(parsed)).buffer as ArrayBuffer;
+  } catch {
+    return body;
+  }
+}
+
+function isMerchandisingPromotion(promotion: MerchantPromotion, now: Date) {
+  const startsAt = promotion.startsAt ? new Date(promotion.startsAt) : null;
+  const endsAt = promotion.endsAt ? new Date(promotion.endsAt) : null;
+  return (
+    promotion.status === "active" &&
+    promotion.isAutomatic &&
+    promotion.promotionType === "standard" &&
+    promotion.targetType === "items" &&
+    promotion.method === "percentage" &&
+    promotion.value > 0 &&
+    promotion.value < 100 &&
+    !promotion.registeredCustomersOnly &&
+    !promotion.hasUnsupportedRules &&
+    promotion.usageLimit == null &&
+    promotion.campaignBudgetLimit == null &&
+    (!startsAt || (!Number.isNaN(startsAt.valueOf()) && startsAt <= now)) &&
+    (!endsAt || (!Number.isNaN(endsAt.valueOf()) && endsAt > now))
+  );
+}
+
+function promotionMatchesProduct(promotion: MerchantPromotion, product: Record<string, unknown>) {
+  const productId = typeof product.id === "string" ? product.id : null;
+  const collectionId =
+    typeof product.collection_id === "string"
+      ? product.collection_id
+      : product.collection &&
+          typeof product.collection === "object" &&
+          !Array.isArray(product.collection)
+        ? ((product.collection as Record<string, unknown>).id as string | undefined)
+        : undefined;
+  const categoryIds = new Set(
+    (Array.isArray(product.categories) ? product.categories : []).flatMap((category) =>
+      category &&
+      typeof category === "object" &&
+      !Array.isArray(category) &&
+      typeof (category as Record<string, unknown>).id === "string"
+        ? [String((category as Record<string, unknown>).id)]
+        : [],
+    ),
+  );
+  const hasTarget =
+    promotion.productIds.length > 0 ||
+    promotion.collectionIds.length > 0 ||
+    promotion.categoryIds.length > 0;
+  if (!hasTarget) return true;
+  return (
+    (productId !== null && promotion.productIds.includes(productId)) ||
+    (collectionId !== undefined && promotion.collectionIds.includes(collectionId)) ||
+    promotion.categoryIds.some((id) => categoryIds.has(id))
+  );
 }
 
 function scopeTaxonomyResponseToTenant(input: {

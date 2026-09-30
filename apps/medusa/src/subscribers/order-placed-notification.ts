@@ -5,8 +5,24 @@ import { loadOrderForNotification } from "../lib/load-order-for-notification";
 import {
   buildOrderNotificationPayload,
   emitPlatformNotificationEvent,
+  emitPlatformOrderCostSnapshot,
   medusaToPlatformNotificationEvent,
 } from "../lib/platform-notifications";
+
+export class OrderCostSnapshotRetryError extends Error {
+  readonly name = "OrderCostSnapshotRetryError";
+}
+
+export function requireOrderCostSnapshot(
+  result: Awaited<ReturnType<typeof emitPlatformOrderCostSnapshot>>,
+  orderId: string,
+) {
+  if (!result.ok) {
+    throw new OrderCostSnapshotRetryError(
+      `failed to capture order costs (orderId=${orderId}, error=${result.error}, status=${result.status ?? "n/a"})`,
+    );
+  }
+}
 
 /**
  * order.placed → platform order.created + sales-driven inventory.low when stock is low.
@@ -34,6 +50,24 @@ export default async function orderPlacedNotificationHandler({
     }
 
     const eventType = medusaToPlatformNotificationEvent["order.placed"] ?? "order.created";
+    const costSnapshot = await emitPlatformOrderCostSnapshot({
+      medusaSalesChannelId: order.sales_channel_id,
+      orderId: order.id,
+      orderPlacedAt: order.created_at ?? new Date().toISOString(),
+      items: (order.items ?? []).flatMap((item) =>
+        item.id && item.quantity && item.quantity > 0
+          ? [
+              {
+                lineItemId: item.id,
+                quantity: item.quantity,
+                unitCostAmount: item.unit_cost_amount ?? null,
+                variantId: item.variant_id ?? null,
+              },
+            ]
+          : [],
+      ),
+    });
+    requireOrderCostSnapshot(costSnapshot, orderId);
     const result = await emitPlatformNotificationEvent({
       eventType,
       medusaSalesChannelId: order.sales_channel_id,
@@ -71,6 +105,9 @@ export default async function orderPlacedNotificationHandler({
     logger.error(
       `order.placed notification handler error (orderId=${orderId}, err=${error instanceof Error ? error.message : String(error)})`,
     );
+    // The snapshot endpoint is idempotent. Propagating this one failure lets the
+    // event delivery retry without risking a duplicate cost row or order.
+    if (error instanceof OrderCostSnapshotRetryError) throw error;
   }
 }
 

@@ -1,5 +1,7 @@
 import type { MerchantProduct } from "@ecs/contracts";
 import type { ProductListFilters } from "../commerce/product-list-filters.js";
+import { filterProductsByInventory } from "../inventory/low-stock-products.js";
+import { getLowStockThreshold } from "../notifications/inventory-low.js";
 
 export const PRODUCT_CSV_SCHEMA_VERSION = "ecs-products-v2";
 const EXPORT_PAGE_SIZE = 100;
@@ -135,10 +137,11 @@ export async function exportProductsToCsv(input: {
   let offset = 0;
   let expectedCount: number | null = null;
   const seen = new Set<string>();
+  const { inventory, ...catalogFilters } = input.filters ?? {};
 
   do {
     const page = await input.listProducts({
-      ...input.filters,
+      ...catalogFilters,
       limit: EXPORT_PAGE_SIZE,
       offset,
       salesChannelId: input.salesChannelId,
@@ -174,11 +177,14 @@ export async function exportProductsToCsv(input: {
   } while (offset < (expectedCount ?? 0));
 
   const uniqueProducts = [...new Map(products.map((product) => [product.id, product])).values()];
-  const built = buildProductCsv(uniqueProducts);
+  const exportedProducts = inventory
+    ? filterProductsByInventory(uniqueProducts, inventory, getLowStockThreshold())
+    : uniqueProducts;
+  const built = buildProductCsv(exportedProducts);
   return {
     ok: true,
     csv: built.csv,
-    productCount: uniqueProducts.length,
+    productCount: exportedProducts.length,
     rowCount: built.rowCount,
   };
 }
