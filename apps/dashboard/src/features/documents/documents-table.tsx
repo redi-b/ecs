@@ -13,9 +13,10 @@ import { type DataTableFilter, DataTableFilters } from "@/components/app/data-ta
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import type { ResourceRowActions } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n/provider";
+import { listEntityLinkClassName } from "@/lib/list-entity-link";
 import { dashboardRoutes } from "@/lib/routes";
 
 const kinds: MerchantOperationsDocumentKind[] = [
@@ -109,7 +110,7 @@ export function DocumentsTable({
         header: t("documents.document"),
         cell: ({ row }) => (
           <div className="min-w-40">
-            <Link className="font-medium hover:underline" href={detailHref(row.original)}>
+            <Link className={listEntityLinkClassName} href={detailHref(row.original)}>
               {row.original.number}
             </Link>
             {row.original.orderReference ? (
@@ -177,9 +178,22 @@ export function DocumentsTable({
     [t],
   );
 
+  const columnsWithActions = useMemo<ColumnDef<MerchantOperationsDocumentSummary>[]>(
+    () => [
+      ...columns,
+      {
+        id: "actions",
+        cell: ({ row }) => <RowActionsMenu {...rowActions(row.original)} />,
+        enableHiding: false,
+        enableSorting: false,
+      },
+    ],
+    [columns, rowActions],
+  );
+
   return (
     <DataTable
-      columns={columns}
+      columns={columnsWithActions}
       data={documents}
       emptyIcon={<AppIcons.documents aria-hidden className="size-8" />}
       emptyMessage={t("documents.emptyMessage")}

@@ -15,6 +15,7 @@ export function getDashboardBreadcrumbTrail(
 ): DashboardBreadcrumb[] {
   const productsRoute = appRoutes.find((route) => route.href === dashboardRoutes.products);
   const ordersRoute = appRoutes.find((route) => route.href === dashboardRoutes.orders);
+  const documentsRoute = appRoutes.find((route) => route.href === dashboardRoutes.documents);
   const productCategoriesRoute = productsRoute?.children?.find(
     (route) => route.href === dashboardRoutes.productCategories,
   );
@@ -136,10 +137,14 @@ export function getDashboardBreadcrumbTrail(
     ];
   }
 
-  if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/quotations/`)) {
+  if (documentsRoute && pathname.startsWith(`${dashboardRoutes.orders}/quotations/`)) {
     return [
-      toBreadcrumb(ordersRoute),
-      { href: `${dashboardRoutes.orders}?view=quotes`, id: "quotations", title: "Quotations" },
+      toBreadcrumb(documentsRoute),
+      {
+        href: `${dashboardRoutes.documents}?kind=quotation`,
+        id: "quotations",
+        title: "Quotations",
+      },
       {
         href: pathname,
         id: "quotation-details",
@@ -148,10 +153,10 @@ export function getDashboardBreadcrumbTrail(
     ];
   }
 
-  if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/documents/`)) {
+  if (documentsRoute && pathname.startsWith(`${dashboardRoutes.orders}/documents/`)) {
     const orderId = labels["sales-document-order-id"]?.trim();
     return [
-      toBreadcrumb(ordersRoute),
+      toBreadcrumb(documentsRoute),
       ...(orderId
         ? [
             {
@@ -161,7 +166,6 @@ export function getDashboardBreadcrumbTrail(
             },
           ]
         : []),
-      { href: null, id: "sales-documents", title: "Documents" },
       {
         href: pathname,
         id: "sales-document-details",

@@ -244,6 +244,7 @@ export function registerMerchantOrderRoutes(
     }
 
     const body = (await context.req.json().catch(() => ({}))) as Record<string, unknown>;
+    const operationChannel = body.channel === "pos" ? "pos" : "assisted_sale";
     let settlement: OrderSettlementInput | undefined;
     if (action === "mark-paid") {
       const parsed = parseSettlementBody(body);
@@ -268,7 +269,12 @@ export function registerMerchantOrderRoutes(
             shippingOptionId: merchant.result.context.medusaShippingOptionId ?? undefined,
           }
         : {}),
-      ...(settlement ? { settlement, source: "dashboard" as const } : {}),
+      ...(settlement
+        ? {
+            settlement,
+            source: operationChannel === "pos" ? ("pos" as const) : ("dashboard" as const),
+          }
+        : {}),
       ...(refund ? { refund } : {}),
       ...(typeof body.paymentReference === "string"
         ? { paymentReference: body.paymentReference }
@@ -286,7 +292,7 @@ export function registerMerchantOrderRoutes(
           payload: mutationInput,
           requestId: context.get("requestId"),
           resourceKeys: [`order:${orderId}`],
-          source: "assisted_sale",
+          source: operationChannel,
           tenantId: merchant.result.context.tenantId,
         },
         () => mutateMerchantOrder(mutationInput),

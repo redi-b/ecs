@@ -45,7 +45,7 @@ export type ManualOrderCreateInput = {
   idempotencyKey?: string | undefined;
   quotationId?: string | undefined;
   quotationRevision?: number | undefined;
-  source?: "assisted_sale" | "quote_conversion" | undefined;
+  source?: "assisted_sale" | "pos" | "quote_conversion" | undefined;
 };
 
 export type ManualOrderResult =
@@ -126,7 +126,11 @@ export function createMedusaManualOrderService(options: Options) {
       metadata: {
         created_by_user_id: input.userId,
         created_from:
-          input.source === "quote_conversion" ? "quote_conversion" : "dashboard_manual_order",
+          input.source === "quote_conversion"
+            ? "quote_conversion"
+            : input.source === "pos"
+              ? "pos"
+              : "dashboard_manual_order",
         quotation_id: input.quotationId ?? null,
         quotation_revision: input.quotationRevision ?? null,
         note: input.note?.trim() || null,

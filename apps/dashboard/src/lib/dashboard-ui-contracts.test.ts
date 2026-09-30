@@ -39,6 +39,13 @@ test("dashboard field triggers use the shared compact control height", () => {
   assert.doesNotMatch(editorSettings, /h-9 min-w-0 flex-1 justify-between/);
 });
 
+test("expense creation keeps shared single-line control geometry", () => {
+  const expenseDialog = source("features/expenses/expense-create-dialog.tsx");
+  assert.match(expenseDialog, /<SelectTrigger className="w-full"/);
+  assert.doesNotMatch(expenseDialog, /SelectTrigger[^>]*rounded-/);
+  assert.doesNotMatch(expenseDialog, /<select|type="date"/);
+});
+
 test("shared dialog footer exposes semantic action groups without changing its default", () => {
   const dialog = source("components/ui/dialog.tsx");
   assert.match(dialog, /function DialogFooterLeading/);
@@ -63,6 +70,7 @@ test("sidebar storefront dock stays fixed and exposes open and copy actions", ()
 
   assert.match(sidebar, /storefrontPublished=\{access\.storefront\.isPublished\}/);
   assert.match(sidebar, /pb-2/);
+  assert.match(sidebar, /overscroll-contain/);
   assert.match(sidebar, /<\/SidebarContent>[\s\S]{0,120}<StorefrontDock/);
   assert.match(dock, /PopoverContent/);
   assert.match(dock, /storefrontPublished/);
@@ -72,6 +80,8 @@ test("sidebar storefront dock stays fixed and exposes open and copy actions", ()
   assert.match(dock, /onPointerEnter=\{openOnHover\}/);
   assert.match(dock, /onPointerLeave=\{closeAfterHover\}/);
   assert.match(dock, /data-storefront-status/);
+  assert.match(dock, /data-storefront-status-collapsed/);
+  assert.match(dock, /group-data-\[collapsible=icon\]:block/);
   assert.match(dock, /statusLabel/);
   assert.doesNotMatch(dock, /hidden=\{!collapsed\}/);
   assert.match(dock, /copyTextToClipboard/);
@@ -80,6 +90,18 @@ test("sidebar storefront dock stays fixed and exposes open and copy actions", ()
   assert.match(dock, /toast\.success/);
   assert.match(dock, /target="_blank"/);
   assert.match(layout, /storefrontUrl=\{storefrontUrl\}/);
+});
+
+test("operations tables expose visible row actions and only useful bulk selection", () => {
+  const documents = source("features/documents/documents-table.tsx");
+  const expenses = source("features/expenses/expenses-table.tsx");
+
+  assert.match(documents, /<RowActionsMenu/);
+  assert.doesNotMatch(documents, /id: "select"/);
+  assert.match(expenses, /<RowActionsMenu/);
+  assert.match(expenses, /id: "select"/);
+  assert.match(expenses, /bulkActions=/);
+  assert.match(expenses, /bulkVoid/);
 });
 
 test("expenses remain unavailable until the operations workspace owns the workflow", () => {

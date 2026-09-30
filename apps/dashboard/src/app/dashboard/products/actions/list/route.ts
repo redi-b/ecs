@@ -6,11 +6,15 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const limit = Number(url.searchParams.get("limit") ?? 50);
     const offset = Number(url.searchParams.get("offset") ?? 0);
+    const q = url.searchParams.get("q")?.trim() || undefined;
+    const categoryId = url.searchParams.get("categoryId")?.trim() || undefined;
 
     const result = await getMerchantProducts({
       cookieHeader: context.cookieHeader,
       limit: Number.isFinite(limit) ? Math.min(limit, 100) : 50,
       offset: Number.isFinite(offset) ? offset : 0,
+      ...(q ? { q } : {}),
+      ...(categoryId ? { categoryId } : {}),
       platformApiBaseUrl: context.platformApiBaseUrl,
       requestHost: context.requestHost,
       tenantId: context.tenantId,

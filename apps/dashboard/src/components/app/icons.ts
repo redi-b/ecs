@@ -21,6 +21,7 @@ import {
   RiDraggable,
   RiEdgeLine,
   RiEqualizerLine,
+  RiEraserLine,
   RiErrorWarningLine,
   RiExternalLinkLine,
   RiEyeCloseLine,
@@ -67,6 +68,7 @@ import {
   RiSmartphoneLine,
   RiStarFill,
   RiStarLine,
+  RiSubtractLine,
   RiSunLine,
   RiTeamLine,
   RiTelegram2Line,
@@ -83,6 +85,7 @@ import {
   RiWindowsLine,
   RiYoutubeFill,
 } from "@remixicon/react";
+import { CashierMachineIcon } from "@/components/app/cashier-machine-icon";
 
 export const AppIcons = {
   add: RiAddLine,
@@ -96,6 +99,7 @@ export const AppIcons = {
   billing: RiBankCardLine,
   bank: RiBankLine,
   calendar: RiCalendarLine,
+  quickSale: CashierMachineIcon,
   check: RiCheckLine,
   chrome: RiChromeLine,
   close: RiCloseLine,
@@ -107,6 +111,7 @@ export const AppIcons = {
   drag: RiDraggable,
   edge: RiEdgeLine,
   editor: RiPaintBrushLine,
+  clear: RiEraserLine,
   error: RiErrorWarningLine,
   expand: RiFullscreenLine,
   externalLink: RiExternalLinkLine,
@@ -152,6 +157,7 @@ export const AppIcons = {
   smartphone: RiSmartphoneLine,
   star: RiStarLine,
   starFill: RiStarFill,
+  subtract: RiSubtractLine,
   sun: RiSunLine,
   time: RiTimeLine,
   translate: RiTranslate2,

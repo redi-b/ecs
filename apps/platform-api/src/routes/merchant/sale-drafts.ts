@@ -19,7 +19,12 @@ export function registerMerchantSaleDraftRoutes(
     }
     const limit = getPaginationValue(context.req.query("limit"), 20, 100);
     const offset = getPaginationValue(context.req.query("offset"), 0, 10_000);
+    const channelValue = context.req.query("channel");
+    if (channelValue && channelValue !== "assisted_sale" && channelValue !== "pos") {
+      return context.json({ error: "invalid_sale_draft_channel" }, 400);
+    }
     const result = await options.listMerchantSaleDrafts({
+      ...(channelValue ? { channel: channelValue } : {}),
       limit,
       offset,
       tenantId: merchant.result.context.tenantId,
@@ -84,7 +89,7 @@ export function registerMerchantSaleDraftRoutes(
           payload: { content: parsed.data, draftId, expectedRevision },
           requestId: context.get("requestId"),
           resourceKeys: [draftId ? `sale-draft:${draftId}` : `sale-draft-create:${idempotencyKey}`],
-          source: "assisted_sale",
+          source: parsed.data.channel === "pos" ? "pos" : "assisted_sale",
           tenantId: merchant.result.context.tenantId,
         },
         execute,

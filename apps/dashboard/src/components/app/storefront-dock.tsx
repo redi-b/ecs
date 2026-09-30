@@ -105,6 +105,15 @@ export function StorefrontDock({
                 onPointerLeave={closeAfterHover}
               >
                 <AppIcons.global />
+                <span
+                  aria-label={statusLabel}
+                  className={cn(
+                    "absolute top-1 right-1 hidden size-1.5 rounded-full ring-2 ring-sidebar group-data-[collapsible=icon]:block",
+                    storefrontPublished ? "bg-success" : "bg-muted-foreground/55",
+                  )}
+                  data-storefront-status-collapsed
+                  role="img"
+                />
                 <span className="truncate font-medium">{t("common.storefrontDock.title")}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>

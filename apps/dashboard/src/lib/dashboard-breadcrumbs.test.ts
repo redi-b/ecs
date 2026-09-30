@@ -191,8 +191,12 @@ describe("getDashboardBreadcrumbTrail", () => {
         "quotation-details": "Q-000001",
       }),
       [
-        { href: "/dashboard/orders", id: "orders", title: "Orders" },
-        { href: "/dashboard/orders?view=quotes", id: "quotations", title: "Quotations" },
+        { href: "/dashboard/documents", id: "documents", title: "Documents" },
+        {
+          href: "/dashboard/documents?kind=quotation",
+          id: "quotations",
+          title: "Quotations",
+        },
         {
           href: "/dashboard/orders/quotations/quote_1",
           id: "quotation-details",
@@ -207,9 +211,8 @@ describe("getDashboardBreadcrumbTrail", () => {
         "sales-document-details": "Order summary DOC-000001",
       }),
       [
-        { href: "/dashboard/orders", id: "orders", title: "Orders" },
+        { href: "/dashboard/documents", id: "documents", title: "Documents" },
         { href: "/dashboard/orders/order_1", id: "order-details", title: "Order #1024" },
-        { href: null, id: "sales-documents", title: "Documents" },
         {
           href: "/dashboard/orders/documents/document_1",
           id: "sales-document-details",

@@ -25,6 +25,7 @@ import am_orders from "./am/orders.json";
 import am_overview from "./am/overview.json";
 import am_products from "./am/products.json";
 import am_promotions from "./am/promotions.json";
+import am_quickSale from "./am/quickSale.json";
 import am_settings from "./am/settings.json";
 import am_signup from "./am/signup.json";
 import am_table from "./am/table.json";
@@ -53,6 +54,7 @@ import en_orders from "./en/orders.json";
 import en_overview from "./en/overview.json";
 import en_products from "./en/products.json";
 import en_promotions from "./en/promotions.json";
+import en_quickSale from "./en/quickSale.json";
 import en_settings from "./en/settings.json";
 import en_signup from "./en/signup.json";
 import en_table from "./en/table.json";
@@ -82,6 +84,7 @@ export const messageNamespaces = [
   "orders",
   "overview",
   "products",
+  "quickSale",
   "promotions",
   "settings",
   "signup",
@@ -115,6 +118,7 @@ export const messagesByLocale = {
     orders: am_orders,
     overview: am_overview,
     products: am_products,
+    quickSale: am_quickSale,
     promotions: am_promotions,
     settings: am_settings,
     signup: am_signup,
@@ -145,6 +149,7 @@ export const messagesByLocale = {
     orders: en_orders,
     overview: en_overview,
     products: en_products,
+    quickSale: en_quickSale,
     promotions: en_promotions,
     settings: en_settings,
     signup: en_signup,

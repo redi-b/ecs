@@ -62,6 +62,10 @@ const PAGE_REQUIREMENTS: ReadonlyArray<{
     requirement: merchantPolicies.insights,
   },
   {
+    matches: (pathname) => pathname === dashboardRoutes.pos,
+    requirement: { allOf: ["orders.read", "orders.create", "products.read"] },
+  },
+  {
     matches: (pathname) => pathname === dashboardRoutes.documents,
     requirement: merchantPolicies.orders,
   },

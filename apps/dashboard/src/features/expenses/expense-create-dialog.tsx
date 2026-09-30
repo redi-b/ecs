@@ -141,7 +141,7 @@ export function ExpenseCreateDialog() {
                 onValueChange={(value) => setCategory(value as MerchantExpenseCategory)}
                 value={category}
               >
-                <SelectTrigger className="w-full rounded-md" id={`${baseId}-category`}>
+                <SelectTrigger className="w-full" id={`${baseId}-category`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent align="start">

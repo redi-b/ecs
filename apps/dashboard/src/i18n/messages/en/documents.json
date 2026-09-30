@@ -1,5 +1,8 @@
 {
   "title": "Documents",
+  "create": "Create document",
+  "createFromOrder": "From an order",
+  "createQuotation": "New quotation",
   "searchLabel": "Search documents",
   "searchPlaceholder": "Search document, order, or customer",
   "document": "Document",

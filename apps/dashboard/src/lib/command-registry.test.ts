@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createTranslator } from "next-intl";
 
+import { AppIcons } from "@/components/app/icons";
 import { messagesByLocale } from "../i18n/messages/index.js";
 
 import {
@@ -27,6 +28,9 @@ describe("command registry", () => {
   it("includes create/open actions", () => {
     const actions = getCommandActions(translate);
     assert.ok(actions.some((command) => command.id === "action.create-product"));
+    assert.ok(
+      actions.some((command) => command.id === "action.pos" && command.href === "/dashboard/pos"),
+    );
     assert.ok(actions.some((command) => command.id === "action.billing"));
     assert.ok(actions.some((command) => command.label.toLowerCase().includes("billing")));
   });
@@ -48,7 +52,16 @@ describe("command registry", () => {
     assert.ok(commands.some((command) => command.id === "nav.products"));
     assert.ok(!commands.some((command) => command.id === "nav.insights"));
     assert.ok(!commands.some((command) => command.id === "action.create-product"));
+    assert.ok(!commands.some((command) => command.id === "action.pos"));
     assert.ok(!commands.some((command) => command.id === "action.create-promotion"));
+  });
+
+  it("offers POS only to members who can create orders", () => {
+    const commands = getCommandActions(translate, new Set(["orders.create"]));
+    const quickSale = commands.find((command) => command.id === "action.pos");
+    assert.equal(quickSale?.label, "POS");
+    assert.equal(quickSale?.permission, "orders.create");
+    assert.equal(quickSale?.icon, AppIcons.quickSale);
   });
 
   it("derives read-only editor navigation from the route policy", () => {

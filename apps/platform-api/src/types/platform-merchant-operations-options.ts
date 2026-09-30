@@ -137,7 +137,12 @@ export type PlatformMerchantOperationsOptions = {
       >)
     | undefined;
   listMerchantQuotations?:
-    | ((input: { limit: number; offset: number; tenantId: string }) => Promise<{
+    | ((input: {
+        channel?: "assisted_sale" | "pos" | undefined;
+        limit: number;
+        offset: number;
+        tenantId: string;
+      }) => Promise<{
         ok: true;
         count: number;
         limit: number;
@@ -281,7 +286,7 @@ export type PlatformMerchantOperationsOptions = {
         idempotencyKey?: string | undefined;
         quotationId?: string | undefined;
         quotationRevision?: number | undefined;
-        source?: "assisted_sale" | "quote_conversion" | undefined;
+        source?: "assisted_sale" | "pos" | "quote_conversion" | undefined;
       }) => Promise<
         | {
             ok: true;
@@ -308,7 +313,7 @@ export type PlatformMerchantOperationsOptions = {
         shippingOptionId?: string | undefined;
         stockLocationId?: string | undefined;
         paymentReference?: string | null | undefined;
-        source?: "dashboard" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
+        source?: "dashboard" | "pos" | "chapa_webhook" | "chapa_recheck" | "telegram" | undefined;
         settlement?:
           | {
               method: "cash" | "telebirr" | "cbe_birr" | "bank_transfer" | "chapa" | "other";

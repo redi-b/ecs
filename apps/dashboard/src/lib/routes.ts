@@ -72,6 +72,8 @@ export const dashboardRoutes = {
   documents: "/dashboard/documents",
   salesDocument: (documentId: string) =>
     `/dashboard/orders/documents/${encodeURIComponent(documentId)}`,
+  pos: "/dashboard/pos",
+  posAction: "/dashboard/pos/actions",
   expensesCreateAction: "/dashboard/expenses/actions",
   expensesExportAction: "/dashboard/expenses/export",
   expenseVoidAction: (expenseId: string) =>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { PlatformAppOptions } from "../../app.js";
 import {
   getOperationalCustomerEmail,
+  getWalkInCustomerEmail,
   normalizeOperationalPhone,
 } from "../../modules/commerce/customer-identity.js";
 import type { MerchantRouteApp, MerchantRouteHelpers } from "./context.js";
@@ -20,6 +21,7 @@ const addressSchema = z.object({
 });
 
 const createSchema = z.object({
+  channel: z.enum(["assisted_sale", "pos"]).default("assisted_sale"),
   customerEmail: z.string().trim().email().nullish(),
   customerFirstName: z.string().trim().max(80).nullish(),
   customerId: z.string().min(1).nullish(),
@@ -85,6 +87,12 @@ export function registerMerchantManualOrderRoutes(
     const hasAdjustment = Boolean(
       parsed.data.discount || parsed.data.items.some((item) => item.unitPrice != null),
     );
+    if (hasAdjustment) {
+      const adjustmentAccess = await helpers.getAuthorizedMerchantContext(context, {
+        orders: ["update"],
+      });
+      if (!adjustmentAccess.ok) return adjustmentAccess.response;
+    }
     if (hasAdjustment && !parsed.data.adjustmentReason) {
       return context.json({ error: "manual_order_adjustment_reason_required" }, 400);
     }
@@ -95,18 +103,21 @@ export function registerMerchantManualOrderRoutes(
     const normalizedPhone = normalizeOperationalPhone(
       parsed.data.customerPhone ?? shippingAddress?.phone,
     );
-    if (!parsed.data.customerId && !normalizedPhone) {
+    const isPos = parsed.data.channel === "pos";
+    if (!isPos && !parsed.data.customerId && !normalizedPhone) {
       return context.json({ error: "invalid_manual_order" }, 400);
     }
-    const customerEmail = getOperationalCustomerEmail({
-      email: parsed.data.customerEmail,
-      phone: normalizedPhone,
-      tenantId: merchant.result.context.tenantId,
-    });
+    const customerEmail =
+      getOperationalCustomerEmail({
+        email: parsed.data.customerEmail,
+        phone: normalizedPhone,
+        tenantId: merchant.result.context.tenantId,
+      }) ?? (isPos ? getWalkInCustomerEmail(merchant.result.context.tenantId) : null);
     if (!customerEmail) return context.json({ error: "invalid_manual_order" }, 400);
 
     let customerId = parsed.data.customerId ?? null;
-    if (!customerId && options.ensureMerchantCustomer) {
+    const isWalkIn = customerEmail === getWalkInCustomerEmail(merchant.result.context.tenantId);
+    if (!customerId && !isWalkIn && options.ensureMerchantCustomer) {
       const ensured = await options.ensureMerchantCustomer({
         email: customerEmail,
         firstName: parsed.data.customerFirstName ?? shippingAddress?.firstName ?? null,
@@ -134,6 +145,7 @@ export function registerMerchantManualOrderRoutes(
         shippingOptionId: merchant.result.context.medusaShippingOptionId,
         tenantId: merchant.result.context.tenantId,
         userId: merchant.session.user.id,
+        source: isPos ? "pos" : "assisted_sale",
       });
     let result: Awaited<ReturnType<typeof createOrder>>;
     if (options.executeMerchantMutation) {
@@ -146,8 +158,8 @@ export function registerMerchantManualOrderRoutes(
           operation: "assisted_sale.create",
           payload: parsed.data,
           requestId: context.get("requestId"),
-          resourceKeys: [`assisted-sale:${idempotencyKey}`],
-          source: "assisted_sale",
+          resourceKeys: [`${isPos ? "quick-sale" : "assisted-sale"}:${idempotencyKey}`],
+          source: isPos ? "pos" : "assisted_sale",
           tenantId: merchant.result.context.tenantId,
         },
         createOrder,

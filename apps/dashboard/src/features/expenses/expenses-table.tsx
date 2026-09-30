@@ -12,8 +12,10 @@ import { DataTable } from "@/components/app/data-table";
 import { type DataTableFilter, DataTableFilters } from "@/components/app/data-table-filters";
 import { AppIcons } from "@/components/app/icons";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
-import type { ResourceRowActions } from "@/components/app/row-actions-menu";
+import { type ResourceRowActions, RowActionsMenu } from "@/components/app/row-actions-menu";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useI18n } from "@/i18n/provider";
 import { createClientId } from "@/lib/client-id";
 import { dashboardRoutes } from "@/lib/routes";
@@ -44,6 +46,10 @@ export function ExpensesTable({
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [voiding, setVoiding] = useState<MerchantExpense | null>(null);
+  const [bulkVoiding, setBulkVoiding] = useState<{
+    clearSelection: () => void;
+    expenses: MerchantExpense[];
+  } | null>(null);
   const [voidPending, setVoidPending] = useState(false);
 
   const pushFilters = useCallback(
@@ -131,6 +137,45 @@ export function ExpensesTable({
 
   const columns = useMemo<ColumnDef<MerchantExpense>[]>(
     () => [
+      ...(canManage
+        ? [
+            {
+              id: "select",
+              header: ({ table }) => {
+                const activeRows = table
+                  .getRowModel()
+                  .rows.filter((row) => row.original.status === "active");
+                const allSelected =
+                  activeRows.length > 0 && activeRows.every((row) => row.getIsSelected());
+                const someSelected = activeRows.some((row) => row.getIsSelected());
+                return (
+                  <Checkbox
+                    aria-label={t("expenses.selectAll")}
+                    checked={allSelected || (someSelected && "indeterminate")}
+                    disabled={activeRows.length === 0}
+                    onCheckedChange={(value) => {
+                      activeRows.forEach((row) => {
+                        row.toggleSelected(Boolean(value));
+                      });
+                    }}
+                  />
+                );
+              },
+              cell: ({ row }) => (
+                <Checkbox
+                  aria-label={t("expenses.selectExpense", {
+                    name: row.original.vendorLabel || formatDate(row.original.occurredOn),
+                  })}
+                  checked={row.getIsSelected()}
+                  disabled={row.original.status !== "active"}
+                  onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+                />
+              ),
+              enableHiding: false,
+              enableSorting: false,
+            } satisfies ColumnDef<MerchantExpense>,
+          ]
+        : []),
       {
         accessorKey: "occurredOn",
         header: t("expenses.date"),
@@ -182,7 +227,7 @@ export function ExpensesTable({
         ),
       },
     ],
-    [formatDate, formatNumber, t],
+    [canManage, formatDate, formatNumber, t],
   );
 
   const rowActions = useCallback(
@@ -204,15 +249,37 @@ export function ExpensesTable({
     [canManage, t],
   );
 
+  const columnsWithActions = useMemo<ColumnDef<MerchantExpense>[]>(
+    () => [
+      ...columns,
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const actions = rowActions(row.original);
+          return actions ? <RowActionsMenu {...actions} /> : null;
+        },
+        enableHiding: false,
+        enableSorting: false,
+      },
+    ],
+    [columns, rowActions],
+  );
+
+  async function requestVoid(expense: MerchantExpense, keyPrefix: string) {
+    return fetch(dashboardRoutes.expenseVoidAction(expense.id), {
+      headers: { "idempotency-key": createClientId(keyPrefix) },
+      method: "POST",
+    })
+      .then((response) => response.ok)
+      .catch(() => false);
+  }
+
   async function voidExpense() {
     if (!voiding) return;
     setVoidPending(true);
-    const response = await fetch(dashboardRoutes.expenseVoidAction(voiding.id), {
-      headers: { "idempotency-key": createClientId("expense-void") },
-      method: "POST",
-    }).catch(() => null);
+    const succeeded = await requestVoid(voiding, "expense-void");
     setVoidPending(false);
-    if (!response?.ok) {
+    if (!succeeded) {
       toast.error(t("expenses.toast.voidFailed"));
       return;
     }
@@ -221,12 +288,45 @@ export function ExpensesTable({
     router.refresh();
   }
 
+  async function bulkVoid() {
+    if (!bulkVoiding) return;
+    setVoidPending(true);
+    const results = await Promise.all(
+      bulkVoiding.expenses.map((expense) => requestVoid(expense, "expense-bulk-void")),
+    );
+    setVoidPending(false);
+    const succeeded = results.filter(Boolean).length;
+    const failed = results.length - succeeded;
+
+    if (succeeded > 0) {
+      toast.success(t("expenses.toast.bulkVoided", { count: succeeded }));
+      bulkVoiding.clearSelection();
+      router.refresh();
+    }
+    if (failed > 0) toast.error(t("expenses.toast.bulkVoidFailed", { count: failed }));
+    setBulkVoiding(null);
+  }
+
   const filtered = Boolean(initialQuery || from || to || category !== "all" || status !== "all");
 
   return (
     <>
       <DataTable
-        columns={columns}
+        bulkActions={(selectedExpenses, { clearSelection }) => {
+          const activeExpenses = selectedExpenses.filter((expense) => expense.status === "active");
+          return activeExpenses.length > 0 ? (
+            <Button
+              onClick={() => setBulkVoiding({ clearSelection, expenses: activeExpenses })}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              <AppIcons.close data-icon="inline-start" />
+              {t("expenses.bulkVoid", { count: activeExpenses.length })}
+            </Button>
+          ) : null;
+        }}
+        columns={columnsWithActions}
         data={expenses}
         emptyIcon={<AppIcons.wallet aria-hidden className="size-8" />}
         emptyMessage={t("expenses.emptyMessage")}
@@ -239,6 +339,7 @@ export function ExpensesTable({
         isFiltered={filtered}
         isLoading={pending}
         rowActions={rowActions}
+        selectedSummaryLabel={t("expenses.selected")}
         toolbar={
           <DataTableFilters filters={filters} onClearAll={clearFilters}>
             <ListToolbarSearch
@@ -264,6 +365,19 @@ export function ExpensesTable({
         }}
         open={Boolean(voiding)}
         title={t("expenses.void.title")}
+      />
+      <ConfirmDialog
+        confirmDisabled={voidPending}
+        confirmLabel={t("expenses.bulkVoidConfirm")}
+        description={t("expenses.bulkVoidDescription", {
+          count: bulkVoiding?.expenses.length ?? 0,
+        })}
+        onConfirm={() => void bulkVoid()}
+        onOpenChange={(open) => {
+          if (!open && !voidPending) setBulkVoiding(null);
+        }}
+        open={Boolean(bulkVoiding)}
+        title={t("expenses.bulkVoidTitle")}
       />
     </>
   );

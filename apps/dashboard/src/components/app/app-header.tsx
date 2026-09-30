@@ -3,12 +3,17 @@
 import { PermissionGate } from "@/components/app/access-context";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { CommandCenter } from "@/components/app/command-center";
+import { AppIcons } from "@/components/app/icons";
 import { LanguageSwitcher } from "@/components/app/language-switcher";
+import Link from "@/components/app/link";
 import { NotificationCenter } from "@/components/app/notification-center";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
+import { dashboardRoutes } from "@/lib/routes";
 
 export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
   const { t } = useI18n();
@@ -29,6 +34,20 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
         <AppBreadcrumbs />
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        {demoMode ? null : (
+          <PermissionGate permission="orders.create">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild size="icon-sm" variant="ghost">
+                  <Link aria-label={t("nav.quickSale")} href={dashboardRoutes.pos} prefetch={false}>
+                    <AppIcons.quickSale />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("nav.quickSale")}</TooltipContent>
+            </Tooltip>
+          </PermissionGate>
+        )}
         {demoMode ? (
           <Badge className="hidden rounded-full sm:inline-flex" variant="secondary">
             {t("overview.demo.readOnly")}
