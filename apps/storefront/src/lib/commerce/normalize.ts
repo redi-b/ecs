@@ -24,7 +24,16 @@ function getCalculatedPrice(variant: Record<string, unknown>) {
     };
   }
 
-  const calculatedAmount = getNumber(calculated.calculated_amount);
+  const merchandising = isRecord(variant.ecs_merchandising) ? variant.ecs_merchandising : null;
+  const projectedPercentage = getNumber(merchandising?.discount_percentage);
+  const baseCalculatedAmount = getNumber(calculated.calculated_amount);
+  const calculatedAmount =
+    baseCalculatedAmount != null &&
+    projectedPercentage != null &&
+    projectedPercentage > 0 &&
+    projectedPercentage < 100
+      ? baseCalculatedAmount * (1 - projectedPercentage / 100)
+      : baseCalculatedAmount;
   const originalAmount = getNumber(calculated.original_amount);
   const amount = calculatedAmount ?? originalAmount ?? getNumber(calculated.amount) ?? null;
   const hasDiscount = amount != null && originalAmount != null && originalAmount > amount;
