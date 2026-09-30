@@ -13,7 +13,6 @@ import { formatMoney } from "../../../../lib/money";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
-import contactFallback from "../assets/contact-store-interior.webp";
 import featuredFallback from "../assets/featured-item-promo.webp";
 import qualityFallback from "../assets/product-quality-phone-promo.webp";
 import heroFallback from "../assets/tech-workspace-hero.webp";
@@ -228,132 +227,129 @@ const hasCatalogError = "message" in productsResult;
 <div class="benefits-section__gradient-overlay" aria-hidden="true">
 </div>
       <div class="container benefits-section__wrapper">
-<div class="benefits-section__header">
-<div class="benefits-section__header-top">
-<div class="benefits-section__eyebrow">
-<span class="benefits-section__bar benefits-section__bar--sm">
-</span>
-<span class="benefits-section__bar benefits-section__bar--md">
-</span>
-<span class="benefits-section__badge type-body-xs-500" data-editor-path="home.quality.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.eyebrow}</span>
-</div>
-<h2 class="benefits-section__title" data-editor-path="home.quality.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.title}</h2>
-</div>
-<div class="benefits-section__header-columns">
-<div class="benefits-section__header-col-spacer" aria-hidden="true">
-</div>
-<div class="benefits-section__header-col">
-<p class="type-body-s-400" data-editor-path="home.quality.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.body}</p>
-</div>
-<div class="benefits-section__header-col">
-<p class="type-body-s-400">{m.home_clear_information({}, { locale })}</p>
-</div>
-</div>
-</div>
-        <div class="benefits-section__divider" aria-hidden="true">
-</div>
-<div class="benefits-section__faq-row">
-<div class="benefits-section__cta-card">
-<div class="benefits-section__cta-texture" aria-hidden="true">
-<img src={qualityFallback.src} alt="" class="cover" loading="lazy" />
-</div>
-<div class="benefits-section__cta-content">
-<p class="benefits-section__cta-text">{m.home_quality_cta({}, { locale })}</p>
-<Button text={m.nav_contact({}, { locale })} href="#contact" variant="secondary" />
-</div>
-</div>
-<div class="benefits-section__main-card">
-<div class="benefits-section__accordion" data-accordion-group>
-          <div class="benefits-section__acc-item is-open" data-acc-item>
-<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="true">
-<span class="benefits-section__acc-heading">
-<span class="benefits-section__acc-num">[1]</span>
-<span class="benefits-section__acc-title" data-editor-path="home.quality.accordion1Title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion1Title}</span>
-</span>
-<span class="benefits-section__acc-icon" aria-hidden="true">−</span>
-</button>
-<div class="benefits-section__acc-content" data-acc-panel>
-<p class="type-body-s-400" data-editor-path="home.quality.accordion1Body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion1Body}</p>
-</div>
-</div>
-          <div class="benefits-section__acc-item" data-acc-item>
-<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
-<span class="benefits-section__acc-heading">
-<span class="benefits-section__acc-num">[2]</span>
-<span class="benefits-section__acc-title" data-editor-path="home.quality.accordion2Title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion2Title}</span>
-</span>
-<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
-</button>
-<div class="benefits-section__acc-content" data-acc-panel>
-<p class="type-body-s-400" data-editor-path="home.quality.accordion2Body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion2Body}</p>
-</div>
-</div>
-          <div class="benefits-section__acc-item" data-acc-item>
-<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
-<span class="benefits-section__acc-heading">
-<span class="benefits-section__acc-num">[3]</span>
-<span class="benefits-section__acc-title" data-editor-path="home.quality.accordion3Title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion3Title}</span>
-</span>
-<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
-</button>
-<div class="benefits-section__acc-content" data-acc-panel>
-<p class="type-body-s-400" data-editor-path="home.quality.accordion3Body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion3Body}</p>
-</div>
-</div>
-          <div class="benefits-section__acc-item" data-acc-item>
-<button type="button" class="benefits-section__acc-btn" data-acc-trigger aria-expanded="false">
-<span class="benefits-section__acc-heading">
-<span class="benefits-section__acc-num">[4]</span>
-<span class="benefits-section__acc-title" data-editor-path="home.quality.accordion4Title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion4Title}</span>
-</span>
-<span class="benefits-section__acc-icon" aria-hidden="true">+</span>
-</button>
-<div class="benefits-section__acc-content" data-acc-panel>
-<p class="type-body-s-400" data-editor-path="home.quality.accordion4Body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.accordion4Body}</p>
-</div>
-</div>
+        <div class="benefits-section__header">
+          <div class="benefits-section__eyebrow">
+            <span class="benefits-section__bar benefits-section__bar--sm"></span>
+            <span class="benefits-section__bar benefits-section__bar--md"></span>
+            <span class="benefits-section__badge type-body-xs-500" data-editor-path="home.quality.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.eyebrow}</span>
+          </div>
+          <h2 class="benefits-section__title" data-editor-path="home.quality.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.title === "QUALITY TECHNOLOGY, SELECTED WITH CARE." ? "QUALITY TECHNOLOGY, SELECTED AND SERVED WITH CARE." : (template.home.quality.title || "QUALITY TECHNOLOGY, SELECTED AND SERVED WITH CARE.")}</h2>
+          <p class="benefits-section__body type-body-s-400" data-editor-path="home.quality.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.quality.body === "CONNECTING GLOBAL INNOVATION WITH LOCAL EXCELLENCE, THIS PLATFORM OFFERS CUTTING-EDGE TECH SOLUTIONS AND STRONG SUPPORT TO EMPOWER THE ETHIOPIAN MARKET." ? "CONNECTING GLOBAL INNOVATION WITH LOCAL EXCELLENCE TO EMPOWER THE ETHIOPIAN MARKET." : (template.home.quality.body || "CONNECTING GLOBAL INNOVATION WITH LOCAL EXCELLENCE TO EMPOWER THE ETHIOPIAN MARKET.")}</p>
         </div>
-<div class="benefits-section__promo-image img-wrapper">
-<img src={nexahubAsset(template.home.quality.imageAssetId, qualityFallback.src)} alt={m.home_quality_image_alt({}, { locale })} class="cover" loading="lazy" data-editor-image-path="home.quality.imageAssetId" data-editor-empty-src={qualityFallback.src} />
-</div>
-</div>
-</div>
-</div>
-    </section>}
+        <div class="benefits-section__divider" aria-hidden="true"></div>
+        <div class="benefits-section__contact-row" id="contact" data-inquiry-toggle-container>
+          <div class="benefits-section__cta-card">
+            <div class="benefits-section__cta-texture" aria-hidden="true">
+              <img src={qualityFallback.src} alt="" class="cover" loading="lazy" />
+            </div>
+            <div class="benefits-section__cta-content">
+              <p class="benefits-section__cta-text">{m.home_quality_cta({}, { locale })}</p>
+              <Button text={m.nav_contact({}, { locale })} href="#contact-form" variant="secondary" />
+            </div>
+          </div>
 
-    {(editorMode || template.home.contact.enabled) && <section class="contact-section" id="contact" data-editor-section="home.contact" data-editor-visible-path="home.contact.enabled" hidden={!template.home.contact.enabled}>
-<div class="container contact-section__wrapper">
-<div class="contact-section__card">
-<div class="contact-section__form-box">
-<div class="contact-section__eyebrow">
-<span class="contact-section__bar contact-section__bar--sm">
-</span>
-<span class="contact-section__bar contact-section__bar--md">
-</span>
-<span class="contact-section__badge type-body-xs-500" data-editor-path="home.contact.eyebrow" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.eyebrow}</span>
-</div>
-<h2 class="contact-section__title type-heading-3" data-editor-path="home.contact.title" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.title}</h2>
-<p data-editor-path="home.contact.body" contenteditable={editorMode ? "plaintext-only" : undefined}>{template.home.contact.body}</p>
-<form class="contact-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
-<input type="hidden" name="type" value="contact" />
-<input type="hidden" name="subject" value="Storefront contact request" />
-<div class="contact-section__row">
-<label class="nexa-sr-only">{m.contact_full_name({}, { locale })}<input type="text" name="name" required autocomplete="name" placeholder={m.contact_name_required({}, { locale })} class="contact-section__input type-body-s-400" /></label>
-<label class="nexa-sr-only">{m.contact_phone({}, { locale })}<input type="tel" name="phone" autocomplete="tel" placeholder={m.contact_phone({}, { locale })} class="contact-section__input type-body-s-400" /></label>
-</div>
-<label class="nexa-sr-only">{m.contact_email({}, { locale })}<input type="email" name="email" required autocomplete="email" placeholder={m.contact_email_required({}, { locale })} class="contact-section__input type-body-s-400" /></label>
-<label class="nexa-sr-only">{m.contact_message({}, { locale })}<textarea name="message" rows="4" required placeholder={m.contact_message_required({}, { locale })} class="contact-section__textarea type-body-s-400"></textarea></label>
-<Button text={template.home.contact.ctaLabel} editorPath="home.contact.ctaLabel" editorRelatedPaths={["home.contact.ctaHref"]} editorMode={editorMode} />
-</form>
-<p data-inquiry-status aria-live="polite">
-</p>
-</div>
-<div class="contact-section__image img-wrapper">
-<img src={nexahubAsset(template.home.contact.imageAssetId, contactFallback.src)} alt={m.home_store_interior_alt({}, { locale })} class="cover" loading="lazy" data-editor-image-path="home.contact.imageAssetId" data-editor-empty-src={contactFallback.src} />
-</div>
-</div>
-</div>
-</section>}
+          <div class="benefits-section__form-card" id="contact-form">
+            <div class="benefits-section__form-head">
+              <div class="benefits-section__form-intro">
+                <h3 class="benefits-section__form-title type-heading-5" data-mode-title="contact">{m.contact_title({}, { locale })}</h3>
+                <h3 class="benefits-section__form-title type-heading-5" data-mode-title="request" hidden>{m.request_title({}, { locale })}</h3>
+              </div>
+
+              <div class="nexa-form-toggle" role="tablist" aria-label="Inquiry Type">
+                <button
+                  type="button"
+                  class="nexa-form-toggle__btn is-active"
+                  data-toggle-mode="contact"
+                  role="tab"
+                  aria-selected="true"
+                  aria-pressed="true"
+                >
+                  {m.contact_send_message({}, { locale })}
+                </button>
+                <button
+                  type="button"
+                  class="nexa-form-toggle__btn"
+                  data-toggle-mode="request"
+                  role="tab"
+                  aria-selected="false"
+                  aria-pressed="false"
+                >
+                  {m.request_title({}, { locale })}
+                </button>
+              </div>
+            </div>
+
+            <form class="benefits-section__form" action="/actions/inquiries" method="post" data-inquiry-form>
+              <input type="hidden" name="type" value="contact" data-inquiry-type />
+              <label class="nexa-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
+
+              {/* Mode 1: Send Message / Contact */}
+              <div class="benefits-section__fields-group" data-fields-mode="contact">
+                <div class="benefits-section__fields-row">
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.contact_full_name({}, { locale })} *</span>
+                    <input type="text" name="fullName" required autocomplete="name" placeholder={m.contact_name_required({}, { locale })} class="nexa-input type-body-s-400" />
+                  </label>
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.contact_email({}, { locale })} *</span>
+                    <input type="email" name="email" required autocomplete="email" placeholder={m.contact_email_required({}, { locale })} class="nexa-input type-body-s-400" />
+                  </label>
+                </div>
+                <div class="benefits-section__fields-row">
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.contact_whatsapp_optional({}, { locale })}</span>
+                    <input type="tel" name="whatsapp" autocomplete="tel" placeholder="+251..." class="nexa-input type-body-s-400" />
+                  </label>
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.contact_message({}, { locale })} *</span>
+                    <textarea name="message" rows="2" required placeholder={m.contact_message_required({}, { locale })} class="nexa-textarea type-body-s-400"></textarea>
+                  </label>
+                </div>
+              </div>
+
+              {/* Mode 2: Request Item */}
+              <div class="benefits-section__fields-group" data-fields-mode="request" hidden>
+                <div class="benefits-section__fields-row">
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_product_name({}, { locale })} *</span>
+                    <input type="text" name="productName" placeholder={m.request_product_name({}, { locale })} class="nexa-input type-body-s-400" disabled />
+                  </label>
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_brand_optional({}, { locale })}</span>
+                    <input type="text" name="brand" placeholder={m.request_brand_optional({}, { locale })} class="nexa-input type-body-s-400" disabled />
+                  </label>
+                </div>
+                <div class="benefits-section__fields-row">
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_your_name({}, { locale })} *</span>
+                    <input type="text" name="customerName" autocomplete="name" placeholder={m.request_your_name({}, { locale })} class="nexa-input type-body-s-400" disabled />
+                  </label>
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_contact({}, { locale })} *</span>
+                    <input type="text" name="contact" placeholder={m.request_contact({}, { locale })} class="nexa-input type-body-s-400" disabled />
+                  </label>
+                </div>
+                <div class="benefits-section__fields-row">
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_link_optional({}, { locale })}</span>
+                    <input type="url" name="productUrl" placeholder="https://" class="nexa-input type-body-s-400" disabled />
+                  </label>
+                  <label class="nexa-field">
+                    <span class="type-body-xs-500">{m.request_details_optional({}, { locale })}</span>
+                    <textarea name="details" rows="2" placeholder={m.request_details_placeholder({}, { locale })} class="nexa-textarea type-body-s-400" disabled></textarea>
+                  </label>
+                </div>
+              </div>
+
+              <div class="benefits-section__form-footer">
+                <Button text={m.contact_send({}, { locale })} type="submit" variant="primary" data-inquiry-submit data-contact-label={m.contact_send({}, { locale })} data-request-label={m.request_send({}, { locale })} />
+                <p class="benefits-section__form-status type-body-s-400" data-inquiry-status role="status" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>}
     {editorMode && products.map((product) => <template data-editor-product-option={product.id}>
 <ProductCard product={product} />
 </template>)}

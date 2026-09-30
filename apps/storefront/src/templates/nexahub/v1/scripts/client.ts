@@ -195,28 +195,86 @@ export function initNexahubStorefront() {
     const previous = root.querySelector<HTMLButtonElement>("[data-cat-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-cat-next]");
     if (!track || !previous || !next) return;
+    const cards = [
+      ...track.querySelectorAll<HTMLElement>("[data-category-card], .catalogue-section__card"),
+    ];
+    if (cards.length === 0) return;
+
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let frame = 0;
-    const sync = () => {
-      frame = 0;
-      const max = Math.max(0, track.scrollWidth - track.clientWidth);
-      previous.disabled = track.scrollLeft <= 2;
-      next.disabled = max <= 2 || track.scrollLeft >= max - 2;
+    let activeIndex = cards.findIndex((card) => card.classList.contains("is-active"));
+    if (activeIndex < 0) activeIndex = 0;
+
+    let isProgrammaticScroll = false;
+    let scrollEndTimer: number | undefined;
+
+    const updateArrows = () => {
+      previous.disabled = activeIndex <= 0;
+      next.disabled = activeIndex >= cards.length - 1;
     };
-    // Coalesce to one read/write per frame instead of per scroll event.
-    const scheduleSync = () => {
-      if (!frame) frame = window.requestAnimationFrame(sync);
+
+    const setActiveCard = (newIndex: number, scrollToView = true) => {
+      if (newIndex < 0) newIndex = 0;
+      if (newIndex >= cards.length) newIndex = cards.length - 1;
+      activeIndex = newIndex;
+
+      cards.forEach((card, idx) => {
+        card.classList.toggle("is-active", idx === activeIndex);
+      });
+
+      updateArrows();
+
+      if (scrollToView) {
+        isProgrammaticScroll = true;
+        const targetCard = cards[activeIndex];
+        if (targetCard) {
+          const behavior: ScrollBehavior = reducedMotion.matches ? "auto" : "smooth";
+          const targetLeft = targetCard.offsetLeft - track.offsetLeft;
+          track.scrollTo({ left: targetLeft, behavior });
+        }
+        window.clearTimeout(scrollEndTimer);
+        scrollEndTimer = window.setTimeout(() => {
+          isProgrammaticScroll = false;
+        }, 400);
+      }
     };
-    const behavior: ScrollBehavior = reducedMotion.matches ? "auto" : "smooth";
-    previous.addEventListener("click", () =>
-      track.scrollBy({ left: -track.clientWidth * 0.72, behavior }),
-    );
-    next.addEventListener("click", () =>
-      track.scrollBy({ left: track.clientWidth * 0.72, behavior }),
-    );
-    track.addEventListener("scroll", scheduleSync, { passive: true });
-    window.addEventListener("resize", scheduleSync);
-    sync();
+
+    previous.addEventListener("click", () => {
+      setActiveCard(activeIndex - 1, true);
+    });
+
+    next.addEventListener("click", () => {
+      setActiveCard(activeIndex + 1, true);
+    });
+
+    const syncOnScroll = () => {
+      if (isProgrammaticScroll) return;
+      window.clearTimeout(scrollEndTimer);
+      scrollEndTimer = window.setTimeout(() => {
+        const scrollLeft = track.scrollLeft;
+        let closestIndex = 0;
+        let minDistance = Infinity;
+
+        cards.forEach((card, idx) => {
+          const cardLeft = card.offsetLeft - track.offsetLeft;
+          const distance = Math.abs(cardLeft - scrollLeft);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = idx;
+          }
+        });
+
+        if (closestIndex !== activeIndex) {
+          setActiveCard(closestIndex, false);
+        } else {
+          updateArrows();
+        }
+      }, 100);
+    };
+
+    track.addEventListener("scroll", syncOnScroll, { passive: true });
+    window.addEventListener("resize", () => updateArrows());
+
+    setActiveCard(activeIndex, false);
   });
 
   const setNavigation = (open: boolean) => {
@@ -309,6 +367,84 @@ export function initNexahubStorefront() {
     }
   });
 
+  document.querySelectorAll<HTMLElement>("[data-inquiry-toggle-container]").forEach((container) => {
+    const form = container.querySelector<HTMLFormElement>("[data-inquiry-form]");
+    const typeInput = form?.querySelector<HTMLInputElement>("[data-inquiry-type]");
+    const buttons = container.querySelectorAll<HTMLButtonElement>("[data-toggle-mode]");
+    const contactFields = container.querySelectorAll<HTMLElement>("[data-fields-mode='contact']");
+    const requestFields = container.querySelectorAll<HTMLElement>("[data-fields-mode='request']");
+    const submitLabels = container.querySelectorAll<HTMLElement>("[data-submit-label]");
+    const modeLabels = container.querySelectorAll<HTMLElement>("[data-mode-label]");
+    const modeTitles = container.querySelectorAll<HTMLElement>("[data-mode-title]");
+
+    function setMode(mode: "contact" | "request") {
+      buttons.forEach((btn) => {
+        const active = btn.dataset.toggleMode === mode;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-selected", String(active));
+        btn.setAttribute("aria-pressed", String(active));
+      });
+
+      if (typeInput) {
+        typeInput.value = mode === "request" ? "product_request" : "contact";
+      }
+
+      contactFields.forEach((el) => {
+        el.hidden = mode !== "contact";
+        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach((input) => {
+          input.disabled = mode !== "contact";
+          if (input.dataset.wasRequired === "true") {
+            input.required = mode === "contact";
+          }
+        });
+      });
+
+      requestFields.forEach((el) => {
+        el.hidden = mode !== "request";
+        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach((input) => {
+          input.disabled = mode !== "request";
+          if (input.dataset.wasRequired === "true") {
+            input.required = mode === "request";
+          }
+        });
+      });
+
+      const submitBtn = container.querySelector<HTMLElement>("[data-inquiry-submit]");
+      const submitText = submitBtn?.querySelector<HTMLElement>(".btn__text") ?? submitBtn;
+      if (submitBtn && submitText) {
+        submitText.textContent =
+          mode === "request"
+            ? submitBtn.dataset.requestLabel || ""
+            : submitBtn.dataset.contactLabel || "";
+      }
+
+      submitLabels.forEach((label) => {
+        label.hidden = label.dataset.submitLabel !== mode;
+      });
+
+      modeLabels.forEach((label) => {
+        label.hidden = label.dataset.modeLabel !== mode;
+      });
+
+      modeTitles.forEach((title) => {
+        title.hidden = title.dataset.modeTitle !== mode;
+      });
+    }
+
+    container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[required], textarea[required]").forEach((input) => {
+      input.dataset.wasRequired = "true";
+    });
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.toggleMode as "contact" | "request";
+        if (mode) setMode(mode);
+      });
+    });
+
+    setMode("contact");
+  });
+
   document.querySelectorAll<HTMLElement>("[data-accordion-group]").forEach((group) => {
     group.addEventListener("click", (event) => {
       const trigger =
@@ -324,29 +460,6 @@ export function initNexahubStorefront() {
         const icon = candidate.querySelector<HTMLElement>(".benefits-section__acc-icon");
         if (icon) icon.textContent = open ? "−" : "+";
       });
-    });
-    group.addEventListener("keydown", (event) => {
-      const triggers = [...group.querySelectorAll<HTMLButtonElement>("[data-acc-trigger]")];
-      const current =
-        event.target instanceof Element
-          ? event.target.closest<HTMLButtonElement>("[data-acc-trigger]")
-          : null;
-      const index = current ? triggers.indexOf(current) : -1;
-      if (index < 0) return;
-      const next =
-        event.key === "ArrowDown"
-          ? (index + 1) % triggers.length
-          : event.key === "ArrowUp"
-            ? (index - 1 + triggers.length) % triggers.length
-            : event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? triggers.length - 1
-                : -1;
-      if (next >= 0) {
-        event.preventDefault();
-        triggers[next]?.focus();
-      }
     });
   });
 

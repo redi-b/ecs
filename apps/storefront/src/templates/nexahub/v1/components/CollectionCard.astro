@@ -22,8 +22,8 @@ const href =
     ? categoryProductsHref(item as StoreCategory)
     : collectionProductsHref(item as StoreCollection);
 ---
-{variant === "featured" ? (
-  <article class="catalogue-section__card catalogue-section__card--featured">
+<article class={`catalogue-section__card ${variant === "featured" ? "is-active" : ""}`} data-category-card>
+  <div class="catalogue-section__card-view catalogue-section__card-view--featured">
     <div class="catalogue-section__card-bg img-wrapper">
       {image ? <img src={image} alt="" class="cover" loading="lazy" /> : <span class="catalogue-section__image-placeholder" aria-hidden="true"></span>}
     </div>
@@ -37,9 +37,9 @@ const href =
       </div>
       <Button text={m.catalog_explore_more({}, { locale })} href={href} variant="secondary" size="small" />
     </div>
-  </article>
-) : (
-  <article class="catalogue-section__card catalogue-section__card--standard">
+  </div>
+
+  <div class="catalogue-section__card-view catalogue-section__card-view--standard">
     <div class="catalogue-section__card-top">
       <h3 class="type-heading-5">{title}</h3>
       <Button text={m.catalog_explore_more({}, { locale })} href={href} variant="neutral" size="small" />
@@ -47,5 +47,5 @@ const href =
     <div class="catalogue-section__card-image img-wrapper">
       {image ? <img src={image} alt="" class="cover" loading="lazy" /> : <span class="catalogue-section__image-placeholder" aria-hidden="true"></span>}
     </div>
-  </article>
-)}
+  </div>
+</article>

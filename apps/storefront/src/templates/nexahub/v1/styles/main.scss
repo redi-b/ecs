@@ -241,8 +241,9 @@ button[data-busy="true"] > .btn__icon {
   animation: nexa-qty-tick 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-:where([data-wishlist-toggle][aria-pressed="true"], [data-wishlist-indicator][data-active]) {
-  color: var(--nexa-primary-link);
+[data-wishlist-toggle][aria-pressed="true"],
+[data-wishlist-indicator][data-active] {
+  color: var(--nexa-primary);
 
   .nexa-save-icon__outline { visibility: hidden; }
   .nexa-save-icon__filled { visibility: visible; }
