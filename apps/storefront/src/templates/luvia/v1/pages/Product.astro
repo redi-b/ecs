@@ -261,7 +261,6 @@ const wishlistItem = product
                 class:list={["type-body-s-400", { "is-out": !defaultVariant?.inStock }]}
               >
                 {defaultVariant?.inStock ? m.catalog_in_stock({}, { locale }) : m.catalog_out_of_stock({}, { locale })}
-                {defaultVariant?.sku ? ` · SKU ${defaultVariant.sku}` : ""}
               </small>
             </div>
 
@@ -383,7 +382,18 @@ const wishlistItem = product
                 <summary class="type-body-l-500">
                   {m.product_description({}, { locale })} <Icon name="chevron" />
                 </summary>
-                <div class="rich-text type-body-400" set:html={descriptionHtml} />
+                <div>
+                  <div class="rich-text type-body-400" data-product-description set:html={descriptionHtml} />
+                  <button
+                    class="product-desc-toggle type-body-s-500"
+                    type="button"
+                    data-description-toggle
+                    aria-expanded="false"
+                    hidden
+                  >
+                    {m.product_show_more({}, { locale })}
+                  </button>
+                </div>
               </details>
               <details>
                 <summary class="type-body-l-500">

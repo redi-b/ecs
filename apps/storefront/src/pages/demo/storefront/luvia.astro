@@ -3,13 +3,19 @@ import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
 import {
   luviaDemoCategories,
   luviaDemoCollections,
+  luviaDemoFooterContact,
   luviaDemoProducts,
 } from "../../../lib/demo/luvia-fixture";
 import LuviaV1Home from "../../../templates/luvia/v1/pages/index.astro";
+
+const data = structuredClone(luviaV1Defaults);
+data.home.categories.categoryIds = luviaDemoCategories.map((item) => item.id);
+data.home.featuredProducts.productIds = luviaDemoProducts.slice(0, 4).map((item) => item.id);
+Object.assign(data.footer, luviaDemoFooterContact);
 ---
 
 <LuviaV1Home
-  data={luviaV1Defaults}
+  data={data}
   themeTokens={luviaV1ThemeTokens}
   tenantName="Luvia Beauty"
   productsResult={{ products: luviaDemoProducts, count: luviaDemoProducts.length, limit: luviaDemoProducts.length, offset: 0 }}

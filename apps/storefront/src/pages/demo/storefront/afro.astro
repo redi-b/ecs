@@ -1,9 +1,13 @@
 ---
 import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
-import { afroDemoCollections, afroDemoCategories, afroDemoProducts } from "../../../lib/demo/afro-fixture";
+import { afroDemoCollections, afroDemoCategories, afroDemoProducts, afroDemoFooterContact } from "../../../lib/demo/afro-fixture";
 import Home from "../../../templates/afro/v1/pages/index.astro";
 
 const data = structuredClone(afroV1Defaults);
+data.home.categories.categoryIds = afroDemoCategories.map((c) => c.id);
+data.home.collections.collectionIds = afroDemoCollections.map((c) => c.id);
+data.home.products.productIds = afroDemoProducts.slice(0, 8).map((p) => p.id);
+Object.assign(data.footer, afroDemoFooterContact);
 ---
 
 <Home

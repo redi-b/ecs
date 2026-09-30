@@ -63,16 +63,6 @@ export function initNexahubStorefront() {
       liveRegion.textContent = message;
     }, 20);
   };
-  // The drawer's own aria-live region, which nothing was writing to, so no
-  // cart mutation was ever announced from the drawer.
-  const announceCart = (message: string) => {
-    const status = document.querySelector<HTMLElement>("[data-cart-status]");
-    if (!status || !message) return;
-    status.textContent = "";
-    window.setTimeout(() => {
-      status.textContent = message;
-    }, 20);
-  };
   const showToast = (message: string, tone: "error" | "info" = "error") => {
     if (!toast) return;
     window.clearTimeout(toastTimer);
@@ -581,13 +571,9 @@ export function initNexahubStorefront() {
 
     if (quantity) {
       const qty = Number(quantity.dataset.cartQuantity || "1");
-      announceCart(clientMessage("cartUpdating"));
-      const result = await updateCartItemQuantity(lineItemId, qty);
-      announceCart(clientMessage(result?.ok ? "cartUpdated" : "cartUpdateFailed"));
+      await updateCartItemQuantity(lineItemId, qty);
     } else if (remove) {
-      announceCart(clientMessage("cartUpdating"));
-      const result = await removeCartItem(lineItemId);
-      announceCart(clientMessage(result?.ok ? "cartUpdated" : "cartUpdateFailed"));
+      await removeCartItem(lineItemId);
     }
   });
 

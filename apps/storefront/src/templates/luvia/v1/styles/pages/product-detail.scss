@@ -40,7 +40,7 @@
 .product-detail {
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 489px;
+  grid-template-columns: 1fr 0.75fr;
   gap: $space-700;
   align-items: start;
 }
@@ -410,6 +410,14 @@
   margin-top: $space-250;
 }
 
+.rich-text :is(h3, h4, h5) {
+  font-family: $ff-hero;
+  color: var(--clr-ink);
+  margin: $space-300 0 $space-150;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
 .rich-text :is(ul, ol) {
   margin: $space-200 0 0;
   padding-left: $space-550;
@@ -423,15 +431,85 @@
   list-style: decimal;
 }
 
+.rich-text li {
+  line-height: 1.55;
+}
+
+.rich-text table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: $space-250 0;
+  font-size: 0.875rem;
+  border: 1px solid var(--clr-line);
+  border-radius: $radius-100;
+  overflow: hidden;
+
+  th, td {
+    padding: $space-150 $space-250;
+    border-bottom: 1px solid var(--clr-line);
+    border-right: 1px solid var(--clr-line);
+    text-align: left;
+
+    &:last-child {
+      border-right: 0;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  th {
+    font-weight: 500;
+    color: var(--clr-ink);
+    background: alpha(var(--clr-ink), 0.04);
+  }
+}
+
 .rich-text blockquote {
   margin: $space-250 0 0;
-  padding-left: $space-300;
+  padding: $space-200 $space-300;
   border-left: 2px solid var(--clr-primary);
+  background: alpha(var(--clr-primary), 0.05);
+  border-radius: 0 $radius-100 $radius-100 0;
 }
 
 .rich-text a {
   color: var(--clr-primary-link);
   text-underline-offset: 3px;
+}
+
+.rich-text.is-collapsible:not(.is-expanded) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.product-desc-toggle {
+  display: inline-block;
+  min-height: 32px;
+  margin-top: $space-200;
+  padding: $space-100 0;
+  border: 0;
+  background: transparent;
+  color: var(--clr-primary-link);
+  font-family: $ff-body;
+  font-size: $fs-body-s;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 140ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    color: var(--clr-primary-text);
+  }
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .related {

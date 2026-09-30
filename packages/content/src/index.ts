@@ -1,35 +1,59 @@
+import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 const PRODUCT_DESCRIPTION_TAGS = [
   "p",
   "br",
+  "hr",
   "h1",
   "h2",
   "h3",
+  "h4",
+  "h5",
+  "h6",
   "ul",
   "ol",
   "li",
   "strong",
+  "b",
   "em",
+  "i",
   "s",
+  "del",
+  "code",
+  "pre",
   "blockquote",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
   "a",
   "img",
 ] as const;
 
 /**
  * Canonical trust-boundary sanitizer for merchant-authored product descriptions.
- * The result is safe to render as HTML and remains compatible with Medusa's
+ * Converts markdown / rich-text to safe HTML and remains compatible with Medusa's
  * native string description field.
  */
 export function sanitizeProductDescription(value: string | null | undefined): string | null {
   const source = value?.trim();
   if (!source) return null;
 
-  const sanitized = sanitizeHtml(source, {
+  const rawHtml = marked.parse(source, {
+    gfm: true,
+    breaks: false,
+    async: false,
+  }) as string;
+
+  const sanitized = sanitizeHtml(rawHtml, {
     allowedAttributes: {
-      a: ["href"],
+      a: ["href", "target", "rel"],
       img: ["src", "alt", "title"],
+      th: ["align"],
+      td: ["align"],
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesAppliedToAttributes: ["href", "src"],
@@ -55,7 +79,10 @@ export function productDescriptionToText(value: string | null | undefined): stri
       tagName === "li" ||
       tagName === "h1" ||
       tagName === "h2" ||
-      tagName === "h3"
+      tagName === "h3" ||
+      tagName === "h4" ||
+      tagName === "th" ||
+      tagName === "td"
         ? ` ${chunk}`
         : chunk,
   });

@@ -109,13 +109,6 @@
     scrollbar-gutter: stable;
   }
 
-  &__status {
-    flex-shrink: 0;
-    min-height: 1.25rem;
-    margin-top: $space-300;
-    color: alpha(var(--nexa-ink), 0.6);
-  }
-
   &__items[aria-busy="true"]::before {
     content: "";
     display: block;

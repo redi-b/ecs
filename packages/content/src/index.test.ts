@@ -31,6 +31,34 @@ describe("product rich text", () => {
     );
   });
 
+  it("parses Markdown into clean sanitized HTML", () => {
+    const md = `
+Overview text here.
+
+### Key Highlights
+- Feature one
+- Feature two
+
+### Specifications
+| Specification | Detail |
+| :--- | :--- |
+| **Battery** | 5000 mAh |
+
+> **Note:** Fast shipping available.
+    `.trim();
+
+    const html = sanitizeProductDescription(md);
+    assert.ok(html?.includes("<p>Overview text here.</p>"));
+    assert.ok(html?.includes("<h3>Key Highlights</h3>"));
+    assert.ok(html?.includes("<ul>"));
+    assert.ok(html?.includes("<li>Feature one</li>"));
+    assert.ok(html?.includes("<table>"));
+    assert.ok(html?.includes("Specification</th>"));
+    assert.ok(html?.includes("<strong>Battery</strong></td>"));
+    assert.ok(html?.includes("<blockquote>"));
+    assert.ok(html?.includes("<strong>Note:</strong>"));
+  });
+
   it("creates a normalized plain-text projection", () => {
     assert.equal(
       productDescriptionToText(

@@ -3,13 +3,16 @@ import {
   accounts,
   analyticsEvents,
   auditLogs,
+  customerCommerceStates,
   dailyMetrics,
   deliverySettings,
   domains,
   inAppNotifications,
   invoices,
+  jobRuns,
   mediaAssets,
   mediaUsages,
+  merchantReceivingAccounts,
   metricRollupCheckpoints,
   notificationDestinations,
   notificationLogs,
@@ -18,9 +21,14 @@ import {
   organizations,
   paymentOnboarding,
   platformPrincipals,
+  productImportArtifacts,
+  productImportExecutions,
+  productOptionSets,
+  productSalesDaily,
   storefrontConfigs,
   storefrontInquiries,
   storefrontRevisions,
+  storefrontTemplateDrafts,
   subscriptions,
   telegramConnectSessions,
   tenantMemberships,
@@ -132,6 +140,27 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
         .delete(metricRollupCheckpoints)
         .where(inArray(metricRollupCheckpoints.tenantId, idsToRemove));
       await options.db
+        .delete(productSalesDaily)
+        .where(inArray(productSalesDaily.tenantId, idsToRemove));
+      await options.db
+        .delete(customerCommerceStates)
+        .where(inArray(customerCommerceStates.tenantId, idsToRemove));
+      await options.db
+        .delete(productImportExecutions)
+        .where(inArray(productImportExecutions.tenantId, idsToRemove));
+      await options.db
+        .delete(productImportArtifacts)
+        .where(inArray(productImportArtifacts.tenantId, idsToRemove));
+      await options.db
+        .delete(productOptionSets)
+        .where(inArray(productOptionSets.tenantId, idsToRemove));
+      await options.db
+        .delete(merchantReceivingAccounts)
+        .where(inArray(merchantReceivingAccounts.tenantId, idsToRemove));
+      await options.db
+        .delete(jobRuns)
+        .where(inArray(jobRuns.tenantId, idsToRemove));
+      await options.db
         .delete(storefrontInquiries)
         .where(inArray(storefrontInquiries.tenantId, idsToRemove));
       await options.db
@@ -140,6 +169,9 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
       await options.db
         .delete(storefrontRevisions)
         .where(inArray(storefrontRevisions.tenantId, idsToRemove));
+      await options.db
+        .delete(storefrontTemplateDrafts)
+        .where(inArray(storefrontTemplateDrafts.tenantId, idsToRemove));
       await options.db
         .delete(tenantOnboarding)
         .where(inArray(tenantOnboarding.tenantId, idsToRemove));
@@ -156,7 +188,10 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
       );
       if (trialTable.rows[0]?.table_name) {
         await options.db.execute(
-          sql`delete from subscription_trials where tenant_id = any(${idsToRemove}::uuid[])`,
+          sql`delete from subscription_trials where tenant_id in (${sql.join(
+            idsToRemove.map((id) => sql`${id}::uuid`),
+            sql`, `,
+          )})`,
         );
       }
       await options.db.delete(subscriptions).where(inArray(subscriptions.tenantId, idsToRemove));
@@ -512,10 +547,29 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
     return removed;
   }
 
-  /**
-   * Backdate converted orders so the list/overview feel multi-day.
-   * Admin API cannot set created_at — update Medusa DB directly when available.
-   */
+  async function cleanTenantPriceLists(handle: string) {
+    const slug =
+      handle
+        .replace(/[^a-z0-9]/gi, "")
+        .slice(0, 6)
+        .toUpperCase() || "SHOP";
 
-  return { cleanAllDemoData, cleanShopCommerce, cleanTenantPromotions };
+    const listed = await options.medusa
+      .get<{ price_lists?: Array<{ id: string; title?: string | null }> }>(
+        "/admin/price-lists?limit=50&fields=id,title",
+      )
+      .catch(() => null);
+
+    let removed = 0;
+    for (const pl of listed?.price_lists ?? []) {
+      const title = (pl.title ?? "").toUpperCase();
+      if (title.includes(slug) || title.includes("SEASONAL SALE")) {
+        await options.medusa.delete(`/admin/price-lists/${encodeURIComponent(pl.id)}`).catch(() => null);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  return { cleanAllDemoData, cleanShopCommerce, cleanTenantPriceLists, cleanTenantPromotions };
 }

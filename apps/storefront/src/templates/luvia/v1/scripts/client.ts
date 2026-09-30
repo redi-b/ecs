@@ -818,17 +818,40 @@ export function initLuviaProductPage() {
     rail?.scrollBy({ left: Math.max(280, (rail.clientWidth || 300) * 0.75), behavior: "smooth" });
   });
 
-  // Sticky product bottom bar intersection
-  const stickyProduct = root.querySelector<HTMLElement>("[data-sticky-product]");
-  const inquiry = document.querySelector(".inquiry");
-  if (stickyProduct && inquiry && "IntersectionObserver" in window) {
-    const inquiryObserver = new IntersectionObserver(
-      ([entry]) => {
-        stickyProduct.toggleAttribute("data-hidden", Boolean(entry?.isIntersecting));
-      },
-      { threshold: 0.05 },
-    );
-    inquiryObserver.observe(inquiry);
+  // Collapsible description toggle
+  const description = root.querySelector<HTMLElement>("[data-product-description]");
+  const descriptionToggle = root.querySelector<HTMLButtonElement>("[data-description-toggle]");
+  if (description && descriptionToggle) {
+    const measureDescription = () => {
+      const expanded = description.classList.contains("is-expanded");
+      description.classList.remove("is-collapsible", "is-expanded");
+      const lineHeight = Number.parseFloat(getComputedStyle(description).lineHeight) || 21;
+      const long = description.scrollHeight > lineHeight * 5 + 1;
+      description.classList.toggle("is-collapsible", long);
+      description.classList.toggle("is-expanded", long && expanded);
+      descriptionToggle.hidden = !long;
+      descriptionToggle.setAttribute("aria-expanded", String(long && expanded));
+      descriptionToggle.textContent = long && expanded
+        ? (messages.showLess || "Show less")
+        : (messages.showMore || "Show more");
+    };
+    descriptionToggle.addEventListener("click", () => {
+      const expanded = description.classList.toggle("is-expanded");
+      descriptionToggle.setAttribute("aria-expanded", String(expanded));
+      descriptionToggle.textContent = expanded
+        ? (messages.showLess || "Show less")
+        : (messages.showMore || "Show more");
+    });
+    measureDescription();
+    if ("ResizeObserver" in window && description.parentElement) {
+      let descriptionWidth = description.parentElement.clientWidth;
+      new ResizeObserver(([entry]) => {
+        const width = Math.round(entry.contentRect.width);
+        if (width === descriptionWidth) return;
+        descriptionWidth = width;
+        measureDescription();
+      }).observe(description.parentElement);
+    }
   }
 
   refreshVariant();

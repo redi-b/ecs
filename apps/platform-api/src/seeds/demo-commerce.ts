@@ -100,13 +100,26 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
       const parentId = category.parentHandle
         ? categoryByHandle.get(category.parentHandle)?.id
         : undefined;
+      const mediaUrl = category.mediaUrl
+        ? await demoMedia.seedTaxonomyAsset({
+            filename: category.mediaUrl,
+            handle: category.handle,
+            templateKey: shop.templateKey ?? "nexahub",
+            tenantId,
+            title: category.name,
+            userId,
+          })
+        : null;
       const result = await demoMedusa.post<{ product_category?: { id: string; name: string } }>(
         "/admin/product-categories",
         {
           handle: category.handle,
           is_active: true,
           is_internal: false,
-          metadata,
+          metadata: {
+            ...metadata,
+            ...(mediaUrl ? { media_url: mediaUrl } : {}),
+          },
           name: category.name,
           ...(parentId ? { parent_category_id: parentId } : {}),
         },
@@ -119,11 +132,24 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
 
     const collectionByHandle = new Map<string, { id: string; title: string }>();
     for (const collection of shop.collections) {
+      const mediaUrl = collection.mediaUrl
+        ? await demoMedia.seedTaxonomyAsset({
+            filename: collection.mediaUrl,
+            handle: collection.handle,
+            templateKey: shop.templateKey ?? "nexahub",
+            tenantId,
+            title: collection.title,
+            userId,
+          })
+        : null;
       const result = await demoMedusa.post<{ collection?: { id: string; title: string } }>(
         "/admin/collections",
         {
           handle: collection.handle,
-          metadata,
+          metadata: {
+            ...metadata,
+            ...(mediaUrl ? { media_url: mediaUrl } : {}),
+          },
           title: collection.title,
         },
       );
@@ -137,6 +163,7 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
     await demoMedia.resetTenant(tenantId);
 
     const products: ProductSeedResult[] = [];
+    const saleItems: Array<{ salePrice: number; variantId: string }> = [];
     let mediaAssetsCreated = 0;
     let variantsStocked = 0;
 
@@ -168,6 +195,23 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
         throw new Error(`Demo product ${product.handle} has no usable product image`);
       }
 
+      const optionMediaBindings =
+        product.optionMediaBindings ??
+        (() => {
+          const colorOption = product.options.find((opt) =>
+            /colou?r|shade|finish/i.test(opt.title),
+          );
+          if (colorOption && colorOption.values.length > 1 && imageUrls.length > 1) {
+            const mappings: Record<string, string[]> = {};
+            for (const [idx, val] of colorOption.values.entries()) {
+              const url = imageUrls[idx % imageUrls.length];
+              if (url) mappings[val] = [url];
+            }
+            return { optionTitle: colorOption.title, mappings };
+          }
+          return undefined;
+        })();
+
       const result = await demoMedusa.post<{ product?: ProductSeedResult }>("/admin/products", {
         categories: category ? [{ id: category.id }] : [],
         collection_id: collection?.id,
@@ -176,9 +220,11 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
         images: imageUrls.map((url) => ({ url })),
         metadata: {
           ...metadata,
-          image_license: "Pexels License",
+          image_license: "Commercial Studio License",
           image_sources: curatedImages.map((image) => image.sourceUrl),
           merchandising_family: product.imageCategory,
+          ...(optionMediaBindings ? { option_media_bindings: optionMediaBindings } : {}),
+          ...(product.optionPresentation ? { option_presentation: product.optionPresentation } : {}),
         },
         options: product.options.map((option) => ({
           title: option.title,
@@ -192,7 +238,8 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
         variants: product.variants.map((variant) => ({
           manage_inventory: true,
           options: variant.options,
-          prices: [{ amount: variant.price, currency_code: "etb" }],
+          // If discounted, base price is originalPrice so sale price lists calculate discounts cleanly
+          prices: [{ amount: variant.originalPrice ?? variant.price, currency_code: "etb" }],
           // Prefix SKUs with tenant short id so re-seeds after soft-delete do not collide.
           sku: `${tenantId.slice(0, 8)}_${variant.sku}`.slice(0, 64),
           title:
@@ -208,6 +255,17 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
         const seededProduct = detailed?.product ?? result.product;
         products.push(seededProduct);
         variantsStocked += await seedProductStock(result.product.id, resources, product);
+
+        for (const [vIndex, seededVariant] of (seededProduct.variants ?? []).entries()) {
+          const defVariant = product.variants[vIndex];
+          if (defVariant?.originalPrice && defVariant.originalPrice > defVariant.price) {
+            saleItems.push({
+              variantId: seededVariant.id,
+              salePrice: defVariant.price,
+            });
+          }
+        }
+
         if (uploaded.length) {
           await demoMedia.linkUsages({
             assets: uploaded,
@@ -231,6 +289,10 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
       customersCreated += 1;
     }
 
+    // Price lists for discounted/sale items (strikethrough original prices)
+    await demoCleanup.cleanTenantPriceLists(shop.tenant.handle);
+    const priceListsCreated = await seedPriceLists(shop.tenant.handle, saleItems);
+
     // Promotions (tenant-scoped via campaign_identifier prefix used by platform API)
     await demoCleanup.cleanTenantPromotions(tenantId, shop.tenant.handle);
     const promotionsCreated = await seedPromotions(tenantId, shop.tenant.handle, products);
@@ -252,6 +314,7 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
       mediaAssets: mediaAssetsCreated,
       customers: customersCreated,
       promotions: promotionsCreated,
+      priceLists: priceListsCreated,
       orders: orderSummary.orders,
       drafts: orderSummary.drafts,
       cancelled: orderSummary.cancelled,
@@ -565,6 +628,34 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
     return created;
   }
 
+  async function seedPriceLists(
+    handle: string,
+    saleItems: Array<{ salePrice: number; variantId: string }>,
+  ) {
+    if (!saleItems.length) return 0;
+    const slug =
+      handle
+        .replace(/[^a-z0-9]/gi, "")
+        .slice(0, 6)
+        .toUpperCase() || "SHOP";
+
+    const result = await demoMedusa
+      .post<{ price_list?: { id: string } }>("/admin/price-lists", {
+        description: "Seasonal promotional discounts on curated products",
+        prices: saleItems.map((item) => ({
+          amount: item.salePrice,
+          currency_code: "etb",
+          variant_id: item.variantId,
+        })),
+        status: "active",
+        title: `${slug} SEASONAL SALE`,
+        type: "sale",
+      })
+      .catch(() => null);
+
+    return result?.price_list?.id ? 1 : 0;
+  }
+
   async function seedProductStock(
     productId: string,
     resources: CommerceResources,
@@ -594,7 +685,8 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
           const skuTail = item.sku;
           return Boolean(variant.sku?.endsWith(skuTail) || variant.sku?.includes(skuTail));
         }) ?? product.variants[index];
-      const stockedQuantity = definition?.stock ?? 25 + (index % 5) * 5;
+      const stockedQuantity =
+        typeof definition?.stock === "number" ? definition.stock : 25 + (index % 5) * 5;
 
       await demoMedusa
         .post(`/admin/inventory-items/${encodeURIComponent(inventoryItemId)}/location-levels`, {

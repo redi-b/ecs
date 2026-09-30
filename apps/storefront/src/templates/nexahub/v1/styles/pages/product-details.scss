@@ -1,5 +1,6 @@
 @use '../utils/functions' as *;
 @use "../variables" as *;
+@use "../components/quantity-selector";
 
 // ==========================================
 // Product Details Page Styles
@@ -138,7 +139,7 @@
 .product-info {
   width: 653px;
   max-width: 100%;
-  height: auto;
+  height: 588px;
   background: var(--nexa-surface);
   border: 1px solid alpha(var(--nexa-ink), 0.3);
   border-radius: $radius-100;
@@ -204,8 +205,8 @@
   }
 
   &__scrollable {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
@@ -235,15 +236,76 @@
     font-size: $fs-body-s-400;
     line-height: 1.5;
     letter-spacing: $ls-body-s-400;
-    text-transform: uppercase;
-    opacity: 0.8;
+    text-transform: none;
+    opacity: 0.9;
 
     > * { margin: 0; }
     > * + * { margin-top: $space-250; }
-    :is(ul, ol) { padding-left: $space-500; }
+
+    h3, h4, h5 {
+      font-family: $ff-header;
+      color: var(--nexa-ink);
+      margin: $space-300 0 $space-150;
+      font-size: $fs-body-s-500;
+      font-weight: $fw-bold;
+      letter-spacing: -0.01em;
+      text-transform: none;
+    }
+
+    :is(ul, ol) {
+      margin: $space-150 0;
+      padding-left: $space-500;
+      display: flex;
+      flex-direction: column;
+      gap: $space-100;
+    }
+
     ul { list-style: disc; }
     ol { list-style: decimal; }
-    blockquote { padding-left: $space-300; border-left: 2px solid var(--nexa-primary); }
+    li { line-height: 1.5; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: $space-250 0;
+      font-size: $fs-body-xs-400;
+      border: 1px solid alpha(var(--nexa-ink), 0.15);
+      border-radius: $radius-50;
+      overflow: hidden;
+
+      th, td {
+        padding: $space-150 $space-250;
+        border-bottom: 1px solid alpha(var(--nexa-ink), 0.1);
+        border-right: 1px solid alpha(var(--nexa-ink), 0.08);
+        text-align: left;
+
+        &:last-child {
+          border-right: 0;
+        }
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      th {
+        font-weight: $fw-bold;
+        color: var(--nexa-ink);
+        background: alpha(var(--nexa-ink), 0.05);
+      }
+    }
+
+    blockquote {
+      margin: $space-250 0;
+      padding: $space-200 $space-300;
+      border-left: 3px solid var(--nexa-primary);
+      background: alpha(var(--nexa-primary), 0.06);
+      border-radius: 0 $radius-50 $radius-50 0;
+      font-size: $fs-body-xs-400;
+      line-height: 1.45;
+    }
+
     a { color: var(--nexa-primary-link); text-underline-offset: 3px; }
   }
 
@@ -413,6 +475,8 @@
 
     .btn {
       flex: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   }
 }

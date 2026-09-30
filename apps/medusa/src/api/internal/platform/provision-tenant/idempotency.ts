@@ -50,25 +50,42 @@ async function inspectTenantCommerceResourcesUnsafe({
     entity: "sales_channel",
     filters: { description: `Primary channel for ${input.handle}` },
   });
-  const publishableKey = await findPublishableKey(query, {
-    title: `${input.name} Storefront`,
-  });
+  const publishableKey =
+    (await findPublishableKey(query, { title: `${input.name} Storefront` })) ||
+    (await findPublishableKey(query, { title: `${input.handle} Storefront` })) ||
+    (await findPublishableKeyByCreatedBy(query, input.requestedByUserId)) ||
+    (await findPublishableKeyByMatch(query, input.handle));
   const regionId = await findOneId(query, {
     entity: "region",
     filters: { currency_code: "etb" },
   });
-  const shippingProfileId = await findOneId(query, {
-    entity: "shipping_profile",
-    filters: { name: `${input.name} (${input.handle}) Standard` },
-  });
-  const fulfillmentSetId = await findOneId(query, {
-    entity: "fulfillment_set",
-    filters: { name: `${input.name} (${input.handle}) Shipping` },
-  });
-  const serviceZoneId = await findOneId(query, {
-    entity: "service_zone",
-    filters: { name: `${input.name} (${input.handle}) Ethiopia` },
-  });
+  const shippingProfileId =
+    (await findOneId(query, {
+      entity: "shipping_profile",
+      filters: { name: `${input.name} (${input.handle}) Standard` },
+    })) ??
+    (await findOneId(query, {
+      entity: "shipping_profile",
+      filters: { name: { $like: `%(${input.handle}) Standard` } },
+    }));
+  const fulfillmentSetId =
+    (await findOneId(query, {
+      entity: "fulfillment_set",
+      filters: { name: `${input.name} (${input.handle}) Shipping` },
+    })) ??
+    (await findOneId(query, {
+      entity: "fulfillment_set",
+      filters: { name: { $like: `%(${input.handle}) Shipping` } },
+    }));
+  const serviceZoneId =
+    (await findOneId(query, {
+      entity: "service_zone",
+      filters: { name: `${input.name} (${input.handle}) Ethiopia` },
+    })) ??
+    (await findOneId(query, {
+      entity: "service_zone",
+      filters: { name: { $like: `%(${input.handle}) Ethiopia` } },
+    }));
   const shippingOptionId = serviceZoneId
     ? await findOneId(query, {
         entity: "shipping_option",
@@ -129,6 +146,39 @@ async function findPublishableKey(query: QueryGraph, input: { title: string }) {
     entity: "api_key",
     fields: ["id", "token"],
     filters: { title: input.title, type: "publishable" },
+    pagination: { take: 1, skip: 0 },
+  });
+  const [row] = data;
+  if (!isRecord(row)) return undefined;
+  const token = typeof row.token === "string" ? row.token.trim() : "";
+  return {
+    present: true,
+    token: token && !token.startsWith("apk_") ? token : undefined,
+  } as const;
+}
+
+async function findPublishableKeyByCreatedBy(query: QueryGraph, userId: string) {
+  if (!userId) return undefined;
+  const { data } = await query.graph({
+    entity: "api_key",
+    fields: ["id", "token"],
+    filters: { created_by: userId, type: "publishable" },
+    pagination: { take: 1, skip: 0 },
+  });
+  const [row] = data;
+  if (!isRecord(row)) return undefined;
+  const token = typeof row.token === "string" ? row.token.trim() : "";
+  return {
+    present: true,
+    token: token && !token.startsWith("apk_") ? token : undefined,
+  } as const;
+}
+
+async function findPublishableKeyByMatch(query: QueryGraph, handle: string) {
+  const { data } = await query.graph({
+    entity: "api_key",
+    fields: ["id", "token"],
+    filters: { title: { $like: `%${handle}%` }, type: "publishable" },
     pagination: { take: 1, skip: 0 },
   });
   const [row] = data;

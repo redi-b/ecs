@@ -3,6 +3,7 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { type createPlatformDb, mediaAssets, mediaUsages } from "@ecs/db";
 import { eq } from "drizzle-orm";
 import { generateObjectKey } from "../modules/media/variants.js";
+import { demoTaxonomyImage } from "./demo/product-images.js";
 import type { DemoProductImage } from "./demo/types.js";
 import { ensureS3Bucket } from "./seed-media-storage.js";
 
@@ -187,7 +188,11 @@ export function createDemoMediaSeeder(options: DemoMediaSeederOptions) {
         continue;
       }
 
-      const ext = fetched.mimeType.includes("png") ? "png" : "jpg";
+      const ext = fetched.mimeType.includes("webp")
+        ? "webp"
+        : fetched.mimeType.includes("png")
+          ? "png"
+          : "jpg";
       const filename = `${input.productHandle}-${index + 1}.${ext}`;
       const assetId = crypto.randomUUID();
       const objectKey = generateObjectKey({
@@ -285,5 +290,24 @@ export function createDemoMediaSeeder(options: DemoMediaSeederOptions) {
       await options.db.delete(mediaAssets).where(eq(mediaAssets.tenantId, tenantId));
     },
     seedProductAssets,
+    async seedTaxonomyAsset(input: {
+      filename: string;
+      handle: string;
+      title: string;
+      tenantId: string;
+      userId: string;
+      templateKey: string;
+    }): Promise<string | null> {
+      const img = demoTaxonomyImage(input.filename, input.templateKey);
+      if (!img) return input.filename.startsWith("http") ? input.filename : null;
+      const uploaded = await seedProductAssets({
+        images: [img],
+        productHandle: `tax-${input.handle}`,
+        productTitle: input.title,
+        tenantId: input.tenantId,
+        userId: input.userId,
+      });
+      return uploaded[0]?.publicUrl ?? img.url;
+    },
   };
 }

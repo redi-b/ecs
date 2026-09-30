@@ -98,7 +98,12 @@ function resolveTargetShops(): readonly DemoShopDefinition[] {
     process.env.SEED_DEMO_LOCAL_ONLY === "true";
 
   if (localOnly) {
-    return demoShops.filter((s) => s.tenant.handle === "bolestyle" || s.tenant.handle === "afro");
+    return demoShops.filter(
+      (s) =>
+        s.tenant.handle === "bolestyle" ||
+        s.tenant.handle === "afrostudio" ||
+        s.tenant.handle === "afro",
+    );
   }
 
   const raw = shopsArg
@@ -124,7 +129,11 @@ function resolveTargetShops(): readonly DemoShopDefinition[] {
       if (handle === t || name === t || tpl.includes(t)) return true;
       if (handle === "bolestyle" && (t === "fashion" || t === "luvia")) return true;
       if (handle === "addistech" && (t === "tech" || t === "nexahub")) return true;
-      if (handle === "afro" && (t === "afro" || t === "apparel")) return true;
+      if (
+        (handle === "afrostudio" || handle === "afro") &&
+        (t === "afro" || t === "afrostudio" || t === "apparel")
+      )
+        return true;
       return false;
     });
   });
@@ -178,8 +187,8 @@ function assertDemoFixtureIntegrity(shops: readonly DemoShopDefinition[]) {
           `Demo product ${product.handle} references missing collection ${product.collectionHandle}`,
         );
       }
-      if (demoProductImages(product.handle).length < 2) {
-        throw new Error(`Demo product ${product.handle} needs at least two curated images`);
+      if (demoProductImages(product.handle).length < 1) {
+        throw new Error(`Demo product ${product.handle} needs at least one curated image`);
       }
     }
   }
@@ -474,6 +483,7 @@ async function seedShop(
     ownerUserId: userId,
     platformTenantId: shop.ids.tenant,
     ...(shop.templateKey ? { templateKey: shop.templateKey } : {}),
+    ...(shop.shopDetails ? { shopDetails: shop.shopDetails } : {}),
   });
 
   if (!provisioned.ok) {

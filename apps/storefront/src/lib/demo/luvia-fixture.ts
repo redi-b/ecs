@@ -28,24 +28,35 @@ export const luviaDemoCategories: StoreCategory[] = luviaDemoCollections.map((co
 }));
 
 const productSeeds = [
-  ["gentle-cleanser", "Gentle Botanical Cleanser", 1_250, heroPortrait.src, 0],
-  ["radiance-serum", "Radiance Vitamin Serum", 1_780, categoryPreview.src, 1],
-  ["barrier-cream", "Daily Barrier Cream", 1_490, aboutImage.src, 2],
-  ["body-oil", "Nourishing Body Oil", 1_320, brandImage.src, 3],
-  ["night-serum", "Renewal Night Serum", 1_950, heroPortrait.src, 1],
-  ["face-mist", "Botanical Face Mist", 980, categoryPreview.src, 2],
+  ["gentle-cleanser", "Gentle Botanical Cleanser", 1_250, heroPortrait.src, 0, false],
+  ["radiance-serum", "Radiance Vitamin Serum", 1_780, categoryPreview.src, 1, false],
+  ["barrier-cream", "Daily Barrier Cream", 1_490, aboutImage.src, 2, false],
+  ["body-oil", "Nourishing Body Oil", 1_320, brandImage.src, 3, false],
+  ["night-serum", "Renewal Night Serum", 1_950, heroPortrait.src, 1, false],
+  ["face-mist", "Botanical Face Mist", 980, categoryPreview.src, 2, false],
+  ["velvet-lipstick", "Velvet Matte Lip Color", 1_750, categoryPreview.src, 1, true], // SOLD OUT test
 ] as const;
 
 export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
-  ([handle, title, priceAmount, thumbnail, collectionIndex], index) => {
+  ([handle, title, priceAmount, thumbnail, collectionIndex, isSoldOut], index) => {
     const collection = luviaDemoCollections[collectionIndex];
-    const originalPriceAmount = index === 1 ? 2_050 : null;
+    const originalPriceAmount = index === 1 ? 2_050 : index === 4 ? 2_450 : null;
+    const discountPercentage =
+      originalPriceAmount != null && originalPriceAmount > priceAmount
+        ? Math.round(((originalPriceAmount - priceAmount) / originalPriceAmount) * 100)
+        : null;
+    const discountAmount =
+      originalPriceAmount != null && originalPriceAmount > priceAmount
+        ? originalPriceAmount - priceAmount
+        : null;
+
     return {
       id: `demo-product-${index + 1}`,
       title,
       handle,
-      description:
-        "A considered daily essential made for a calm, radiant skincare routine. Gentle textures and thoughtfully selected ingredients make it easy to use every day.",
+      description: isSoldOut
+        ? "Formulated with wild botanicals and natural mineral pigments. Currently sold out.\n\n### Highlights\n- Deep pigment payoff\n- Non-drying nourishing botanical base"
+        : "A considered daily essential made for a calm, radiant skincare routine. Gentle textures and thoughtfully selected ingredients make it easy to use every day.\n\n### Highlights\n- 100% Vegan & cruelty-free\n- Formulated for high-altitude skin barrier protection",
       thumbnail,
       images: [thumbnail],
       gallery: [{ url: thumbnail }],
@@ -56,12 +67,12 @@ export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
           sku: `LUV-${String(index + 1).padStart(3, "0")}`,
           manageInventory: true,
           allowBackorder: false,
-          inventoryQuantity: 12,
-          inStock: true,
+          inventoryQuantity: isSoldOut ? 0 : 12,
+          inStock: !isSoldOut,
           priceAmount,
           originalPriceAmount,
-          discountAmount: originalPriceAmount ? originalPriceAmount - priceAmount : null,
-          discountPercentage: originalPriceAmount ? 13 : null,
+          discountAmount,
+          discountPercentage,
           currencyCode: "ETB",
           optionValues: [],
         },
@@ -72,8 +83,8 @@ export const luviaDemoProducts: StoreProduct[] = productSeeds.map(
       categoryIds: collection ? [`category-${collection.id}`] : [],
       priceAmount,
       originalPriceAmount,
-      discountAmount: originalPriceAmount ? originalPriceAmount - priceAmount : null,
-      discountPercentage: originalPriceAmount ? 13 : null,
+      discountAmount,
+      discountPercentage,
       currencyCode: "ETB",
     };
   },
@@ -137,3 +148,14 @@ export const luviaDemoOrder: LastOrderCookie = {
 export function findLuviaDemoProduct(handle: string) {
   return luviaDemoProducts.find((product) => product.handle === handle) ?? null;
 }
+
+/**
+ * Demo-only contact details. The template defaults deliberately leave
+ * phone/email/address undefined so a legacy tenant without valid shopDetails
+ * cannot publish someone else's contact info; the demo needs its own copy.
+ */
+export const luviaDemoFooterContact = {
+  phone: "+251 91 110 0002",
+  email: "hello@bolestyle.com",
+  address: "Bole Road, Woreda 3, Jomo Building, 2nd Floor, Addis Ababa, Ethiopia",
+};

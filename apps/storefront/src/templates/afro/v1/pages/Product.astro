@@ -15,6 +15,7 @@ import * as m from "../../../../paraglide/messages.js";
 import Button from "../components/Button.astro";
 import Layout from "../layouts/Layout.astro";
 import ProductCard from "../components/ProductCard.astro";
+import { sanitizeProductDescription } from "@ecs/content";
 import { parseAfroData } from "../lib";
 import "../styles/pages/product-detail.scss";
 
@@ -63,6 +64,7 @@ const currentPrice = formatMoney(
   defaultVariant?.currencyCode ?? product?.currencyCode,
   locale,
 );
+const descriptionHtml = sanitizeProductDescription(product?.description);
 
 // Selectors are derived from the product's real variants. The previous hardcoded
 // size/colour lists rendered controls that changed nothing, so the hidden variantId
@@ -105,6 +107,8 @@ const clientMessages = {
   addToCart: m.action_add_to_cart({}, { locale }),
   selected: m.product_selected({ options: "__OPTIONS__" }, { locale }),
   selectOption: m.product_select_option({ option: "__VALUE__" }, { locale }),
+  showMore: m.product_show_more({}, { locale }),
+  showLess: m.action_show_less({}, { locale }),
 };
 const href = product?.handle ? `/products/${encodeURIComponent(product.handle)}` : "/products";
 const wishlistItem = product
@@ -252,10 +256,24 @@ const wishlistItem = product
               </div>
 
               <!-- Description -->
-              {product.description && (
-                <p class="product-details__description type-body-s-400">
-                  {product.description}
-                </p>
+              {descriptionHtml && (
+                <div class="product-details__desc-box" id="afro-product-description">
+                  <div
+                    class="product-details__description afro-rich-text type-body-s-400"
+                    data-product-description
+                    set:html={descriptionHtml}
+                  />
+                  <button
+                    class="product-details__desc-toggle type-body-s-500"
+                    type="button"
+                    data-description-toggle
+                    aria-expanded="false"
+                    aria-controls="afro-product-description"
+                    hidden
+                  >
+                    {m.product_show_more({}, { locale })}
+                  </button>
+                </div>
               )}
 
               <div class="product-details__divider" aria-hidden="true"></div>
@@ -535,5 +553,39 @@ const wishlistItem = product
         sync();
       });
     });
+    const description = root.querySelector<HTMLElement>('[data-product-description]');
+    const descriptionToggle = root.querySelector<HTMLButtonElement>('[data-description-toggle]');
+    if (description && descriptionToggle) {
+      const measureDescription = () => {
+        const expanded = description.classList.contains('is-expanded');
+        description.classList.remove('is-collapsible', 'is-expanded');
+        const lineHeight = Number.parseFloat(getComputedStyle(description).lineHeight) || 21;
+        const long = description.scrollHeight > lineHeight * 5 + 1;
+        description.classList.toggle('is-collapsible', long);
+        description.classList.toggle('is-expanded', long && expanded);
+        descriptionToggle.hidden = !long;
+        descriptionToggle.setAttribute('aria-expanded', String(long && expanded));
+        descriptionToggle.textContent = long && expanded
+          ? (clientMessages.showLess || "Show less")
+          : (clientMessages.showMore || "Show more");
+      };
+      descriptionToggle.addEventListener('click', () => {
+        const expanded = description.classList.toggle('is-expanded');
+        descriptionToggle.setAttribute('aria-expanded', String(expanded));
+        descriptionToggle.textContent = expanded
+          ? (clientMessages.showLess || "Show less")
+          : (clientMessages.showMore || "Show more");
+      });
+      measureDescription();
+      if ('ResizeObserver' in window && description.parentElement) {
+        let descriptionWidth = description.parentElement.clientWidth;
+        new ResizeObserver(([entry]) => {
+          const width = Math.round(entry.contentRect.width);
+          if (width === descriptionWidth) return;
+          descriptionWidth = width;
+          measureDescription();
+        }).observe(description.parentElement);
+      }
+    }
   }
 </script>

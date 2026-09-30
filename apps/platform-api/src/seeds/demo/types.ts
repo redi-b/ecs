@@ -21,6 +21,15 @@ export type DemoCategory = {
   name: string;
   /** Parent category handle within the same shop (nested taxonomy). */
   parentHandle?: string;
+  /** Cover image asset filename or public URL. */
+  mediaUrl?: string | undefined;
+};
+
+export type DemoCollection = {
+  handle: string;
+  title: string;
+  /** Cover image asset filename or public URL. */
+  mediaUrl?: string | undefined;
 };
 
 export type DemoProductOption = {
@@ -32,16 +41,18 @@ export type DemoProductVariant = {
   /** Option title → value, e.g. { Size: "M", Color: "Black" }. */
   options: Record<string, string>;
   price: number;
+  /** Strikethrough price for discounted/sale items. */
+  originalPrice?: number | undefined;
   sku: string;
-  /** Absolute stocked quantity; omit for a healthy default. */
-  stock?: number;
-  title?: string;
+  /** Absolute stocked quantity; omit for a healthy default. 0 = sold out. */
+  stock?: number | undefined;
+  title?: string | undefined;
 };
 
 export type DemoProduct = {
   /** Category handle for assignment (prefer leaf categories). */
-  categoryHandle?: string;
-  collectionHandle?: string;
+  categoryHandle?: string | undefined;
+  collectionHandle?: string | undefined;
   description: string;
   handle: string;
   /** Broad merchandising family retained in seeded product metadata. */
@@ -49,6 +60,12 @@ export type DemoProduct = {
   options: readonly DemoProductOption[];
   title: string;
   variants: readonly DemoProductVariant[];
+  /** Strikethrough original price if the entire product is discounted. */
+  originalPrice?: number | undefined;
+  /** Color swatches or presentation overrides for options. */
+  optionPresentation?: Record<string, Record<string, { kind: "color"; value: string }>> | undefined;
+  /** Image URLs / filenames mapped to option values (e.g. Color -> [image1, image2]). */
+  optionMediaBindings?: { optionTitle: string; mappings: Record<string, string[]> } | undefined;
 };
 
 export type DemoProductImage = {
@@ -58,9 +75,29 @@ export type DemoProductImage = {
   url: string;
 };
 
+export type DemoShopSocialProfile = {
+  platform: "facebook" | "instagram" | "tiktok" | "telegram" | "whatsapp" | "youtube" | "linkedin" | "x";
+  url: string;
+};
+
+export type DemoShopDetails = {
+  version: 1;
+  categories: string[];
+  description: string;
+  primaryPhone: string;
+  additionalPhones: string[];
+  publicEmail: string;
+  address?: {
+    city: string;
+    streetAddress: string;
+    directions: string;
+  };
+  socialProfiles: DemoShopSocialProfile[];
+};
+
 export type DemoShopDefinition = {
   categories: ReadonlyArray<DemoCategory>;
-  collections: ReadonlyArray<{ handle: string; title: string }>;
+  collections: ReadonlyArray<DemoCollection>;
   customers: ReadonlyArray<DemoCustomer>;
   ids: {
     account: string;
@@ -78,6 +115,8 @@ export type DemoShopDefinition = {
     status: string;
   };
   products: ReadonlyArray<DemoProduct>;
+  /** Shop contact info, socials, and description — injected into storefront footer via applyShopDetails. */
+  shopDetails: DemoShopDetails;
   templateKey?: string;
   tenant: {
     handle: string;

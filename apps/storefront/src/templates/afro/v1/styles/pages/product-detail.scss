@@ -255,10 +255,122 @@
     margin: 0;
   }
 
+  &__desc-box {
+    display: flex;
+    flex-direction: column;
+    gap: $space-150;
+  }
+
   &__description {
     color: alpha($clr-neutral-900, 0.8);
     max-width: 55ch;
     margin: 0;
+
+    & > * + * {
+      margin-top: $space-250;
+    }
+
+    h3, h4, h5 {
+      font-family: $ff-header;
+      color: $clr-neutral-900;
+      margin: $space-300 0 $space-150;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    ul, ol {
+      margin: $space-150 0;
+      padding-left: $space-400;
+      display: flex;
+      flex-direction: column;
+      gap: $space-100;
+    }
+
+    ul {
+      list-style-type: disc;
+    }
+
+    ol {
+      list-style-type: decimal;
+    }
+
+    li {
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: $space-250 0;
+      font-size: 0.875rem;
+      border: 1px solid alpha($clr-neutral-900, 0.15);
+      border-radius: $radius-200;
+      overflow: hidden;
+
+      th, td {
+        padding: $space-150 $space-250;
+        border-bottom: 1px solid alpha($clr-neutral-900, 0.1);
+        border-right: 1px solid alpha($clr-neutral-900, 0.08);
+        text-align: left;
+
+        &:last-child {
+          border-right: 0;
+        }
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      th {
+        font-weight: 600;
+        color: $clr-neutral-900;
+        background: alpha($clr-neutral-900, 0.04);
+      }
+    }
+
+    blockquote {
+      margin: $space-250 0;
+      padding: $space-200 $space-300;
+      border-left: 3px solid $clr-primary-500;
+      background: alpha($clr-primary-500, 0.06);
+      border-radius: 0 $radius-100 $radius-100 0;
+      font-size: 0.875rem;
+      line-height: 1.45;
+    }
+  }
+
+  &__description.is-collapsible:not(.is-expanded) {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+  }
+
+  &__desc-toggle {
+    align-self: flex-start;
+    min-height: 32px;
+    padding: $space-100 0;
+    border: 0;
+    background: transparent;
+    color: $clr-primary-link;
+    font-family: $ff-body;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color $dur-ui ease;
+
+    &:hover {
+      color: $clr-primary-800;
+    }
+
+    &[hidden] {
+      display: none;
+    }
   }
 
   &__divider {

@@ -256,3 +256,14 @@ export const afroDemoOrder: LastOrderCookie = {
 export function findAfroDemoProduct(handle: string) {
   return afroDemoProducts.find((p) => p.handle === handle) ?? null;
 }
+
+/**
+ * Demo-only contact details. The template defaults deliberately leave
+ * phone/email/address undefined so a legacy tenant without valid shopDetails
+ * cannot publish someone else's contact info; the demo needs its own copy.
+ */
+export const afroDemoFooterContact = {
+  phone: "+251 91 110 0003",
+  email: "studio@afrostudio.et",
+  address: "Kazanchis, Africa Avenue, AFRO Studio Building, Ground Floor, Addis Ababa, Ethiopia",
+};

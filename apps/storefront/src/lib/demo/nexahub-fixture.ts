@@ -25,23 +25,35 @@ export const nexahubDemoCategories: StoreCategory[] = nexahubDemoCollections.map
   mediaUrl: collection.mediaUrl,
 }));
 const seeds = [
-  ["portable-workstation", "Portable Workstation", 84_900, laptop.src, 0],
-  ["everyday-smartphone", "Everyday Smartphone", 34_500, phone.src, 1],
-  ["wireless-keyboard", "Wireless Keyboard", 4_800, peripheral.src, 2],
-  ["usb-c-dock", "USB-C Connectivity Dock", 8_200, featured.src, 2],
-  ["compact-laptop", "Compact Performance Laptop", 62_000, laptop.src, 0],
-  ["wireless-mouse", "Precision Wireless Mouse", 2_950, peripheral.src, 2],
+  ["portable-workstation", "Portable Workstation", 84_900, laptop.src, 0, false],
+  ["everyday-smartphone", "Everyday Smartphone", 34_500, phone.src, 1, false],
+  ["wireless-keyboard", "Wireless Keyboard", 4_800, peripheral.src, 2, false],
+  ["usb-c-dock", "USB-C Connectivity Dock", 8_200, featured.src, 2, false],
+  ["compact-laptop", "Compact Performance Laptop", 62_000, laptop.src, 0, false],
+  ["wireless-mouse", "Precision Wireless Mouse", 2_950, peripheral.src, 2, false],
+  ["titanium-flagship", "Titanium Flagship Phone", 88_000, phone.src, 1, true], // SOLD OUT test
 ] as const;
+
 export const nexahubDemoProducts: StoreProduct[] = seeds.map(
-  ([handle, title, priceAmount, thumbnail, collectionIndex], index) => {
+  ([handle, title, priceAmount, thumbnail, collectionIndex, isSoldOut], index) => {
     const collection = nexahubDemoCollections[collectionIndex];
-    const originalPriceAmount = index === 3 ? 9_400 : null;
+    const originalPriceAmount = index === 3 ? 9_400 : index === 0 ? 99_000 : null;
+    const discountPercentage =
+      originalPriceAmount != null && originalPriceAmount > priceAmount
+        ? Math.round(((originalPriceAmount - priceAmount) / originalPriceAmount) * 100)
+        : null;
+    const discountAmount =
+      originalPriceAmount != null && originalPriceAmount > priceAmount
+        ? originalPriceAmount - priceAmount
+        : null;
+
     return {
       id: `nexa-demo-product-${index + 1}`,
       title,
       handle,
-      description:
-        "A practical technology product configured as bounded demonstration data. Production storefronts always use the merchant’s current catalog.",
+      description: isSoldOut
+        ? "Precision-crafted flagship engineering. Currently out of stock due to extraordinary demand.\n\n### Specifications\n- **Processor:** Desktop-class 3nm SoC\n- **Display:** 6.7-inch OLED 120Hz\n- **Chassis:** Grade 5 Titanium"
+        : "Engineered for high performance and daily productivity with premium tactile finish.\n\n### Key Highlights\n- High-efficiency architecture for sustained workloads\n- Durable aluminum construction\n- Includes 1-year local warranty in Addis Ababa",
       thumbnail,
       images: [thumbnail],
       gallery: [{ url: thumbnail }],
@@ -52,12 +64,12 @@ export const nexahubDemoProducts: StoreProduct[] = seeds.map(
           sku: `NEX-${String(index + 1).padStart(3, "0")}`,
           manageInventory: true,
           allowBackorder: false,
-          inventoryQuantity: 10,
-          inStock: true,
+          inventoryQuantity: isSoldOut ? 0 : 10,
+          inStock: !isSoldOut,
           priceAmount,
           originalPriceAmount,
-          discountAmount: originalPriceAmount ? originalPriceAmount - priceAmount : null,
-          discountPercentage: originalPriceAmount ? 13 : null,
+          discountAmount,
+          discountPercentage,
           currencyCode: "ETB",
           optionValues: [],
         },
@@ -68,8 +80,8 @@ export const nexahubDemoProducts: StoreProduct[] = seeds.map(
       categoryIds: collection ? [`category-${collection.id}`] : [],
       priceAmount,
       originalPriceAmount,
-      discountAmount: originalPriceAmount ? originalPriceAmount - priceAmount : null,
-      discountPercentage: originalPriceAmount ? 13 : null,
+      discountAmount,
+      discountPercentage,
       currencyCode: "ETB",
     };
   },

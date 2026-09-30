@@ -89,10 +89,12 @@ if (clean) {
   success("Demo data ready");
   blank();
   kv([
-    ["Tech shop", "http://addistech.lvh.me/admin"],
+    ["Tech shop", "http://addistech.lvh.me (admin: /admin)"],
     ["", "yonatan@addistech.ecs.et / password1234"],
-    ["Fashion shop", "http://bolestyle.lvh.me/admin"],
-    ["", "liya@bolestyle.ecs.et / password1234"],
+    ["Fashion shop", "http://bolestyle.lvh.me (admin: /admin)"],
+    ["", "mahi@bolestyle.ecs.et / password1234"],
+    ["Afro shop", "http://afrostudio.lvh.me (admin: /admin)"],
+    ["", "selam@afrostudio.ecs.et / password1234"],
     ["Reverse", "pnpm seed:demo:clean"],
   ]);
   blank();
