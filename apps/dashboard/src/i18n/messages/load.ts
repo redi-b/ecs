@@ -10,6 +10,7 @@ import am_collections from "./am/collections.json";
 import am_commandCenter from "./am/commandCenter.json";
 import am_common from "./am/common.json";
 import am_customers from "./am/customers.json";
+import am_documents from "./am/documents.json";
 import am_editor from "./am/editor.json";
 import am_expenses from "./am/expenses.json";
 import am_filters from "./am/filters.json";
@@ -37,6 +38,7 @@ import en_collections from "./en/collections.json";
 import en_commandCenter from "./en/commandCenter.json";
 import en_common from "./en/common.json";
 import en_customers from "./en/customers.json";
+import en_documents from "./en/documents.json";
 import en_editor from "./en/editor.json";
 import en_expenses from "./en/expenses.json";
 import en_filters from "./en/filters.json";
@@ -66,6 +68,7 @@ export const messageNamespaces = [
   "commandCenter",
   "common",
   "customers",
+  "documents",
   "editor",
   "filters",
   "expenses",
@@ -98,6 +101,7 @@ export const messagesByLocale = {
     commandCenter: am_commandCenter,
     common: am_common,
     customers: am_customers,
+    documents: am_documents,
     editor: am_editor,
     filters: am_filters,
     expenses: am_expenses,
@@ -127,6 +131,7 @@ export const messagesByLocale = {
     commandCenter: en_commandCenter,
     common: en_common,
     customers: en_customers,
+    documents: en_documents,
     editor: en_editor,
     filters: en_filters,
     expenses: en_expenses,

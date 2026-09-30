@@ -92,7 +92,7 @@ describe("createMedusaProductService: product writes and ownership", () => {
     assert.equal(forwardedRequest.headers.get("content-type"), "application/json");
     assert.deepEqual(await forwardedRequest.json(), {
       title: "Coffee",
-      description: "Roasted coffee beans",
+      description: "<p>Roasted coffee beans</p>",
       handle: "coffee",
       collection_id: "pcol_1",
       thumbnail: null,

@@ -42,6 +42,8 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   media: "nav.media",
   editor: "nav.editor",
   insights: "nav.insights",
+  documents: "nav.documents",
+  expenses: "nav.expenses",
   billing: "nav.billing",
   settings: "nav.settings",
   "product-categories-new": "nav.breadcrumbs.newCategory",

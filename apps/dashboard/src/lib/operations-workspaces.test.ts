@@ -53,3 +53,17 @@ test("expense facade forwards server-owned search and filters", async () => {
   assert.equal(url.searchParams.get("from"), "2026-09-01");
   assert.equal(url.searchParams.get("to"), "2026-09-30");
 });
+
+test("documents have one canonical searchable operations workspace", () => {
+  const page = join(sourceRoot, "app/dashboard/(dashboard)/documents/page.tsx");
+  assert.equal(existsSync(page), true);
+
+  const source = readFileSync(page, "utf8");
+  assert.match(source, /DocumentsTable/);
+  assert.doesNotMatch(source, /Issue|Create document/);
+
+  const navigation = readFileSync(join(sourceRoot, "lib/navigation.ts"), "utf8");
+  assert.match(navigation, /id: "operations"/);
+  assert.match(navigation, /dashboardRoutes\.documents/);
+  assert.match(navigation, /dashboardRoutes\.expenses/);
+});

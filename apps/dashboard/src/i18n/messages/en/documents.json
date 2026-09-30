@@ -1,0 +1,27 @@
+{
+  "title": "Documents",
+  "searchLabel": "Search documents",
+  "searchPlaceholder": "Search document, order, or customer",
+  "document": "Document",
+  "type": "Type",
+  "customer": "Customer",
+  "issued": "Issued",
+  "total": "Total",
+  "source": "Source",
+  "openSource": "Open source",
+  "viewPrint": "View / print",
+  "rowActions": "Document actions",
+  "emptyTitle": "No documents yet",
+  "emptyMessage": "Issued quotations, receipts, summaries, and packing slips will appear here.",
+  "filteredEmptyTitle": "No matching documents",
+  "filteredEmptyMessage": "Change the search or filters to see other documents.",
+  "loadFailed": "Documents could not be loaded",
+  "loadFailedHelp": "Try again. Existing documents are unchanged.",
+  "allTypes": "All types",
+  "types": {
+    "quotation": "Quotation",
+    "order_summary": "Order summary",
+    "payment_receipt": "Payment receipt",
+    "packing_slip": "Packing slip"
+  }
+}
