@@ -6,12 +6,19 @@ import { useBreadcrumbLabels } from "@/components/app/breadcrumb-labels";
 import Link from "@/components/app/link";
 import {
   Breadcrumb,
+  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   getDashboardPathFromDemo,
   getDemoPathFromDashboard,
@@ -42,6 +49,8 @@ const BREADCRUMB_TITLE_KEYS: Record<string, MessageKey> = {
   "product-details": "nav.breadcrumbs.productDetails",
   "product-edit": "nav.breadcrumbs.editProduct",
   "order-details": "nav.breadcrumbs.orderDetails",
+  quotations: "orders.views.quotes",
+  "sales-documents": "orders.documents.title",
   "customer-details": "nav.breadcrumbs.customerDetails",
   "storefront-section": "nav.section.storefront",
   "storefront-translations": "nav.breadcrumbs.translations",
@@ -88,6 +97,34 @@ export function AppBreadcrumbs() {
   return (
     <Breadcrumb>
       <BreadcrumbList className="flex-nowrap">
+        {trail.length > 1 ? (
+          <>
+            <BreadcrumbItem className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label={t("nav.breadcrumbs.ancestors")}
+                  className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <BreadcrumbEllipsis />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {trail.slice(0, -1).map((route) =>
+                    route.href ? (
+                      <DropdownMenuItem asChild key={route.id}>
+                        <Link href={route.href}>{route.title}</Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem disabled key={route.id}>
+                        {route.title}
+                      </DropdownMenuItem>
+                    ),
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="sm:hidden" />
+          </>
+        ) : null}
         {trail.slice(0, -1).map((route) => (
           <Fragment key={route.id}>
             <BreadcrumbItem className="hidden sm:inline-flex">

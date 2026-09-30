@@ -4,7 +4,7 @@ import type { MerchantProduct, MerchantProductStock } from "@ecs/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useState } from "react";
+import { type ComponentProps, useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/app/data-table";
@@ -15,11 +15,23 @@ import { UnsavedChangesDialog } from "@/components/app/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { rankFuzzyItems } from "@/lib/fuzzy-search";
 import { dashboardRoutes } from "@/lib/routes";
@@ -31,11 +43,65 @@ type VariantInventoryRow = {
   isLoading: boolean;
   isSaving: boolean;
   onStockedQuantityChange: (value: string) => void;
+  onAdjustmentSaved: (stock: MerchantProductStock) => void;
   onSubmit: () => void;
+  productId: string;
   stock: MerchantProductStock | undefined;
   stockedQuantity: string;
+  tenantId?: string | undefined;
   variant: NonNullable<MerchantProduct["variants"]>[number];
 };
+
+function StockOperationLabel({
+  label,
+  operation,
+}: {
+  label: string;
+  operation: "add" | "remove" | "set";
+}) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5">
+      <span
+        aria-hidden
+        className={
+          operation === "add"
+            ? "font-mono text-sm font-semibold text-success"
+            : operation === "remove"
+              ? "font-mono text-sm font-semibold text-destructive"
+              : "font-mono text-sm font-semibold text-muted-foreground"
+        }
+      >
+        {operation === "add" ? "+" : operation === "remove" ? "−" : "="}
+      </span>
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
+function StockQuantityInput({
+  operation,
+  ...props
+}: ComponentProps<typeof InputGroupInput> & {
+  operation: "add" | "remove" | "set";
+}) {
+  return (
+    <InputGroup>
+      <InputGroupAddon
+        aria-hidden
+        className={
+          operation === "add"
+            ? "font-mono text-base font-semibold text-success"
+            : operation === "remove"
+              ? "font-mono text-base font-semibold text-destructive"
+              : "font-mono text-base font-semibold text-muted-foreground"
+        }
+      >
+        {operation === "add" ? "+" : operation === "remove" ? "−" : "="}
+      </InputGroupAddon>
+      <InputGroupInput {...props} />
+    </InputGroup>
+  );
+}
 
 export function SingleVariantStockPanel({
   action,
@@ -61,12 +127,16 @@ export function SingleVariantStockPanel({
       : String(initialStock.stockedQuantity),
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [adjustmentTask, setAdjustmentTask] = useState<"add" | "remove" | "set">("set");
+  const [adjustmentNote, setAdjustmentNote] = useState("");
+  const mutationKey = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const baselineQuantity =
     stock?.stockedQuantity === null || stock?.stockedQuantity === undefined
       ? ""
       : String(stock.stockedQuantity);
-  const stockDirty = stockedQuantity !== baselineQuantity;
+  const stockDirty =
+    adjustmentTask === "set" ? stockedQuantity !== baselineQuantity : stockedQuantity !== "";
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(stockDirty);
 
   const mutation = useMutation({
@@ -76,14 +146,38 @@ export function SingleVariantStockPanel({
       if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
         throw new Error(t("products.stock.enterWholeNumber"));
       }
+      const current = stock?.stockedQuantity ?? 0;
+      const target =
+        adjustmentTask === "add"
+          ? current + parsedQuantity
+          : adjustmentTask === "remove"
+            ? current - parsedQuantity
+            : parsedQuantity;
+      if (target < 0) throw new Error(t("products.stock.removeTooMany"));
+      if (adjustmentTask === "remove" && !adjustmentNote.trim()) {
+        throw new Error(t("products.stock.noteRequired"));
+      }
+      const reason =
+        adjustmentTask === "add"
+          ? "stock_received"
+          : adjustmentTask === "remove"
+            ? "correction_remove"
+            : "manual_count";
+      const fingerprint = `${adjustmentTask}:${target}:${adjustmentNote.trim()}`;
+      if (mutationKey.current?.fingerprint !== fingerprint) {
+        mutationKey.current = { fingerprint, key: createClientId("inventory-stock") };
+      }
 
       const response = await fetch(action, {
         body: JSON.stringify({
-          stockedQuantity: parsedQuantity,
+          note: adjustmentNote.trim() || undefined,
+          reason,
+          stockedQuantity: target,
         }),
         headers: {
           accept: "application/json",
           "content-type": "application/json",
+          "idempotency-key": mutationKey.current.key,
         },
         method: "POST",
       });
@@ -99,6 +193,9 @@ export function SingleVariantStockPanel({
       return data.stock;
     },
     onSuccess: async (nextStock) => {
+      mutationKey.current = null;
+      setAdjustmentTask("set");
+      setAdjustmentNote("");
       setStock(nextStock);
       setStockedQuantity(
         nextStock.stockedQuantity === null || nextStock.stockedQuantity === undefined
@@ -163,24 +260,89 @@ export function SingleVariantStockPanel({
               mutation.mutate();
             }}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <Field className="max-w-xs flex-1">
-                <FieldLabel htmlFor={stockedQuantityInputId}>
-                  {t("products.stock.setStockedQuantity")}
-                </FieldLabel>
-                <Input
-                  id={stockedQuantityInputId}
-                  min="0"
-                  onChange={(event) => setStockedQuantity(event.target.value)}
-                  step="1"
-                  type="number"
-                  value={stockedQuantity}
-                />
-                <FieldDescription>{t("products.stock.reservedHelp")}</FieldDescription>
-              </Field>
-              <Button disabled={mutation.isPending} type="submit">
-                {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
-              </Button>
+            <div className="space-y-3">
+              <SegmentedControl
+                active="muted"
+                ariaLabel={t("products.stock.adjustmentTask")}
+                onChange={(task) => {
+                  setAdjustmentTask(task);
+                  setStockedQuantity(task === "set" ? baselineQuantity : "");
+                }}
+                options={[
+                  {
+                    id: "add",
+                    label: (
+                      <StockOperationLabel label={t("products.stock.addStock")} operation="add" />
+                    ),
+                  },
+                  {
+                    id: "remove",
+                    label: (
+                      <StockOperationLabel
+                        label={t("products.stock.removeStock")}
+                        operation="remove"
+                      />
+                    ),
+                  },
+                  {
+                    id: "set",
+                    label: (
+                      <StockOperationLabel label={t("products.stock.setCount")} operation="set" />
+                    ),
+                  },
+                ]}
+                size="sm"
+                value={adjustmentTask}
+              />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <Field className="max-w-xs flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <FieldLabel htmlFor={stockedQuantityInputId}>
+                      {adjustmentTask === "set"
+                        ? t("products.stock.countedQuantity")
+                        : t("products.stock.adjustmentQuantity")}
+                    </FieldLabel>
+                    <HelpTip summary={t("products.stock.adjustmentQuantityHelp")} />
+                  </div>
+                  <StockQuantityInput
+                    id={stockedQuantityInputId}
+                    min="0"
+                    onChange={(event) => setStockedQuantity(event.target.value)}
+                    operation={adjustmentTask}
+                    step="1"
+                    type="number"
+                    value={stockedQuantity}
+                  />
+                </Field>
+                <Button disabled={mutation.isPending} type="submit">
+                  {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+                </Button>
+              </div>
+              {adjustmentTask === "remove" ? (
+                <Field>
+                  <FieldLabel htmlFor={`${stockedQuantityInputId}-note`}>
+                    {t("products.stock.adjustmentNote")}
+                  </FieldLabel>
+                  <Input
+                    id={`${stockedQuantityInputId}-note`}
+                    onChange={(event) => setAdjustmentNote(event.target.value)}
+                    placeholder={t("products.stock.adjustmentNotePlaceholder")}
+                    value={adjustmentNote}
+                  />
+                </Field>
+              ) : null}
+              {stockedQuantity !== "" && Number.isInteger(Number(stockedQuantity)) ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("products.stock.afterPreview", {
+                    count:
+                      adjustmentTask === "add"
+                        ? (stock?.stockedQuantity ?? 0) + Number(stockedQuantity)
+                        : adjustmentTask === "remove"
+                          ? (stock?.stockedQuantity ?? 0) - Number(stockedQuantity)
+                          : Number(stockedQuantity),
+                  })}
+                </p>
+              ) : null}
             </div>
           </form>
         ) : null}
@@ -275,6 +437,7 @@ export function VariantStockPanel({
     });
   }, [stockByVariantId, stockedQuantityByVariantId, variants]);
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(multiStockDirty);
+  const mutationKeys = useRef(new Map<string, string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -370,13 +533,20 @@ export function VariantStockPanel({
         throw new Error(t("products.stock.enterWholeNumber"));
       }
 
+      const mutationIdentity = `${variantId}:${parsedQuantity}`;
+      const idempotencyKey =
+        mutationKeys.current.get(mutationIdentity) ?? createClientId("inventory-stock");
+      mutationKeys.current.set(mutationIdentity, idempotencyKey);
+
       const response = await fetch(getVariantStockAction(productId, variantId, tenantId), {
         body: JSON.stringify({
+          reason: "manual_count",
           stockedQuantity: parsedQuantity,
         }),
         headers: {
           accept: "application/json",
           "content-type": "application/json",
+          "idempotency-key": idempotencyKey,
         },
         method: "POST",
       });
@@ -392,6 +562,9 @@ export function VariantStockPanel({
       return data.stock;
     },
     onSuccess: async (nextStock) => {
+      for (const key of mutationKeys.current.keys()) {
+        if (key.startsWith(`${nextStock.variantId}:`)) mutationKeys.current.delete(key);
+      }
       setStockByVariantId((current) => ({
         ...current,
         [nextStock.variantId]: nextStock,
@@ -432,9 +605,20 @@ export function VariantStockPanel({
             ...current,
             [variant.id]: value,
           })),
+        onAdjustmentSaved: (nextStock) => {
+          setStockByVariantId((current) => ({ ...current, [variant.id]: nextStock }));
+          setStockedQuantityByVariantId((current) => ({
+            ...current,
+            [variant.id]: String(nextStock.stockedQuantity ?? 0),
+          }));
+          void queryClient.invalidateQueries({ queryKey: ["product", productId] });
+          router.refresh();
+        },
         onSubmit: () => mutation.mutate(variant.id),
+        productId,
         stock: stockByVariantId[variant.id],
         stockedQuantity: stockedQuantityByVariantId[variant.id] ?? "",
+        tenantId,
         variant,
       })),
     [
@@ -442,8 +626,12 @@ export function VariantStockPanel({
       filteredVariants,
       isLoading,
       mutation,
+      productId,
+      queryClient,
+      router,
       stockByVariantId,
       stockedQuantityByVariantId,
+      tenantId,
     ],
   );
 
@@ -604,33 +792,180 @@ export function getVariantInventoryColumns(
         const item = row.original;
 
         return (
-          <form
-            className="flex items-center gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              item.onSubmit();
-            }}
-          >
-            <Input
-              aria-label={t("products.stock.stockedAria", {
-                name: item.variant.title ?? item.variant.id,
-              })}
-              className="h-9 w-20 tabular-nums"
-              min="0"
-              onChange={(event) => item.onStockedQuantityChange(event.target.value)}
-              step="1"
-              type="number"
-              value={item.stockedQuantity}
-            />
-            <Button disabled={item.isSaving || item.isLoading} size="sm" type="submit">
-              {item.isSaving ? t("products.stock.saving") : t("products.stock.save")}
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                item.onSubmit();
+              }}
+            >
+              <Input
+                aria-label={t("products.stock.stockedAria", {
+                  name: item.variant.title ?? item.variant.id,
+                })}
+                className="h-9 w-20 tabular-nums"
+                min="0"
+                onChange={(event) => item.onStockedQuantityChange(event.target.value)}
+                step="1"
+                type="number"
+                value={item.stockedQuantity}
+              />
+              <Button disabled={item.isSaving || item.isLoading} size="sm" type="submit">
+                {item.isSaving ? t("products.stock.saving") : t("products.stock.save")}
+              </Button>
+            </form>
+            <VariantStockDeltaDialog row={item} />
+          </div>
         );
       },
     },
   ];
   return canUpdate ? columns : columns.filter((column) => column.id !== "stocked");
+}
+
+function VariantStockDeltaDialog({ row }: { row: VariantInventoryRow }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [task, setTask] = useState<"add" | "remove">("add");
+  const [quantity, setQuantity] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const replay = useRef<{ fingerprint: string; key: string } | null>(null);
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const amount = Number(quantity);
+      const current = row.stock?.stockedQuantity ?? 0;
+      if (!Number.isInteger(amount) || amount <= 0) {
+        throw new Error(t("products.stock.enterWholeNumber"));
+      }
+      if (task === "remove" && !note.trim()) {
+        throw new Error(t("products.stock.noteRequired"));
+      }
+      const target = task === "add" ? current + amount : current - amount;
+      if (target < 0) throw new Error(t("products.stock.removeTooMany"));
+      const fingerprint = `${task}:${target}:${note.trim()}`;
+      if (replay.current?.fingerprint !== fingerprint) {
+        replay.current = { fingerprint, key: createClientId("inventory-stock") };
+      }
+      const response = await fetch(
+        getVariantStockAction(row.productId, row.variant.id, row.tenantId),
+        {
+          body: JSON.stringify({
+            note: note.trim() || undefined,
+            reason: task === "add" ? "stock_received" : "correction_remove",
+            stockedQuantity: target,
+          }),
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+            "idempotency-key": replay.current.key,
+          },
+          method: "POST",
+        },
+      );
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        stock?: MerchantProductStock;
+      };
+      if (!response.ok || !data.stock) throw new Error(getStockErrorMessage(data.error, t));
+      return data.stock;
+    },
+    onError: (cause) => {
+      setError(cause instanceof Error ? cause.message : t("products.stock.couldNotUpdate"));
+    },
+    onSuccess: (stock) => {
+      replay.current = null;
+      row.onAdjustmentSaved(stock);
+      toast.success(t("products.stock.toastVariantUpdated"));
+      setOpen(false);
+      setQuantity("");
+      setNote("");
+      setError(null);
+    },
+  });
+
+  return (
+    <Dialog onOpenChange={(next) => !mutation.isPending && setOpen(next)} open={open}>
+      <DialogTrigger asChild>
+        <Button disabled={row.isLoading} size="sm" type="button" variant="outline">
+          {t("products.stock.adjust")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="gap-0 overflow-visible p-0 sm:max-w-md">
+        <DialogHeader className="gap-1.5 border-b px-4 py-4 pr-12 text-left sm:px-5">
+          <DialogTitle>
+            {t("products.stock.adjustVariant", { name: row.variant.title ?? row.variant.id })}
+          </DialogTitle>
+          <DialogDescription>{t("products.stock.adjustVariantDescription")}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 px-4 py-5 sm:px-5">
+          <SegmentedControl
+            active="muted"
+            ariaLabel={t("products.stock.adjustmentTask")}
+            onChange={(value) => {
+              setTask(value);
+              setError(null);
+            }}
+            options={[
+              {
+                id: "add",
+                label: <StockOperationLabel label={t("products.stock.addStock")} operation="add" />,
+              },
+              {
+                id: "remove",
+                label: (
+                  <StockOperationLabel label={t("products.stock.removeStock")} operation="remove" />
+                ),
+              },
+            ]}
+            size="sm"
+            value={task}
+          />
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>{t("products.stock.adjustmentQuantity")}</FieldLabel>
+              <HelpTip summary={t("products.stock.adjustmentQuantityHelp")} />
+            </div>
+            <StockQuantityInput
+              min="1"
+              onChange={(event) => setQuantity(event.target.value)}
+              operation={task}
+              step="1"
+              type="number"
+              value={quantity}
+            />
+          </Field>
+          {task === "remove" ? (
+            <Field>
+              <FieldLabel>{t("products.stock.adjustmentNote")}</FieldLabel>
+              <Input
+                onChange={(event) => setNote(event.target.value)}
+                placeholder={t("products.stock.adjustmentNotePlaceholder")}
+                value={note}
+              />
+            </Field>
+          ) : null}
+          {quantity !== "" && Number.isInteger(Number(quantity)) ? (
+            <p className="rounded-lg bg-muted/35 px-3 py-2 text-sm font-medium tabular-nums text-foreground ring-1 ring-border/60">
+              {t("products.stock.afterPreview", {
+                count:
+                  task === "add"
+                    ? (row.stock?.stockedQuantity ?? 0) + Number(quantity)
+                    : (row.stock?.stockedQuantity ?? 0) - Number(quantity),
+              })}
+            </p>
+          ) : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
+        <DialogFooter className="mx-0 mb-0 rounded-b-xl border-t bg-muted/50 p-4">
+          <Button disabled={mutation.isPending || !quantity} onClick={() => mutation.mutate()}>
+            {mutation.isPending ? t("products.stock.saving") : t("products.stock.saveStock")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function StockMetric({

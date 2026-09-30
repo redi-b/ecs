@@ -16,9 +16,9 @@ import { EcsArtwork } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import { ListResultsStatus } from "@/components/app/list-results-status";
 import { ListToolbarSearch } from "@/components/app/list-toolbar";
+import { useCatalogLabelLocale } from "@/components/providers/catalog-label-locale-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useCatalogLabelLocale } from "@/components/providers/catalog-label-locale-provider";
 import { BulkInventoryDialog } from "@/features/products/bulk-inventory-dialog";
 import { ProductMediaEditButton } from "@/features/products/product-edit-dialog";
 import {
@@ -38,6 +38,7 @@ type ProductsTableProps = {
   initialCategoryId?: string | undefined;
   initialCollectionId?: string | undefined;
   initialMedia?: ProductMediaFilter | undefined;
+  initialInventory?: "all" | "low_stock" | "out_of_stock" | undefined;
   initialQuery?: string | undefined;
   initialStatus?: ProductStatusFilter | undefined;
   pageSize: number;
@@ -84,6 +85,7 @@ export function ProductsTable({
   initialCategoryId = "all",
   initialCollectionId = "all",
   initialMedia = "all",
+  initialInventory = "all",
   initialQuery = "",
   initialStatus = "all",
   pageSize,
@@ -108,7 +110,6 @@ export function ProductsTable({
   const [pending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [editingMediaProduct, setEditingMediaProduct] = useState<MerchantProduct | null>(null);
-  // Stock remains page-local until its backend availability query is implemented.
   const media = initialMedia;
   void pageSize;
 
@@ -284,6 +285,7 @@ export function ProductsTable({
         collectionId: string;
         categoryId: string;
         media: ProductMediaFilter;
+        inventory: "all" | "low_stock" | "out_of_stock";
       }>,
     ) => {
       const url = new URL(window.location.href);
@@ -299,6 +301,7 @@ export function ProductsTable({
       setUrlFilter(url, "status", status, "all");
       setUrlFilter(url, "collectionId", collectionId, "all");
       setUrlFilter(url, "categoryId", categoryId, "all");
+      setUrlFilter(url, "inventory", next.inventory ?? initialInventory, "all");
       url.searchParams.delete("stock");
       setUrlFilter(url, "media", next.media ?? media, "all");
       // Retired page-local variant-count filter: do not carry old bookmarks forward.
@@ -309,7 +312,15 @@ export function ProductsTable({
         router.push(`${url.pathname}?${url.searchParams.toString()}`);
       });
     },
-    [initialCategoryId, initialCollectionId, initialQuery, initialStatus, media, router],
+    [
+      initialCategoryId,
+      initialCollectionId,
+      initialInventory,
+      initialQuery,
+      initialStatus,
+      media,
+      router,
+    ],
   );
 
   // All exposed filters are applied by the server before pagination.
@@ -329,12 +340,26 @@ export function ProductsTable({
   const hasClientPageFilter = false;
   const hasServerFilter =
     media !== "all" ||
+    initialInventory !== "all" ||
     Boolean(initialQuery.trim()) ||
     initialStatus !== "all" ||
     initialCollectionId !== "all" ||
     initialCategoryId !== "all";
 
   const filters: DataTableFilterDefinition[] = [
+    {
+      defaultValue: "all",
+      id: "inventory",
+      label: t("products.filter.inventory.label"),
+      onChange: (value) =>
+        pushServerFilters({ inventory: value as "all" | "low_stock" | "out_of_stock" }),
+      options: [
+        { label: t("products.filter.inventory.all"), value: "all" },
+        { label: t("products.filter.inventory.lowStock"), value: "low_stock" },
+        { label: t("products.filter.inventory.outOfStock"), value: "out_of_stock" },
+      ],
+      value: initialInventory,
+    },
     {
       defaultValue: "all",
       id: "status",
@@ -397,6 +422,7 @@ export function ProductsTable({
       "collectionId",
       "categoryId",
       "stock",
+      "inventory",
       "media",
       "variantCount",
       "page",

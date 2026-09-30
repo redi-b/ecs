@@ -37,6 +37,7 @@ const product: MerchantProduct = {
       id: "variant_s",
       title: "S",
       sku: "TEE-S",
+      unitCostAmount: 600,
       optionValues: [{ optionTitle: "Size", value: "S" }],
       prices: [{ amount: 1000, currencyCode: "etb" }],
       stock: {
@@ -108,6 +109,21 @@ describe("product variant edit state", () => {
     );
   });
 
+  it("keeps unit cost optional and applies the simple product cost to every variant", () => {
+    const values = getProductDefaultValues(product);
+    assert.equal(values.unitCostAmount, "600");
+    assert.deepEqual(
+      getProductVariantsPayload(values).map((variant) => variant.unitCostAmount),
+      [600, 600],
+    );
+
+    values.unitCostAmount = "";
+    assert.deepEqual(
+      getProductVariantsPayload(values).map((variant) => variant.unitCostAmount),
+      [null, null],
+    );
+  });
+
   it("preserves variant identity when an option label changes", () => {
     const values = getProductDefaultValues(product);
     const option = values.options[0];
@@ -123,7 +139,10 @@ describe("product variant edit state", () => {
     assert.deepEqual(medium?.optionValues, { Fit: "Medium" });
     assert.deepEqual(
       variants.map((variant) => [variant.id, variant.priceAmount]),
-      [["variant_s", 1000], ["variant_m", 1200]],
+      [
+        ["variant_s", 1000],
+        ["variant_m", 1200],
+      ],
     );
   });
 
@@ -262,15 +281,9 @@ describe("product variant edit state", () => {
     values.initialStock = "10";
     values.options = [];
 
-    assert.strictEqual(
-      getFirstInvalidFieldForStep("variants", values, t as never),
-      "options",
-    );
+    assert.strictEqual(getFirstInvalidFieldForStep("variants", values, t as never), "options");
 
     values.options = [{ key: "opt1", title: "Size", values: [{ key: "val1", label: "S" }] }];
-    assert.strictEqual(
-      getFirstInvalidFieldForStep("variants", values, t as never),
-      null,
-    );
+    assert.strictEqual(getFirstInvalidFieldForStep("variants", values, t as never), null);
   });
 });

@@ -9,12 +9,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ManualOrderCreateDialog } from "@/features/orders/manual-order-create-dialog";
 import { parseOrderListFilters } from "@/features/orders/order-domain";
 import { OrdersTable } from "@/features/orders/orders-table";
+import { OrdersViewSwitcher } from "@/features/orders/orders-view-switcher";
+import { QuotationsTable } from "@/features/orders/quotations-table";
+import { SaleDraftsTable } from "@/features/orders/sale-drafts-table";
 import { getTranslations } from "@/i18n/server";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { listDateRangeToTimestamps, parseListDateRange } from "@/lib/list-date-range";
 import { getListErrorState } from "@/lib/list-error-state";
 import { listExportPath } from "@/lib/list-export-path";
-import { getMerchantOrders } from "@/lib/merchant-orders";
+import {
+  getMerchantOrders,
+  listMerchantQuotations,
+  listMerchantSaleDrafts,
+} from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 import { parseListSearchParams } from "@/lib/url-state";
 
@@ -34,6 +41,90 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
   const t = await getTranslations();
   const requestHeaders = await headers();
   const offset = (listParams.page - 1) * listParams.pageSize;
+  const viewValue = resolvedSearchParams.view;
+  const requestedView = Array.isArray(viewValue) ? viewValue[0] : viewValue;
+  const view = requestedView === "drafts" || requestedView === "quotes" ? requestedView : "orders";
+  const viewSwitcher = !tenantId ? <OrdersViewSwitcher value={view} /> : null;
+
+  if (view === "drafts" && !tenantId) {
+    const drafts = await listMerchantSaleDrafts({
+      cookieHeader: requestHeaders.get("cookie"),
+      limit: listParams.pageSize,
+      offset,
+      platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+      requestHost: requestHeaders.get("host"),
+    });
+    return (
+      <PageShell
+        actions={
+          <>
+            <RefreshButton />
+            <PermissionGate permission="orders.create">
+              <ManualOrderCreateDialog />
+            </PermissionGate>
+          </>
+        }
+        title={t("orders.views.drafts")}
+      >
+        {viewSwitcher}
+        {drafts.ok ? (
+          <>
+            <ListSummary count={drafts.count} page={listParams.page} pageSize={drafts.limit} />
+            <SaleDraftsTable drafts={drafts.drafts} />
+            <PaginationControls
+              basePath={dashboardRoutes.orders}
+              count={drafts.count}
+              page={listParams.page}
+              pageSize={drafts.limit}
+              searchParams={resolvedSearchParams}
+            />
+          </>
+        ) : (
+          <Alert variant="destructive">
+            <AlertTitle>{t("orders.drafts.loadFailedTitle")}</AlertTitle>
+            <AlertDescription>{t("orders.drafts.loadFailedMessage")}</AlertDescription>
+          </Alert>
+        )}
+      </PageShell>
+    );
+  }
+
+  if (view === "quotes" && !tenantId) {
+    const quotations = await listMerchantQuotations({
+      cookieHeader: requestHeaders.get("cookie"),
+      limit: listParams.pageSize,
+      offset,
+      platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+      requestHost: requestHeaders.get("host"),
+    });
+    return (
+      <PageShell actions={<RefreshButton />} title={t("orders.views.quotes")}>
+        {viewSwitcher}
+        {quotations.ok ? (
+          <>
+            <ListSummary
+              count={quotations.count}
+              page={listParams.page}
+              pageSize={quotations.limit}
+            />
+            <QuotationsTable quotations={quotations.quotations} />
+            <PaginationControls
+              basePath={dashboardRoutes.orders}
+              count={quotations.count}
+              page={listParams.page}
+              pageSize={quotations.limit}
+              searchParams={resolvedSearchParams}
+            />
+          </>
+        ) : (
+          <Alert variant="destructive">
+            <AlertTitle>{t("orders.quotes.loadFailedTitle")}</AlertTitle>
+            <AlertDescription>{t("orders.quotes.loadFailedMessage")}</AlertDescription>
+          </Alert>
+        )}
+      </PageShell>
+    );
+  }
 
   const dateRange = parseListDateRange(filters.createdFrom, filters.createdTo);
   const result = await getMerchantOrders({
@@ -75,6 +166,7 @@ export default async function MerchantOrdersPage({ searchParams }: MerchantOrder
       }
       title={t("orders.title")}
     >
+      {viewSwitcher}
       {result.ok ? (
         <>
           <ListSummary

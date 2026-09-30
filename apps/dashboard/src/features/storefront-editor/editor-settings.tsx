@@ -8,6 +8,7 @@ import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ColorPickerField } from "@/components/ui/color-picker-field";
 import {
   Command,
   CommandEmpty,
@@ -35,8 +36,8 @@ import { isShopManagedStorefrontPath } from "@/lib/storefront-managed-fields";
 import { cn } from "@/lib/utils";
 import { StorefrontLinksEditor } from "./editor-links";
 import {
-  StorefrontCollectionPicker,
   StorefrontCategoriesPicker,
+  StorefrontCollectionPicker,
   StorefrontCollectionsPicker,
   StorefrontProductsPicker,
 } from "./editor-merchandising";
@@ -46,7 +47,7 @@ import {
   getStorefrontPageProps,
   type StorefrontPageProps,
 } from "./editor-state";
-import { ColorPickerField, ThemeBrandSection } from "./editor-theme";
+import { ThemeBrandSection } from "./editor-theme";
 import { updateStorefrontProp } from "./editor-utils";
 
 export {
@@ -146,7 +147,7 @@ export function StorefrontSettingsPanel({
           <PopoverTrigger asChild>
             <Button
               aria-expanded={sectionNavigatorOpen}
-              className="h-9 min-w-0 flex-1 justify-between px-3 font-normal"
+              className="h-8 min-w-0 flex-1 justify-between px-3 font-normal"
               type="button"
               variant="outline"
             >

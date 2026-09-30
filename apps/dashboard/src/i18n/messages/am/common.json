@@ -44,6 +44,17 @@
   "noMatchingProducts": "ምንም የሚዛመድ ምርት አልተገኘም።",
   "toggleTheme": "ገጽታ ቀይር",
   "toggleSidebar": "ማውጫውን ክፈት/ዝጋ",
+  "storefrontDock": {
+    "title": "የመደብር ገጽ",
+    "open": "ክፈት",
+    "copy": "ሊንኩን ኮፒ አድርግ",
+    "copied": "ኮፒ ተደርጓል",
+    "copyFailed": "የመደብሩን ሊንክ ኮፒ ማድረግ አልተቻለም።",
+    "published": "ታትሟል",
+    "notPublished": "አልታተመም",
+    "publishedDescription": "ደንበኞች ይህን የመደብር ገጽ መጎብኘት ይችላሉ።",
+    "notPublishedDescription": "ይህን ሊንክ ከማጋራትዎ በፊት የመደብር ገጹን ያትሙ።"
+  },
   "themeToLight": "ወደ ብሩህ ገጽታ ቀይር",
   "themeToDark": "ወደ ጨለማ ገጽታ ቀይር",
   "clearSelection": "ምርጫን አጽዳ",

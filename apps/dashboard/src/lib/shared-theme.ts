@@ -4,6 +4,20 @@ export const SHARED_THEME_COOKIE = "ecs-theme";
 
 export type SharedTheme = "dark" | "light" | "system";
 
+export const SHARED_THEME_BACKGROUND = {
+  dark: "oklch(0.185 0.003 255)",
+  light: "oklch(0.987 0.008 248)",
+} as const;
+
+export function getSharedThemePresentation(theme: SharedTheme, prefersDark: boolean) {
+  const dark = theme === "dark" || (theme === "system" && prefersDark);
+  return {
+    backgroundColor: dark ? SHARED_THEME_BACKGROUND.dark : SHARED_THEME_BACKGROUND.light,
+    colorScheme: dark ? ("dark" as const) : ("light" as const),
+    dark,
+  };
+}
+
 export function isSharedTheme(value: unknown): value is SharedTheme {
   return value === "dark" || value === "light" || value === "system";
 }
@@ -102,5 +116,5 @@ export function persistSharedTheme(theme: SharedTheme) {
  * on first hit of a new subdomain when localStorage is empty).
  */
 export function getThemeBootstrapScript(): string {
-  return `(function(){var t="system";try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/g);if(m&&m.length)t=decodeURIComponent(m[m.length-1].split("=")[1]||"system");else try{t=localStorage.getItem("ecs-theme-ls")||"system";}catch(e){}if(t!=="dark"&&t!=="light"&&t!=="system")t="system";}catch(e){}var d=t==="dark";if(t==="system"){d=true;try{if(typeof window.matchMedia==="function")d=window.matchMedia("(prefers-color-scheme: dark)").matches;}catch(e){}}var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";r.style.backgroundColor=d?"oklch(0.185 0.003 255)":"oklch(0.987 0.008 248)";})();`;
+  return `(function(){var t="system";try{var m=document.cookie.match(/(?:^|; )${SHARED_THEME_COOKIE}=([^;]*)/g);if(m&&m.length)t=decodeURIComponent(m[m.length-1].split("=")[1]||"system");else try{t=localStorage.getItem("ecs-theme-ls")||"system";}catch(e){}if(t!=="dark"&&t!=="light"&&t!=="system")t="system";}catch(e){}var d=t==="dark";if(t==="system"){d=true;try{if(typeof window.matchMedia==="function")d=window.matchMedia("(prefers-color-scheme: dark)").matches;}catch(e){}}var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";r.style.backgroundColor=d?"${SHARED_THEME_BACKGROUND.dark}":"${SHARED_THEME_BACKGROUND.light}";})();`;
 }

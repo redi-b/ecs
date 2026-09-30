@@ -19,6 +19,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -554,12 +556,21 @@ export function ProductOptionsEditButton({ action, product }: ProductEditSheetBa
                 </div>
               </div>
               <DialogFooter className="m-0 rounded-none px-4 py-3 sm:px-5">
-                <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
-                  {t("common.cancel")}
-                </Button>
-                <Button disabled={isSaving} type="submit">
-                  {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
-                </Button>
+                <DialogFooterLeading>
+                  <Button
+                    disabled={isSaving}
+                    onClick={requestClose}
+                    type="button"
+                    variant="outline"
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                </DialogFooterLeading>
+                <DialogFooterActions>
+                  <Button disabled={isSaving} type="submit">
+                    {isSaving ? t("products.edit.saving") : t("products.edit.saveChanges")}
+                  </Button>
+                </DialogFooterActions>
               </DialogFooter>
             </form>
           </div>

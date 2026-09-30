@@ -15,9 +15,12 @@ export async function copyTextToClipboard(value: string) {
     }
   }
 
+  const previouslyFocused = document.activeElement;
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "true");
+  textarea.setAttribute("data-clipboard-fallback", "true");
+  textarea.setAttribute("aria-hidden", "true");
   textarea.style.position = "fixed";
   textarea.style.top = "-9999px";
   document.body.appendChild(textarea);
@@ -27,5 +30,16 @@ export async function copyTextToClipboard(value: string) {
     return document.execCommand("copy");
   } finally {
     document.body.removeChild(textarea);
+    if (typeof HTMLElement !== "undefined" && previouslyFocused instanceof HTMLElement) {
+      previouslyFocused.focus({ preventScroll: true });
+    }
   }
+}
+
+export function isClipboardFallbackTarget(target: EventTarget | null) {
+  return (
+    typeof Element !== "undefined" &&
+    target instanceof Element &&
+    target.hasAttribute("data-clipboard-fallback")
+  );
 }

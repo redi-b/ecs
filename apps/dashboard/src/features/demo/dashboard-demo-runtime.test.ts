@@ -19,7 +19,10 @@ describe("dashboard demo runtime boundaries", () => {
     const source = await readFile(new URL("dashboard-demo-shell.tsx", import.meta.url), "utf8");
     assert.match(source, /<TooltipProvider>/);
     assert.match(source, /<SidebarProvider>/);
-    assert.match(source, /<AppSidebar access=\{dashboardDemoFixture\} demoMode \/>/);
+    assert.match(
+      source,
+      /<AppSidebar access=\{dashboardDemoFixture\} demoMode storefrontUrl="\/demo\/storefront" \/>/,
+    );
     assert.match(source, /<AppHeader demoMode \/>/);
     assert.match(source, /<DemoPreviewBanner \/>/);
     assert.doesNotMatch(source, /<Sidebar collapsible=/);

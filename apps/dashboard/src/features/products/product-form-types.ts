@@ -38,6 +38,7 @@ export type ProductFormValues = {
   imageUrls: string;
   status: "draft" | "published";
   priceAmount: string;
+  unitCostAmount: string;
   currencyCode: "etb";
   hasVariants: boolean;
   initialStock: string;
@@ -127,6 +128,7 @@ export function createProductPayloadSchema(t: Translate) {
           priceAmount: z.number().int().nonnegative(t("products.validation.priceNonNegative")),
           currencyCode: z.literal("etb"),
           stockedQuantity: z.number().int().nonnegative(t("products.validation.stockNonNegative")),
+          unitCostAmount: z.number().int().nonnegative().nullable().optional(),
         }),
       )
       .optional(),

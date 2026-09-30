@@ -1,16 +1,68 @@
+import {
+  type MerchantInventoryMovement,
+  type MerchantInventoryMovementReason,
+  merchantInventoryMovementsResponseSchema,
+  platformErrorSchema,
+} from "@ecs/contracts";
 import { fetchProductStockResource, parseProductStockResponse } from "./shared";
 import type { MerchantProductStockResult } from "./types";
 import {
   getBulkInventoryUrl,
   getProductHeaders,
+  getProductInventoryMovementsUrl,
   getProductStockUrl,
   getProductVariantStockUrl,
 } from "./urls";
+
+export type MerchantInventoryMovementsResult =
+  | {
+      ok: true;
+      count: number;
+      limit: number;
+      movements: MerchantInventoryMovement[];
+      offset: number;
+    }
+  | { ok: false; message: string; status: number };
+
+export async function listMerchantInventoryMovements(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  platformApiBaseUrl: string;
+  productId: string;
+  requestHost?: string | null | undefined;
+  variantId?: string | undefined;
+}): Promise<MerchantInventoryMovementsResult> {
+  const response = await (options.fetcher ?? fetch)(getProductInventoryMovementsUrl(options), {
+    cache: "no-store",
+    headers: getProductHeaders({
+      cookieHeader: options.cookieHeader,
+      requestHost: options.requestHost,
+    }),
+  }).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "inventory_movements_request_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantInventoryMovementsResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, ...parsed.data }
+    : { ok: false, message: "invalid_inventory_movements_response", status: 502 };
+}
 
 export type BulkInventoryUpdate = {
   productId: string;
   variantId: string;
   stockedQuantity: number;
+  reason?: MerchantInventoryMovementReason | undefined;
+  note?: string | undefined;
 };
 
 export type BulkInventoryActionResult =
@@ -26,6 +78,7 @@ export async function updateMerchantInventoryBatch(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   requestHost?: string | null | undefined;
   updates: BulkInventoryUpdate[];
 }): Promise<BulkInventoryActionResult> {
@@ -34,11 +87,14 @@ export async function updateMerchantInventoryBatch(options: {
     {
       body: JSON.stringify({ updates: options.updates }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -83,9 +139,12 @@ export async function updateMerchantProductStock(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   productId: string;
   requestHost?: string | null | undefined;
   stockedQuantity: number;
+  reason?: MerchantInventoryMovementReason | undefined;
+  note?: string | undefined;
   tenantId?: string | null | undefined;
 }): Promise<MerchantProductStockResult> {
   const tenantId = options.tenantId?.trim();
@@ -98,14 +157,19 @@ export async function updateMerchantProductStock(options: {
     }),
     {
       body: JSON.stringify({
+        note: options.note,
+        reason: options.reason ?? "manual_count",
         stockedQuantity: options.stockedQuantity,
       }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: tenantId ? undefined : options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: tenantId ? undefined : options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -163,9 +227,12 @@ export async function updateMerchantProductVariantStock(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   platformApiBaseUrl: string;
+  idempotencyKey: string;
   productId: string;
   requestHost?: string | null | undefined;
   stockedQuantity: number;
+  reason?: MerchantInventoryMovementReason | undefined;
+  note?: string | undefined;
   tenantId?: string | null | undefined;
   variantId: string;
 }): Promise<MerchantProductStockResult> {
@@ -180,14 +247,19 @@ export async function updateMerchantProductVariantStock(options: {
     }),
     {
       body: JSON.stringify({
+        note: options.note,
+        reason: options.reason ?? "manual_count",
         stockedQuantity: options.stockedQuantity,
       }),
       cache: "no-store",
-      headers: getProductHeaders({
-        cookieHeader: options.cookieHeader,
-        contentType: true,
-        requestHost: tenantId ? undefined : options.requestHost,
-      }),
+      headers: withIdempotencyKey(
+        getProductHeaders({
+          cookieHeader: options.cookieHeader,
+          contentType: true,
+          requestHost: tenantId ? undefined : options.requestHost,
+        }),
+        options.idempotencyKey,
+      ),
       method: "POST",
     },
   ).catch(() => null);
@@ -201,4 +273,9 @@ export async function updateMerchantProductVariantStock(options: {
   }
 
   return parseProductStockResponse(response);
+}
+
+function withIdempotencyKey(headers: Headers, idempotencyKey: string) {
+  headers.set("idempotency-key", idempotencyKey);
+  return headers;
 }

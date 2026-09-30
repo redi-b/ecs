@@ -2,16 +2,15 @@
 
 import type { StorefrontTemplateCatalogItem } from "@ecs/contracts";
 import { useMemo } from "react";
-
-import { AppIcons } from "@/components/app/icons";
 import { HelpTip } from "@/components/app/help-tip";
+import { AppIcons } from "@/components/app/icons";
 import { MultiSearchableCombobox } from "@/components/app/searchable-combobox";
-import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import {
   BUSINESS_CATEGORY_OPTIONS,
   getTemplateTags,
   type HandleState,
 } from "@/components/onboarding/onboarding-helpers";
+import { StorefrontTemplatePreview } from "@/components/storefront/storefront-template-preview";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/provider";
@@ -44,7 +43,6 @@ export function CategoryCombobox({
 
   return (
     <MultiSearchableCombobox
-      className="h-11"
       emptyLabel={t("onboarding.categoryEmpty")}
       id={id}
       onChange={onChange}
@@ -58,7 +56,13 @@ export function CategoryCombobox({
   );
 }
 
-export function HandleStatus({ message, status }: { message?: string; status: HandleState["status"] }) {
+export function HandleStatus({
+  message,
+  status,
+}: {
+  message?: string;
+  status: HandleState["status"];
+}) {
   const { t } = useI18n();
   if (status === "checking") {
     return (

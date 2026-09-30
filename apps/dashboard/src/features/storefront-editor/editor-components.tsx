@@ -8,6 +8,8 @@
  * - editor-preview: iframe preview + inline editing controls
  * - editor-state / editor-utils / editor-config: pure state & helpers
  */
+
+export { ColorPickerField } from "@/components/ui/color-picker-field";
 export {
   PublicationStatusBadge,
   ShopLiveStatusBadge,
@@ -20,7 +22,6 @@ export {
   StorefrontCollectionPicker,
   StorefrontProductsPicker,
 } from "./editor-merchandising";
-
 export {
   EditableHint,
   EditableImage,
@@ -34,8 +35,7 @@ export {
   StorefrontSettingControl,
   StorefrontSettingsPanel,
 } from "./editor-settings";
-
-export { ColorPickerField, ThemeBrandSection } from "./editor-theme";
+export { ThemeBrandSection } from "./editor-theme";
 export {
   getErrorMessage,
   isHexColor,

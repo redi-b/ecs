@@ -1,5 +1,18 @@
-import type { MerchantOrder, MerchantOrders } from "@ecs/contracts";
-import { merchantOrderSchema, merchantOrdersSchema, platformErrorSchema } from "@ecs/contracts";
+import type {
+  MerchantOrder,
+  MerchantOrderReturn,
+  MerchantOrders,
+  MerchantSalesDocument,
+  MerchantSalesDocumentKind,
+} from "@ecs/contracts";
+import {
+  merchantOrderReturnSchema,
+  merchantOrderSchema,
+  merchantOrdersSchema,
+  merchantSalesDocumentResponseSchema,
+  merchantSalesDocumentsResponseSchema,
+  platformErrorSchema,
+} from "@ecs/contracts";
 import { createPlatformHeaders, normalizeBaseUrl } from "@/lib/platform-api/client";
 
 export type MerchantOrderAction =
@@ -52,6 +65,18 @@ export type MerchantOrderResult =
     };
 
 export type MerchantOrderActionResult = MerchantOrderResult;
+
+export type MerchantReturnResult =
+  | { ok: true; orderReturn: MerchantOrderReturn }
+  | { ok: false; message: string; status: number };
+
+export type MerchantSalesDocumentsResult =
+  | { ok: true; documents: MerchantSalesDocument[] }
+  | { ok: false; message: string; status: number };
+
+export type MerchantSalesDocumentResult =
+  | { ok: true; document: MerchantSalesDocument }
+  | { ok: false; message: string; status: number };
 
 export async function getMerchantOrders(
   options: {
@@ -160,6 +185,122 @@ export async function getMerchantOrder(options: {
   };
 }
 
+export async function listMerchantSalesDocuments(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentsResult> {
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/orders/${encodeURIComponent(options.orderId)}/documents`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      cache: "no-store",
+      headers: getOrderHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: options.requestHost,
+      }),
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_documents_request_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentsResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, documents: parsed.data.documents }
+    : { ok: false, message: "invalid_sales_documents_response", status: 502 };
+}
+
+export async function getMerchantSalesDocument(options: {
+  cookieHeader?: string | null | undefined;
+  documentId: string;
+  fetcher?: typeof fetch;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentResult> {
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/sales-documents/${encodeURIComponent(options.documentId)}`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      cache: "no-store",
+      headers: getOrderHeaders({
+        cookieHeader: options.cookieHeader,
+        requestHost: options.requestHost,
+      }),
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_document_request_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, document: parsed.data.document }
+    : { ok: false, message: "invalid_sales_document_response", status: 502 };
+}
+
+export async function issueMerchantSalesDocument(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  idempotencyKey: string;
+  kind: MerchantSalesDocumentKind;
+  language: "en" | "am";
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+}): Promise<MerchantSalesDocumentResult> {
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.requestHost,
+  });
+  headers.set("idempotency-key", options.idempotencyKey);
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `/platform/merchant/orders/${encodeURIComponent(options.orderId)}/documents`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      body: JSON.stringify({ kind: options.kind, language: options.language }),
+      cache: "no-store",
+      headers,
+      method: "POST",
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "sales_document_issue_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantSalesDocumentResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, document: parsed.data.document }
+    : { ok: false, message: "invalid_sales_document_response", status: 502 };
+}
+
 export type OrderSettlementPayload = {
   settlementMethod: string;
   bankCode?: string | undefined;
@@ -190,6 +331,7 @@ export async function mutateMerchantOrder(options: {
   cookieHeader?: string | null | undefined;
   fetcher?: typeof fetch;
   fulfillmentId?: string | null | undefined;
+  idempotencyKey?: string | null | undefined;
   orderId: string;
   platformApiBaseUrl: string;
   requestHost?: string | null | undefined;
@@ -209,14 +351,16 @@ export async function mutateMerchantOrder(options: {
     Object.assign(body, options.refund);
   }
 
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+  });
+  if (options.idempotencyKey?.trim()) headers.set("idempotency-key", options.idempotencyKey.trim());
   const response = await fetcher(getOrderActionUrl(options), {
     body: JSON.stringify(body),
     cache: "no-store",
-    headers: getOrderHeaders({
-      contentType: "application/json",
-      cookieHeader: options.cookieHeader,
-      requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
-    }),
+    headers,
     method: "POST",
   }).catch(() => null);
 
@@ -254,6 +398,108 @@ export async function mutateMerchantOrder(options: {
     ok: true,
     order: parsed.data,
   };
+}
+
+export async function createMerchantReturn(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  idempotencyKey: string;
+  items: Array<{ lineItemId: string; quantity: number; note?: string | undefined }>;
+  note?: string | undefined;
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantReturnResult> {
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+  });
+  headers.set("idempotency-key", options.idempotencyKey);
+  const tenantId = options.tenantId?.trim();
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/orders/${encodeURIComponent(options.orderId)}`
+    : `/platform/merchant/orders/${encodeURIComponent(options.orderId)}`;
+  const response = await (options.fetcher ?? fetch)(
+    new URL(`${basePath}/returns`, normalizeBaseUrl(options.platformApiBaseUrl)),
+    {
+      body: JSON.stringify({
+        items: options.items,
+        ...(options.note ? { note: options.note } : {}),
+      }),
+      cache: "no-store",
+      headers,
+      method: "POST",
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "order_return_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantOrderReturnSchema.safeParse(data?.return);
+  return parsed.success
+    ? { ok: true, orderReturn: parsed.data }
+    : { ok: false, message: "invalid_order_return_response", status: 502 };
+}
+
+export async function receiveMerchantReturn(options: {
+  cookieHeader?: string | null | undefined;
+  fetcher?: typeof fetch;
+  idempotencyKey: string;
+  items: Array<{
+    damagedQuantity: number;
+    lineItemId: string;
+    sellableQuantity: number;
+  }>;
+  orderId: string;
+  platformApiBaseUrl: string;
+  requestHost?: string | null | undefined;
+  returnId: string;
+  tenantId?: string | null | undefined;
+}): Promise<MerchantReturnResult> {
+  const headers = getOrderHeaders({
+    contentType: "application/json",
+    cookieHeader: options.cookieHeader,
+    requestHost: options.tenantId?.trim() ? undefined : options.requestHost,
+  });
+  headers.set("idempotency-key", options.idempotencyKey);
+  const tenantId = options.tenantId?.trim();
+  const basePath = tenantId
+    ? `/platform/tenants/${encodeURIComponent(tenantId)}/orders/${encodeURIComponent(options.orderId)}`
+    : `/platform/merchant/orders/${encodeURIComponent(options.orderId)}`;
+  const response = await (options.fetcher ?? fetch)(
+    new URL(
+      `${basePath}/returns/${encodeURIComponent(options.returnId)}/receive`,
+      normalizeBaseUrl(options.platformApiBaseUrl),
+    ),
+    {
+      body: JSON.stringify({ items: options.items }),
+      cache: "no-store",
+      headers,
+      method: "POST",
+    },
+  ).catch(() => null);
+  if (!response) return { ok: false, message: "platform_request_failed", status: 503 };
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    const error = platformErrorSchema.safeParse(data);
+    return {
+      ok: false,
+      message: error.success ? error.data.error : "order_return_receive_failed",
+      status: response.status,
+    };
+  }
+  const parsed = merchantOrderReturnSchema.safeParse(data?.return);
+  return parsed.success
+    ? { ok: true, orderReturn: parsed.data }
+    : { ok: false, message: "invalid_order_return_response", status: 502 };
 }
 
 function getOrdersUrl(

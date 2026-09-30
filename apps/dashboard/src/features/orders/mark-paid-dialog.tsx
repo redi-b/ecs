@@ -10,6 +10,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -299,19 +301,23 @@ export function MarkPaidDialog({
 
           {/* p-0 content: cancel DialogFooter negative margins (same as create dialogs). */}
           <DialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t bg-muted/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => requestClose()}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button type="button" disabled={pending} onClick={submit}>
-              {pending
-                ? t("orders.actions.working")
-                : (confirmLabel ?? t("orders.settlement.confirmPaid"))}
-            </Button>
+            <DialogFooterLeading>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => requestClose()}
+              >
+                {t("common.cancel")}
+              </Button>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button type="button" disabled={pending} onClick={submit}>
+                {pending
+                  ? t("orders.actions.working")
+                  : (confirmLabel ?? t("orders.settlement.confirmPaid"))}
+              </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MerchantOrder } from "@ecs/contracts";
+import type { MerchantOrder, MerchantSalesDocument } from "@ecs/contracts";
 import {
   DetailActivityList,
   DetailField,
@@ -37,6 +37,8 @@ import {
   getPaymentStatusLabel,
 } from "@/features/orders/order-domain";
 import { OrderPaymentCell } from "@/features/orders/order-table-cells";
+import { ReceiveReturnAction } from "@/features/orders/receive-return-dialog";
+import { CreateSalesDocumentDialog, SalesDocuments } from "@/features/orders/sales-documents";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
@@ -47,6 +49,8 @@ import { cn } from "@/lib/utils";
 type OrderDetailProps = {
   action: string;
   customerProfileAvailable?: boolean;
+  documents?: MerchantSalesDocument[];
+  documentsAction?: string;
   order: MerchantOrder;
   tenantId?: string | undefined;
 };
@@ -122,6 +126,22 @@ function buildActivity(order: MerchantOrder, t: Translate) {
       label: `${t("orders.refund.refunded")} · ${formatOrderMoney(refund.amount, order.currencyCode)}`,
     });
   }
+  for (const orderReturn of order.returns ?? []) {
+    const canceled = orderReturn.canceledAt || orderReturn.status?.toLowerCase().includes("cancel");
+    const received = orderReturn.receivedAt || orderReturn.status?.toLowerCase().includes("receiv");
+    events.push({
+      at:
+        orderReturn.canceledAt ??
+        orderReturn.receivedAt ??
+        orderReturn.requestedAt ??
+        orderReturn.createdAt,
+      label: canceled
+        ? t("orders.returns.canceled")
+        : received
+          ? t("orders.returns.received")
+          : t("orders.returns.requested"),
+    });
+  }
 
   if (getOrderProgress(order) === "completed") {
     events.push({ at: order.updatedAt, label: t("orders.detail.activityCompleted") });
@@ -138,6 +158,8 @@ function buildActivity(order: MerchantOrder, t: Translate) {
 export function OrderDetail({
   action,
   customerProfileAvailable = false,
+  documents,
+  documentsAction,
   order,
   tenantId,
 }: OrderDetailProps) {
@@ -413,6 +435,63 @@ export function OrderDetail({
         </div>
 
         <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+          {documents && documentsAction ? (
+            <DetailSection
+              action={<CreateSalesDocumentDialog action={documentsAction} order={order} />}
+              help={{ summary: t("orders.documents.optionalHint") }}
+              title={t("orders.documents.title")}
+            >
+              <SalesDocuments documents={documents} />
+            </DetailSection>
+          ) : null}
+          {(order.returns ?? []).length > 0 ? (
+            <DetailSection title={t("orders.returns.sectionTitle")}>
+              <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain pr-1">
+                {(order.returns ?? []).map((orderReturn) => {
+                  const canceled = Boolean(
+                    orderReturn.canceledAt || orderReturn.status?.toLowerCase().includes("cancel"),
+                  );
+                  const received = Boolean(
+                    orderReturn.receivedAt || orderReturn.status?.toLowerCase().includes("receiv"),
+                  );
+                  const quantity = orderReturn.items.reduce((sum, item) => sum + item.quantity, 0);
+                  return (
+                    <div
+                      className="rounded-lg bg-muted/25 px-3 py-2.5 ring-1 ring-foreground/[0.06]"
+                      key={orderReturn.id}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium">
+                            {canceled
+                              ? t("orders.returns.canceled")
+                              : received
+                                ? t("orders.returns.received")
+                                : t("orders.returns.requested")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("orders.returns.itemsCount", { count: quantity })}
+                          </p>
+                        </div>
+                        {orderReturn.requestedAt || orderReturn.createdAt ? (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {formatDateTime(orderReturn.requestedAt ?? orderReturn.createdAt ?? "")}
+                          </span>
+                        ) : null}
+                      </div>
+                      {!canceled && !received ? (
+                        <ReceiveReturnAction
+                          action={action}
+                          order={order}
+                          orderReturn={orderReturn}
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </DetailSection>
+          ) : null}
           <DetailSection
             help={{
               summary: t("orders.detail.paymentHelpSummary"),
@@ -477,7 +556,7 @@ export function OrderDetail({
                   />
                 </div>
                 {(order.refunds ?? []).length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain pr-1">
                     <p className="text-xs font-medium text-muted-foreground">
                       {t("orders.refund.history")}
                     </p>

@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { ProductOptionMediaBindings } from "@ecs/contracts";
 import AwsS3 from "@uppy/aws-s3";
 import Uppy, { type UppyFile } from "@uppy/core";
+// biome-ignore lint/correctness/noUnusedImports: JSX runtime is required by direct Node SSR tests.
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -555,15 +556,25 @@ export function MediaUploadField({
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Button
-            onClick={() => inputRef.current?.click()}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <AppIcons.image data-icon="inline-start" />
-            {t("media.chooseFiles")}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={hasImages ? t("media.chooseFiles") : undefined}
+                onClick={() => inputRef.current?.click()}
+                size={hasImages ? "icon-sm" : "sm"}
+                type="button"
+                variant="outline"
+              >
+                <AppIcons.upload data-icon="inline-start" />
+                {hasImages ? (
+                  <span className="sr-only">{t("media.chooseFiles")}</span>
+                ) : (
+                  t("media.chooseFiles")
+                )}
+              </Button>
+            </TooltipTrigger>
+            {hasImages ? <TooltipContent>{t("media.chooseFiles")}</TooltipContent> : null}
+          </Tooltip>
           <MediaLibraryDialog
             onSelect={(assets) => {
               addUrls(
@@ -571,6 +582,9 @@ export function MediaUploadField({
               );
             }}
             selectionMode="multiple"
+            triggerContent={hasImages ? <AppIcons.folder /> : undefined}
+            triggerLabel={t("media.chooseLibrary")}
+            triggerSize={hasImages ? "icon-sm" : "sm"}
           />
         </div>
         <input

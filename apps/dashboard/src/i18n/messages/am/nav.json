@@ -23,6 +23,7 @@
   },
   "dashboard": "አጠቃላይ እይታ",
   "breadcrumbs": {
+    "ancestors": "የቀድሞ ገጾችን ክፈት",
     "newCategory": "አዲስ ምድብ",
     "newCollection": "አዲስ ስብስብ",
     "productDetails": "የምርት ዝርዝር",

@@ -17,7 +17,7 @@ import {
 } from "@/lib/dashboard-tenant-context";
 import { getListErrorState } from "@/lib/list-error-state";
 import { getMerchantCustomer } from "@/lib/merchant-customers";
-import { getMerchantOrder } from "@/lib/merchant-orders";
+import { getMerchantOrder, listMerchantSalesDocuments } from "@/lib/merchant-orders";
 import { dashboardRoutes } from "@/lib/routes";
 
 type MerchantOrderDetailPageProps = {
@@ -34,13 +34,24 @@ export default async function MerchantOrderDetailPage({
   const tenantId = getSelectedTenantId(resolvedSearchParams ?? {});
   const cookieStore = await cookies();
   const requestHeaders = await headers();
-  const result = await getMerchantOrder({
-    cookieHeader: cookieStore.toString(),
-    orderId,
-    platformApiBaseUrl: process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
-    requestHost: requestHeaders.get("host"),
-    tenantId,
-  });
+  const platformApiBaseUrl = process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000";
+  const [result, documentResult] = await Promise.all([
+    getMerchantOrder({
+      cookieHeader: cookieStore.toString(),
+      orderId,
+      platformApiBaseUrl,
+      requestHost: requestHeaders.get("host"),
+      tenantId,
+    }),
+    tenantId
+      ? Promise.resolve(null)
+      : listMerchantSalesDocuments({
+          cookieHeader: cookieStore.toString(),
+          orderId,
+          platformApiBaseUrl,
+          requestHost: requestHeaders.get("host"),
+        }),
+  ]);
   const errorState = result.ok ? null : getListErrorState("orders", result.message);
   const setupError =
     errorState?.kind === "setup" || errorState?.kind === "service" ? errorState : null;
@@ -75,8 +86,10 @@ export default async function MerchantOrderDetailPage({
         <OrderDetail
           action={getTenantScopedPath(dashboardRoutes.orderAction(result.order.id), tenantId)}
           customerProfileAvailable={customerProfileAvailable}
+          documentsAction={`/dashboard/orders/actions/${encodeURIComponent(result.order.id)}/documents`}
           order={result.order}
           tenantId={tenantId}
+          {...(documentResult?.ok ? { documents: documentResult.documents } : {})}
         />
       ) : result.message === "order_not_found" || result.status === 404 ? (
         <OrderNotFoundState />

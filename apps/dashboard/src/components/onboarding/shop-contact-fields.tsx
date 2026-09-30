@@ -92,6 +92,14 @@ export const shopContactDraftSchema = z.object({
       customPrimary: z.string().max(7).optional(),
     })
     .optional(),
+  documentBranding: z
+    .object({
+      accentColor: z.string().max(7),
+      footerNote: z.string().max(240),
+      logoUrl: z.string().max(2_000),
+      showContactDetails: z.boolean(),
+    })
+    .optional(),
 });
 
 export function emptyShopDetails(): ShopDetails {

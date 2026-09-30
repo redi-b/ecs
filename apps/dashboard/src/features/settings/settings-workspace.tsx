@@ -13,10 +13,13 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AccountSecurityPanel } from "@/features/settings/account-security-panel";
+import { DocumentBrandingFields } from "@/features/settings/document-branding-fields";
 import { DomainsSection } from "@/features/settings/domains-section";
 import { NotificationsSection } from "@/features/settings/notifications-section";
 import { PaymentsSection } from "@/features/settings/payments-section";
@@ -55,7 +58,7 @@ function canOpenSettingsSection(
     return allows(permissions, merchantPolicies.notifications);
   }
   if (section === "storefront") return allows(permissions, merchantPolicies.storefront);
-  if (section === "shop" || section === "fulfillment") {
+  if (section === "shop" || section === "documents" || section === "fulfillment") {
     return allows(permissions, merchantPolicies.shopSettings);
   }
   return true;
@@ -135,14 +138,18 @@ export function SettingsWorkspace({
       ? preferenceChanges
       : section === "shop"
         ? shopChanges
-        : section === "storefront"
-          ? [
-              ...(storefrontLanguageDirty ? [t("settings.storefront.languagesTitle")] : []),
-              ...(storefrontSeoDirty ? [t("settings.storefront.seoTitle")] : []),
-            ]
-          : section === "account"
-            ? accountChanges
-            : [];
+        : section === "documents"
+          ? detailsDirty
+            ? [t("settings.documents.title")]
+            : []
+          : section === "storefront"
+            ? [
+                ...(storefrontLanguageDirty ? [t("settings.storefront.languagesTitle")] : []),
+                ...(storefrontSeoDirty ? [t("settings.storefront.seoTitle")] : []),
+              ]
+            : section === "account"
+              ? accountChanges
+              : [];
   const canSaveShop =
     name.trim().length >= 2 &&
     normalizedHandle.length >= 3 &&
@@ -165,6 +172,7 @@ export function SettingsWorkspace({
       "payments",
       "fulfillment",
       "storefront",
+      "documents",
       "domains",
       "account",
     ] as SettingsSectionId[]
@@ -424,6 +432,20 @@ export function SettingsWorkspace({
             />
           ) : null}
 
+          {section === "documents" ? (
+            <DocumentBrandingFields
+              canSave={canSaveShop}
+              dirty={detailsDirty}
+              disabled={isPending || !allows(permissions, merchantPolicies.shopSettingsManage)}
+              onChange={setShopDetails}
+              onDiscard={resetShopDraft}
+              onSave={saveShopSettings}
+              pending={isPending}
+              shopName={name}
+              value={shopDetails}
+            />
+          ) : null}
+
           {section === "preferences" ? (
             <PreferencesSection
               onDirtyChange={setPreferenceChanges}
@@ -518,19 +540,23 @@ export function SettingsWorkspace({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button className="rounded-full" type="button" variant="outline">
-                {t("common.cancel")}
+            <DialogFooterLeading>
+              <DialogClose asChild>
+                <Button className="rounded-full" type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+              </DialogClose>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button
+                className="rounded-full"
+                disabled={isPending}
+                type="button"
+                onClick={saveShopSettings}
+              >
+                {isPending ? t("settings.dialog.updating") : t("settings.dialog.changeAddress")}
               </Button>
-            </DialogClose>
-            <Button
-              className="rounded-full"
-              disabled={isPending}
-              type="button"
-              onClick={saveShopSettings}
-            >
-              {isPending ? t("settings.dialog.updating") : t("settings.dialog.changeAddress")}
-            </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -15,8 +15,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import Link from "@/components/app/link";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ import {
   getDemandRhythmRows,
   StatusDonutChart,
 } from "@/features/overview/overview-helpers";
+import { OverviewKpiStrip } from "@/features/overview/overview-kpi-strip";
 import {
   filterSeriesByRange,
   getPresetRange,
@@ -55,7 +56,6 @@ import {
   type OverviewRangePreset,
 } from "@/features/overview/overview-range";
 import { WaitingOrders } from "@/features/overview/waiting-orders";
-import { OverviewKpiStrip } from "@/features/overview/overview-kpi-strip";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -183,6 +183,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
   const { t, locale, formatDate } = useI18n();
   const [metric, setMetric] = useState<ChartMetric>("revenue");
   const revenueFillId = `revenue-fill-${useId().replace(/:/g, "")}`;
+  const tradingRangeId = `trading-date-range-${useId().replace(/:/g, "")}`;
   const [rangePreset, setRangePreset] = useState<OverviewRangePreset>("30d");
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
   const [mixView, setMixView] = useState<MixView>("payment");
@@ -513,6 +514,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           {hasSeries ? (
             <div className="col-start-2 row-span-2 row-start-1 flex flex-wrap justify-end gap-2 self-start justify-self-end">
               <Select
+                size="sm"
                 value={rangePreset}
                 onValueChange={(value) => {
                   const next = value as OverviewRangePreset;
@@ -535,7 +537,11 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Select value={metric} onValueChange={(value) => setMetric(value as ChartMetric)}>
+              <Select
+                size="sm"
+                value={metric}
+                onValueChange={(value) => setMetric(value as ChartMetric)}
+              >
                 <SelectTrigger size="sm" aria-label={t("overview.aria.chartMetric")}>
                   <SelectValue />
                 </SelectTrigger>
@@ -555,7 +561,7 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
             <div className="mb-3 flex justify-end rounded-xl border border-border/80 bg-muted/25 p-3">
               <DateRangePicker
                 className="w-full sm:w-auto sm:min-w-72"
-                id="trading-date-range"
+                id={tradingRangeId}
                 max={seriesBounds.end}
                 min={seriesBounds.start}
                 labels={{

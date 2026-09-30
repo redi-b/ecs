@@ -52,7 +52,7 @@ type MediaLibraryDialogProps = {
   triggerClassName?: string | undefined;
   triggerLabel?: string | undefined;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost" | undefined;
-  triggerSize?: "default" | "sm" | "xs" | "lg" | undefined;
+  triggerSize?: "default" | "sm" | "xs" | "lg" | "icon-sm" | undefined;
   triggerContent?: ReactNode;
   /** Controls the dialog externally when the trigger lives in another overlay. */
   open?: boolean | undefined;
@@ -174,7 +174,7 @@ export function MediaLibraryDialog({
             type="button"
             variant={triggerVariant}
           >
-            <AppIcons.image data-icon="inline-start" />
+            <AppIcons.folder data-icon="inline-start" />
             {triggerLabel ?? t("media.chooseLibrary")}
           </Button>
         )

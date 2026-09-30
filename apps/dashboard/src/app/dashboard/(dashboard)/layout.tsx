@@ -38,6 +38,7 @@ import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getCentralDashboardUrl } from "@/lib/shop-host";
 import { resolveShopDestination } from "@/lib/shop-selection";
 import { getSidebarDefaultOpen, SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
+import { resolvePublicStorefrontProtocol } from "@/lib/storefront-preview-url";
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations();
@@ -145,6 +146,13 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     platformApiBaseUrl,
     tenantId: access.access.tenant.id,
   });
+  const storefrontProtocol = resolvePublicStorefrontProtocol({
+    configuredProtocol: process.env.STOREFRONT_PUBLIC_PROTOCOL,
+    forwardedProtocol: requestHeaders.get("x-forwarded-proto"),
+    hostname: access.access.domain.hostname,
+    nodeEnv: process.env.NODE_ENV,
+  });
+  const storefrontUrl = `${storefrontProtocol}://${access.access.domain.hostname}`;
   const amharicEnabled =
     !storefrontDraft.ok || storefrontDraft.draft.languageSettings.enabledLocales.includes("am");
   const catalogLabelLocale = parseCatalogLabelLocaleCookie(
@@ -162,6 +170,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
               <AppSidebar
                 access={access.access}
                 centralDashboardUrl={getCentralDashboardUrl("").replace(/\/$/, "")}
+                storefrontUrl={storefrontUrl}
                 {...(landingPageUrl ? { landingPageUrl } : {})}
               />
               <SidebarInset>

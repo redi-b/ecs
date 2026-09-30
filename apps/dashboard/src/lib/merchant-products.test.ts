@@ -617,6 +617,7 @@ describe("getMerchantProducts", () => {
   it("updates merchant product stock with resolved shop host context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await updateMerchantProductStock({
+      idempotencyKey: "stock-key-1",
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
       productId: "prod_1",
@@ -643,6 +644,7 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.method, "POST");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
     assert.deepEqual(await forwardedRequest?.json(), {
+      reason: "manual_count",
       stockedQuantity: 15,
     });
   });
@@ -679,6 +681,7 @@ describe("getMerchantProducts", () => {
   it("updates merchant product variant stock with resolved shop host context", async () => {
     let forwardedRequest: Request | undefined;
     const result = await updateMerchantProductVariantStock({
+      idempotencyKey: "variant-stock-key-1",
       cookieHeader: "better-auth.session_token=session_1",
       platformApiBaseUrl: "http://platform.local",
       productId: "prod_1",
@@ -706,6 +709,7 @@ describe("getMerchantProducts", () => {
     assert.equal(forwardedRequest?.method, "POST");
     assert.equal(forwardedRequest?.headers.get("x-forwarded-host"), "abebe.lvh.me");
     assert.deepEqual(await forwardedRequest?.json(), {
+      reason: "manual_count",
       stockedQuantity: 18,
     });
   });

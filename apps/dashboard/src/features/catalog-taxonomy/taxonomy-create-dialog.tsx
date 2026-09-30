@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -428,15 +430,19 @@ function TaxonomyCreateDialogInner({
                 />
               </Field>
             </div>
-            <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4 sm:justify-end">
-              <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={isSaving} type="submit">
-                {isSaving
-                  ? t("taxonomy.create.creating")
-                  : t("taxonomy.create.createBtn", { entity: localizedEntity })}
-              </Button>
+            <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
+              <DialogFooterLeading>
+                <Button disabled={isSaving} onClick={requestClose} type="button" variant="outline">
+                  {t("common.cancel")}
+                </Button>
+              </DialogFooterLeading>
+              <DialogFooterActions>
+                <Button disabled={isSaving} type="submit">
+                  {isSaving
+                    ? t("taxonomy.create.creating")
+                    : t("taxonomy.create.createBtn", { entity: localizedEntity })}
+                </Button>
+              </DialogFooterActions>
             </DialogFooter>
           </form>
         </DialogContent>

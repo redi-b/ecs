@@ -13,6 +13,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -203,19 +205,19 @@ export function CustomerFormDialog({
     </div>
   );
 
-  const actions = (
-    <>
-      <Button disabled={saving} onClick={requestClose} type="button" variant="outline">
-        {t("common.cancel")}
-      </Button>
-      <Button disabled={saving} type="submit">
-        {saving
-          ? t("common.saving")
-          : customer
-            ? t("customers.detail.saveChanges")
-            : t("customers.detail.addCustomer")}
-      </Button>
-    </>
+  const cancelAction = (
+    <Button disabled={saving} onClick={requestClose} type="button" variant="outline">
+      {t("common.cancel")}
+    </Button>
+  );
+  const submitAction = (
+    <Button disabled={saving} type="submit">
+      {saving
+        ? t("common.saving")
+        : customer
+          ? t("customers.detail.saveChanges")
+          : t("customers.detail.addCustomer")}
+    </Button>
   );
 
   const form = (
@@ -229,14 +231,16 @@ export function CustomerFormDialog({
         <>
           <SheetBody className="px-5 py-5">{fields}</SheetBody>
           <SheetFooter className="gap-2 border-t bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end">
-            {actions}
+            {cancelAction}
+            {submitAction}
           </SheetFooter>
         </>
       ) : (
         <>
           <div className="p-4 sm:p-5">{fields}</div>
           <DialogFooter className="mx-0 mb-0 rounded-none border-t bg-muted/50 p-4">
-            {actions}
+            <DialogFooterLeading>{cancelAction}</DialogFooterLeading>
+            <DialogFooterActions>{submitAction}</DialogFooterActions>
           </DialogFooter>
         </>
       )}

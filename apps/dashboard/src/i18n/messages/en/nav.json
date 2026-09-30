@@ -23,6 +23,7 @@
   },
   "dashboard": "Dashboard",
   "breadcrumbs": {
+    "ancestors": "Open previous pages",
     "newCategory": "New category",
     "newCollection": "New collection",
     "productDetails": "Product details",

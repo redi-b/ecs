@@ -79,7 +79,40 @@
   },
   "action": {
     "edit": "Edit promotion",
-    "copy": "Copy code"
+    "copy": "Copy code",
+    "createBatch": "Create code batch"
+  },
+  "batch": {
+    "title": "Create promotion codes",
+    "description": "Create up to 50 unique codes with the same offer as {code}.",
+    "prefix": "Code prefix",
+    "prefixHelp": "Letters and numbers only. Each code gets a random 8-character suffix.",
+    "count": "Number of codes",
+    "usageLimit": "Uses per code",
+    "unlimited": "Unlimited",
+    "create": "Create codes",
+    "creating": "Creating…",
+    "copy": "Copy all",
+    "close": "Close",
+    "download": "Download CSV",
+    "created": "{count} promotion codes created.",
+    "copied": "Promotion codes copied.",
+    "partial": "{failed} of {requested} codes could not be created. Copy or download the successful codes before closing.",
+    "invalidCount": "Choose between 2 and 50 codes.",
+    "invalidLimit": "Uses per code must be a positive whole number.",
+    "failed": "Promotion codes could not be created."
+  },
+  "target": {
+    "products": "Specific products",
+    "categories": "Product categories",
+    "collections": "Product collections",
+    "selectCategories": "Select categories…",
+    "selectCollections": "Select collections…",
+    "noCategories": "No categories found.",
+    "noCollections": "No collections found.",
+    "registeredOnly": "Registered customers only",
+    "registeredOnlyHelp": "Guests cannot use this promotion. Keep this off for public offers.",
+    "unsupportedRules": "This promotion contains advanced rules that ECS cannot safely edit yet. It remains active in Medusa, but editing is disabled here to avoid changing its behavior."
   },
   "toast": {
     "deleted": "Promotion deleted.",

@@ -18,6 +18,8 @@ type DatePickerProps = {
   value: string;
   placeholder?: string;
   disabled?: boolean;
+  /** Earliest selectable day, as `YYYY-MM-DD`. */
+  min?: string;
   /** Close popover after picking a day (default true). */
   closeOnSelect?: boolean;
 };
@@ -29,11 +31,13 @@ export function DatePicker({
   value,
   placeholder,
   disabled = false,
+  min,
   closeOnSelect = true,
 }: DatePickerProps) {
   const { calendarSystem, formatDate, formatDualDate, t } = useI18n();
   const resolvedPlaceholder = placeholder ?? t("common.datePicker.placeholder");
   const selected = useMemo(() => fromDateValue(value), [value]);
+  const minimum = useMemo(() => (min ? fromDateValue(min) : null), [min]);
   const dualDate = selected ? formatDualDate(selected) : null;
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState<Date>(selected ?? new Date());
@@ -54,7 +58,7 @@ export function DatePicker({
         <Button
           aria-expanded={open}
           className={cn(
-            "group h-9 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
+            "group h-8 w-full justify-between gap-2 border-input bg-background px-3 font-normal shadow-none",
             "hover:bg-background hover:border-foreground/20",
             open && "border-ring ring-3 ring-ring/30",
             !selected && "text-muted-foreground",
@@ -117,6 +121,7 @@ export function DatePicker({
         <div className="p-3">
           <Calendar
             calendarSystem={calendarSystem}
+            minDate={minimum}
             month={month}
             onMonthChange={setMonth}
             onSelect={pick}

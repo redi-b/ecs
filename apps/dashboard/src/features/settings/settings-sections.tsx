@@ -19,6 +19,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -339,28 +341,32 @@ export function StorefrontTemplateOption({
             </label>
           </div>
           <DialogFooter>
-            <Button
-              disabled={pending}
-              onClick={() => setChoiceOpen(false)}
-              type="button"
-              variant="outline"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={pending}
-              onClick={() => void selectTemplate(draftChoice)}
-              type="button"
-            >
-              {pending ? (
-                <>
-                  <Loader2Icon className="size-4 animate-spin" data-icon="inline-start" />
-                  {t("settings.storefront.selecting")}
-                </>
-              ) : (
-                t("common.continue")
-              )}
-            </Button>
+            <DialogFooterLeading>
+              <Button
+                disabled={pending}
+                onClick={() => setChoiceOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                {t("common.cancel")}
+              </Button>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button
+                disabled={pending}
+                onClick={() => void selectTemplate(draftChoice)}
+                type="button"
+              >
+                {pending ? (
+                  <>
+                    <Loader2Icon className="size-4 animate-spin" data-icon="inline-start" />
+                    {t("settings.storefront.selecting")}
+                  </>
+                ) : (
+                  t("common.continue")
+                )}
+              </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

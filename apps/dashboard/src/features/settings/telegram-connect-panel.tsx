@@ -14,6 +14,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -610,22 +612,26 @@ export function TelegramConnectPanel({
             Use the Telegram account that should receive shop alerts. You can connect more later.
           </p>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button className="rounded-full" type="button" variant="outline">
-                Not now
+            <DialogFooterLeading>
+              <DialogClose asChild>
+                <Button className="rounded-full" type="button" variant="outline">
+                  Not now
+                </Button>
+              </DialogClose>
+            </DialogFooterLeading>
+            <DialogFooterActions>
+              <Button
+                className="rounded-full"
+                disabled={isPending}
+                type="button"
+                onClick={startConnect}
+              >
+                {isPending
+                  ? t("settings.notifications.telegramPanel.opening")
+                  : t("settings.notifications.telegramPanel.continueTelegram")}
+                {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
               </Button>
-            </DialogClose>
-            <Button
-              className="rounded-full"
-              disabled={isPending}
-              type="button"
-              onClick={startConnect}
-            >
-              {isPending
-                ? t("settings.notifications.telegramPanel.opening")
-                : t("settings.notifications.telegramPanel.continueTelegram")}
-              {!isPending ? <AppIcons.externalLink className="size-3.5" /> : null}
-            </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>

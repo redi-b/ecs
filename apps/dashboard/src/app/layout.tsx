@@ -16,6 +16,7 @@ import { getDashboardPublicUrl } from "@/lib/dashboard-hosts";
 import {
   getThemeBootstrapScript,
   parseSharedThemeCookieValue,
+  SHARED_THEME_BACKGROUND,
   SHARED_THEME_COOKIE,
   type SharedTheme,
 } from "@/lib/shared-theme";
@@ -90,9 +91,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       )}
       style={
         themePreference === "dark"
-          ? { colorScheme: "dark", backgroundColor: "oklch(0.185 0.003 255)" }
+          ? { colorScheme: "dark", backgroundColor: SHARED_THEME_BACKGROUND.dark }
           : themePreference === "light"
-            ? { colorScheme: "light", backgroundColor: "oklch(0.987 0.008 248)" }
+            ? { colorScheme: "light", backgroundColor: SHARED_THEME_BACKGROUND.light }
             : undefined
       }
     >

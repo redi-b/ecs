@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -799,15 +801,19 @@ function InviteDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={isPending || !email.trim()}
-            onClick={() => onSubmit({ email: email.trim(), role })}
-          >
-            {t("settings.team.sendInvite")}
-          </Button>
+          <DialogFooterLeading>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t("common.cancel")}
+            </Button>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            <Button
+              disabled={isPending || !email.trim()}
+              onClick={() => onSubmit({ email: email.trim(), role })}
+            >
+              {t("settings.team.sendInvite")}
+            </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -851,15 +857,19 @@ function MemberRoleDialog({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={isPending || selectedRole === member?.role}
-            onClick={() => onSubmit(selectedRole)}
-          >
-            {t("common.save")}
-          </Button>
+          <DialogFooterLeading>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t("common.cancel")}
+            </Button>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            <Button
+              disabled={isPending || selectedRole === member?.role}
+              onClick={() => onSubmit(selectedRole)}
+            >
+              {t("common.save")}
+            </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { PermissionGate } from "@/components/app/access-context";
-import { ListSetupState } from "@/components/app/list-error-state";
 import { CatalogLabelLocaleControl } from "@/components/app/catalog-label-locale-control";
+import { ListSetupState } from "@/components/app/list-error-state";
 import { ListSummary, PaginationControls } from "@/components/app/list-page-controls";
 import { PageShell } from "@/components/app/page-shell";
 import { RefreshButton } from "@/components/app/refresh-button";
@@ -47,6 +47,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const collectionFilter = getResourceFilter(resolvedSearchParams.collectionId);
   const categoryFilter = getResourceFilter(resolvedSearchParams.categoryId);
   const mediaFilter = parseProductMediaFilter(resolvedSearchParams.media);
+  const inventoryFilter = getInventoryFilter(resolvedSearchParams.inventory);
   // Taxonomy (categories/collections) loads client-side after paint — keeps list TTFB
   // on the product page only.
   const requestOptions = { cookieHeader, platformApiBaseUrl, requestHost, tenantId };
@@ -60,6 +61,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
       ...(collectionFilter !== "all" ? { collectionId: collectionFilter } : {}),
       ...(categoryFilter !== "all" ? { categoryId: categoryFilter } : {}),
       ...(mediaFilter !== "all" ? { media: mediaFilter } : {}),
+      ...(inventoryFilter !== "all" ? { inventory: inventoryFilter } : {}),
     }),
     getMerchantDashboardAccessShell(requestOptions),
   ]);
@@ -73,6 +75,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
   const errorState = result.ok ? null : getListErrorState("products", result.message);
   const listFiltered =
     mediaFilter !== "all" ||
+    inventoryFilter !== "all" ||
     Boolean(listParams.q) ||
     statusFilter !== "all" ||
     collectionFilter !== "all" ||
@@ -116,6 +119,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
                           categoryId: categoryFilter,
                           collectionId: collectionFilter,
                           media: mediaFilter,
+                          inventory: inventoryFilter,
                         },
                       )}
                     />
@@ -141,6 +145,7 @@ export default async function MerchantProductsPage({ searchParams }: MerchantPro
             initialCategoryId={categoryFilter}
             initialCollectionId={collectionFilter}
             initialMedia={mediaFilter}
+            initialInventory={inventoryFilter}
             initialQuery={listParams.q}
             initialStatus={statusFilter}
             pageSize={result.products.limit}
@@ -170,6 +175,11 @@ function getResourceFilter(value: string | string[] | undefined) {
   const trimmed = candidate?.trim();
 
   return trimmed || "all";
+}
+
+function getInventoryFilter(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === "low_stock" || candidate === "out_of_stock" ? candidate : "all";
 }
 
 function getProductNotice(

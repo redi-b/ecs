@@ -2,16 +2,13 @@
 
 import type { StorefrontSeoSettings } from "@ecs/contracts";
 import { useForm, useStore } from "@tanstack/react-form";
-import { RiImageAddLine as ImageUpIcon } from "@remixicon/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { ContextualSaveActions } from "@/components/app/contextual-save-actions";
-import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MediaLibraryDialog } from "@/features/media/media-library-dialog";
-import { uploadMediaFile } from "@/features/media/upload-media-file";
+import { MediaImageReferenceControl } from "@/features/media/media-image-reference-control";
 import { SettingsPanel } from "@/features/settings/settings-sections";
 import {
   getStorefrontSeoEditorValues,
@@ -33,8 +30,6 @@ export function StorefrontSeoSettingsForm({
   tenantName: string;
 }) {
   const { t } = useI18n();
-  const uploadInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const form = useForm({
     defaultValues: getStorefrontSeoEditorValues(initialSeo),
     onSubmit: async ({ value }) => {
@@ -150,6 +145,12 @@ export function StorefrontSeoSettingsForm({
             <Field>
               <FieldLabel>{t("settings.storefront.seoSocialImage")}</FieldLabel>
               <FieldDescription>{t("settings.storefront.seoSocialImageHint")}</FieldDescription>
+              <MediaImageReferenceControl
+                hideLabel
+                label={t("settings.storefront.seoSocialImage")}
+                onChange={(value) => field.handleChange(value ?? "")}
+                value={field.state.value}
+              />
               {field.state.value ? (
                 <div className="max-w-md overflow-hidden rounded-xl border bg-muted/30">
                   <div className="aspect-[1.91/1] bg-muted">
@@ -174,62 +175,6 @@ export function StorefrontSeoSettingsForm({
                   </div>
                 </div>
               ) : null}
-              <div className="flex flex-wrap gap-2">
-                <input
-                  accept="image/avif,image/gif,image/jpeg,image/png,image/webp"
-                  className="sr-only"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    setUploadingImage(true);
-                    void uploadMediaFile(file)
-                      .then((url) => {
-                        field.handleChange(url);
-                        toast.success(t("settings.storefront.seoImageUploaded"));
-                      })
-                      .catch(() => toast.error(t("settings.storefront.seoImageUploadFailed")))
-                      .finally(() => {
-                        setUploadingImage(false);
-                        if (uploadInputRef.current) uploadInputRef.current.value = "";
-                      });
-                  }}
-                  ref={uploadInputRef}
-                  type="file"
-                />
-                <Button
-                  disabled={uploadingImage}
-                  onClick={() => uploadInputRef.current?.click()}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <ImageUpIcon data-icon="inline-start" />
-                  {uploadingImage
-                    ? t("settings.storefront.seoUploadingImage")
-                    : t("settings.storefront.seoUploadImage")}
-                </Button>
-                <MediaLibraryDialog
-                  onSelect={(assets) => {
-                    const selected = assets[0];
-                    if (selected?.publicUrl) field.handleChange(selected.publicUrl);
-                  }}
-                  triggerLabel={
-                    field.state.value
-                      ? t("settings.storefront.seoChangeImage")
-                      : t("settings.storefront.seoChooseImage")
-                  }
-                />
-                {field.state.value ? (
-                  <Button
-                    onClick={() => field.handleChange("")}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    {t("media.remove")}
-                  </Button>
-                ) : null}
-              </div>
             </Field>
           )}
         </form.Field>

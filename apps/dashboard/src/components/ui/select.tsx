@@ -14,11 +14,16 @@ import {
 } from "@/lib/nested-overlay";
 import { cn } from "@/lib/utils";
 
+type SelectSize = "sm" | "default";
+
+const SelectSizeContext = React.createContext<SelectSize>("default");
+
 function Select({
   onOpenChange,
   open,
+  size = "default",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+}: React.ComponentProps<typeof SelectPrimitive.Root> & { size?: SelectSize }) {
   const sessionRef = React.useRef<NestedOverlaySession>({ isOpen: false, layerId: null });
 
   React.useEffect(() => {
@@ -35,15 +40,17 @@ function Select({
   }, [open]);
 
   return (
-    <SelectPrimitive.Root
-      data-slot="select"
-      onOpenChange={(next) => {
-        sessionRef.current = applyNestedOverlaySession(next, sessionRef.current);
-        onOpenChange?.(next);
-      }}
-      {...(open !== undefined ? { open } : {})}
-      {...props}
-    />
+    <SelectSizeContext.Provider value={size}>
+      <SelectPrimitive.Root
+        data-slot="select"
+        onOpenChange={(next) => {
+          sessionRef.current = applyNestedOverlaySession(next, sessionRef.current);
+          onOpenChange?.(next);
+        }}
+        {...(open !== undefined ? { open } : {})}
+        {...props}
+      />
+    </SelectSizeContext.Provider>
   );
 }
 
@@ -63,16 +70,18 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
 
 function SelectTrigger({
   className,
-  size = "default",
+  size,
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "sm" | "default";
+  size?: SelectSize;
 }) {
+  const inheritedSize = React.useContext(SelectSizeContext);
+  const resolvedSize = size ?? inheritedSize;
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
-      data-size={size}
+      data-size={resolvedSize}
       className={cn(
         "group flex w-fit items-center justify-between gap-1.5 rounded-full border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-background/60 dark:hover:bg-muted dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
@@ -94,10 +103,12 @@ function SelectContent({
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  const resolvedSize = React.useContext(SelectSizeContext);
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         data-slot="select-content"
+        data-size={resolvedSize}
         data-align-trigger={position === "item-aligned"}
         className={cn(
           // Below media lightbox (z-[200]) and bulk bar chrome is fine at 100.
@@ -112,9 +123,10 @@ function SelectContent({
       >
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
+          data-slot="select-viewport"
           data-position={position}
           className={cn(
-            "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
+            "scroll-my-1 p-1 data-[position=popper]:min-h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
             position === "popper" && "",
           )}
         >
@@ -141,11 +153,13 @@ function SelectItem({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  const resolvedSize = React.useContext(SelectSizeContext);
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      data-size={resolvedSize}
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[size=sm]:py-1 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

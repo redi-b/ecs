@@ -1,5 +1,6 @@
 export type SettingsSectionId =
   | "shop"
+  | "documents"
   | "preferences"
   | "notifications"
   | "team"
@@ -19,6 +20,7 @@ export const SETTINGS_SECTION_IDS: SettingsSectionId[] = [
   "payments",
   "fulfillment",
   "storefront",
+  "documents",
   "domains",
   "account",
 ];
@@ -70,6 +72,11 @@ export const SETTINGS_SECTIONS: Array<{
     description: "Template and live status",
   },
   {
+    id: "documents",
+    label: "Documents",
+    description: "Branding for printable documents",
+  },
+  {
     id: "domains",
     label: "Domains",
     description: "Custom address and DNS setup",
@@ -84,6 +91,7 @@ export const SETTINGS_SECTIONS: Array<{
 export function parseSettingsSection(value: string | undefined): SettingsSectionId {
   if (
     value === "shop" ||
+    value === "documents" ||
     value === "preferences" ||
     value === "notifications" ||
     value === "team" ||

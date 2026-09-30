@@ -13,14 +13,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -74,8 +78,7 @@ const SAMPLE_PRODUCT_CSV = [
   .join("\r\n");
 
 function createIdempotencyKey(artifactId: string) {
-  const randomPart = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-  return `product-import:${artifactId}:${randomPart}`;
+  return `product-import:${artifactId}:${createClientId("apply")}`;
 }
 
 export function ProductImportDryRunDialog({
@@ -365,19 +368,28 @@ export function ProductImportDryRunDialog({
             </div>
           ) : null}
         </div>
-        <DialogFooter className="m-0 rounded-b-xl" showCloseButton={!busy}>
-          {report?.artifact && report.issues.length === 0 ? (
-            <Button disabled={busy || artifactExpired} onClick={() => void apply()}>
-              {applying ? t("products.import.applying") : t("products.import.apply")}
+        <DialogFooter className="m-0 rounded-b-xl">
+          <DialogFooterLeading>
+            <DialogClose asChild>
+              <Button disabled={busy} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+            </DialogClose>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            {report?.artifact && report.issues.length === 0 ? (
+              <Button disabled={busy || artifactExpired} onClick={() => void apply()}>
+                {applying ? t("products.import.applying") : t("products.import.apply")}
+              </Button>
+            ) : null}
+            <Button
+              disabled={!file || busy}
+              onClick={() => void run()}
+              variant={report ? "outline" : "default"}
+            >
+              {running ? t("products.import.running") : t("products.import.run")}
             </Button>
-          ) : null}
-          <Button
-            disabled={!file || busy}
-            onClick={() => void run()}
-            variant={report ? "outline" : "default"}
-          >
-            {running ? t("products.import.running") : t("products.import.run")}
-          </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>

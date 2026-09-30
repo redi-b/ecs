@@ -2,20 +2,27 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 
-import { getThemeBootstrapScript } from "./shared-theme";
+import { getSharedThemePresentation, getThemeBootstrapScript } from "./shared-theme";
 
 function resolveTheme(cookie = "", prefersDark?: boolean, stored: string | null = null) {
   let dark = false;
   const root = {
-    classList: { toggle: (_name: string, value: boolean) => { dark = value; } },
+    classList: {
+      toggle: (_name: string, value: boolean) => {
+        dark = value;
+      },
+    },
     style: { colorScheme: "", backgroundColor: "" },
   };
   runInNewContext(getThemeBootstrapScript(), {
     document: { cookie, documentElement: root },
     localStorage: { getItem: () => stored },
-    window: prefersDark === undefined ? {} : {
-      matchMedia: () => ({ matches: prefersDark }),
-    },
+    window:
+      prefersDark === undefined
+        ? {}
+        : {
+            matchMedia: () => ({ matches: prefersDark }),
+          },
   });
   return { dark, colorScheme: root.style.colorScheme, backgroundColor: root.style.backgroundColor };
 }
@@ -40,4 +47,21 @@ test("saved theme takes precedence over device preference", () => {
 
 test("invalid theme values fall back to the device preference", () => {
   assert.equal(resolveTheme("ecs-theme=invalid", true).dark, true);
+});
+
+test("runtime theme presentation updates the root surface as well as color scheme", () => {
+  assert.deepEqual(getSharedThemePresentation("light", true), {
+    backgroundColor: "oklch(0.987 0.008 248)",
+    colorScheme: "light",
+    dark: false,
+  });
+  assert.deepEqual(getSharedThemePresentation("dark", false), {
+    backgroundColor: "oklch(0.185 0.003 255)",
+    colorScheme: "dark",
+    dark: true,
+  });
+  assert.equal(
+    getSharedThemePresentation("system", true).backgroundColor,
+    "oklch(0.185 0.003 255)",
+  );
 });

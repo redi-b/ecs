@@ -1,21 +1,25 @@
 "use client";
 
 import type { MerchantProduct } from "@ecs/contracts";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
+  DialogFooterLeading,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/provider";
+import { createClientId } from "@/lib/client-id";
 import { dashboardRoutes } from "@/lib/routes";
 
 type Row = {
@@ -52,6 +56,7 @@ export function BulkInventoryDialog({
     [products],
   );
   const [rows, setRows] = useState(initialRows);
+  const mutationKey = useRef<{ payload: string; value: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tooLarge = rows.length > 50;
@@ -87,13 +92,21 @@ export function BulkInventoryDialog({
       variantId: row.variantId,
       stockedQuantity: Number(row.stockedQuantity.trim()),
     }));
+    const payload = JSON.stringify(updates);
+    if (mutationKey.current?.payload !== payload) {
+      mutationKey.current = { payload, value: createClientId("inventory-batch") };
+    }
 
     setSaving(true);
     setError(null);
     try {
       const response = await fetch(dashboardRoutes.productsBatchInventoryAction, {
         method: "POST",
-        headers: { accept: "application/json", "content-type": "application/json" },
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "idempotency-key": mutationKey.current.value,
+        },
         body: JSON.stringify({ updates }),
       });
       const data = await response.json().catch(() => ({}));
@@ -115,6 +128,7 @@ export function BulkInventoryDialog({
         toast.warning(t("products.stock.bulkPartial", { failed, succeeded }));
         onSaved();
       } else {
+        mutationKey.current = null;
         toast.success(t("products.stock.bulkUpdated", { count: succeeded }));
         onOpenChange(false);
         onSaved();
@@ -134,54 +148,67 @@ export function BulkInventoryDialog({
       }}
       open={open}
     >
-      <DialogContent className="max-h-[min(90vh,48rem)] sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,48rem)] flex-col gap-0 overflow-visible p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 gap-1.5 border-b px-4 py-4 pr-12 text-left sm:px-5">
           <DialogTitle>{t("products.stock.bulkTitle")}</DialogTitle>
           <DialogDescription>{t("products.stock.bulkDescription")}</DialogDescription>
         </DialogHeader>
-        {tooLarge ? (
-          <Alert variant="destructive">
-            <AlertDescription>{t("products.stock.bulkTooLarge")}</AlertDescription>
-          </Alert>
-        ) : null}
-        {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-          {rows.map((row, index) => (
-            <label
-              className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 rounded-lg border p-3"
-              htmlFor={`bulk-stock-${index}`}
-              key={row.key}
-            >
-              <span className="truncate text-sm font-medium">{row.label}</span>
-              <Input
-                aria-label={t("products.stock.stockedAria", { name: row.label })}
-                disabled={saving}
-                inputMode="numeric"
-                id={`bulk-stock-${index}`}
-                min={0}
-                onChange={(event) => {
-                  setError(null);
-                  setRows((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, stockedQuantity: event.target.value } : item,
-                    ),
-                  );
-                }}
-                step={1}
-                type="number"
-                value={row.stockedQuantity}
-              />
-            </label>
-          ))}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-5">
+          {tooLarge ? (
+            <Alert variant="destructive">
+              <AlertDescription>{t("products.stock.bulkTooLarge")}</AlertDescription>
+            </Alert>
+          ) : null}
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <div className="space-y-2">
+            {rows.map((row, index) => (
+              <label
+                className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 rounded-lg border p-3"
+                htmlFor={`bulk-stock-${index}`}
+                key={row.key}
+              >
+                <span className="truncate text-sm font-medium">{row.label}</span>
+                <Input
+                  aria-label={t("products.stock.stockedAria", { name: row.label })}
+                  disabled={saving}
+                  inputMode="numeric"
+                  id={`bulk-stock-${index}`}
+                  min={0}
+                  onChange={(event) => {
+                    setError(null);
+                    setRows((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, stockedQuantity: event.target.value }
+                          : item,
+                      ),
+                    );
+                  }}
+                  step={1}
+                  type="number"
+                  value={row.stockedQuantity}
+                />
+              </label>
+            ))}
+          </div>
         </div>
-        <DialogFooter showCloseButton>
-          <Button disabled={saving || tooLarge || rows.length === 0} onClick={() => void save()}>
-            {saving ? t("products.stock.saving") : t("products.stock.bulkSave")}
-          </Button>
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-muted/50 p-4">
+          <DialogFooterLeading>
+            <DialogClose asChild>
+              <Button disabled={saving} type="button" variant="outline">
+                {t("common.cancel")}
+              </Button>
+            </DialogClose>
+          </DialogFooterLeading>
+          <DialogFooterActions>
+            <Button disabled={saving || tooLarge || rows.length === 0} onClick={() => void save()}>
+              {saving ? t("products.stock.saving") : t("products.stock.bulkSave")}
+            </Button>
+          </DialogFooterActions>
         </DialogFooter>
       </DialogContent>
     </Dialog>

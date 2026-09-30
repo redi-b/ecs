@@ -136,6 +136,40 @@ export function getDashboardBreadcrumbTrail(
     ];
   }
 
+  if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/quotations/`)) {
+    return [
+      toBreadcrumb(ordersRoute),
+      { href: `${dashboardRoutes.orders}?view=quotes`, id: "quotations", title: "Quotations" },
+      {
+        href: pathname,
+        id: "quotation-details",
+        title: labels["quotation-details"] ?? "Quotation details",
+      },
+    ];
+  }
+
+  if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/documents/`)) {
+    const orderId = labels["sales-document-order-id"]?.trim();
+    return [
+      toBreadcrumb(ordersRoute),
+      ...(orderId
+        ? [
+            {
+              href: dashboardRoutes.orderDetail(orderId),
+              id: "order-details",
+              title: labels["order-details"] ?? "Order details",
+            },
+          ]
+        : []),
+      { href: null, id: "sales-documents", title: "Documents" },
+      {
+        href: pathname,
+        id: "sales-document-details",
+        title: labels["sales-document-details"] ?? "Document details",
+      },
+    ];
+  }
+
   if (ordersRoute && pathname.startsWith(`${dashboardRoutes.orders}/`)) {
     return [
       toBreadcrumb(ordersRoute),
