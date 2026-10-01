@@ -20,6 +20,7 @@ import {
   COMMERCE_ROLLUP_VERSION,
   DEFAULT_REPORTING_TIMEZONE,
 } from "../modules/analytics/commerce-rollup.js";
+import { DEMO_DELIVERY_FEE } from "./demo-delivery.js";
 import { DEMO_SEED_MARKER, type DemoShopDefinition } from "./demo-shops.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -51,7 +52,7 @@ export async function seedPlatformExtras(
       phoneConfirmationRequired: true,
       notesEnabled: true,
       landmarkRequired: false,
-      defaultDeliveryFee: "75",
+      defaultDeliveryFee: String(DEMO_DELIVERY_FEE),
       currency: "ETB",
       zones: [
         { name: "Bole", fee: "75.00" },
@@ -72,7 +73,7 @@ export async function seedPlatformExtras(
         phoneConfirmationRequired: true,
         notesEnabled: true,
         landmarkRequired: false,
-        defaultDeliveryFee: "75",
+        defaultDeliveryFee: String(DEMO_DELIVERY_FEE),
         currency: "ETB",
         zones: [
           { name: "Bole", fee: "75.00" },
