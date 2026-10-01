@@ -1,7 +1,7 @@
+import { parseScheduledDowngradePlanId } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import { billingPaymentEvidence, invoices, plans, planVersions, subscriptions } from "@ecs/db";
 import { desc, eq, sql } from "drizzle-orm";
-
 import type { BillingStatusResult } from "../../types/index.js";
 import { createEntitlementService } from "../entitlements/service.js";
 import {
@@ -12,7 +12,6 @@ import {
   serializeInvoice,
   serializePaymentEvidence,
 } from "./invoice-service.js";
-import { parseScheduledDowngradePlanId } from "@ecs/billing";
 import type { createBillingPlanService } from "./plan-service.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -96,8 +95,9 @@ export function createBillingStatusService({
           .limit(1)
       : [undefined];
     const invoiceRows = await db
-      .select(selectInvoiceFields())
+      .select({ ...selectInvoiceFields(), planId: planVersions.planId })
       .from(invoices)
+      .leftJoin(planVersions, eq(planVersions.id, invoices.planVersionId))
       .where(eq(invoices.tenantId, tenantId))
       .orderBy(desc(invoices.createdAt))
       .limit(20);
@@ -191,6 +191,7 @@ export function createBillingStatusService({
         },
         invoices: invoiceRows.map((invoice) => ({
           ...serializeInvoice(invoice),
+          planId: invoice.planId,
           paymentEvidence: latestEvidenceByInvoice.get(invoice.id) ?? null,
         })),
         paymentDestinations: paymentOptions?.paymentDestinations ?? [],

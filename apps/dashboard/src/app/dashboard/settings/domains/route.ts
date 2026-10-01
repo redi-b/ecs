@@ -2,6 +2,7 @@ import { withMerchantAction } from "@/lib/platform-api";
 import {
   createMerchantDomain,
   getMerchantDomains,
+  removeMerchantDomain,
   setMerchantPrimaryDomain,
   verifyMerchantDomain,
 } from "@/lib/platform-api/domains";
@@ -17,7 +18,11 @@ export async function GET(request: Request) {
       tenantId: context.tenantId,
     });
     return result.ok
-      ? { ok: true, data: { domains: result.domains }, status: 200 }
+      ? {
+          ok: true,
+          data: { domains: result.domains, ...(result.setup ? { setup: result.setup } : {}) },
+          status: 200,
+        }
       : { ok: false, message: result.message, status: result.status };
   });
 }
@@ -37,6 +42,16 @@ export async function POST(request: Request) {
       platformApiBaseUrl: context.platformApiBaseUrl,
       tenantId: context.tenantId,
     };
+    if (body.action === "remove" && typeof body.domainId === "string") {
+      const removal = await removeMerchantDomain({ ...common, domainId: body.domainId });
+      return removal.ok
+        ? {
+            ok: true,
+            data: { status: removal.status },
+            status: removal.status === "removing" ? 202 : 200,
+          }
+        : { ok: false, message: removal.message, status: removal.status };
+    }
     const result =
       body.action === "create" && typeof body.hostname === "string"
         ? await createMerchantDomain({ ...common, hostname: body.hostname })

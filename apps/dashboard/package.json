@@ -7,7 +7,8 @@
     "dev": "cross-env NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "test": "cross-env TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx --test \"src/**/*.test.ts\"",
+    "test:domains": "cross-env TSX_TSCONFIG_PATH=tsconfig.test.json node --import tsx --test-isolation=none --test src/features/settings/domains-section.test.ts src/features/settings/domain-settings-client.test.ts src/features/settings/domain-settings-model.test.ts src/lib/platform-api/domains.test.ts src/i18n/messages.test.ts",
     "start": "cross-env NEXT_TELEMETRY_DISABLED=1 next start -p 3001"
   },
   "dependencies": {

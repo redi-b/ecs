@@ -18,7 +18,7 @@ import {
   subscriptionTrials,
   tenants,
 } from "@ecs/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type { BillingStatus } from "../../types/index.js";
 import {
@@ -29,16 +29,11 @@ import {
   serializeDate,
 } from "./invoice-service.js";
 import { createBillingLifecycleRunner } from "./lifecycle-runner.js";
-import { createBillingSubscriptionLifecycleService } from "./subscription-lifecycle-service.js";
 import { DEFAULT_PLAN_CATALOG, DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 import { createBillingPlanService } from "./plan-service.js";
 import { createBillingStatusService } from "./status-service.js";
+import { createBillingSubscriptionLifecycleService } from "./subscription-lifecycle-service.js";
 
-export {
-  BILLING_CHAPA_TX_PREFIX,
-  billingTxRefForInvoice,
-  isPlatformBillingTxRef,
-} from "./invoice-service.js";
 export {
   BILLING_RENEWAL_LEAD_DAYS,
   encodeScheduledDowngrade,
@@ -46,6 +41,11 @@ export {
   planBillingLifecycle,
   SCHEDULED_DOWNGRADE_PREFIX,
 } from "@ecs/billing";
+export {
+  BILLING_CHAPA_TX_PREFIX,
+  billingTxRefForInvoice,
+  isPlatformBillingTxRef,
+} from "./invoice-service.js";
 export { DEFAULT_PLAN_IDS } from "./plan-catalog.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
@@ -623,27 +623,21 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
         .where(
           and(
             eq(invoices.tenantId, input.tenantId),
+            eq(invoices.subscriptionId, input.subscriptionId),
             eq(invoices.status, "pending"),
             eq(invoices.amount, input.planPrice),
             eq(invoices.currency, "ETB"),
+            input.planVersionId
+              ? eq(invoices.planVersionId, input.planVersionId)
+              : and(isNull(invoices.planVersionId), eq(invoices.provider, `plan:${input.planId}`)),
           ),
         )
         .orderBy(desc(invoices.createdAt))
         .limit(1);
 
       if (existing) {
-        if (
-          !existing.provider?.startsWith("plan:") ||
-          (!existing.planVersionId && input.planVersionId)
-        ) {
-          await db
-            .update(invoices)
-            .set({
-              provider: `plan:${input.planId}`,
-              ...(input.planVersionId ? { planVersionId: input.planVersionId } : {}),
-            })
-            .where(eq(invoices.id, existing.id));
-        }
+        // Reuse only the issued terms of this exact plan version. Never turn a
+        // renewal/seed invoice into a different upgrade based on amount alone.
         return { created: false, invoiceId: existing.id };
       }
 

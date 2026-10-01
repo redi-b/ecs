@@ -18,6 +18,7 @@ import { assertPlatformProductionEnvironment } from "./config/production-environ
 import { createAnalyticsCommerceRollupHandler } from "./jobs/handlers/analytics-commerce-rollup.js";
 import { createBillingLifecycleHandler } from "./jobs/handlers/billing-lifecycle.js";
 import { createBillingPaymentReconcileHandler } from "./jobs/handlers/billing-payment-reconcile.js";
+import { createDomainReconciliationHandlers } from "./jobs/handlers/domain-reconciliation.js";
 import { createEmailDeliverHandler } from "./jobs/handlers/email-deliver.js";
 import { createInAppNotificationMaterializeHandler } from "./jobs/handlers/in-app-notification-materialize.js";
 import { createMediaProcessHandler } from "./jobs/handlers/media-process.js";
@@ -28,6 +29,8 @@ import {
 } from "./jobs/handlers/product-import-apply.js";
 import { systemPingHandler } from "./jobs/handlers/system-ping.js";
 import { platformJobRegistry } from "./jobs/registry.js";
+import { registerDomainRepeatableJobs } from "./jobs/schedule-domain-jobs.js";
+import { createDomainRuntime } from "./modules/domains/runtime.js";
 import { createMediaService } from "./modules/media/index.js";
 
 loadPlatformApiEnvFiles();
@@ -103,6 +106,10 @@ if (!process.env.CHAPA_SECRET_KEY?.trim()) {
 }
 
 const workerBuildVersion = process.env.APP_VERSION ?? process.env.GIT_SHA ?? "development";
+const domainRuntime = createDomainRuntime({ db: platformDb.db, env: process.env });
+const domainHandlers = domainRuntime
+  ? createDomainReconciliationHandlers({ ...domainRuntime, jobsClient })
+  : undefined;
 const worker = startPlatformWorkers({
   buildVersion: workerBuildVersion,
   concurrencyByQueue: {
@@ -114,6 +121,12 @@ const worker = startPlatformWorkers({
   db: platformDb.db,
   registry: platformJobRegistry,
   handlers: {
+    ...(domainHandlers
+      ? {
+          "domains.scan": domainHandlers.scan,
+          "domains.reconcile": domainHandlers.reconcile,
+        }
+      : {}),
     "system.ping": systemPingHandler as JobHandler,
     "email.deliver": createEmailDeliverHandler({
       db: platformDb.db,
@@ -182,6 +195,15 @@ const scheduling = startWorkerScheduling({
   medusaInternalUrl,
   notificationService,
 });
+
+void registerDomainRepeatableJobs({ jobsClient, configured: Boolean(domainRuntime) }).catch(
+  (error) => {
+    logger.error(
+      { err: error instanceof Error ? error.message : String(error) },
+      "Failed to register domain reconciliation schedule",
+    );
+  },
+);
 
 logger.info(
   {

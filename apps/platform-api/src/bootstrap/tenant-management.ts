@@ -1,5 +1,6 @@
-import { resolveTxt as resolveDnsTxt } from "node:dns/promises";
 import type { createPlatformDb } from "@ecs/db";
+import { createDomainTxtResolver } from "../modules/domains/dns-readiness.js";
+import { parseDomainRuntimeConfig } from "../modules/domains/runtime-config.js";
 import { createDomainManagementService } from "../modules/domains/service.js";
 import { createEntitlementService } from "../modules/entitlements/service.js";
 import { createTenantOnboardingService } from "../modules/onboarding/service.js";
@@ -22,14 +23,18 @@ type TenantManagementRuntimeOptions = {
 };
 
 export function createTenantManagementRuntime(options: TenantManagementRuntimeOptions) {
+  const domainConfig = parseDomainRuntimeConfig(options.env);
   const entitlementService = createEntitlementService(options.db);
   const encryptionKey =
     options.env.PAYMENTS_CREDENTIALS_ENCRYPTION_KEY ?? options.env.CHAPA_SECRET_KEY;
 
   return {
     domainManagementService: createDomainManagementService(options.db, {
+      customDomainsAvailable: domainConfig?.enabled === true,
+      platformBaseDomain: options.env.STOREFRONT_PUBLIC_BASE_DOMAIN?.trim() || "ecset.dev",
+      ingressAddresses: domainConfig?.ingressAddresses ?? [],
       evaluateEntitlement: entitlementService.evaluate,
-      resolveTxt: resolveDnsTxt,
+      resolveTxt: createDomainTxtResolver(),
     }),
     entitlementService,
     getTenantCommerceContext: createTenantCommerceContextService(options.db),

@@ -1,10 +1,11 @@
 import type {
   DeliverySettings,
   MerchantDashboardAccess,
-  StorefrontSeoSettings,
   StorefrontLanguageSettings,
+  StorefrontSeoSettings,
   StorefrontTemplateCatalogItem,
   TenantDomainContract,
+  TenantDomainSetup,
 } from "@ecs/contracts";
 
 import type { MessageKey } from "@/i18n/messages";
@@ -16,6 +17,8 @@ export type Delivery = DeliverySettings["delivery"];
 export type SettingsWorkspaceProps = {
   delivery: Delivery | null;
   domains: TenantDomainContract[];
+  domainSetup?: TenantDomainSetup | undefined;
+  domainsLoadFailed?: boolean;
   initialSection?: string | undefined;
   payments: MerchantPaymentsStatus | null;
   /** mailto: or https — merchant support for Chapa setup help. */

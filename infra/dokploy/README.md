@@ -4,6 +4,11 @@ This stack is intended for a Dokploy Compose service. GitHub Actions builds the 
 
 ## DNS and routing
 
+Merchant-owned storefront domains use the optional
+[custom-domain overlay](custom-domains/README.md), not the platform wildcard
+router or dashboard/auth hosts. Keep it disabled until its operator setup and
+activation checks are complete.
+
 Set `BASE_DOMAIN` to the application's public base domain. It can be an apex such as `example.com`
 (recommended now that ECS has a dedicated domain), or a delegated name such as `ecs.example.com`.
 A wildcard DNS record for `*.${BASE_DOMAIN}` covers hosts such as:
@@ -164,10 +169,18 @@ Demo seed runs **inside** the `platform-api` container (no host `pnpm` required)
 
 **Media:** seed PutObject uses `MEDIA_S3_INTERNAL_ENDPOINT` (default `http://seaweedfs:8333`), not the public `MEDIA_S3_ENDPOINT`. Browser URLs still use `MEDIA_S3_PUBLIC_BASE_URL`.
 
-The showcase catalog uses a checked-in manifest of product-matched Pexels photographs under the
-[Pexels license](https://www.pexels.com/license/). The seed copies each image into ECS media storage
-and records its source page in Medusa product metadata. If an individual copy fails, that image uses
-its curated CDN URL instead; the seed never substitutes an unrelated random photograph.
+The showcase catalog uses repository-owned curated product and category/collection
+images. The Platform API image includes the three template asset directories at
+`/app/apps/storefront/src/templates`, matching the seed's local resolver. No host
+checkout or storefront-container mount is required. The seed uploads those files
+to ECS media storage using the internal S3 endpoint and records their local source
+identity in product metadata. Missing curated images fail validation; do not
+disable that check or substitute unrelated remote photographs. Deploy a rebuilt
+Platform API image before rerunning the command below; restarting an old image
+does not add the assets.
+
+Local packaging regression (no database, S3 or seed mutation):
+`node --test-isolation=none --test scripts/demo-seed-packaging.test.mjs`.
 
 ```sh
 # Ensure platform-api has started at least once (token bootstrap), then:
@@ -176,6 +189,21 @@ docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts
 # Remove demo data
 docker compose exec platform-api node --import tsx src/seeds/demo-seed.ts --clean
 ```
+
+Cleanup follows the deployed Platform database foreign keys, including nested
+dependents, rather than a fixed table deletion list. Platform cleanup is one
+transaction; shared assets/content survive with optional demo-author references
+cleared. Required references into unrelated tenants stop cleanup instead of
+deleting their data. Medusa cleanup remains a separate, replayable operation, not
+part of that SQL transaction. This is demo-data cleanup, not a database reset;
+do not remove application containers or volumes to repair a cleanup error.
+
+Database regression: from `apps/platform-api`, set
+`ECS_UNSEED_TEST_DATABASE_URL` to a dedicated database named
+`ecs_unseed_regression`, then run
+`node --import tsx --test src/seeds/demo-cleanup.test.ts`.
+Fixtures use real migrations and rollback after each test; never supply an
+application database. Without the variable these opt-in database tests skip.
 
 Logs to expect:
 

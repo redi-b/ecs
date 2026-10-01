@@ -1,14 +1,16 @@
 import {
   platformErrorSchema,
   type TenantDomainContract,
+  type TenantDomainSetup,
   tenantDomainListResponseSchema,
+  tenantDomainRemovalResponseSchema,
   tenantDomainResponseSchema,
 } from "@ecs/contracts";
 
 import { platformFetch } from "./client";
 
 export type MerchantDomainsResult =
-  | { ok: true; domains: TenantDomainContract[] }
+  | { ok: true; domains: TenantDomainContract[]; setup?: TenantDomainSetup }
   | { ok: false; message: string; status: number };
 export type MerchantDomainResult =
   | { ok: true; domain: TenantDomainContract }
@@ -27,7 +29,11 @@ export async function getMerchantDomains(options: CommonOptions): Promise<Mercha
   if (!response.ok) return domainError(response, data);
   const parsed = tenantDomainListResponseSchema.safeParse(data);
   return parsed.success
-    ? { ok: true, domains: parsed.data.domains }
+    ? {
+        ok: true,
+        domains: parsed.data.domains,
+        ...(parsed.data.setup ? { setup: parsed.data.setup } : {}),
+      }
     : { ok: false, message: "invalid_domains_response", status: 502 };
 }
 
@@ -49,6 +55,20 @@ export async function setMerchantPrimaryDomain(
   return domainMutation(options, `/${encodeURIComponent(options.domainId)}/primary`, "POST");
 }
 
+export async function removeMerchantDomain(
+  options: CommonOptions & { domainId: string },
+): Promise<
+  { ok: true; status: "removed" | "removing" } | { ok: false; message: string; status: number }
+> {
+  const response = await domainFetch(options, `/${encodeURIComponent(options.domainId)}`, "DELETE");
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return domainError(response, data);
+  const parsed = tenantDomainRemovalResponseSchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, status: parsed.data.status }
+    : { ok: false, message: "invalid_domain_response", status: 502 };
+}
+
 async function domainMutation(
   options: CommonOptions,
   suffix: string,
@@ -67,7 +87,7 @@ async function domainMutation(
 function domainFetch(
   options: CommonOptions,
   suffix: string,
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "DELETE",
   body?: unknown,
 ) {
   return platformFetch(

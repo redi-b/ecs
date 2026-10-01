@@ -1,6 +1,6 @@
 import type { createPlatformDb } from "@ecs/db";
 import { domains, storefrontConfigs, storefrontTemplateVersions, tenants } from "@ecs/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { TenantDomainRecord } from "./tenant-resolver.js";
 
@@ -15,6 +15,11 @@ export function createDomainTenantLookup(db: PlatformDb) {
         domainId: domains.id,
         hostname: domains.hostname,
         domainStatus: domains.status,
+        domainType: domains.type,
+        sslStatus: domains.sslStatus,
+        activatedAt: domains.activatedAt,
+        warningSince: domains.warningSince,
+        warningReason: domains.warningReason,
         verificationStatus: domains.verificationStatus,
         primaryDomainId: tenants.primaryDomainId,
         tenantId: tenants.id,
@@ -44,7 +49,7 @@ export function createDomainTenantLookup(db: PlatformDb) {
           eq(storefrontTemplateVersions.version, storefrontConfigs.draftTemplateVersion),
         ),
       )
-      .where(eq(domains.hostname, hostname))
+      .where(and(eq(domains.hostname, hostname), isNull(domains.removedAt)))
       .limit(1);
 
     if (!row) return undefined;
@@ -55,9 +60,20 @@ export function createDomainTenantLookup(db: PlatformDb) {
             hostname: domains.hostname,
             status: domains.status,
             verificationStatus: domains.verificationStatus,
+            type: domains.type,
+            sslStatus: domains.sslStatus,
+            activatedAt: domains.activatedAt,
+            warningSince: domains.warningSince,
+            warningReason: domains.warningReason,
           })
           .from(domains)
-          .where(and(eq(domains.id, row.primaryDomainId), eq(domains.tenantId, row.tenantId)))
+          .where(
+            and(
+              eq(domains.id, row.primaryDomainId),
+              eq(domains.tenantId, row.tenantId),
+              isNull(domains.removedAt),
+            ),
+          )
           .limit(1)
       : [];
 
@@ -66,6 +82,11 @@ export function createDomainTenantLookup(db: PlatformDb) {
       primaryHostname: primaryDomain?.hostname ?? null,
       primaryDomainStatus: primaryDomain?.status ?? null,
       primaryDomainVerificationStatus: primaryDomain?.verificationStatus ?? null,
+      primaryDomainType: primaryDomain?.type ?? null,
+      primaryDomainSslStatus: primaryDomain?.sslStatus ?? null,
+      primaryDomainActivatedAt: primaryDomain?.activatedAt ?? null,
+      primaryDomainWarningSince: primaryDomain?.warningSince ?? null,
+      primaryDomainWarningReason: primaryDomain?.warningReason ?? null,
     };
   };
 }

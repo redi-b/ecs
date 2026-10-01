@@ -1,8 +1,13 @@
-import { shopDetailsSchema, type ShopDetails } from "@ecs/contracts";
+import {
+  type CustomDomainLifecycleStatus,
+  type ShopDetails,
+  shopDetailsSchema,
+} from "@ecs/contracts";
+import { DOMAIN_WARNING_GRACE_MS } from "../modules/domains/lifecycle.js";
 
 export type TenantStatus = "draft" | "active" | "suspended" | "cancelled";
 
-export type DomainStatus = "active" | "pending_verification" | "misconfigured" | "disabled";
+export type DomainStatus = CustomDomainLifecycleStatus | "disabled";
 
 export type DomainVerificationStatus = "pending" | "verified" | "failed";
 
@@ -12,9 +17,19 @@ export type TenantDomainRecord = {
   hostname: string;
   domainStatus: DomainStatus | string;
   verificationStatus: DomainVerificationStatus | string;
+  domainType?: string;
+  sslStatus?: string;
+  activatedAt?: Date | null;
+  warningSince?: Date | null;
+  warningReason?: string | null;
   primaryHostname?: string | null;
   primaryDomainStatus?: DomainStatus | string | null;
   primaryDomainVerificationStatus?: DomainVerificationStatus | string | null;
+  primaryDomainType?: string | null;
+  primaryDomainSslStatus?: string | null;
+  primaryDomainActivatedAt?: Date | null;
+  primaryDomainWarningSince?: Date | null;
+  primaryDomainWarningReason?: string | null;
   tenantId: string;
   tenantName: string;
   tenantHandle: string;
@@ -82,6 +97,42 @@ export function normalizeHostname(host: string): string {
   return host.trim().replace(/:\d+$/, "").replace(/\.$/, "").toLowerCase();
 }
 
+function isDomainAdmitted(
+  record: {
+    type: string | null | undefined;
+    status: string | null | undefined;
+    verification: string | null | undefined;
+    ssl: string | null | undefined;
+    activatedAt: Date | null | undefined;
+    warningSince: Date | null | undefined;
+    warningReason: string | null | undefined;
+  },
+  now: number,
+) {
+  if (record.verification !== "verified") return false;
+  if (record.type !== "custom_domain") return record.status === "active";
+  const activatedAt = record.activatedAt?.getTime();
+  if (
+    record.ssl !== "active" ||
+    activatedAt === undefined ||
+    !Number.isFinite(activatedAt) ||
+    activatedAt < 0 ||
+    activatedAt > now
+  )
+    return false;
+  if (record.status === "active") return true;
+  const warningSince = record.warningSince?.getTime();
+  return (
+    record.status === "misconfigured" &&
+    (record.warningReason === "dns_missing" || record.warningReason === "ownership_missing") &&
+    warningSince !== undefined &&
+    Number.isFinite(warningSince) &&
+    warningSince >= activatedAt &&
+    warningSince <= now &&
+    now - warningSince < DOMAIN_WARNING_GRACE_MS
+  );
+}
+
 export async function resolveTenantFromHost(
   options: ResolveTenantFromHostOptions,
 ): Promise<TenantResolutionResult> {
@@ -102,7 +153,21 @@ export async function resolveTenantFromHost(
     return { ok: false, error: "shop_not_found" };
   }
 
-  if (record.domainStatus !== "active" || record.verificationStatus !== "verified") {
+  const now = Date.now();
+  if (
+    !isDomainAdmitted(
+      {
+        type: record.domainType,
+        status: record.domainStatus,
+        verification: record.verificationStatus,
+        ssl: record.sslStatus,
+        activatedAt: record.activatedAt,
+        warningSince: record.warningSince,
+        warningReason: record.warningReason,
+      },
+      now,
+    )
+  ) {
     return { ok: false, error: "domain_misconfigured" };
   }
 
@@ -126,8 +191,18 @@ export async function resolveTenantFromHost(
       hostname,
       primaryHostname:
         record.primaryHostname &&
-        record.primaryDomainStatus === "active" &&
-        record.primaryDomainVerificationStatus === "verified"
+        isDomainAdmitted(
+          {
+            type: record.primaryDomainType,
+            status: record.primaryDomainStatus,
+            verification: record.primaryDomainVerificationStatus,
+            ssl: record.primaryDomainSslStatus,
+            activatedAt: record.primaryDomainActivatedAt,
+            warningSince: record.primaryDomainWarningSince,
+            warningReason: record.primaryDomainWarningReason,
+          },
+          now,
+        )
           ? normalizeHostname(record.primaryHostname)
           : hostname,
       domainId: record.domainId,

@@ -1,0 +1,9 @@
+# Operator-installed once in Traefik's dynamic directory, outside the ECS-owned
+# route subdirectory. No routers, default hosts or certificates are declared.
+http:
+  services:
+    ecs-custom-domains-storefront:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://ecs-custom-domain-gateway:8080
