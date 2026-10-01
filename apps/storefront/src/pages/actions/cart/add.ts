@@ -1,10 +1,9 @@
 import type { APIRoute } from "astro";
-
-import { getStoreProductByHandle } from "../../../lib/commerce/products.js";
-import { addStoreCartLineItem, ensureStoreCart } from "../../../lib/commerce/cart.js";
-import { associateCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
-import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
 import { getStorefrontActionLocale } from "../../../lib/action-locale.js";
+import { addStoreCartLineItem, ensureStoreCart } from "../../../lib/commerce/cart.js";
+import { cartJson, cartJsonError } from "../../../lib/commerce/cart-json.js";
+import { associateCartWithCustomer } from "../../../lib/commerce/customer-cart.js";
+import { getStoreProductByHandle } from "../../../lib/commerce/products.js";
 import { isStoreError } from "../../../lib/commerce/result.js";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../lib/env.js";
 import { loadPageContext } from "../../../lib/page-context.js";
@@ -84,11 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   if (isStoreError(addResult)) {
-    return failure(
-      returnTo,
-      m.product_add_failed({}, { locale }),
-      wantsJson,
-    );
+    return failure(returnTo, m.product_add_failed({}, { locale }), wantsJson);
   }
 
   const headers = new Headers();

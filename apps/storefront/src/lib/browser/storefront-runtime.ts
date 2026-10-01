@@ -1,4 +1,5 @@
 import { initCartStore } from "../stores/cart";
+import { initCartFeedback } from "./cart-feedback";
 import { initWishlistController } from "./wishlist";
 
 let initialized = false;
@@ -9,4 +10,5 @@ export function initStorefrontRuntime() {
   initialized = true;
   initCartStore();
   initWishlistController();
+  initCartFeedback();
 }

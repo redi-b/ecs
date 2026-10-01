@@ -428,22 +428,26 @@ export function initNexahubStorefront() {
 
       contactFields.forEach((el) => {
         el.hidden = mode !== "contact";
-        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach((input) => {
-          input.disabled = mode !== "contact";
-          if (input.dataset.wasRequired === "true") {
-            input.required = mode === "contact";
-          }
-        });
+        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach(
+          (input) => {
+            input.disabled = mode !== "contact";
+            if (input.dataset.wasRequired === "true") {
+              input.required = mode === "contact";
+            }
+          },
+        );
       });
 
       requestFields.forEach((el) => {
         el.hidden = mode !== "request";
-        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach((input) => {
-          input.disabled = mode !== "request";
-          if (input.dataset.wasRequired === "true") {
-            input.required = mode === "request";
-          }
-        });
+        el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea").forEach(
+          (input) => {
+            input.disabled = mode !== "request";
+            if (input.dataset.wasRequired === "true") {
+              input.required = mode === "request";
+            }
+          },
+        );
       });
 
       const submitBtn = container.querySelector<HTMLElement>("[data-inquiry-submit]");
@@ -468,9 +472,13 @@ export function initNexahubStorefront() {
       });
     }
 
-    container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[required], textarea[required]").forEach((input) => {
-      input.dataset.wasRequired = "true";
-    });
+    container
+      .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        "input[required], textarea[required]",
+      )
+      .forEach((input) => {
+        input.dataset.wasRequired = "true";
+      });
 
     buttons.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -728,7 +736,7 @@ export function initNexahubStorefront() {
   });
 
   $cart.subscribe((cart) => {
-    if (!readOnly && cart) {
+    if (!readOnly) {
       renderCart(cart);
     }
   });

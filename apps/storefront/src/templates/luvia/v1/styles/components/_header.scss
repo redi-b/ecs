@@ -429,12 +429,13 @@
 .action--wishlist::after {
   content: "";
   position: absolute;
-  top: 9px;
-  right: 9px;
+  top: -2px;
+  right: -2px;
   width: 8px;
   height: 8px;
   border-radius: $radius-full;
   background: var(--clr-primary);
+  border: 2px solid var(--clr-white);
   opacity: 0;
   transform: scale(0.65);
   transition: opacity 160ms ease, transform 160ms ease;

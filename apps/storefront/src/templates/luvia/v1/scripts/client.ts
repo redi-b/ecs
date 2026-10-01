@@ -1,6 +1,7 @@
 import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
 import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
 import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
+import { cleanVariantTitle } from "../../../../lib/commerce/normalize";
 import {
   $cart,
   $cartDrawerOpen,
@@ -12,7 +13,6 @@ import {
   removeCartItem,
   updateCartItemQuantity,
 } from "../../../../lib/stores/cart";
-import { cleanVariantTitle } from "../../../../lib/commerce/normalize";
 import { initHeroCarousels } from "./hero-carousel";
 
 function getClientMessages(): Record<string, string> {
@@ -275,9 +275,7 @@ export function initLuviaStorefront() {
 
       const copy = createNode("div", "cart-item__copy");
       const titleText = item.title || messages.product || "Product";
-      copy.append(
-        createNode("strong", "type-body-s-500", titleText),
-      );
+      copy.append(createNode("strong", "type-body-s-500", titleText));
       const cleanVariant = cleanVariantTitle(item.variantTitle, titleText);
       if (cleanVariant) copy.append(createNode("span", "type-body-xs", cleanVariant));
       copy.append(
@@ -435,7 +433,7 @@ export function initLuviaStorefront() {
   });
 
   $cart.subscribe((cart) => {
-    if (!readOnlyPreview && cart) {
+    if (!readOnlyPreview) {
       // Only rebuild the closed drawer on demand. Every page mounts this
       // module, so an unguarded rebuild cost a full list re-render per
       // mutation on pages that never open the drawer.
@@ -677,6 +675,13 @@ export function initLuviaProductPage() {
 
     const variantInput = root.querySelector<HTMLInputElement>('input[name="variantId"]');
     if (variantInput) variantInput.value = variant.id;
+    const addForm = root.querySelector<HTMLFormElement>("[data-add-form]");
+    if (addForm?.dataset.cartItem)
+      addForm.dataset.cartItem = JSON.stringify({
+        ...JSON.parse(addForm.dataset.cartItem),
+        unitPrice: variant.priceAmount,
+        variantTitle: Object.values(selected).join(" · "),
+      });
 
     const price = root.querySelector<HTMLElement>("[data-product-price]");
     // The payload key is priceAmount (see Product.astro); reading `price` here
@@ -836,16 +841,15 @@ export function initLuviaProductPage() {
       description.classList.toggle("is-expanded", long && expanded);
       descriptionToggle.hidden = !long;
       descriptionToggle.setAttribute("aria-expanded", String(long && expanded));
-      descriptionToggle.textContent = long && expanded
-        ? (messages.showLess || "Show less")
-        : (messages.showMore || "Show more");
+      descriptionToggle.textContent =
+        long && expanded ? messages.showLess || "Show less" : messages.showMore || "Show more";
     };
     descriptionToggle.addEventListener("click", () => {
       const expanded = description.classList.toggle("is-expanded");
       descriptionToggle.setAttribute("aria-expanded", String(expanded));
       descriptionToggle.textContent = expanded
-        ? (messages.showLess || "Show less")
-        : (messages.showMore || "Show more");
+        ? messages.showLess || "Show less"
+        : messages.showMore || "Show more";
     });
     measureDescription();
     if ("ResizeObserver" in window && description.parentElement) {

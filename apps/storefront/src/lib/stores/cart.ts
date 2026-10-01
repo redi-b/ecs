@@ -1,14 +1,11 @@
 import { atom, computed } from "nanostores";
-import type { StoreCart, StoreCartItem } from "../commerce/types";
+import { CART_UPDATED_EVENT, setCartCount as syncCartCountBadge } from "../browser/cart-count";
 import {
   projectCartAddition,
   projectCartItemQuantity,
   snapshotCart,
 } from "../commerce/cart-optimistic";
-import {
-  CART_UPDATED_EVENT,
-  setCartCount as syncCartCountBadge,
-} from "../browser/cart-count";
+import type { StoreCart, StoreCartItem } from "../commerce/types";
 
 export { CART_UPDATED_EVENT } from "../browser/cart-count";
 
@@ -24,6 +21,7 @@ export const $cartCount = computed($cart, (cart) => {
 });
 
 let listeningForUpdates = false;
+let cartRevision = 0;
 
 function safeSyncBadge(count: number) {
   if (typeof document !== "undefined") {
@@ -70,6 +68,7 @@ function readCartFromStorage(): StoreCart | null {
 }
 
 export function setCart(cart: StoreCart | null, broadcast = true) {
+  cartRevision += 1;
   $cart.set(cart);
   saveCartToStorage(cart);
   if (broadcast) {
@@ -79,6 +78,7 @@ export function setCart(cart: StoreCart | null, broadcast = true) {
 
 export async function fetchCart(): Promise<StoreCart | null> {
   if (typeof window === "undefined") return null;
+  const revision = cartRevision;
   $isCartLoading.set(true);
   $cartError.set(null);
   try {
@@ -91,11 +91,12 @@ export async function fetchCart(): Promise<StoreCart | null> {
     if (!response.ok || !result.ok) {
       throw new Error(result.message || "Failed to load cart");
     }
+    if (revision !== cartRevision || $isCartMutating.get()) return $cart.get();
     setCart(result.cart, true);
     return result.cart;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Failed to load cart";
-    $cartError.set(msg);
+    if (revision === cartRevision && !$isCartMutating.get()) $cartError.set(msg);
     return null;
   } finally {
     $isCartLoading.set(false);
@@ -110,28 +111,61 @@ export interface AddToCartOptions {
   openDrawer?: boolean;
 }
 
-export async function addToCart(options: AddToCartOptions): Promise<{ ok: boolean; cart?: StoreCart; error?: string }> {
+export async function addToCart(
+  options: AddToCartOptions,
+): Promise<{ ok: boolean; cart?: StoreCart; error?: string }> {
+  // One in-flight mutation prevents overlapping snapshots from erasing each other.
+  if ($isCartMutating.get()) return { ok: false, error: "Cart is updating. Please try again." };
   const currentCart = $cart.get();
   const snapshot = snapshotCart(currentCart);
   $isCartMutating.set(true);
   $cartError.set(null);
+  cartRevision += 1;
 
-  const quantity = options.quantity ?? 1;
-  const variantId = options.variantId ?? (options.form ? new FormData(options.form).get("variantId")?.toString() : undefined);
+  const formData = options.form ? new FormData(options.form) : null;
+  const rawQuantity = options.quantity ?? Number(formData?.get("quantity") ?? 1);
+  const quantity = Number.isFinite(rawQuantity) && rawQuantity > 0 ? Math.floor(rawQuantity) : 1;
+  const variantId = options.variantId ?? formData?.get("variantId")?.toString();
+  let optimisticItem = options.optimisticItem;
+  if (!optimisticItem && options.form?.dataset.cartItem) {
+    try {
+      optimisticItem = JSON.parse(options.form.dataset.cartItem);
+    } catch {
+      /* Optional display hints only. */
+    }
+  }
 
   // Optimistic update
-  if (currentCart && variantId) {
-    const optimisticCart = projectCartAddition(currentCart, {
+  if (variantId) {
+    const base: StoreCart = currentCart ?? {
+      id: "optimistic",
+      regionId: null,
+      email: null,
+      currencyCode: "ETB",
+      subtotal: 0,
+      itemTotal: 0,
+      itemSubtotal: 0,
+      itemDiscountTotal: 0,
+      shippingTotal: 0,
+      shippingSubtotal: 0,
+      shippingDiscountTotal: 0,
+      taxTotal: 0,
+      discountTotal: 0,
+      originalTotal: 0,
+      total: 0,
+      promotions: [],
+      items: [],
+    };
+    const optimisticCart = projectCartAddition(base, {
       variantId,
       quantity,
-      item: options.optimisticItem,
+      item: optimisticItem ?? { title: "Product" },
       optimisticId: `optimistic-${Date.now()}`,
     });
     $cart.set(optimisticCart);
-    safeSyncBadge(
-      optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-    );
+    safeSyncBadge(optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0));
   }
+  if (options.openDrawer) $cartDrawerOpen.set(true);
 
   try {
     let body: FormData;
@@ -163,11 +197,7 @@ export async function addToCart(options: AddToCartOptions): Promise<{ ok: boolea
   } catch (error) {
     // Rollback to snapshot
     $cart.set(snapshot);
-    if (snapshot) {
-      safeSyncBadge(
-        snapshot.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-      );
-    }
+    safeSyncBadge(snapshot?.items.reduce((s, i) => s + Number(i.quantity || 0), 0) ?? 0);
     const msg = error instanceof Error ? error.message : "Failed to add item to cart";
     $cartError.set(msg);
     return { ok: false, error: msg };
@@ -180,6 +210,8 @@ export async function updateCartItemQuantity(
   lineItemId: string,
   quantity: number,
 ): Promise<{ ok: boolean; cart?: StoreCart; error?: string }> {
+  if ($isCartMutating.get()) return { ok: false, error: "Cart is updating. Please try again." };
+  cartRevision += 1;
   const currentCart = $cart.get();
   const snapshot = snapshotCart(currentCart);
   $isCartMutating.set(true);
@@ -189,9 +221,7 @@ export async function updateCartItemQuantity(
   if (currentCart && Array.isArray(currentCart.items)) {
     const optimisticCart = projectCartItemQuantity(currentCart, lineItemId, quantity);
     $cart.set(optimisticCart);
-    safeSyncBadge(
-      optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-    );
+    safeSyncBadge(optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0));
   }
 
   try {
@@ -217,9 +247,7 @@ export async function updateCartItemQuantity(
     // Rollback to snapshot
     $cart.set(snapshot);
     if (snapshot) {
-      safeSyncBadge(
-        snapshot.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-      );
+      safeSyncBadge(snapshot.items.reduce((s, i) => s + Number(i.quantity || 0), 0));
     }
     const msg = error instanceof Error ? error.message : "Failed to update item quantity";
     $cartError.set(msg);
@@ -232,6 +260,8 @@ export async function updateCartItemQuantity(
 export async function removeCartItem(
   lineItemId: string,
 ): Promise<{ ok: boolean; cart?: StoreCart; error?: string }> {
+  if ($isCartMutating.get()) return { ok: false, error: "Cart is updating. Please try again." };
+  cartRevision += 1;
   const currentCart = $cart.get();
   const snapshot = snapshotCart(currentCart);
   $isCartMutating.set(true);
@@ -241,9 +271,7 @@ export async function removeCartItem(
   if (currentCart && Array.isArray(currentCart.items)) {
     const optimisticCart = projectCartItemQuantity(currentCart, lineItemId, 0);
     $cart.set(optimisticCart);
-    safeSyncBadge(
-      optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-    );
+    safeSyncBadge(optimisticCart.items.reduce((s, i) => s + Number(i.quantity || 0), 0));
   }
 
   try {
@@ -268,9 +296,7 @@ export async function removeCartItem(
     // Rollback to snapshot
     $cart.set(snapshot);
     if (snapshot) {
-      safeSyncBadge(
-        snapshot.items.reduce((s, i) => s + Number(i.quantity || 0), 0),
-      );
+      safeSyncBadge(snapshot.items.reduce((s, i) => s + Number(i.quantity || 0), 0));
     }
     const msg = error instanceof Error ? error.message : "Failed to remove item from cart";
     $cartError.set(msg);
@@ -284,6 +310,8 @@ export async function applyPromotion(
   code: string,
   intent: "apply" | "remove" = "apply",
 ): Promise<{ ok: boolean; cart?: StoreCart; error?: string }> {
+  if ($isCartMutating.get()) return { ok: false, error: "Cart is updating. Please try again." };
+  cartRevision += 1;
   const currentCart = $cart.get();
   const snapshot = snapshotCart(currentCart);
   $isCartMutating.set(true);

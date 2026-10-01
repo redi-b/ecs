@@ -1,18 +1,18 @@
 import EmblaCarousel, { type EmblaCarouselType, type EmblaOptionsType } from "embla-carousel";
-import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 import { setCartCount as syncCartCount } from "../../../../lib/browser/cart-count";
+import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
+import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
 import {
   $cart,
   $cartDrawerOpen,
-  fetchCart,
   addToCart,
-  updateCartItemQuantity,
+  fetchCart,
   removeCartItem,
+  updateCartItemQuantity,
 } from "../../../../lib/stores/cart";
-import { initStorefrontRuntime } from "../../../../lib/browser/storefront-runtime";
-import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -115,12 +115,7 @@ export const fadePresets = {
 
 export type FadePresetName = keyof typeof fadePresets;
 
-const fadeDirections = new Set<FadeDirection>([
-  "toTop",
-  "toBottom",
-  "toLeft",
-  "toRight",
-]);
+const fadeDirections = new Set<FadeDirection>(["toTop", "toBottom", "toLeft", "toRight"]);
 
 interface TextAnimations {
   headerAnimation: (
@@ -133,11 +128,7 @@ interface TextAnimations {
     staggerValue?: number,
     durationValue?: number,
   ) => gsap.core.Tween | undefined;
-  linkAnimation: (
-    el: HTMLElement,
-    staggerValue?: number,
-    durationValue?: number,
-  ) => void;
+  linkAnimation: (el: HTMLElement, staggerValue?: number, durationValue?: number) => void;
 }
 
 const textAnimations: TextAnimations = {
@@ -184,9 +175,7 @@ export function animateText(
   durationValue?: number,
 ): gsap.core.Tween | void | undefined {
   const targetEl =
-    typeof el === "string"
-      ? document.querySelector<HTMLElement>(el)
-      : (el as HTMLElement | null);
+    typeof el === "string" ? document.querySelector<HTMLElement>(el) : (el as HTMLElement | null);
   const animType = targetEl?.dataset?.textAnim as keyof TextAnimations | undefined;
   const animFunc = animType ? textAnimations[animType] : undefined;
   return animFunc && targetEl ? animFunc(targetEl, staggerValue, durationValue) : undefined;
@@ -198,8 +187,7 @@ export function getFadeVars(
 ): gsap.TweenVars {
   const preset = fadePresets[presetName] ?? fadePresets["fade-1"];
   const tweenVars: gsap.TweenVars = { ...preset };
-  const resolveVal = (val: unknown) =>
-    typeof val === "function" ? (val as () => number)() : val;
+  const resolveVal = (val: unknown) => (typeof val === "function" ? (val as () => number)() : val);
 
   const presetRecord = preset as Record<string, unknown>;
   const rawDist = resolveVal(presetRecord.y) ?? resolveVal(presetRecord.x) ?? 32;
@@ -227,9 +215,7 @@ export function animateFadeIn(
   scrollTriggerValue: gsap.DOMTarget | object | null = null,
 ): gsap.core.Tween | undefined {
   const targetEl =
-    typeof el === "string"
-      ? document.querySelector<HTMLElement>(el)
-      : (el as HTMLElement | null);
+    typeof el === "string" ? document.querySelector<HTMLElement>(el) : (el as HTMLElement | null);
   if (!targetEl) return undefined;
 
   const tweenVars = getFadeVars(direction, presetName);
@@ -244,9 +230,7 @@ export function initGlobalFadeIns(): void {
   document.querySelectorAll<HTMLElement>('[data-fade-in^="st"]').forEach((el) => {
     const parts = el.dataset.fadeIn?.split(":") ?? [];
     const presetName =
-      parts[1] && parts[1] in fadePresets
-        ? (parts[1] as FadePresetName)
-        : "fade-1";
+      parts[1] && parts[1] in fadePresets ? (parts[1] as FadePresetName) : "fade-1";
     const direction =
       parts[2] && fadeDirections.has(parts[2] as FadeDirection)
         ? (parts[2] as FadeDirection)
@@ -319,7 +303,9 @@ export function initAfroStorefront() {
   const searchForms = document.querySelectorAll<HTMLFormElement>(
     "[data-product-search-suggestions]",
   );
-  searchForms.forEach((form) => initProductSearchSuggestions(form));
+  searchForms.forEach((form) => {
+    initProductSearchSuggestions(form);
+  });
 
   // --- Header Nav Links & Scrollspy ---
   initHeaderNavigation();
@@ -1112,9 +1098,7 @@ export function initWishlistPage() {
     if (empty) empty.hidden = visible > 0;
     if (count) {
       count.textContent =
-        visible === 0
-          ? "Saved pieces stay on this device."
-          : `${visible} saved on this device.`;
+        visible === 0 ? "Saved pieces stay on this device." : `${visible} saved on this device.`;
     }
   }
 
@@ -1526,7 +1510,7 @@ function initCartDrawerRuntime({
 
   // Subscribe to $cart nanostore
   $cart.subscribe((cart) => {
-    if (!readOnly && cart) {
+    if (!readOnly) {
       renderCart(cart);
     }
   });

@@ -6,10 +6,10 @@ import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytic
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
 import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
-import { listStoreCategories } from "../../../../lib/commerce/catalog";
+import { loadNavigationCatalog } from "../../../../lib/navigation-catalog";
 import { categoryProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import type { StoreCategory } from "../../../../lib/commerce/types";
-import { getEcsLandingPageUrl, getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
+import { getEcsLandingPageUrl } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -18,6 +18,7 @@ import Button from "../components/Button.astro";
 import SaveIcon from "../components/SaveIcon.astro";
 import { parseNexahubThemeTokens } from "../lib";
 import "../styles/main.scss";
+import "../../../../components/shell/cart-feedback.css";
 import "../styles/components/_header.scss";
 import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
@@ -53,18 +54,10 @@ const {
 } = Astro.props;
 const ecsLandingPageUrl = getEcsLandingPageUrl();
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
-const categoriesResult =
-  suppliedNavigationCategories === undefined && !demoMode
-    ? await listStoreCategories({
-        platformApiBaseUrl: getPlatformApiBaseUrl(),
-        requestHost: getRequestHost(Astro.request),
-        locale: locale === "am" ? "am-ET" : "en-ET",
-        limit: 8,
-      })
-    : null;
-const navigationCategories =
-  suppliedNavigationCategories ??
-  (categoriesResult && "categories" in categoriesResult ? categoriesResult.categories : []);
+const { categories: navigationCategories } = await loadNavigationCatalog(Astro.request, {
+  categories: suppliedNavigationCategories, demoMode, editorMode,
+});
+
 const theme = parseNexahubThemeTokens(themeTokens);
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
@@ -191,7 +184,7 @@ const nexahubClientMessages = {
         {!footer.managedContact && <span class="nexa-sr-only">{item.label}</span>}
       </a>)}</div></div>
     </div></footer>
-    <div class="cart-drawer-overlay" data-cart-overlay aria-hidden="true"><div class="cart-drawer-container" data-cart-modal role="dialog" aria-modal="true" aria-labelledby="nexa-cart-title"><button class="cart-drawer-close" type="button" aria-label={m.cart_close({}, { locale })} data-cart-close>×</button><aside class="cart-drawer"><div class="cart-drawer__header"><h2 id="nexa-cart-title" class="type-heading-4">{m.cart_title({}, { locale })}</h2><span class="cart-drawer__badge type-body-xs-500" data-cart-drawer-count>{m.cart_item_count({ count: 0 }, { locale })}</span></div><div class="cart-drawer__items" data-cart-items></div><div class="cart-drawer__summary" data-cart-footer hidden><div class="cart-drawer__total-row"><span class="type-body-l">{m.cart_total({}, { locale })}</span><strong class="type-heading-6" data-cart-total></strong></div><a class="btn btn--primary btn--large btn--full-width" href="/checkout">{m.action_checkout({}, { locale })}</a></div></aside></div></div>
+<div class="cart-drawer-overlay" data-cart-overlay aria-hidden="true"><div class="cart-drawer-container" data-cart-modal role="dialog" aria-modal="true" aria-labelledby="nexa-cart-title"><button class="cart-drawer-close" type="button" aria-label={m.cart_close({}, { locale })} data-cart-close>×</button><aside class="cart-drawer"><div class="cart-drawer__header"><h2 id="nexa-cart-title" class="type-heading-4">{m.cart_title({}, { locale })}</h2><span class="cart-drawer__badge type-body-xs-500" data-cart-drawer-count>{m.cart_item_count({ count: 0 }, { locale })}</span></div><div data-cart-status role="status" aria-live="polite"></div><div class="cart-drawer__items" data-cart-items></div><div class="cart-drawer__summary" data-cart-footer hidden><div class="cart-drawer__total-row"><span class="type-body-l">{m.cart_total({}, { locale })}</span><strong class="type-heading-6" data-cart-total></strong></div><a class="btn btn--primary btn--large btn--full-width" href="/checkout">{m.action_checkout({}, { locale })}</a></div></aside></div></div>
     <StorefrontAnalytics disabled={demoMode || editorMode} />
     <script is:inline define:vars={{ nexahubClientMessages }}>
       window.__ECS_NEXAHUB_MESSAGES__ = nexahubClientMessages;

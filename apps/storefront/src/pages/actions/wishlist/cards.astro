@@ -1,0 +1,40 @@
+---
+import { loadPageContext } from "../../../lib/page-context";
+import { InvalidWishlistPaths, loadWishlistProducts } from "../../../lib/wishlist-products";
+import ProductCard from "../../../templates/luvia/v1/components/ProductCard.astro";
+
+export const partial = true;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+if (Astro.request.method !== "POST") return new Response(null, { status: 405 });
+const origin = Astro.request.headers.get("origin");
+if (origin && origin !== Astro.url.origin) return new Response(null, { status: 403 });
+const reader = Astro.request.body?.getReader();
+let body = "";
+let size = 0;
+const decoder = new TextDecoder();
+if (reader) {
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 16000) { await reader.cancel(); return new Response(null, { status: 413 }); }
+      body += decoder.decode(value, { stream: true });
+    }
+    body += decoder.decode();
+  } finally { reader.releaseLock(); }
+}
+let paths: unknown;
+try { paths = JSON.parse(body).paths; } catch { return new Response(null, { status: 400 }); }
+const ctx = await loadPageContext(Astro.request, { skipCart: true });
+if (!ctx.ok) return new Response(null, { status: ctx.status });
+if (ctx.config.storefront.templateKey !== "luvia@1") return new Response(null, { status: 404 });
+let products;
+try {
+  products = await loadWishlistProducts({ paths, platformApiBaseUrl: ctx.platformApiBaseUrl,
+    requestHost: ctx.requestHost, locale: ctx.commerceLocale, regionId: ctx.config.commerce.regionId });
+} catch (error) { return new Response(null, { status: error instanceof InvalidWishlistPaths ? 400 : 503 }); }
+---
+{products.map((product) => <ProductCard product={product} data-wishlist-path={`/products/${encodeURIComponent(product.handle ?? "")}`} />)}
