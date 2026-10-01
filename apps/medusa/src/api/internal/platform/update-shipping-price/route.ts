@@ -86,6 +86,46 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       ],
     });
 
+    const query = req.scope.resolve("query") as {
+      graph: (input: {
+        entity: string;
+        fields: string[];
+        filters?: Record<string, unknown>;
+      }) => Promise<{ data: unknown[] }>;
+    };
+    const { data } = await query.graph({
+      entity: "shipping_option",
+      fields: ["id", "prices.amount", "prices.currency_code"],
+      filters: { id: parsed.shippingOptionId },
+    });
+    const option = data[0] as
+      | { prices?: Array<{ amount?: unknown; currency_code?: unknown }> }
+      | undefined;
+    const verified = (option?.prices ?? []).some((price) => {
+      const amount =
+        typeof price.amount === "number"
+          ? price.amount
+          : typeof price.amount === "string"
+            ? Number.parseFloat(price.amount)
+            : Number.NaN;
+      const currencyCode =
+        typeof price.currency_code === "string" ? price.currency_code.toLowerCase() : "";
+      return (
+        currencyCode === parsed.currencyCode &&
+        Number.isFinite(amount) &&
+        Math.abs(amount - parsed.amount) < 0.005
+      );
+    });
+
+    if (!verified) {
+      return res.status(502).json({
+        error: "shipping_price_verification_failed",
+        shippingOptionId: parsed.shippingOptionId,
+        amount: parsed.amount,
+        currencyCode: parsed.currencyCode,
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       shippingOptionId: parsed.shippingOptionId,

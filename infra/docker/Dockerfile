@@ -142,6 +142,12 @@ CMD ["node", "dist/server/entry.mjs"]
 FROM runtime AS platform-api
 ENV PORT=3000
 COPY --chown=node:node --from=platform-api-build /out/platform-api ./
+# Demo seeds run from /app and upload these repository-owned images to S3.
+# pnpm deploy includes API source, not sibling storefront assets. Preserve the
+# resolver's workspace-relative layout without shipping storefront source/deps.
+COPY --chown=node:node --from=platform-api-build /workspace/apps/storefront/src/templates/nexahub/v1/assets ./apps/storefront/src/templates/nexahub/v1/assets
+COPY --chown=node:node --from=platform-api-build /workspace/apps/storefront/src/templates/luvia/v1/assets ./apps/storefront/src/templates/luvia/v1/assets
+COPY --chown=node:node --from=platform-api-build /workspace/apps/storefront/src/templates/afro/v1/assets ./apps/storefront/src/templates/afro/v1/assets
 USER node
 EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--"]

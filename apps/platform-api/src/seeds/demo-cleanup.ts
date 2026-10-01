@@ -1,44 +1,8 @@
 import type { createPlatformDb } from "@ecs/db";
-import {
-  accounts,
-  analyticsEvents,
-  auditLogs,
-  customerCommerceStates,
-  dailyMetrics,
-  deliverySettings,
-  domains,
-  inAppNotifications,
-  invoices,
-  jobRuns,
-  mediaAssets,
-  mediaUsages,
-  merchantReceivingAccounts,
-  metricRollupCheckpoints,
-  notificationDestinations,
-  notificationLogs,
-  notificationPreferences,
-  operatorNotes,
-  organizations,
-  paymentOnboarding,
-  platformPrincipals,
-  productImportArtifacts,
-  productImportExecutions,
-  productOptionSets,
-  productSalesDaily,
-  storefrontConfigs,
-  storefrontInquiries,
-  storefrontRevisions,
-  storefrontTemplateDrafts,
-  subscriptions,
-  telegramConnectSessions,
-  tenantMemberships,
-  tenantOnboarding,
-  tenantProvisioningAttempts,
-  tenants,
-  users,
-} from "@ecs/db";
-import { eq, inArray, sql } from "drizzle-orm";
+import { tenants, users } from "@ecs/db";
+import { inArray, or } from "drizzle-orm";
 import type { createDemoMedusaClient } from "./demo-medusa-client.js";
+import { cleanDemoPlatformData } from "./demo-platform-cleanup.js";
 import {
   DEMO_OPERATIONS,
   DEMO_SEED_MARKER,
@@ -58,19 +22,6 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
     const emails = [...demoShops.map((shop) => shop.user.email), ...LEGACY_DEMO_EMAILS];
     const tenantIds = demoShops.map((shop) => shop.ids.tenant);
 
-    await options.db
-      .delete(auditLogs)
-      .where(eq(auditLogs.platformPrincipalId, DEMO_OPERATIONS.principalId));
-    await options.db
-      .delete(platformPrincipals)
-      .where(eq(platformPrincipals.userId, DEMO_OPERATIONS.operator.id));
-    await options.db
-      .delete(accounts)
-      .where(inArray(accounts.userId, [DEMO_OPERATIONS.operator.id, DEMO_OPERATIONS.approver.id]));
-    await options.db
-      .delete(users)
-      .where(inArray(users.id, [DEMO_OPERATIONS.operator.id, DEMO_OPERATIONS.approver.id]));
-
     const existingTenants = await options.db
       .select({
         id: tenants.id,
@@ -79,7 +30,7 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
         organizationId: tenants.organizationId,
       })
       .from(tenants)
-      .where(inArray(tenants.handle, handles));
+      .where(or(inArray(tenants.handle, handles), inArray(tenants.id, tenantIds)));
 
     const idsToRemove = [...new Set([...tenantIds, ...existingTenants.map((row) => row.id)])];
     const organizationIdsToRemove = existingTenants.flatMap((row) =>
@@ -129,119 +80,24 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
       };
     }
 
-    if (idsToRemove.length) {
-      // Delete every platform table that FKs tenants (ON DELETE NO ACTION).
-      // Order: dependents with nested FKs first (media usages → assets), then tenants.
-      await options.db
-        .delete(analyticsEvents)
-        .where(inArray(analyticsEvents.tenantId, idsToRemove));
-      await options.db.delete(dailyMetrics).where(inArray(dailyMetrics.tenantId, idsToRemove));
-      await options.db
-        .delete(metricRollupCheckpoints)
-        .where(inArray(metricRollupCheckpoints.tenantId, idsToRemove));
-      await options.db
-        .delete(productSalesDaily)
-        .where(inArray(productSalesDaily.tenantId, idsToRemove));
-      await options.db
-        .delete(customerCommerceStates)
-        .where(inArray(customerCommerceStates.tenantId, idsToRemove));
-      await options.db
-        .delete(productImportExecutions)
-        .where(inArray(productImportExecutions.tenantId, idsToRemove));
-      await options.db
-        .delete(productImportArtifacts)
-        .where(inArray(productImportArtifacts.tenantId, idsToRemove));
-      await options.db
-        .delete(productOptionSets)
-        .where(inArray(productOptionSets.tenantId, idsToRemove));
-      await options.db
-        .delete(merchantReceivingAccounts)
-        .where(inArray(merchantReceivingAccounts.tenantId, idsToRemove));
-      await options.db
-        .delete(jobRuns)
-        .where(inArray(jobRuns.tenantId, idsToRemove));
-      await options.db
-        .delete(storefrontInquiries)
-        .where(inArray(storefrontInquiries.tenantId, idsToRemove));
-      await options.db
-        .delete(storefrontConfigs)
-        .where(inArray(storefrontConfigs.tenantId, idsToRemove));
-      await options.db
-        .delete(storefrontRevisions)
-        .where(inArray(storefrontRevisions.tenantId, idsToRemove));
-      await options.db
-        .delete(storefrontTemplateDrafts)
-        .where(inArray(storefrontTemplateDrafts.tenantId, idsToRemove));
-      await options.db
-        .delete(tenantOnboarding)
-        .where(inArray(tenantOnboarding.tenantId, idsToRemove));
-      await options.db
-        .delete(tenantMemberships)
-        .where(inArray(tenantMemberships.tenantId, idsToRemove));
-      await options.db.delete(domains).where(inArray(domains.tenantId, idsToRemove));
-      await options.db.delete(invoices).where(inArray(invoices.tenantId, idsToRemove));
-      // Trial history belongs to the configurable-plan schema, which may not be
-      // deployed in environments running the base billing model yet. Keep this
-      // seed compatible with both schemas without importing an optional table.
-      const trialTable = await options.db.execute<{ table_name: string | null }>(
-        sql`select to_regclass('public.subscription_trials')::text as table_name`,
-      );
-      if (trialTable.rows[0]?.table_name) {
-        await options.db.execute(
-          sql`delete from subscription_trials where tenant_id in (${sql.join(
-            idsToRemove.map((id) => sql`${id}::uuid`),
-            sql`, `,
-          )})`,
-        );
-      }
-      await options.db.delete(subscriptions).where(inArray(subscriptions.tenantId, idsToRemove));
-      await options.db
-        .delete(tenantProvisioningAttempts)
-        .where(inArray(tenantProvisioningAttempts.tenantId, idsToRemove));
-      await options.db
-        .delete(tenantProvisioningAttempts)
-        .where(inArray(tenantProvisioningAttempts.platformTenantId, idsToRemove));
-      await options.db
-        .delete(deliverySettings)
-        .where(inArray(deliverySettings.tenantId, idsToRemove));
-      await options.db
-        .delete(paymentOnboarding)
-        .where(inArray(paymentOnboarding.tenantId, idsToRemove));
-      await options.db
-        .delete(notificationPreferences)
-        .where(inArray(notificationPreferences.tenantId, idsToRemove));
-      await options.db
-        .delete(notificationLogs)
-        .where(inArray(notificationLogs.tenantId, idsToRemove));
-      await options.db
-        .delete(notificationDestinations)
-        .where(inArray(notificationDestinations.tenantId, idsToRemove));
-      await options.db
-        .delete(telegramConnectSessions)
-        .where(inArray(telegramConnectSessions.tenantId, idsToRemove));
-      await options.db
-        .delete(inAppNotifications)
-        .where(inArray(inAppNotifications.tenantId, idsToRemove));
-      await options.db.delete(operatorNotes).where(inArray(operatorNotes.tenantId, idsToRemove));
-      await options.db.delete(mediaUsages).where(inArray(mediaUsages.tenantId, idsToRemove));
-      await options.db.delete(mediaAssets).where(inArray(mediaAssets.tenantId, idsToRemove));
-      await options.db.delete(tenants).where(inArray(tenants.id, idsToRemove));
-      if (organizationIdsToRemove.length) {
-        await options.db
-          .delete(organizations)
-          .where(inArray(organizations.id, organizationIdsToRemove));
-      }
-    }
-
     const existingUsers = await options.db
       .select({ id: users.id })
       .from(users)
-      .where(inArray(users.email, emails));
+      .where(
+        or(
+          inArray(users.email, emails),
+          inArray(
+            users.id,
+            demoShops.map((shop) => shop.ids.user),
+          ),
+        ),
+      );
     const userIds = existingUsers.map((row) => row.id);
-    if (userIds.length) {
-      await options.db.delete(accounts).where(inArray(accounts.userId, userIds));
-      await options.db.delete(users).where(inArray(users.id, userIds));
-    }
+    await cleanDemoPlatformData(options.db, {
+      tenantIds: idsToRemove,
+      organizationIds: organizationIdsToRemove,
+      userIds: [...new Set([...userIds, DEMO_OPERATIONS.operator.id, DEMO_OPERATIONS.approver.id])],
+    });
 
     return {
       commerce,
@@ -564,7 +420,9 @@ export function createDemoCleanup(options: DemoCleanupOptions) {
     for (const pl of listed?.price_lists ?? []) {
       const title = (pl.title ?? "").toUpperCase();
       if (title.includes(slug) || title.includes("SEASONAL SALE")) {
-        await options.medusa.delete(`/admin/price-lists/${encodeURIComponent(pl.id)}`).catch(() => null);
+        await options.medusa
+          .delete(`/admin/price-lists/${encodeURIComponent(pl.id)}`)
+          .catch(() => null);
         removed += 1;
       }
     }

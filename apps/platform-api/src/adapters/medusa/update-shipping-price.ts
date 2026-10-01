@@ -72,6 +72,27 @@ export function createMedusaShippingPriceClient(options: MedusaFulfillmentOption
         };
       }
 
+      const data = (await response.json().catch(() => null)) as {
+        amount?: unknown;
+        currencyCode?: unknown;
+      } | null;
+      const confirmedAmount =
+        typeof data?.amount === "number"
+          ? data.amount
+          : typeof data?.amount === "string"
+            ? Number.parseFloat(data.amount)
+            : Number.NaN;
+      const confirmedCurrency =
+        typeof data?.currencyCode === "string" ? data.currencyCode.trim().toLowerCase() : "";
+
+      if (
+        !Number.isFinite(confirmedAmount) ||
+        Math.abs(confirmedAmount - input.amount) >= 0.005 ||
+        confirmedCurrency !== input.currencyCode.trim().toLowerCase()
+      ) {
+        return { ok: false, error: "commerce_backend_error" };
+      }
+
       return { ok: true };
     } catch {
       return { ok: false, error: "commerce_backend_unavailable" };

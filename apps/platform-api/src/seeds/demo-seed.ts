@@ -14,6 +14,7 @@ import { and, eq } from "drizzle-orm";
 
 import { resolveMedusaAdminToken } from "../adapters/medusa/admin-token.js";
 import { createMedusaCommerceProvisioningClient } from "../adapters/medusa/commerce-provisioning.js";
+import { createMedusaShippingPriceClient } from "../adapters/medusa/update-shipping-price.js";
 import { loadPlatformApiEnvFiles } from "../config/env.js";
 import { PLATFORM_PERMISSIONS } from "../context/platform-authorization.js";
 import { createBillingService } from "../modules/billing/service.js";
@@ -21,16 +22,17 @@ import { createStorefrontTemplateService } from "../modules/storefront/template-
 import { createTenantShopProvisioningService } from "../modules/tenants/shop-provisioning.js";
 import { createDemoCleanup } from "./demo-cleanup.js";
 import { createDemoCommerceSeeder } from "./demo-commerce.js";
+import { syncDemoDeliveryPrice } from "./demo-delivery.js";
 import { createDemoMediaSeeder } from "./demo-media.js";
 import { createDemoMedusaClient } from "./demo-medusa-client.js";
 import { seedAnalyticsEvents, seedMetrics, seedPlatformExtras } from "./demo-platform-data.js";
 import {
+  afroShop,
   DEMO_OPERATIONS,
   DEMO_OPERATIONS_PASSWORD,
   DEMO_OWNER_PASSWORD,
   DEMO_SEED_MARKER,
   type DemoShopDefinition,
-  afroShop,
   demoProductImages,
   demoShops,
   fashionShop,
@@ -110,7 +112,7 @@ function resolveTargetShops(): readonly DemoShopDefinition[] {
     ? shopsArg.slice("--shops=".length)
     : shopArg
       ? shopArg.slice("--shop=".length)
-      : process.env.SEED_DEMO_SHOPS ?? process.env.SEED_DEMO_SHOP;
+      : (process.env.SEED_DEMO_SHOPS ?? process.env.SEED_DEMO_SHOP);
 
   if (!raw) return demoShops;
 
@@ -557,6 +559,13 @@ async function seedShop(
     shop.customers.length,
   );
   await seedAnalyticsEvents(platformDb.db, provisioned.tenant.id, shop);
+  await syncDemoDeliveryPrice(
+    tenantRow?.medusaShippingOptionId,
+    createMedusaShippingPriceClient({
+      internalApiToken: platformInternalApiToken,
+      medusaInternalUrl,
+    }),
+  );
   const platformExtras = await seedPlatformExtras(
     platformDb.db,
     shop,
