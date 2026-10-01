@@ -111,6 +111,19 @@ export const shopSocialProfileSchema = z
   });
 
 /** Public business information, distinct from the owner's private account. */
+export const shopAddressSchema = z
+  .object({
+    city: z.string().trim().max(100).default(""),
+    streetAddress: z.string().trim().max(500).default(""),
+    directions: z.string().trim().max(300).default(""),
+    region: z.string().trim().max(100).optional(),
+    subcity: z.string().trim().max(100).optional(),
+    woreda: z.string().trim().max(100).optional(),
+    area: z.string().trim().max(100).optional(),
+    landmark: z.string().trim().max(300).optional(),
+  })
+  .strict();
+
 export const shopDetailsSchema = z
   .object({
     version: z.literal(1),
@@ -119,14 +132,7 @@ export const shopDetailsSchema = z
     primaryPhone: ethiopianPhoneSchema,
     additionalPhones: z.array(ethiopianPhoneSchema).max(3).default([]),
     publicEmail: z.union([z.literal(""), z.string().trim().email().max(254)]).default(""),
-    address: z
-      .object({
-        city: z.string().trim().max(100).default(""),
-        streetAddress: z.string().trim().max(500).default(""),
-        directions: z.string().trim().max(300).default(""),
-      })
-      .strict()
-      .optional(),
+    address: shopAddressSchema.optional(),
     socialProfiles: z.array(shopSocialProfileSchema).max(8).default([]),
     brand: z
       .object({
@@ -184,6 +190,35 @@ export const shopDetailsSchema = z
   });
 
 export type ShopDetails = z.infer<typeof shopDetailsSchema>;
+
+/** Shared human address text; map/provider data never enters this display. */
+export function formatShopAddress(
+  address: Partial<NonNullable<ShopDetails["address"]>> | undefined,
+  separator = " · ",
+) {
+  if (!address) return "";
+  const parts = [
+    address.streetAddress,
+    address.area,
+    address.woreda,
+    address.subcity,
+    address.city,
+    address.region,
+    address.landmark,
+    address.directions,
+  ]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
+  const seen = new Set<string>();
+  return parts
+    .filter((part) => {
+      const key = part.toLocaleLowerCase("en");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(separator);
+}
 
 export const launchReadinessSchema = z.object({
   tenantId: z.string(),

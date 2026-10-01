@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  formatShopAddress,
   normalizeEthiopianPhone,
   normalizeShopSocialProfileUrl,
   shopDetailsSchema,
@@ -22,6 +23,27 @@ test("normalizes familiar Ethiopian phone notation", () => {
     }).success,
     true,
   );
+});
+
+test("address display preserves meaningful landmarks without duplicating city and region", () => {
+  assert.equal(
+    formatShopAddress({
+      city: "Addis Ababa",
+      region: "Addis Ababa",
+      subcity: "Bole",
+      woreda: "03",
+      area: "Atlas",
+      streetAddress: "Example building",
+      landmark: "Opposite the pharmacy",
+      directions: "Side entrance",
+    }),
+    "Example building · Atlas · 03 · Bole · Addis Ababa · Opposite the pharmacy · Side entrance",
+  );
+  assert.equal(
+    formatShopAddress({ city: "Adama", streetAddress: "Main street", directions: "" }, "\n"),
+    "Main street\nAdama",
+  );
+  assert.equal(formatShopAddress(undefined), "");
 });
 
 test("rejects duplicate phones and links that impersonate a social host", () => {
@@ -103,4 +125,25 @@ test("accepts restrained document branding and rejects unsafe values", () => {
     }).success,
     false,
   );
+});
+
+test("manual Ethiopian address details survive shop contract validation", () => {
+  const address = {
+    city: "Addis Ababa",
+    region: "Addis Ababa",
+    subcity: "Bole",
+    woreda: "03",
+    area: "Atlas",
+    streetAddress: "First floor, Example building",
+    landmark: "Opposite the pharmacy",
+    directions: "Use the side entrance",
+  };
+  const result = shopDetailsSchema.safeParse({
+    version: 1,
+    categories: ["Fashion"],
+    primaryPhone: "0912345678",
+    address,
+  });
+  assert.equal(result.success, true);
+  if (result.success) assert.deepEqual(result.data.address, address);
 });

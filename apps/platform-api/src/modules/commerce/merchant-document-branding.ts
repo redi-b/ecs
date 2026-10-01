@@ -1,4 +1,4 @@
-import type { MerchantDocumentBranding, ShopDetails } from "@ecs/contracts";
+import { formatShopAddress, type MerchantDocumentBranding, type ShopDetails } from "@ecs/contracts";
 
 const presetColors: Record<NonNullable<ShopDetails["brand"]>["presetId"], string> = {
   amber: "#b45309",
@@ -21,11 +21,7 @@ export function snapshotMerchantDocumentBranding(
       settings?.accentColor ||
       details?.brand?.customPrimary ||
       presetColors[details?.brand?.presetId ?? "original"],
-    address:
-      showContactDetails && address
-        ? [address.streetAddress, address.city, address.directions].filter(Boolean).join(" · ") ||
-          null
-        : null,
+    address: showContactDetails && address ? formatShopAddress(address) || null : null,
     email: showContactDetails && details?.publicEmail ? details.publicEmail : null,
     footerNote: settings?.footerNote || null,
     logoUrl: settings?.logoUrl || null,

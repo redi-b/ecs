@@ -67,6 +67,8 @@ function canOpenSettingsSection(
 export function SettingsWorkspace({
   delivery,
   domains,
+  domainSetup,
+  domainsLoadFailed,
   initialSection,
   payments,
   paymentsSupportHref = null,
@@ -516,7 +518,15 @@ export function SettingsWorkspace({
             />
           ) : null}
 
-          {section === "domains" ? <DomainsSection initialDomains={domains} /> : null}
+          {section === "domains" ? (
+            <DomainsSection
+              key={summary.tenant.id}
+              tenantId={summary.tenant.id}
+              initialDomains={domains}
+              initialSetup={domainSetup}
+              initialLoadFailed={domainsLoadFailed}
+            />
+          ) : null}
 
           {section === "account" ? (
             <AccountSecurityPanel

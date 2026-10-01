@@ -31,6 +31,7 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { findPlanInvoice } from "./plan-invoice";
 
 type CatalogPlan = {
   features: unknown;
@@ -172,6 +173,7 @@ export function BillingWorkspace({
   const activeProductLimit = getProductLimit(activePlan.limits);
 
   const openInvoice = invoices.find((invoice) => invoice.status === "pending") ?? null;
+  const selectedPlanInvoice = findPlanInvoice(invoices, chosenPlan.id);
   const history = invoices.filter((invoice) => invoice.id !== openInvoice?.id);
 
   const isCurrentFree = activePlan.isFree;
@@ -328,9 +330,9 @@ export function BillingWorkspace({
 
   const primaryLabel = (() => {
     // Pay belongs on paid selection; free selection never shows Pay (open invoice is above).
-    if (openInvoice && !selectedIsFree) {
+    if (selectedPlanInvoice && !selectedIsFree) {
       return t("billing.payment.payAmount", {
-        amount: formatMoney(openInvoice.amount, openInvoice.currency, formatNumber),
+        amount: formatMoney(selectedPlanInvoice.amount, selectedPlanInvoice.currency, formatNumber),
       });
     }
     if (selectedIsCurrent && selectedIsFree) {
@@ -382,7 +384,7 @@ export function BillingWorkspace({
     (selectedIsCurrent && selectedIsFree) ||
     (selectedIsCurrent &&
       !selectedIsFree &&
-      !openInvoice &&
+      !selectedPlanInvoice &&
       !hasScheduledDowngrade &&
       !inRenewalWindow &&
       subscription.status !== "past_due");
@@ -646,7 +648,7 @@ export function BillingWorkspace({
                 ? openInvoice
                   ? t("billing.hint.onStarterSelectGrowth")
                   : t("billing.hint.alreadyOnPlan")
-                : openInvoice
+                : selectedPlanInvoice
                   ? t("billing.hint.finishPayment")
                   : hasScheduledDowngrade
                     ? t("billing.hint.scheduledKeep", {
@@ -670,26 +672,30 @@ export function BillingWorkspace({
                         next: chosenPlan.name,
                       })
                     : t("billing.hint.switchNowPeriodEnded", { name: chosenPlan.name })
-                : openInvoice
+                : selectedPlanInvoice
                   ? t("billing.hint.completeOrContinue")
                   : t("billing.hint.chargedForMonth", {
                       price: formatPlanPrice(chosenPlan.price, t, formatNumber),
                     })}
           </p>
-          {openInvoice && !selectedIsFree ? (
+          {selectedPlanInvoice && !selectedIsFree ? (
             !hasPaymentDestinations ? (
               <Button className="shrink-0 sm:min-w-[12rem]" disabled type="button">
                 {t("billing.payment.detailsUnavailable")}
               </Button>
-            ) : openInvoice.paymentEvidence?.status === "needs_review" ? (
+            ) : selectedPlanInvoice.paymentEvidence?.status === "needs_review" ? (
               <Button className="shrink-0 sm:min-w-[12rem]" disabled type="button">
                 {t("billing.payment.reviewPending")}
               </Button>
             ) : (
               <PaymentEvidenceDialog
-                amount={formatMoney(openInvoice.amount, openInvoice.currency, formatNumber)}
+                amount={formatMoney(
+                  selectedPlanInvoice.amount,
+                  selectedPlanInvoice.currency,
+                  formatNumber,
+                )}
                 {...(billingPath ? { billingPath } : {})}
-                invoiceId={openInvoice.id}
+                invoiceId={selectedPlanInvoice.id}
                 paymentDestinations={paymentDestinations}
                 tenantId={tenantId}
                 triggerLabel={primaryLabel}
@@ -742,6 +748,17 @@ export function BillingWorkspace({
                     {formatMoney(invoice.amount, invoice.currency, formatNumber)}
                   </span>
                   <Badge variant="secondary">{invoiceStatusLabel(invoice.status, t)}</Badge>
+                  {invoice.status === "pending" &&
+                  hasPaymentDestinations &&
+                  invoice.paymentEvidence?.status !== "needs_review" ? (
+                    <PaymentEvidenceDialog
+                      amount={formatMoney(invoice.amount, invoice.currency, formatNumber)}
+                      {...(billingPath ? { billingPath } : {})}
+                      invoiceId={invoice.id}
+                      paymentDestinations={paymentDestinations}
+                      tenantId={tenantId}
+                    />
+                  ) : null}
                 </div>
               </li>
             ))}

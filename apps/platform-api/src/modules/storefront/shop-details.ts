@@ -1,4 +1,4 @@
-import { shopDetailsSchema } from "@ecs/contracts";
+import { formatShopAddress, shopDetailsSchema } from "@ecs/contracts";
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -31,10 +31,7 @@ export function applyShopDetails(data: unknown, details: unknown): unknown {
       phone: shop.primaryPhone,
       additionalPhones: shop.additionalPhones,
       email: shop.publicEmail || undefined,
-      address:
-        [shop.address?.streetAddress, shop.address?.city, shop.address?.directions]
-          .filter(Boolean)
-          .join(" · ") || undefined,
+      address: formatShopAddress(shop.address) || undefined,
       socialLinks: shop.socialProfiles.map((profile) => ({
         label: socialLabels[profile.platform],
         href: profile.url,

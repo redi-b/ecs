@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
+import { useState } from "react";
 import { type AppIcon, AppIcons } from "@/components/app/icons";
-import { SETTINGS_SECTION_IDS, type SettingsSectionId } from "@/features/settings/settings-nav";
-import type { MessageKey } from "@/i18n/messages";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import {
+  groupSettingsSections,
+  SETTINGS_SECTION_IDS,
+  type SettingsSectionId,
+  searchSettingsSections,
+} from "./settings-nav";
 
 const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   shop: AppIcons.settings,
@@ -22,15 +38,6 @@ const SECTION_ICONS: Record<SettingsSectionId, AppIcon> = {
   account: AppIcons.user,
 };
 
-function sectionLabelKey(id: SettingsSectionId): MessageKey {
-  return `settings.sections.${id}.label` as MessageKey;
-}
-
-/**
- * Settings section switcher.
- * Mobile: sticky full-viewport chip strip (horizontal scroll inside the bar).
- * Desktop: vertical sidebar list with short blurbs.
- */
 export function SettingsSectionNav({
   active,
   onSelect,
@@ -41,123 +48,140 @@ export function SettingsSectionNav({
   visibleSections?: SettingsSectionId[];
 }) {
   const { t } = useI18n();
-  const scrollerRef = useRef<HTMLUListElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-
-    function update() {
-      if (!el) return;
-      const max = el.scrollWidth - el.clientWidth;
-      setCanScrollLeft(el.scrollLeft > 4);
-      setCanScrollRight(max > 4 && el.scrollLeft < max - 4);
-    }
-
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => {
-      el.removeEventListener("scroll", update);
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const activeButton = el.querySelector<HTMLElement>(`[data-section="${active}"]`);
-    if (!activeButton) return;
-    // Scroll only the chip strip — scrollIntoView can jank the whole page on mobile.
-    const left = activeButton.offsetLeft - (el.clientWidth - activeButton.offsetWidth) / 2;
-    el.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
-  }, [active]);
-
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const groups = groupSettingsSections(searchSettingsSections(query, visibleSections, t));
+  const ActiveIcon = SECTION_ICONS[active];
   return (
     <nav
       aria-label={t("settings.navAria")}
-      className={cn(
-        // Sticky under AppHeader.
-        "sticky z-30 self-start top-14 sm:top-16 lg:top-20",
-        // Mobile: break out of PageShell padding to true viewport width so scrolling
-        // content never peeks in the side gutters under a half-width bar.
-        "w-screen max-w-[100vw] ml-[calc(50%-50vw)]",
-        "border-b border-border/70 bg-background px-4 py-2.5 sm:px-5",
-        // Desktop: normal sidebar column (no viewport breakout).
-        "lg:ml-0 lg:w-56 lg:max-w-none lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0",
-        "lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto",
-      )}
+      className="sticky top-14 z-30 -mx-4 min-w-0 self-stretch border-b border-border/70 bg-background px-4 py-3 sm:top-16 sm:-mx-5 sm:px-5 md:-mx-8 md:px-8 lg:top-20 lg:mx-0 lg:w-52 lg:shrink-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0"
     >
-      {/* min-w-0: chips scroll inside the bar; do not expand the page. */}
-      <div className="relative min-w-0">
-        <div
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 z-10 flex w-8 items-center justify-start bg-background pl-0.5 transition-opacity lg:hidden",
-            canScrollLeft ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <AppIcons.arrowLeft className="size-3.5 text-muted-foreground" />
-        </div>
-        <div
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-10 flex w-8 items-center justify-end bg-background pr-0.5 transition-opacity lg:hidden",
-            canScrollRight ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <AppIcons.arrowRight className="size-3.5 text-muted-foreground" />
-        </div>
-        <ul
-          className={cn(
-            "flex min-w-0 gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth",
-            "touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            "lg:flex-col lg:gap-0.5 lg:overflow-visible lg:touch-auto",
-          )}
-          ref={scrollerRef}
-        >
-          {visibleSections.map((id) => {
-            const isActive = active === id;
-            const Icon = SECTION_ICONS[id];
-            return (
-              <li className="shrink-0 lg:w-full" key={id}>
-                <button
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-full border px-3 py-2 text-left transition-colors",
-                    "lg:gap-2.5 lg:rounded-lg lg:border-transparent lg:px-2.5 lg:py-2",
-                    "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-                    isActive
-                      ? "border-primary/25 bg-primary/10 text-foreground lg:border-transparent lg:bg-primary/10"
-                      : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground lg:bg-transparent lg:hover:bg-muted/45",
-                  )}
-                  data-section={id}
-                  onClick={() => onSelect(id)}
-                  type="button"
-                >
-                  <Icon
-                    className={cn(
-                      "size-3.5 shrink-0 lg:mt-0.5 lg:size-4",
-                      isActive ? "text-primary opacity-100" : "opacity-75",
-                    )}
-                  />
-                  <span className="min-w-0">
-                    <span
-                      className={cn(
-                        "block text-sm whitespace-nowrap",
-                        isActive ? "font-semibold tracking-tight" : "font-medium",
-                      )}
-                    >
-                      {t(sectionLabelKey(id))}
-                    </span>
-                  </span>
-                </button>
+      <div className="flex justify-center lg:hidden">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full max-w-sm justify-between"
+              role="combobox"
+              aria-expanded={open}
+              aria-label={t("settings.navAria")}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <ActiveIcon aria-hidden />
+                {t(`settings.sections.${active}.label`)}
+              </span>
+              <AppIcons.arrowDown aria-hidden />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] p-0"
+            align="center"
+            collisionPadding={16}
+          >
+            <Command
+              filter={(value, search) =>
+                searchSettingsSections(search, visibleSections, t).includes(
+                  value as SettingsSectionId,
+                )
+                  ? 1
+                  : 0
+              }
+            >
+              <CommandInput
+                placeholder={t("settings.search.placeholder")}
+                aria-label={t("settings.search.placeholder")}
+                size="panel"
+              />
+              <CommandList>
+                <CommandEmpty>{t("settings.search.empty")}</CommandEmpty>
+                {groupSettingsSections(visibleSections).map((group) => (
+                  <CommandGroup key={group.id} heading={t(`settings.groups.${group.id}`)}>
+                    {group.sections.map((id) => {
+                      const Icon = SECTION_ICONS[id];
+                      return (
+                        <CommandItem
+                          key={id}
+                          value={id}
+                          onSelect={() => {
+                            setOpen(false);
+                            onSelect(id);
+                          }}
+                        >
+                          <Icon aria-hidden />
+                          <span>{t(`settings.sections.${id}.label`)}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="hidden lg:flex lg:max-h-[calc(100dvh-7rem)] lg:flex-col lg:gap-4">
+        <InputGroup>
+          <InputGroupAddon>
+            <AppIcons.search aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("settings.search.placeholder")}
+            aria-label={t("settings.search.placeholder")}
+          />
+        </InputGroup>
+        <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(100dvh-10.5rem)] [&_[data-slot=scroll-area-viewport]]:overscroll-contain">
+          <ul className="flex flex-col gap-4 pr-2 pb-4">
+            {groups.map((group) => (
+              <li key={group.id}>
+                <h3 className="px-2.5 pb-1.5 text-xs font-medium text-muted-foreground">
+                  {t(`settings.groups.${group.id}`)}
+                </h3>
+                <ul className="flex flex-col gap-0.5">
+                  {group.sections.map((id) => {
+                    const Icon = SECTION_ICONS[id];
+                    return (
+                      <li key={id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-current={id === active ? "page" : undefined}
+                              data-section={id}
+                              onClick={() => onSelect(id)}
+                              className={cn(
+                                "flex min-h-10 w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                                id === active
+                                  ? "bg-primary/10 text-foreground"
+                                  : "text-muted-foreground hover:bg-muted/45 hover:text-foreground",
+                              )}
+                            >
+                              <Icon
+                                aria-hidden
+                                className={cn("size-4 shrink-0", id === active && "text-primary")}
+                              />
+                              <span>{t(`settings.sections.${id}.label`)}</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {t(`settings.sections.${id}.description`)}
+                          </TooltipContent>
+                        </Tooltip>
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+          {!groups.length && (
+            <output className="block px-2.5 pb-4 text-sm text-muted-foreground">
+              {t("settings.search.empty")}
+            </output>
+          )}
+        </ScrollArea>
       </div>
     </nav>
   );

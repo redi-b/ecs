@@ -126,7 +126,7 @@ export function QuickSaleCatalog({
 
   return (
     <section
-      className="flex min-h-0 flex-1 flex-col bg-background"
+      className="flex min-h-0 min-w-0 flex-1 flex-col bg-background"
       aria-label={t("quickSale.products")}
     >
       <div className="shrink-0 border-b bg-background px-3 py-2.5 sm:px-4">
@@ -194,7 +194,7 @@ export function QuickSaleCatalog({
 
       <div
         aria-busy={loading || loadingMore || undefined}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4"
       >
         {loading ? (
           <output aria-label={t("quickSale.productsLoading")} className="block">
@@ -242,7 +242,7 @@ export function QuickSaleCatalog({
                 />
               ))}
             </div>
-            {hasMore && categoryId === "all" && !query ? (
+            {hasMore ? (
               <div className="flex justify-center py-5">
                 <Button disabled={loadingMore} onClick={onLoadMore} variant="outline">
                   {loadingMore ? <AppIcons.loader className="animate-spin" /> : null}
@@ -255,7 +255,7 @@ export function QuickSaleCatalog({
       </div>
 
       <Sheet open={Boolean(activeProduct)} onOpenChange={(open) => !open && setActiveProduct(null)}>
-        <SheetContent className="sm:max-w-md" side="right">
+        <SheetContent className="w-full sm:max-w-md" side="right">
           {activeProduct ? (
             <>
               <SheetHeader>

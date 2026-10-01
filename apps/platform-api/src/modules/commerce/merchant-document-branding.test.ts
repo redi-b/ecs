@@ -6,7 +6,12 @@ test("freezes restrained public document branding without private account data",
   assert.deepEqual(
     snapshotMerchantDocumentBranding({
       additionalPhones: [],
-      address: { city: "Addis Ababa", directions: "Near Meskel Square", streetAddress: "Bole" },
+      address: {
+        city: "Addis Ababa",
+        directions: "Near Meskel Square",
+        streetAddress: "Bole",
+        landmark: "Blue gate",
+      },
       brand: { presetId: "teal" },
       categories: ["Retail"],
       description: "",
@@ -23,7 +28,7 @@ test("freezes restrained public document branding without private account data",
     }),
     {
       accentColor: "#123456",
-      address: "Bole · Addis Ababa · Near Meskel Square",
+      address: "Bole · Addis Ababa · Blue gate · Near Meskel Square",
       email: "hello@example.com",
       footerNote: "Thank you for choosing us.",
       logoUrl: "https://cdn.example.com/logo.png",

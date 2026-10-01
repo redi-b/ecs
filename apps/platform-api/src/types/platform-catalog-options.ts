@@ -28,6 +28,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantDomainRemovalResult,
   TenantDomainVerificationResult,
   TenantShopProvisioningResult,
 } from "./tenant.js";
@@ -205,6 +206,13 @@ export type PlatformCatalogOptions = {
   listStorefrontTemplates?: (() => Promise<StorefrontTemplateCatalogItem[]>) | undefined;
   listTenantDomains?:
     | ((input: { tenantId: string }) => Promise<TenantDomainListResult>)
+    | undefined;
+  removeTenantDomain?:
+    | ((input: {
+        domainId: string;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantDomainRemovalResult>)
     | undefined;
   verifyTenantDomainOwnership?:
     | ((input: {

@@ -8,8 +8,6 @@ export type HandleState =
   | { status: "available"; message: string; hostname: string }
   | { status: "unavailable"; message: string };
 
-export const ONBOARDING_DRAFT_KEY = "ecs:onboarding-draft";
-
 export const BUSINESS_CATEGORY_OPTIONS = [
   "Groceries",
   "Fashion",

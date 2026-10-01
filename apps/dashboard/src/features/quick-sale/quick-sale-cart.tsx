@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type RefObject, useId, useState } from "react";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
@@ -34,6 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { PosCartSurface, usePosDesktop } from "./pos-cart-surface";
 import type {
   DiscountType,
   QuickSaleProduct,
@@ -62,6 +63,7 @@ export function QuickSaleCart({
   discountValue,
   lines,
   mobileOpen,
+  mobileTriggerRef,
   onClear,
   onCloseMobile,
   onComplete,
@@ -102,6 +104,7 @@ export function QuickSaleCart({
   discountValue: string;
   lines: SaleLine[];
   mobileOpen: boolean;
+  mobileTriggerRef: RefObject<HTMLButtonElement | null>;
   onClear: () => void;
   onCloseMobile: () => void;
   onComplete: (completion: "paid" | "pay_later") => void;
@@ -129,6 +132,7 @@ export function QuickSaleCart({
   variantById: Map<string, VariantDetail>;
 }) {
   const { formatNumber, t } = useI18n();
+  const desktop = usePosDesktop();
   const [customerOpen, setCustomerOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
@@ -137,12 +141,13 @@ export function QuickSaleCart({
   const editingVariant = editingVariantId ? variantById.get(editingVariantId) : null;
 
   return (
-    <aside
-      className={cn(
-        "z-40 flex min-h-0 flex-col bg-card lg:static lg:z-auto lg:border-l",
-        mobileOpen ? "fixed inset-0" : "hidden lg:flex",
-      )}
-      aria-label={t("quickSale.currentSale")}
+    <PosCartSurface
+      desktop={desktop}
+      mobileOpen={mobileOpen}
+      onCloseMobile={onCloseMobile}
+      busy={saving || completing}
+      title={t("quickSale.currentSale")}
+      triggerRef={mobileTriggerRef}
     >
       {stage === "complete" && completedSale ? (
         <CompletionState completedSale={completedSale} onNewSale={onNewSale} />
@@ -167,7 +172,8 @@ export function QuickSaleCart({
           <div className="flex h-14 shrink-0 items-center gap-2 border-b px-3 sm:px-4">
             <Button
               aria-label={t("common.back")}
-              className="lg:hidden"
+              className="size-10 lg:hidden"
+              disabled={saving || completing}
               onClick={onCloseMobile}
               size="icon-sm"
               variant="ghost"
@@ -248,11 +254,11 @@ export function QuickSaleCart({
                               <AppIcons.trash />
                             </Button>
                           </div>
-                          <div className="mt-2 flex items-center justify-between gap-3">
-                            <div className="inline-flex h-8 items-center rounded-full border bg-background">
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <div className="inline-flex h-10 items-center rounded-full border bg-background lg:h-8">
                               <Button
                                 aria-label={t("quickSale.decreaseQuantity")}
-                                className="size-8 rounded-full"
+                                className="size-10 lg:size-8"
                                 onClick={() =>
                                   onUpdateLine(line.variantId, {
                                     quantity: Math.max(1, line.quantity - 1),
@@ -268,7 +274,7 @@ export function QuickSaleCart({
                               </span>
                               <Button
                                 aria-label={t("quickSale.increaseQuantity")}
-                                className="size-8 rounded-full"
+                                className="size-10 lg:size-8"
                                 disabled={
                                   variant?.availableQuantity != null &&
                                   line.quantity >= variant.availableQuantity
@@ -362,7 +368,7 @@ export function QuickSaleCart({
                 <TooltipContent>{t("quickSale.saveCart")}</TooltipContent>
               </Tooltip>
               <Button
-                className="justify-between px-4"
+                className="h-11 justify-between px-4 lg:h-8"
                 disabled={!valid || completing}
                 onClick={() => onSetStage("payment")}
               >
@@ -405,7 +411,7 @@ export function QuickSaleCart({
         open={Boolean(editingLine)}
         variant={editingVariant ?? null}
       />
-    </aside>
+    </PosCartSurface>
   );
 }
 
@@ -440,11 +446,20 @@ function PaymentStage({
 }) {
   const { formatNumber, t } = useI18n();
   const tenders: Tender[] = ["cash", "telebirr", "cbe_birr", "bank_transfer", "other"];
+  const cashId = useId();
+  const referenceId = useId();
 
   return (
     <>
       <div className="flex h-14 shrink-0 items-center gap-2 border-b px-3 sm:px-4">
-        <Button aria-label={t("common.back")} onClick={onBack} size="icon-sm" variant="ghost">
+        <Button
+          aria-label={t("common.back")}
+          className="size-10 lg:size-8"
+          disabled={completing}
+          onClick={onBack}
+          size="icon-sm"
+          variant="ghost"
+        >
           <AppIcons.arrowLeft />
         </Button>
         <div className="min-w-0 flex-1">
@@ -454,7 +469,7 @@ function PaymentStage({
           </p>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
         <div className="grid grid-cols-2 gap-2">
           {tenders.map((value) => (
             <button
@@ -477,9 +492,11 @@ function PaymentStage({
         {tender === "cash" ? (
           <div className="mt-5 space-y-3">
             <Field>
-              <FieldLabel>{t("quickSale.cashReceived")}</FieldLabel>
+              <FieldLabel htmlFor={cashId}>{t("quickSale.cashReceived")}</FieldLabel>
               <InputGroup>
                 <InputGroupInput
+                  id={cashId}
+                  className="text-base lg:text-sm"
                   autoFocus
                   inputMode="decimal"
                   min={0}
@@ -503,15 +520,20 @@ function PaymentStage({
           <div className="mt-5 space-y-3">
             <Badge variant="outline">{t("quickSale.merchantRecorded")}</Badge>
             <Field>
-              <FieldLabel>{t("quickSale.referenceOptional")}</FieldLabel>
-              <Input onChange={(event) => onSetReference(event.target.value)} value={reference} />
+              <FieldLabel htmlFor={referenceId}>{t("quickSale.referenceOptional")}</FieldLabel>
+              <Input
+                id={referenceId}
+                className="text-base lg:text-sm"
+                onChange={(event) => onSetReference(event.target.value)}
+                value={reference}
+              />
             </Field>
           </div>
         )}
       </div>
       <div className="shrink-0 space-y-2 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
         <Button
-          className="w-full justify-between px-4"
+          className="h-11 w-full justify-between px-4 lg:h-8"
           disabled={!valid || !canUpdate || completing}
           onClick={() => onComplete("paid")}
         >
@@ -519,7 +541,7 @@ function PaymentStage({
           <span className="font-mono tabular-nums">{formatEtb(total, formatNumber)}</span>
         </Button>
         <Button
-          className="w-full"
+          className="h-11 w-full lg:h-8"
           disabled={!valid || completing}
           onClick={() => onComplete("pay_later")}
           variant="outline"

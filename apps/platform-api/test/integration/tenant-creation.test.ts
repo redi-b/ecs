@@ -61,6 +61,25 @@ describe("tenant creation", () => {
   });
 
   it("creates a tenant shop for the current platform user", async () => {
+    const shopDetails = {
+      version: 1,
+      categories: ["Fashion"],
+      primaryPhone: "+251912345678",
+      description: "",
+      additionalPhones: [],
+      publicEmail: "",
+      socialProfiles: [],
+      address: {
+        city: "Addis Ababa",
+        region: "Addis Ababa",
+        subcity: "Bole",
+        woreda: "03",
+        area: "Atlas",
+        streetAddress: "Example building",
+        landmark: "Opposite the pharmacy",
+        directions: "Side entrance",
+      },
+    };
     const app = appWithResolution(
       { ok: false, error: "shop_context_required" },
       {
@@ -73,6 +92,7 @@ describe("tenant creation", () => {
             handle: "new-shop",
             ownerUserId: "user_1",
             templateKey: "luvia@1",
+            shopDetails,
           });
 
           return {
@@ -100,6 +120,7 @@ describe("tenant creation", () => {
         name: "New Shop",
         handle: "new-shop",
         templateKey: "luvia@1",
+        shopDetails,
       }),
       headers: {
         "content-type": "application/json",

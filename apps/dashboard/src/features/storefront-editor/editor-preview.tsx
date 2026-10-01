@@ -1,6 +1,11 @@
 "use client";
 
-import { contrastingInk, contrastRatio, deriveTextContrast, getStorefrontEditorManifest } from "@ecs/storefront-templates";
+import {
+  contrastingInk,
+  contrastRatio,
+  deriveTextContrast,
+  getStorefrontEditorManifest,
+} from "@ecs/storefront-templates";
 import { RiEditLine, RiExternalLinkLine, RiRefreshLine } from "@remixicon/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -10,6 +15,7 @@ import {
   POPOVER_MOTION_CLASSNAME,
   useStorefrontEditor,
 } from "@/features/storefront-editor/editor-config";
+import { useI18n } from "@/i18n/provider";
 import { isMixedContentPreviewUrl } from "@/lib/storefront-preview-url";
 import { cn } from "@/lib/utils";
 import { getEffectiveLocalizedTranslations } from "./editor-localization";
@@ -65,7 +71,7 @@ export function TemplatePreview({
   }
 
   if (manifest?.previewMode === "iframe") {
-    return <UnavailableIframePreview templateKey={templateKey} />;
+    return <UnavailableIframePreview />;
   }
 
   return <UnsupportedTemplatePreview templateKey={templateKey} />;
@@ -78,16 +84,15 @@ function withPreviewPage(previewUrl: string, previewPage: string, previewLocale:
   return url.toString();
 }
 
-function UnavailableIframePreview({ templateKey }: { templateKey: string }) {
+function UnavailableIframePreview() {
+  const { t } = useI18n();
   return (
     <div className="flex min-h-[32rem] items-center justify-center p-8 text-center">
       <div className="max-w-md rounded-lg border bg-muted/30 p-6">
-        <div className="text-sm font-semibold">Preview session unavailable</div>
+        <div className="text-sm font-semibold">{t("editor.preview.unavailableTitle")}</div>
         <p className="mt-2 text-sm text-muted-foreground">
-          The storefront renderer is registered, but the editor could not open a signed preview
-          session. Refresh after confirming the preview services are running.
+          {t("editor.preview.unavailableDescription")}
         </p>
-        <p className="mt-3 font-mono text-xs text-muted-foreground">{templateKey}</p>
       </div>
     </div>
   );
@@ -112,6 +117,7 @@ function StorefrontIframePreview({
   showEditHints: boolean;
   viewport: "desktop" | "mobile";
 }) {
+  const { t } = useI18n();
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const connectedOriginRef = useRef<string | null>(null);
@@ -146,40 +152,39 @@ function StorefrontIframePreview({
     // JSON contract, so normalize it before it crosses the iframe boundary.
     return JSON.parse(JSON.stringify(values)) as Record<string, unknown>;
   }, [data, liveProps, manifest, previewLocale, templateKey]);
-  const resolvedTheme = useMemo(
-    () => {
-      const brandText =
-        liveProps.primaryColor && liveProps.backgroundColor
-          ? deriveTextContrast(liveProps.primaryColor, liveProps.backgroundColor)
-          : undefined;
-      return {
-        accent: liveProps.accentColor,
-        background: liveProps.backgroundColor,
-        foreground: liveProps.foregroundColor,
-        muted: liveProps.mutedColor,
-        onAccent: liveProps.accentColor ? contrastingInk(liveProps.accentColor) : undefined,
-        onPrimary: liveProps.primaryColor ? contrastingInk(liveProps.primaryColor) : undefined,
-        primary: liveProps.primaryColor,
-        primaryFill: brandText?.fill ?? liveProps.primaryColor,
-        primaryText: brandText?.text ?? liveProps.primaryColor,
-        primaryLink: brandText?.link ?? liveProps.primaryColor,
-        primaryDark: liveProps.primaryColor ? `color-mix(in srgb, ${liveProps.primaryColor}, #000 65%)` : undefined,
-        primaryEdge:
-          liveProps.primaryColor && liveProps.backgroundColor && liveProps.foregroundColor
-            ? contrastRatio(liveProps.primaryColor, liveProps.backgroundColor) < 1.3
-              ? liveProps.foregroundColor
-              : "transparent"
-            : undefined,
-      };
-    },
-    [
-      liveProps.accentColor,
-      liveProps.backgroundColor,
-      liveProps.foregroundColor,
-      liveProps.mutedColor,
-      liveProps.primaryColor,
-    ],
-  );
+  const resolvedTheme = useMemo(() => {
+    const brandText =
+      liveProps.primaryColor && liveProps.backgroundColor
+        ? deriveTextContrast(liveProps.primaryColor, liveProps.backgroundColor)
+        : undefined;
+    return {
+      accent: liveProps.accentColor,
+      background: liveProps.backgroundColor,
+      foreground: liveProps.foregroundColor,
+      muted: liveProps.mutedColor,
+      onAccent: liveProps.accentColor ? contrastingInk(liveProps.accentColor) : undefined,
+      onPrimary: liveProps.primaryColor ? contrastingInk(liveProps.primaryColor) : undefined,
+      primary: liveProps.primaryColor,
+      primaryFill: brandText?.fill ?? liveProps.primaryColor,
+      primaryText: brandText?.text ?? liveProps.primaryColor,
+      primaryLink: brandText?.link ?? liveProps.primaryColor,
+      primaryDark: liveProps.primaryColor
+        ? `color-mix(in srgb, ${liveProps.primaryColor}, #000 65%)`
+        : undefined,
+      primaryEdge:
+        liveProps.primaryColor && liveProps.backgroundColor && liveProps.foregroundColor
+          ? contrastRatio(liveProps.primaryColor, liveProps.backgroundColor) < 1.3
+            ? liveProps.foregroundColor
+            : "transparent"
+          : undefined,
+    };
+  }, [
+    liveProps.accentColor,
+    liveProps.backgroundColor,
+    liveProps.foregroundColor,
+    liveProps.mutedColor,
+    liveProps.primaryColor,
+  ]);
   const postConnected = useCallback((message: Record<string, unknown>) => {
     const origin = connectedOriginRef.current;
     if (!origin) return;
@@ -401,11 +406,10 @@ function StorefrontIframePreview({
               <RiRefreshLine className="size-5" aria-hidden />
             </div>
             <strong className="mt-4 text-base font-semibold">
-              The storefront preview did not respond
+              {t("editor.preview.failedTitle")}
             </strong>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-              The storefront may be restarting or unable to render this draft. Retry here, or open
-              the preview separately to inspect the storefront error.
+              {t("editor.preview.failedDescription")}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <Button
@@ -419,12 +423,12 @@ function StorefrontIframePreview({
                 type="button"
               >
                 <RiRefreshLine aria-hidden />
-                Retry preview
+                {t("editor.preview.retry")}
               </Button>
               <Button asChild size="sm" variant="outline">
                 <a href={previewUrl} rel="noreferrer" target="_blank">
                   <RiExternalLinkLine aria-hidden />
-                  Open separately
+                  {t("editor.preview.openSeparately")}
                 </a>
               </Button>
             </div>
@@ -435,7 +439,7 @@ function StorefrontIframePreview({
               aria-hidden
               className="size-4 animate-spin rounded-full border-2 border-muted-foreground/25 border-t-foreground"
             />
-            <span>Loading preview</span>
+            <span>{t("editor.preview.loading")}</span>
           </div>
         )}
       </div>
@@ -469,15 +473,15 @@ function applyLocalizedPreviewValue(fields: Record<string, unknown>, path: strin
   if (value.trim()) fields[path] = value;
 }
 
-export function UnsupportedTemplatePreview({ templateKey }: { templateKey: string }) {
+export function UnsupportedTemplatePreview(_props: { templateKey: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex min-h-[32rem] items-center justify-center p-8 text-center">
       <div className="max-w-md rounded-lg border bg-muted/30 p-6">
-        <div className="text-sm font-semibold">Preview adapter unavailable</div>
+        <div className="text-sm font-semibold">{t("editor.preview.unsupportedTitle")}</div>
         <p className="mt-2 text-sm text-muted-foreground">
-          This storefront template does not have a registered preview renderer yet.
+          {t("editor.preview.unsupportedDescription")}
         </p>
-        <p className="mt-3 font-mono text-xs text-muted-foreground">{templateKey}</p>
       </div>
     </div>
   );

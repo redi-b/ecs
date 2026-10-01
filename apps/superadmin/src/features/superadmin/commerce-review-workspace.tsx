@@ -1,7 +1,10 @@
 "use client";
 
 import type { SuperadminCommerceReview } from "@ecs/contracts";
-import { RiMoneyDollarCircleLine as Banknote, RiFileCheckLine as FileCheck2 } from "@remixicon/react";
+import {
+  RiMoneyDollarCircleLine as Banknote,
+  RiFileCheckLine as FileCheck2,
+} from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
@@ -99,7 +102,11 @@ export function CommerceReviewWorkspace({
                       <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
                         <InvoiceAction invoice={invoice} mode="paid" tenantId={tenantId} />
                         {invoice.paymentEvidence?.status === "needs_review" ? (
-                          <InvoiceAction invoice={invoice} mode="evidence_rejected" tenantId={tenantId} />
+                          <InvoiceAction
+                            invoice={invoice}
+                            mode="evidence_rejected"
+                            tenantId={tenantId}
+                          />
                         ) : (
                           <InvoiceAction invoice={invoice} mode="void" tenantId={tenantId} />
                         )}
@@ -217,7 +224,11 @@ function InvoiceAction({
       );
       if (!response.ok) {
         if (beginReauthentication(response.error)) return;
-        if (response.error === "billing_invoice_status_invalid") router.refresh();
+        if (
+          response.error === "billing_invoice_status_invalid" ||
+          response.error === "billing_invoice_not_found"
+        )
+          router.refresh();
         toast.error(invoiceError(response.error));
         return;
       }
@@ -270,7 +281,13 @@ function InvoiceAction({
       }
       onOpenChange={setOpen}
       open={open}
-      title={paid ? "Confirm this payment?" : rejectingEvidence ? "Reject this evidence?" : "Void this invoice?"}
+      title={
+        paid
+          ? "Confirm this payment?"
+          : rejectingEvidence
+            ? "Reject this evidence?"
+            : "Void this invoice?"
+      }
       trigger={
         <Button size="sm" variant={paid ? "default" : "destructive-outline"}>
           {paid ? <Banknote aria-hidden /> : null}
@@ -497,11 +514,13 @@ function paymentImpact(status: "approved" | "needs_review" | "rejected") {
       : "This closes the current request as rejected. The merchant can submit a new request later.";
 }
 function invoiceError(error: string | undefined) {
-  return error === "billing_invoice_status_invalid"
-    ? "This invoice changed and has been reloaded."
-    : error === "operator_forbidden"
-      ? "Your operator access no longer allows invoice decisions."
-      : "The invoice decision could not be saved.";
+  return error === "billing_invoice_not_found"
+    ? "This invoice no longer exists. The invoice list has been refreshed."
+    : error === "billing_invoice_status_invalid"
+      ? "This invoice changed and has been reloaded."
+      : error === "operator_forbidden"
+        ? "Your operator access no longer allows invoice decisions."
+        : "The invoice decision could not be saved.";
 }
 function paymentError(error: string | undefined) {
   return error === "payment_onboarding_status_invalid"

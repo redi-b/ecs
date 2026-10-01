@@ -16,7 +16,7 @@ import {
   tenants,
 } from "@ecs/db";
 import { getStartingBrandTokens } from "@ecs/storefront-templates";
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
 import type {
   CommerceProvisioningInput,
   CommerceProvisioningResources,
@@ -670,7 +670,7 @@ export function createTenantShopProvisioningService(options: TenantShopProvision
       const [existingDomain] = await options.db
         .select({ id: domains.id })
         .from(domains)
-        .where(eq(domains.hostname, hostname))
+        .where(and(eq(domains.hostname, hostname), isNull(domains.removedAt)))
         .limit(1);
 
       return Boolean(existingDomain);

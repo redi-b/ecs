@@ -53,6 +53,8 @@ export const merchantBillingStatusSchema = z.object({
   invoices: z.array(
     z.object({
       id: z.string().min(1),
+      /** Issued plan identity, independent of the payment provider and amount. */
+      planId: z.string().min(1).nullable().optional(),
       amount: z.string().min(1),
       currency: z.string().min(1),
       status: z.string().min(1),
