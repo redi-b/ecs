@@ -24,6 +24,7 @@ const wishlistMessages = {
   productFallback: m.catalog_product_fallback({}, { locale }),
   remove: m.action_remove({}, { locale }),
   view: m.action_view_product({}, { locale }),
+  addToCart: m.action_add_to_cart({}, { locale }),
 };
 ---
 
@@ -52,9 +53,6 @@ const wishlistMessages = {
       <h1 class="wishlist__title type-heading-1">
         {m.wishlist_title({}, { locale })}
       </h1>
-      <p class="wishlist__subtitle type-body-400" data-wishlist-account-copy>
-        {m.wishlist_intro({}, { locale })}
-      </p>
     </header>
 
     <section data-wishlist-content class="wishlist__content" aria-live="polite" aria-busy="true">
@@ -65,6 +63,17 @@ const wishlistMessages = {
     </section>
   </main>
 </Layout>
+
+<template data-wishlist-heart-template>
+  <span class="wishlist-heart" aria-hidden="true">
+    <Icon name="heart" />
+    <Icon name="heart-filled" />
+  </span>
+</template>
+
+<template data-wishlist-bag-icon>
+  <Icon name="bag" />
+</template>
 
 <script>
   import {
@@ -185,12 +194,10 @@ const wishlistMessages = {
           "aria-label",
           `${messages.remove || "Remove"} ${item.title}`,
         );
-        heartBtn.innerHTML = `
-          <span class="wishlist-heart" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-          </span>
-        `;
+        const heartTemplate = document.querySelector<HTMLTemplateElement>("[data-wishlist-heart-template]");
+        if (heartTemplate) {
+          heartBtn.append(heartTemplate.content.cloneNode(true));
+        }
 
         heartBtn.addEventListener("click", (e) => {
           e.preventDefault();
@@ -208,6 +215,56 @@ const wishlistMessages = {
           );
         });
         media.append(heartBtn);
+
+        const ctaForm = document.createElement("form");
+        ctaForm.className = "product-card__cta";
+        ctaForm.action = "/actions/cart/add";
+        ctaForm.method = "post";
+        ctaForm.setAttribute("data-card-add-form", "");
+
+        if (item.variantId) {
+          const varInput = document.createElement("input");
+          varInput.type = "hidden";
+          varInput.name = "variantId";
+          varInput.value = item.variantId;
+          ctaForm.append(varInput);
+        }
+
+        const handle = item.path ? item.path.split("/").filter(Boolean).pop() : "";
+        if (handle) {
+          const handleInput = document.createElement("input");
+          handleInput.type = "hidden";
+          handleInput.name = "productHandle";
+          handleInput.value = decodeURIComponent(handle);
+          ctaForm.append(handleInput);
+        }
+
+        const qtyInput = document.createElement("input");
+        qtyInput.type = "hidden";
+        qtyInput.name = "quantity";
+        qtyInput.value = "1";
+        ctaForm.append(qtyInput);
+
+        const btn = document.createElement("button");
+        btn.type = "submit";
+        btn.className = "button button--secondary button--small";
+
+        const textSpan = document.createElement("span");
+        textSpan.className = "button__text type-body-400";
+        textSpan.setAttribute("data-card-add-label", "");
+        textSpan.textContent = messages.addToCart || "Add to Bag";
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "button__icon";
+        iconSpan.setAttribute("aria-hidden", "true");
+        const bagTemplate = document.querySelector<HTMLTemplateElement>("[data-wishlist-bag-icon]");
+        if (bagTemplate) {
+          iconSpan.append(bagTemplate.content.cloneNode(true));
+        }
+
+        btn.append(textSpan, iconSpan);
+        ctaForm.append(btn);
+        media.append(ctaForm);
 
         const brand = document.createElement("p");
         brand.className = "product-card__brand type-body-s-400";

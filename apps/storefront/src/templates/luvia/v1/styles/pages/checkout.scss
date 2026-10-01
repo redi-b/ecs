@@ -46,15 +46,15 @@
 }
 
 .checkout-form-wrap {
-  padding: $space-650;
+  padding: $space-600;
   border: 1px solid var(--clr-line);
   border-radius: $radius-450;
   background: var(--clr-surface);
-  box-shadow: 0 18px 48px alpha(var(--clr-ink), 0.05);
+  box-shadow: 0 18px 48px alpha(var(--clr-ink), 0.04);
 }
 
 .checkout-form-wrap>header {
-  padding-bottom: $space-400;
+  padding-bottom: $space-500;
   border-bottom: 1px solid var(--clr-line);
 }
 
@@ -68,13 +68,13 @@
 }
 
 .checkout-form {
-  padding-top: $space-600;
+  padding-top: $space-500;
 }
 
 .checkout-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: $space-450 $space-600;
+  gap: $space-400 $space-300;
 }
 
 .checkout-fields>label {
@@ -125,11 +125,13 @@
   border-radius: $radius-250;
   background: var(--clr-surface);
   cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 180ms ease, transform 140ms ease;
 }
 
 .checkout-choice-group label:hover,
 .checkout-payment label:hover {
   border-color: alpha(var(--clr-primary), 0.38);
+  transform: translateY(-1px);
 }
 
 .checkout-choice-group label:has(input:checked),
@@ -139,12 +141,46 @@
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.1);
 }
 
-.checkout-choice-group input,
-.checkout-payment input {
-  width: 19px;
-  height: 19px;
+.checkout-choice-group input[type="radio"],
+.checkout-payment input[type="radio"],
+.checkout-saved-addresses input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
   flex: 0 0 auto;
-  accent-color: var(--clr-primary);
+  border: 1.5px solid alpha(var(--clr-ink), 0.28);
+  border-radius: $radius-pill;
+  background-color: var(--clr-surface);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+
+  &::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 120ms ease-in-out;
+    background-color: var(--clr-primary-fill);
+  }
+
+  &:checked {
+    border-color: var(--clr-primary);
+    background-color: var(--clr-surface);
+
+    &::before {
+      transform: scale(1);
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.2);
+  }
 }
 
 .checkout-choice-group label>span,
@@ -168,12 +204,12 @@
 
 .checkout-delivery-details {
   grid-column: 1/-1;
-  padding: $space-500;
+  padding: $space-450 0;
   display: grid;
-  gap: $space-450;
-  border: 1px solid var(--clr-line);
-  border-radius: $radius-400;
-  background: var(--clr-soft);
+  gap: $space-400;
+  border-top: 1px solid var(--clr-line);
+  border-bottom: 1px solid var(--clr-line);
+  background: transparent;
 }
 
 .checkout-delivery-details>header {
@@ -273,13 +309,6 @@
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.1);
 }
 
-.checkout-saved-addresses input {
-  width: 19px;
-  height: 19px;
-  flex: 0 0 auto;
-  accent-color: var(--clr-primary);
-}
-
 .checkout-saved-addresses label span {
   min-width: 0;
   display: grid;
@@ -354,6 +383,7 @@
   outline: 0;
   background: var(--clr-surface);
   color: var(--clr-ink);
+  transition: border-color 150ms ease, box-shadow 180ms ease, background-color 150ms ease;
 }
 
 .checkout-fields>label>textarea {
@@ -367,6 +397,7 @@
 .checkout-fields>label>textarea:focus {
   border-color: var(--clr-primary);
   box-shadow: 0 0 0 3px alpha(var(--clr-primary), 0.14);
+  background: var(--clr-surface);
 }
 
 .checkout-fields>label>input::placeholder,
@@ -454,6 +485,8 @@
   color: var(--clr-on-primary);
   cursor: pointer;
   width: 100%;
+  box-shadow: 0 10px 24px alpha(var(--clr-primary), .18);
+  transition: transform 140ms ease, box-shadow 180ms ease, filter 140ms ease;
 }
 
 .checkout-actions button:disabled {
@@ -467,7 +500,10 @@
 
 .checkout-actions button:hover:not(:disabled) {
   filter: brightness(0.96);
+  box-shadow: 0 14px 30px alpha(var(--clr-primary), .24);
 }
+
+.checkout-actions button:active:not(:disabled) { transform: scale(.985); }
 
 .checkout-blocker {
   grid-column: 1 / -1;
@@ -806,5 +842,17 @@
 
   .checkout-summary {
     padding: $space-450 $space-350;
+  }
+
+  .checkout-form-wrap {
+    padding: $space-450 $space-350;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-choice-group label,
+  .checkout-payment label,
+  .checkout-actions button {
+    transition: none;
   }
 }

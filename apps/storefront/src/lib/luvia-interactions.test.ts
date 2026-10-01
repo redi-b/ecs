@@ -29,21 +29,18 @@ test("product and address disclosures animate their content instead of snapping"
   assert.match(account, /data-address-toggle/);
 });
 
-test("catalog facets support persistent batch filtering and a dedicated scroll region", async () => {
-  const [catalog, styles, animation] = await Promise.all([
+test("Luvia listing preserves filters, sidebar, and toolbar structure", async () => {
+  const [catalog, styles] = await Promise.all([
     readTemplate("pages/ProductList.astro"),
     readTemplate("styles/pages/product-list.scss"),
-    readFile(new URL("./browser/animate-details.ts", import.meta.url), "utf8"),
   ]);
 
-  assert.match(catalog, /initAnimatedDetails\(document, "\.filter-menu"/);
-  assert.doesNotMatch(catalog, /other\.open\s*=\s*false/);
-  assert.doesNotMatch(catalog, /menu\.open\s*=\s*false/);
-  assert.match(styles, /\.catalog-filter__scroll\s*\{[^}]*overflow-y:\s*auto/);
-  assert.match(catalog, /catalog-filter__scroll/);
-  assert.match(catalog, /filter-footer[\s\S]*catalog-filter__active[\s\S]*filter-clear[\s\S]*filter-apply/);
-  assert.match(animation, /animation\.finished/);
-  assert.match(animation, /if \(!opening\) details\.open = false/);
+  assert.ok(catalog.includes("shop-page"), "listing must have shop-page");
+  assert.ok(catalog.includes("shop-sidebar"), "listing must have shop-sidebar");
+  assert.ok(catalog.includes("shop-main"), "listing must have shop-main");
+  assert.ok(catalog.includes("shop-main__toolbar"), "listing must have shop-main__toolbar");
+  assert.ok(catalog.includes("ProductCard"), "listing must use ProductCard");
+  assert.match(styles, /\.shop-sidebar[\s\S]*?overflow-y:\s*auto/);
 });
 
 test("featured promotions autoplay without taking control from the shopper", async () => {

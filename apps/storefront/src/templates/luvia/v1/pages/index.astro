@@ -72,24 +72,22 @@ const portrait = storefrontAsset(
   template.home.hero.portraitAssetId,
   heroPortrait.src,
 );
-const pickProducts = (ids: string[], source: StoreProduct[], limit: number) => {
-  if (!ids.length) return source.slice(0, limit);
+const pickProducts = (ids: string[], source: StoreProduct[], limit?: number) => {
+  if (!ids.length) return limit !== undefined ? source.slice(0, limit) : source;
   const byId = new Map(source.map((product) => [product.id, product]));
-  return ids
+  const picked = ids
     .map((id) => byId.get(id))
-    .filter((product): product is StoreProduct => Boolean(product))
-    .slice(0, limit);
+    .filter((product): product is StoreProduct => Boolean(product));
+  return limit !== undefined ? picked.slice(0, limit) : picked;
 };
 const topPicks = pickProducts(
   template.home.featuredProducts.productIds,
   products,
   template.home.featuredProducts.limit,
 );
-const listing = pickProducts(
-  template.home.products.productIds,
-  products,
-  template.home.products.limit,
-);
+const listing = template.home.products.productIds.length
+  ? pickProducts(template.home.products.productIds, products)
+  : products;
 const legacyHeroId = template.home.hero.featuredProductId;
 const configuredHeroIds = template.home.hero.featuredProductIds.length
   ? template.home.hero.featuredProductIds
@@ -107,7 +105,7 @@ const selectedCategories = (
         .filter((item): item is StoreCategory => Boolean(item))
     : categories
 ).slice(0, 5);
-const defaultShown = Math.min(listing.length, 12);
+const defaultShown = Math.min(listing.length, template.home.products.limit || 12);
 const collectionById = new Map(collections.map((col) => [col.id, col]));
 ---
 

@@ -25,15 +25,16 @@ const brand =
   product.collectionTitle?.toUpperCase() ||
   m.catalog_collection_fallback({}, { locale }).toUpperCase();
 const title = product.title ?? m.catalog_product_fallback({}, { locale });
+const purchasableVariant =
+  product.variants.find((variant) => variant.inStock) ?? product.variants[0];
 const wishlistItem = JSON.stringify({
   path: href,
   title,
   thumbnail: product.thumbnail,
   priceAmount: product.priceAmount,
   currencyCode: product.currencyCode,
+  variantId: purchasableVariant?.id,
 });
-const purchasableVariant =
-  product.variants.find((variant) => variant.inStock) ?? product.variants[0];
 const badge = resolveProductBadge(product, purchasableVariant);
 const originalPrice =
   purchasableVariant?.originalPriceAmount ??

@@ -6,7 +6,6 @@ export const luviaV1Defaults: LuviaV1Data = {
     navigation: [
       { label: "Home", href: "/" },
       { label: "Shop", href: "/products" },
-      { label: "Request Item", href: "/request-item" },
       { label: "Contact", href: "/contact" },
     ],
   },
@@ -71,7 +70,6 @@ export const luviaV1Defaults: LuviaV1Data = {
     ],
     shopLinks: [
       { label: "All products", href: "/products" },
-      { label: "Request an item", href: "/request-item" },
       { label: "Wishlist", href: "/wishlist" },
     ],
     inquiry: {

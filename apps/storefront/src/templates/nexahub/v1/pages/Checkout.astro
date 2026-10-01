@@ -86,7 +86,7 @@ const clientMessages = {
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} cartCount={cartCount} demoMode={demoMode}>
   <main class="nexa-commerce nexa-checkout" id="main-content">
     <div class="container nexa-commerce__frame">
-      <nav class="nexa-breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/cart">{m.nav_cart({}, { locale })}</a><span>/</span><span aria-current="page">{m.checkout_title({}, { locale })}</span></nav>
+      <nav class="nexa-breadcrumb" aria-label={m.breadcrumb_label({}, { locale })}><a href="/">{m.nav_home({}, { locale })}</a><span>/</span><span aria-current="page">{m.checkout_title({}, { locale })}</span></nav>
       <header class="nexa-commerce__heading"><span class="nexa-kicker">{m.checkout_title({}, { locale })}</span><div><h1>{m.checkout_title({}, { locale })}</h1><p>{m.checkout_intro({}, { locale })}</p></div></header>
       {error && <div class="nexa-notice nexa-notice--error" role="alert"><strong>{m.checkout_could_not_continue({}, { locale })}</strong><p>{error}</p></div>}
       {shippingError && <div class="nexa-notice nexa-notice--error" role="alert"><strong>{m.checkout_options_unavailable({}, { locale })}</strong><p>{m.checkout_refresh_try_again({}, { locale })}</p></div>}

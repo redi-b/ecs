@@ -226,10 +226,17 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
           ...(optionMediaBindings ? { option_media_bindings: optionMediaBindings } : {}),
           ...(product.optionPresentation ? { option_presentation: product.optionPresentation } : {}),
         },
-        options: product.options.map((option) => ({
-          title: option.title,
-          values: [...option.values],
-        })),
+        options: product.options.length
+          ? product.options.map((option) => ({
+              title: option.title,
+              values: [...option.values],
+            }))
+          : [
+              {
+                title: "Default",
+                values: ["Default"],
+              },
+            ],
         sales_channels: [{ id: resources.salesChannelId }],
         shipping_profile_id: resources.shippingProfileId,
         status: "published",
@@ -237,7 +244,8 @@ export function createDemoCommerceSeeder(options: DemoCommerceSeederOptions) {
         title: product.title,
         variants: product.variants.map((variant) => ({
           manage_inventory: true,
-          options: variant.options,
+          options:
+            Object.keys(variant.options).length > 0 ? variant.options : { Default: "Default" },
           // If discounted, base price is originalPrice so sale price lists calculate discounts cleanly
           prices: [{ amount: variant.originalPrice ?? variant.price, currency_code: "etb" }],
           // Prefix SKUs with tenant short id so re-seeds after soft-delete do not collide.

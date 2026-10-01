@@ -2,8 +2,14 @@
 import StoreUnavailable from "../components/shell/StoreUnavailable.astro";
 import { loadPageContext } from "../lib/page-context";
 import { getStorefrontRenderer } from "../templates/registry";
+import { resolveStorefrontTemplateKey } from "../templates/template-key";
 import * as m from "../paraglide/messages.js";
 const ctx = await loadPageContext(Astro.request, { skipCart: true });
+if (ctx.ok && resolveStorefrontTemplateKey(ctx.config.storefront.templateKey) === "luvia@1") {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.set("mode", "request");
+  return Astro.redirect(`/contact?${params.toString()}`, 302);
+}
 const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) Astro.response.status = ctx.status;
 const Page = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.RequestItem : null;

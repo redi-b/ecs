@@ -1,7 +1,3 @@
 ---
-import { luviaV1Defaults, luviaV1ThemeTokens } from "@ecs/storefront-templates";
-import { luviaDemoCart } from "../../../../lib/demo/luvia-fixture";
-import LuviaV1Cart from "../../../../templates/luvia/v1/pages/Cart.astro";
+return Astro.redirect(`/demo/storefront/luvia/checkout${Astro.url.search}`, 302);
 ---
-
-<LuviaV1Cart data={luviaV1Defaults} themeTokens={luviaV1ThemeTokens} tenantName="Luvia Beauty" cartCount={2} cart={luviaDemoCart} demoMode />

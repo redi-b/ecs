@@ -45,7 +45,6 @@ import LuviaV1Home from "./luvia/v1/pages/index.astro";
 import LuviaV1OrderConfirm from "./luvia/v1/pages/OrderConfirm.astro";
 import LuviaV1Product from "./luvia/v1/pages/Product.astro";
 import LuviaV1ProductList from "./luvia/v1/pages/ProductList.astro";
-import LuviaV1RequestItem from "./luvia/v1/pages/RequestItem.astro";
 import LuviaV1SystemState from "./luvia/v1/pages/SystemState.astro";
 import LuviaV1Wishlist from "./luvia/v1/pages/Wishlist.astro";
 import { resolveStorefrontTemplateKey } from "./template-key.js";
@@ -83,7 +82,6 @@ export const storefrontRenderers = {
     Checkout: LuviaV1Checkout,
     Contact: LuviaV1Contact,
     OrderConfirm: LuviaV1OrderConfirm,
-    RequestItem: LuviaV1RequestItem,
     Wishlist: LuviaV1Wishlist,
     Account: LuviaV1Account,
     AccountOrder: LuviaV1AccountOrder,

@@ -1,7 +1,6 @@
 import {
   buildRichDescription,
   singleAxisProduct,
-  singleVariantProduct,
 } from "./catalog-builders.js";
 import type { DemoShopDefinition } from "./types.js";
 
@@ -202,12 +201,14 @@ export const fashionShop: DemoShopDefinition = {
 
     // 2. Botanical Bakuchiol Radiance Oil
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Botanical Bakuchiol Radiance Oil",
         "demo-fashion-bakuchiol-oil",
         "skincare",
         2250,
-        20,
+        "Volume",
+        ["30ml", "50ml"],
+        [20, 12],
         buildRichDescription({
           overview:
             "A potent plant-powered alternative to retinol. Infused with 1% pure organic Bakuchiol suspended in cold-pressed rosehip and Ethiopian black seed oil to visibly smooth fine lines, refine texture, and enhance skin radiance without irritation or photosensitivity.",
@@ -218,7 +219,7 @@ export const fashionShop: DemoShopDefinition = {
             "Safe for day and night use; non-comedogenic and gentle on reactive skin",
           ],
           specs: {
-            Volume: "30ml (1.0 fl. oz.)",
+            Volume: "30ml (1.0 fl. oz.) / 50ml (1.7 fl. oz.)",
             SkinTypes: "All skin types, especially sensitive and aging skin",
             Texture: "Fast-absorbing dry botanical elixir with a golden sheen",
           },
@@ -228,6 +229,9 @@ export const fashionShop: DemoShopDefinition = {
           ],
           note: "Warm 3 drops between clean palms and press gently into face, neck, and décolletage.",
         }),
+        {
+          priceMultipliers: [1, 1.42],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-serums",
       collectionHandle: "demo-fashion-essentials",
@@ -235,12 +239,14 @@ export const fashionShop: DemoShopDefinition = {
 
     // 3. Vitamin C Brightening Eye Elixir
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Vitamin C Brightening Eye Elixir",
         "demo-fashion-eye-elixir",
         "skincare",
         1750,
-        22,
+        "Volume",
+        ["15ml", "30ml"],
+        [22, 14],
         buildRichDescription({
           overview:
             "An invigorating targeted eye treatment featuring stabilized 5% Vitamin C, green tea caffeine, and revitalizing peptides. Delivered via an ergonomic cooling ceramic applicator tip that instantly depuffs morning under-eye swelling and brightens stubborn dark circles.",
@@ -251,13 +257,16 @@ export const fashionShop: DemoShopDefinition = {
             "Featherweight cream-gel texture wears seamlessly beneath makeup with zero creasing",
           ],
           specs: {
-            Volume: "15ml (0.5 fl. oz.)",
+            Volume: "15ml (0.5 fl. oz.) / 30ml (1.0 fl. oz.)",
             Applicator: "Ergonomic cooling ceramic & brushed platinum tip",
             KeyActives: "5% Vitamin C Ester, Green Tea Caffeine, Palmitoyl Tripeptide-38",
           },
           inTheBox: ["Precision Ceramic Tip Eye Elixir Tube"],
           note: "Gently squeeze tube and glide cooling ceramic tip across orbital bone.",
         }),
+        {
+          priceMultipliers: [1, 1.54],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-serums",
       collectionHandle: "demo-fashion-essentials",
@@ -290,19 +299,24 @@ export const fashionShop: DemoShopDefinition = {
           inTheBox: ["Amber Frosted Pump Bottle with protective travel clip"],
           note: "Massage 1-2 pumps onto damp skin for 60 seconds; rinse thoroughly with lukewarm water.",
         }),
+        {
+          priceMultipliers: [1, 1.48],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-cleansers",
       collectionHandle: "demo-fashion-essentials",
     },
 
-    // 5. Balancing Rosemary & Rose Hydrosol Mist (SINGLE-IMAGE TEST CASE)
+    // 5. Balancing Rosemary & Rose Hydrosol Mist
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Balancing Rosemary & Rose Hydrosol Mist",
         "demo-fashion-rosemary-mist",
         "skincare",
         1150,
-        30,
+        "Volume",
+        ["100ml", "200ml"],
+        [30, 16],
         buildRichDescription({
           overview:
             "Steam-distilled from organic high-altitude rosemary sprigs and damask rose petals. A refreshing micro-fine botanical toner mist that instantly rebalances skin pH, refines pores, and delivers a surge of hydration throughout the day.",
@@ -313,13 +327,16 @@ export const fashionShop: DemoShopDefinition = {
             "Versatile formula serves as toner, midday hydrator, and makeup setting spray",
           ],
           specs: {
-            Volume: "100ml (3.4 fl. oz.)",
+            Volume: "100ml (3.4 fl. oz.) / 200ml (6.8 fl. oz.)",
             Nozzle: "Ultra-fine continuous micro-atomizer spray",
             Ingredients: "Rosa Damascena Flower Water, Rosmarinus Officinalis Water, Niacinamide",
           },
           inTheBox: ["Frosted Glass Atomizer Bottle with protective cap"],
           note: "Mist generously over face after cleansing or whenever skin requires a midday radiance boost.",
         }),
+        {
+          priceMultipliers: [1, 1.6],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-cleansers",
       collectionHandle: "demo-fashion-essentials",
@@ -327,12 +344,14 @@ export const fashionShop: DemoShopDefinition = {
 
     // 6. Ceramide Barrier Moisture Cream (ON SALE TEST CASE)
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Ceramide Barrier Moisture Cream",
         "demo-fashion-ceramide-cream",
         "skincare",
         2100,
-        25,
+        "Size",
+        ["50ml", "100ml"],
+        [25, 12],
         buildRichDescription({
           overview:
             "A rich, velvety restorative cream engineered with a 3:1:1 physiological lipid ratio of bio-identical ceramides, plant cholesterol, and essential fatty acids. Deeply repairs compromised skin barriers, seals in moisture, and protects against harsh dry winds.",
@@ -343,7 +362,7 @@ export const fashionShop: DemoShopDefinition = {
             "Provides proven 48-hour continuous moisture retention",
           ],
           specs: {
-            Volume: "50ml (1.7 fl. oz.)",
+            Volume: "50ml (1.7 fl. oz.) / 100ml (3.4 fl. oz.)",
             Container: "Heavy-walled frosted cylindrical glass jar with matte stone-beige lid",
             Texture: "Rich, decadent whipped ivory moisture cream",
           },
@@ -351,10 +370,11 @@ export const fashionShop: DemoShopDefinition = {
             "Heavy-Walled Frosted Glass Jar",
             "Bespoke Bamboo Cosmetic Spatula",
           ],
-          note: "On Sale: Save 550 ETB. The definitive barrier restoration treatment.",
+          note: "On Sale: Save 550 ETB on 50ml jar. The definitive barrier restoration treatment.",
         }),
         {
           originalPrice: 2650,
+          priceMultipliers: [1, 1.62],
         },
       ),
       categoryHandle: "demo-fashion-skincare-creams",
@@ -363,12 +383,14 @@ export const fashionShop: DemoShopDefinition = {
 
     // 7. Overnight Restorative Peptide Mask
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Overnight Restorative Peptide Mask",
         "demo-fashion-peptide-mask",
         "skincare",
         2350,
-        18,
+        "Size",
+        ["60ml", "100ml"],
+        [18, 10],
         buildRichDescription({
           overview:
             "An intensive leave-on sleeping mask formulated with a 5-peptide matrix and tremella snow mushroom extract. Works in harmony with the body's nocturnal repair cycle to firm skin, diminish signs of fatigue, and restore plump, rested vitality by morning.",
@@ -379,7 +401,7 @@ export const fashionShop: DemoShopDefinition = {
             "Pillow-safe, fast-absorbing formula that will not rub off on bed linens",
           ],
           specs: {
-            Volume: "60ml (2.0 fl. oz.)",
+            Volume: "60ml (2.0 fl. oz.) / 100ml (3.4 fl. oz.)",
             Container: "Deep sage-green tinted glass cosmetic jar with brushed silver lid",
             Texture: "Cooling jade gel-cream sleeping mask",
           },
@@ -389,19 +411,24 @@ export const fashionShop: DemoShopDefinition = {
           ],
           note: "Smooth a generous layer over face as the final step in your evening routine 2-3 nights per week.",
         }),
+        {
+          priceMultipliers: [1, 1.47],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-creams",
       collectionHandle: "demo-fashion-new-season",
     },
 
-    // 8. Multi-Active Restoring Barrier Balm (SINGLE-IMAGE TEST CASE)
+    // 8. Multi-Active Restoring Barrier Balm
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Multi-Active Restoring Barrier Balm",
         "demo-fashion-barrier-balm",
         "skincare",
-        1280,
-        35,
+        780,
+        "Size",
+        ["20ml", "40ml"],
+        [35, 20],
         buildRichDescription({
           overview:
             "A concentrated SOS rescue salve in an aluminum travel tube. Combines 5% panthenol (pro-vitamin B5), madecassoside, and organic shea butter to immediately heal dry cracked lips, irritated dry patches, and rough cuticles.",
@@ -412,13 +439,16 @@ export const fashionShop: DemoShopDefinition = {
             "Pocket-friendly minimalist aluminum squeeze tube with octagonal cap",
           ],
           specs: {
-            Volume: "40ml (1.4 fl. oz.)",
+            Volume: "20ml (0.7 fl. oz.) / 40ml (1.4 fl. oz.)",
             Tube: "Recyclable matte off-white aluminum tube with faceted cap",
             Texture: "Rich protective melting ointment balm",
           },
           inTheBox: ["Aluminum Barrier Balm Squeeze Tube"],
           note: "Apply as needed to dry, chapped, or sensitized areas throughout the day.",
         }),
+        {
+          priceMultipliers: [1, 1.64],
+        },
       ),
       categoryHandle: "demo-fashion-skincare-creams",
       collectionHandle: "demo-fashion-essentials",
@@ -432,8 +462,8 @@ export const fashionShop: DemoShopDefinition = {
         "makeup",
         2400,
         "Shade",
-        ["Fair Neutral", "Medium Warm"],
-        [15, 12],
+        ["Fair Neutral", "Medium Warm", "Deep Bronze"],
+        [15, 12, 10],
         buildRichDescription({
           overview:
             "A weightless serum foundation that unifies skincare and makeup. Provides customizable light-to-medium coverage with a natural satin-skin finish that blurs pores, evens skin tone, and glows with healthy, breathable radiance.",
@@ -460,6 +490,7 @@ export const fashionShop: DemoShopDefinition = {
             Shade: {
               "Fair Neutral": { kind: "color", value: "#E8DACB" },
               "Medium Warm": { kind: "color", value: "#C6A789" },
+              "Deep Bronze": { kind: "color", value: "#8C5B3E" },
             },
           },
         },
@@ -512,29 +543,40 @@ export const fashionShop: DemoShopDefinition = {
 
     // 11. Dewy Liquid Sculpt & Glow Highlighter
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Dewy Liquid Sculpt & Glow Highlighter",
         "demo-fashion-liquid-highlighter",
         "makeup",
         1550,
-        20,
+        "Shade",
+        ["Celestial Champagne", "Rose Quartz", "Golden Hour"],
+        [20, 14, 8],
         buildRichDescription({
           overview:
-            "A sheer champagne liquid highlighter featuring ultra-fine micro-pearls that reflect light with an ethereal, glass-skin finish. Blends seamlessly over makeup or directly onto bare skin for an effortless candlelit glow.",
+            "A sheer liquid highlighter featuring ultra-fine micro-pearls that reflect light with an ethereal, glass-skin finish. Blends seamlessly over makeup or directly onto bare skin for an effortless candlelit glow.",
           features: [
-            "Micro-milled champagne pearls melt into skin without visible chunky glitter",
+            "Micro-milled champagne and rose pearls melt into skin without visible chunky glitter",
             "Plush doe-foot cushion wand enables precise spot-highlighting on cheekbones and nose",
             "Infused with jojoba seed oil for a dewy, non-drying lit-from-within glow",
             "Multi-use: tap onto high points or mix 1 drop into foundation for all-over radiance",
           ],
           specs: {
             Volume: "15ml (0.5 fl. oz.)",
-            Shade: "Celestial Champagne (Universal golden-champagne pearl)",
+            Shades: "Celestial Champagne, Rose Quartz, Golden Hour",
             Wand: "Plush doe-foot cushion wand applicator",
           },
           inTheBox: ["Frosted Glass Bottle with rose-gold metallic cap"],
           note: "Dot 2 small drops along cheekbones and brow arch; blend gently with fingertips.",
         }),
+        {
+          swatches: {
+            Shade: {
+              "Celestial Champagne": { kind: "color", value: "#F4E7D3" },
+              "Rose Quartz": { kind: "color", value: "#E8B4B8" },
+              "Golden Hour": { kind: "color", value: "#D4A373" },
+            },
+          },
+        },
       ),
       categoryHandle: "demo-fashion-makeup",
       collectionHandle: "demo-fashion-new-season",
@@ -573,37 +615,43 @@ export const fashionShop: DemoShopDefinition = {
         }),
         {
           originalPrice: 4500,
+          priceMultipliers: [1, 1.42],
         },
       ),
       categoryHandle: "demo-fashion-fragrance",
       collectionHandle: "demo-fashion-offers",
     },
 
-    // 13. Wild Jasmine Nourishing Body Oil (SINGLE-IMAGE TEST CASE)
+    // 13. Wild Jasmine Nourishing Body Oil
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Wild Jasmine Nourishing Body Oil",
         "demo-fashion-jasmine-body-oil",
         "body",
         1950,
-        24,
+        "Scent",
+        ["Wild Jasmine", "Amber & Neroli"],
+        [24, 16],
         buildRichDescription({
           overview:
-            "A fast-absorbing, non-greasy dry body oil made with golden jojoba, sweet almond, and night-blooming wild jasmine extract. Delivers intense satin hydration, leaves skin feeling silky-smooth, and envelopes the body in an intoxicating floral aroma.",
+            "A fast-absorbing, non-greasy dry body oil made with golden jojoba, sweet almond, and botanical essences. Delivers intense satin hydration, leaves skin feeling silky-smooth, and envelopes the body in an intoxicating aroma.",
           features: [
             "Non-greasy dry oil blend absorbs instantly so you can dress immediately",
-            "Night-blooming Jasmine extract provides an intoxicating, elegant floral aroma",
+            "Available in intoxicating Night-blooming Jasmine or warm Amber & Neroli",
             "Deeply nourishes dry elbows, knees, and restores all-over body radiance",
             "Fluted glass bottle with brushed gold dispensing pump",
           ],
           specs: {
             Volume: "100ml (3.4 fl. oz.)",
             Bottle: "Fluted ribbed glass with brushed gold pump dispenser",
-            KeyIngredients: "Golden Jojoba Oil, Sweet Almond Oil, Jasmine Sambac Absolute",
+            KeyIngredients: "Golden Jojoba Oil, Sweet Almond Oil, Botanical Absolutes",
           },
           inTheBox: ["Fluted Glass Body Oil Pump Bottle"],
           note: "Smooth over clean, slightly damp skin after showering for best absorption.",
         }),
+        {
+          priceMultipliers: [1, 1.1],
+        },
       ),
       categoryHandle: "demo-fashion-body",
       collectionHandle: "demo-fashion-essentials",
@@ -611,12 +659,14 @@ export const fashionShop: DemoShopDefinition = {
 
     // 14. Whipped Shea & Sea Kelp Body Butter
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "Whipped Shea & Sea Kelp Body Butter",
         "demo-fashion-shea-body-butter",
         "body",
-        1700,
-        26,
+        1050,
+        "Size",
+        ["100ml", "200ml"],
+        [26, 18],
         buildRichDescription({
           overview:
             "Hand-whipped pure unrefined African shea butter blended with mineral-rich Atlantic sea kelp and organic cocoa butter. Melts instantly on contact with skin to provide 48-hour deep nourishment for dry, weather-exposed skin.",
@@ -627,26 +677,31 @@ export const fashionShop: DemoShopDefinition = {
             "Subtle natural scent of raw cocoa and warm organic vanilla bean",
           ],
           specs: {
-            Volume: "200ml (6.7 fl. oz.)",
+            Volume: "100ml (3.4 fl. oz.) / 200ml (6.7 fl. oz.)",
             Container: "Wide matte sand-colored terracotta jar with beechwood lid",
             Texture: "Decadent whipped body butter with peak retention",
           },
           inTheBox: ["Terracotta Ceramic Jar with Beechwood Lid"],
           note: "Warm a small dollop between hands and massage over dry areas.",
         }),
+        {
+          priceMultipliers: [1, 1.62],
+        },
       ),
       categoryHandle: "demo-fashion-body",
       collectionHandle: "demo-fashion-essentials",
     },
 
-    // 15. The Radiance Essentials 4-Piece Curation (GIFT BOX)
+    // 15. The Radiance Essentials 4-Piece Curation
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "The Radiance Essentials 4-Piece Curation",
         "demo-fashion-curation-box",
         "skincare",
         4850,
-        15,
+        "Edition",
+        ["Signature Gift Box", "Deluxe Keepsake Edition"],
+        [15, 8],
         buildRichDescription({
           overview:
             "The ultimate luxury beauty gift curation. Beautifully presented in a handcrafted charcoal linen presentation box tied with grosgrain ribbon. Contains travel-size editions of our iconic Hyaluronic Serum, Ceramide Moisture Cream, Rosemary Mist, and Velvet Satin Lipstick.",
@@ -668,6 +723,9 @@ export const fashionShop: DemoShopDefinition = {
           ],
           note: "Limited seasonal edition. Pre-packaged and ready for gifting with zero wrapping required.",
         }),
+        {
+          priceMultipliers: [1, 1.28],
+        },
       ),
       categoryHandle: "demo-fashion-skincare",
       collectionHandle: "demo-fashion-gift-picks",

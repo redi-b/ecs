@@ -1,4 +1,4 @@
-import { buildRichDescription, matrixProduct, singleAxisProduct, singleVariantProduct } from "./catalog-builders.js";
+import { buildRichDescription, matrixProduct, singleAxisProduct } from "./catalog-builders.js";
 import type { DemoShopDefinition } from "./types.js";
 
 /** Tech shop — phones, laptops, audio, accessories. Handle has no dashes. */
@@ -455,14 +455,15 @@ export const techShop: DemoShopDefinition = {
       categoryHandle: "demo-tech-audio",
       collectionHandle: "demo-tech-deals",
     },
-    // Single-variant / zero-option product (SINGLE-IMAGE TEST CASE)
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         "65W GaN Dual Port Charger",
         "demo-tech-gan-charger",
         "accessories",
         1800,
-        45,
+        "Color",
+        ["Matte Black", "Pure White"],
+        [45, 20],
         buildRichDescription({
           overview:
             "Harnessing next-generation Gallium Nitride (GaN III) semiconductor tech. Replaces bulky power bricks with a pocket-sized powerhouse capable of fast-charging laptops, tablets, and phones simultaneously.",
@@ -484,6 +485,14 @@ export const techShop: DemoShopDefinition = {
           ],
           note: "Universal compatibility: charges MacBooks, ThinkPads, iPhones, and Android.",
         }),
+        {
+          swatches: {
+            Color: {
+              "Matte Black": { kind: "color", value: "#1E293B" },
+              "Pure White": { kind: "color", value: "#F8FAFC" },
+            },
+          },
+        },
       ),
       categoryHandle: "demo-tech-accessories",
       collectionHandle: "demo-tech-new-arrivals",
@@ -531,14 +540,15 @@ export const techShop: DemoShopDefinition = {
       categoryHandle: "demo-tech-accessories",
       collectionHandle: "demo-tech-wfh",
     },
-    // Single-variant / zero-option product (SINGLE-IMAGE TEST CASE)
     {
-      ...singleVariantProduct(
+      ...singleAxisProduct(
         'Hard-Shell Laptop Sleeve 14"',
         "demo-tech-laptop-sleeve",
         "accessories",
         950,
-        35,
+        "Color",
+        ["Charcoal Grey", "Midnight Blue"],
+        [35, 18],
         buildRichDescription({
           overview:
             "Engineered 360-degree corner drop defense in an ultra-slim silhouette. Features high-density shock-absorbing memory foam, water-resistant ballistic canvas, and a super-soft plush fleece interior.",
@@ -557,6 +567,14 @@ export const techShop: DemoShopDefinition = {
           inTheBox: ['14" Protective Laptop Sleeve'],
           note: "Fits inside any standard backpack or briefcase effortlessly.",
         }),
+        {
+          swatches: {
+            Color: {
+              "Charcoal Grey": { kind: "color", value: "#334155" },
+              "Midnight Blue": { kind: "color", value: "#1E3A8A" },
+            },
+          },
+        },
       ),
       categoryHandle: "demo-tech-accessories",
       collectionHandle: "demo-tech-wfh",

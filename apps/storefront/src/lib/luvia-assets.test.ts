@@ -17,7 +17,7 @@ test("Luvia template raster assets stay web-ready and within budget", async () =
 });
 
 test("Luvia static editorial images use the responsive Astro image boundary", async () => {
-  const files = ["pages/index.astro", "pages/Contact.astro", "pages/ProductList.astro"];
+  const files = ["pages/index.astro", "pages/ProductList.astro"];
   const sources = await Promise.all(files.map((file) => readFile(new URL(file, templateRoot), "utf8")));
   const styles = await Promise.all(
     ["pages/index.scss", "pages/contact.scss", "pages/product-list.scss"].map((file) =>

@@ -276,7 +276,7 @@
   "request_received": "Request received. The shop can now review it and contact you.",
   "request_failed": "Your request could not be sent. Please try again.",
   "wishlist_title": "Wishlist",
-  "wishlist_saved_items": "Saved items",
+  "wishlist_saved_items": "Your saved items",
   "wishlist_intro": "Keep products here while you decide.",
   "wishlist_loading": "Loading your wishlist",
   "wishlist_item_singular": "item",

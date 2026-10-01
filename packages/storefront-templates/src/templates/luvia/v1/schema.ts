@@ -76,7 +76,6 @@ export const luviaV1DataSchema = z.object({
     ]),
     shopLinks: z.array(navigationItemSchema).default([
       { label: "All products", href: "/products" },
-      { label: "Request an item", href: "/request-item" },
       { label: "Wishlist", href: "/wishlist" },
     ]),
     inquiry: z

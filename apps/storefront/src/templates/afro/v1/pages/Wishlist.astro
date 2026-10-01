@@ -86,6 +86,9 @@ const template = parseAfroData(data);
       }
     };
 
+    const escapeHtml = (str: string) =>
+      str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
     const render = (savedItems: readonly WishlistEntry[]) => {
       grid.replaceChildren();
       const hasItems = savedItems.length > 0;
@@ -102,31 +105,54 @@ const template = parseAfroData(data);
       savedItems.forEach((item) => {
         const card = document.createElement("article");
         card.className = "product-card";
+        card.dataset.productId = item.path;
         const itemPath = localizeBrowserPath(item.path);
+        const handle = item.path.replace(/^\/products\//, "").replace(/\/$/, "");
 
         card.innerHTML = `
           <div class="product-card__media">
-            <a href="${itemPath}" class="product-card__img-link" tabindex="-1">
+            <a href="${itemPath}" class="product-card__img-link" tabindex="-1" aria-hidden="true">
               <div class="img-wrapper">
-                ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" class="cover" width="262" height="262" />` : ""}
+                ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${escapeHtml(item.title)}" class="cover" width="262" height="262" loading="lazy" decoding="async" />` : `<div class="product-media-placeholder">${escapeHtml(item.title)}</div>`}
               </div>
             </a>
-            <button type="button" class="product-card__wishlist-btn product-card__wishlist-btn--active" aria-label="Remove from wishlist" aria-pressed="true">
+            <button
+              type="button"
+              class="product-card__wishlist-btn product-card__wishlist-btn--active"
+              aria-label="Remove ${escapeHtml(item.title)} from wishlist"
+              aria-pressed="true"
+            >
               <span class="wishlist-heart" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14.25l-1.15-1.04C2.76 9.45 0 6.94 0 3.82 0 1.25 2.02 0 4.6 0c1.45 0 2.85.67 3.4 1.74C8.55.67 9.95 0 11.4 0 13.98 0 16 1.25 16 3.82c0 3.12-2.76 5.63-6.85 9.39L8 14.25z"/></svg>
+                <svg data-icon="heart" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               </span>
             </button>
           </div>
           <div class="product-card__content">
             <div class="product-card__info">
               <h3 class="product-card__title type-body-l">
-                <a href="${itemPath}" class="product-card__title-link">${item.title}</a>
+                <a href="${itemPath}" class="product-card__title-link">${escapeHtml(item.title)}</a>
               </h3>
             </div>
             <div class="product-card__pricing">
               <span class="product-card__price type-body-xl">${money(item.priceAmount, item.currencyCode)}</span>
             </div>
           </div>
+          <form action="/actions/cart/add" method="post" data-card-add-form>
+            <input type="hidden" name="productHandle" value="${escapeHtml(handle)}" />
+            <input type="hidden" name="quantity" value="1" />
+            <button
+              type="submit"
+              class="product-card__quick-add-btn"
+              aria-label="Add ${escapeHtml(item.title)} to cart"
+              data-action="quick-add"
+            >
+              <span class="product-card__quick-glyph" aria-hidden="true">
+                <svg data-icon="plus" viewBox="0 0 12 12" focusable="false"><path d="M6 1.5v9M1.5 6h9" /></svg>
+                <svg data-icon="check" viewBox="0 0 14 14" focusable="false"><path d="m2.5 7 3 3 6-6" /></svg>
+              </span>
+              <span class="product-card__tip type-body-xs-500" role="tooltip">Add to cart</span>
+            </button>
+          </form>
         `;
 
         card.querySelector(".product-card__wishlist-btn")?.addEventListener("click", () => {

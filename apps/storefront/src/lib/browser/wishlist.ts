@@ -7,6 +7,7 @@ export interface WishlistEntry {
   thumbnail: string | null;
   priceAmount: number | null;
   currencyCode: string | null;
+  variantId?: string | null;
 }
 
 export interface WishlistStorage {
@@ -46,6 +47,7 @@ export const normalizeWishlistEntry = (value: unknown): WishlistEntry | null => 
         ? entry.priceAmount
         : null,
     currencyCode: typeof entry.currencyCode === "string" ? entry.currencyCode : null,
+    ...(typeof entry.variantId === "string" ? { variantId: entry.variantId } : {}),
   };
 };
 

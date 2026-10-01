@@ -19,6 +19,8 @@ const wishlistMessages = {
   remove: m.action_remove({}, { locale }),
   viewProduct: m.wishlist_view_product({ product: "__PRODUCT__" }, { locale }),
   removeProduct: m.wishlist_remove_product({ product: "__PRODUCT__" }, { locale }),
+  addToCart: m.action_add_to_cart({}, { locale }),
+  startingAt: m.catalog_starting_at({}, { locale }),
 };
 ---
 <Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
@@ -55,6 +57,9 @@ const wishlistMessages = {
       try { return new Intl.NumberFormat(document.documentElement.lang === "am" ? "am-ET" : "en-ET", { style: "currency", currency: (currency || "ETB").toUpperCase() }).format(amount); }
       catch { return String(amount); }
     };
+    const escapeHtml = (str: string) =>
+      str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
     const render = () => {
       content.replaceChildren();
       if (count) count.textContent = `${String(items.length).padStart(2, "0")} ${items.length === 1 ? messages.item : messages.items}`;
@@ -76,50 +81,50 @@ const wishlistMessages = {
       grid.className = "nexa-wishlist__grid";
       items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = "nexa-wishlist-card";
+        card.className = "product-card";
         card.dataset.wishlistPath = item.path;
         const itemPath = localizeBrowserPath(item.path);
-        const media = document.createElement("a");
-        media.className = "nexa-wishlist-card__media";
-        media.href = itemPath;
-        media.setAttribute("aria-label", (messages.viewProduct || "").replace("__PRODUCT__", item.title));
-        const indexBadge = document.createElement("span");
-        indexBadge.className = "nexa-wishlist-card__index";
-        indexBadge.setAttribute("aria-hidden", "true");
-        indexBadge.textContent = String(index + 1).padStart(2, "0");
-        media.append(indexBadge);
-        if (item.thumbnail) {
-          const image = document.createElement("img");
-          image.src = item.thumbnail;
-          image.alt = item.title;
-          image.width = 900;
-          image.height = 900;
-          image.loading = "lazy";
-          image.decoding = "async";
-          media.append(image);
-        }
-        const body = document.createElement("div");
-        body.className = "nexa-wishlist-card__body";
-        const title = document.createElement("a");
-        title.href = itemPath;
-        title.textContent = item.title;
-        const price = document.createElement("span");
-        price.className = "nexa-wishlist-card__price";
-        price.textContent = money(item.priceAmount, item.currencyCode);
-        body.append(title);
-        if (price.textContent) body.append(price);
-        const actions = document.createElement("div");
-        actions.className = "nexa-wishlist-card__actions";
-        const view = document.createElement("a");
-        view.href = itemPath;
-        view.textContent = messages.view || "";
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.textContent = messages.remove || "";
-        remove.setAttribute("aria-label", (messages.removeProduct || "").replace("__PRODUCT__", item.title));
-        remove.addEventListener("click", () => { const index = items.findIndex((saved) => saved.path === item.path); focusAfterRender = items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__"; window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items: items.filter(saved => saved.path !== item.path), origin: "page" } })); });
-        actions.append(view, remove);
-        card.append(media, body, actions);
+        const handle = item.path.replace(/^\/products\//, "").replace(/\/$/, "");
+
+        card.innerHTML = `
+          <h3 class="product-card__name type-heading-5"><a href="${itemPath}">${escapeHtml(item.title)}</a></h3>
+          <div class="product-card__image-box">
+            <a href="${itemPath}" class="product-card__image img-wrapper" aria-label="${escapeHtml(item.title)}">
+              ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${escapeHtml(item.title)}" width="400" height="400" loading="lazy" decoding="async" class="cover" />` : `<div class="product-media-placeholder">${escapeHtml(item.title)}</div>`}
+            </a>
+            <button class="product-card__save is-active" type="button" aria-pressed="true" aria-label="${(messages.removeProduct || "Remove __PRODUCT__").replace("__PRODUCT__", escapeHtml(item.title))}">
+              <span class="nexa-save-icon" aria-hidden="true">
+                <span class="nexa-save-icon__outline"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.75 0.75H12.25C12.8023 0.75 13.25 1.19772 13.25 1.75V13.793C13.25 14.6372 12.2697 15.1025 11.6154 14.5689L8.1328 11.7289C7.76422 11.4283 7.23578 11.4283 6.8672 11.7289L3.38459 14.5689C2.73034 15.1025 1.75 14.6372 1.75 13.793V1.75C1.75 1.19772 2.19772 0.75 2.75 0.75Z" fill="currentColor"/></svg></span>
+              </span>
+            </button>
+            <form class="product-card__actions" action="/actions/cart/add" method="post" data-card-add-form>
+              <input type="hidden" name="productHandle" value="${escapeHtml(handle)}" />
+              <input type="hidden" name="quantity" value="1" />
+              <button class="product-card__add-btn" type="submit" aria-label="Add ${escapeHtml(item.title)} to cart">
+                <span data-card-add-label>${messages.addToCart || "Add to Cart"}</span>
+              </button>
+              <button class="product-card__cart" type="submit" aria-label="Add ${escapeHtml(item.title)} to cart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="15" viewBox="0 0 13 15" fill="none" class="add-to-cart-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.4362 0C4.92567 0 3.70112 1.22454 3.70112 2.73508V3.28209H2.49227C1.65608 3.28209 0.953606 3.91083 0.861264 4.74191L0.0103542 12.4001C-0.0976595 13.3722 0.663277 14.2224 1.64136 14.2224H8.07725C8.37936 14.2224 8.62426 13.9775 8.62426 13.6754C8.62426 13.3733 8.37936 13.1284 8.07725 13.1284H1.64136C1.31534 13.1284 1.06169 12.845 1.09769 12.521L1.9486 4.86275C1.97939 4.58568 2.21354 4.37612 2.49227 4.37612H3.70112V5.47015C3.70112 5.77227 3.94602 6.01717 4.24814 6.01717C4.55025 6.01717 4.79515 5.77227 4.79515 5.47015V4.37612H8.07725V5.47015C8.07725 5.77227 8.32214 6.01717 8.62426 6.01717C8.92638 6.01717 9.17128 5.77227 9.17128 5.47015V4.37612H10.3801C10.6589 4.37612 10.8931 4.58568 10.9238 4.86275L11.3627 8.81264C11.396 9.11289 11.6665 9.32929 11.9668 9.29592C12.2671 9.26256 12.4834 8.99211 12.45 8.69186L12.0112 4.74191C11.9188 3.91084 11.2163 3.28209 10.3801 3.28209H9.17128V2.73508C9.17128 1.22454 7.94673 0 6.4362 0ZM8.07725 3.28209V2.73508C8.07725 1.82875 7.34255 1.09403 6.4362 1.09403C5.5299 1.09403 4.79515 1.82875 4.79515 2.73508V3.28209H8.07725Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M11.3595 10.3937C11.3595 10.0916 11.1146 9.84668 10.8125 9.84668C10.5103 9.84668 10.2654 10.0916 10.2654 10.3937V11.4877H9.17141C8.86929 11.4877 8.62439 11.7326 8.62439 12.0347C8.62439 12.3369 8.86929 12.5818 9.17141 12.5818H10.2654V13.6758C10.2654 13.9779 10.5103 14.2228 10.8125 14.2228C11.1146 14.2228 11.3595 13.9779 11.3595 13.6758V12.5818H12.4535C12.7556 12.5818 13.0005 12.3369 13.0005 12.0347C13.0005 11.7326 12.7556 11.4877 12.4535 11.4877H11.3595V10.3937Z" fill="currentColor"/></svg>
+              </button>
+            </form>
+          </div>
+          <div class="product-card__footer">
+            <div class="product-card__price-group"><span class="product-card__label type-body-xs-500">${messages.startingAt || "Starting at"}</span><strong class="product-card__price type-heading-6">${money(item.priceAmount, item.currencyCode)}</strong></div>
+          </div>
+        `;
+
+        card.querySelector(".product-card__save")?.addEventListener("click", () => {
+          const index = items.findIndex((saved) => saved.path === item.path);
+          focusAfterRender = items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__";
+          window.dispatchEvent(
+            new CustomEvent(WISHLIST_UPDATED_EVENT, {
+              detail: {
+                items: items.filter((saved) => saved.path !== item.path),
+                origin: "page",
+              },
+            }),
+          );
+        });
         grid.append(card);
       });
       content.append(grid);

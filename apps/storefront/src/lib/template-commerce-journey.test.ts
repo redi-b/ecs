@@ -19,17 +19,7 @@ const journey = [
     slot: "Product",
     route: "pages/products/[handle].astro",
     fallback: "templates/fallback/ProductPage.astro",
-    evidence: ['action="/actions/cart/add"', 'href="/cart"'],
-  },
-  {
-    slot: "Cart",
-    route: "pages/cart.astro",
-    fallback: "templates/fallback/CartPage.astro",
-    evidence: [
-      'action="/actions/cart/update"',
-      'action="/actions/cart/remove"',
-      'href="/checkout"',
-    ],
+    evidence: ['action="/actions/cart/add"'],
   },
   {
     slot: "Checkout",
@@ -205,7 +195,6 @@ test("every selectable template has a bounded fixture-only public demo", () => {
       `pages/demo/storefront/${template.slug}.astro`,
       `pages/demo/storefront/${template.slug}/products/index.astro`,
       `pages/demo/storefront/${template.slug}/products/[handle].astro`,
-      `pages/demo/storefront/${template.slug}/cart.astro`,
       `pages/demo/storefront/${template.slug}/checkout.astro`,
       `pages/demo/storefront/${template.slug}/order-confirmation.astro`,
     ];

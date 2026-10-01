@@ -198,6 +198,11 @@ export function initLuviaStorefront() {
     return el;
   };
 
+  const appendTemplateIcon = (element: HTMLElement, selector: string) => {
+    const template = document.querySelector<HTMLTemplateElement>(selector);
+    if (template) element.append(template.content.cloneNode(true));
+  };
+
   // data-cart-status is a declared aria-live region; nothing ever wrote to it,
   // so no cart mutation was ever announced to screen readers.
   const announce = (message?: string) => {
@@ -225,8 +230,8 @@ export function initLuviaStorefront() {
     if (!cartItems.length) {
       const empty = createNode("div", "cart-empty empty-state");
       const mark = createNode("span", "empty-state__mark");
-      mark.innerHTML =
-        '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>';
+      const icon = document.querySelector<HTMLTemplateElement>("[data-cart-empty-icon]");
+      if (icon) mark.append(icon.content.cloneNode(true));
       const copy = createNode("div", "empty-state__copy");
       copy.append(
         createNode(
@@ -284,7 +289,8 @@ export function initLuviaStorefront() {
 
       const controls = createNode("div", "cart-item__actions");
       const quantity = createNode("div", "cart-quantity");
-      const minus = createNode("button", "type-body-s-500", "−") as HTMLButtonElement;
+      const minus = createNode("button", "type-body-s-500") as HTMLButtonElement;
+      appendTemplateIcon(minus, "[data-cart-minus-icon]");
       minus.type = "button";
       minus.dataset.cartAction = "dec";
       minus.dataset.cartQuantity = String(Math.max(1, Number(item.quantity) - 1));
@@ -295,7 +301,8 @@ export function initLuviaStorefront() {
       minus.disabled = Number(item.quantity) <= 1;
 
       const amount = createNode("span", "type-body-s-500", String(item.quantity));
-      const plus = createNode("button", "type-body-s-500", "+") as HTMLButtonElement;
+      const plus = createNode("button", "type-body-s-500") as HTMLButtonElement;
+      appendTemplateIcon(plus, "[data-cart-plus-icon]");
       plus.type = "button";
       plus.dataset.cartAction = "inc";
       plus.dataset.cartQuantity = String(Number(item.quantity) + 1);
@@ -305,11 +312,8 @@ export function initLuviaStorefront() {
       );
 
       quantity.append(minus, amount, plus);
-      const remove = createNode(
-        "button",
-        "cart-remove type-body-xs",
-        messages.remove || "Remove",
-      ) as HTMLButtonElement;
+      const remove = createNode("button", "cart-remove") as HTMLButtonElement;
+      appendTemplateIcon(remove, "[data-cart-remove-icon]");
       remove.type = "button";
       remove.dataset.cartAction = "remove";
       remove.dataset.cartRemove = "";

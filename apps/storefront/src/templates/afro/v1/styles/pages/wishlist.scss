@@ -1,5 +1,6 @@
 @use "../abstracts" as *;
 @use "../components/empty-state";
+@use "../components/product-card";
 
 .wishlist-page {
   background-color: $clr-neutral-200;
@@ -66,17 +67,12 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: $space-300;
 
-    &:not(:has(.is-saved)) {
+    &[hidden] {
       display: none;
     }
 
     .product-card {
-      display: none;
       max-width: none;
-
-      &.is-saved {
-        display: flex;
-      }
     }
 
     @media (max-width: 1100px) {
