@@ -27,7 +27,8 @@ export const DEFAULT_PLAN_CATALOG = {
     price: "0",
     status: "active",
     limits: {},
-    features: definePlanEntitlements({ customDomains: false }),
+    // Temporary policy while final pricing is undecided; runtime ingress remains opt-in.
+    features: definePlanEntitlements({ customDomains: true }),
     kind: "standard",
     visibility: "public",
   },
@@ -38,7 +39,7 @@ export const DEFAULT_PLAN_CATALOG = {
     price: "2499",
     status: "active",
     limits: {},
-    features: definePlanEntitlements({ customDomains: false }),
+    features: definePlanEntitlements({ customDomains: true }),
     kind: "standard",
     visibility: "public",
   },

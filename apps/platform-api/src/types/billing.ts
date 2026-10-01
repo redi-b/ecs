@@ -2,6 +2,7 @@ import type { EntitlementDecisionContract, EntitlementKey } from "@ecs/contracts
 
 export type BillingInvoice = {
   id: string;
+  planId?: string | null;
   amount: string;
   currency: string;
   status: string;

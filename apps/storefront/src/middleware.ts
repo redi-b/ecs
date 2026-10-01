@@ -22,6 +22,9 @@ import {
 } from "./lib/storefront-locale.js";
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // This identity-only endpoint must not be localized, canonicalized or made
+  // dependent on ordinary admission while certificate activation is pending.
+  if (context.url.pathname === "/.well-known/ecs-domain-verification") return next();
   const brandedDemoPath = resolveBrandedStorefrontDemoPath({
     demoHost: getStorefrontDemoHost(import.meta.env.STOREFRONT_DEMO_HOST),
     hostname: context.url.hostname,

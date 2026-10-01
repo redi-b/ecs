@@ -175,7 +175,7 @@ describe("tenant domains and billing", () => {
               id: input.domainId,
               hostname: "shop.example.com",
               type: "custom_domain",
-              status: "pending_certificate",
+              status: "pending_dns",
               isPrimary: false,
               verificationStatus: "verified",
               sslStatus: "pending",

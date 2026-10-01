@@ -1,0 +1,49 @@
+# Opt-in overlay; keep the ordinary Dokploy stack free of host route mounts.
+# Merge AFTER docker-compose.yml. Prepare the owned host directory first.
+x-domain-access: &domain-access
+  environment:
+    ECS_CUSTOM_DOMAINS_ENABLED: ${ECS_CUSTOM_DOMAINS_ENABLED:-false}
+    ECS_DOMAIN_ROUTE_DIRECTORY: /var/lib/ecs-domain-routes
+    ECS_DOMAIN_TRAEFIK_API_URL: http://dokploy-traefik:8080
+    ECS_DOMAIN_INGRESS_IPV4: ${ECS_DOMAIN_INGRESS_IPV4:?set the public ECS ingress IPv4}
+    ECS_DOMAIN_STOREFRONT_SERVICE: ecs-custom-domains-storefront@file
+    ECS_DOMAIN_CERT_RESOLVER: ${ECS_DOMAIN_CERT_RESOLVER:-letsencrypt}
+  volumes:
+    - type: bind
+      source: ${ECS_DOMAIN_ROUTE_HOST_DIRECTORY:?prepare the ECS-owned Traefik child directory}
+      target: /var/lib/ecs-domain-routes
+      bind:
+        create_host_path: false
+  networks:
+    default: {}
+    dokploy-network: {}
+
+services:
+  platform-api:
+    <<: *domain-access
+  platform-worker:
+    <<: *domain-access
+  custom-domain-gateway:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    # The official binary carries this file capability, including on port 8080.
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ./custom-domains/Caddyfile:/etc/caddy/Caddyfile:ro
+    tmpfs:
+      - /config:uid=1000,gid=1000
+      - /data:uid=1000,gid=1000
+    networks:
+      default: {}
+      dokploy-network:
+        aliases: [ecs-custom-domain-gateway]
+    # Exact file-provider routes exclusively own this backend. Prevent Docker
+    # discovery from synthesizing internal-name routers and ACME requests.
+    labels:
+      - traefik.enable=false
+    mem_limit: 128m
+    cpus: 0.25

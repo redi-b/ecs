@@ -1,63 +1,477 @@
 "use client";
 
-import type { TenantDomainContract } from "@ecs/contracts";
-
+import type { TenantDomainContract, TenantDomainSetup } from "@ecs/contracts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useId, useRef, useState } from "react";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { AppIcons } from "@/components/app/icons";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   SectionIntro,
   SettingsPanel,
   SettingsSectionBody,
 } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import {
+  type DomainSettingsAction,
+  DomainSettingsError,
+  getDomainSettings,
+  mutateDomainSettings,
+} from "./domain-settings-client";
+import {
+  canUseDomain,
+  domainConnectionStatus,
+  initialChallengeExpired,
+  normalizeDomainInput,
+} from "./domain-settings-model";
 
-export function DomainsSection({ initialDomains }: { initialDomains: TenantDomainContract[] }) {
-  const { t } = useI18n();
+export function DomainsSection({
+  tenantId,
+  initialDomains,
+  initialSetup,
+  initialLoadFailed = false,
+}: {
+  tenantId: string;
+  initialDomains: TenantDomainContract[];
+  initialSetup?: TenantDomainSetup | undefined;
+  initialLoadFailed?: boolean | undefined;
+}) {
+  const { t, formatDateTime } = useI18n();
+  const hostnameId = useId();
+  const hintId = useId();
+  const errorId = useId();
+  const client = useQueryClient();
+  const queryKey = ["domain-settings", tenantId] as const;
+  const query = useQuery({
+    queryKey,
+    queryFn: ({ signal }) => getDomainSettings({ tenantId, signal }),
+    ...(initialLoadFailed
+      ? {}
+      : {
+          initialData: {
+            domains: initialDomains,
+            ...(initialSetup ? { setup: initialSetup } : {}),
+          },
+        }),
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
+    refetchInterval: (current) =>
+      current.state.data?.domains.some(
+        (domain) => domain.type === "custom_domain" && domain.status !== "active",
+      )
+        ? 15_000
+        : 60_000,
+  });
+  const [hostname, setHostname] = useState("");
+  const [invalid, setInvalid] = useState(false);
+  const [removing, setRemoving] = useState<TenantDomainContract | null>(null);
+  const mutationGuard = useRef(false);
+  const mutation = useMutation({
+    mutationFn: (action: DomainSettingsAction) => mutateDomainSettings({ tenantId, action }),
+  });
+  const domains = query.data?.domains ?? [];
+  const setup = query.data?.setup;
+  const customCount = domains.filter((domain) => domain.type === "custom_domain").length;
+  const busy = mutation.isPending;
+
+  function errorMessage(error: unknown) {
+    const code = error instanceof DomainSettingsError ? error.code : "";
+    if (code === "domain_verification_pending") return t("settings.domains.waitingOwnership");
+    if (code === "domain_verification_expired") return t("settings.domains.expired");
+    if (code === "domain_reconciliation_busy") return t("settings.domains.busy");
+    if (code === "domain_invalid") return t("settings.domains.hostnameInvalid");
+    if (code === "domain_unavailable") return t("settings.domains.unavailable");
+    if (code === "domain_limit_reached") return t("settings.domains.limitReached");
+    if (code === "entitlement_required") return t("settings.domains.accessRequired");
+    if (code === "custom_domains_unavailable") return t("settings.domains.disabled");
+    if (code === "domain_not_verified") return t("settings.domains.notReady");
+    return t("settings.domains.actionFailed");
+  }
+
+  async function act(action: DomainSettingsAction, renewal = false) {
+    if (mutationGuard.current) return;
+    mutationGuard.current = true;
+    try {
+      await client.cancelQueries({ queryKey });
+      const result = await mutation.mutateAsync(action);
+      client.setQueryData<typeof query.data>(queryKey, (previous) => {
+        if (!previous) return previous;
+        if (result.kind === "removal" && action.action === "remove") {
+          return {
+            ...previous,
+            domains:
+              result.status === "removed"
+                ? previous.domains.filter((domain) => domain.id !== action.domainId)
+                : previous.domains.map((domain) =>
+                    domain.id === action.domainId
+                      ? { ...domain, status: "removing", isPrimary: false }
+                      : domain,
+                  ),
+          };
+        }
+        if (result.kind !== "domain") return previous;
+        const others = previous.domains
+          .filter((domain) => domain.id !== result.domain.id)
+          .map((domain) =>
+            action.action === "primary" ? { ...domain, isPrimary: false } : domain,
+          );
+        return { ...previous, domains: [...others, result.domain] };
+      });
+      if (action.action === "remove" && result.kind === "removal") {
+        setRemoving(null);
+        if (result.status === "removed") toast.success(t("settings.domains.removed"));
+        else toast.message(t("settings.domains.removingNotice"));
+      } else if (action.action === "create") {
+        if (!renewal) setHostname("");
+        toast.success(t(renewal ? "settings.domains.renewed" : "settings.domains.created"));
+      } else if (action.action === "primary") toast.success(t("settings.domains.primaryChanged"));
+      else toast.success(t("settings.domains.ownershipVerified"));
+      await client.invalidateQueries({ queryKey });
+    } catch (error) {
+      if (error instanceof DomainSettingsError && error.code === "domain_verification_pending")
+        toast.message(errorMessage(error));
+      else toast.error(errorMessage(error));
+      await client.invalidateQueries({ queryKey });
+    } finally {
+      mutationGuard.current = false;
+    }
+  }
+
+  function record(label: string, value: string) {
+    return (
+      <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-muted/25 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <code className="block break-all text-xs leading-relaxed select-all">{value}</code>
+        </div>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={`${t("settings.domains.copy")}: ${label}`}
+          onClick={async () => {
+            if (await copyTextToClipboard(value)) toast.success(t("settings.domains.copied"));
+            else toast.error(t("settings.domains.copyFailed"));
+          }}
+        >
+          <AppIcons.copy aria-hidden />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <SettingsSectionBody>
-      <SectionIntro title={t("settings.sections.domains.label")} />
-
-      <SettingsPanel
-        description={t("settings.domains.unavailableDescription")}
-        title={t("settings.domains.unavailableTitle")}
-      >
-        <p className="text-sm text-muted-foreground">{t("settings.domains.unavailableNote")}</p>
-      </SettingsPanel>
-
-      <div className="space-y-3">
-        {initialDomains.map((domain) => (
-          <Card className="border-border/80" key={domain.id}>
-            <CardHeader className="flex-row items-start justify-between gap-4">
-              <div className="min-w-0">
-                <CardTitle className="truncate text-base">{domain.hostname}</CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {domain.type === "platform_subdomain"
-                    ? t("settings.domains.ecsAddressDescription")
-                    : t("settings.domains.legacyCustomDescription")}
-                </p>
-              </div>
-              <Badge variant={domain.isPrimary ? "secondary" : "outline"}>
-                {domain.isPrimary
-                  ? t("settings.domains.primary")
-                  : t("settings.domains.notPrimary")}
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <a
-                className="inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline"
-                href={`//${domain.hostname}`}
-                rel="noreferrer"
-                target="_blank"
+      <SectionIntro
+        title={t("settings.sections.domains.label")}
+        description={t("settings.domains.connectDescription")}
+      />
+      {query.isError || (!query.data && initialLoadFailed) ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {t(query.data ? "settings.domains.stale" : "settings.domains.loadFailed")}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={query.isFetching}
+              onClick={() => void query.refetch()}
+            >
+              {t("settings.domains.retry")}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {query.data ? (
+        <SettingsPanel
+          title={t("settings.domains.connectTitle")}
+          description={setup?.enabled && setup.entitled ? t("settings.domains.limit") : undefined}
+        >
+          {setup?.enabled && setup.entitled ? (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const normalized = normalizeDomainInput(hostname);
+                setInvalid(!normalized);
+                if (normalized) void act({ action: "create", hostname: normalized });
+              }}
+              className="space-y-3"
+            >
+              <Field data-invalid={invalid || undefined}>
+                <FieldLabel htmlFor={hostnameId}>{t("settings.domains.hostname")}</FieldLabel>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id={hostnameId}
+                    name="hostname"
+                    value={hostname}
+                    onChange={(event) => {
+                      setHostname(event.target.value);
+                      if (invalid) setInvalid(false);
+                    }}
+                    placeholder="shop.example.com"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    aria-invalid={invalid}
+                    aria-describedby={invalid ? `${errorId} ${hintId}` : hintId}
+                    disabled={busy || customCount >= 2}
+                  />
+                  <Button type="submit" disabled={busy || customCount >= 2 || !hostname.trim()}>
+                    {busy && mutation.variables?.action === "create" ? (
+                      <Spinner aria-label={t("settings.domains.adding")} />
+                    ) : (
+                      <AppIcons.link aria-hidden />
+                    )}
+                    {t(
+                      busy && mutation.variables?.action === "create"
+                        ? "settings.domains.adding"
+                        : "settings.domains.add",
+                    )}
+                  </Button>
+                </div>
+                <FieldDescription id={hintId}>
+                  {t("settings.domains.hostnameHint")}
+                </FieldDescription>
+                {invalid ? (
+                  <FieldError id={errorId}>{t("settings.domains.hostnameInvalid")}</FieldError>
+                ) : null}
+              </Field>
+              <p className="text-xs text-muted-foreground">{t("settings.domains.dnsOnly")}</p>
+            </form>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {t(
+                setup?.enabled && !setup.entitled
+                  ? "settings.domains.accessRequired"
+                  : "settings.domains.disabled",
+              )}
+            </p>
+          )}
+        </SettingsPanel>
+      ) : null}
+      {domains.map((domain) => {
+        const managed = domain.type === "platform_subdomain";
+        const status = domainConnectionStatus(domain);
+        const usable = canUseDomain(domain);
+        const expired = initialChallengeExpired(domain, Date.now());
+        const removingDomain = status === "removing";
+        return (
+          <SettingsPanel
+            key={domain.id}
+            title={<span className="break-all">{domain.hostname}</span>}
+            description={managed ? t("settings.domains.ecsAddressDescription") : undefined}
+            action={
+              <Badge
+                variant={
+                  managed || status === "active"
+                    ? "success"
+                    : status === "misconfigured" || status === "failed"
+                      ? "warning"
+                      : "secondary"
+                }
               >
-                {t("settings.domains.openAddress")}
-                <AppIcons.externalLink className="size-3.5" aria-hidden />
-              </a>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                {managed
+                  ? t(domain.isPrimary ? "settings.domains.primary" : "settings.domains.notPrimary")
+                  : t(`settings.domains.states.${status}`)}
+              </Badge>
+            }
+          >
+            {!managed ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    removingDomain
+                      ? "settings.domains.removingNotice"
+                      : expired
+                        ? "settings.domains.expired"
+                        : domain.diagnostics
+                          ? `settings.domains.diagnostics.${domain.diagnostics.reason}`
+                          : status === "pending_verification"
+                            ? "settings.domains.waitingOwnership"
+                            : status === "pending_dns"
+                              ? "settings.domains.waitingDns"
+                              : status === "active"
+                                ? "settings.domains.ready"
+                                : status === "pending_certificate"
+                                  ? "settings.domains.waitingCertificate"
+                                  : "settings.domains.actionFailed",
+                  )}
+                </p>
+                {domain.diagnostics?.reason === "caa_restricted" && domain.diagnostics.detail ? (
+                  <p className="text-sm">
+                    {t(`settings.domains.caa.${domain.diagnostics.detail}`)}
+                  </p>
+                ) : null}
+                {domain.warningGraceExpiresAt ? (
+                  <p className="text-sm text-warning">
+                    {t("settings.domains.grace", {
+                      date: formatDateTime(domain.warningGraceExpiresAt),
+                    })}
+                  </p>
+                ) : null}
+                {!removingDomain ? (
+                  <details open={!usable} className="group space-y-3">
+                    <summary className="cursor-pointer text-sm font-medium focus-visible:outline-ring">
+                      {t("settings.domains.setup")}
+                    </summary>
+                    {domain.verificationChallenge ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">{t("settings.domains.txtTitle")}</p>
+                        {record(
+                          t("settings.domains.recordName"),
+                          domain.verificationChallenge.recordName,
+                        )}
+                        {record(
+                          t("settings.domains.recordValue"),
+                          domain.verificationChallenge.recordValue,
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {t("settings.domains.keepTxt")}
+                        </p>
+                      </div>
+                    ) : null}
+                    {setup ? (
+                      <div className="space-y-2 border-t border-border/60 pt-3">
+                        <p className="text-xs font-medium">{t("settings.domains.routingTitle")}</p>
+                        {record(t("settings.domains.hostname"), domain.hostname)}
+                        {record("CNAME / ALIAS", setup.dnsTarget)}
+                        <p className="text-xs text-muted-foreground">
+                          {t("settings.domains.cname", { target: setup.dnsTarget })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("settings.domains.apex", { target: setup.dnsTarget })}
+                        </p>
+                        {setup.ingressIpv4.length ? (
+                          <details>
+                            <summary className="cursor-pointer text-xs">A / IPv4</summary>
+                            <p className="pt-2 text-xs text-muted-foreground">
+                              {t("settings.domains.fallback", {
+                                addresses: setup.ingressIpv4.join(", "),
+                              })}
+                            </p>
+                          </details>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">
+                          {t("settings.domains.dnsOnly")}
+                        </p>
+                      </div>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">
+                      {t("settings.domains.txtPropagation")}
+                    </p>
+                  </details>
+                ) : null}
+                {domain.diagnostics ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.domains.checked", {
+                      date: formatDateTime(domain.diagnostics.checkedAt),
+                    })}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {usable ? (
+                <Button asChild size="sm" variant="outline">
+                  <a href={`https://${domain.hostname}`} target="_blank" rel="noopener noreferrer">
+                    {t("settings.domains.openAddress")}
+                    <AppIcons.externalLink aria-hidden />
+                  </a>
+                </Button>
+              ) : null}
+              {managed && usable && !domain.isPrimary ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => void act({ action: "primary", domainId: domain.id })}
+                >
+                  {t("settings.domains.makePrimary")}
+                </Button>
+              ) : null}
+              {!managed && !removingDomain ? (
+                <>
+                  {expired ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy || !setup?.enabled || !setup.entitled}
+                      onClick={() =>
+                        void act({ action: "create", hostname: domain.hostname }, true)
+                      }
+                    >
+                      {t("settings.domains.renew")}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void act({ action: "verify", domainId: domain.id })}
+                    >
+                      {busy &&
+                      mutation.variables?.action === "verify" &&
+                      mutation.variables.domainId === domain.id ? (
+                        <Spinner aria-label={t("settings.domains.checking")} />
+                      ) : (
+                        <AppIcons.refresh aria-hidden />
+                      )}
+                      {t("settings.domains.check")}
+                    </Button>
+                  )}
+                  {canUseDomain(domain) ? (
+                    domain.isPrimary ? (
+                      <Badge variant="outline">{t("settings.domains.primary")}</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void act({ action: "primary", domainId: domain.id })}
+                      >
+                        {t("settings.domains.makePrimary")}
+                      </Button>
+                    )
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={busy}
+                    onClick={() => setRemoving(domain)}
+                  >
+                    {t("settings.domains.remove")}
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </SettingsPanel>
+        );
+      })}
+      <ConfirmDialog
+        open={Boolean(removing)}
+        onOpenChange={(open) => {
+          if (!busy && !open) setRemoving(null);
+        }}
+        title={t("settings.domains.removeTitle")}
+        description={t("settings.domains.removeDescription", {
+          hostname: removing?.hostname ?? "",
+        })}
+        confirmLabel={busy ? t("settings.domains.removing") : t("settings.domains.remove")}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+        onConfirm={(event) => {
+          event.preventDefault();
+          if (removing) void act({ action: "remove", domainId: removing.id });
+        }}
+      />
     </SettingsSectionBody>
   );
 }

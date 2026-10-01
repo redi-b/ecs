@@ -1,3 +1,4 @@
+import type { DomainDiagnostics, TenantDomainSetup } from "@ecs/contracts";
 import type { DashboardActorRole } from "./session.js";
 
 export type TenantStatus = "draft" | "active" | "suspended" | "cancelled";
@@ -294,6 +295,8 @@ export type TenantDomain = {
   isPrimary: boolean;
   verificationStatus: string;
   sslStatus: string;
+  diagnostics?: DomainDiagnostics | null;
+  warningGraceExpiresAt?: string | null;
   verificationChallenge?: {
     recordName: string;
     recordValue: string;
@@ -304,7 +307,12 @@ export type TenantDomain = {
 export type TenantDomainListResult = {
   ok: true;
   domains: TenantDomain[];
+  setup?: TenantDomainSetup;
 };
+
+export type TenantDomainRemovalResult =
+  | { ok: true; status: "removed" | "removing" }
+  | { ok: false; error: "domain_not_found" | "domain_reconciliation_busy"; status: 404 | 503 };
 
 export type TenantDomainCreateResult =
   | {
@@ -317,6 +325,8 @@ export type TenantDomainCreateResult =
         | "custom_domains_unavailable"
         | "domain_invalid"
         | "domain_unavailable"
+        | "domain_limit_reached"
+        | "domain_reconciliation_busy"
         | "entitlement_required";
       status: 400 | 403 | 409 | 503;
     };
@@ -328,16 +338,20 @@ export type TenantDomainPrimaryResult =
     }
   | {
       ok: false;
-      error: "domain_not_found" | "domain_not_verified";
-      status: 404 | 409;
+      error: "domain_not_found" | "domain_not_verified" | "domain_reconciliation_busy";
+      status: 404 | 409 | 503;
     };
 
 export type TenantDomainVerificationResult =
   | { ok: true; domain: TenantDomain }
   | {
       ok: false;
-      error: "domain_not_found" | "domain_verification_expired" | "domain_verification_pending";
-      status: 404 | 409;
+      error:
+        | "domain_not_found"
+        | "domain_verification_expired"
+        | "domain_verification_pending"
+        | "domain_reconciliation_busy";
+      status: 404 | 409 | 503;
     };
 
 export type TenantOnboardingResult =

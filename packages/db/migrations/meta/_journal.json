@@ -519,6 +519,27 @@
       "when": 1790721365151,
       "tag": "0073_cold_aaron_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1790840719159,
+      "tag": "0074_organic_marauders",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1790856257850,
+      "tag": "0075_plain_moon_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1790857292732,
+      "tag": "0076_short_bishop",
+      "breakpoints": true
     }
   ]
 }

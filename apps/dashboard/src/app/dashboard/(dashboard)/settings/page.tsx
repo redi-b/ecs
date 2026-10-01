@@ -93,6 +93,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <PageShell
       // overflow-x-hidden on PageShell breaks position:sticky for the section nav.
       className="overflow-x-visible"
+      headerMode="sr-only"
       title={t("settings.title")}
     >
       {!result.ok ? (
@@ -106,6 +107,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <SettingsWorkspace
           delivery={delivery?.ok ? delivery.delivery : null}
           domains={domains?.ok ? domains.domains : []}
+          domainSetup={domains?.ok ? domains.setup : undefined}
+          domainsLoadFailed={Boolean(domains && !domains.ok)}
           initialSection={resolvedSearchParams.section}
           payments={payments?.ok ? payments.payment : null}
           paymentsSupportHref={paymentsSupportHref}

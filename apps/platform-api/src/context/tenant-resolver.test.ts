@@ -42,6 +42,56 @@ describe("normalizeHostname", () => {
 });
 
 describe("resolveTenantFromHost", () => {
+  it("admits custom domains during persisted DNS/TXT grace but rejects expired or unsafe warnings", async () => {
+    const now = Date.now();
+    const record = {
+      ...activePublishedRecord,
+      domainType: "custom_domain",
+      sslStatus: "active",
+      activatedAt: new Date(now - 86400000),
+      domainStatus: "misconfigured",
+      warningSince: new Date(now - 1000),
+      warningReason: "dns_missing",
+    };
+    assert.equal((await resolverFor(record)).ok, true);
+    assert.deepEqual(await resolverFor({ ...record, warningSince: new Date(now - 7 * 86400000) }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    assert.deepEqual(await resolverFor({ ...record, warningReason: "wrong_shop" }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    assert.deepEqual(await resolverFor({ ...record, sslStatus: "pending" }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    assert.deepEqual(await resolverFor({ ...record, domainStatus: "removing" }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    assert.deepEqual(await resolverFor({ ...record, domainStatus: "active", activatedAt: null }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    assert.deepEqual(await resolverFor({ ...record, warningSince: new Date(now + 86400000) }), {
+      ok: false,
+      error: "domain_misconfigured",
+    });
+    const primary = await resolverFor({
+      ...activePublishedRecord,
+      primaryHostname: "expired.example.com",
+      primaryDomainType: "custom_domain",
+      primaryDomainStatus: "misconfigured",
+      primaryDomainVerificationStatus: "verified",
+      primaryDomainSslStatus: "active",
+      primaryDomainActivatedAt: new Date(now - 8 * 86400000),
+      primaryDomainWarningSince: new Date(now - 7 * 86400000),
+      primaryDomainWarningReason: "dns_missing",
+    });
+    assert.equal(primary.ok && primary.context.primaryHostname, activePublishedRecord.hostname);
+  });
+
   it("requires shop context when host is missing", async () => {
     const result = await resolveTenantFromHost({
       host: undefined,

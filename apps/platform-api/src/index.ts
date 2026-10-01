@@ -21,13 +21,15 @@ import { createTelegramRuntime } from "./bootstrap/telegram.js";
 import { createTenantRuntime } from "./bootstrap/tenant.js";
 import { createTenantManagementRuntime } from "./bootstrap/tenant-management.js";
 import { loadPlatformApiEnvFiles } from "./config/env.js";
-import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { getSystemHosts } from "./config/hosts.js";
+import { assertPlatformProductionEnvironment } from "./config/production-environment.js";
 import { createDomainTenantLookup } from "./context/domain-tenant-lookup.js";
 import { parseTrustedOrigins } from "./context/platform-auth.js";
 import { resolveTenantFromHost } from "./context/tenant-resolver.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
 import { createProductImportArtifactService } from "./modules/data-transfer/product-import-artifact.js";
+import { createDomainProbeIdentityService } from "./modules/domains/probe-identity.js";
+import { createDomainRuntime } from "./modules/domains/runtime.js";
 import { createLaunchReadinessService } from "./modules/onboarding/launch-readiness.js";
 import { createCustomerCommerceService } from "./modules/storefront/customer-commerce-service.js";
 import { createStorefrontInquiryService } from "./modules/storefront/inquiry-service.js";
@@ -58,6 +60,7 @@ const platformDb = createPlatformDb({
   ),
 });
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
+const domainRuntime = createDomainRuntime({ db: platformDb.db, env: process.env });
 const billingRuntime = createBillingRuntime({ db: platformDb.db, env: process.env, logger });
 const { billingProviderEventInbox, billingService } = billingRuntime;
 const recordMerchantDataExport = createDataExportAuditRecorder(platformDb.db);
@@ -299,9 +302,16 @@ const app = createPlatformApp({
   updateStorefrontInquiryStatus: storefrontInquiryService.updateInquiryStatus,
   logger,
   storefrontPreviewSecret: process.env.STOREFRONT_PREVIEW_SECRET?.trim(),
+  getDomainProbeIdentity: createDomainProbeIdentityService({
+    enabled: domainRuntime?.enabled() === true,
+    platformBaseDomain,
+    findDomainByHostname,
+    evaluateEntitlement: entitlementService.evaluate,
+  }),
   authHandler: auth.handler,
   googleAuthEnabled,
   createTenantDomain: domainManagementService.createTenantDomain,
+  removeTenantDomain: domainRuntime?.removeTenantDomain,
   createTenantShop,
   checkTenantHandleAvailability,
   ...billingAppOptions,

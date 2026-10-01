@@ -22,8 +22,8 @@ describe("default plan catalog", () => {
     assert.deepEqual(DEFAULT_PLAN_CATALOG.growth.limits, {});
   });
 
-  it("does not sell custom domains while operational availability is deferred", () => {
-    assert.equal(DEFAULT_PLAN_CATALOG.starter.features.customDomains, false);
-    assert.equal(DEFAULT_PLAN_CATALOG.growth.features.customDomains, false);
+  it("temporarily includes custom domains in free and paid defaults independently of infrastructure availability", () => {
+    assert.equal(DEFAULT_PLAN_CATALOG.starter.features.customDomains, true);
+    assert.equal(DEFAULT_PLAN_CATALOG.growth.features.customDomains, true);
   });
 });

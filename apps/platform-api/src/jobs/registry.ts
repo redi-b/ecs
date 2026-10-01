@@ -7,6 +7,39 @@ const exponential = { delayMs: 5_000, jitter: 0.2, type: "exponential" as const 
 
 export const platformJobRegistry = createJobRegistry([
   defineJob({
+    attempts: 3,
+    backoff: exponential,
+    idempotency: "optional",
+    manualRetry: "safe",
+    name: "domains.scan",
+    payloadSchema: z.discriminatedUnion("source", [
+      maintenancePayload,
+      z.object({
+        source: z.literal("continuation"),
+        cursor: z.string().uuid(),
+        scanId: z.string().min(1).max(128),
+      }),
+    ]),
+    queue: "bulk",
+    retention: standardRetention,
+    retry: "classified",
+    timeoutMs: 120_000,
+    version: 1,
+  }),
+  defineJob({
+    attempts: 3,
+    backoff: exponential,
+    idempotency: "required",
+    manualRetry: "safe",
+    name: "domains.reconcile",
+    payloadSchema: z.object({ domainId: z.string().uuid() }),
+    queue: "bulk",
+    retention: standardRetention,
+    retry: "classified",
+    timeoutMs: 60_000,
+    version: 1,
+  }),
+  defineJob({
     attempts: 1,
     backoff: exponential,
     idempotency: "optional",

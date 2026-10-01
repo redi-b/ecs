@@ -45,6 +45,10 @@ import type {
 } from "./tenant.js";
 
 export type PlatformStorefrontOptions = {
+  getDomainProbeIdentity?: (input: {
+    hostname: string;
+    nonce: string;
+  }) => Promise<import("@ecs/contracts").DomainProbeIdentity | undefined>;
   handleChapaPaymentCallback?:
     | ((input: {
         providerReference?: string | null | undefined;

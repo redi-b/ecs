@@ -1,4 +1,4 @@
-import { isIP } from "node:net";
+import { domainDiagnosticsSchema } from "@ecs/contracts";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
@@ -7,7 +7,7 @@ import {
   domainVerificationChallenges,
   tenants,
 } from "@ecs/db";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type {
   TenantDomain,
@@ -17,33 +17,28 @@ import type {
   TenantDomainVerificationResult,
 } from "../../types/index.js";
 import type { EntitlementDecision } from "../entitlements/service.js";
+import {
+  isReservedCustomDomainHostname,
+  isValidCustomDomainHostname,
+  normalizeCustomDomainHostname,
+} from "./hostname.js";
+import { DOMAIN_WARNING_GRACE_MS } from "./lifecycle.js";
+
+export { isValidCustomDomainHostname, normalizeCustomDomainHostname } from "./hostname.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 const DOMAIN_CHALLENGE_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 
-const hostnamePattern =
-  /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])$/;
-
-export function normalizeCustomDomainHostname(value: string) {
-  return value.trim().replace(/\.$/, "").toLowerCase();
-}
-
-export function isValidCustomDomainHostname(value: string) {
-  if (!hostnamePattern.test(value) || isIP(value) !== 0) {
-    return false;
-  }
-
-  return !value.split(".").some((label) => label.startsWith("-") || label.endsWith("-"));
-}
-
 export function hasDomainOwnershipRecord(records: string[][], expected: string) {
-  return records.flat().some((value) => value.trim() === expected);
+  return records.some((chunks) => chunks.join("").trim() === expected);
 }
 
 export function createDomainManagementService(
   db: PlatformDb,
   options: {
     customDomainsAvailable?: boolean;
+    platformBaseDomain?: string;
+    ingressAddresses?: string[];
     evaluateEntitlement: (input: {
       key: "customDomains";
       tenantId: string;
@@ -84,7 +79,10 @@ export function createDomainManagementService(
 
       const hostname = normalizeCustomDomainHostname(input.hostname);
 
-      if (!isValidCustomDomainHostname(hostname)) {
+      if (
+        !isValidCustomDomainHostname(hostname) ||
+        isReservedCustomDomainHostname(hostname, options.platformBaseDomain)
+      ) {
         return {
           ok: false,
           error: "domain_invalid",
@@ -92,21 +90,124 @@ export function createDomainManagementService(
         };
       }
 
-      const [existingDomain] = await db
-        .select({ id: domains.id })
-        .from(domains)
-        .where(eq(domains.hostname, hostname))
-        .limit(1);
-
-      if (existingDomain) {
-        return {
-          ok: false,
-          error: "domain_unavailable",
-          status: 409,
-        };
-      }
-
-      const domain = await db.transaction(async (transaction) => {
+      return db.transaction(async (transaction): Promise<TenantDomainCreateResult> => {
+        const lock = await transaction.execute(
+          sql`select pg_try_advisory_xact_lock(hashtextextended('ecs:custom-domain-reconciliation:v1', 0)) as acquired`,
+        );
+        if (lock.rows[0]?.acquired !== true)
+          return { ok: false, error: "domain_reconciliation_busy", status: 503 };
+        const [existing] = await transaction
+          .select()
+          .from(domains)
+          .where(and(eq(domains.hostname, hostname), isNull(domains.removedAt)))
+          .limit(1);
+        if (existing) {
+          if (
+            existing.tenantId !== input.tenantId ||
+            existing.type !== "custom_domain" ||
+            existing.status === "removing"
+          )
+            return { ok: false, error: "domain_unavailable", status: 409 };
+          let [challenge] = await transaction
+            .select({
+              verifiedAt: domainVerificationChallenges.verifiedAt,
+              recordName: domainVerificationChallenges.recordName,
+              recordValue: domainVerificationChallenges.recordValue,
+              expiresAt: domainVerificationChallenges.expiresAt,
+            })
+            .from(domainVerificationChallenges)
+            .where(eq(domainVerificationChallenges.domainId, existing.id))
+            .orderBy(desc(domainVerificationChallenges.createdAt))
+            .limit(1);
+          // Repeating the claim renews only an expired initial setup challenge.
+          // Connected challenges survive their initial TTL and are never rotated
+          // by replay, including while DNS/TXT recovery is in progress.
+          if (
+            existing.activatedAt === null &&
+            (!challenge ||
+              (challenge.verifiedAt === null && challenge.expiresAt.getTime() <= Date.now()))
+          ) {
+            const expiresAt = new Date(Date.now() + DOMAIN_CHALLENGE_TTL_MS);
+            [challenge] = await transaction
+              .insert(domainVerificationChallenges)
+              .values({
+                domainId: existing.id,
+                recordName: `_ecs-verification.${hostname}`,
+                recordValue: `ecs-domain-verification=${crypto.randomUUID()}`,
+                expiresAt,
+              })
+              .returning({
+                verifiedAt: domainVerificationChallenges.verifiedAt,
+                recordName: domainVerificationChallenges.recordName,
+                recordValue: domainVerificationChallenges.recordValue,
+                expiresAt: domainVerificationChallenges.expiresAt,
+              });
+            if (!challenge) throw new Error("Domain challenge renewal returned no rows.");
+            await transaction
+              .update(domains)
+              .set({
+                status: "pending_verification",
+                verificationStatus: "pending",
+                sslStatus: "pending",
+                warningSince: null,
+                warningReason: null,
+                updatedAt: new Date(),
+              })
+              .where(and(eq(domains.id, existing.id), eq(domains.tenantId, input.tenantId)));
+            existing.status = "pending_verification";
+            existing.verificationStatus = "pending";
+            existing.sslStatus = "pending";
+            const metadata = {
+              recordName: challenge.recordName,
+              expiresAt: expiresAt.toISOString(),
+            };
+            await transaction.insert(domainLifecycleEvents).values({
+              domainId: existing.id,
+              tenantId: input.tenantId,
+              event: "ownership_challenge_reissued",
+              metadata,
+            });
+            await transaction.insert(auditLogs).values({
+              actorUserId: input.userId,
+              tenantId: input.tenantId,
+              action: "domain.ownership_challenge_reissued",
+              targetType: "domain",
+              targetId: existing.id,
+              metadata,
+            });
+          }
+          return {
+            ok: true,
+            domain: {
+              id: existing.id,
+              hostname: existing.hostname,
+              type: existing.type,
+              status: existing.status,
+              isPrimary: existing.isPrimary,
+              verificationStatus: existing.verificationStatus,
+              sslStatus: existing.sslStatus,
+              verificationChallenge: challenge
+                ? {
+                    recordName: challenge.recordName,
+                    recordValue: challenge.recordValue,
+                    expiresAt: challenge.expiresAt.toISOString(),
+                  }
+                : null,
+            },
+          };
+        }
+        const claims = await transaction
+          .select({ id: domains.id })
+          .from(domains)
+          .where(
+            and(
+              eq(domains.tenantId, input.tenantId),
+              eq(domains.type, "custom_domain"),
+              isNull(domains.removedAt),
+            ),
+          )
+          .limit(2);
+        if (claims.length >= 2) return { ok: false, error: "domain_limit_reached", status: 409 };
         const [createdDomain] = await transaction
           .insert(domains)
           .values({
@@ -168,42 +269,57 @@ export function createDomainManagementService(
         });
 
         return {
-          ...createdDomain,
-          verificationChallenge: {
-            ...challenge,
-            expiresAt: challenge.expiresAt.toISOString(),
+          ok: true,
+          domain: {
+            ...createdDomain,
+            verificationChallenge: {
+              ...challenge,
+              expiresAt: challenge.expiresAt.toISOString(),
+            },
           },
         };
       });
-
-      return {
-        ok: true,
-        domain,
-      };
     },
     verifyTenantDomainOwnership: async (input: {
       domainId: string;
       tenantId: string;
       userId: string;
     }): Promise<TenantDomainVerificationResult> => {
-      const [row] = await db
-        .select({
-          challengeId: domainVerificationChallenges.id,
-          expiresAt: domainVerificationChallenges.expiresAt,
-          hostname: domains.hostname,
-          recordName: domainVerificationChallenges.recordName,
-          recordValue: domainVerificationChallenges.recordValue,
-        })
-        .from(domains)
-        .innerJoin(
-          domainVerificationChallenges,
-          eq(domainVerificationChallenges.domainId, domains.id),
-        )
-        .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
-        .orderBy(desc(domainVerificationChallenges.createdAt))
-        .limit(1);
+      const readChallenge = async (executor: Pick<PlatformDb, "select">) =>
+        executor
+          .select({
+            challengeId: domainVerificationChallenges.id,
+            verifiedAt: domainVerificationChallenges.verifiedAt,
+            expiresAt: domainVerificationChallenges.expiresAt,
+            id: domains.id,
+            hostname: domains.hostname,
+            type: domains.type,
+            status: domains.status,
+            isPrimary: domains.isPrimary,
+            verificationStatus: domains.verificationStatus,
+            sslStatus: domains.sslStatus,
+            recordName: domainVerificationChallenges.recordName,
+            recordValue: domainVerificationChallenges.recordValue,
+          })
+          .from(domains)
+          .innerJoin(
+            domainVerificationChallenges,
+            eq(domainVerificationChallenges.domainId, domains.id),
+          )
+          .where(
+            and(
+              eq(domains.id, input.domainId),
+              eq(domains.tenantId, input.tenantId),
+              eq(domains.type, "custom_domain"),
+            ),
+          )
+          .orderBy(desc(domainVerificationChallenges.createdAt))
+          .limit(1);
+      const [row] = await readChallenge(db);
       if (!row) return { ok: false, error: "domain_not_found", status: 404 };
-      if (row.expiresAt.getTime() <= Date.now()) {
+      if (row.status === "removing") return { ok: false, error: "domain_not_found", status: 404 };
+      const previouslyVerified = row.verifiedAt !== null;
+      if (!previouslyVerified && row.expiresAt.getTime() <= Date.now()) {
         return { ok: false, error: "domain_verification_expired", status: 409 };
       }
 
@@ -212,7 +328,39 @@ export function createDomainManagementService(
         return { ok: false, error: "domain_verification_pending", status: 409 };
       }
 
-      const domain = await db.transaction(async (transaction) => {
+      return db.transaction(async (transaction): Promise<TenantDomainVerificationResult> => {
+        const lock = await transaction.execute<{ acquired: boolean }>(
+          sql`select pg_try_advisory_xact_lock(hashtextextended('ecs:custom-domain-reconciliation:v1', 0)) as acquired`,
+        );
+        if (lock.rows[0]?.acquired !== true) {
+          return { ok: false, error: "domain_reconciliation_busy", status: 503 };
+        }
+        // DNS is external and slow. Apply its evidence only to the same current
+        // claim, under the lock shared by removal and route publication.
+        const [current] = await readChallenge(transaction);
+        if (!current || current.status === "removing") {
+          return { ok: false, error: "domain_not_found", status: 404 };
+        }
+        if (
+          current.challengeId !== row.challengeId ||
+          current.hostname !== row.hostname ||
+          current.recordName !== row.recordName ||
+          current.recordValue !== row.recordValue
+        ) {
+          return { ok: false, error: "domain_verification_pending", status: 409 };
+        }
+        // The TTL bounds initial claims, not persistent connected ownership.
+        // Replays return current readiness without mutating lifecycle/audit.
+        if (current.verifiedAt !== null) {
+          const { id, hostname, type, status, isPrimary, verificationStatus, sslStatus } = current;
+          return {
+            ok: true,
+            domain: { id, hostname, type, status, isPrimary, verificationStatus, sslStatus },
+          };
+        }
+        if (current.expiresAt.getTime() <= Date.now()) {
+          return { ok: false, error: "domain_verification_expired", status: 409 };
+        }
         const now = new Date();
         await transaction
           .update(domainVerificationChallenges)
@@ -220,7 +368,7 @@ export function createDomainManagementService(
           .where(eq(domainVerificationChallenges.id, row.challengeId));
         const [updated] = await transaction
           .update(domains)
-          .set({ verificationStatus: "verified", status: "pending_certificate", updatedAt: now })
+          .set({ verificationStatus: "verified", status: "pending_dns", updatedAt: now })
           .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
           .returning({
             id: domains.id,
@@ -246,9 +394,8 @@ export function createDomainManagementService(
           targetId: updated.id,
           metadata: { hostname: updated.hostname },
         });
-        return updated;
+        return { ok: true, domain: updated };
       });
-      return { ok: true, domain };
     },
     listTenantDomains: async (input: { tenantId: string }): Promise<TenantDomainListResult> => {
       const rows = await db
@@ -260,41 +407,73 @@ export function createDomainManagementService(
           isPrimary: domains.isPrimary,
           verificationStatus: domains.verificationStatus,
           sslStatus: domains.sslStatus,
+          lastCheckedAt: domains.lastCheckedAt,
+          lastCheckReason: domains.lastCheckReason,
+          lastCheckDetail: domains.lastCheckDetail,
+          warningSince: domains.warningSince,
         })
         .from(domains)
-        .where(eq(domains.tenantId, input.tenantId))
+        .where(and(eq(domains.tenantId, input.tenantId), isNull(domains.removedAt)))
         .orderBy(desc(domains.isPrimary), asc(domains.hostname));
 
       const domainsWithChallenges: TenantDomain[] = await Promise.all(
-        rows.map(async (domain) => {
-          if (domain.type !== "custom_domain" || domain.verificationStatus === "verified") {
-            return domain;
-          }
-          const [challenge] = await db
-            .select({
-              expiresAt: domainVerificationChallenges.expiresAt,
-              recordName: domainVerificationChallenges.recordName,
-              recordValue: domainVerificationChallenges.recordValue,
-            })
-            .from(domainVerificationChallenges)
-            .where(eq(domainVerificationChallenges.domainId, domain.id))
-            .orderBy(desc(domainVerificationChallenges.createdAt))
-            .limit(1);
-          return {
-            ...domain,
-            verificationChallenge: challenge
-              ? {
-                  ...challenge,
-                  expiresAt: challenge.expiresAt.toISOString(),
-                }
-              : null,
-          };
-        }),
+        rows.map(
+          async ({
+            lastCheckedAt,
+            lastCheckReason,
+            lastCheckDetail,
+            warningSince,
+            ...storedDomain
+          }) => {
+            const parsedDiagnostic = domainDiagnosticsSchema.safeParse({
+              checkedAt: lastCheckedAt?.toISOString(),
+              reason: lastCheckReason,
+              detail: lastCheckDetail,
+            });
+            const domain = {
+              ...storedDomain,
+              diagnostics: parsedDiagnostic.success ? parsedDiagnostic.data : null,
+              warningGraceExpiresAt: warningSince
+                ? new Date(warningSince.getTime() + DOMAIN_WARNING_GRACE_MS).toISOString()
+                : null,
+            };
+            if (domain.type !== "custom_domain") {
+              return domain;
+            }
+            const [challenge] = await db
+              .select({
+                expiresAt: domainVerificationChallenges.expiresAt,
+                recordName: domainVerificationChallenges.recordName,
+                recordValue: domainVerificationChallenges.recordValue,
+              })
+              .from(domainVerificationChallenges)
+              .where(eq(domainVerificationChallenges.domainId, domain.id))
+              .orderBy(desc(domainVerificationChallenges.createdAt))
+              .limit(1);
+            return {
+              ...domain,
+              verificationChallenge: challenge
+                ? {
+                    ...challenge,
+                    expiresAt: challenge.expiresAt.toISOString(),
+                  }
+                : null,
+            };
+          },
+        ),
       );
 
       return {
         ok: true,
         domains: domainsWithChallenges,
+        setup: {
+          enabled: options.customDomainsAvailable === true,
+          entitled: (
+            await options.evaluateEntitlement({ tenantId: input.tenantId, key: "customDomains" })
+          ).allowed,
+          dnsTarget: `domains.${options.platformBaseDomain ?? "ecset.dev"}`,
+          ingressIpv4: options.ingressAddresses ?? [],
+        },
       };
     },
     setTenantPrimaryDomain: async (input: {
@@ -302,41 +481,63 @@ export function createDomainManagementService(
       tenantId: string;
       userId: string;
     }): Promise<TenantDomainPrimaryResult> => {
-      const [domain] = await db
-        .select({
-          id: domains.id,
-          hostname: domains.hostname,
-          type: domains.type,
-          status: domains.status,
-          isPrimary: domains.isPrimary,
-          verificationStatus: domains.verificationStatus,
-          sslStatus: domains.sslStatus,
-        })
-        .from(domains)
-        .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
-        .limit(1);
+      return db.transaction(async (transaction): Promise<TenantDomainPrimaryResult> => {
+        const lock = await transaction.execute(
+          sql`select pg_try_advisory_xact_lock(hashtextextended('ecs:custom-domain-reconciliation:v1', 0)) as acquired`,
+        );
+        if (lock.rows[0]?.acquired !== true)
+          return { ok: false, error: "domain_reconciliation_busy", status: 503 };
+        const [domain] = await transaction
+          .select({
+            id: domains.id,
+            hostname: domains.hostname,
+            type: domains.type,
+            status: domains.status,
+            isPrimary: domains.isPrimary,
+            verificationStatus: domains.verificationStatus,
+            sslStatus: domains.sslStatus,
+            activatedAt: domains.activatedAt,
+          })
+          .from(domains)
+          .where(and(eq(domains.id, input.domainId), eq(domains.tenantId, input.tenantId)))
+          .limit(1);
 
-      if (!domain) {
-        return {
-          ok: false,
-          error: "domain_not_found",
-          status: 404,
-        };
-      }
+        if (!domain) {
+          return {
+            ok: false,
+            error: "domain_not_found",
+            status: 404,
+          };
+        }
 
-      if (
-        domain.status !== "active" ||
-        domain.verificationStatus !== "verified" ||
-        domain.sslStatus !== "active"
-      ) {
-        return {
-          ok: false,
-          error: "domain_not_verified",
-          status: 409,
-        };
-      }
+        if (
+          domain.status !== "active" ||
+          domain.verificationStatus !== "verified" ||
+          domain.sslStatus !== "active" ||
+          (domain.type === "custom_domain" &&
+            (options.customDomainsAvailable !== true ||
+              !domain.activatedAt ||
+              !Number.isFinite(domain.activatedAt.getTime()) ||
+              domain.activatedAt.getTime() < 0 ||
+              domain.activatedAt.getTime() > Date.now() ||
+              !(
+                await options.evaluateEntitlement({
+                  key: "customDomains",
+                  tenantId: input.tenantId,
+                })
+              ).allowed))
+        ) {
+          return {
+            ok: false,
+            error: "domain_not_verified",
+            status: 409,
+          };
+        }
 
-      const primaryDomain = await db.transaction(async (transaction) => {
+        if (domain.isPrimary) {
+          const { activatedAt: _activatedAt, ...current } = domain;
+          return { ok: true, domain: current };
+        }
         await transaction
           .update(domains)
           .set({
@@ -385,13 +586,8 @@ export function createDomainManagementService(
           },
         });
 
-        return updatedDomain;
+        return { ok: true, domain: updatedDomain };
       });
-
-      return {
-        ok: true,
-        domain: primaryDomain,
-      };
     },
   };
 }
