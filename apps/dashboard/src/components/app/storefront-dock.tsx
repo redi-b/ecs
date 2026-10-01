@@ -36,6 +36,7 @@ export function StorefrontDock({
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedByHover = useRef(false);
   const collapsed = state === "collapsed" && !isMobile;
   const displayAddress = storefrontUrl.startsWith("/")
     ? t("common.viewDemo")
@@ -60,6 +61,7 @@ export function StorefrontDock({
   function openOnHover(event: ReactPointerEvent) {
     if (event.pointerType !== "mouse") return;
     clearHoverClose();
+    if (!open) openedByHover.current = true;
     setOpen(true);
   }
 
@@ -138,6 +140,10 @@ export function StorefrontDock({
               align="end"
               className="w-64 gap-0 overflow-hidden p-0"
               collisionPadding={12}
+              onOpenAutoFocus={(event) => {
+                if (openedByHover.current) event.preventDefault();
+                openedByHover.current = false;
+              }}
               onFocusOutside={(event) => {
                 if (isClipboardFallbackTarget(event.target)) event.preventDefault();
               }}

@@ -126,6 +126,8 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
       ) : null}
 
       <ShopOnboardingForm
+        key={onboardingResult.ok ? onboardingResult.state.user.id : "unavailable"}
+        draftOwnerId={onboardingResult.ok ? onboardingResult.state.user.id : null}
         defaultValues={{
           businessCategory: resolvedSearchParams.businessCategory,
           contactPhone: resolvedSearchParams.contactPhone,

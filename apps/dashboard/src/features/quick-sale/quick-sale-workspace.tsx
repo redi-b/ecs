@@ -90,6 +90,7 @@ export function QuickSaleWorkspace({
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const mobileCartTriggerRef = useRef<HTMLButtonElement>(null);
   const [savedSalesOpen, setSavedSalesOpen] = useState(false);
   const [savedSales, setSavedSales] = useState(initialDrafts);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
@@ -503,8 +504,8 @@ export function QuickSaleWorkspace({
   );
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b bg-card px-2 py-2 sm:flex-nowrap sm:px-3">
+    <div className="flex h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b bg-card px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 lg:flex-nowrap">
         {lines.length > 0 ? (
           <ConfirmDialog
             confirmLabel={t("quickSale.exit")}
@@ -526,7 +527,7 @@ export function QuickSaleWorkspace({
             {exiting ? <AppIcons.loader className="animate-spin" /> : <AppIcons.close />}
           </Button>
         )}
-        <div className="min-w-0 flex-1 border-l pl-3 sm:flex-initial">
+        <div className="min-w-0 flex-1 border-l pl-3 lg:max-w-64 lg:flex-initial">
           <h1 className="truncate font-heading text-base font-semibold">{t("quickSale.title")}</h1>
           <p className="truncate text-xs text-muted-foreground">
             {t("quickSale.operatorLine", {
@@ -535,7 +536,7 @@ export function QuickSaleWorkspace({
             })}
           </p>
         </div>
-        <div className="order-last w-full sm:order-none sm:mx-auto sm:max-w-lg">
+        <div className="order-last w-full min-w-0 lg:order-none lg:mx-auto lg:max-w-lg lg:flex-1">
           <InputGroup className="h-9 bg-background">
             <InputGroupAddon>
               <InputGroupText>
@@ -543,6 +544,7 @@ export function QuickSaleWorkspace({
               </InputGroupText>
             </InputGroupAddon>
             <InputGroupInput
+              className="text-base lg:text-sm"
               aria-label={t("quickSale.searchProducts")}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("quickSale.searchProducts")}
@@ -567,7 +569,13 @@ export function QuickSaleWorkspace({
           </InputGroup>
         </div>
         {savedSales.length > 0 ? (
-          <Button onClick={() => setSavedSalesOpen(true)} size="sm" variant="outline">
+          <Button
+            aria-label={t("quickSale.savedSales")}
+            className="h-10 px-3 sm:h-8"
+            onClick={() => setSavedSalesOpen(true)}
+            size="sm"
+            variant="outline"
+          >
             <AppIcons.documents />
             <span className="hidden sm:inline">{t("quickSale.savedSales")}</span>
             <span className="tabular-nums">{savedSales.length}</span>
@@ -577,7 +585,7 @@ export function QuickSaleWorkspace({
         <ThemeToggle />
       </header>
 
-      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_23rem] xl:grid-cols-[minmax(0,1fr)_25rem]">
+      <main className="grid min-h-0 min-w-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_23rem] xl:grid-cols-[minmax(0,1fr)_25rem]">
         <QuickSaleCatalog
           categoriesError={categoriesError}
           categoriesLoading={categoriesLoading}
@@ -610,6 +618,7 @@ export function QuickSaleWorkspace({
           discountValue={discountValue}
           lines={lines}
           mobileOpen={mobileCartOpen}
+          mobileTriggerRef={mobileCartTriggerRef}
           onClear={clearSale}
           onCloseMobile={() => setMobileCartOpen(false)}
           onComplete={(completion) => void complete(completion)}
@@ -639,8 +648,12 @@ export function QuickSaleWorkspace({
       </main>
 
       {lines.length > 0 && !mobileCartOpen ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
-          <Button className="w-full justify-between px-4" onClick={() => setMobileCartOpen(true)}>
+        <div className="shrink-0 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <Button
+            className="h-11 w-full justify-between px-4"
+            ref={mobileCartTriggerRef}
+            onClick={() => setMobileCartOpen(true)}
+          >
             <span>
               {t("quickSale.viewCart", {
                 count: lines.reduce((sum, line) => sum + line.quantity, 0),

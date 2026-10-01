@@ -5,6 +5,7 @@ import {
   normalizeEthiopianPhone,
   normalizeShopSocialProfileUrl,
   type ShopDetails,
+  shopAddressSchema,
   shopDetailsSchema,
   shopSocialPlatforms,
 } from "@ecs/contracts";
@@ -25,6 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n/provider";
 import { CategoryCombobox } from "./onboarding-form-parts";
+import { ShopAddressFields } from "./shop-address-fields";
 
 export const socialLabels = {
   facebook: "Facebook",
@@ -76,13 +78,7 @@ export const shopContactDraftSchema = z.object({
   primaryPhone: z.string().max(40),
   additionalPhones: z.array(z.string().max(40)).max(3),
   publicEmail: z.string().max(254),
-  address: z
-    .object({
-      city: z.string().max(100),
-      streetAddress: z.string().max(500),
-      directions: z.string().max(300),
-    })
-    .optional(),
+  address: shopAddressSchema.optional(),
   socialProfiles: z
     .array(z.object({ platform: z.enum(shopSocialPlatforms), url: z.string().max(500) }))
     .max(8),
@@ -140,9 +136,6 @@ export function ShopContactFields({
     issues.some((issue) => issue.path[0] === "socialProfiles" && issue.path[1] === index)
       ? t("onboarding.contact.invalidSocial")
       : null;
-  const address = [value.address?.streetAddress, value.address?.city, value.address?.directions]
-    .filter(Boolean)
-    .join("\n");
   const phoneError = (phone: string, index: number) => {
     if (!touched.has(`phone-${index}`)) return null;
     if (!phone.trim()) return null;
@@ -294,22 +287,11 @@ export function ShopContactFields({
         />
         {emailError ? <FieldError>{emailError}</FieldError> : null}
       </Field>
-      <Field>
-        <FieldLabel htmlFor={`${id}-address`}>{t("onboarding.contact.address")}</FieldLabel>
-        <Textarea
-          className="min-h-24 resize-y"
-          disabled={disabled}
-          id={`${id}-address`}
-          maxLength={500}
-          value={address}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              address: { city: "", directions: "", streetAddress: event.target.value },
-            })
-          }
-        />
-      </Field>
+      <ShopAddressFields
+        value={value.address}
+        disabled={disabled}
+        onChange={(address) => onChange({ ...value, address })}
+      />
       <Field>
         <FieldLabel>{t("onboarding.contact.social")}</FieldLabel>
         {value.socialProfiles.map((profile, index) => (

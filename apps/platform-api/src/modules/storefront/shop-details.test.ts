@@ -96,3 +96,26 @@ test("live contact changes clear removed fields without replacing a custom logo"
   assert.deepEqual(updated.footer.socialLinks, []);
   assert.equal(applyShopDetails(data, null), data, "legacy designs remain untouched");
 });
+
+test("storefront contacts include confirmed human landmarks and administrative address text", () => {
+  const updated = applyShopDetails(
+    { footer: {} },
+    {
+      ...details,
+      address: {
+        city: "Addis Ababa",
+        region: "Addis Ababa",
+        subcity: "Bole",
+        woreda: "03",
+        area: "Atlas",
+        streetAddress: "Example building",
+        landmark: "Opposite the pharmacy",
+        directions: "Side entrance",
+      },
+    },
+  ) as { footer: { address: string } };
+  assert.equal(
+    updated.footer.address,
+    "Example building · Atlas · 03 · Bole · Addis Ababa · Opposite the pharmacy · Side entrance",
+  );
+});

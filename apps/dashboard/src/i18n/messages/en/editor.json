@@ -83,7 +83,16 @@
     "language": "Preview language",
     "viewport": "Preview device",
     "desktop": "Desktop preview",
-    "mobile": "Mobile preview"
+    "mobile": "Mobile preview",
+    "unavailableTitle": "Preview is unavailable",
+    "unavailableDescription": "You can keep editing and save your draft. Save any changes before refreshing to try the preview again.",
+    "failedTitle": "Preview could not load",
+    "failedDescription": "Try again or open the preview in another tab. Your changes are still in the editor.",
+    "retry": "Try again",
+    "openSeparately": "Open in new tab",
+    "loading": "Loading preview…",
+    "unsupportedTitle": "Preview is not available for this template",
+    "unsupportedDescription": "You can still edit and save your draft. Open your storefront to check the published version."
   },
   "shell": {
     "title": "Storefront editor",

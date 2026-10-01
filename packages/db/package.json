@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No db tests yet\"",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrations.ts",
     "db:studio": "drizzle-kit studio"

@@ -8,9 +8,7 @@ import {
   tenants,
   users,
 } from "@ecs/db";
-import { and, count, desc, eq, ne, or, sql } from "drizzle-orm";
-import { purgeStorefrontTenantCache } from "../storefront/cache-purge.js";
-
+import { and, count, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import type {
   PlatformOnboardingStateResult,
   TenantDetailResult,
@@ -19,6 +17,7 @@ import type {
   TenantListResult,
   TenantShopSettingsUpdateResult,
 } from "../../types/index.js";
+import { purgeStorefrontTenantCache } from "../storefront/cache-purge.js";
 
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 const handlePattern = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/;
@@ -239,7 +238,7 @@ export function createTenantHandleAvailabilityService(options: {
     const [existingDomain] = await options.db
       .select({ id: domains.id })
       .from(domains)
-      .where(eq(domains.hostname, hostname))
+      .where(and(eq(domains.hostname, hostname), isNull(domains.removedAt)))
       .limit(1);
 
     if (existingDomain) {
@@ -428,7 +427,13 @@ export function createTenantShopSettingsService(options: {
     const [takenDomain] = await options.db
       .select({ id: domains.id })
       .from(domains)
-      .where(and(eq(domains.hostname, hostname), ne(domains.tenantId, input.tenantId)))
+      .where(
+        and(
+          eq(domains.hostname, hostname),
+          ne(domains.tenantId, input.tenantId),
+          isNull(domains.removedAt),
+        ),
+      )
       .limit(1);
 
     if (takenDomain) {

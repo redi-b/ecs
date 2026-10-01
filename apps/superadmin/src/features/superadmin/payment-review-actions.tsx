@@ -80,12 +80,25 @@ function ReviewAction({
       const data = (await response?.json().catch(() => ({}))) as { error?: string };
       if (!response?.ok) {
         if (beginReauthentication(data.error)) return;
-        toast.error("The payment decision could not be saved.");
+        if (
+          data.error === "billing_invoice_not_found" ||
+          data.error === "billing_invoice_status_invalid"
+        )
+          router.refresh();
+        toast.error(
+          data.error === "billing_invoice_not_found"
+            ? "This invoice no longer exists. The payment list has been refreshed."
+            : data.error === "billing_invoice_status_invalid"
+              ? "This invoice changed. Review its current status before trying again."
+              : "The payment decision could not be saved.",
+        );
         return;
       }
       setOpen(false);
       setReason("");
-      toast.success(approving ? "Payment confirmed." : "Evidence rejected. The invoice remains open.");
+      toast.success(
+        approving ? "Payment confirmed." : "Evidence rejected. The invoice remains open.",
+      );
       router.refresh();
     } finally {
       setBusy(false);
@@ -103,7 +116,9 @@ function ReviewAction({
       footer={
         <>
           <DialogClose asChild>
-            <Button disabled={busy} variant="outline">Cancel</Button>
+            <Button disabled={busy} variant="outline">
+              Cancel
+            </Button>
           </DialogClose>
           <Button
             disabled={busy || reason.trim().length < 10}
@@ -117,18 +132,26 @@ function ReviewAction({
       onOpenChange={setOpen}
       open={open}
       title={approving ? "Confirm this payment?" : "Reject this evidence?"}
-      trigger={<Button size="sm" variant={approving ? "default" : "destructive-outline"}>{label}</Button>}
+      trigger={
+        <Button size="sm" variant={approving ? "default" : "destructive-outline"}>
+          {label}
+        </Button>
+      }
     >
       <Field>
         <FieldLabel htmlFor={reasonId}>Review note</FieldLabel>
         <Textarea
           id={reasonId}
           onChange={(event) => setReason(event.target.value)}
-          placeholder={approving ? "How the payment was verified" : "What the merchant needs to correct"}
+          placeholder={
+            approving ? "How the payment was verified" : "What the merchant needs to correct"
+          }
           rows={4}
           value={reason}
         />
-        <FieldDescription>Saved in the audit trail. Rejection notes are shown to the merchant.</FieldDescription>
+        <FieldDescription>
+          Saved in the audit trail. Rejection notes are shown to the merchant.
+        </FieldDescription>
       </Field>
     </OperationsActionDialog>
   );

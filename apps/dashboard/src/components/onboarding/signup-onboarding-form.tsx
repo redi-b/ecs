@@ -1,9 +1,18 @@
 "use client";
-import { type StorefrontTemplateCatalogItem, shopDetailsSchema } from "@ecs/contracts";
+import {
+  formatShopAddress,
+  type StorefrontTemplateCatalogItem,
+  shopDetailsSchema,
+} from "@ecs/contracts";
 import { getBrandPresets } from "@ecs/storefront-templates";
 import { useEffect, useId, useMemo, useState } from "react";
 import { z } from "zod";
 import { AppIcons } from "@/components/app/icons";
+import {
+  clearOnboardingDraft,
+  readOnboardingDraft,
+  writeOnboardingDraft,
+} from "@/components/onboarding/onboarding-draft";
 import {
   CategoryCombobox,
   HandleStatus,
@@ -16,7 +25,6 @@ import {
   getRecommendedTemplateKey,
   type HandleState,
   mapOnboardingError,
-  ONBOARDING_DRAFT_KEY,
   parseCategories,
   sanitizeHandleDraft,
   serializeCategories,
@@ -97,11 +105,13 @@ function SocialProfilesReview({
 }
 
 export function ShopOnboardingForm({
+  draftOwnerId,
   defaultValues,
   errorMessage,
   storefrontBaseDomain,
   templates,
 }: {
+  draftOwnerId: string | null;
   defaultValues: {
     businessCategory?: string | undefined;
     contactPhone?: string | undefined;
@@ -197,7 +207,7 @@ export function ShopOnboardingForm({
     setDraftHydrated(true);
     if (defaultValues.shopName || defaultValues.handle) return;
     try {
-      const draft = window.localStorage.getItem(ONBOARDING_DRAFT_KEY);
+      const draft = readOnboardingDraft(window.localStorage, draftOwnerId);
       if (!draft) return;
       const value = z
         .object({
@@ -213,7 +223,7 @@ export function ShopOnboardingForm({
           defaultStorefrontLocale: z.enum(["en", "am"]).optional(),
           step: z.number().int().min(0).max(3).optional(),
         })
-        .parse(JSON.parse(draft));
+        .parse(draft);
       setShopName(value.shopName ?? "");
       setHandle(value.handle ?? "");
       setHandleTouched(Boolean(value.handle));
@@ -241,26 +251,23 @@ export function ShopOnboardingForm({
     } catch {
       // A blocked or old browser draft must not prevent setup.
     }
-  }, [defaultValues.handle, defaultValues.shopName, templates]);
+  }, [defaultValues.handle, defaultValues.shopName, draftOwnerId, templates]);
 
   useEffect(() => {
     if (!draftHydrated) return;
     try {
-      window.localStorage.setItem(
-        ONBOARDING_DRAFT_KEY,
-        JSON.stringify({
-          businessCategory: serializeCategories(businessCategories),
-          shopDetails,
-          deliveryEnabled,
-          pickupEnabled,
-          handle,
-          shopName,
-          templateKey,
-          amharicEnabled,
-          defaultStorefrontLocale,
-          step,
-        }),
-      );
+      writeOnboardingDraft(window.localStorage, draftOwnerId, {
+        businessCategory: serializeCategories(businessCategories),
+        shopDetails,
+        deliveryEnabled,
+        pickupEnabled,
+        handle,
+        shopName,
+        templateKey,
+        amharicEnabled,
+        defaultStorefrontLocale,
+        step,
+      });
     } catch {
       /* Setup remains usable when local storage is unavailable. */
     }
@@ -275,6 +282,7 @@ export function ShopOnboardingForm({
     deliveryEnabled,
     pickupEnabled,
     draftHydrated,
+    draftOwnerId,
     step,
   ]);
 
@@ -439,7 +447,7 @@ export function ShopOnboardingForm({
     }
 
     try {
-      window.localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+      clearOnboardingDraft(window.localStorage, draftOwnerId);
     } catch {
       /* Shop creation already succeeded. */
     }
@@ -845,16 +853,10 @@ export function ShopOnboardingForm({
                           value={shopDetails.publicEmail}
                         />
                       ) : null}
-                      {shopDetails.address?.streetAddress || shopDetails.address?.city ? (
+                      {formatShopAddress(shopDetails.address) ? (
                         <ReviewItem
                           label={t("onboarding.contact.address")}
-                          value={[
-                            shopDetails.address.streetAddress,
-                            shopDetails.address.city,
-                            shopDetails.address.directions,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          value={formatShopAddress(shopDetails.address)}
                         />
                       ) : null}
                       {shopDetails.socialProfiles.length ? (
