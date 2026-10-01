@@ -783,6 +783,7 @@
 
 @media(max-width:760px) {
   .account__hub {
+      // Keep mobile overrides after the base grid; earlier rules were overridden.
   
       grid-template-columns: 1fr;
   
@@ -947,6 +948,33 @@
       padding: $space-450 $space-400
   
     }
+}
+
+@media (max-width: 760px) {
+  .account {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: $space-1050 $space-900;
+    gap: $space-600;
+  }
+
+  .account > section,
+  .account > aside,
+  .account__hub > *,
+  .account__profile-form,
+  .account__address-card {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .account > section,
+  .account > aside {
+    padding: $space-450;
+  }
+
+  .account__hub .account__identity { min-width: 0; }
+  .account input,
+  .account select,
+  .account textarea { min-width: 0; max-width: 100%; }
 }
 
 @media(max-width:380px) {

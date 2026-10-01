@@ -32,6 +32,12 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
   input.setAttribute("aria-autocomplete", "list");
   input.setAttribute("aria-controls", list.id);
   input.setAttribute("aria-expanded", "false");
+  form.addEventListener("submit", (event) => {
+    if (!input.value.trim()) {
+      event.preventDefault();
+      input.focus();
+    }
+  });
 
   let timer = 0;
   let controller: AbortController | null = null;
@@ -75,9 +81,11 @@ export function initProductSearchSuggestions(form: HTMLFormElement | null) {
       link.setAttribute("role", "option");
       link.setAttribute("aria-selected", "false");
       link.addEventListener("click", () => {
-        document.dispatchEvent(new CustomEvent("ecs:product-search-suggestion-selected", {
-          detail: { handle: suggestion.handle, position: index + 1, query },
-        }));
+        document.dispatchEvent(
+          new CustomEvent("ecs:product-search-suggestion-selected", {
+            detail: { handle: suggestion.handle, position: index + 1, query },
+          }),
+        );
       });
 
       const media = document.createElement("span");

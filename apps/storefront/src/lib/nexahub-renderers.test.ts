@@ -517,8 +517,10 @@ test("NexaHub keeps its commerce shell and reference PDP structure consistent ac
   const preview = read("pages/preview.astro");
 
   assert.doesNotMatch(layout, /productNav && \(navigationCategories\.length/);
-  assert.match(layout, /suppliedNavigationCategories === undefined/);
-  assert.match(layout, /await listStoreCategories/);
+  assert.match(layout, /await loadNavigationCatalog\(Astro.request/);
+  const shellCatalog = read("lib/navigation-catalog.ts");
+  assert.match(shellCatalog, /listStoreCategories\(common\)/);
+  assert.match(shellCatalog, /getRequestHost\(request\)/);
   assert.match(layout, /productLinks\.map\(\(item\) => <li>/);
   assert.match(product, /similar-products__eyebrow/);
   assert.match(product, /m\.product_related/);

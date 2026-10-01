@@ -264,7 +264,7 @@ const wishlistItem = product
               </small>
             </div>
 
-            <form method="post" action="/actions/cart/add" data-add-form>
+            <form method="post" action="/actions/cart/add" data-add-form data-cart-item={JSON.stringify({ title: product.title, thumbnail: product.thumbnail, productHandle: product.handle, unitPrice: defaultVariant?.priceAmount ?? product.priceAmount })}>
               <input type="hidden" name="variantId" value={defaultVariant?.id ?? ""} data-variant-id />
               <input type="hidden" name="returnTo" value={`/products/${encodeURIComponent(handle)}`} />
               <input type="hidden" name="quantity" value="1" />

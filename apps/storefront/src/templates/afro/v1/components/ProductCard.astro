@@ -152,7 +152,7 @@ const wishlistItem = JSON.stringify({
   </div>
 
   {variant ? (
-    <form action="/actions/cart/add" method="post" data-card-add-form>
+    <form action="/actions/cart/add" method="post" data-card-add-form data-cart-item={JSON.stringify({ title, unitPrice: variant.priceAmount ?? product?.priceAmount, thumbnail: product?.thumbnail, productHandle: product?.handle, variantTitle: variant.title })}>
       <input type="hidden" name="variantId" value={variant.id} />
       <input type="hidden" name="quantity" value="1" />
       <button

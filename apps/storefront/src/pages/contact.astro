@@ -9,4 +9,4 @@ const locale = ctx.ok ? ctx.locale : "en";
 if (!ctx.ok) Astro.response.status = ctx.status;
 const Contact = ctx.ok ? getStorefrontRenderer(ctx.config.storefront.templateKey)?.Contact : null;
 ---
-{!ctx.ok || !Contact ? <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} /> : <Contact data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} categories={ctx.categories} />}
+{!ctx.ok || !Contact ? <StoreUnavailable message={ctx.ok ? m.status_template_unavailable({}, { locale }) : ctx.message} /> : <Contact data={ctx.config.storefront.data} themeTokens={ctx.config.storefront.themeTokens} tenantName={ctx.config.tenant.name} deferCartCount={true} />}

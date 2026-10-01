@@ -99,6 +99,7 @@ const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
           action="/actions/cart/add"
           method="post"
           data-card-add-form
+          data-cart-item={JSON.stringify({ title, unitPrice: purchasableVariant.priceAmount ?? product.priceAmount, thumbnail: product.thumbnail, productHandle: product.handle, variantTitle: purchasableVariant.title })}
         >
           <>
             <input

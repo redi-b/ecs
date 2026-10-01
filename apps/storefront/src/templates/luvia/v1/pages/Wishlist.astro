@@ -24,7 +24,10 @@ const wishlistMessages = {
   productFallback: m.catalog_product_fallback({}, { locale }),
   remove: m.action_remove({}, { locale }),
   view: m.action_view_product({}, { locale }),
-  addToCart: m.action_add_to_cart({}, { locale }),
+  failure: m.status_generic_error({}, { locale }),
+  retry: m.action_retry({}, { locale }),
+  singular: m.wishlist_item_singular({}, { locale }),
+  plural: m.wishlist_item_plural({}, { locale }),
 };
 ---
 
@@ -64,250 +67,98 @@ const wishlistMessages = {
   </main>
 </Layout>
 
-<template data-wishlist-heart-template>
-  <span class="wishlist-heart" aria-hidden="true">
-    <Icon name="heart" />
-    <Icon name="heart-filled" />
-  </span>
-</template>
 
-<template data-wishlist-bag-icon>
-  <Icon name="bag" />
+<template data-wishlist-empty-template>
+  <div class="wishlist__empty empty-state">
+    <span class="empty-state__mark" aria-hidden="true"><Icon name="heart" /></span>
+    <div class="empty-state__copy">
+      <h2 class="empty-state__title type-heading-3">{m.wishlist_empty_title({}, { locale })}</h2>
+      <p class="empty-state__text type-body-400">{m.wishlist_empty_help({}, { locale })}</p>
+    </div>
+    <a class="empty-state__action type-body-500" href="/products">{m.action_browse_products({}, { locale })}</a>
+  </div>
 </template>
-
 <script>
-  import {
-    WISHLIST_REQUEST_EVENT,
-    WISHLIST_UPDATED_EVENT,
-    type WishlistEntry,
-  } from "../../../../lib/browser/wishlist";
+  import { WISHLIST_REQUEST_EVENT, WISHLIST_UPDATED_EVENT, type WishlistEntry } from "../../../../lib/browser/wishlist";
   import { localizeBrowserPath } from "../../../../lib/browser/localized-path";
-
-  (() => {
-    const root = document.querySelector<HTMLElement>("[data-wishlist-page]");
-    const content = root?.querySelector("[data-wishlist-content]");
-    const header = root?.querySelector<HTMLElement>("[data-wishlist-header]");
-    const countBadge = root?.querySelector<HTMLElement>("[data-wishlist-count-badge]");
-    if (!content) return;
-
-    const messages = JSON.parse(
-      root?.dataset.wishlistMessages || "{}",
-    ) as Record<string, string>;
-    let items: WishlistEntry[] = [];
-    let focusAfterRender: string | null = null;
-
-    const money = (amount: number | null, currency: string | null) => {
-      if (typeof amount !== "number") return "";
-      const locale = document.documentElement.lang === "am" ? "am-ET" : "en-ET";
+  const root = document.querySelector<HTMLElement>("[data-wishlist-page]");
+  const content = root?.querySelector<HTMLElement>("[data-wishlist-content]");
+  if (root && content) {
+    const messages = JSON.parse(root.dataset.wishlistMessages || "{}") as Record<string, string>;
+    const header = root.querySelector<HTMLElement>("[data-wishlist-header]");
+    const badge = root.querySelector<HTMLElement>("[data-wishlist-count-badge]");
+    let signature: string | null = null;
+    let controller: AbortController | undefined;
+    let saved: WishlistEntry[] = [];
+    let restoreFocus = false;
+    root.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("[data-wishlist-toggle]")) restoreFocus = true;
+    }, true);
+    const render = async (items: WishlistEntry[], force = false) => {
+      const paths = items.map((item) => item.path);
+      const next = JSON.stringify(paths);
+      if (!force && signature === next) return;
+      signature = next;
+      controller?.abort();
+      const current = new AbortController();
+      controller = current;
+      content.setAttribute("aria-busy", "true");
+      if (badge) {
+        badge.textContent = `${items.length} ${items.length === 1 ? messages.singular : messages.plural}`;
+        badge.hidden = !items.length;
+      }
+      header?.classList.toggle("is-empty", !items.length);
       try {
-        return new Intl.NumberFormat(locale, {
-          style: "currency",
-          currency: (currency || "ETB").toUpperCase(),
-        }).format(amount);
-      } catch {
-        return String(amount);
-      }
-    };
-
-    const render = () => {
-      content.replaceChildren();
-
-      if (countBadge) {
-        countBadge.textContent = `${items.length} ${items.length === 1 ? "piece" : "pieces"}`;
-        countBadge.hidden = items.length === 0;
-      }
-
-      if (!items.length) {
-        if (header) header.classList.add("is-empty");
-        const empty = document.createElement("div");
-        empty.className = "wishlist__empty empty-state";
-        const mark = document.createElement("span");
-        mark.className = "empty-state__mark";
-        mark.innerHTML =
-          '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
-        const body = document.createElement("div");
-        body.className = "empty-state__copy";
-        const title = document.createElement("h2");
-        title.className = "empty-state__title type-heading-3";
-        title.textContent = messages.emptyTitle || "Your wishlist is empty";
-        const copy = document.createElement("p");
-        copy.className = "empty-state__text type-body-400";
-        copy.textContent =
-          messages.emptyHelp || "Save pieces you love while exploring the shop.";
-        body.append(title, copy);
-        const link = document.createElement("a");
-        link.className = "empty-state__action type-body-500";
-        link.href = localizeBrowserPath("/products");
-        link.textContent = messages.browse || "Browse products";
-        empty.append(mark, body, link);
-        content.append(empty);
-        if (focusAfterRender) {
-          focusAfterRender = null;
-          link.focus();
+        const grid = document.createElement("div");
+        grid.className = "wishlist__grid";
+        for (let offset = 0; offset < paths.length; offset += 48) {
+          const response = await fetch("/actions/wishlist/cards", {
+            method: "POST", credentials: "same-origin", signal: current.signal,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paths: paths.slice(offset, offset + 48) }),
+          });
+          if (!response.ok) throw new Error("wishlist unavailable");
+          const fragment = document.createElement("template");
+          fragment.innerHTML = await response.text();
+          grid.append(fragment.content);
         }
-        return;
-      }
-
-      if (header) header.classList.remove("is-empty");
-      const grid = document.createElement("div");
-      grid.className = "wishlist__grid";
-
-      for (const item of items) {
-        const card = document.createElement("article");
-        card.className = "product-card";
-        card.dataset.wishlistPath = item.path;
-        const itemPath = localizeBrowserPath(item.path);
-
-        const media = document.createElement("div");
-        media.className = "product-card__media";
-
-        const mediaLink = document.createElement("a");
-        mediaLink.className = "product-card__media-link";
-        mediaLink.href = itemPath;
-        mediaLink.setAttribute("aria-label", `${messages.view || "View"}: ${item.title}`);
-
-        if (item.thumbnail) {
-          const image = document.createElement("img");
-          image.src = item.thumbnail;
-          image.alt = item.title;
-          image.width = 400;
-          image.height = 400;
-          image.loading = "lazy";
-          image.decoding = "async";
-          mediaLink.append(image);
-        } else {
-          const placeholder = document.createElement("div");
-          placeholder.className = "product-card__placeholder";
-          placeholder.innerHTML =
-            '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
-          mediaLink.append(placeholder);
-        }
-        media.append(mediaLink);
-
-        const heartBtn = document.createElement("button");
-        heartBtn.className = "product-card__heart";
-        heartBtn.type = "button";
-        heartBtn.setAttribute("data-wishlist-toggle", "");
-        heartBtn.dataset.wishlistItem = JSON.stringify(item);
-        heartBtn.setAttribute("aria-pressed", "true");
-        heartBtn.setAttribute(
-          "aria-label",
-          `${messages.remove || "Remove"} ${item.title}`,
-        );
-        const heartTemplate = document.querySelector<HTMLTemplateElement>("[data-wishlist-heart-template]");
-        if (heartTemplate) {
-          heartBtn.append(heartTemplate.content.cloneNode(true));
-        }
-
-        heartBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const index = items.findIndex((saved) => saved.path === item.path);
-          focusAfterRender =
-            items[index + 1]?.path ?? items[index - 1]?.path ?? "__empty__";
-          window.dispatchEvent(
-            new CustomEvent(WISHLIST_UPDATED_EVENT, {
-              detail: {
-                items: items.filter((saved) => saved.path !== item.path),
-                origin: "page",
-              },
-            }),
-          );
+        if (current.signal.aborted) return;
+        const empty = document.querySelector<HTMLTemplateElement>("[data-wishlist-empty-template]");
+        content.replaceChildren(...(grid.children.length ? [grid] : empty ? [empty.content.cloneNode(true)] : []));
+        content.querySelectorAll<HTMLAnchorElement>('a[href^="/"]').forEach((link) => {
+          link.href = localizeBrowserPath(link.getAttribute("href") || "/products");
         });
-        media.append(heartBtn);
-
-        const ctaForm = document.createElement("form");
-        ctaForm.className = "product-card__cta";
-        ctaForm.action = "/actions/cart/add";
-        ctaForm.method = "post";
-        ctaForm.setAttribute("data-card-add-form", "");
-
-        if (item.variantId) {
-          const varInput = document.createElement("input");
-          varInput.type = "hidden";
-          varInput.name = "variantId";
-          varInput.value = item.variantId;
-          ctaForm.append(varInput);
+        window.dispatchEvent(new CustomEvent(WISHLIST_UPDATED_EVENT, { detail: { items, origin: "controller" } }));
+        if (restoreFocus) {
+          restoreFocus = false;
+          content.querySelector<HTMLElement>("[data-wishlist-toggle], .empty-state__action")?.focus();
         }
-
-        const handle = item.path ? item.path.split("/").filter(Boolean).pop() : "";
-        if (handle) {
-          const handleInput = document.createElement("input");
-          handleInput.type = "hidden";
-          handleInput.name = "productHandle";
-          handleInput.value = decodeURIComponent(handle);
-          ctaForm.append(handleInput);
-        }
-
-        const qtyInput = document.createElement("input");
-        qtyInput.type = "hidden";
-        qtyInput.name = "quantity";
-        qtyInput.value = "1";
-        ctaForm.append(qtyInput);
-
-        const btn = document.createElement("button");
-        btn.type = "submit";
-        btn.className = "button button--secondary button--small";
-
-        const textSpan = document.createElement("span");
-        textSpan.className = "button__text type-body-400";
-        textSpan.setAttribute("data-card-add-label", "");
-        textSpan.textContent = messages.addToCart || "Add to Bag";
-
-        const iconSpan = document.createElement("span");
-        iconSpan.className = "button__icon";
-        iconSpan.setAttribute("aria-hidden", "true");
-        const bagTemplate = document.querySelector<HTMLTemplateElement>("[data-wishlist-bag-icon]");
-        if (bagTemplate) {
-          iconSpan.append(bagTemplate.content.cloneNode(true));
-        }
-
-        btn.append(textSpan, iconSpan);
-        ctaForm.append(btn);
-        media.append(ctaForm);
-
-        const brand = document.createElement("p");
-        brand.className = "product-card__brand type-body-s-400";
-        brand.textContent = messages.savedProduct || "COLLECTION";
-
-        const title = document.createElement("a");
-        title.className = "product-card__title type-body-l-400";
-        title.href = itemPath;
-        title.textContent = item.title || messages.productFallback || "Product";
-
-        const price = document.createElement("p");
-        price.className = "product-card__price type-body-xl";
-        const priceStrong = document.createElement("strong");
-        priceStrong.textContent = money(item.priceAmount, item.currencyCode);
-        price.append(priceStrong);
-
-        card.append(media, brand, title, price);
-        grid.append(card);
-      }
-
-      content.append(grid);
-
-      if (focusAfterRender) {
-        const target =
-          focusAfterRender === "__empty__"
-            ? content.querySelector<HTMLElement>(".empty-state__action")
-            : content.querySelector<HTMLElement>(
-                `[data-wishlist-path="${CSS.escape(focusAfterRender)}"] a`,
-              );
-        focusAfterRender = null;
-        target?.focus();
+      } catch {
+        if (current.signal.aborted) return;
+        const error = document.createElement("div");
+        error.className = "empty-state";
+        error.setAttribute("role", "alert");
+        const text = document.createElement("p");
+        text.textContent = messages.failure;
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "button button--secondary button--small";
+        retry.textContent = messages.retry;
+        retry.addEventListener("click", () => void render(saved, true));
+        error.append(text, retry);
+        content.querySelector('[role="alert"]')?.remove();
+        if (!content.querySelector(".wishlist__grid")) content.replaceChildren();
+        content.append(error);
+      } finally {
+        if (!current.signal.aborted) content.setAttribute("aria-busy", "false");
       }
     };
-
     window.addEventListener(WISHLIST_UPDATED_EVENT, (event) => {
-      const next = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail
-        ?.items;
-      if (!Array.isArray(next)) return;
-      items = next;
-      content.setAttribute("aria-busy", "false");
-      render();
+      const items = (event as CustomEvent<{ items?: WishlistEntry[] }>).detail?.items;
+      if (!Array.isArray(items)) return;
+      saved = items;
+      void render(items);
     });
-
     window.dispatchEvent(new CustomEvent(WISHLIST_REQUEST_EVENT));
-  })();
+  }
 </script>

@@ -526,7 +526,7 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
                           class="luvia-dropdown__option type-body-s-400"
                           role="option"
                           data-value={opt.value}
-                          aria-selected={String((filters.order ?? "") === opt.value)}
+                          aria-selected={(filters.order ?? "") === opt.value}
                           onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value || undefined }, 0)}#shop-products'`}
                         >
                           <span class="luvia-dropdown__option-text">{opt.label}</span>

@@ -6,10 +6,10 @@ import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytic
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
 import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
-import { listStoreCategories, listStoreCollections } from "../../../../lib/commerce/catalog";
+import { loadNavigationCatalog } from "../../../../lib/navigation-catalog";
 import { categoryProductsHref, collectionProductsHref } from "../../../../lib/commerce/taxonomy-links";
 import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
-import { getEcsLandingPageUrl, getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
+import { getEcsLandingPageUrl } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
@@ -20,6 +20,7 @@ import SearchModal from "../components/SearchModal.astro";
 import { parseAfroThemeTokens } from "../lib";
 import { afroDemoCategories, afroDemoCollections } from "../../../../lib/demo/afro-fixture";
 import "../styles/main.scss";
+import "../../../../components/shell/cart-feedback.css";
 import "../styles/components/_header.scss";
 import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
@@ -64,46 +65,12 @@ const ecsLandingPageUrl = getEcsLandingPageUrl();
 
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 
-const shouldFetchCollections = suppliedNavigationCollections === undefined && !demoMode;
-const shouldFetchCategories = suppliedNavigationCategories === undefined && !demoMode;
-
-const [collectionsResult, categoriesResult] = await Promise.all([
-  shouldFetchCollections
-    ? listStoreCollections({
-        platformApiBaseUrl: getPlatformApiBaseUrl(),
-        requestHost: getRequestHost(Astro.request),
-        locale: locale === "am" ? "am-ET" : "en-ET",
-        limit: 8,
-      })
-    : null,
-  shouldFetchCategories
-    ? listStoreCategories({
-        platformApiBaseUrl: getPlatformApiBaseUrl(),
-        requestHost: getRequestHost(Astro.request),
-        locale: locale === "am" ? "am-ET" : "en-ET",
-        limit: 8,
-      })
-    : null,
-]);
-
-const rawCollections =
-  suppliedNavigationCollections ??
-  (collectionsResult && "collections" in collectionsResult
-    ? collectionsResult.collections
-    : demoMode
-      ? afroDemoCollections
-      : []);
-
-const rawCategories =
-  suppliedNavigationCategories ??
-  (categoriesResult && "categories" in categoriesResult
-    ? categoriesResult.categories
-    : demoMode
-      ? afroDemoCategories
-      : []);
-
-const navigationCollections = rawCollections.length > 0 ? rawCollections : (demoMode ? afroDemoCollections : []);
-const navigationCategories = rawCategories.length > 0 ? rawCategories : (demoMode ? afroDemoCategories : []);
+const { categories: navigationCategories, collections: navigationCollections } =
+  await loadNavigationCatalog(Astro.request, {
+    categories: suppliedNavigationCategories ?? (demoMode ? afroDemoCategories : []),
+    collections: suppliedNavigationCollections ?? (demoMode ? afroDemoCollections : []),
+    demoMode, editorMode,
+  });
 
 const theme = parseAfroThemeTokens(themeTokens);
 const emptyLogoUrl = header?.useShopName ? null : logoImg.src;
@@ -173,6 +140,8 @@ const quickLinks = footer?.quickLinks ?? [];
 const socialLinks = footer?.socialLinks ?? [];
 
 const afroClientMessages = {
+  cartUpdateFailed: m.cart_update_failed({}, { locale }),
+  cartUpdating: m.cart_updating({}, { locale }),
   cartLoading: m.cart_loading({}, { locale }),
   cartLoadFailed: m.cart_load_failed({}, { locale }),
   cartEmpty: m.cart_empty({}, { locale }),

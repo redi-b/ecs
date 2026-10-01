@@ -138,6 +138,7 @@ const clientMessages = {
         class="product-info"
         data-product-config-card
         data-add-form
+        data-cart-item={JSON.stringify({ title: product.title, thumbnail: product.thumbnail, productHandle: product.handle, unitPrice: defaultVariant?.priceAmount ?? product.priceAmount })}
         method="post"
         action="/actions/cart/add"
       >
@@ -350,6 +351,8 @@ const clientMessages = {
         if (addLabel) addLabel.textContent = (clientMessages.outOfStock || 'OUT OF STOCK').toUpperCase();
       } else {
         if (input) input.value = variant.id;
+        const form = root.querySelector('[data-add-form]');
+        if (form?.dataset.cartItem) form.dataset.cartItem = JSON.stringify({ ...JSON.parse(form.dataset.cartItem), unitPrice: variant.priceAmount, variantTitle: Object.values(selected).join(' · ') });
         if (submit) submit.disabled = !variant.inStock;
         if (addLabel) {
           addLabel.textContent = (variant.inStock

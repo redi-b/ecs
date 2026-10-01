@@ -340,7 +340,7 @@ const wishlistItem = product
               })}
 
               <!-- Actions Form -->
-              <form action="/actions/cart/add" method="post" data-add-form class="product-details__form">
+              <form action="/actions/cart/add" method="post" data-add-form class="product-details__form" data-cart-item={JSON.stringify({ title: product.title, thumbnail: product.thumbnail, productHandle: product.handle, unitPrice: defaultVariant?.priceAmount ?? product.priceAmount })}>
                 <input
                   type="hidden"
                   name="variantId"
@@ -517,6 +517,8 @@ const wishlistItem = product
         return;
       }
       if (input) input.value = variant.id;
+      const form = root.querySelector<HTMLFormElement>('[data-add-form]');
+      if (form?.dataset.cartItem) form.dataset.cartItem = JSON.stringify({ ...JSON.parse(form.dataset.cartItem), unitPrice: variant.priceAmount, variantTitle: Object.values(selected).join(' · ') });
       if (submit) submit.disabled = !variant.inStock;
       if (label) {
         label.textContent = variant.inStock

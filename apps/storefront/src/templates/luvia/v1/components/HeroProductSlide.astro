@@ -32,7 +32,7 @@ const wishlistItem = JSON.stringify({ path: href, title, thumbnail: product.thum
     <strong class="type-promo-title" title={title}>{title}</strong>
     <b class="type-promo-price">{formatMoney(variant?.priceAmount ?? product.priceAmount, variant?.currencyCode ?? product.currencyCode, locale)}</b>
     <div class="promo__actions">
-      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} icon="bag" tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
+      {variant ? <form action="/actions/cart/add" method="post" data-card-add-form data-cart-item={JSON.stringify({ title, thumbnail: product.thumbnail, productHandle: product.handle, unitPrice: variant.priceAmount ?? product.priceAmount, variantTitle: variant.title })}><input type="hidden" name="variantId" value={variant.id} /><input type="hidden" name="quantity" value="1" /><ActionButton icon="bag" tone="secondary" size="small" type="submit" disabled={!variant.inStock}><span data-card-add-label>{variant.inStock ? m.action_add_to_cart({}, { locale }) : m.catalog_out_of_stock({}, { locale })}</span></ActionButton></form> : <ActionButton href={href} icon="bag" tone="secondary" size="small">{m.action_view_product({}, { locale })}</ActionButton>}
     </div>
   </div>
 </section>

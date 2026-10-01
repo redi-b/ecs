@@ -1,0 +1,25 @@
+.ecs-cart-pending-total {
+  position: relative;
+  color: transparent !important;
+  min-width: 5rem;
+  min-height: 1em;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--clr-ink, var(--nexa-ink, CanvasText)) 8%, transparent);
+  overflow: hidden;
+}
+.ecs-cart-loading-row { display: flex; align-items: center; gap: 1rem; padding-block: 0.75rem; }
+.ecs-cart-loading-row > :first-child { width: 4.5rem; min-width: 4.5rem; height: 5rem; }
+.ecs-cart-loading-row > :last-child { width: 60%; height: 2.5rem; }
+.ecs-cart-pending-total::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--clr-ink, var(--nexa-ink, CanvasText)) 15%, transparent), transparent);
+  transform: translateX(-100%);
+  animation: ecs-cart-shimmer 1.2s ease-in-out infinite;
+}
+[data-cart-drawer] a[aria-disabled="true"], [data-cart-modal] a[aria-disabled="true"] { cursor: progress; opacity: 0.65; }
+@keyframes ecs-cart-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .ecs-cart-pending-total::after { animation: none; transform: none; }
+}
