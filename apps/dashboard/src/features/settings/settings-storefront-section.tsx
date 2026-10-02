@@ -32,6 +32,7 @@ import { StorefrontLanguageSettingsPanel } from "@/features/settings/storefront-
 import { StorefrontSeoSettingsForm } from "@/features/settings/storefront-seo-settings-form";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
+import { emitStorefrontPublicationChange } from "@/lib/storefront-publication-events";
 import { cn } from "@/lib/utils";
 
 export function StorefrontSection({
@@ -110,9 +111,7 @@ export function StorefrontSection({
       }
 
       setIsPublished(false);
-      window.dispatchEvent(
-        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: false } }),
-      );
+      emitStorefrontPublicationChange(false);
       toast.success(t("settings.storefront.pauseShopSuccess"));
       router.refresh();
     } catch {
@@ -147,9 +146,7 @@ export function StorefrontSection({
       }
 
       setIsPublished(true);
-      window.dispatchEvent(
-        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: true } }),
-      );
+      emitStorefrontPublicationChange(true);
       setPublishedTemplateKey(activeKey);
       setHasUnpublishedChanges(false);
       toast.success(t("settings.storefront.publishShopSuccess"));

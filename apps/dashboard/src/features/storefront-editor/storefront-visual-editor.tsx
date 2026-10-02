@@ -19,6 +19,7 @@ import {
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { useI18n } from "@/i18n/provider";
 import { markStorefrontEditorVisited } from "@/lib/launch-assistant-preferences";
+import { emitStorefrontPublicationChange } from "@/lib/storefront-publication-events";
 import { cn } from "@/lib/utils";
 import {
   buildDraftPayload,
@@ -188,9 +189,7 @@ export function StorefrontVisualEditor({
       setSavedSnapshot(snapshot);
       setPublishedSnapshot(snapshot);
       setIsLive(true);
-      window.dispatchEvent(
-        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: true } }),
-      );
+      emitStorefrontPublicationChange(true);
       router.refresh();
     })();
 
@@ -218,9 +217,7 @@ export function StorefrontVisualEditor({
       }
       setPublishedSnapshot(null);
       setIsLive(false);
-      window.dispatchEvent(
-        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: false } }),
-      );
+      emitStorefrontPublicationChange(false);
       router.refresh();
     })();
 
