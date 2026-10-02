@@ -289,7 +289,8 @@
     "ready": "Ownership and secure certificate are ready.",
     "primary": "Primary",
     "readyBadge": "Ready",
-    "setup": "Setup required",
+    "setup": "Finish setup",
+    "viewSetup": "View DNS details",
     "txtTitle": "Add this TXT record at your DNS provider",
     "recordName": "Record name",
     "recordValue": "Record value",
@@ -299,7 +300,12 @@
     "makePrimary": "Make primary",
     "primaryChanged": "Primary shop domain updated.",
     "copy": "Copy value",
-    "copied": "Copied."
+    "copied": "Copied.",
+    "setupDescription": "Use these records to finish setup. You can leave this window and return any time.",
+    "redirectPolicyTitle": "Redirect custom addresses",
+    "redirectPolicyDescription": "Choose whether additional custom addresses should send visitors to the primary custom address.",
+    "redirectPolicyHint": "Off by default. Your ECS address remains available for recovery and is never redirected.",
+    "redirectPolicySaved": "Redirect preference saved."
   },
   "status": {
     "settingsUpdated": "Settings saved.",
