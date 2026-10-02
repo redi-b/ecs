@@ -15,6 +15,12 @@ import type {
 import type { DashboardAuthorizationResult, PlatformSession } from "./session.js";
 
 export type PlatformAdministrationOptions = {
+  listDiscoveryCampaigns?: ReturnType<
+    typeof import("../modules/discovery/service.js").createDiscoveryService
+  >["listEligible"];
+  recordDiscoveryEvent?: ReturnType<
+    typeof import("../modules/discovery/service.js").createDiscoveryService
+  >["recordEvent"];
   /** Browser origins allowed to perform the read-only landing-page session probe. */
   landingPublicOrigins?: string[];
   listEmailTemplates?: ReturnType<
