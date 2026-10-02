@@ -1,0 +1,2 @@
+ALTER TABLE "dashboard_discovery_events" ADD COLUMN "idempotency_key" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "dashboard_discovery_events_idempotency_key_uidx" ON "dashboard_discovery_events" USING btree ("idempotency_key");

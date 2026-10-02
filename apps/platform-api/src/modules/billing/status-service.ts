@@ -2,6 +2,7 @@ import { parseScheduledDowngradePlanId } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import { billingPaymentEvidence, invoices, plans, planVersions, subscriptions } from "@ecs/db";
 import { desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { BillingStatusResult } from "../../types/index.js";
 import { createEntitlementService } from "../entitlements/service.js";
 import {
@@ -52,6 +53,7 @@ export function createBillingStatusService({
   syncTenantBillingLifecycle,
 }: BillingStatusServiceOptions) {
   const entitlementService = createEntitlementService(db);
+  const entitlementPlanVersions = alias(planVersions, "billing_entitlement_plan_versions");
 
   const readSubscription = async (tenantId: string): Promise<SubscriptionProjection | null> => {
     const [subscription] = await db
@@ -62,9 +64,9 @@ export function createBillingStatusService({
         renewalPlanVersionId: subscriptions.renewalPlanVersionId,
         renewalEffectiveAt: subscriptions.renewalEffectiveAt,
         manualPaymentState: subscriptions.manualPaymentState,
-        planFeatures: sql<unknown>`coalesce(${planVersions.features}, ${plans.features})`,
+        planFeatures: sql<unknown>`coalesce(${entitlementPlanVersions.features}, ${planVersions.features}, ${plans.features})`,
         planId: plans.id,
-        planLimits: sql<unknown>`coalesce(${planVersions.limits}, ${plans.limits})`,
+        planLimits: sql<unknown>`coalesce(${entitlementPlanVersions.limits}, ${planVersions.limits}, ${plans.limits})`,
         planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
         planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
         planVersionId: subscriptions.planVersionId,
@@ -76,6 +78,10 @@ export function createBillingStatusService({
       .from(subscriptions)
       .innerJoin(plans, eq(plans.id, subscriptions.planId))
       .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
+      .leftJoin(
+        entitlementPlanVersions,
+        eq(entitlementPlanVersions.id, subscriptions.entitlementPlanVersionId),
+      )
       .where(eq(subscriptions.tenantId, tenantId))
       .orderBy(desc(subscriptions.currentPeriodEnd))
       .limit(1);

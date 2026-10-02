@@ -44,7 +44,7 @@ export function createBillingSubscriptionLifecycleService(input: {
             planVersionId: subscriptions.planVersionId,
             status: subscriptions.status,
             planId: plans.id,
-            planBillingInterval: sql<string>`coalesce(, 'month')`,
+            planBillingInterval: sql<string>`coalesce(${planVersions.billingInterval}, 'month')`,
             planName: sql<string>`coalesce(${planVersions.name}, ${plans.name})`,
             planPrice: sql<string>`coalesce(${planVersions.price}, ${plans.price})`,
             currentPeriodEnd: subscriptions.currentPeriodEnd,
@@ -93,6 +93,7 @@ export function createBillingSubscriptionLifecycleService(input: {
                 .set({
                   planId: renewal.planId,
                   planVersionId: renewal.id,
+                  entitlementPlanVersionId: renewal.id,
                   renewalPlanVersionId: null,
                   renewalEffectiveAt: null,
                   currentPeriodStart: now,
@@ -196,6 +197,7 @@ export function createBillingSubscriptionLifecycleService(input: {
               manualPaymentState: isFreePlanPrice(fallback.price) ? "none" : "pending",
               planId: fallback.planId,
               planVersionId: fallback.id,
+              entitlementPlanVersionId: fallback.id,
               status: "active",
               trialEndsAt: null,
             })

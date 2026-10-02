@@ -19,6 +19,7 @@ import { CatalogLabelLocaleProvider } from "@/components/providers/catalog-label
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MediaUploadHost } from "@/features/media/media-upload-host";
+import { DiscoveryCard } from "@/features/overview/discovery-card";
 import { LaunchAssistant } from "@/features/overview/launch-assistant";
 import { getTranslations } from "@/i18n/server";
 import { allows, merchantPolicies } from "@/lib/access-policy";
@@ -32,6 +33,7 @@ import { isCentralDashboardHost } from "@/lib/dashboard-hosts";
 import { getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
+import { getPlatformDiscoveryCampaigns } from "@/lib/platform-api/discovery";
 import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
 import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
@@ -141,6 +143,22 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
     });
   }
 
+  const setupComplete =
+    access.access.storefront.isPublished ||
+    Boolean(
+      initialReadiness?.isPublished &&
+        initialReadiness.checks.every((check) => check.status === "ready"),
+    );
+  const discoveryCampaigns =
+    currentPath === "/dashboard"
+      ? await getPlatformDiscoveryCampaigns({
+          cookieHeader: requestHeaders.get("cookie"),
+          platformApiBaseUrl,
+          requestHost,
+          setupComplete,
+        })
+      : [];
+
   const storefrontDraft = await getStorefrontDraft({
     cookieHeader: requestHeaders.get("cookie"),
     platformApiBaseUrl,
@@ -190,6 +208,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
                       initialHidden={initialHidden}
                       initialReadiness={initialReadiness}
                     />
+                    <DiscoveryCard campaigns={discoveryCampaigns} />
                     <ActivityRegistryProvider>
                       <BackgroundTaskCenter />
                       <MediaUploadHost />

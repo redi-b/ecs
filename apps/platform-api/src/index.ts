@@ -28,6 +28,7 @@ import { parseTrustedOrigins } from "./context/platform-auth.js";
 import { resolveTenantFromHost } from "./context/tenant-resolver.js";
 import { createDataExportAuditRecorder } from "./modules/data-transfer/export-audit.js";
 import { createProductImportArtifactService } from "./modules/data-transfer/product-import-artifact.js";
+import { createDiscoveryService } from "./modules/discovery/service.js";
 import { createDomainProbeIdentityService } from "./modules/domains/probe-identity.js";
 import { createDomainRuntime } from "./modules/domains/runtime.js";
 import { createLaunchReadinessService } from "./modules/onboarding/launch-readiness.js";
@@ -59,6 +60,8 @@ const platformDb = createPlatformDb({
     10,
   ),
 });
+const discoveryService = createDiscoveryService(platformDb.db);
+await discoveryService.ensureDefaults();
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const domainRuntime = createDomainRuntime({ db: platformDb.db, env: process.env });
 const billingRuntime = createBillingRuntime({ db: platformDb.db, env: process.env, logger });
@@ -315,6 +318,10 @@ const app = createPlatformApp({
   createTenantShop,
   checkTenantHandleAvailability,
   ...billingAppOptions,
+  listDiscoveryCampaigns: discoveryService.listEligible,
+  listDiscoveryCampaignCatalog: discoveryService.listCampaigns,
+  updateDiscoveryCampaign: discoveryService.updateCampaign,
+  recordDiscoveryEvent: discoveryService.recordEvent,
   getDashboardMetrics: dashboardMetricsService,
   getInsightsSales,
   getInsightsProducts,

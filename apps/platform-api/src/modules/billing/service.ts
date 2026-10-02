@@ -1,7 +1,6 @@
 import {
   addBillingInterval,
   BILLING_RENEWAL_LEAD_DAYS,
-  type BillingInterval,
   encodeScheduledDowngrade,
   MS_PER_DAY,
   parseScheduledDowngradePlanId,
@@ -146,12 +145,13 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
               currentPeriodStart: new Date(),
               manualPaymentState: "none",
               ...(pinnedVersion ? { planVersionId: pinnedVersion.id } : {}),
+              ...(pinnedVersion ? { entitlementPlanVersionId: pinnedVersion.id } : {}),
             })
             .where(eq(subscriptions.id, existing.id));
         } else if (pinnedVersion) {
           await db
             .update(subscriptions)
-            .set({ planVersionId: pinnedVersion.id })
+            .set({ planVersionId: pinnedVersion.id, entitlementPlanVersionId: pinnedVersion.id })
             .where(eq(subscriptions.id, existing.id));
         }
         return { created: false as const, subscriptionId: existing.id };
@@ -167,6 +167,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
           tenantId: input.tenantId,
           planId: DEFAULT_PLAN_CATALOG.starter.id,
           planVersionId: starterVersion.id,
+          entitlementPlanVersionId: starterVersion.id,
           status: "active",
           billingCycle: "monthly",
           currentPeriodStart: now,
@@ -393,6 +394,7 @@ export function createBillingService(db: PlatformDb, options?: BillingServicePay
         .set({
           planId: plan.id,
           planVersionId: version.id,
+          entitlementPlanVersionId: version.id,
           status: "active",
           currentPeriodStart: now,
           currentPeriodEnd: addBillingInterval(now, version.terms.interval),

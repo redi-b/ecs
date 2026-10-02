@@ -17,6 +17,27 @@
     "mixView": "እንዴት እንደሚከፈል",
     "closeLaunch": "የሱቅ ዝግጅቱን ዝጋ"
   },
+  "discovery": {
+    "dismiss": "አሁን አይደለም",
+    "telegram": {
+      "eyebrow": "መረጃ ይድረስዎ",
+      "title": "ለሱቅ ማሳወቂያዎች Telegramን ያገናኙ",
+      "description": "አስፈላጊ የትዕዛዝ እና የሱቅ ማሳወቂያዎችን ቡድንዎ በሚጠቀምበት ቦታ ይቀበሉ።",
+      "action": "Telegramን ያገናኙ"
+    },
+    "quickSale": {
+      "eyebrow": "በመደብሩ ላይ",
+      "title": "ለፈጣን ሽያጭ POSን ይሞክሩ",
+      "description": "ከምርት ካታሎግዎ ሳይወጡ የጥሬ ገንዘብ ሽያጭን በፍጥነት ይመዝግቡ።",
+      "action": "POSን ክፈት"
+    },
+    "domains": {
+      "eyebrow": "የመደብርዎ አድራሻ",
+      "title": "ለሱቅዎ የራሱን አድራሻ ይስጡ",
+      "description": "የECS አድራሻዎን እንደ መመለሻ አማራጭ በመቆየት የራስዎን ዶሜይን ያገናኙ።",
+      "action": "ዶሜይኖችን ክፈት"
+    }
+  },
   "metrics": {
     "detailUnavailable": "ዝርዝር መረጃ አይገኝም",
     "noProducts": "ገና ምርቶች የሉም",
