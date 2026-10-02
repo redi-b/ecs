@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
+import { HelpTip } from "@/components/app/help-tip";
 import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +22,10 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
+import { cn } from "@/lib/utils";
 import {
   type DomainSettingsAction,
   DomainSettingsError,
@@ -257,7 +258,7 @@ export function DomainsSection({
                 </Button>
               ) : null}
             </div>
-            <div className="hidden grid-cols-[minmax(0,1fr)_minmax(8rem,0.7fr)_auto] gap-4 bg-muted/25 px-4 py-2.5 text-xs font-medium text-muted-foreground sm:grid sm:px-5">
+            <div className="hidden grid-cols-[minmax(0,1fr)_minmax(12rem,0.9fr)_auto] gap-4 bg-muted/25 px-4 py-2.5 text-xs font-medium text-muted-foreground sm:grid sm:px-5">
               <span>{t("settings.domains.addressColumn")}</span>
               <span>{t("settings.domains.statusColumn")}</span>
               <span className="sr-only">{t("settings.domains.actionsColumn")}</span>
@@ -273,6 +274,14 @@ export function DomainsSection({
                 const stateText = managed
                   ? t(domain.isPrimary ? "settings.domains.primary" : "settings.domains.notPrimary")
                   : t(`settings.domains.states.${status}`);
+                const StatusIcon =
+                  managed || status === "active"
+                    ? AppIcons.check
+                    : status === "misconfigured" || status === "failed"
+                      ? AppIcons.error
+                      : status === "removing"
+                        ? AppIcons.loader
+                        : AppIcons.time;
                 const detail = managed
                   ? t("settings.domains.ecsAddressDescription")
                   : expired
@@ -294,7 +303,7 @@ export function DomainsSection({
                   <div
                     key={domain.id}
                     data-domain-row="true"
-                    className="grid gap-3 border-t border-border/70 px-4 py-4 first:border-t-0 transition-colors hover:bg-muted/20 motion-reduce:transition-none sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.7fr)_auto] sm:items-center sm:gap-4 sm:px-5"
+                    className="grid gap-3 border-t border-border/70 px-4 py-4 first:border-t-0 transition-colors hover:bg-muted/20 motion-reduce:transition-none sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.9fr)_auto] sm:items-center sm:gap-4 sm:px-5"
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex min-w-0 items-center gap-2">
@@ -316,8 +325,9 @@ export function DomainsSection({
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2 sm:justify-start">
                       <Badge
+                        className="gap-1.5 whitespace-nowrap"
                         variant={
                           managed || status === "active"
                             ? "success"
@@ -326,10 +336,14 @@ export function DomainsSection({
                               : "secondary"
                         }
                       >
+                        <StatusIcon
+                          className={cn("size-3.5", status === "removing" && "animate-spin")}
+                          aria-hidden
+                        />
                         {stateText}
                       </Badge>
                       {domain.diagnostics ? (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="min-w-0 truncate text-xs text-muted-foreground">
                           {t("settings.domains.checked", {
                             date: formatDateTime(domain.diagnostics.checkedAt),
                           })}
@@ -511,23 +525,10 @@ export function DomainsSection({
                   <span className="text-sm font-medium">
                     {t("settings.domains.redirectPolicyTitle")}
                   </span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={t("settings.domains.redirectPolicyHelp")}
-                        >
-                          <AppIcons.question aria-hidden />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        {t("settings.domains.redirectPolicyDescription")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <HelpTip
+                    label={t("settings.domains.redirectPolicyHelp")}
+                    summary={t("settings.domains.redirectPolicyDescription")}
+                  />
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground">
