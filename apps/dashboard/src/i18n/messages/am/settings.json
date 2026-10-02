@@ -210,6 +210,7 @@
     "routingTitle": "ይህን አድራሻ ወደ ECS ይምሩ",
     "cname": "ለንዑስ ዶሜይን (Subdomain)፣ ወደ {target} የሚያመለክት CNAME ሪከርድ ይጨምሩ።",
     "apex": "ለዋና ዶሜይን (Root domain)፣ ወደ {target} የሚያመለክት ALIAS፣ ANAME ወይም flattened CNAME ይጠቀሙ።",
+    "apexTitle": "ዋና ዶሜይን እየጠቀሙ ነው?",
     "fallback": "ይህ አማራጭ በአቅራቢዎ ከሌለ፣ {addresses} ያለውን A ሪከርድ ይጠቀሙ። የECS ሰርቨር አድራሻ ከተቀየረ ይህን ሪከርድ መቀየር ሊያስፈልግዎ ይችላል።",
     "keepTxt": "ዶሜይኑ ተገናኝቶ እስካለ ድረስ ይህን TXT ሪከርድ ያስቀምጡ። ባለቤትነትዎን በቀጣይነት ያረጋግጣል።",
     "remove": "ዶሜይን አስወግድ",
@@ -267,6 +268,10 @@
     "unavailableDescription": "ለጊዜው የECS ሱቅ አድራሻዎን ይጠቀሙ።",
     "unavailableNote": "የራስዎን ዶሜይን ማገናኘት ሲቻል እናሳውቅዎታለን።",
     "ecsAddressDescription": "የECS ሱቅ አድራሻዎ",
+    "ecsAddress": "የECS አድራሻ",
+    "addressColumn": "አድራሻ",
+    "statusColumn": "ሁኔታ",
+    "actionsColumn": "የዶሜይን እርምጃዎች",
     "legacyCustomDescription": "ቀደም ሲል የተገናኘ የራስዎ ዶሜይን አድራሻ",
     "notPrimary": "ተጨማሪ",
     "openAddress": "አድራሻውን ክፈት",
@@ -291,6 +296,7 @@
     "primary": "ዋና",
     "readyBadge": "ዝግጁ",
     "setup": "ማገናኘቱን ጨርስ",
+    "setupTitle": "የዶሜይን ማገናኘትን ጨርስ",
     "viewSetup": "የDNS ዝርዝር ተመልከት",
     "txtTitle": "በDNS አቅራቢዎ ዘንድ ይህን TXT ሪከርድ ያስገቡ",
     "recordName": "የሪከርድ ስም (Record Name)",
@@ -306,7 +312,10 @@
     "redirectPolicyTitle": "ወደ ዋናው አድራሻ አዙር",
     "redirectPolicyDescription": "ተጨማሪ የራስዎ አድራሻዎች ጎብኚዎችን ወደ ዋናው አድራሻ እንዲያዞሩ ይምረጡ።",
     "redirectPolicyHint": "መጀመሪያ ጠፍቷል። የECS አድራሻዎ እንደ መጠባበቂያ ይቀጥላል፤ ወደ ሌላ አድራሻ አይዞርም።",
-    "redirectPolicySaved": "የማዞሪያ ቅንብሩ ተቀይሯል።"
+    "redirectPolicySaved": "የማዞሪያ ቅንብሩ ተቀይሯል።",
+    "redirectPolicyHelp": "ስለ የራስዎ ዶሜይን ማዞሪያ",
+    "redirectOn": "አብራ",
+    "redirectOff": "ጠፍቷል"
   },
   "status": {
     "settingsUpdated": "ማስተካከያዎቹ ተቀምጠዋል።",

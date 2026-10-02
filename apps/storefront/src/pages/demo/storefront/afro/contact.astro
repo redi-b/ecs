@@ -1,0 +1,16 @@
+---
+import { afroV1Defaults, afroV1ThemeTokens } from "@ecs/storefront-templates";
+import { afroDemoFooterContact } from "../../../../lib/demo/afro-fixture";
+import Contact from "../../../../templates/afro/v1/pages/Contact.astro";
+
+const data = structuredClone(afroV1Defaults);
+Object.assign(data.footer, afroDemoFooterContact);
+---
+
+<Contact
+  data={data}
+  themeTokens={afroV1ThemeTokens}
+  tenantName="AFRO Studio"
+  demoMode
+  deferCartCount
+/>

@@ -9,9 +9,10 @@ interface Props {
   themeTokens?: unknown;
   tenantName: string;
   deferCartCount?: boolean;
+  demoMode?: boolean;
 }
 
-const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const { data, themeTokens, tenantName, deferCartCount = false, demoMode = false } = Astro.props;
 const template = parseAfroData(data);
 const { email, phone, phone2, additionalPhones } = template.footer;
 const secondaryPhone = phone2 ?? additionalPhones?.[0];
@@ -23,6 +24,7 @@ const secondaryPhone = phone2 ?? additionalPhones?.[0];
   footer={template.footer}
   themeTokens={themeTokens}
   deferCartCount={deferCartCount}
+  demoMode={demoMode}
   title={`Contact Us — ${tenantName}`}
 >
   <main class="home-page" id="main-content">

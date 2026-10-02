@@ -165,7 +165,7 @@ const themeStyle = [
   >
     <a class="skip-link" href="#main-content">{m.a11y_skip_to_content({}, { locale })}</a>
     {demoMode ? (
-      <div class="demo-badge type-body-xs" role="status">Preview</div>
+      <div class="demo-badge type-body-xs" role="status">Preview mode</div>
     ) : null}
 
     <Header
@@ -205,3 +205,20 @@ const themeStyle = [
     </script>
   </body>
 </html>
+
+<style>
+  .demo-badge {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    z-index: 1000;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--clr-ink) 20%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--clr-bg) 92%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--clr-ink) 14%, transparent);
+    color: var(--clr-ink);
+    letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+</style>

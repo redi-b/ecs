@@ -7,14 +7,16 @@
   position: fixed;
   z-index: 90;
   right: 1rem;
-  bottom: 1rem;
-  padding: .35rem .6rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  padding: .4rem .7rem;
   border: 1px solid color-mix(in srgb, var(--nexa-ink) 22%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--nexa-bg) 92%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--nexa-ink) 14%, transparent);
   color: var(--nexa-ink);
   font: 500 .68rem/1.2 "DM Mono", monospace;
   letter-spacing: .04em;
+  pointer-events: none;
 }
 
 body.nexa-body {

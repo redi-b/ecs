@@ -44,8 +44,7 @@ function formatCartMoney(
  */
 export function initLuviaStorefront() {
   const editorPreview = document.body.dataset.editorMode === "true";
-  const demoPreview = document.body.dataset.demoMode === "true";
-  const readOnlyPreview = editorPreview || demoPreview;
+  const readOnlyPreview = editorPreview || document.body.dataset.demoMode === "true";
   const messages = getClientMessages();
 
   initCartStore();
@@ -470,39 +469,6 @@ export function initLuviaStorefront() {
     button.disabled = false;
     button.classList.remove("is-bump");
   });
-
-  if (demoPreview) {
-    const containPreviewNavigation = (event: Event) => {
-      const anchor =
-        event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a") : null;
-      if (!anchor) return;
-      const url = new URL(anchor.href, window.location.href);
-      if (url.origin !== window.location.origin) return;
-      event.preventDefault();
-      const internalDemoRoot = "/demo/storefront/luvia";
-      const demoRoot =
-        window.location.pathname === "/luvia" || window.location.pathname.startsWith("/luvia/")
-          ? "/luvia"
-          : internalDemoRoot;
-      const route = url.pathname.startsWith(internalDemoRoot)
-        ? `${demoRoot}${url.pathname.slice(internalDemoRoot.length)}${url.search}`
-        : demoRoot === "/luvia" && (url.pathname === "/luvia" || url.pathname.startsWith("/luvia/"))
-          ? `${url.pathname}${url.search}`
-          : url.pathname === "/"
-            ? demoRoot
-            : url.pathname === "/products"
-              ? `${demoRoot}/products${url.search}`
-              : url.pathname.startsWith("/products/")
-                ? `${demoRoot}${url.pathname}`
-                : url.pathname === "/cart" || url.pathname === "/checkout"
-                  ? `${demoRoot}${url.pathname}`
-                  : null;
-      if (route) window.location.assign(route);
-    };
-    document.addEventListener("click", containPreviewNavigation, { capture: true });
-    document.addEventListener("auxclick", containPreviewNavigation, { capture: true });
-    document.addEventListener("submit", (event) => event.preventDefault(), { capture: true });
-  }
 
   if (!readOnlyPreview) {
     initStorefrontRuntime();
