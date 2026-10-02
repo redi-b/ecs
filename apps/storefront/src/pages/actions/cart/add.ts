@@ -34,7 +34,8 @@ export const POST: APIRoute = async ({ request }) => {
       requestHost: ctx.requestHost,
     });
     if (!isStoreError(productResult)) {
-      const purchasable = productResult.variants.find((v) => v.inStock) ?? productResult.variants[0];
+      const variants = productResult.product.variants ?? [];
+      const purchasable = variants.find((v) => v.inStock) ?? variants[0];
       if (purchasable?.id) {
         variantId = purchasable.id;
       }

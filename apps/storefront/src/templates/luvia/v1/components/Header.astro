@@ -3,6 +3,9 @@ import type { LuviaV1Data } from "@ecs/storefront-templates";
 import StorefrontLanguageSwitcher from "../../../../components/shell/StorefrontLanguageSwitcher.astro";
 import * as m from "../../../../paraglide/messages.js";
 import { Icon } from "astro-icon/components";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
+import { categoryProductsHref, collectionProductsHref, taxonomyHandle } from "../../../../lib/commerce/taxonomy-links";
+import Dropdown from "./Dropdown.astro";
 
 interface Props {
   tenantName: string;
@@ -14,6 +17,8 @@ interface Props {
   locale: "am" | "en";
   logoUrl?: string | null;
   emptyLogoUrl?: string | null;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 
 const {
@@ -26,11 +31,35 @@ const {
   locale,
   logoUrl,
   emptyLogoUrl,
+  categories = [],
+  collections = [],
 } = Astro.props;
 
-const pathname = Astro.url.pathname;
+const rawPathname = Astro.url.pathname;
+const cleanPathname =
+  rawPathname
+    .replace(/^\/demo\/storefront\/(?:luvia|nexahub|afro)/, "")
+    .replace(/^\/(?:luvia|nexahub|afro)/, "") || "/";
 const isActiveLink = (href: string) =>
-  href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  href === "/" ? cleanPathname === "/" : cleanPathname === href || cleanPathname.startsWith(`${href}/`);
+
+const categoryOptions = [
+  { value: "all", label: m.catalog_all_categories({}, { locale }), href: "/products" },
+  ...categories.map((cat) => ({
+    value: taxonomyHandle(cat) || cat.name || cat.id,
+    label: cat.name ?? m.catalog_category_fallback({}, { locale }),
+    href: categoryProductsHref(cat),
+  })),
+];
+
+const collectionOptions = [
+  { value: "all", label: m.catalog_all_collections({}, { locale }), href: "/products" },
+  ...collections.map((col) => ({
+    value: taxonomyHandle(col) || col.title || col.id,
+    label: col.title ?? m.catalog_collection_fallback({}, { locale }),
+    href: collectionProductsHref(col),
+  })),
+];
 ---
 
 <header class="header container">
@@ -73,6 +102,24 @@ const isActiveLink = (href: string) =>
             </a>
           ))
         }
+        {categories.length > 0 && (
+          <Dropdown
+            id="nav-categories-dropdown"
+            label={m.catalog_category({}, { locale })}
+            options={categoryOptions}
+            staticLabel={true}
+            class="nav__dropdown"
+          />
+        )}
+        {collections.length > 0 && (
+          <Dropdown
+            id="nav-collections-dropdown"
+            label={m.catalog_collection({}, { locale })}
+            options={collectionOptions}
+            staticLabel={true}
+            class="nav__dropdown"
+          />
+        )}
       </div>
       <div class="nav__customer" role="group" aria-label={m.a11y_customer_links({}, { locale })}>
         <a class="nav__customer-item type-body-s-500" href="/wishlist">

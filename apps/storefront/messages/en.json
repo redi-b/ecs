@@ -350,6 +350,7 @@
   "catalog_title_za": "Title Z to A",
   "catalog_results_for": "Results for “{query}”",
   "catalog_showing": "Showing {shown} of {total} products",
+  "catalog_showing_results": "Showing {shown} out of {total} results",
   "catalog_load_failed": "Products could not be loaded",
   "catalog_no_results": "No results for “{query}”",
   "catalog_empty": "No products available yet",

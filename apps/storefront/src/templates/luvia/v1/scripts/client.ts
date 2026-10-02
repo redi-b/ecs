@@ -49,6 +49,7 @@ export function initLuviaStorefront() {
   const messages = getClientMessages();
 
   initCartStore();
+  initLuviaDropdowns();
   initLuviaHome();
 
   // Header & Search
@@ -934,14 +935,20 @@ export function initLuviaDropdowns(root: ParentNode = document) {
     const menu = dropdown.querySelector<HTMLElement>(".luvia-dropdown__menu");
     const label = dropdown.querySelector<HTMLElement>("[data-dropdown-label]");
     const options = Array.from(
-      dropdown.querySelectorAll<HTMLButtonElement>(".luvia-dropdown__option"),
+      dropdown.querySelectorAll<HTMLElement>(".luvia-dropdown__option"),
     );
     if (!trigger || !menu || options.length === 0) return;
+
+    const isNavDropdown =
+      dropdown.classList.contains("nav__dropdown") || Boolean(dropdown.closest(".nav"));
+    const isDesktopNav = () => isNavDropdown && window.innerWidth > 760;
 
     const selected =
       options.find((opt) => opt.getAttribute("aria-selected") === "true") ?? options[0];
     dropdown.dataset.value = selected.dataset.value ?? "";
-    if (label) label.textContent = selected.textContent?.trim() ?? "";
+    if (label && !dropdown.hasAttribute("data-static-label")) {
+      label.textContent = selected.textContent?.trim() ?? "";
+    }
 
     function close() {
       trigger?.setAttribute("aria-expanded", "false");
@@ -962,7 +969,7 @@ export function initLuviaDropdowns(root: ParentNode = document) {
 
     function setValue(value: string, text: string, silent = false) {
       dropdown.dataset.value = value;
-      if (label) label.textContent = text;
+      if (label && !dropdown.hasAttribute("data-static-label")) label.textContent = text;
       options.forEach((opt) => {
         opt.setAttribute("aria-selected", String(opt.dataset.value === value));
       });
@@ -973,7 +980,43 @@ export function initLuviaDropdowns(root: ParentNode = document) {
       }
     }
 
+    let hoverCloseTimer = 0;
+
+    if (isNavDropdown) {
+      dropdown.addEventListener("mouseenter", () => {
+        if (isDesktopNav()) {
+          window.clearTimeout(hoverCloseTimer);
+          open();
+        }
+      });
+
+      dropdown.addEventListener("mouseleave", () => {
+        if (isDesktopNav()) {
+          hoverCloseTimer = window.setTimeout(() => {
+            close();
+          }, 150);
+        }
+      });
+
+      dropdown.addEventListener("focusin", () => {
+        if (isDesktopNav()) {
+          window.clearTimeout(hoverCloseTimer);
+          open();
+        }
+      });
+
+      dropdown.addEventListener("focusout", (event) => {
+        if (isDesktopNav()) {
+          const related = event.relatedTarget as Node | null;
+          if (!dropdown.contains(related)) {
+            close();
+          }
+        }
+      });
+    }
+
     trigger.addEventListener("click", () => {
+      if (isDesktopNav()) return;
       if (trigger.getAttribute("aria-expanded") === "true") close();
       else open();
     });
@@ -1116,14 +1159,28 @@ export function initLuviaHomeFilters() {
       productGrid.appendChild(card); // re-appending reorders the DOM
     });
 
+    const totalMatching = matches.length;
+
     if (countEl) {
       const template = countEl.dataset.template;
       if (template) {
         countEl.textContent = template
           .replace("{shown}", String(visible.length))
-          .replace("{total}", String(cards.length));
+          .replace("{total}", String(totalMatching));
       } else {
-        countEl.textContent = `Showing ${visible.length} of ${cards.length} products`;
+        countEl.textContent = `Showing ${visible.length} of ${totalMatching} products`;
+      }
+    }
+
+    const loadMoreCountEl = document.getElementById("luvia-load-more-count");
+    if (loadMoreCountEl) {
+      const template = loadMoreCountEl.dataset.template;
+      if (template) {
+        loadMoreCountEl.textContent = template
+          .replace("{shown}", String(visible.length))
+          .replace("{total}", String(totalMatching));
+      } else {
+        loadMoreCountEl.textContent = `Showing ${visible.length} out of ${totalMatching} results`;
       }
     }
 

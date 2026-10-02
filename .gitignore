@@ -19,3 +19,5 @@ worktrees/
 
 *.log
 .DS_Store
+.vivid/
+.agent_chat_prompt.txt

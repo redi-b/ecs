@@ -68,6 +68,7 @@ const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "a
 const template = parseLuviaData(data);
 const activeCollection = collections.find((item) => taxonomyHandle(item) === filters.collectionId);
 const activeCategory = categories.find((item) => taxonomyHandle(item) === filters.categoryId);
+const categoryById = new Map(categories.map((c) => [c.id, c]));
 
 const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 const currentPage = Math.min(totalPages, Math.floor(offset / limit) + 1);
@@ -167,6 +168,8 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
   demoMode={demoMode}
   title={m.catalog_listing_title({}, { locale })}
   seo={seo}
+  categories={categories}
+  collections={collections}
 >
   <main id="main-content" class="shop-page">
     <!-- Hero Section -->
@@ -526,7 +529,7 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
                           class="luvia-dropdown__option type-body-s-400"
                           role="option"
                           data-value={opt.value}
-                          aria-selected={String((filters.order ?? "") === opt.value)}
+                          aria-selected={(filters.order ?? "") === opt.value}
                           onclick={`window.location.href = '${catalogHref({ ...filters, order: opt.value || undefined }, 0)}#shop-products'`}
                         >
                           <span class="luvia-dropdown__option-text">{opt.label}</span>
@@ -571,9 +574,16 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
             </div>
           ) : products.length > 0 ? (
             <div class="shop-main__grid" id="shop-product-grid">
-              {products.map((prod, index) => (
-                <ProductCard product={prod} eager={index < 4} />
-              ))}
+              {products.map((prod, index) => {
+                const primaryCategory = prod.categoryIds?.[0] ? categoryById.get(prod.categoryIds[0]) : null;
+                return (
+                  <ProductCard
+                    product={prod}
+                    categoryName={primaryCategory?.name}
+                    eager={index < 4}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div class="shop-main__empty empty-state is-visible" id="shop-empty-state">
@@ -735,7 +745,7 @@ if (filters.optionPairs && filters.optionPairs.length > 0) {
   });
 
   // Custom Dropdown
-  const dropdown = document.querySelector<HTMLElement>("[data-dropdown]");
+  const dropdown = document.getElementById("shop-sort");
   if (dropdown) {
     const trigger = dropdown.querySelector<HTMLButtonElement>(".luvia-dropdown__trigger");
     const menu = dropdown.querySelector<HTMLElement>(".luvia-dropdown__menu");

@@ -314,10 +314,45 @@ export function initNexahubStorefront() {
       navigationLastFocused?.focus();
     }, 220);
   };
+  const dropdownContainer = header?.querySelector<HTMLElement>(".site-header__nav-item--dropdown");
+  let dropdownCloseTimer = 0;
+
   const setDropdown = (open: boolean) => {
     dropdown?.classList.toggle("is-open", open);
     dropdownButton?.setAttribute("aria-expanded", String(open));
   };
+
+  dropdownContainer?.addEventListener("mouseenter", () => {
+    if (!isCollapsedNavigation()) {
+      window.clearTimeout(dropdownCloseTimer);
+      setDropdown(true);
+    }
+  });
+
+  dropdownContainer?.addEventListener("mouseleave", () => {
+    if (!isCollapsedNavigation()) {
+      dropdownCloseTimer = window.setTimeout(() => {
+        setDropdown(false);
+      }, 150);
+    }
+  });
+
+  dropdownContainer?.addEventListener("focusin", () => {
+    if (!isCollapsedNavigation()) {
+      window.clearTimeout(dropdownCloseTimer);
+      setDropdown(true);
+    }
+  });
+
+  dropdownContainer?.addEventListener("focusout", (event) => {
+    if (!isCollapsedNavigation()) {
+      const related = event.relatedTarget as Node | null;
+      if (!dropdownContainer.contains(related)) {
+        setDropdown(false);
+      }
+    }
+  });
+
   menu?.addEventListener("click", () =>
     setNavigation(nav?.classList.contains("is-closing") || !header?.classList.contains("is-open")),
   );
@@ -331,8 +366,10 @@ export function initNexahubStorefront() {
       setNavigation(false);
   });
   dropdownButton?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    setDropdown(!dropdown?.classList.contains("is-open"));
+    if (isCollapsedNavigation()) {
+      event.stopPropagation();
+      setDropdown(!dropdown?.classList.contains("is-open"));
+    }
   });
   dropdownButton?.addEventListener("keydown", (event) => {
     if (event.key === "ArrowDown") {

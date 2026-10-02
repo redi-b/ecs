@@ -85,7 +85,7 @@ export const luviaV1DataSchema = z.object({
         ctaHref: z.string().min(1),
       })
       .default({
-        title: "Do you have any inquiries for us?",
+        title: "Do you have any inquiries?",
         ctaLabel: "Let’s Get in Touch",
         ctaHref: "/contact",
       }),

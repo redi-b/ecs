@@ -25,7 +25,7 @@ const amharicDefaults: Record<string, Record<string, StorefrontTemplateTranslati
     "home.cta.primary.label": { source: "Shop Now", value: "አሁኑኑ ይግዙ" },
     "home.cta.secondary.label": { source: "Contact Us", value: "ያግኙን" },
     "footer.inquiry.title": {
-      source: "Do you have any inquiries for us?",
+      source: "Do you have any inquiries?",
       value: "የሚጠይቁት ጥያቄ አለዎት?",
     },
     "footer.inquiry.ctaLabel": { source: "Let’s Get in Touch", value: "ያግኙን" },

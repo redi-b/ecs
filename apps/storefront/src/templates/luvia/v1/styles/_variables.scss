@@ -94,7 +94,7 @@ $space-950: fluid(52px, 70px);
 $space-1000: fluid(60px, 80px);
 $space-1050: fluid(72px, 100px);
 $space-1100: fluid(88px, 120px);
-$space-1150: fluid(110px, 140px);
+$space-1150: fluid(114px, 136px);
 $space-1200: fluid(130px, 180px);
 
 $radius-50: 4px;
@@ -119,7 +119,7 @@ $radius-full: 50%;
 // it offsets from --header-offset instead of inventing its own clearance; the
 // 760px overrides live with the header's own breakpoint rules.
 :root {
-  --header-top: 26px;
+  --header-top: 18px;
   --header-height: 64px;
   --header-offset: calc(var(--header-top) + var(--header-height) + #{$space-500});
 }

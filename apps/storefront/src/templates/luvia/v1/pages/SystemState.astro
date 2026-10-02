@@ -3,6 +3,7 @@ import "../styles/pages/system-state.scss";
 import OfflineStateEnhancer from "../../../../components/shell/OfflineStateEnhancer.astro";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 import ActionButton from "../components/ActionButton.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
@@ -20,6 +21,9 @@ interface Props {
   code?: string;
   statusLabel?: string;
   recoveryLabel?: string;
+  demoMode?: boolean;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 
 const {
@@ -32,6 +36,9 @@ const {
   actionHref,
   actionLabel,
   code,
+  demoMode = false,
+  categories,
+  collections,
 } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
@@ -44,6 +51,9 @@ const locale =
   footer={template.footer}
   themeTokens={themeTokens}
   cartCount={cartCount}
+  demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   seo={{
     canonicalUrl: Astro.url.href,
     description,

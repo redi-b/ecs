@@ -5,6 +5,7 @@ import "../styles/components/_dropdown.scss";
 interface DropdownOption {
   value: string;
   label: string;
+  href?: string;
 }
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
   icon?: string;
   options: DropdownOption[];
   defaultValue?: string;
+  staticLabel?: boolean;
   class?: string;
 }
 
@@ -22,10 +24,11 @@ const {
   icon,
   options,
   defaultValue,
+  staticLabel = false,
   class: className,
 } = Astro.props;
 
-const selectedOption = options.find((opt) => opt.value === defaultValue) ?? options[0];
+const selectedOption = defaultValue ? (options.find((opt) => opt.value === defaultValue) ?? options[0]) : null;
 ---
 
 <div
@@ -33,6 +36,7 @@ const selectedOption = options.find((opt) => opt.value === defaultValue) ?? opti
   id={id}
   data-dropdown
   data-value={selectedOption?.value ?? ""}
+  data-static-label={staticLabel ? "true" : undefined}
 >
   <button
     type="button"
@@ -47,7 +51,7 @@ const selectedOption = options.find((opt) => opt.value === defaultValue) ?? opti
       </span>
     )}
     <span class="luvia-dropdown__label type-body-s-400" data-dropdown-label>
-      {selectedOption?.label ?? label}
+      {staticLabel ? label : (selectedOption?.label ?? label)}
     </span>
     <span class="luvia-dropdown__chevron" aria-hidden="true">
       <Icon name="chevron-down" />
@@ -56,18 +60,32 @@ const selectedOption = options.find((opt) => opt.value === defaultValue) ?? opti
   <ul class="luvia-dropdown__menu" role="listbox" aria-label={label} hidden>
     {options.map((option) => (
       <li>
-        <button
-          type="button"
-          class="luvia-dropdown__option type-body-s-400"
-          role="option"
-          data-value={option.value}
-          aria-selected={option.value === selectedOption?.value ? "true" : "false"}
-        >
-          <span class="luvia-dropdown__option-text">{option.label}</span>
-          <span class="luvia-dropdown__option-check" aria-hidden="true">
-            <Icon name="check" />
-          </span>
-        </button>
+        {option.href ? (
+          <a
+            class="luvia-dropdown__option type-body-s-400"
+            href={option.href}
+            data-value={option.value}
+            aria-selected={option.value === selectedOption?.value ? "true" : "false"}
+          >
+            <span class="luvia-dropdown__option-text">{option.label}</span>
+            <span class="luvia-dropdown__option-check" aria-hidden="true">
+              <Icon name="check" />
+            </span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            class="luvia-dropdown__option type-body-s-400"
+            role="option"
+            data-value={option.value}
+            aria-selected={option.value === selectedOption?.value ? "true" : "false"}
+          >
+            <span class="luvia-dropdown__option-text">{option.label}</span>
+            <span class="luvia-dropdown__option-check" aria-hidden="true">
+              <Icon name="check" />
+            </span>
+          </button>
+        )}
       </li>
     ))}
   </ul>

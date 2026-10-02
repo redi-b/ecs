@@ -349,6 +349,7 @@
   "catalog_title_za": "ስም፦ ፐ እስከ ሀ",
   "catalog_results_for": "ለ“{query}” የተገኙ ውጤቶች",
   "catalog_showing": "ከ{total} ምርቶች {shown} ታይተዋል",
+  "catalog_showing_results": "ከ{total} ውጤቶች {shown} ታይተዋል",
   "catalog_load_failed": "ምርቶችን መክፈት አልተቻለም",
   "catalog_no_results": "ለ“{query}” ምንም ውጤት አልተገኘም",
   "catalog_empty": "ገና የሚገኝ ምርት የለም",

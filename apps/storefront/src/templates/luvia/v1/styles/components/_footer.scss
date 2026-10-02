@@ -9,20 +9,36 @@
   position: relative;
   min-height: 280px;
   margin: $space-950 auto $space-300;
-  padding: $space-700 $space-600 $space-850;
-  display: grid;
-  grid-template-columns: 2fr repeat(4, 1fr);
-  gap: $space-800;
+  padding: $space-700 $space-600 $space-600;
   border-radius: $radius-400;
   background: var(--clr-soft);
   color: alpha(var(--clr-ink), 0.80);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.footer>div {
+.footer__grid {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, 1fr) 1.4fr;
+  gap: $space-800;
+  width: 100%;
+}
+
+.footer__grid>div {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: $space-350;
+}
+
+.footer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-400;
+  margin-top: $space-600;
+  width: 100%;
 }
 
 .footer strong {
@@ -43,15 +59,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: $space-350;
-}
-
-.footer__intro {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  height: 100%;
+  gap: $space-250;
 }
 
 .footer__brand {
@@ -80,12 +88,6 @@
   cursor: pointer;
 }
 
-.footer small {
-  position: absolute;
-  right: 28px;
-  bottom: 26px;
-}
-
 .inquiry {
   height: 76px;
   margin: 0 auto;
@@ -106,7 +108,7 @@
 }
 
 @media (max-width: 1100px) {
-  .footer {
+  .footer__grid {
       grid-template-columns: 2fr repeat(2, 1fr);
     }
 }
@@ -115,6 +117,9 @@
   .footer {
       margin-top: $space-900;
       padding: $space-600 $space-500 $space-900;
+    }
+
+  .footer__grid {
       grid-template-columns: 1fr 1fr;
       gap: $space-650 $space-600;
     }
@@ -123,10 +128,23 @@
       grid-column: 1 / -1;
     }
 
-  .footer small {
-      right: 22px;
-      left: 22px;
-      bottom: 24px;
+  .footer__bar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: $space-250;
+      margin-top: $space-650;
+
+      small {
+        font-size: $fs-body-xs;
+      }
+
+      a {
+        font-size: $fs-body-xs;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
     }
 
   .inquiry {
@@ -142,7 +160,7 @@
 }
 
 @media (max-width: 430px) {
-  .footer {
+  .footer__grid {
       grid-template-columns: 1fr 1fr;
       gap: $space-600 $space-450;
     }
@@ -151,16 +169,29 @@
       grid-column: 1 / -1;
     }
 
-  .footer>div {
+  .footer__grid>div {
       min-width: 0;
     }
 
-  .footer>div:last-of-type {
+  .footer__grid>div:last-of-type {
       grid-column: 1 / -1;
     }
 
+  .footer__bar {
+      gap: $space-200;
+
+      small {
+        font-size: 11px;
+      }
+
+      a {
+        font-size: 11px;
+      }
+    }
+
   .footer a,
-    .footer p {
+    .footer p,
+    .footer small {
       overflow-wrap: anywhere;
     }
 

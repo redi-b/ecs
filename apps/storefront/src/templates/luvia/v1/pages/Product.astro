@@ -6,6 +6,8 @@ import ProductMediaPlaceholder from "../../../../components/media/ProductMediaPl
 import { resolveProductBadge } from "../../../../lib/commerce/merchandising";
 import { isColorOptionTitle, resolveColorSwatch } from "../../../../lib/commerce/product-options";
 import type {
+  StoreCategory,
+  StoreCollection,
   StoreProduct,
   StoreProductImage,
   StoreProductOption,
@@ -36,6 +38,8 @@ interface Props {
   seo?: StorefrontSeo;
   structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
   demoMode?: boolean;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 
 const {
@@ -52,6 +56,8 @@ const {
   seo,
   structuredData,
   demoMode = false,
+  categories,
+  collections,
 } = Astro.props;
 
 const template = parseLuviaData(data);
@@ -144,6 +150,8 @@ const wishlistItem = product
   cartCount={cartCount}
   deferCartCount={deferCartCount}
   demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   title={product?.title ?? m.product_not_found({}, { locale })}
   seo={seo}
   structuredData={structuredData}

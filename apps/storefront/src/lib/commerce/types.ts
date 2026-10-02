@@ -71,6 +71,8 @@ export type StoreProduct = {
   collectionId: string | null;
   collectionTitle: string | null;
   categoryIds: string[];
+  categoryTitle?: string | null;
+  categories?: Array<{ id: string; name: string | null; handle?: string | null }>;
   priceAmount: number | null;
   originalPriceAmount?: number | null;
   discountAmount?: number | null;

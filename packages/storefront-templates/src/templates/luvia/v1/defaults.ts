@@ -73,7 +73,7 @@ export const luviaV1Defaults: LuviaV1Data = {
       { label: "Wishlist", href: "/wishlist" },
     ],
     inquiry: {
-      title: "Do you have any inquiries for us?",
+      title: "Do you have any inquiries?",
       ctaLabel: "Let’s Get in Touch",
       ctaHref: "/contact",
     },

@@ -8,6 +8,8 @@ import { resolveStoreCartSummary } from "../../../../lib/commerce/cart-summary";
 import { resolveStoreFulfillmentOptions } from "../../../../lib/commerce/fulfillment";
 import type {
   StoreCart,
+  StoreCategory,
+  StoreCollection,
   StoreDeliveryOptions,
   StorePaymentOptions,
   StoreShippingOption,
@@ -34,6 +36,8 @@ interface Props {
   customer?: StoreCustomer | null;
   customerAddresses?: StoreCustomerAddress[];
   demoMode?: boolean;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 const {
   data,
@@ -49,6 +53,8 @@ const {
   customer = null,
   customerAddresses = [],
   demoMode = false,
+  categories,
+  collections,
 } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
@@ -110,6 +116,8 @@ const clientMessages = {
   themeTokens={themeTokens}
   cartCount={cartCount}
   demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   title={m.checkout_title({}, { locale })}
 >
   <main id="main-content" class="checkout">

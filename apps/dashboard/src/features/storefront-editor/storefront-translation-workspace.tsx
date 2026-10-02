@@ -45,6 +45,11 @@ import { dashboardRoutes } from "@/lib/routes";
 import { saveStorefrontLanguageSettings } from "@/lib/storefront-languages-client";
 import type { StorefrontTranslationField } from "@/lib/storefront-localization-fields";
 import { cn } from "@/lib/utils";
+import {
+  clearPendingTranslations,
+  loadPendingTranslations,
+  savePendingTranslations,
+} from "./editor-storage";
 import { SectionNavigator } from "./section-navigator";
 import { TranslationSourceReference } from "./translation-source-reference";
 
@@ -137,6 +142,36 @@ export function StorefrontTranslationWorkspace({
     fields.some((field) => values[field.path] !== savedValues[field.path]);
   const { leaveDialogOpen, requestLeave, confirmLeave, cancelLeave } =
     useUnsavedChangesGuard(dirty);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const restored = loadPendingTranslations(tenantId, locale);
+    if (!restored) return;
+    const hasDiff =
+      restored.reviewedPaths.length > 0 ||
+      fields.some(
+        (field) =>
+          restored.values[field.path] !== undefined &&
+          restored.values[field.path] !== field.translation,
+      );
+    if (hasDiff) {
+      setValues((current) => ({ ...current, ...restored.values }));
+      if (restored.reviewedPaths.length > 0) {
+        setReviewedPaths(new Set(restored.reviewedPaths));
+      }
+    } else {
+      clearPendingTranslations(tenantId, locale);
+    }
+  }, [fields, locale, tenantId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (dirty) {
+      savePendingTranslations(tenantId, locale, values, Array.from(reviewedPaths));
+    } else {
+      clearPendingTranslations(tenantId, locale);
+    }
+  }, [dirty, locale, reviewedPaths, tenantId, values]);
   const allSectionsExpanded = groups.every((group) => !collapsedSections.has(group.id));
   const pageMetric = fields.reduce(
     (metric, field) => {
@@ -310,6 +345,7 @@ export function StorefrontTranslationWorkspace({
         toast.error(t("editor.translations.saveFailed"));
         return;
       }
+      clearPendingTranslations(tenantId, locale);
       setSavedValues({ ...values });
       setReviewedPaths(new Set());
       toast.success(t("editor.translations.saved"));

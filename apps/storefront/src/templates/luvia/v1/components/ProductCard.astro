@@ -11,19 +11,32 @@ import ActionButton from "./ActionButton.astro";
 
 interface Props {
   product: StoreProduct;
+  categoryName?: string | null;
+  category?: string | null;
   eager?: boolean;
   class?: string;
   [key: string]: any;
 }
-const { product, eager = false, class: className, ...rest } = Astro.props;
+const {
+  product,
+  categoryName,
+  category: propCategory,
+  eager = false,
+  class: className,
+  ...rest
+} = Astro.props;
 const locale =
   Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
 const href = product.handle
   ? `/products/${encodeURIComponent(product.handle)}`
   : "/products";
-const brand =
-  product.collectionTitle?.toUpperCase() ||
-  m.catalog_collection_fallback({}, { locale }).toUpperCase();
+const rawCategory =
+  categoryName ??
+  propCategory ??
+  product.categoryTitle ??
+  product.categories?.[0]?.name ??
+  null;
+const category = rawCategory?.trim() ? rawCategory.trim().toUpperCase() : null;
 const title = product.title ?? m.catalog_product_fallback({}, { locale });
 const purchasableVariant =
   product.variants.find((variant) => variant.inStock) ?? product.variants[0];
@@ -125,7 +138,7 @@ const cardSrcset = buildProductImageSrcset(product.thumbnailVariants);
       ) : null
     }
   </div>
-  <p class="product-card__brand type-body-s-400">{brand}</p>
+  {category ? <p class="product-card__brand type-body-s-400">{category}</p> : null}
   <a class="product-card__title type-body-l-400" href={href}>{title}</a>
   <p class="product-card__price type-body-xl">
     <strong

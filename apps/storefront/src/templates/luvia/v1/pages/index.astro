@@ -122,6 +122,7 @@ const collectionById = new Map(collections.map((col) => [col.id, col]));
   seo={seo}
   structuredData={structuredData}
   categories={categories}
+  collections={collections}
 >
   <main id="main-content" class="home">
     {
@@ -294,9 +295,16 @@ const collectionById = new Map(collections.map((col) => [col.id, col]));
                   aria-label={m.home_top_picks({}, { locale })}
                   tabindex="0"
                 >
-                  {topPicks.map((product, index) => (
-                    <ProductCard product={product} eager={index < 4} />
-                  ))}
+                  {topPicks.map((product, index) => {
+                    const primaryCategory = product.categoryIds?.[0] ? categoryById.get(product.categoryIds[0]) : null;
+                    return (
+                      <ProductCard
+                        product={product}
+                        categoryName={primaryCategory?.name}
+                        eager={index < 4}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ) : (
@@ -344,6 +352,7 @@ const collectionById = new Map(collections.map((col) => [col.id, col]));
               <div class="product-grid" id="luvia-product-grid">
                 {listing.map((product, index) => {
                   const productCollection = product.collectionId ? collectionById.get(product.collectionId) : null;
+                  const primaryCategory = product.categoryIds?.[0] ? categoryById.get(product.categoryIds[0]) : null;
                   const productCategoryIds = product.categoryIds ?? [];
                   const productCategoryNames = productCategoryIds
                     .map((cid) => categoryById.get(cid))
@@ -360,6 +369,7 @@ const collectionById = new Map(collections.map((col) => [col.id, col]));
                   return (
                     <ProductCard
                       product={product}
+                      categoryName={primaryCategory?.name}
                       data-category={`${productCategoryNames},${productCategoryHandles}`}
                       data-collection={`${productCollection?.title || productCollection?.handle || product.collectionTitle || ""},${collectionHandle}`}
                       class={index >= defaultShown ? "is-deferred" : undefined}
@@ -372,9 +382,13 @@ const collectionById = new Map(collections.map((col) => [col.id, col]));
             )}
             {listing.length > 0 && (
               <div class="load-more">
-                <p class="type-body-400">
-                  {m.catalog_result_count(
-                    { count: listing.length },
+                <p
+                  class="type-body-400"
+                  id="luvia-load-more-count"
+                  data-template={m.catalog_showing_results({ shown: "{shown}", total: "{total}" }, { locale })}
+                >
+                  {m.catalog_showing_results(
+                    { shown: defaultShown, total: listing.length },
                     { locale },
                   )}
                 </p>

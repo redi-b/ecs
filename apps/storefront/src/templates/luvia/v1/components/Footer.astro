@@ -40,127 +40,131 @@ const categoryLinks = [
 ---
 
 <footer class="footer container" data-editor-section="footer">
-  <div class="footer__intro" data-editor-image-scope>
-    <div class="footer__brand">
-      <img
-        src={logoUrl ?? undefined}
-        alt={tenantName}
-        data-editor-image-path="header.logoAssetId"
-        data-editor-empty-src={emptyLogoUrl ?? undefined}
-        hidden={!logoUrl}
-      />
-      <p
-        class="type-body-s-400"
-      >
-        {footer.blurb}
-      </p>
+  <div class="footer__grid">
+    <div class="footer__intro" data-editor-image-scope>
+      <div class="footer__brand">
+        <img
+          src={logoUrl ?? undefined}
+          alt={tenantName}
+          data-editor-image-path="header.logoAssetId"
+          data-editor-empty-src={emptyLogoUrl ?? undefined}
+          hidden={!logoUrl}
+        />
+        <p
+          class="type-body-s-400"
+        >
+          {footer.blurb}
+        </p>
+      </div>
     </div>
+
+    <div class="type-body-s-400">
+      <strong class="type-body-s-500">{m.footer_quick_links({}, { locale })}</strong>
+      <span
+        class="footer__links"
+      >
+        {
+          footer.quickLinks.map((item) => (
+            <a
+              class="type-body-s-400"
+              href={item.href}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </span>
+    </div>
+
+    <div class="type-body-s-400">
+      <strong class="type-body-s-500">{m.catalog_category({}, { locale })}</strong>
+      <span
+        class="footer__links"
+      >
+        {
+          categoryLinks.map((item) => (
+            <a
+              class="type-body-s-400"
+              href={item.href}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </span>
+    </div>
+
+    {
+      (footer.socialLinks.length > 0 || editorMode) && (
+        <div class="type-body-s-400">
+          <strong class="type-body-s-500">{m.contact_socials({}, { locale })}</strong>
+          {editorMode && footer.socialLinks.length === 0 && (
+            <p class="footer__contact-missing type-body-xs-500" data-editor-section="footer">
+              {m.footer_social_incomplete({}, { locale })}
+            </p>
+          )}
+          <span
+            class="footer__links"
+          >
+            {footer.socialLinks.map((item) => (
+              <a
+                class="type-body-s-400"
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {item.label}
+              </a>
+            ))}
+          </span>
+        </div>
+      )
+    }
+
+    <div class="type-body-s-400">
+      <strong class="type-body-s-500">{m.contact_information({}, { locale })}</strong>
+      {editorMode && (!footer.phone || !footer.email) && (
+        <p class="footer__contact-missing type-body-xs-500" data-editor-section="footer">
+          {m.footer_contact_incomplete({}, { locale })}
+        </p>
+      )}
+      <span class="footer__links">
+        {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => (
+          <a
+            class="type-body-s-400"
+            href={`tel:${phone}`}
+          >
+            {phone}
+          </a>
+        ))}
+        {(footer.email || (editorMode && !footer.managedContact)) && (
+          <a
+            class="type-body-s-400"
+            href={`mailto:${footer.email ?? ""}`}
+          >
+            {footer.email}
+          </a>
+        )}
+        {(footer.address || (editorMode && !footer.managedContact)) && (
+          // A <p> is flow content and was invalid inside this phrasing-only <span>.
+          <span
+            class="type-body-s-400"
+          >
+            {footer.address}
+          </span>
+        )}
+      </span>
+    </div>
+  </div>
+
+  <div class="footer__bar">
+    <small class="type-body-s-400">
+      © {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}
+    </small>
     <a href={ecsLandingPageUrl} rel="noreferrer" target="_blank" class="type-body-xs">
       {m.footer_design_by_ecs({}, { locale })}
     </a>
   </div>
-
-  <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.footer_quick_links({}, { locale })}</strong>
-    <span
-      class="footer__links"
-    >
-      {
-        footer.quickLinks.map((item) => (
-          <a
-            class="type-body-s-400"
-            href={item.href}
-          >
-            {item.label}
-          </a>
-        ))
-      }
-    </span>
-  </div>
-
-  <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.catalog_category({}, { locale })}</strong>
-    <span
-      class="footer__links"
-    >
-      {
-        categoryLinks.map((item) => (
-          <a
-            class="type-body-s-400"
-            href={item.href}
-          >
-            {item.label}
-          </a>
-        ))
-      }
-    </span>
-  </div>
-
-  {
-    (footer.socialLinks.length > 0 || editorMode) && (
-      <div class="type-body-s-400">
-        <strong class="type-body-s-500">{m.contact_socials({}, { locale })}</strong>
-        {editorMode && footer.socialLinks.length === 0 && (
-          <p class="footer__contact-missing type-body-xs-500" data-editor-section="footer">
-            {m.footer_social_incomplete({}, { locale })}
-          </p>
-        )}
-        <span
-          class="footer__links"
-        >
-          {footer.socialLinks.map((item) => (
-            <a
-              class="type-body-s-400"
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {item.label}
-            </a>
-          ))}
-        </span>
-      </div>
-    )
-  }
-
-  <div class="type-body-s-400">
-    <strong class="type-body-s-500">{m.contact_information({}, { locale })}</strong>
-    {editorMode && (!footer.phone || !footer.email) && (
-      <p class="footer__contact-missing type-body-xs-500" data-editor-section="footer">
-        {m.footer_contact_incomplete({}, { locale })}
-      </p>
-    )}
-    <span class="footer__links">
-      {[footer.phone, ...(footer.additionalPhones ?? [])].filter(Boolean).map((phone) => (
-        <a
-          class="type-body-s-400"
-          href={`tel:${phone}`}
-        >
-          {phone}
-        </a>
-      ))}
-      {(footer.email || (editorMode && !footer.managedContact)) && (
-        <a
-          class="type-body-s-400"
-          href={`mailto:${footer.email ?? ""}`}
-        >
-          {footer.email}
-        </a>
-      )}
-      {(footer.address || (editorMode && !footer.managedContact)) && (
-        // A <p> is flow content and was invalid inside this phrasing-only <span>.
-        <span
-          class="type-body-s-400"
-        >
-          {footer.address}
-        </span>
-      )}
-    </span>
-  </div>
-
-  <small class="type-body-s-400">
-    © {new Date().getFullYear()} {tenantName}. {m.footer_rights_reserved({}, { locale })}
-  </small>
 </footer>
 
 <aside class="inquiry container" data-editor-section="footer.inquiry">

@@ -394,11 +394,20 @@ export function normalizeProduct(value: unknown): StoreProduct {
   const collection = isRecord(value.collection) ? value.collection : null;
   const categories = Array.isArray(value.categories) ? value.categories : [];
   const categoryIds: string[] = [];
+  const normalizedCategories: Array<{ id: string; name: string | null; handle: string | null }> = [];
   for (const category of categories) {
     if (!isRecord(category)) continue;
     const id = getString(category.id);
-    if (id) categoryIds.push(id);
+    if (id) {
+      categoryIds.push(id);
+      normalizedCategories.push({
+        id,
+        name: getString(category.name) ?? getString(category.title),
+        handle: getString(category.handle),
+      });
+    }
   }
+  const categoryTitle = normalizedCategories[0]?.name ?? null;
 
   const priced = variants.find((v) => v.priceAmount != null) ?? variants[0];
   const optionMediaBindings = parseOptionMediaBindings(metadata, value.optionMediaBindings);
@@ -418,6 +427,8 @@ export function normalizeProduct(value: unknown): StoreProduct {
     collectionId: getString(value.collection_id) ?? getString(collection?.id),
     collectionTitle: getString(collection?.title),
     categoryIds,
+    categoryTitle,
+    categories: normalizedCategories,
     priceAmount: priced?.priceAmount ?? null,
     originalPriceAmount: priced?.originalPriceAmount ?? null,
     discountAmount: priced?.discountAmount ?? null,

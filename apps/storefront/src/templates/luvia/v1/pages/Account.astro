@@ -9,6 +9,7 @@ import { formatStorefrontDate } from "../../../../lib/date";
 import { formatMoney } from "../../../../lib/money";
 import { formatOrderReference } from "../../../../lib/order-reference";
 import { orderStatusLabel } from "../../../../lib/order-status-label";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
 interface Props {
@@ -16,20 +17,26 @@ interface Props {
   themeTokens?: unknown;
   tenantName: string;
   deferCartCount?: boolean;
+  demoMode?: boolean;
   account?: CustomerAccountView | null;
   error?: string | null;
   success?: string | null;
   initialMode?: "login" | "register";
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 const {
   data,
   themeTokens,
   tenantName,
   deferCartCount = false,
+  demoMode = false,
   account = null,
   error = null,
   success = null,
   initialMode = "login",
+  categories,
+  collections,
 } = Astro.props;
 const template = parseLuviaData(data);
 const locale =
@@ -49,6 +56,9 @@ function formatOrderDate(value: string | null) {
   footer={template.footer}
   themeTokens={themeTokens}
   deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   title={m.account_title({}, { locale })}
 >
   <main id="main-content"

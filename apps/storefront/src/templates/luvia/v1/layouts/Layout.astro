@@ -10,8 +10,9 @@ import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
 import StorefrontFonts from "../../../../components/shell/StorefrontFonts.astro";
 import StructuredData from "../../../../components/shell/StructuredData.astro";
-import { listStoreCategories } from "../../../../lib/commerce/catalog";
-import type { StoreCategory } from "../../../../lib/commerce/types";
+import { listStoreCategories, listStoreCollections } from "../../../../lib/commerce/catalog";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
+import { luviaDemoCategories, luviaDemoCollections } from "../../../../lib/demo/luvia-fixture";
 import { getPlatformApiBaseUrl, getRequestHost } from "../../../../lib/env";
 import type { StorefrontSeo } from "../../../../lib/seo";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
@@ -36,6 +37,7 @@ interface Props {
   seo?: StorefrontSeo;
   structuredData?: Record<string, unknown> | Record<string, unknown>[] | null;
   categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 
 const {
@@ -51,12 +53,14 @@ const {
   seo,
   structuredData,
   categories: suppliedCategories,
+  collections: suppliedCollections,
 } = Astro.props;
 
 const emptyLogoUrl = header.useShopName ? null : logo.src;
 const logoUrl = header.logoAssetId ?? emptyLogoUrl;
 const theme = parseLuviaThemeTokens(themeTokens);
 const locale = Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
+
 const categoriesResult =
   suppliedCategories === undefined && !demoMode
     ? await listStoreCategories({
@@ -68,7 +72,28 @@ const categoriesResult =
     : null;
 const categories =
   suppliedCategories ??
-  (categoriesResult && "categories" in categoriesResult ? categoriesResult.categories : []);
+  (demoMode
+    ? luviaDemoCategories
+    : categoriesResult && "categories" in categoriesResult
+      ? categoriesResult.categories
+      : []);
+
+const collectionsResult =
+  suppliedCollections === undefined && !demoMode
+    ? await listStoreCollections({
+        platformApiBaseUrl: getPlatformApiBaseUrl(),
+        requestHost: getRequestHost(Astro.request),
+        locale: locale === "am" ? "am-ET" : "en-ET",
+        limit: 8,
+      })
+    : null;
+const collections =
+  suppliedCollections ??
+  (demoMode
+    ? luviaDemoCollections
+    : collectionsResult && "collections" in collectionsResult
+      ? collectionsResult.collections
+      : []);
 
 const addToCartLabel = resolveTemplateVoiceMessage({
   fallback: m.action_add_to_cart({}, { locale }),
@@ -199,6 +224,8 @@ const themeStyle = [
       locale={locale}
       logoUrl={logoUrl}
       emptyLogoUrl={emptyLogoUrl}
+      categories={categories}
+      collections={collections}
     />
 
     <slot />

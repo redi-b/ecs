@@ -147,6 +147,10 @@
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  .product-card__media + & {
+    margin-top: $space-350;
+  }
 }
 
 .product-card__price {

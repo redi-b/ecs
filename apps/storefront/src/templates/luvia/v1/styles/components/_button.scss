@@ -82,6 +82,21 @@
   height: 16px;
 }
 
+// The diagonal-arrow glyph fills its full 18×18 viewBox edge-to-edge, unlike
+// icons such as bag/chat which keep internal whitespace, so it reads visually
+// bigger at the same width/height. Shrink it inside buttons so it optically
+// matches the other button icons.
+.button--small-icon .button__icon svg[data-icon="diagonal-arrow"],
+.button--small .button__icon svg[data-icon="diagonal-arrow"] {
+  width: 13px;
+  height: 13px;
+}
+
+.button--large .button__icon svg[data-icon="diagonal-arrow"] {
+  width: 15px;
+  height: 15px;
+}
+
 .button--secondary .button__text,
 .button--secondary .button__icon {
   background: var(--clr-dark);

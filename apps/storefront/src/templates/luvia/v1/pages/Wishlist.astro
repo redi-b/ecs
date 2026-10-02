@@ -3,6 +3,7 @@ import "../styles/pages/wishlist.scss";
 import { Icon } from "astro-icon/components";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
 
@@ -11,8 +12,19 @@ interface Props {
   themeTokens?: unknown;
   tenantName: string;
   deferCartCount?: boolean;
+  demoMode?: boolean;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
-const { data, themeTokens, tenantName, deferCartCount = false } = Astro.props;
+const {
+  data,
+  themeTokens,
+  tenantName,
+  deferCartCount = false,
+  demoMode = false,
+  categories,
+  collections,
+} = Astro.props;
 const template = parseLuviaData(data);
 const locale =
   Astro.request.headers.get(STOREFRONT_LOCALE_HEADER) === "am" ? "am" : "en";
@@ -34,6 +46,9 @@ const wishlistMessages = {
   footer={template.footer}
   themeTokens={themeTokens}
   deferCartCount={deferCartCount}
+  demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   title={m.wishlist_title({}, { locale })}
 >
   <main

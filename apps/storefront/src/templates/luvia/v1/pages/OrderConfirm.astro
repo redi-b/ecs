@@ -6,6 +6,7 @@ import { formatOrderReference } from "../../../../lib/order-reference";
 import type { LastOrderCookie } from "../../../../lib/session/cart-cookie";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 import ActionButton from "../components/ActionButton.astro";
 import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
@@ -19,6 +20,8 @@ interface Props {
   lastOrder: LastOrderCookie | null;
   hasCustomerSession?: boolean;
   demoMode?: boolean;
+  categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
 const {
   data,
@@ -29,6 +32,8 @@ const {
   lastOrder,
   hasCustomerSession = false,
   demoMode = false,
+  categories,
+  collections,
 } = Astro.props;
 const template = parseLuviaData(data);
 const verified = Boolean(lastOrder && lastOrder.id === orderId);
@@ -44,6 +49,8 @@ const locale =
   themeTokens={themeTokens}
   cartCount={cartCount}
   demoMode={demoMode}
+  categories={categories}
+  collections={collections}
   title={m.order_confirmed({}, { locale })}
 >
   <main id="main-content"

@@ -30,79 +30,143 @@
 .contact__layout {
   margin: $space-700 auto 0;
   display: grid;
-  grid-template-columns: minmax(0, 539px) minmax(0, 832px);
-  gap: $space-550;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: $space-650;
   align-items: start;
 }
 
 .contact__aside {
   display: flex;
   flex-direction: column;
-  gap: $space-300;
+  gap: $space-400;
 }
 
 .contact-info,
 .inquiry-panel {
-  border: 1px solid var(--clr-line);
-  border-radius: $radius-250;
+  border: 1px solid alpha(var(--clr-primary), 0.18);
+  border-radius: $radius-300;
   background: var(--clr-surface);
+  box-shadow: 0 4px 24px alpha(var(--clr-primary), 0.05);
 }
 
 .contact-info {
-  min-height: 282px;
-  padding: $space-500 $space-400;
-}
-
-.contact-info h2 {
-  margin: 0 0 $space-500;
-}
-
-.contact-info>div {
+  padding: $space-650 $space-600;
   display: flex;
   flex-direction: column;
-  gap: $space-300;
 }
 
-.contact-info p {
-  margin: 0;
+.contact-info__header {
+  margin-bottom: $space-550;
+  padding-bottom: $space-350;
+  border-bottom: 1px solid alpha(var(--clr-line), 0.7);
+
+  h2 {
+    margin: 0;
+    font-size: $fs-heading-4;
+    font-weight: $fw-semi-bold;
+    color: var(--clr-dark);
+    letter-spacing: -0.02em;
+  }
+}
+
+.contact-info__list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-450;
+}
+
+.contact-info__item {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: $space-300;
-  align-items: center;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: $space-350;
+  align-items: flex-start;
+  padding-bottom: $space-450;
+  border-bottom: 1px solid alpha(var(--clr-line), 0.5);
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
 }
 
-.contact-info p>span:first-child {
-  width: 42px;
-  height: 42px;
+.contact-info__icon {
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border: 1px solid alpha(var(--clr-primary), 0.38);
-  border-radius: $radius-200;
-  background: var(--clr-accent);
-  color: var(--clr-ink);
+  border: 1px solid alpha(var(--clr-primary), 0.22);
+  border-radius: $radius-full;
+  background: alpha(var(--clr-primary), 0.08);
+  color: var(--clr-primary-link);
+  flex-shrink: 0;
+
+  svg[data-icon] {
+    width: 18px;
+    height: 18px;
+  }
 }
 
-.contact-info p>span:first-child svg[data-icon] {
-  width: 17px;
-  height: 17px;
-}
-
-.contact-info p>span:last-child {
+.contact-info__content {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: $space-50;
+  gap: 6px;
+  padding-top: 2px;
+
+  small {
+    font-size: 11px;
+    font-weight: $fw-medium;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: alpha(var(--clr-ink), 0.55);
+  }
+
+  strong,
+  a {
+    color: var(--clr-ink);
+    font-size: $fs-body-s;
+    font-weight: $fw-medium;
+    line-height: 1.5;
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+
+  a {
+    width: fit-content;
+    max-width: 100%;
+
+    &:hover {
+      color: var(--clr-primary-link);
+    }
+  }
 }
 
-.contact-info small {
-  color: alpha(var(--clr-ink), 0.72);
+.contact-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-150;
+  margin-top: $space-100;
 }
 
-.contact-info strong,
-.contact-info a,
-.contact-info .contact-socials {
+.contact-social-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: $radius-pill;
+  background: var(--clr-soft);
+  border: 1px solid alpha(var(--clr-primary), 0.20);
+  font-size: $fs-body-xs;
+  font-weight: $fw-medium;
   color: var(--clr-ink);
   text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+
+  &:hover {
+    background: alpha(var(--clr-primary), 0.14);
+    border-color: var(--clr-primary);
+    color: var(--clr-primary-link);
+    transform: translateY(-1px);
+  }
 }
 
 .contact-info__empty {
@@ -237,8 +301,9 @@
     padding: $space-500;
   }
 
+  .contact-info__item,
   .contact-info p {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 40px minmax(0, 1fr);
     gap: $space-300;
   }
 

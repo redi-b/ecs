@@ -63,7 +63,7 @@ test("provides conservative Amharic defaults for stock template labels", () => {
     value: "የተቀመጡ ምርቶች",
   });
   assert.deepEqual(luviaDefaults["footer.inquiry.title"], {
-    source: "Do you have any inquiries for us?",
+    source: "Do you have any inquiries?",
     value: "የሚጠይቁት ጥያቄ አለዎት?",
   });
   assert.deepEqual(luviaDefaults["home.cta.primary.label"], {

@@ -34,7 +34,7 @@
   display: flex;
   gap: $space-700;
   align-items: stretch;
-  padding-block: $space-1150 $space-700;
+  padding-block: $space-1150 $space-850;
   
 }
 
@@ -493,7 +493,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: $space-950 $space-900;
+  padding: $space-950 $space-800;
   overflow: hidden;
   background: var(--clr-dark);
   color: var(--clr-white);
@@ -671,7 +671,7 @@
     li {
       width: auto;
       min-width: 0;
-      height: 74px;
+      text-align: left;
       padding: $space-600 $space-200 $space-300;
     }
   }
@@ -800,6 +800,24 @@
   }
 }
 
+// Phone-sized hero: the bottom padding is roughly doubled from $space-850 to
+// $space-1100 to give the floating promo card room, and the portrait is bumped
+// up slightly (480px -> 500px) to keep filling the taller column. The tighter
+// sub-480px heights below still apply on narrower screens.
+@media (max-width: 520px) {
+  .hero__inner {
+    padding-bottom: $space-1100;
+  }
+
+  .hero__right {
+    height: 500px;
+  }
+
+  .hero__portrait {
+    height: 100%;
+  }
+}
+
 @media (max-width: 480px) {
   .hero__copy {
     padding-inline: 16px;
@@ -825,20 +843,19 @@
 @media (max-width: 390px) {
   .hero__copy ul {
     grid-template-columns: 1fr;
-    gap: $space-150;
+    gap: $space-250;
+    margin-block: $space-650;
   }
 
   .hero__copy li {
     height: auto;
     min-height: 52px;
+    max-width: 100%;
+    width: 55vw;
   }
 
   .hero__right {
     height: 380px;
-  }
-
-  .promo {
-    display: none;
   }
 
   .product-rail .product-card {

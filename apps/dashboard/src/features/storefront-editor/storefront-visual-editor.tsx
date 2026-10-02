@@ -28,6 +28,11 @@ import {
   getPublicationStatus,
   serializeEditorData,
 } from "./editor-state";
+import {
+  clearPendingDraft,
+  loadPendingDraft,
+  savePendingDraft,
+} from "./editor-storage";
 
 export function StorefrontVisualEditor({
   canEdit = true,
@@ -80,6 +85,22 @@ export function StorefrontVisualEditor({
   useEffect(() => {
     setSidebarOpenRef.current?.(false);
   }, []);
+
+  useEffect(() => {
+    if (!canEdit || typeof window === "undefined") return;
+    const restored = loadPendingDraft(draft.tenantId, draft.templateKey);
+    if (!restored) return;
+    const restoredSnapshot = serializeEditorData(restored);
+    if (restoredSnapshot !== initialSnapshot) {
+      setEditorData(restored);
+      setHistory([initialData, restored]);
+      setHistoryIndex(1);
+      historyRef.current = [initialData, restored];
+      historyIndexRef.current = 1;
+    } else {
+      clearPendingDraft(draft.tenantId, draft.templateKey);
+    }
+  }, [canEdit, draft.tenantId, draft.templateKey, initialData, initialSnapshot]);
 
   useEffect(() => {
     if (canEdit) markStorefrontEditorVisited(draft.tenantId);
@@ -157,6 +178,7 @@ export function StorefrontVisualEditor({
       savedTranslationsRef.current = { ...translations };
     }
 
+    clearPendingDraft(draft.tenantId, draft.templateKey);
     setSavedSnapshot(serializeEditorData(data));
   }
 
@@ -182,6 +204,7 @@ export function StorefrontVisualEditor({
         throw new Error(published.message);
       }
 
+      clearPendingDraft(draft.tenantId, draft.templateKey);
       const snapshot = serializeEditorData(data);
       setSavedSnapshot(snapshot);
       setPublishedSnapshot(snapshot);
@@ -323,6 +346,7 @@ export function StorefrontVisualEditor({
   }
 
   function handleReset() {
+    clearPendingDraft(draft.tenantId, draft.templateKey);
     skipHistoryRef.current = true;
     setEditorData(initialData);
     historyRef.current = [initialData];
@@ -344,6 +368,15 @@ export function StorefrontVisualEditor({
   });
   const hasUnsavedChanges = canEdit && currentSnapshot !== savedSnapshot;
   const { leaveDialogOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard(hasUnsavedChanges);
+
+  useEffect(() => {
+    if (!canEdit || typeof window === "undefined") return;
+    if (hasUnsavedChanges) {
+      savePendingDraft(draft.tenantId, draft.templateKey, editorData);
+    } else {
+      clearPendingDraft(draft.tenantId, draft.templateKey);
+    }
+  }, [canEdit, draft.templateKey, draft.tenantId, editorData, hasUnsavedChanges]);
 
   return (
     <div

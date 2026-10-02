@@ -5,7 +5,7 @@ import Layout from "../layouts/Layout.astro";
 import { parseLuviaData } from "../lib";
 import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale";
 import * as m from "../../../../paraglide/messages.js";
-import type { StoreCategory } from "../../../../lib/commerce/types";
+import type { StoreCategory, StoreCollection } from "../../../../lib/commerce/types";
 
 interface Props {
   data: unknown;
@@ -14,8 +14,17 @@ interface Props {
   deferCartCount?: boolean;
   demoMode?: boolean;
   categories?: StoreCategory[];
+  collections?: StoreCollection[];
 }
-const { data, themeTokens, tenantName, deferCartCount = false, demoMode = false, categories } = Astro.props;
+const {
+  data,
+  themeTokens,
+  tenantName,
+  deferCartCount = false,
+  demoMode = false,
+  categories,
+  collections,
+} = Astro.props;
 const template = parseLuviaData(data);
 const email = template.footer.email?.trim();
 const phone = template.footer.phone?.trim();
@@ -42,6 +51,7 @@ const initialMode = Astro.url.searchParams.get("mode") === "request" ? "request"
   deferCartCount={deferCartCount}
   demoMode={demoMode}
   categories={categories}
+  collections={collections}
   title={m.contact_title({}, { locale })}
 >
   <main id="main-content" class="contact">
@@ -55,96 +65,82 @@ const initialMode = Astro.url.searchParams.get("mode") === "request" ? "request"
     <section class="contact__layout container">
       <div class="contact__aside">
         <article class="contact-info">
-          <h2 class="type-heading-4">
-            {m.contact_information({}, { locale })}
-          </h2><div>
+          <div class="contact-info__header">
+            <h2 class="type-heading-4">
+              {m.contact_information({}, { locale })}
+            </h2>
+          </div>
+          <div class="contact-info__list">
             {
               address && (
-                <p>
-                  <>
-                    <span>
-                      <Icon name="location" />
-                    </span>
-                    <span>
-                      <>
-                        <small class="type-body-xs">
-                          {m.contact_address({}, { locale })}
-                        </small>
-                        <strong class="type-body-s-500">{address}</strong>
-                      </>
-                    </span>
-                  </>
-                </p>
+                <div class="contact-info__item">
+                  <span class="contact-info__icon" aria-hidden="true">
+                    <Icon name="location" />
+                  </span>
+                  <div class="contact-info__content">
+                    <small class="type-body-xs">
+                      {m.contact_address({}, { locale })}
+                    </small>
+                    <strong class="type-body-s-500">{address}</strong>
+                  </div>
+                </div>
               )
             }
             {
               email && (
-                <p>
-                  <>
-                    <span>
-                      <Icon name="mail" />
-                    </span>
-                    <span>
-                      <>
-                        <small class="type-body-xs">
-                          {m.contact_email({}, { locale })}
-                        </small>
-                        <a class="type-body-s-500" href={`mailto:${email}`}>
-                          {email}
-                        </a>
-                      </>
-                    </span>
-                  </>
-                </p>
+                <div class="contact-info__item">
+                  <span class="contact-info__icon" aria-hidden="true">
+                    <Icon name="mail" />
+                  </span>
+                  <div class="contact-info__content">
+                    <small class="type-body-xs">
+                      {m.contact_email({}, { locale })}
+                    </small>
+                    <a class="type-body-s-500" href={`mailto:${email}`}>
+                      {email}
+                    </a>
+                  </div>
+                </div>
               )
             }
             {
               [phone, ...(template.footer.additionalPhones ?? [])]
                 .filter(Boolean)
                 .map((number) => (
-                  <p>
-                    <>
-                      <span>
-                        <Icon name="phone" />
-                      </span>
-                      <span>
-                        <>
-                          <small class="type-body-xs">
-                            {m.contact_phone({}, { locale })}
-                          </small>
-                          <a class="type-body-s-500" href={`tel:${number}`}>
-                            {number}
-                          </a>
-                        </>
-                      </span>
-                    </>
-                  </p>
+                  <div class="contact-info__item">
+                    <span class="contact-info__icon" aria-hidden="true">
+                      <Icon name="phone" />
+                    </span>
+                    <div class="contact-info__content">
+                      <small class="type-body-xs">
+                        {m.contact_phone({}, { locale })}
+                      </small>
+                      <a class="type-body-s-500" href={`tel:${number}`}>
+                        {number}
+                      </a>
+                    </div>
+                  </div>
                 ))
             }
             {
               socials.length > 0 && (
-                <p>
-                  <>
-                    <span>
-                      <Icon name="socials-web" />
-                    </span>
-                    <span>
-                      <>
-                        <small class="type-body-xs">
-                          {m.contact_socials({}, { locale })}
-                        </small>
-                        <span class="contact-socials type-body-s-500">
-                          {socials.map((social, index) => (
-                            <>
-                              <a href={social.href}>{social.label}</a>
-                              {index < socials.length - 1 && " · "}
-                            </>
-                          ))}
-                        </span>
-                      </>
-                    </span>
-                  </>
-                </p>
+                <div class="contact-info__item contact-info__item--socials">
+                  <span class="contact-info__icon" aria-hidden="true">
+                    <Icon name="socials-web" />
+                  </span>
+                  <div class="contact-info__content">
+                    <small class="type-body-xs">
+                      {m.contact_socials({}, { locale })}
+                    </small>
+                    <div class="contact-socials">
+                      {socials.map((social) => (
+                        <a class="contact-social-pill" href={social.href} target="_blank" rel="noopener noreferrer">
+                          {social.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )
             }
             {

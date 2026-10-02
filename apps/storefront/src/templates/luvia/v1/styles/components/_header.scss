@@ -23,7 +23,7 @@
 // Once content is scrolling beneath the pill the glow deepens so the bar keeps
 // a readable edge over imagery and body copy. Toggled by scripts/client.ts.
 .header[data-scrolled] {
-  box-shadow: 0 0 30px alpha(var(--clr-primary), 0.32), 0 20px 44px alpha(var(--clr-ink), 0.10);
+  box-shadow: 0px 6px 50px 0px rgb(from var(--clr-accent));
 }
 
 .header__start {
@@ -87,6 +87,69 @@
 .nav__link.is-active,
 .nav a.is-active {
   color: var(--clr-ink);
+}
+
+.nav__dropdown {
+  position: relative;
+  display: inline-flex;
+
+  @media (hover: hover) and (min-width: 761px) {
+    &:hover,
+    &:focus-within {
+      .luvia-dropdown__trigger {
+        color: var(--clr-ink);
+        background: alpha(var(--clr-primary), 0.04);
+        border-color: alpha(var(--clr-primary), 0.48);
+
+        .luvia-dropdown__chevron {
+          transform: rotate(180deg);
+        }
+      }
+
+      .luvia-dropdown__menu {
+        display: block !important;
+        opacity: 1;
+        transform: translateY(0);
+        visibility: visible;
+        pointer-events: auto;
+      }
+    }
+  }
+
+  .luvia-dropdown__trigger {
+    height: 38px;
+    padding: 0 $space-300;
+    border: 1px solid alpha(var(--clr-primary), 0.28);
+    border-radius: $radius-pill;
+    background: transparent;
+    color: alpha(var(--clr-ink), 0.85);
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+
+    &:hover {
+      color: var(--clr-ink);
+      background: alpha(var(--clr-primary), 0.04);
+      border-color: alpha(var(--clr-primary), 0.48);
+    }
+
+    &[aria-expanded="true"] {
+      color: var(--clr-ink);
+      border-color: var(--clr-primary);
+      background: alpha(var(--clr-primary), 0.06);
+    }
+  }
+
+  .luvia-dropdown__menu {
+    min-width: 180px;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: -$space-150;
+      left: 0;
+      right: 0;
+      height: $space-150;
+    }
+  }
 }
 
 .actions {
@@ -614,6 +677,35 @@
     }
   }
 
+  .nav__dropdown {
+    width: 100%;
+
+    .luvia-dropdown__trigger {
+      width: 100%;
+      min-height: 48px;
+      padding: $space-200 $space-350;
+      border-radius: $radius-250;
+      justify-content: space-between;
+      border: 1px solid var(--clr-line);
+      background: var(--clr-surface);
+      color: var(--clr-ink);
+
+      &:hover,
+      &:focus-visible {
+        background: alpha(var(--clr-ink), 0.04);
+      }
+    }
+
+    .luvia-dropdown__menu {
+      position: static;
+      width: 100%;
+      margin-top: $space-100;
+      max-height: 220px;
+      box-shadow: none;
+      border: 1px solid var(--clr-line);
+    }
+  }
+
   .nav__customer {
     margin-top: $space-100;
     padding-top: $space-200;
@@ -668,7 +760,7 @@
   }
 
   .search {
-    width: min(240px, 28vw);
+    width: min(260px, 32vw);
     min-width: 130px;
     height: 42px;
     padding: 0 5px 0 12px;
