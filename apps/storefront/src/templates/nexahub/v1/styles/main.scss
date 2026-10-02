@@ -4,22 +4,17 @@
 @use "./variables" as *;
 
 .nexa-demo {
-  position: sticky;
+  position: fixed;
   z-index: 90;
-  top: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem 1rem;
-  padding: .6rem 1rem;
-  background: var(--nexa-primary-fill);
-  color: var(--nexa-on-primary);
+  right: 1rem;
+  bottom: 1rem;
+  padding: .35rem .6rem;
+  border: 1px solid color-mix(in srgb, var(--nexa-ink) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--nexa-bg) 92%, transparent);
+  color: var(--nexa-ink);
   font: 500 .68rem/1.2 "DM Mono", monospace;
-  text-transform: uppercase;
-
-  nav { display: flex; flex-wrap: wrap; gap: .75rem; }
-  a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  letter-spacing: .04em;
 }
 
 body.nexa-body {

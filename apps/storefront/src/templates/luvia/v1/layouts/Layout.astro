@@ -5,7 +5,6 @@ import "../styles/components/_header.scss";
 import "../styles/components/_footer.scss";
 import "../styles/components/_cart-drawer.scss";
 import "../styles/components/_rail.scss";
-import "../styles/components/_demo-banner.scss";
 import { contrastRatio, deriveTextContrast, type LuviaV1Data } from "@ecs/storefront-templates";
 import SeoHead from "../../../../components/shell/SeoHead.astro";
 import StorefrontAnalytics from "../../../../components/shell/StorefrontAnalytics.astro";
@@ -166,18 +165,7 @@ const themeStyle = [
   >
     <a class="skip-link" href="#main-content">{m.a11y_skip_to_content({}, { locale })}</a>
     {demoMode ? (
-      <div class="demo-banner type-body-xs" role="status">
-        <strong>Template preview</strong>
-        <nav aria-label="Preview pages">
-          <a href="/demo/storefront/luvia">Home</a>
-          <a href="/demo/storefront/luvia/products">Shop</a>
-          <a href="/demo/storefront/luvia/products/radiance-serum">Product</a>
-          <a href="/demo/storefront/luvia/cart">Cart</a>
-          <a href="/demo/storefront/luvia/checkout">Checkout</a>
-          <a href="/demo/storefront/luvia/order-confirmation">Receipt</a>
-        </nav>
-        <span>Shopping actions are disabled</span>
-      </div>
+      <div class="demo-badge type-body-xs" role="status">Preview</div>
     ) : null}
 
     <Header

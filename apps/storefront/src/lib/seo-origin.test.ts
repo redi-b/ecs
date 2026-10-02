@@ -41,6 +41,7 @@ function config(primaryHostname = "Shop.Example.com."): PublishedStorefrontConfi
       status: "active",
       domain: { id: "domain_alias", hostname: "alias.example.com" },
       primaryDomain: { hostname: primaryHostname },
+      redirectToPrimary: false,
     },
     commerce: { regionId: "reg_1" },
     storefront: {

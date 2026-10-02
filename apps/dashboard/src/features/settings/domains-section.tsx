@@ -170,11 +170,9 @@ export function DomainsSection({
 
   function record(label: string, value: string) {
     return (
-      <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 bg-muted/25 px-3 py-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <code className="block break-all text-xs leading-relaxed select-all">{value}</code>
-        </div>
+      <div className="grid min-w-0 grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto] items-center gap-3 border-t border-border/60 px-3 py-2.5 first:border-t-0">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <code className="min-w-0 break-all text-xs leading-relaxed select-all">{value}</code>
         <Button
           type="button"
           size="icon-sm"
@@ -193,13 +191,10 @@ export function DomainsSection({
 
   return (
     <SettingsSectionBody>
-      <SectionIntro
-        title={t("settings.sections.domains.label")}
-        description={t("settings.domains.connectDescription")}
-      />
+      <SectionIntro title={t("settings.sections.domains.label")} />
       {query.isError || (!query.data && initialLoadFailed) ? (
-        <Alert variant="destructive">
-          <AlertDescription>
+        <Alert className="items-center gap-3" variant="destructive">
+          <AlertDescription className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3">
             {t(query.data ? "settings.domains.stale" : "settings.domains.loadFailed")}
             <Button
               type="button"
@@ -331,7 +326,6 @@ export function DomainsSection({
             key={domain.id}
             data-domain-row="true"
             title={<span className="break-all">{domain.hostname}</span>}
-            description={managed ? t("settings.domains.ecsAddressDescription") : undefined}
             action={
               <div className="flex items-center gap-2">
                 <Badge
@@ -362,15 +356,15 @@ export function DomainsSection({
                       <AppIcons.more aria-hidden />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled={!usable} asChild>
+                  <DropdownMenuContent align="end" className="min-w-48">
+                    <DropdownMenuItem className="justify-between gap-3" disabled={!usable} asChild>
                       <a
                         href={`https://${domain.hostname}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         {t("settings.domains.openAddress")}
-                        <AppIcons.externalLink />
+                        <AppIcons.externalLink aria-hidden />
                       </a>
                     </DropdownMenuItem>
                     {usable && !domain.isPrimary ? (
