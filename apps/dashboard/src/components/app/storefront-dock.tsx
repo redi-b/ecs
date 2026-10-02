@@ -200,7 +200,7 @@ export function StorefrontDock({
               <div className="grid grid-cols-2 gap-1.5 p-2">
                 <Button
                   asChild
-                  className="h-9 justify-center rounded-full"
+                  className="h-8 justify-center rounded-full border border-border/70 bg-card/40 text-xs hover:bg-muted/55"
                   size="sm"
                   variant="ghost"
                 >
@@ -219,7 +219,7 @@ export function StorefrontDock({
                 </Button>
                 <Button
                   aria-live="polite"
-                  className="h-9 justify-center rounded-full"
+                  className="h-8 justify-center rounded-full border border-border/70 bg-card/40 text-xs hover:bg-muted/55"
                   onClick={() => void copyLink()}
                   size="sm"
                   type="button"
@@ -234,7 +234,7 @@ export function StorefrontDock({
                 </Button>
                 <Button
                   asChild
-                  className="col-span-2 h-9 justify-center rounded-full bg-muted/35 hover:bg-muted/60"
+                  className="col-span-2 h-8 justify-center rounded-full border border-border/70 bg-muted/30 text-xs hover:bg-muted/60"
                   size="sm"
                   variant="ghost"
                 >

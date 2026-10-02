@@ -41,6 +41,7 @@
   "selectedCount": "{count} የተመረጡ",
   "headers": {
     "order": "ትዕዛዝ",
+    "orderCode": "የትዕዛዝ መለያ",
     "customer": "ደንበኛ",
     "total": "ጠቅላላ",
     "payment": "ክፍያ",

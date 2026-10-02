@@ -276,6 +276,15 @@ export function ProductsTable({
       ),
     [canDelete, canUpdate, handleStatusChange, t, tenantId, effectiveTranslationsEnabled],
   );
+  const productRowHref = useCallback(
+    (product: MerchantProduct) =>
+      readOnly
+        ? null
+        : productDetailHrefBase
+          ? `${productDetailHrefBase}/${encodeURIComponent(product.id)}`
+          : getTenantScopedPath(dashboardRoutes.productDetail(product.id), tenantId),
+    [productDetailHrefBase, readOnly, tenantId],
+  );
 
   const pushServerFilters = useCallback(
     (
@@ -602,6 +611,7 @@ export function ProductsTable({
         filteredEmptyMessage={t("products.table.filteredEmptyMessage")}
         filteredEmptyTitle={t("products.table.filteredEmptyTitle")}
         getRowId={(product) => product.id}
+        getRowHref={productRowHref}
         isFiltered={counts.hasActiveFilter}
         isLoading={pending}
         rowActions={productRowActions}

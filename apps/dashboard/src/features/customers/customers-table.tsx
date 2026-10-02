@@ -128,6 +128,10 @@ export function CustomersTable({
     }),
     [canUpdate, t],
   );
+  const customerRowHref = useCallback(
+    (customer: MerchantCustomer) => dashboardRoutes.customerDetail(customer.id),
+    [],
+  );
 
   const columns = useMemo<ColumnDef<MerchantCustomer>[]>(
     () => [
@@ -297,6 +301,7 @@ export function CustomersTable({
         filteredEmptyMessage={t("customers.table.filteredEmptyMessage")}
         filteredEmptyTitle={t("customers.table.filteredEmptyTitle")}
         getRowId={(row) => row.id}
+        getRowHref={customerRowHref}
         isFiltered={hasActiveFilter}
         isLoading={pending}
         rowActions={customerRowActions}
