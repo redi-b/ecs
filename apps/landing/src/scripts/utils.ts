@@ -11,10 +11,6 @@ export function responsiveClamp(
   return Math.round(clamp(map(window.innerWidth)) * 100) / 100;
 }
 
-export function prefersReducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function whenPageReady(callback: () => void): void {
   const run = () => {
     const fonts = "fonts" in document ? document.fonts : undefined;

@@ -1,7 +1,6 @@
 import { gsap } from "gsap";
 import { CustomEase } from "gsap/CustomEase";
 import { bodyLineAnimation, headerWordAnimation } from "../common";
-import { prefersReducedMotion } from "../utils";
 
 gsap.registerPlugin(CustomEase);
 
@@ -32,12 +31,6 @@ export function initPreloader(onComplete: () => void): gsap.core.Timeline | unde
   const progressFill = preloader.querySelector<HTMLElement>(".preloader__progress-fill");
   const loadingText = preloader.querySelector<HTMLElement>(".preloader__loading-text");
   const loadingPct = preloader.querySelector<HTMLElement>(".preloader__loading-pct");
-
-  if (prefersReducedMotion()) {
-    gsap.set(preloader, { display: "none" });
-    onComplete();
-    return undefined;
-  }
 
   // Initial setup: ensure elements are in starting state
   if (topCard) {
