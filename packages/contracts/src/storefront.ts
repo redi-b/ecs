@@ -163,6 +163,7 @@ export type SuperadminTenant = z.infer<typeof superadminTenantSchema>;
 
 export const publishedStorefrontConfigSchema = z.object({
   tenant: z.object({
+    redirectToPrimary: z.boolean().default(false),
     id: z.string().min(1),
     name: z.string().min(1),
     handle: z.string().min(1),

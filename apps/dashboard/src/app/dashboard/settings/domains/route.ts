@@ -3,6 +3,7 @@ import {
   createMerchantDomain,
   getMerchantDomains,
   removeMerchantDomain,
+  setMerchantDomainRedirectPolicy,
   setMerchantPrimaryDomain,
   verifyMerchantDomain,
 } from "@/lib/platform-api/domains";
@@ -20,7 +21,11 @@ export async function GET(request: Request) {
     return result.ok
       ? {
           ok: true,
-          data: { domains: result.domains, ...(result.setup ? { setup: result.setup } : {}) },
+          data: {
+            domains: result.domains,
+            redirectToPrimary: result.redirectToPrimary,
+            ...(result.setup ? { setup: result.setup } : {}),
+          },
           status: 200,
         }
       : { ok: false, message: result.message, status: result.status };
@@ -36,6 +41,7 @@ export async function POST(request: Request) {
       action?: unknown;
       domainId?: unknown;
       hostname?: unknown;
+      redirectToPrimary?: unknown;
     };
     const common = {
       cookieHeader: context.cookieHeader,
@@ -51,6 +57,15 @@ export async function POST(request: Request) {
             status: removal.status === "removing" ? 202 : 200,
           }
         : { ok: false, message: removal.message, status: removal.status };
+    }
+    if (body.action === "redirect-policy" && typeof body.redirectToPrimary === "boolean") {
+      const policy = await setMerchantDomainRedirectPolicy({
+        ...common,
+        redirectToPrimary: body.redirectToPrimary,
+      });
+      return policy.ok
+        ? { ok: true, data: { redirectToPrimary: policy.redirectToPrimary }, status: 200 }
+        : { ok: false, message: policy.message, status: policy.status };
     }
     const result =
       body.action === "create" && typeof body.hostname === "string"

@@ -307,6 +307,7 @@ export type TenantDomain = {
 export type TenantDomainListResult = {
   ok: true;
   domains: TenantDomain[];
+  redirectToPrimary?: boolean;
   setup?: TenantDomainSetup;
 };
 
@@ -339,6 +340,14 @@ export type TenantDomainPrimaryResult =
   | {
       ok: false;
       error: "domain_not_found" | "domain_not_verified" | "domain_reconciliation_busy";
+      status: 404 | 409 | 503;
+    };
+
+export type TenantDomainRedirectPolicyResult =
+  | { ok: true; redirectToPrimary: boolean }
+  | {
+      ok: false;
+      error: "tenant_not_found" | "domain_not_verified" | "domain_reconciliation_busy";
       status: 404 | 409 | 503;
     };
 

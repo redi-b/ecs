@@ -7,6 +7,7 @@ describe("primary domain redirects", () => {
   it("redirects a secondary custom hostname and preserves path/query", () => {
     const redirect = getPrimaryDomainRedirect({
       method: "GET",
+      redirectToPrimary: true,
       platformBaseDomain: "shops.ecs.example",
       primaryHostname: "shop.example.com",
       requestUrl: new URL("https://old.example.com/products/coffee?size=large"),
@@ -14,9 +15,21 @@ describe("primary domain redirects", () => {
     assert.equal(redirect?.href, "https://shop.example.com/products/coffee?size=large");
   });
 
+  it("serves secondary addresses independently unless redirection is explicitly enabled", () => {
+    const input = {
+      method: "GET",
+      platformBaseDomain: "shops.ecs.example",
+      primaryHostname: "abebe.shops.ecs.example",
+      requestUrl: new URL("https://shop.example.com/products"),
+    };
+    assert.equal(getPrimaryDomainRedirect(input), null);
+    assert.equal(getPrimaryDomainRedirect({ ...input, redirectToPrimary: false }), null);
+  });
+
   it("keeps the managed platform hostname available as a fallback", () => {
     const redirect = getPrimaryDomainRedirect({
       method: "GET",
+      redirectToPrimary: true,
       platformBaseDomain: "shops.ecs.example",
       primaryHostname: "shop.example.com",
       requestUrl: new URL("https://abebe.shops.ecs.example/products"),
@@ -27,6 +40,7 @@ describe("primary domain redirects", () => {
   it("never redirects mutations", () => {
     const redirect = getPrimaryDomainRedirect({
       method: "POST",
+      redirectToPrimary: true,
       platformBaseDomain: "shops.ecs.example",
       primaryHostname: "shop.example.com",
       requestUrl: new URL("https://old.example.com/actions/cart/update"),

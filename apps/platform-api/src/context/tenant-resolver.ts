@@ -12,6 +12,7 @@ export type DomainStatus = CustomDomainLifecycleStatus | "disabled";
 export type DomainVerificationStatus = "pending" | "verified" | "failed";
 
 export type TenantDomainRecord = {
+  redirectCustomDomainsToPrimary?: boolean;
   shopDetails?: unknown;
   domainId: string;
   hostname: string;
@@ -48,6 +49,7 @@ export type TenantDomainRecord = {
 };
 
 export type TenantContext = {
+  redirectToPrimary?: boolean;
   shopDetails?: ShopDetails | null;
   tenantId: string;
   tenantName: string;
@@ -206,6 +208,7 @@ export async function resolveTenantFromHost(
           ? normalizeHostname(record.primaryHostname)
           : hostname,
       domainId: record.domainId,
+      redirectToPrimary: record.redirectCustomDomainsToPrimary === true,
       status: record.tenantStatus,
       medusaStoreId: record.medusaStoreId,
       medusaSalesChannelId: record.medusaSalesChannelId,

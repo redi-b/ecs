@@ -67,6 +67,7 @@ export function registerPlatformStorefrontRoutes(
     return context.json({
       tenant: {
         id: result.context.tenantId,
+        redirectToPrimary: result.context.redirectToPrimary === true,
         name: result.context.tenantName,
         handle: result.context.tenantHandle,
         status: result.context.status,

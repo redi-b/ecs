@@ -11,6 +11,7 @@ type Dependencies = Pick<
   | "listTenantDomains"
   | "removeTenantDomain"
   | "setTenantPrimaryDomain"
+  | "setTenantDomainRedirectPolicy"
   | "verifyTenantDomainOwnership"
 >;
 
@@ -18,6 +19,33 @@ export function registerPlatformTenantDomainRoutes(
   app: Hono<{ Variables: PlatformAppVariables }>,
   options: Dependencies,
 ) {
+  app.post("/platform/tenants/:tenantId/domains/redirect-policy", async (context) => {
+    if (!options.setTenantDomainRedirectPolicy)
+      return context.json({ error: "domains_unavailable" }, 503);
+    const session = await options.getSession?.(context.req.raw.headers);
+    if (!session) return context.json({ error: "auth_required" }, 401);
+    const tenantId = context.req.param("tenantId");
+    if (!z.string().uuid().safeParse(tenantId).success)
+      return context.json({ error: "tenant_invalid" }, 400);
+    const authorization = await options.authorizeDashboardForTenant?.({
+      tenantId,
+      userId: session.user.id,
+      permission: { domains: ["manage"] },
+    });
+    if (!authorization?.ok) return context.json({ error: "dashboard_forbidden" }, 403);
+    const body = await getJsonBody(context.req.raw);
+    const parsed = z.object({ redirectToPrimary: z.boolean() }).safeParse(body);
+    if (!parsed.success) return context.json({ error: "domain_policy_invalid" }, 400);
+    const result = await options.setTenantDomainRedirectPolicy({
+      ...parsed.data,
+      tenantId,
+      userId: session.user.id,
+    });
+    context.header("Cache-Control", "private, no-store");
+    return result.ok
+      ? context.json({ redirectToPrimary: result.redirectToPrimary })
+      : context.json({ error: result.error }, result.status);
+  });
   app.delete("/platform/tenants/:tenantId/domains/:domainId", async (context) => {
     if (!options.removeTenantDomain) return context.json({ error: "domains_unavailable" }, 503);
     const session = await options.getSession?.(context.req.raw.headers);
@@ -73,6 +101,7 @@ export function registerPlatformTenantDomainRoutes(
 
     return context.json({
       domains: result.domains,
+      redirectToPrimary: result.redirectToPrimary === true,
       ...(result.setup ? { setup: result.setup } : {}),
     });
   });

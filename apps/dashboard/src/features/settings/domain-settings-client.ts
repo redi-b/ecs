@@ -1,6 +1,7 @@
 import {
   platformErrorSchema,
   tenantDomainListResponseSchema,
+  tenantDomainRedirectPolicySchema,
   tenantDomainRemovalResponseSchema,
   tenantDomainResponseSchema,
 } from "@ecs/contracts";
@@ -8,7 +9,8 @@ import { getTenantScopedPath } from "@/lib/dashboard-tenant-context";
 
 export type DomainSettingsAction =
   | { action: "create"; hostname: string }
-  | { action: "verify" | "primary" | "remove"; domainId: string };
+  | { action: "verify" | "primary" | "remove"; domainId: string }
+  | { action: "redirect-policy"; redirectToPrimary: boolean };
 
 export class DomainSettingsError extends Error {
   constructor(
@@ -66,6 +68,11 @@ export async function mutateDomainSettings(
     const parsed = tenantDomainRemovalResponseSchema.safeParse(body);
     if (!parsed.success) throw new DomainSettingsError("domain_response_invalid", 502);
     return { kind: "removal" as const, status: parsed.data.status };
+  }
+  if (options.action.action === "redirect-policy") {
+    const parsed = tenantDomainRedirectPolicySchema.safeParse(body);
+    if (!parsed.success) throw new DomainSettingsError("domain_response_invalid", 502);
+    return { kind: "redirect-policy" as const, redirectToPrimary: parsed.data.redirectToPrimary };
   }
   const parsed = tenantDomainResponseSchema.safeParse(body);
   if (!parsed.success) throw new DomainSettingsError("domain_response_invalid", 502);

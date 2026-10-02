@@ -381,6 +381,7 @@ const app = createPlatformApp({
   verifyTenantDomainOwnership: domainManagementService.verifyTenantDomainOwnership,
   selectStorefrontTemplate: storefrontTemplateService.selectStorefrontTemplate,
   setTenantPrimaryDomain: domainManagementService.setTenantPrimaryDomain,
+  setTenantDomainRedirectPolicy: domainManagementService.setTenantDomainRedirectPolicy,
   submitPaymentOnboarding: paymentOnboardingService.submitPaymentOnboarding,
   updateTenantShopSettings,
   upsertNotificationPreference: notificationService.upsertNotificationPreference,

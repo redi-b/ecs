@@ -108,6 +108,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           delivery={delivery?.ok ? delivery.delivery : null}
           domains={domains?.ok ? domains.domains : []}
           domainSetup={domains?.ok ? domains.setup : undefined}
+          domainRedirectToPrimary={domains?.ok ? domains.redirectToPrimary : undefined}
           domainsLoadFailed={Boolean(domains && !domains.ok)}
           initialSection={resolvedSearchParams.section}
           payments={payments?.ok ? payments.payment : null}

@@ -9,9 +9,17 @@ import { AppIcons } from "@/components/app/icons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import {
   SectionIntro,
   SettingsPanel,
@@ -36,11 +44,13 @@ export function DomainsSection({
   tenantId,
   initialDomains,
   initialSetup,
+  initialRedirectToPrimary = false,
   initialLoadFailed = false,
 }: {
   tenantId: string;
   initialDomains: TenantDomainContract[];
   initialSetup?: TenantDomainSetup | undefined;
+  initialRedirectToPrimary?: boolean | undefined;
   initialLoadFailed?: boolean | undefined;
 }) {
   const { t, formatDateTime } = useI18n();
@@ -58,6 +68,7 @@ export function DomainsSection({
           initialData: {
             domains: initialDomains,
             ...(initialSetup ? { setup: initialSetup } : {}),
+            redirectToPrimary: initialRedirectToPrimary,
           },
         }),
     refetchOnWindowFocus: true,
@@ -71,7 +82,9 @@ export function DomainsSection({
   });
   const [hostname, setHostname] = useState("");
   const [invalid, setInvalid] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [removing, setRemoving] = useState<TenantDomainContract | null>(null);
+  const [setupDomain, setSetupDomain] = useState<TenantDomainContract | null>(null);
   const mutationGuard = useRef(false);
   const mutation = useMutation({
     mutationFn: (action: DomainSettingsAction) => mutateDomainSettings({ tenantId, action }),
@@ -130,8 +143,12 @@ export function DomainsSection({
         else toast.message(t("settings.domains.removingNotice"));
       } else if (action.action === "create") {
         if (!renewal) setHostname("");
+        if (!renewal) setAddDialogOpen(false);
+        if (result.kind === "domain") setSetupDomain(result.domain);
         toast.success(t(renewal ? "settings.domains.renewed" : "settings.domains.created"));
       } else if (action.action === "primary") toast.success(t("settings.domains.primaryChanged"));
+      else if (action.action === "redirect-policy")
+        toast.success(t("settings.domains.redirectPolicySaved"));
       else toast.success(t("settings.domains.ownershipVerified"));
       await client.invalidateQueries({ queryKey });
     } catch (error) {
@@ -190,71 +207,111 @@ export function DomainsSection({
         </Alert>
       ) : null}
       {query.data ? (
-        <SettingsPanel
-          title={t("settings.domains.connectTitle")}
-          description={setup?.enabled && setup.entitled ? t("settings.domains.limit") : undefined}
-        >
+        <>
+          <SettingsPanel
+            title={t("settings.domains.connectTitle")}
+            description={setup?.enabled && setup.entitled ? t("settings.domains.limit") : undefined}
+            action={
+              setup?.enabled && setup.entitled ? (
+                <Button type="button" size="sm" onClick={() => setAddDialogOpen(true)}>
+                  <AppIcons.link aria-hidden />
+                  {t("settings.domains.add")}
+                </Button>
+              ) : null
+            }
+          >
+            {setup?.enabled && setup.entitled ? (
+              <p className="text-sm text-muted-foreground">
+                {t("settings.domains.addDescription")}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  setup?.enabled && !setup.entitled
+                    ? "settings.domains.accessRequired"
+                    : "settings.domains.disabled",
+                )}
+              </p>
+            )}
+          </SettingsPanel>
           {setup?.enabled && setup.entitled ? (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                const normalized = normalizeDomainInput(hostname);
-                setInvalid(!normalized);
-                if (normalized) void act({ action: "create", hostname: normalized });
-              }}
-              className="space-y-3"
+            <SettingsPanel
+              title={t("settings.domains.redirectPolicyTitle")}
+              description={t("settings.domains.redirectPolicyDescription")}
+              action={
+                <Switch
+                  checked={query.data.redirectToPrimary}
+                  disabled={busy}
+                  onCheckedChange={(checked) =>
+                    void act({ action: "redirect-policy", redirectToPrimary: checked })
+                  }
+                />
+              }
             >
-              <Field data-invalid={invalid || undefined}>
-                <FieldLabel htmlFor={hostnameId}>{t("settings.domains.hostname")}</FieldLabel>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    id={hostnameId}
-                    name="hostname"
-                    value={hostname}
-                    onChange={(event) => {
-                      setHostname(event.target.value);
-                      if (invalid) setInvalid(false);
-                    }}
-                    placeholder="shop.example.com"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    aria-invalid={invalid}
-                    aria-describedby={invalid ? `${errorId} ${hintId}` : hintId}
-                    disabled={busy || customCount >= 2}
-                  />
-                  <Button type="submit" disabled={busy || customCount >= 2 || !hostname.trim()}>
-                    {busy && mutation.variables?.action === "create" ? (
-                      <Spinner aria-label={t("settings.domains.adding")} />
-                    ) : (
-                      <AppIcons.link aria-hidden />
-                    )}
-                    {t(
-                      busy && mutation.variables?.action === "create"
-                        ? "settings.domains.adding"
-                        : "settings.domains.add",
-                    )}
-                  </Button>
-                </div>
-                <FieldDescription id={hintId}>
-                  {t("settings.domains.hostnameHint")}
-                </FieldDescription>
-                {invalid ? (
-                  <FieldError id={errorId}>{t("settings.domains.hostnameInvalid")}</FieldError>
-                ) : null}
-              </Field>
-              <p className="text-xs text-muted-foreground">{t("settings.domains.dnsOnly")}</p>
-            </form>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t(
-                setup?.enabled && !setup.entitled
-                  ? "settings.domains.accessRequired"
-                  : "settings.domains.disabled",
-              )}
-            </p>
-          )}
-        </SettingsPanel>
+              <p className="text-sm text-muted-foreground">
+                {t("settings.domains.redirectPolicyHint")}
+              </p>
+            </SettingsPanel>
+          ) : null}
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{t("settings.domains.addTitle")}</DialogTitle>
+                <DialogDescription>{t("settings.domains.addDescription")}</DialogDescription>
+              </DialogHeader>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const normalized = normalizeDomainInput(hostname);
+                  setInvalid(!normalized);
+                  if (normalized) void act({ action: "create", hostname: normalized });
+                }}
+                className="flex flex-col gap-3"
+              >
+                <Field data-invalid={invalid || undefined}>
+                  <FieldLabel htmlFor={hostnameId}>{t("settings.domains.hostname")}</FieldLabel>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id={hostnameId}
+                      name="hostname"
+                      value={hostname}
+                      onChange={(event) => {
+                        setHostname(event.target.value);
+                        if (invalid) setInvalid(false);
+                      }}
+                      placeholder="shop.example.com"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      aria-invalid={invalid}
+                      aria-describedby={invalid ? `${errorId} ${hintId}` : hintId}
+                      disabled={busy || customCount >= 2}
+                    />
+                    <Button type="submit" disabled={busy || customCount >= 2 || !hostname.trim()}>
+                      {busy && mutation.variables?.action === "create" ? (
+                        <Spinner aria-label={t("settings.domains.adding")} />
+                      ) : (
+                        <AppIcons.link aria-hidden />
+                      )}
+                      {t(
+                        busy && mutation.variables?.action === "create"
+                          ? "settings.domains.adding"
+                          : "settings.domains.add",
+                      )}
+                    </Button>
+                  </div>
+                  <FieldDescription id={hintId}>
+                    {t("settings.domains.hostnameHint")}
+                  </FieldDescription>
+                  {invalid ? (
+                    <FieldError id={errorId}>{t("settings.domains.hostnameInvalid")}</FieldError>
+                  ) : null}
+                </Field>
+                <p className="text-xs text-muted-foreground">{t("settings.domains.dnsOnly")}</p>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </>
       ) : null}
       {domains.map((domain) => {
         const managed = domain.type === "platform_subdomain";
@@ -317,56 +374,87 @@ export function DomainsSection({
                   </p>
                 ) : null}
                 {!removingDomain ? (
-                  <details open={!usable} className="group space-y-3">
-                    <summary className="cursor-pointer text-sm font-medium focus-visible:outline-ring">
-                      {t("settings.domains.setup")}
-                    </summary>
-                    {domain.verificationChallenge ? (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">{t("settings.domains.txtTitle")}</p>
-                        {record(
-                          t("settings.domains.recordName"),
-                          domain.verificationChallenge.recordName,
-                        )}
-                        {record(
-                          t("settings.domains.recordValue"),
-                          domain.verificationChallenge.recordValue,
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {t("settings.domains.keepTxt")}
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSetupDomain(domain)}
+                    >
+                      {t(
+                        status === "active"
+                          ? "settings.domains.viewSetup"
+                          : "settings.domains.setup",
+                      )}
+                    </Button>
+                    <Dialog
+                      open={setupDomain?.id === domain.id}
+                      onOpenChange={(open) => !open && setSetupDomain(null)}
+                    >
+                      <DialogContent className="max-h-[min(90vh,44rem)] overflow-y-auto sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>{domain.hostname}</DialogTitle>
+                          <DialogDescription>
+                            {t("settings.domains.setupDescription")}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <p className="rounded-lg bg-muted/45 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                          {t("settings.domains.propagationHint")}
                         </p>
-                      </div>
-                    ) : null}
-                    {setup ? (
-                      <div className="space-y-2 border-t border-border/60 pt-3">
-                        <p className="text-xs font-medium">{t("settings.domains.routingTitle")}</p>
-                        {record(t("settings.domains.hostname"), domain.hostname)}
-                        {record("CNAME / ALIAS", setup.dnsTarget)}
-                        <p className="text-xs text-muted-foreground">
-                          {t("settings.domains.cname", { target: setup.dnsTarget })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t("settings.domains.apex", { target: setup.dnsTarget })}
-                        </p>
-                        {setup.ingressIpv4.length ? (
-                          <details>
-                            <summary className="cursor-pointer text-xs">A / IPv4</summary>
-                            <p className="pt-2 text-xs text-muted-foreground">
-                              {t("settings.domains.fallback", {
-                                addresses: setup.ingressIpv4.join(", "),
-                              })}
-                            </p>
-                          </details>
-                        ) : null}
-                        <p className="text-xs text-muted-foreground">
-                          {t("settings.domains.dnsOnly")}
-                        </p>
-                      </div>
-                    ) : null}
-                    <p className="text-xs text-muted-foreground">
-                      {t("settings.domains.txtPropagation")}
-                    </p>
-                  </details>
+                        <div className="flex flex-col gap-4">
+                          {domain.verificationChallenge ? (
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium">
+                                {t("settings.domains.txtTitle")}
+                              </p>
+                              {record(
+                                t("settings.domains.recordName"),
+                                domain.verificationChallenge.recordName,
+                              )}
+                              {record(
+                                t("settings.domains.recordValue"),
+                                domain.verificationChallenge.recordValue,
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {t("settings.domains.keepTxt")}
+                              </p>
+                            </div>
+                          ) : null}
+                          {setup ? (
+                            <div className="space-y-2 border-t border-border/60 pt-3">
+                              <p className="text-xs font-medium">
+                                {t("settings.domains.routingTitle")}
+                              </p>
+                              {record(t("settings.domains.hostname"), domain.hostname)}
+                              {record("CNAME / ALIAS", setup.dnsTarget)}
+                              <p className="text-xs text-muted-foreground">
+                                {t("settings.domains.cname", { target: setup.dnsTarget })}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {t("settings.domains.apex", { target: setup.dnsTarget })}
+                              </p>
+                              {setup.ingressIpv4.length ? (
+                                <details>
+                                  <summary className="cursor-pointer text-xs">A / IPv4</summary>
+                                  <p className="pt-2 text-xs text-muted-foreground">
+                                    {t("settings.domains.fallback", {
+                                      addresses: setup.ingressIpv4.join(", "),
+                                    })}
+                                  </p>
+                                </details>
+                              ) : null}
+                              <p className="text-xs text-muted-foreground">
+                                {t("settings.domains.dnsOnly")}
+                              </p>
+                            </div>
+                          ) : null}
+                          <p className="text-xs text-muted-foreground">
+                            {t("settings.domains.txtPropagation")}
+                          </p>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 ) : null}
                 {domain.diagnostics ? (
                   <p className="text-xs text-muted-foreground">
@@ -398,6 +486,26 @@ export function DomainsSection({
               ) : null}
               {!managed && !removingDomain ? (
                 <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || query.isFetching}
+                    onClick={async () => {
+                      await query.refetch();
+                      toast.success(t("settings.domains.statusRefreshed"));
+                    }}
+                  >
+                    {query.isFetching ? (
+                      <Spinner aria-label={t("settings.domains.refreshingStatus")} />
+                    ) : (
+                      <AppIcons.refresh aria-hidden />
+                    )}
+                    {t(
+                      query.isFetching
+                        ? "settings.domains.refreshingStatus"
+                        : "settings.domains.refreshStatus",
+                    )}
+                  </Button>
                   {expired ? (
                     <Button
                       size="sm"

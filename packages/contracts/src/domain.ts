@@ -78,8 +78,10 @@ export const tenantDomainSchema = z.object({
 });
 export const tenantDomainListResponseSchema = z.object({
   domains: z.array(tenantDomainSchema),
+  redirectToPrimary: z.boolean().default(false),
   setup: tenantDomainSetupSchema.optional(),
 });
+export const tenantDomainRedirectPolicySchema = z.object({ redirectToPrimary: z.boolean() });
 export const tenantDomainResponseSchema = z.object({ domain: tenantDomainSchema });
 export const tenantDomainRemovalResponseSchema = z.object({
   status: z.enum(["removed", "removing"]),

@@ -28,6 +28,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantDomainRedirectPolicyResult,
   TenantDomainRemovalResult,
   TenantDomainVerificationResult,
   TenantShopProvisioningResult,
@@ -250,6 +251,13 @@ export type PlatformCatalogOptions = {
         tenantId: string;
         userId: string;
       }) => Promise<TenantDomainPrimaryResult>)
+    | undefined;
+  setTenantDomainRedirectPolicy?:
+    | ((input: {
+        redirectToPrimary: boolean;
+        tenantId: string;
+        userId: string;
+      }) => Promise<TenantDomainRedirectPolicyResult>)
     | undefined;
   listMerchantProducts?:
     | ((input: {

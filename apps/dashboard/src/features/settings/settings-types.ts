@@ -17,6 +17,7 @@ export type Delivery = DeliverySettings["delivery"];
 export type SettingsWorkspaceProps = {
   delivery: Delivery | null;
   domains: TenantDomainContract[];
+  domainRedirectToPrimary?: boolean | undefined;
   domainSetup?: TenantDomainSetup | undefined;
   domainsLoadFailed?: boolean;
   initialSection?: string | undefined;
