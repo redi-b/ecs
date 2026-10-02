@@ -50,6 +50,7 @@
     "copy": "Copy link",
     "copied": "Copied",
     "copyFailed": "Couldn’t copy the storefront link.",
+    "settings": "Storefront settings",
     "published": "Published",
     "notPublished": "Not published",
     "publishedDescription": "Customers can visit this storefront.",

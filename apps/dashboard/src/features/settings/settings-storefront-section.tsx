@@ -110,6 +110,9 @@ export function StorefrontSection({
       }
 
       setIsPublished(false);
+      window.dispatchEvent(
+        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: false } }),
+      );
       toast.success(t("settings.storefront.pauseShopSuccess"));
       router.refresh();
     } catch {
@@ -144,6 +147,9 @@ export function StorefrontSection({
       }
 
       setIsPublished(true);
+      window.dispatchEvent(
+        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: true } }),
+      );
       setPublishedTemplateKey(activeKey);
       setHasUnpublishedChanges(false);
       toast.success(t("settings.storefront.publishShopSuccess"));
