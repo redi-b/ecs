@@ -45,6 +45,7 @@ export function createTenantRuntime(options: TenantRuntimeOptions) {
   });
   const getOnboardingState = createPlatformOnboardingStateService({
     db: options.db,
+    platformBaseDomain: options.platformBaseDomain,
     listTenantsForUser: options.listTenantsForUser,
   });
   const createTenantShop = createTenantShopProvisioningService({

@@ -16,6 +16,7 @@ import { allows, merchantPolicies } from "@/lib/access-policy";
 import { type DashboardSearchParams, getSelectedTenantId } from "@/lib/dashboard-tenant-context";
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { mapPlatformErrorMessage } from "@/lib/platform-api/errors";
+import { getStorefrontHostname } from "@/lib/storefront-hosts";
 import {
   getStorefrontTranslationFields,
   getStorefrontTranslationStatus,
@@ -73,6 +74,12 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
   const editorManifest = draft?.ok
     ? getStorefrontEditorManifest(draft.draft.templateKey)
     : undefined;
+  const managedPreviewHostname = access.ok
+    ? getStorefrontHostname(
+        access.access.tenant.handle,
+        process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me",
+      )
+    : null;
   const previewSession =
     draft?.ok && editorManifest?.previewMode === "iframe"
       ? await createStorefrontPreviewSession({
@@ -141,7 +148,7 @@ export default async function StorefrontEditorPage({ searchParams }: StorefrontE
             ),
             previewUrl: previewSession?.ok
               ? buildStorefrontPreviewUrl({
-                  hostname: access.access.domain.hostname,
+                  hostname: managedPreviewHostname ?? access.access.domain.hostname,
                   protocol: storefrontProtocol,
                   token: previewSession.token,
                 })

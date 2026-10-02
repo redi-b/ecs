@@ -81,7 +81,7 @@ export function registerPlatformTenantRoutes(
 
     return context.json(
       {
-        redirectTo: `http://${result.tenant.primaryDomain.hostname}/dashboard`,
+        redirectTo: `http://${result.tenant.handle}.${(process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me").replace(/^\.+|\.+$/g, "")}/dashboard`,
         tenant: result.tenant,
       },
       201,

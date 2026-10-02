@@ -20,10 +20,9 @@ export async function POST(request: Request) {
   }
 
   const protocol = getPublicProtocol(request);
-  const response = NextResponse.redirect(
-    getShopDashboardUrl(result.tenant.primaryDomain.hostname, protocol),
-    { status: 303 },
-  );
+  const response = NextResponse.redirect(getShopDashboardUrl(result.tenant.handle, protocol), {
+    status: 303,
+  });
   const domain = getSharedParentCookieDomain({
     hostname: request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
   });

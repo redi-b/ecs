@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     if (tenant.ok && isAvailableShop(tenant.tenant)) {
       const protocol = new URL(publicOrigin).protocol.replace(":", "");
       const redirect = NextResponse.redirect(
-        getShopDashboardUrl(tenant.tenant.primaryDomain.hostname, protocol),
+        getShopDashboardUrl(tenant.tenant.handle, protocol),
         303,
       );
       const domain = getSharedParentCookieDomain({
