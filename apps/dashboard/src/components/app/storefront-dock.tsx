@@ -3,6 +3,7 @@
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppIcons } from "@/components/app/icons";
+import Link from "@/components/app/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,7 @@ export function StorefrontDock({
   const { isMobile, setOpenMobile, state } = useSidebar();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [published, setPublished] = useState(storefrontPublished);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,8 +44,19 @@ export function StorefrontDock({
     ? t("common.viewDemo")
     : new URL(storefrontUrl).hostname;
   const statusLabel = t(
-    storefrontPublished ? "common.storefrontDock.published" : "common.storefrontDock.notPublished",
+    published ? "common.storefrontDock.published" : "common.storefrontDock.notPublished",
   );
+
+  useEffect(() => setPublished(storefrontPublished), [storefrontPublished]);
+  useEffect(() => {
+    const onPublicationChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ published?: boolean }>).detail;
+      if (typeof detail.published === "boolean") setPublished(detail.published);
+    };
+    window.addEventListener("ecs:storefront-publication-changed", onPublicationChange);
+    return () =>
+      window.removeEventListener("ecs:storefront-publication-changed", onPublicationChange);
+  }, []);
 
   useEffect(
     () => () => {
@@ -111,7 +124,7 @@ export function StorefrontDock({
                   aria-label={statusLabel}
                   className={cn(
                     "absolute top-1 right-1 hidden size-1.5 rounded-full ring-2 ring-sidebar group-data-[collapsible=icon]:block",
-                    storefrontPublished ? "bg-success" : "bg-muted-foreground/55",
+                    published ? "bg-success" : "bg-muted-foreground/55",
                   )}
                   data-storefront-status-collapsed
                   role="img"
@@ -123,7 +136,7 @@ export function StorefrontDock({
                       aria-label={statusLabel}
                       className={cn(
                         "ms-auto size-1.5 shrink-0 rounded-full group-data-[collapsible=icon]:hidden",
-                        storefrontPublished ? "bg-success" : "bg-muted-foreground/45",
+                        published ? "bg-success" : "bg-muted-foreground/45",
                       )}
                       data-storefront-status
                       role="img"
@@ -138,7 +151,7 @@ export function StorefrontDock({
             </PopoverTrigger>
             <PopoverContent
               align="end"
-              className="w-64 gap-0 overflow-hidden p-0"
+              className="w-72 gap-0 overflow-hidden rounded-2xl p-0"
               collisionPadding={12}
               onOpenAutoFocus={(event) => {
                 if (openedByHover.current) event.preventDefault();
@@ -152,30 +165,45 @@ export function StorefrontDock({
               side={isMobile ? "top" : "right"}
               sideOffset={collapsed ? 10 : 8}
             >
-              <PopoverHeader className="gap-1.5 border-b px-3 py-2.5">
+              <PopoverHeader className="gap-2 border-b bg-muted/20 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <PopoverTitle>{t("common.storefrontDock.title")}</PopoverTitle>
-                  <Badge variant={storefrontPublished ? "success" : "secondary"}>
-                    {t(
-                      storefrontPublished
-                        ? "common.storefrontDock.published"
-                        : "common.storefrontDock.notPublished",
-                    )}
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "size-2 shrink-0 rounded-full",
+                        published ? "bg-success" : "bg-muted-foreground/50",
+                      )}
+                    />
+                    <PopoverTitle className="truncate">
+                      {t("common.storefrontDock.title")}
+                    </PopoverTitle>
+                  </div>
+                  <Badge className="shrink-0" variant={published ? "success" : "secondary"}>
+                    {statusLabel}
                   </Badge>
                 </div>
-                <p className="truncate text-xs text-muted-foreground" title={displayAddress}>
+                <p
+                  className="truncate text-sm font-medium text-foreground/80"
+                  title={displayAddress}
+                >
                   {displayAddress}
                 </p>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   {t(
-                    storefrontPublished
+                    published
                       ? "common.storefrontDock.publishedDescription"
                       : "common.storefrontDock.notPublishedDescription",
                   )}
                 </p>
               </PopoverHeader>
-              <div className="grid grid-cols-2 gap-1 p-1.5">
-                <Button asChild className="justify-start" size="sm" variant="ghost">
+              <div className="grid grid-cols-2 gap-1.5 p-2">
+                <Button
+                  asChild
+                  className="h-9 justify-center rounded-full"
+                  size="sm"
+                  variant="ghost"
+                >
                   <a
                     href={storefrontUrl}
                     onClick={() => {
@@ -191,7 +219,7 @@ export function StorefrontDock({
                 </Button>
                 <Button
                   aria-live="polite"
-                  className="justify-start"
+                  className="h-9 justify-center rounded-full"
                   onClick={() => void copyLink()}
                   size="sm"
                   type="button"
@@ -203,6 +231,23 @@ export function StorefrontDock({
                     <AppIcons.copy data-icon="inline-start" />
                   )}
                   {t(copied ? "common.storefrontDock.copied" : "common.storefrontDock.copy")}
+                </Button>
+                <Button
+                  asChild
+                  className="col-span-2 h-9 justify-center rounded-full bg-muted/35 hover:bg-muted/60"
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Link
+                    href="/dashboard/settings?section=storefront"
+                    onClick={() => {
+                      setOpen(false);
+                      if (isMobile) setOpenMobile(false);
+                    }}
+                  >
+                    <AppIcons.settings data-icon="inline-start" />
+                    {t("common.storefrontDock.settings")}
+                  </Link>
                 </Button>
               </div>
             </PopoverContent>

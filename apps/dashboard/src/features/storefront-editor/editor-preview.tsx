@@ -136,7 +136,7 @@ function StorefrontIframePreview({
     const values: Record<string, unknown> = {};
     for (const section of manifest?.sections ?? []) {
       for (const field of section.fields)
-        values[field.path] = structuredClone(liveProps[field.prop as keyof StorefrontPageProps]);
+        values[field.path] = liveProps[field.prop as keyof StorefrontPageProps];
     }
     if (previewLocale === "am") {
       const translations = getEffectiveLocalizedTranslations(

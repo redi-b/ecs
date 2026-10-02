@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ export function StorefrontVisualEditor({
   onSave,
 }: StorefrontVisualEditorProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const initialData = useMemo(() => buildEditorData(draft), [draft]);
   const initialSnapshot = useMemo(() => serializeEditorData(initialData), [initialData]);
   const initialPublishedSnapshot = useMemo(() => {
@@ -186,6 +188,10 @@ export function StorefrontVisualEditor({
       setSavedSnapshot(snapshot);
       setPublishedSnapshot(snapshot);
       setIsLive(true);
+      window.dispatchEvent(
+        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: true } }),
+      );
+      router.refresh();
     })();
 
     setIsPending(true);
@@ -212,6 +218,10 @@ export function StorefrontVisualEditor({
       }
       setPublishedSnapshot(null);
       setIsLive(false);
+      window.dispatchEvent(
+        new CustomEvent("ecs:storefront-publication-changed", { detail: { published: false } }),
+      );
+      router.refresh();
     })();
 
     setIsPending(true);
