@@ -44,6 +44,7 @@ describe("merchant domains client", () => {
       {
         ok: true,
         domains: [diagnosed],
+        redirectToPrimary: false,
         setup,
       },
     );
@@ -70,7 +71,7 @@ describe("merchant domains client", () => {
       platformApiBaseUrl: "http://platform.local",
       tenantId: "tenant_1",
     });
-    assert.deepEqual(result, { ok: true, domains: [domain] });
+    assert.deepEqual(result, { ok: true, domains: [domain], redirectToPrimary: false });
   });
 
   it("posts normalized domain input to the tenant-scoped endpoint", async () => {

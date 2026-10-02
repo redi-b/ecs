@@ -22,6 +22,7 @@ export function createDomainTenantLookup(db: PlatformDb) {
         warningReason: domains.warningReason,
         verificationStatus: domains.verificationStatus,
         primaryDomainId: tenants.primaryDomainId,
+        redirectCustomDomainsToPrimary: tenants.redirectCustomDomainsToPrimary,
         tenantId: tenants.id,
         tenantName: tenants.name,
         shopDetails: tenants.shopDetails,

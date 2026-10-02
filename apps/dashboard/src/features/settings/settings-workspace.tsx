@@ -68,6 +68,7 @@ export function SettingsWorkspace({
   delivery,
   domains,
   domainSetup,
+  domainRedirectToPrimary,
   domainsLoadFailed,
   initialSection,
   payments,
@@ -524,6 +525,7 @@ export function SettingsWorkspace({
               tenantId={summary.tenant.id}
               initialDomains={domains}
               initialSetup={domainSetup}
+              initialRedirectToPrimary={domainRedirectToPrimary}
               initialLoadFailed={domainsLoadFailed}
             />
           ) : null}

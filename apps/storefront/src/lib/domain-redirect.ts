@@ -1,9 +1,11 @@
 export function getPrimaryDomainRedirect(input: {
   method: string;
+  redirectToPrimary?: boolean;
   platformBaseDomain: string;
   primaryHostname: string;
   requestUrl: URL;
 }) {
+  if (input.redirectToPrimary !== true) return null;
   if (input.method !== "GET" && input.method !== "HEAD") return null;
   const current = normalizeHostname(input.requestUrl.hostname);
   const primary = normalizeHostname(input.primaryHostname);

@@ -3,6 +3,7 @@ import {
   type TenantDomainContract,
   type TenantDomainSetup,
   tenantDomainListResponseSchema,
+  tenantDomainRedirectPolicySchema,
   tenantDomainRemovalResponseSchema,
   tenantDomainResponseSchema,
 } from "@ecs/contracts";
@@ -10,7 +11,12 @@ import {
 import { platformFetch } from "./client";
 
 export type MerchantDomainsResult =
-  | { ok: true; domains: TenantDomainContract[]; setup?: TenantDomainSetup }
+  | {
+      ok: true;
+      domains: TenantDomainContract[];
+      redirectToPrimary: boolean;
+      setup?: TenantDomainSetup;
+    }
   | { ok: false; message: string; status: number };
 export type MerchantDomainResult =
   | { ok: true; domain: TenantDomainContract }
@@ -32,9 +38,26 @@ export async function getMerchantDomains(options: CommonOptions): Promise<Mercha
     ? {
         ok: true,
         domains: parsed.data.domains,
+        redirectToPrimary: parsed.data.redirectToPrimary,
         ...(parsed.data.setup ? { setup: parsed.data.setup } : {}),
       }
     : { ok: false, message: "invalid_domains_response", status: 502 };
+}
+
+export async function setMerchantDomainRedirectPolicy(
+  options: CommonOptions & { redirectToPrimary: boolean },
+): Promise<
+  { ok: true; redirectToPrimary: boolean } | { ok: false; message: string; status: number }
+> {
+  const response = await domainFetch(options, "/redirect-policy", "POST", {
+    redirectToPrimary: options.redirectToPrimary,
+  });
+  const data = await response.json().catch(() => undefined);
+  if (!response.ok) return domainError(response, data);
+  const parsed = tenantDomainRedirectPolicySchema.safeParse(data);
+  return parsed.success
+    ? { ok: true, redirectToPrimary: parsed.data.redirectToPrimary }
+    : { ok: false, message: "invalid_domain_response", status: 502 };
 }
 
 export async function createMerchantDomain(

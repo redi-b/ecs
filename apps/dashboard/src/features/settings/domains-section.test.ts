@@ -66,12 +66,11 @@ function render(overrides: Record<string, unknown> = {}, locale: "en" | "am" = "
     client.clear();
   }
 }
-test("configured setup renders input, managed recovery and persistent DNS records without premature opening", () => {
+test("configured setup starts compact and keeps DNS instructions behind setup action", () => {
   const html = render();
-  assert.match(html, /name="hostname"/);
+  assert.doesNotMatch(html, /name="hostname"/);
   assert.match(html, /bolestyle.ecset.dev/);
-  assert.match(html, /ecs-owner-proof/);
-  assert.match(html, /domains.ecset.dev/);
+  assert.match(html, /View DNS details|Finish setup/);
   assert.doesNotMatch(html, /href="https:\/\/shop.example.com"/);
   assert.doesNotMatch(html, /Make primary/);
   assert.doesNotMatch(html, /aren’t available yet/);
@@ -82,7 +81,7 @@ test("only a fully active custom domain can open and become primary", () => {
   });
   assert.match(html, /href="https:\/\/shop.example.com"/);
   assert.match(html, /Make primary/);
-  assert.match(html, /ecs-owner-proof/);
+  assert.doesNotMatch(html, /ecs-owner-proof/);
 });
 test("load errors offer retry rather than an invented empty state", () => {
   const html = render({ initialDomains: [], initialLoadFailed: true });
@@ -94,7 +93,7 @@ test("disabled connection setup still exposes existing domain management", () =>
   const html = render({ initialSetup: { ...setup, enabled: false } });
   assert.doesNotMatch(html, /name="hostname"/);
   assert.match(html, /Remove domain/);
-  assert.match(html, /ecs-owner-proof/);
+  assert.doesNotMatch(html, /ecs-owner-proof/);
 });
 test("feature availability takes precedence over upgrade prompts and connection instructions", () => {
   const disabled = render({ initialSetup: { ...setup, enabled: false, entitled: false } });
@@ -161,7 +160,7 @@ test("actionable CAA diagnostic and grace deadline render in both locales", () =
       },
       locale,
     );
-    assert.match(html, /ecs-owner-proof/);
+    assert.doesNotMatch(html, /ecs-owner-proof/);
     assert.doesNotMatch(html, /settings\.domains\.|http01_not_allowed/);
     if (locale === "en") {
       assert.match(html, /HTTP-01/);

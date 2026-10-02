@@ -14,6 +14,7 @@ import type {
   TenantDomainCreateResult,
   TenantDomainListResult,
   TenantDomainPrimaryResult,
+  TenantDomainRedirectPolicyResult,
   TenantDomainVerificationResult,
 } from "../../types/index.js";
 import type { EntitlementDecision } from "../entitlements/service.js";
@@ -398,6 +399,11 @@ export function createDomainManagementService(
       });
     },
     listTenantDomains: async (input: { tenantId: string }): Promise<TenantDomainListResult> => {
+      const [tenant] = await db
+        .select({ redirectToPrimary: tenants.redirectCustomDomainsToPrimary })
+        .from(tenants)
+        .where(eq(tenants.id, input.tenantId))
+        .limit(1);
       const rows = await db
         .select({
           id: domains.id,
@@ -466,6 +472,7 @@ export function createDomainManagementService(
       return {
         ok: true,
         domains: domainsWithChallenges,
+        redirectToPrimary: tenant?.redirectToPrimary === true,
         setup: {
           enabled: options.customDomainsAvailable === true,
           entitled: (
@@ -589,5 +596,67 @@ export function createDomainManagementService(
         return { ok: true, domain: updatedDomain };
       });
     },
+    setTenantDomainRedirectPolicy: async (input: {
+      tenantId: string;
+      userId: string;
+      redirectToPrimary: boolean;
+    }): Promise<TenantDomainRedirectPolicyResult> =>
+      db.transaction(async (transaction): Promise<TenantDomainRedirectPolicyResult> => {
+        const lock = await transaction.execute(
+          sql`select pg_try_advisory_xact_lock(hashtextextended('ecs:custom-domain-reconciliation:v1', 0)) as acquired`,
+        );
+        if (lock.rows[0]?.acquired !== true)
+          return { ok: false, error: "domain_reconciliation_busy", status: 503 };
+        const [tenant] = await transaction
+          .select({
+            id: tenants.id,
+            redirectToPrimary: tenants.redirectCustomDomainsToPrimary,
+            primaryDomainId: tenants.primaryDomainId,
+          })
+          .from(tenants)
+          .where(eq(tenants.id, input.tenantId))
+          .limit(1);
+        if (!tenant) return { ok: false, error: "tenant_not_found", status: 404 };
+        if (tenant.redirectToPrimary === input.redirectToPrimary)
+          return { ok: true, redirectToPrimary: input.redirectToPrimary };
+        if (input.redirectToPrimary) {
+          if (!tenant.primaryDomainId)
+            return { ok: false, error: "domain_not_verified", status: 409 };
+          const [primary] = await transaction
+            .select({
+              status: domains.status,
+              verificationStatus: domains.verificationStatus,
+              sslStatus: domains.sslStatus,
+            })
+            .from(domains)
+            .where(
+              and(eq(domains.id, tenant.primaryDomainId), eq(domains.tenantId, input.tenantId)),
+            )
+            .limit(1);
+          if (
+            !primary ||
+            primary.status !== "active" ||
+            primary.verificationStatus !== "verified" ||
+            primary.sslStatus !== "active"
+          )
+            return { ok: false, error: "domain_not_verified", status: 409 };
+        }
+        await transaction
+          .update(tenants)
+          .set({
+            redirectCustomDomainsToPrimary: input.redirectToPrimary,
+            updatedAt: new Date(),
+          })
+          .where(eq(tenants.id, input.tenantId));
+        await transaction.insert(auditLogs).values({
+          actorUserId: input.userId,
+          tenantId: input.tenantId,
+          action: "domain.redirect_policy_changed",
+          targetType: "tenant",
+          targetId: input.tenantId,
+          metadata: { redirectToPrimary: input.redirectToPrimary },
+        });
+        return { ok: true, redirectToPrimary: input.redirectToPrimary };
+      }),
   };
 }

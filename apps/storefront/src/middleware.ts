@@ -91,9 +91,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
         method: context.request.method,
         platformBaseDomain,
         primaryHostname: configResult.config.tenant.primaryDomain.hostname,
+        redirectToPrimary: configResult.config.tenant.redirectToPrimary,
         requestUrl: context.url,
       });
-      if (target) return context.redirect(target.href, 308);
+      if (target) {
+        // A merchant-controlled preference must not be cached permanently by browsers.
+        const response = context.redirect(target.href, 307);
+        response.headers.set("Cache-Control", "private, no-store");
+        return response;
+      }
     }
     if (configResult.ok) {
       const settings = configResult.config.storefront.languageSettings;

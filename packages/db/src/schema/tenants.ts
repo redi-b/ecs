@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { tenantStatus } from "./enums.js";
 
@@ -28,6 +28,9 @@ export const tenants = pgTable("tenants", {
   shopDetails: jsonb("shop_details"),
   status: tenantStatus("status").notNull().default("draft"),
   primaryDomainId: uuid("primary_domain_id"),
+  redirectCustomDomainsToPrimary: boolean("redirect_custom_domains_to_primary")
+    .notNull()
+    .default(false),
   planId: uuid("plan_id"),
   medusaStoreId: text("medusa_store_id"),
   medusaSalesChannelId: text("medusa_sales_channel_id"),

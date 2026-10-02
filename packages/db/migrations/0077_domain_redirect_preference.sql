@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "redirect_custom_domains_to_primary" boolean DEFAULT false NOT NULL;
