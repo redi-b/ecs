@@ -16,6 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -322,22 +329,92 @@ export function DomainsSection({
         return (
           <SettingsPanel
             key={domain.id}
+            data-domain-row="true"
             title={<span className="break-all">{domain.hostname}</span>}
             description={managed ? t("settings.domains.ecsAddressDescription") : undefined}
             action={
-              <Badge
-                variant={
-                  managed || status === "active"
-                    ? "success"
-                    : status === "misconfigured" || status === "failed"
-                      ? "warning"
-                      : "secondary"
-                }
-              >
-                {managed
-                  ? t(domain.isPrimary ? "settings.domains.primary" : "settings.domains.notPrimary")
-                  : t(`settings.domains.states.${status}`)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={
+                    managed || status === "active"
+                      ? "success"
+                      : status === "misconfigured" || status === "failed"
+                        ? "warning"
+                        : "secondary"
+                  }
+                >
+                  {managed
+                    ? t(
+                        domain.isPrimary
+                          ? "settings.domains.primary"
+                          : "settings.domains.notPrimary",
+                      )
+                    : t(`settings.domains.states.${status}`)}
+                </Badge>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("settings.domains.refreshStatus")}
+                    >
+                      <AppIcons.more aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem disabled={!usable} asChild>
+                      <a
+                        href={`https://${domain.hostname}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {t("settings.domains.openAddress")}
+                        <AppIcons.externalLink />
+                      </a>
+                    </DropdownMenuItem>
+                    {usable && !domain.isPrimary ? (
+                      <DropdownMenuItem
+                        disabled={busy}
+                        onSelect={() => void act({ action: "primary", domainId: domain.id })}
+                      >
+                        {t("settings.domains.makePrimary")}
+                      </DropdownMenuItem>
+                    ) : null}
+                    {!managed && !removingDomain ? (
+                      <>
+                        <DropdownMenuItem onSelect={() => setSetupDomain(domain)}>
+                          {t(
+                            status === "active"
+                              ? "settings.domains.viewSetup"
+                              : "settings.domains.setup",
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={busy || query.isFetching}
+                          onSelect={() => void query.refetch()}
+                        >
+                          {t("settings.domains.refreshStatus")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={busy}
+                          onSelect={() => void act({ action: "verify", domainId: domain.id })}
+                        >
+                          {t("settings.domains.check")}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          disabled={busy}
+                          onSelect={() => setRemoving(domain)}
+                        >
+                          {t("settings.domains.remove")}
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             }
           >
             {!managed ? (
@@ -374,87 +451,71 @@ export function DomainsSection({
                   </p>
                 ) : null}
                 {!removingDomain ? (
-                  <>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSetupDomain(domain)}
-                    >
-                      {t(
-                        status === "active"
-                          ? "settings.domains.viewSetup"
-                          : "settings.domains.setup",
-                      )}
-                    </Button>
-                    <Dialog
-                      open={setupDomain?.id === domain.id}
-                      onOpenChange={(open) => !open && setSetupDomain(null)}
-                    >
-                      <DialogContent className="max-h-[min(90vh,44rem)] overflow-y-auto sm:max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>{domain.hostname}</DialogTitle>
-                          <DialogDescription>
-                            {t("settings.domains.setupDescription")}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <p className="rounded-lg bg-muted/45 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                          {t("settings.domains.propagationHint")}
+                  <Dialog
+                    open={setupDomain?.id === domain.id}
+                    onOpenChange={(open) => !open && setSetupDomain(null)}
+                  >
+                    <DialogContent className="max-h-[min(90vh,44rem)] overflow-y-auto sm:max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>{domain.hostname}</DialogTitle>
+                        <DialogDescription>
+                          {t("settings.domains.setupDescription")}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <p className="rounded-lg bg-muted/45 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                        {t("settings.domains.propagationHint")}
+                      </p>
+                      <div className="flex flex-col gap-4">
+                        {domain.verificationChallenge ? (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium">{t("settings.domains.txtTitle")}</p>
+                            {record(
+                              t("settings.domains.recordName"),
+                              domain.verificationChallenge.recordName,
+                            )}
+                            {record(
+                              t("settings.domains.recordValue"),
+                              domain.verificationChallenge.recordValue,
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {t("settings.domains.keepTxt")}
+                            </p>
+                          </div>
+                        ) : null}
+                        {setup ? (
+                          <div className="space-y-2 border-t border-border/60 pt-3">
+                            <p className="text-xs font-medium">
+                              {t("settings.domains.routingTitle")}
+                            </p>
+                            {record(t("settings.domains.hostname"), domain.hostname)}
+                            {record("CNAME / ALIAS", setup.dnsTarget)}
+                            <p className="text-xs text-muted-foreground">
+                              {t("settings.domains.cname", { target: setup.dnsTarget })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {t("settings.domains.apex", { target: setup.dnsTarget })}
+                            </p>
+                            {setup.ingressIpv4.length ? (
+                              <details>
+                                <summary className="cursor-pointer text-xs">A / IPv4</summary>
+                                <p className="pt-2 text-xs text-muted-foreground">
+                                  {t("settings.domains.fallback", {
+                                    addresses: setup.ingressIpv4.join(", "),
+                                  })}
+                                </p>
+                              </details>
+                            ) : null}
+                            <p className="text-xs text-muted-foreground">
+                              {t("settings.domains.dnsOnly")}
+                            </p>
+                          </div>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">
+                          {t("settings.domains.txtPropagation")}
                         </p>
-                        <div className="flex flex-col gap-4">
-                          {domain.verificationChallenge ? (
-                            <div className="space-y-2">
-                              <p className="text-xs font-medium">
-                                {t("settings.domains.txtTitle")}
-                              </p>
-                              {record(
-                                t("settings.domains.recordName"),
-                                domain.verificationChallenge.recordName,
-                              )}
-                              {record(
-                                t("settings.domains.recordValue"),
-                                domain.verificationChallenge.recordValue,
-                              )}
-                              <p className="text-xs text-muted-foreground">
-                                {t("settings.domains.keepTxt")}
-                              </p>
-                            </div>
-                          ) : null}
-                          {setup ? (
-                            <div className="space-y-2 border-t border-border/60 pt-3">
-                              <p className="text-xs font-medium">
-                                {t("settings.domains.routingTitle")}
-                              </p>
-                              {record(t("settings.domains.hostname"), domain.hostname)}
-                              {record("CNAME / ALIAS", setup.dnsTarget)}
-                              <p className="text-xs text-muted-foreground">
-                                {t("settings.domains.cname", { target: setup.dnsTarget })}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {t("settings.domains.apex", { target: setup.dnsTarget })}
-                              </p>
-                              {setup.ingressIpv4.length ? (
-                                <details>
-                                  <summary className="cursor-pointer text-xs">A / IPv4</summary>
-                                  <p className="pt-2 text-xs text-muted-foreground">
-                                    {t("settings.domains.fallback", {
-                                      addresses: setup.ingressIpv4.join(", "),
-                                    })}
-                                  </p>
-                                </details>
-                              ) : null}
-                              <p className="text-xs text-muted-foreground">
-                                {t("settings.domains.dnsOnly")}
-                              </p>
-                            </div>
-                          ) : null}
-                          <p className="text-xs text-muted-foreground">
-                            {t("settings.domains.txtPropagation")}
-                          </p>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 ) : null}
                 {domain.diagnostics ? (
                   <p className="text-xs text-muted-foreground">
@@ -465,99 +526,17 @@ export function DomainsSection({
                 ) : null}
               </>
             ) : null}
-            <div className="flex flex-wrap items-center gap-2">
+            <div
+              data-slot="domain-list"
+              className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+            >
+              <span>
+                {managed
+                  ? t("settings.domains.ecsAddressDescription")
+                  : t("settings.domains.propagationHint")}
+              </span>
               {usable ? (
-                <Button asChild size="sm" variant="outline">
-                  <a href={`https://${domain.hostname}`} target="_blank" rel="noopener noreferrer">
-                    {t("settings.domains.openAddress")}
-                    <AppIcons.externalLink aria-hidden />
-                  </a>
-                </Button>
-              ) : null}
-              {managed && usable && !domain.isPrimary ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => void act({ action: "primary", domainId: domain.id })}
-                >
-                  {t("settings.domains.makePrimary")}
-                </Button>
-              ) : null}
-              {!managed && !removingDomain ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy || query.isFetching}
-                    onClick={async () => {
-                      await query.refetch();
-                      toast.success(t("settings.domains.statusRefreshed"));
-                    }}
-                  >
-                    {query.isFetching ? (
-                      <Spinner aria-label={t("settings.domains.refreshingStatus")} />
-                    ) : (
-                      <AppIcons.refresh aria-hidden />
-                    )}
-                    {t(
-                      query.isFetching
-                        ? "settings.domains.refreshingStatus"
-                        : "settings.domains.refreshStatus",
-                    )}
-                  </Button>
-                  {expired ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy || !setup?.enabled || !setup.entitled}
-                      onClick={() =>
-                        void act({ action: "create", hostname: domain.hostname }, true)
-                      }
-                    >
-                      {t("settings.domains.renew")}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => void act({ action: "verify", domainId: domain.id })}
-                    >
-                      {busy &&
-                      mutation.variables?.action === "verify" &&
-                      mutation.variables.domainId === domain.id ? (
-                        <Spinner aria-label={t("settings.domains.checking")} />
-                      ) : (
-                        <AppIcons.refresh aria-hidden />
-                      )}
-                      {t("settings.domains.check")}
-                    </Button>
-                  )}
-                  {canUseDomain(domain) ? (
-                    domain.isPrimary ? (
-                      <Badge variant="outline">{t("settings.domains.primary")}</Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={busy}
-                        onClick={() => void act({ action: "primary", domainId: domain.id })}
-                      >
-                        {t("settings.domains.makePrimary")}
-                      </Button>
-                    )
-                  ) : null}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={busy}
-                    onClick={() => setRemoving(domain)}
-                  >
-                    {t("settings.domains.remove")}
-                  </Button>
-                </>
+                <span className="shrink-0">{t("settings.domains.openAddress")}</span>
               ) : null}
             </div>
           </SettingsPanel>

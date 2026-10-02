@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n/provider";
 import { persistSharedTheme } from "@/lib/shared-theme";
 import { changeThemeWithTransition } from "@/lib/theme-transition";
@@ -32,20 +33,24 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-lg"
-      aria-label={mounted ? label : t("common.toggleTheme")}
-      title={mounted ? label : t("common.toggleTheme")}
-      onClick={toggleTheme}
-    >
-      <Icon
-        className={cn(
-          "size-4 transition-[transform,opacity] duration-200 ease-[var(--ease-dashboard)]",
-          mounted ? "scale-100 opacity-100" : "scale-95 opacity-70",
-        )}
-      />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-lg"
+          aria-label={mounted ? label : t("common.toggleTheme")}
+          onClick={toggleTheme}
+        >
+          <Icon
+            className={cn(
+              "size-4 transition-[transform,opacity] duration-200 ease-[var(--ease-dashboard)]",
+              mounted ? "scale-100 opacity-100" : "scale-95 opacity-70",
+            )}
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{mounted ? label : t("common.toggleTheme")}</TooltipContent>
+    </Tooltip>
   );
 }

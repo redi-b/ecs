@@ -22,10 +22,15 @@ export function AppHeader({ demoMode = false }: { demoMode?: boolean }) {
       data-slot="app-header"
       className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur-md supports-backdrop-filter:bg-background/85 print:hidden dark:border-sidebar-border dark:bg-sidebar dark:backdrop-blur-none dark:supports-backdrop-filter:bg-sidebar sm:gap-3 sm:px-6"
     >
-      <SidebarTrigger
-        aria-label={t("common.toggleSidebar")}
-        className="size-9 shrink-0 rounded-full"
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SidebarTrigger
+            aria-label={t("common.toggleSidebar")}
+            className="size-9 shrink-0 rounded-full"
+          />
+        </TooltipTrigger>
+        <TooltipContent>{t("common.toggleSidebar")}</TooltipContent>
+      </Tooltip>
       <div
         aria-hidden="true"
         className="hidden h-5 w-px shrink-0 self-center bg-border/80 sm:block"

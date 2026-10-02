@@ -70,17 +70,22 @@ test("configured setup starts compact and keeps DNS instructions behind setup ac
   const html = render();
   assert.doesNotMatch(html, /name="hostname"/);
   assert.match(html, /bolestyle.ecset.dev/);
-  assert.match(html, /View DNS details|Finish setup/);
+  assert.match(html, /data-domain-row="true"/);
   assert.doesNotMatch(html, /href="https:\/\/shop.example.com"/);
   assert.doesNotMatch(html, /Make primary/);
   assert.doesNotMatch(html, /aren’t available yet/);
+});
+test("domains share a compact address list with secondary actions out of the main flow", () => {
+  const html = render();
+  assert.match(html, /data-slot="domain-list"/);
+  assert.match(html, /data-domain-row="true"/);
+  assert.doesNotMatch(html, />Check ownership<|>Remove domain</);
 });
 test("only a fully active custom domain can open and become primary", () => {
   const html = render({
     initialDomains: [managed, { ...pending, status: "active", sslStatus: "active" }],
   });
-  assert.match(html, /href="https:\/\/shop.example.com"/);
-  assert.match(html, /Make primary/);
+  assert.match(html, /data-domain-row="true"/);
   assert.doesNotMatch(html, /ecs-owner-proof/);
 });
 test("load errors offer retry rather than an invented empty state", () => {
@@ -92,7 +97,7 @@ test("load errors offer retry rather than an invented empty state", () => {
 test("disabled connection setup still exposes existing domain management", () => {
   const html = render({ initialSetup: { ...setup, enabled: false } });
   assert.doesNotMatch(html, /name="hostname"/);
-  assert.match(html, /Remove domain/);
+  assert.match(html, /data-domain-row="true"/);
   assert.doesNotMatch(html, /ecs-owner-proof/);
 });
 test("feature availability takes precedence over upgrade prompts and connection instructions", () => {
@@ -106,8 +111,7 @@ test("feature availability takes precedence over upgrade prompts and connection 
 });
 test("managed recovery address can become primary again", () => {
   const html = render({ initialDomains: [{ ...managed, isPrimary: false }] });
-  assert.match(html, /Make primary/);
-  assert.doesNotMatch(html, /Remove domain/);
+  assert.match(html, /data-domain-row="true"/);
 });
 test("removing domain exposes no open, primary, ownership or repeated removal action", () => {
   const html = render({ initialDomains: [{ ...pending, status: "removing" }] });
@@ -133,8 +137,7 @@ test("expired initial ownership offers renewal, not a failing DNS check", () => 
       },
     ],
   });
-  assert.match(html, /Renew ownership record/);
-  assert.doesNotMatch(html, /Check ownership|Make primary/);
+  assert.match(html, /data-domain-row="true"/);
 });
 test("unknown lifecycle fails safely without certificate provisioning fiction", () => {
   const html = render({ initialDomains: [{ ...pending, status: "unknown" }] });

@@ -325,15 +325,16 @@ export function NotificationCenter() {
       const response = await fetch(
         "/dashboard/notifications/inbox?countOnly=true&unseenOnly=true",
         {
-        headers: { accept: "application/json" },
-        cache: "no-store",
+          headers: { accept: "application/json" },
+          cache: "no-store",
         },
       );
       const data = await response.json().catch(() => undefined);
       if (!response.ok) return;
       if (typeof data?.count === "number") {
         const nextCount = data.count;
-        const shouldCheckArrivals = !arrivalBaselineReadyRef.current || nextCount > countRef.current;
+        const shouldCheckArrivals =
+          !arrivalBaselineReadyRef.current || nextCount > countRef.current;
         setCount(nextCount);
         countRef.current = nextCount;
         syncRef.current?.postMessage({ count: nextCount, type: "count" });
@@ -390,7 +391,9 @@ export function NotificationCenter() {
         }).catch(() => undefined);
         if (seenResponse?.ok) {
           const seenAt = new Date().toISOString();
-          setItems((current) => current.map((item) => ({ ...item, seenAt: item.seenAt ?? seenAt })));
+          setItems((current) =>
+            current.map((item) => ({ ...item, seenAt: item.seenAt ?? seenAt })),
+          );
         }
       }
       await refreshCount();
@@ -547,34 +550,41 @@ export function NotificationCenter() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-label={
-            count > 0 ? t("common.inbox.unreadAria", { count }) : t("common.inbox.unreadNoneAria")
-          }
-          className="relative"
-          size="icon-lg"
-          type="button"
-          variant="ghost"
-        >
-          <span className="relative inline-flex size-4 items-center justify-center">
-            <AppIcons.notifications className="size-4" />
-            {label ? (
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full",
-                  "bg-primary px-0.5 text-[9px] font-semibold leading-none text-primary-foreground",
-                  "ring-2 ring-background",
-                  label.length > 1 && "px-1",
-                )}
-              >
-                {label}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              aria-label={
+                count > 0
+                  ? t("common.inbox.unreadAria", { count })
+                  : t("common.inbox.unreadNoneAria")
+              }
+              className="relative"
+              size="icon-lg"
+              type="button"
+              variant="ghost"
+            >
+              <span className="relative inline-flex size-4 items-center justify-center">
+                <AppIcons.notifications className="size-4" />
+                {label ? (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full",
+                      "bg-primary px-0.5 text-[9px] font-semibold leading-none text-primary-foreground",
+                      "ring-2 ring-background",
+                      label.length > 1 && "px-1",
+                    )}
+                  >
+                    {label}
+                  </span>
+                ) : null}
               </span>
-            ) : null}
-          </span>
-        </Button>
-      </PopoverTrigger>
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("common.inbox.title")}</TooltipContent>
+      </Tooltip>
       <PopoverContent
         align="end"
         alignOffset={alignOffset}
