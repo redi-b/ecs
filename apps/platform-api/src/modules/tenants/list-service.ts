@@ -260,6 +260,7 @@ export function createTenantHandleAvailabilityService(options: {
 
 export function createPlatformOnboardingStateService(options: {
   db: PlatformDb;
+  platformBaseDomain: string;
   listTenantsForUser: (input: {
     limit: number;
     offset: number;
@@ -326,7 +327,7 @@ export function createPlatformOnboardingStateService(options: {
           : null,
         primaryTenant: primaryTenant?.primaryDomain.hostname
           ? {
-              dashboardUrl: `http://${primaryTenant.primaryDomain.hostname}/dashboard`,
+              dashboardUrl: `http://${getPlatformHostname(primaryTenant.handle, options.platformBaseDomain)}/dashboard`,
               handle: primaryTenant.handle,
               id: primaryTenant.id,
               primaryDomain: primaryTenant.primaryDomain.hostname,

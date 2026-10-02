@@ -24,6 +24,14 @@ const state = (tenants: PlatformTenant[]): PlatformOnboardingState => ({
 });
 
 describe("shop destination", () => {
+  it("never sends sign-in to a custom storefront primary", () => {
+    const tenant = shop("bolestyle");
+    tenant.primaryDomain.hostname = "cdecs.eclipticcreative.com";
+    assert.equal(
+      resolveShopDestination({ protocol: "https", state: state([tenant]) }).href,
+      "https://bolestyle.lvh.me/dashboard",
+    );
+  });
   it("opens an existing draft shop instead of offering to create another", () => {
     const destination = resolveShopDestination({
       protocol: "https",

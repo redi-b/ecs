@@ -104,7 +104,9 @@ export async function POST(request: Request) {
 
   const redirectTo =
     createResult.mutation.redirectTo ??
-    `http://${createResult.mutation.tenant.primaryDomain.hostname}/dashboard`;
+    `${new URL(process.env.DASHBOARD_PUBLIC_BASE_URL ?? "http://app.lvh.me").protocol}//${
+      createResult.mutation.tenant.handle
+    }.${(process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me").replace(/^\.+|\.+$/g, "")}/dashboard`;
 
   if (wantsJson) {
     return NextResponse.json({

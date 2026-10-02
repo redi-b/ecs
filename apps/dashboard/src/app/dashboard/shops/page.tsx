@@ -41,10 +41,7 @@ export default async function ShopPickerPage({ searchParams }: ShopPickerPagePro
   if (result.ok && shops.length === 0) redirect("/onboarding");
   if (result.ok && shops.length === 1 && shops[0]) {
     redirect(
-      getShopDashboardUrl(
-        shops[0].primaryDomain.hostname,
-        requestHeaders.get("x-forwarded-proto") ?? "http",
-      ),
+      getShopDashboardUrl(shops[0].handle, requestHeaders.get("x-forwarded-proto") ?? "http"),
     );
   }
 

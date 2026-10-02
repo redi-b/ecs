@@ -23,9 +23,13 @@ export function getOnboardingExit(destination: ShopDestination): string | null {
   return destination.kind === "onboarding" ? null : destination.href;
 }
 
-export function getShopDashboardUrl(hostname: string, protocol: string) {
+export function getShopDashboardUrl(handle: string, protocol: string, baseDomain?: string) {
   const normalizedProtocol = protocol.replace(":", "") === "https" ? "https" : "http";
-  return `${normalizedProtocol}://${hostname}/dashboard`;
+  const managedBaseDomain = (baseDomain ?? process.env.STOREFRONT_PUBLIC_BASE_DOMAIN ?? "lvh.me")
+    .trim()
+    .replace(/^\.+|\.+$/g, "")
+    .toLowerCase();
+  return `${normalizedProtocol}://${handle}.${managedBaseDomain}/dashboard`;
 }
 
 export function resolveShopDestination(input: {
@@ -60,7 +64,7 @@ function toShopDestination(
 ): ShopDestination {
   return {
     kind: "shop",
-    href: getShopDashboardUrl(tenant.primaryDomain.hostname, protocol),
+    href: getShopDashboardUrl(tenant.handle, protocol),
     tenantId: tenant.id,
   };
 }
