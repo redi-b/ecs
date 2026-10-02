@@ -213,6 +213,7 @@
     "routingTitle": "Point this hostname to ECS",
     "cname": "For a subdomain, add a CNAME record pointing to {target}.",
     "apex": "For a root domain, use ALIAS, ANAME, or a flattened CNAME pointing to {target}.",
+    "apexTitle": "Using a root domain?",
     "fallback": "If your provider does not support this, use an A record with {addresses}. If ECS moves, you may need to update this record.",
     "keepTxt": "Keep this TXT record while the domain is connected. It proves continuing ownership.",
     "remove": "Remove domain",
@@ -270,6 +271,10 @@
     "unavailableDescription": "Keep using your ECS shop address for now.",
     "unavailableNote": "We’ll let you know when custom domains are ready.",
     "ecsAddressDescription": "Your ECS shop address",
+    "ecsAddress": "ECS address",
+    "addressColumn": "Address",
+    "statusColumn": "Status",
+    "actionsColumn": "Domain actions",
     "legacyCustomDescription": "Previously connected custom address",
     "notPrimary": "Additional",
     "openAddress": "Open address",
@@ -294,6 +299,7 @@
     "primary": "Primary",
     "readyBadge": "Ready",
     "setup": "Finish setup",
+    "setupTitle": "Finish domain setup",
     "viewSetup": "View DNS details",
     "txtTitle": "Add this TXT record at your DNS provider",
     "recordName": "Record name",
@@ -309,7 +315,10 @@
     "redirectPolicyTitle": "Redirect custom addresses",
     "redirectPolicyDescription": "Choose whether additional custom addresses should send visitors to the primary custom address.",
     "redirectPolicyHint": "Off by default. Your ECS address remains available for recovery and is never redirected.",
-    "redirectPolicySaved": "Redirect preference saved."
+    "redirectPolicySaved": "Redirect preference saved.",
+    "redirectPolicyHelp": "About custom-domain redirects",
+    "redirectOn": "On",
+    "redirectOff": "Off"
   },
   "status": {
     "settingsUpdated": "Settings saved.",

@@ -1,9 +1,9 @@
 ---
 import Button from "../components/Button.astro"; import Layout from "../layouts/Layout.astro"; import { parseNexahubData } from "../lib"; import { STOREFRONT_LOCALE_HEADER } from "../../../../lib/storefront-locale"; import * as m from "../../../../paraglide/messages.js"; import "../styles/pages/secondary.scss";
-interface Props { data:unknown; themeTokens?:unknown; tenantName:string; deferCartCount?:boolean; }
-const {data,themeTokens,tenantName,deferCartCount=false}=Astro.props; const template=parseNexahubData(data); const {email,phone,address,socialLinks}=template.footer; const sent=Astro.url.searchParams.get("sent")==="1"; const submitError=Astro.url.searchParams.get("error"); const locale=Astro.request.headers.get(STOREFRONT_LOCALE_HEADER)==="am"?"am":"en";
+interface Props { data:unknown; themeTokens?:unknown; tenantName:string; deferCartCount?:boolean; demoMode?:boolean; }
+const {data,themeTokens,tenantName,deferCartCount=false,demoMode=false}=Astro.props; const template=parseNexahubData(data); const {email,phone,address,socialLinks}=template.footer; const sent=Astro.url.searchParams.get("sent")==="1"; const submitError=Astro.url.searchParams.get("error"); const locale=Astro.request.headers.get(STOREFRONT_LOCALE_HEADER)==="am"?"am":"en";
 ---
-<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount}>
+<Layout tenantName={tenantName} header={template.header} footer={template.footer} themeTokens={themeTokens} deferCartCount={deferCartCount} demoMode={demoMode}>
 <main class="nexa-secondary" id="main-content">
 <div class="container nexa-secondary__frame">
 <header class="nexa-secondary__hero">

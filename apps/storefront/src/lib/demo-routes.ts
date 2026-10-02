@@ -4,6 +4,8 @@ const selectableDemoSlugs = new Set(
   selectableStorefrontTemplates.map((template) => template.slug.toLowerCase()),
 );
 
+export const STOREFRONT_DEMO_TEMPLATE_COOKIE = "ecs_demo_template";
+
 export function isStorefrontDemoPath(pathname: string) {
   return pathname === "/demo" || pathname.startsWith("/demo/");
 }
@@ -35,4 +37,24 @@ export function resolveBrandedStorefrontDemoPath({
   if (!selectableDemoSlugs.has(slug)) return null;
   const suffix = pathname.slice(rawSlug.length + 1);
   return `/demo/storefront/${slug}${suffix}`;
+}
+
+export function resolveCookieStorefrontDemoPath({
+  demoHost,
+  hostname,
+  pathname,
+  templateSlug,
+}: {
+  demoHost?: string | null;
+  hostname: string;
+  pathname: string;
+  templateSlug?: string | null;
+}) {
+  const expectedHost = demoHost?.trim().toLowerCase();
+  const slug = templateSlug?.trim().toLowerCase();
+  if (!expectedHost || hostname.trim().toLowerCase() !== expectedHost) return null;
+  if (!slug || !selectableDemoSlugs.has(slug)) return null;
+  if (!pathname.startsWith("/") || pathname.startsWith("//") || isStorefrontDemoPath(pathname))
+    return null;
+  return `/demo/storefront/${slug}${pathname === "/" ? "" : pathname}`;
 }

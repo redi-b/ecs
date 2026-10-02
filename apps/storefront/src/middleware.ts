@@ -1,5 +1,10 @@
 import { defineMiddleware } from "astro:middleware";
-import { isStorefrontDemoPath, resolveBrandedStorefrontDemoPath } from "./lib/demo-routes.js";
+import {
+  isStorefrontDemoPath,
+  resolveBrandedStorefrontDemoPath,
+  resolveCookieStorefrontDemoPath,
+  STOREFRONT_DEMO_TEMPLATE_COOKIE,
+} from "./lib/demo-routes.js";
 import { getPrimaryDomainRedirect } from "./lib/domain-redirect.js";
 import {
   getPlatformApiBaseUrl,
@@ -25,14 +30,35 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // This identity-only endpoint must not be localized, canonicalized or made
   // dependent on ordinary admission while certificate activation is pending.
   if (context.url.pathname === "/.well-known/ecs-domain-verification") return next();
+  const demoHost = getStorefrontDemoHost(import.meta.env.STOREFRONT_DEMO_HOST);
   const brandedDemoPath = resolveBrandedStorefrontDemoPath({
-    demoHost: getStorefrontDemoHost(import.meta.env.STOREFRONT_DEMO_HOST),
+    demoHost,
     hostname: context.url.hostname,
     pathname: context.url.pathname,
   });
   if (brandedDemoPath) {
     const target = new URL(context.url);
     target.pathname = brandedDemoPath;
+    const response = await context.rewrite(target);
+    context.cookies.set(STOREFRONT_DEMO_TEMPLATE_COOKIE, brandedDemoPath.split("/")[3] ?? "", {
+      httpOnly: false,
+      path: "/",
+      sameSite: "lax",
+      secure: context.url.protocol === "https:",
+    });
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
+  const cookieDemoPath = resolveCookieStorefrontDemoPath({
+    demoHost,
+    hostname: context.url.hostname,
+    pathname: context.url.pathname,
+    templateSlug: context.cookies.get(STOREFRONT_DEMO_TEMPLATE_COOKIE)?.value,
+  });
+  if ((context.request.method === "GET" || context.request.method === "HEAD") && cookieDemoPath) {
+    const target = new URL(context.url);
+    target.pathname = cookieDemoPath;
     const response = await context.rewrite(target);
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;

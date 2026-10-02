@@ -319,17 +319,7 @@ const afroClientMessages = {
       </header>
 
       {demoMode && (
-        <aside class="demo-banner" role="status">
-          <strong>Template preview</strong>
-          <nav aria-label="Preview pages">
-            <a href="/demo/storefront/afro">Home</a>
-            <a href="/demo/storefront/afro/products">Shop</a>
-            <a href="/demo/storefront/afro/products/suede-zip-jacket">Product</a>
-            <a href="/demo/storefront/afro/checkout">Checkout</a>
-            <a href="/demo/storefront/afro/order-confirmation">Receipt</a>
-          </nav>
-          <span>Shopping actions are disabled</span>
-        </aside>
+        <aside class="demo-badge" role="status">Preview mode</aside>
       )}
 
       <slot />
@@ -438,21 +428,6 @@ const afroClientMessages = {
       window.__ECS_AFRO_MESSAGES__ = afroClientMessages;
     </script>
 
-    <script is:inline>
-      if (document.body.dataset.demoMode === 'true') {
-        const prefix = '/demo/storefront/afro';
-        document.addEventListener('submit', (event) => { event.preventDefault(); });
-        document.addEventListener('click', (event) => {
-          const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
-          if (!(link instanceof HTMLAnchorElement)) return;
-          const path = link.getAttribute('href') || '';
-          if (path === '/') link.href = prefix;
-          else if (path === '/products' || path.startsWith('/products/')) link.href = `${prefix}${path}`;
-          else if (['/cart','/checkout'].includes(path)) link.href = `${prefix}${path}`;
-        });
-      }
-    </script>
-
     <script>
       import { initAfroStorefront } from "../scripts/client";
       initAfroStorefront();
@@ -461,9 +436,7 @@ const afroClientMessages = {
 </html>
 
 <style>
-  .demo-banner { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.5rem; background: #1c120d; color: #fffbf8; font-size: 0.85rem; }
-  .demo-banner nav { display: flex; gap: 1rem; }
-  .demo-banner nav a { color: #ff720a; text-decoration: underline; }
+  .demo-badge { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 1000; padding: 0.4rem 0.7rem; border: 1px solid color-mix(in srgb, var(--afro-ink, currentColor) 20%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--afro-bg, currentColor) 92%, transparent); box-shadow: 0 8px 24px color-mix(in srgb, var(--afro-ink, currentColor) 14%, transparent); color: var(--afro-ink, currentColor); font-size: 0.7rem; letter-spacing: 0.04em; pointer-events: none; }
   .wordmark { display: block; font-size: 1.25rem; font-weight: 700; color: var(--afro-primary-link, #923e00); line-height: 1; }
   .wordmark--footer { color: inherit; font-size: 1.5rem; }
 </style>

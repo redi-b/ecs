@@ -71,6 +71,7 @@ export function SettingsPanel({
   children,
   className,
   contentClassName,
+  "data-domain-row": dataDomainRow,
 }: {
   title: ReactNode;
   description?: ReactNode;
@@ -78,9 +79,14 @@ export function SettingsPanel({
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  "data-domain-row"?: string;
 }) {
   return (
-    <Card className={cn("overflow-visible", className)} size="sm">
+    <Card
+      className={cn("overflow-visible", className)}
+      size="sm"
+      {...(dataDomainRow ? { "data-domain-row": dataDomainRow } : {})}
+    >
       <CardHeader
         className={cn(
           "flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 pb-3",

@@ -13,6 +13,7 @@ import {
 import { type AppLocale, getLocaleLabel, isAppLocale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function LanguageSwitcher() {
   const { isLocalePending, locale, setLocale, t } = useI18n();
@@ -28,22 +29,27 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          aria-busy={isLocalePending}
-          aria-label={isLocalePending ? t("language.switching") : t("language.change")}
-          className="min-w-9 tabular-nums"
-          disabled={isLocalePending}
-          size="icon-lg"
-          variant="ghost"
-        >
-          {isLocalePending ? (
-            <AppIcons.loader className="size-4 animate-spin" data-icon="inline-start" />
-          ) : (
-            <span aria-hidden="true" className="text-xs font-semibold uppercase">
-              {locale}
-            </span>
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-busy={isLocalePending}
+              aria-label={isLocalePending ? t("language.switching") : t("language.change")}
+              className="min-w-9 tabular-nums"
+              disabled={isLocalePending}
+              size="icon-lg"
+              variant="ghost"
+            >
+              {isLocalePending ? (
+                <AppIcons.loader className="size-4 animate-spin" data-icon="inline-start" />
+              ) : (
+                <span aria-hidden="true" className="text-xs font-semibold uppercase">
+                  {locale}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("language.change")}</TooltipContent>
+        </Tooltip>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>{t("language.label")}</DropdownMenuLabel>
@@ -58,11 +64,7 @@ export function LanguageSwitcher() {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         {isLocalePending ? (
-          <p
-            className={cn(
-              "flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground",
-            )}
-          >
+          <p className={cn("flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground")}>
             <AppIcons.loader className="size-3.5 animate-spin" />
             {t("language.switching")}
           </p>

@@ -7,6 +7,7 @@ import {
   getSelectableStorefrontDemoSlugs,
   isStorefrontDemoPath,
   resolveBrandedStorefrontDemoPath,
+  resolveCookieStorefrontDemoPath,
 } from "./demo-routes";
 
 test("storefront demo routes have an explicit middleware bypass", () => {
@@ -66,6 +67,30 @@ test("unknown, unreleased, malformed, and merchant-host demo paths are rejected"
       hostname: "bole-style.ecs.et",
       pathname: "/luvia",
     }),
+    null,
+  );
+});
+
+test("a demo template cookie keeps ordinary navigation inside the selected template", () => {
+  const base = { demoHost: "demo.ecs.et", hostname: "demo.ecs.et", templateSlug: "nexahub" };
+  assert.equal(
+    resolveCookieStorefrontDemoPath({ ...base, pathname: "/products" }),
+    "/demo/storefront/nexahub/products",
+  );
+  assert.equal(
+    resolveCookieStorefrontDemoPath({ ...base, pathname: "/contact" }),
+    "/demo/storefront/nexahub/contact",
+  );
+  assert.equal(
+    resolveCookieStorefrontDemoPath({ ...base, pathname: "/" }),
+    "/demo/storefront/nexahub",
+  );
+  assert.equal(
+    resolveCookieStorefrontDemoPath({ ...base, pathname: "/demo/storefront/nexahub/products" }),
+    null,
+  );
+  assert.equal(
+    resolveCookieStorefrontDemoPath({ ...base, templateSlug: "unknown", pathname: "/products" }),
     null,
   );
 });

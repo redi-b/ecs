@@ -368,6 +368,11 @@ export function CommandCenter({ placement = "header" }: { placement?: "header" |
             {t("commandCenter.openAria")}
           </TooltipContent>
         </Tooltip>
+      ) : placement === "header" ? (
+        <Tooltip>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipContent>{t("commandCenter.openAria")}</TooltipContent>
+        </Tooltip>
       ) : (
         trigger
       )}
