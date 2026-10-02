@@ -41,6 +41,7 @@
   "selectedCount": "{count} selected",
   "headers": {
     "order": "Order",
+    "orderCode": "Order code",
     "customer": "Customer",
     "total": "Total",
     "payment": "Payment",

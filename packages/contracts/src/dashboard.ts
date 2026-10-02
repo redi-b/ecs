@@ -163,12 +163,21 @@ export const merchantDashboardSummarySchema = z.object({
         z.object({
           id: z.string().min(1),
           displayId: z.number().int().nullable(),
+          customerName: z.string().nullable().optional(),
+          customerPhone: z.string().nullable().optional(),
           email: z.string().min(1).nullable(),
           total: z.number().nullable(),
           currencyCode: z.string().min(1).nullable(),
           paymentStatus: z.string().min(1).nullable(),
           fulfillmentStatus: z.string().min(1).nullable(),
           createdAt: z.string().min(1).nullable(),
+          products: z.array(
+            z.object({
+              id: z.string(),
+              title: z.string().nullable(),
+              thumbnail: z.string().nullable(),
+            }),
+          ).optional(),
         }),
       ),
       unavailable: z.array(z.string().min(1)),

@@ -29,6 +29,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -37,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatOrderReference } from "@/features/orders/order-domain";
 import type { ChartMetric, MerchantOverviewProps } from "@/features/overview/overview-config";
 import { chartColorConfig } from "@/features/overview/overview-config";
 import {
@@ -56,6 +56,7 @@ import {
   type OverviewRangePreset,
 } from "@/features/overview/overview-range";
 import { WaitingOrders } from "@/features/overview/waiting-orders";
+import { formatRecentOrderCustomer } from "@/features/overview/recent-order-customer";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
 import { dashboardRoutes } from "@/lib/routes";
@@ -70,6 +71,64 @@ function formatOverviewPaymentStatus(paymentStatus: string, t: (key: MessageKey)
     return t("overview.paymentStatus.failed");
   }
   return t("overview.paymentStatus.unpaid");
+}
+
+function RecentOrderProducts({
+  order,
+}: {
+  order: NonNullable<MerchantDashboardSummary["operations"]>["recentOrders"][number];
+}) {
+  const { t } = useI18n();
+  const products = order.products ?? [];
+  const first = products[0];
+  const extra = Math.max(0, products.length - 1);
+  const [open, setOpen] = useState(false);
+  if (!first) {
+    return <span className="text-xs text-muted-foreground">{t("overview.recent.orderItems")}</span>;
+  }
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <div className="flex min-w-0 items-center gap-2">
+        <PopoverTrigger asChild>
+          <button
+            className="relative flex h-8 w-10 shrink-0 items-center"
+            type="button"
+            aria-label={t("overview.recent.orderItems")}
+          >
+            {products.slice(0, 3).map((product, index) => (
+              <span
+                className="absolute flex size-7 items-center justify-center overflow-hidden rounded-md border border-foreground/10 bg-muted ring-2 ring-card"
+                key={product.id}
+                style={{ left: `${index * 0.45}rem`, zIndex: 3 - index }}
+              >
+                {product.thumbnail ? (
+                  <img alt="" className="size-full object-cover" src={product.thumbnail} />
+                ) : (
+                  <AppIcons.products aria-hidden className="size-4 text-muted-foreground" />
+                )}
+              </span>
+            ))}
+          </button>
+        </PopoverTrigger>
+        <span className="min-w-0 truncate font-medium">
+          {first.title ?? t("overview.recent.orderItems")}
+        </span>
+        {extra ? <span className="shrink-0 text-xs text-muted-foreground">+{extra}</span> : null}
+      </div>
+      <PopoverContent align="start" className="w-72 p-2">
+        <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">
+          {t("overview.recent.orderItems")}
+        </p>
+        <ul className="space-y-1">
+          {products.map((product) => (
+            <li className="truncate rounded-md px-1 py-1 text-sm" key={product.id}>
+              {product.title ?? t("overview.recent.orderItems")}
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 type MixView = "payment" | "fulfillment" | "lifecycle" | "customers";
@@ -335,6 +394,35 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
   ];
   const activeMix = mixViews.find((view) => view.id === mixView) ?? mixViews[0]!;
   const billingNotice = getBillingNotice(summary, t, formatDate);
+  const storefrontStages = storefrontActivity
+    ? [
+        {
+          label: t("overview.storefrontActivity.visits"),
+          value: storefrontActivity.visits,
+        },
+        {
+          label: t("overview.storefrontActivity.productViews"),
+          value: storefrontActivity.productViewVisits,
+        },
+        {
+          label: t("overview.storefrontActivity.addedToCart"),
+          value: storefrontActivity.addToCartVisits,
+        },
+        {
+          label: t("overview.storefrontActivity.checkouts"),
+          value: storefrontActivity.checkoutVisits,
+        },
+      ].map((stage) => ({
+        ...stage,
+        share: Math.min(
+          100,
+          Math.max(0, (stage.value / Math.max(1, storefrontActivity.visits)) * 100),
+        ),
+      }))
+    : [];
+  const storefrontCheckoutRate = storefrontActivity
+    ? Math.round((storefrontActivity.checkoutVisits / Math.max(1, storefrontActivity.visits)) * 100)
+    : 0;
 
   return (
     <section className="flex flex-col gap-4" aria-label={t("overview.aria.section")}>
@@ -354,20 +442,31 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
       {billingNotice ? (
         <Alert
           className={cn(
-            "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
-            billingNotice.tone === "warning" && "border-destructive/40",
+            "grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2.5 sm:px-3.5",
+            billingNotice.tone === "warning"
+              ? "border-destructive/25 bg-destructive/6"
+              : "border-warning/30 bg-warning/8",
           )}
         >
+          <span
+            className={cn(
+              "flex size-8 items-center justify-center rounded-full",
+              billingNotice.tone === "warning"
+                ? "bg-destructive/12 text-destructive"
+                : "bg-warning/15 text-warning dark:text-warning",
+            )}
+          >
+            {billingNotice.tone === "warning" ? (
+              <AppIcons.error aria-hidden className="size-4" />
+            ) : (
+              <AppIcons.time aria-hidden className="size-4" />
+            )}
+          </span>
           <div className="min-w-0">
             <AlertTitle>{billingNotice.title}</AlertTitle>
             <AlertDescription>{billingNotice.description}</AlertDescription>
           </div>
-          <Button
-            asChild
-            className="shrink-0 self-start sm:self-center"
-            size="sm"
-            variant="outline"
-          >
+          <Button asChild className="shrink-0" size="sm" variant="outline">
             <Link href={previewHref(dashboardRoutes.billing)} prefetch={false}>
               {t("overview.billing.openBilling")}
             </Link>
@@ -439,37 +538,71 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
               </span>
             </div>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3 pt-3">
+          <CardContent className="flex flex-col gap-2.5 pt-3">
             {hasStorefrontActivity ? (
-              <div className="grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border">
-                {[
-                  {
-                    label: t("overview.storefrontActivity.visits"),
-                    value: storefrontActivity.visits,
-                  },
-                  {
-                    label: t("overview.storefrontActivity.productViews"),
-                    value: storefrontActivity.productViewVisits,
-                  },
-                  {
-                    label: t("overview.storefrontActivity.addedToCart"),
-                    value: storefrontActivity.addToCartVisits,
-                  },
-                  {
-                    label: t("overview.storefrontActivity.checkouts"),
-                    value: storefrontActivity.checkoutVisits,
-                  },
-                ].map((item) => (
-                  <div
-                    className="flex min-w-0 flex-col justify-center gap-1 bg-card px-3 py-3"
-                    key={item.label}
-                  >
-                    <span className="truncate text-xs text-muted-foreground">{item.label}</span>
-                    <span className="font-mono text-xl font-semibold tabular-nums">
-                      {formatNumber(item.value, locale)}
-                    </span>
+              <div className="flex flex-col gap-3 py-1">
+                <div className="flex items-end justify-between gap-6 border-b border-border/60 px-1 pb-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground">{storefrontStages[0]?.label}</p>
+                    <p className="mt-1 font-mono text-2xl font-semibold tracking-tight tabular-nums">
+                      {formatNumber(storefrontStages[0]?.value ?? 0, locale)}
+                    </p>
                   </div>
-                ))}
+                  <div className="min-w-28 pb-1 text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {t("overview.storefrontActivity.checkoutRate")}
+                    </p>
+                    <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
+                      {formatNumber(storefrontCheckoutRate, locale)}%
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className="relative mx-1 h-5"
+                  aria-label={t("overview.storefrontActivity.visitorJourney")}
+                  title={t("overview.storefrontActivity.visitorJourney")}
+                >
+                  <span className="absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-border" />
+                  <AppIcons.arrowRight
+                    aria-hidden
+                    className="absolute top-1/2 left-1/4 size-3 -translate-x-1/2 -translate-y-1/2 bg-card text-muted-foreground"
+                  />
+                  <AppIcons.arrowRight
+                    aria-hidden
+                    className="absolute top-1/2 left-3/4 size-3 -translate-x-1/2 -translate-y-1/2 bg-card text-muted-foreground"
+                  />
+                  {storefrontStages.slice(1).map((stage, index) => (
+                    <span
+                      className="absolute top-1/2 flex size-3 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-card bg-primary"
+                      key={stage.label}
+                      style={{
+                        left: `${(index / Math.max(1, storefrontStages.slice(1).length - 1)) * 100}%`,
+                      }}
+                    >
+                      <span
+                        className="size-1 rounded-full bg-primary-foreground"
+                        style={{ opacity: Math.max(0.35, stage.share / 100) }}
+                      />
+                    </span>
+                  ))}
+                </div>
+                <ol
+                  aria-label={t("overview.storefrontActivity.title")}
+                  className="grid grid-cols-3 gap-3 px-1 text-center"
+                >
+                  {storefrontStages.slice(1).map((stage) => (
+                    <li className="flex min-w-0 flex-col items-center gap-2" key={stage.label}>
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="min-h-8 text-xs leading-4 text-muted-foreground">
+                          {stage.label}
+                        </span>
+                        <span className="font-mono text-base font-semibold tabular-nums">
+                          {formatNumber(stage.value, locale)}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
               </div>
             ) : (
               <div className="flex flex-1 flex-col justify-center rounded-lg border border-dashed px-4 py-5">
@@ -485,15 +618,17 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
                 </p>
               </div>
             )}
-            <div className="flex justify-end border-t pt-2.5">
-              <Link
-                className="text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                href={previewHref(dashboardRoutes.insights)}
-                prefetch={false}
-              >
-                {t("overview.storefrontActivity.viewInsights")}
-              </Link>
-            </div>
+            <Link
+              className="group flex items-center justify-between border-t pt-3 text-xs font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-2 focus-visible:outline-ring"
+              href={previewHref(dashboardRoutes.insights)}
+              prefetch={false}
+            >
+              <span>{t("overview.storefrontActivity.viewInsights")}</span>
+              <AppIcons.arrowRight
+                aria-hidden
+                className="size-4 transition-transform group-hover:translate-x-0.5"
+              />
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -829,33 +964,35 @@ export function MerchantOverview({ demoMode = false, summary }: MerchantOverview
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card className="flex flex-col gap-0">
           <CardHeader className="border-b pb-3">
             <CardTitle>{t("overview.recent.title")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-1 pt-3">
+          <CardContent className="flex flex-1 flex-col justify-start gap-1 pt-1">
             {(operations?.recentOrders.length ?? 0) > 0 ? (
-              <div className="flex flex-1 flex-col gap-0.5">
+              <div className="flex flex-col gap-0.5">
                 {operations?.recentOrders.map((order) => (
                   <Link
-                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/50"
+                    className="group flex items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-sm transition-colors hover:border-border hover:bg-muted/35"
                     href={previewHref(dashboardRoutes.orderDetail(order.id))}
                     key={order.id}
                     prefetch={false}
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">
-                        {formatOrderReference({ id: order.id })}
-                      </span>
+                    <span className="min-w-0 flex-1">
+                      <RecentOrderProducts order={order} />
                       <span className="block truncate text-xs text-muted-foreground">
-                        {order.email ?? t("overview.recent.noEmail")}
-                        {order.paymentStatus
-                          ? ` · ${formatOverviewPaymentStatus(order.paymentStatus, t)}`
-                          : ""}
+                        {formatRecentOrderCustomer(order) ?? t("overview.recent.noCustomer")}
                       </span>
                     </span>
-                    <span className="shrink-0 font-mono text-xs tabular-nums">
-                      {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
+                    <span className="shrink-0 text-right">
+                      <span className="block font-mono text-xs font-medium tabular-nums">
+                        {formatMoney(order.total, order.currencyCode ?? currencyCode, locale)}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        {order.paymentStatus
+                          ? formatOverviewPaymentStatus(order.paymentStatus, t)
+                          : t("overview.recent.noPaymentStatus")}
+                      </span>
                     </span>
                   </Link>
                 ))}

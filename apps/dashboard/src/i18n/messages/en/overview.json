@@ -92,6 +92,8 @@
     "productViews": "Product views",
     "addedToCart": "Added to cart",
     "checkouts": "Checkout starts",
+    "checkoutRate": "Checkout conversion",
+    "visitorJourney": "Visitor journey",
     "emptyTitle": "No storefront activity yet",
     "emptyDescription": "Visits and shopping activity will appear here when customers use your storefront.",
     "unavailableTitle": "Storefront activity is unavailable",
@@ -152,12 +154,15 @@
     "repeatCustomers": "Repeat"
   },
   "recent": {
+    "orderItems": "Order items",
     "title": "Recent orders",
     "description": "Latest orders for this shop.",
     "empty": "New orders will show up here as they arrive.",
     "emptyTitle": "No recent orders",
     "viewAll": "View all orders",
-    "noEmail": "No email"
+    "noEmail": "No email",
+    "noCustomer": "No customer details",
+    "noPaymentStatus": "Payment status unavailable"
   },
   "paymentStatus": {
     "paid": "Paid",

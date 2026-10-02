@@ -30,6 +30,7 @@ import {
   OrderPaymentCell,
   OrderPlacedCell,
   OrderProgressBadge,
+  OrderReferenceCell,
 } from "@/features/orders/order-table-cells";
 import type { MessageKey } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
@@ -153,6 +154,14 @@ function getOrderColumns(
       cell: ({ row }) => <OrderCustomerCell order={row.original} />,
     },
     {
+      id: "reference",
+      accessorFn: (order) => formatOrderReference(order),
+      header: ({ column }) => (
+        <DataTableHeader column={column} title={t("table.headers.orderCode")} />
+      ),
+      cell: ({ row }) => <OrderReferenceCell order={row.original} />,
+    },
+    {
       id: "total",
       accessorFn: (order) => order.total ?? 0,
       header: ({ column }) => <DataTableHeader column={column} title={t("table.headers.total")} />,
@@ -221,6 +230,11 @@ export function OrdersTable({
   const orderRowActions = useCallback(
     (order: MerchantOrder) => getOrderRowActions(order, t, tenantId),
     [t, tenantId],
+  );
+  const orderRowHref = useCallback(
+    (order: MerchantOrder) =>
+      readOnly ? null : getTenantScopedPath(dashboardRoutes.orderDetail(order.id), tenantId),
+    [readOnly, tenantId],
   );
 
   const pushFilters = useCallback(
@@ -427,6 +441,7 @@ export function OrdersTable({
       filteredEmptyTitle={t("orders.table.filteredEmptyTitle")}
       footer={footer}
       getRowId={(row) => row.id}
+      getRowHref={orderRowHref}
       isFiltered={hasActiveFilters}
       isLoading={pending}
       {...(!readOnly ? { rowActions: orderRowActions } : {})}

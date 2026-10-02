@@ -12,10 +12,12 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DataTableBulkBar } from "@/components/app/data-table-bulk-bar";
+import { EcsArtwork } from "@/components/app/ecs-brand";
 import { AppIcons } from "@/components/app/icons";
 import { ListTableSkeleton } from "@/components/app/list-table-skeleton";
 import { PaginationBar } from "@/components/app/pagination-bar";
@@ -32,13 +34,9 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { EcsArtwork } from "@/components/app/ecs-brand";
 
 type DataTableProps<TData> = {
-  bulkActions?: (
-    selectedRows: TData[],
-    context: { clearSelection: () => void },
-  ) => React.ReactNode;
+  bulkActions?: (selectedRows: TData[], context: { clearSelection: () => void }) => React.ReactNode;
   columns: ColumnDef<TData>[];
   data: TData[];
   emptyMessage: string;
@@ -52,6 +50,8 @@ type DataTableProps<TData> = {
   /** Disable client sorting when rows are only one page of a server-owned result set. */
   enableSorting?: boolean;
   getRowId?: (row: TData) => string;
+  /** Optional destination for a row. Interactive descendants keep their own behavior. */
+  getRowHref?: (row: TData) => string | null | undefined;
   globalFilter?: string;
   isFiltered?: boolean;
   /** Server/filter navigation pending — show table skeleton instead of “Updating…”. */
@@ -83,6 +83,7 @@ export function DataTable<TData>({
   footer,
   enableSorting = true,
   getRowId,
+  getRowHref,
   globalFilter,
   isFiltered = false,
   isLoading = false,
@@ -95,6 +96,7 @@ export function DataTable<TData>({
   embedded = false,
 }: DataTableProps<TData>) {
   const { t } = useI18n();
+  const router = useRouter();
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.noRowsTitle");
   const resolvedFilteredEmptyTitle = filteredEmptyTitle ?? t("table.empty.noMatchingRowsTitle");
   const resolvedSelectedSummaryLabel = selectedSummaryLabel ?? t("common.selected");
@@ -272,11 +274,39 @@ export function DataTable<TData>({
               </TableHeader>
               <TableBody>
                 {rows.map((row) => {
+                  const rowHref = getRowHref?.(row.original) ?? null;
+                  const navigateRow = () => {
+                    if (rowHref) router.push(rowHref);
+                  };
                   const tableRow = (
                     <TableRow
-                      className="group/row border-border/50 transition-colors hover:bg-muted/35 data-[state=selected]:bg-primary/[0.06] data-[state=selected]:hover:bg-primary/10"
+                      aria-label={rowHref ? t("table.actions.viewDetails") : undefined}
+                      className={cn(
+                        "group/row border-border/50 transition-colors hover:bg-muted/35 data-[state=selected]:bg-primary/[0.06] data-[state=selected]:hover:bg-primary/10",
+                        rowHref &&
+                          "cursor-pointer focus-visible:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                      )}
                       data-state={row.getIsSelected() ? "selected" : undefined}
+                      onClick={
+                        rowHref
+                          ? (event) => {
+                              if (!shouldNavigateFromRowClick(event)) return;
+                              navigateRow();
+                            }
+                          : undefined
+                      }
+                      onKeyDown={
+                        rowHref
+                          ? (event) => {
+                              if (isRowInteractiveTarget(event.target)) return;
+                              if (event.key !== "Enter" && event.key !== " ") return;
+                              event.preventDefault();
+                              navigateRow();
+                            }
+                          : undefined
+                      }
                       key={row.id}
+                      tabIndex={rowHref ? 0 : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isSticky =
@@ -397,4 +427,25 @@ function getStickyColumnClass(columnId: string, isHeader: boolean, isSelected = 
   }
 
   return isHeader ? "z-30" : "";
+}
+
+const rowInteractiveSelector =
+  "a,button,input,select,textarea,[role=button],[data-row-interactive], [contenteditable=true]";
+
+export function isRowInteractiveTarget(target: EventTarget | null) {
+  return (
+    typeof Element !== "undefined" &&
+    target instanceof Element &&
+    Boolean(target.closest(rowInteractiveSelector))
+  );
+}
+
+export function shouldNavigateFromRowClick(event: React.MouseEvent<HTMLElement>) {
+  if (event.button !== 0 || event.defaultPrevented) return false;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  if (isRowInteractiveTarget(event.target)) return false;
+
+  // A drag-to-select should never unexpectedly open a record when the mouse is released.
+  if (globalThis.window?.getSelection()?.toString()) return false;
+  return true;
 }

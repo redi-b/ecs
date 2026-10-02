@@ -51,13 +51,13 @@
   },
   "billing": {
     "openBilling": "የክፍያ ገጹን ክፈት",
-    "paymentOverdue": "ክፍያ ጊዜው አልፏል",
+    "paymentOverdue": "የክፍያ ጊዜው አልፏል",
     "paymentOverdueDesc": "የዕቅድ ክፍያ በ{date} መከፈል ነበረበት። ለመጨረስ የክፍያ ገጹን ይክፈቱ።",
     "paymentDue": "ክፍያ ያስፈልጋል",
     "paymentDueDesc": "የዕቅድ ክፍያ እስከ {date} ድረስ መከፈል አለበት። ለመክፈል የክፍያ ገጹን ይክፈቱ።",
     "paymentDueNoDate": "ያልተከፈለ የዕቅድ ክፍያ አለዎት። ለመክፈል የክፍያ ገጹን ይክፈቱ።",
-    "paymentPastDue": "የተከፈለ ጊዜ አልቋል",
-    "paymentPastDueDesc": "የሚከፈል ዕቅድ ጊዜዎ አልቋል። ለመቀጠል የክፍያ ገጹን ይክፈቱ።",
+    "paymentPastDue": "የተከፈለበት ጊዜ አልቋል",
+    "paymentPastDueDesc": "የከፈሉበት የዕቅድ ጊዜ አልቋል። በዚህ ዕቅድ ለመቀጠል የክፍያ ገጹን ይክፈቱ።",
     "subscriptionCancelled": "ምዝገባ ተሰርዟል",
     "subscriptionCancelledDesc": "ይህ መደብር በሚከፈል ዕቅድ ላይ አይደለም። ዕቅድ ለመምረጥ የክፍያ ገጹን ይክፈቱ።",
     "periodEnding": "የዕቅድ ጊዜ በቅርብ ያበቃል",
@@ -92,6 +92,8 @@
     "productViews": "የምርት እይታዎች",
     "addedToCart": "ወደ ዘንቢል የተጨመሩ",
     "checkouts": "የተጀመሩ ትዕዛዞች",
+    "checkoutRate": "ወደ ክፍያ የደረሱ",
+    "visitorJourney": "ከምርት እይታ እስከ ትዕዛዝ መጀመር",
     "emptyTitle": "ገና የመደብር እንቅስቃሴ የለም",
     "emptyDescription": "ደንበኞች መደብሩን ሲጠቀሙ ጉብኝትና የግዢ እንቅስቃሴ እዚህ ይታያል።",
     "unavailableTitle": "የመደብር እንቅስቃሴ አልተገኘም",
@@ -140,7 +142,7 @@
   "mix": {
     "title": "ትዕዛዞች በሁኔታ",
     "payment": "ክፍያ",
-    "paymentDesc": "ክፍያ እንዴት እንደተከፈለ።",
+    "paymentDesc": "የቅርብ ጊዜ ትዕዛዞች የክፍያ ሁኔታ።",
     "paymentsTitle": "ክፍያ",
     "fulfillment": "ማስረከብ",
     "fulfillmentDesc": "ትዕዛዞች ከመጠናቀቃቸው በፊት ያሉበት ደረጃ።",
@@ -152,12 +154,15 @@
     "repeatCustomers": "ተመላሽ"
   },
   "recent": {
+    "orderItems": "የታዘዙ ዕቃዎች",
     "title": "የቅርብ ጊዜ ትዕዛዞች",
     "description": "ለዚህ ሱቅ የቅርብ ጊዜ ትዕዛዞች።",
     "empty": "ትዕዛዞች ሲመጡ እዚህ ይታያሉ።",
     "emptyTitle": "የቅርብ ጊዜ ትዕዛዝ የለም",
     "viewAll": "ሁሉንም ይመልከቱ",
-    "noEmail": "ኢሜይል የለም"
+    "noEmail": "ኢሜይል የለም",
+    "noCustomer": "የደንበኛ መረጃ የለም",
+    "noPaymentStatus": "የክፍያ ሁኔታ አልተገኘም"
   },
   "paymentStatus": {
     "paid": "የተከፈለ",

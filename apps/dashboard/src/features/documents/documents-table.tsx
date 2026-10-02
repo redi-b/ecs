@@ -177,6 +177,10 @@ export function DocumentsTable({
     }),
     [t],
   );
+  const documentRowHref = useCallback(
+    (document: MerchantOperationsDocumentSummary) => detailHref(document),
+    [],
+  );
 
   const columnsWithActions = useMemo<ColumnDef<MerchantOperationsDocumentSummary>[]>(
     () => [
@@ -203,6 +207,7 @@ export function DocumentsTable({
       filteredEmptyTitle={t("documents.filteredEmptyTitle")}
       footer={footer}
       getRowId={(document) => `${document.kind}:${document.id}`}
+      getRowHref={documentRowHref}
       isFiltered={Boolean(initialQuery || from || to || kind !== "all")}
       isLoading={pending}
       rowActions={rowActions}

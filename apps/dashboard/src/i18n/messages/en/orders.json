@@ -527,6 +527,8 @@
     "itemsCount": "{count} items",
     "itemFallback": "Item",
     "itemsMore": "{first} +{count} more",
+    "more": "more",
+    "items": "Items",
     "customerFallback": "Guest",
     "noCustomer": "No customer",
     "notAvailable": "Not available",

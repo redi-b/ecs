@@ -329,12 +329,24 @@ export function createMerchantDashboardSummary(
       recentOrders: orderRows.slice(0, 5).map((order) => ({
         id: order.id,
         displayId: order.displayId,
+        customerName:
+          order.delivery?.customerName ||
+          [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
+            .filter(Boolean)
+            .join(" ") ||
+          null,
+        customerPhone: order.delivery?.customerPhone || order.shippingAddress?.phone || null,
         email: order.email,
         total: order.total,
         currencyCode: order.currencyCode,
         paymentStatus: order.paymentStatus,
         fulfillmentStatus: order.fulfillmentStatus,
         createdAt: order.createdAt,
+        products: (order.items ?? []).map((item) => ({
+          id: item.id,
+          title: item.productTitle || item.title,
+          thumbnail: item.thumbnail,
+        })),
       })),
       unavailable,
     };
