@@ -4,7 +4,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
 import { initAuthAwareCtas } from "./auth-aware-cta";
-import { initGlobalFadeIns, initGlobalTextAnimations, revealAnimationTargets } from "./common";
+import { initGlobalFadeIns, initGlobalTextAnimations } from "./common";
 import { initPreloader } from "./components/preloader";
 import {
   initCtaSection,
@@ -18,7 +18,7 @@ import {
   initStorefrontSection,
   initTemplatesSection,
 } from "./pages/home";
-import { prefersReducedMotion, whenPageReady } from "./utils";
+import { whenPageReady } from "./utils";
 
 gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
 
@@ -33,15 +33,13 @@ gsap.defaults({
 
 let animationContext: gsap.Context | undefined;
 
-const lenis: Lenis | null = prefersReducedMotion()
-  ? null
-  : new Lenis({
-      lerp: 0.08,
-      smoothWheel: true,
-      syncTouch: true,
-      touchMultiplier: 1,
-      anchors: true,
-    });
+const lenis: Lenis = new Lenis({
+  lerp: 0.08,
+  smoothWheel: true,
+  syncTouch: true,
+  touchMultiplier: 1,
+  anchors: true,
+});
 
 if (lenis) {
   lenis.on("scroll", ScrollTrigger.update);
@@ -59,13 +57,6 @@ function initAnimationLayer(): void {
 
   animationContext = gsap.context(() => {
     const preloaderEl = document.querySelector<HTMLElement>(".preloader");
-
-    if (prefersReducedMotion()) {
-      if (preloaderEl) gsap.set(preloaderEl, { display: "none" });
-      revealAnimationTargets();
-      ScrollTrigger.refresh();
-      return;
-    }
 
     // 1. Initialize Hero timeline early (paused so elements snap to hidden states behind preloader)
     const heroTimeline = initHeroSection();
