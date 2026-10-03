@@ -18,7 +18,7 @@ import {
   subscriptions,
   tenants,
 } from "@ecs/db";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   BILLING_CAPABILITY_CATALOG,
@@ -728,6 +728,10 @@ export function createPlanAdministrationService(db: PlatformDb) {
           await transaction
             .update(subscriptions)
             .set({
+              // Feature and limit changes are effective for active subscribers
+              // immediately; the pinned commercial terms remain unchanged until
+              // the next renewal.
+              entitlementPlanVersionId: publication.version.id,
               renewalPlanVersionId: publication.version.id,
               renewalEffectiveAt: sql`
                 case when exists (
@@ -747,8 +751,7 @@ export function createPlanAdministrationService(db: PlatformDb) {
             .where(
               and(
                 eq(subscriptions.planId, input.planId),
-                ne(subscriptions.planVersionId, publication.version.id),
-                inArray(subscriptions.status, ["active", "past_due"]),
+                inArray(subscriptions.status, ["active", "trialing", "past_due"]),
               ),
             );
         }

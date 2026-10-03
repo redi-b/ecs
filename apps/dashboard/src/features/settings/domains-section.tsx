@@ -2,7 +2,7 @@
 
 import type { TenantDomainContract, TenantDomainSetup } from "@ecs/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useId, useRef, useState } from "react";
+import { Fragment, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { HelpTip } from "@/components/app/help-tip";
@@ -22,6 +22,14 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { SectionIntro, SettingsSectionBody } from "@/features/settings/settings-sections";
 import { useI18n } from "@/i18n/provider";
 import { copyTextToClipboard } from "@/lib/clipboard";
@@ -258,266 +266,300 @@ export function DomainsSection({
                 </Button>
               ) : null}
             </div>
-            <div className="hidden grid-cols-[minmax(0,1fr)_minmax(12rem,0.9fr)_auto] gap-4 bg-muted/25 px-4 py-2.5 text-xs font-medium text-muted-foreground sm:grid sm:px-5">
-              <span>{t("settings.domains.addressColumn")}</span>
-              <span>{t("settings.domains.statusColumn")}</span>
-              <span className="sr-only">{t("settings.domains.actionsColumn")}</span>
-            </div>
-            <div data-slot="domain-list">
-              {domains.map((domain) => {
-                const managed = domain.type === "platform_subdomain";
-                const status = domainConnectionStatus(domain);
-                const usable = canUseDomain(domain);
-                const removingDomain = status === "removing";
-                const expired = initialChallengeExpired(domain, Date.now());
-                const needsSetup = !managed && !usable && !removingDomain;
-                const stateText = managed
-                  ? t(domain.isPrimary ? "settings.domains.primary" : "settings.domains.notPrimary")
-                  : t(`settings.domains.states.${status}`);
-                const StatusIcon =
-                  managed || status === "active"
-                    ? AppIcons.check
-                    : status === "misconfigured" || status === "failed"
-                      ? AppIcons.error
-                      : status === "removing"
-                        ? AppIcons.loader
-                        : AppIcons.time;
-                const detail = managed
-                  ? t("settings.domains.ecsAddressDescription")
-                  : expired
-                    ? t("settings.domains.expired")
-                    : domain.diagnostics
-                      ? t(`settings.domains.diagnostics.${domain.diagnostics.reason}`)
-                      : status === "active"
-                        ? t("settings.domains.ready")
-                        : status === "pending_verification"
-                          ? t("settings.domains.waitingOwnership")
-                          : status === "pending_dns"
-                            ? t("settings.domains.waitingDns")
-                            : status === "pending_certificate"
-                              ? t("settings.domains.waitingCertificate")
-                              : status === "removing"
-                                ? t("settings.domains.removingNotice")
-                                : t("settings.domains.actionFailed");
-                return (
-                  <div
-                    key={domain.id}
-                    data-domain-row="true"
-                    className="grid gap-3 border-t border-border/70 px-4 py-4 first:border-t-0 transition-colors hover:bg-muted/20 motion-reduce:transition-none sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.9fr)_auto] sm:items-center sm:gap-4 sm:px-5"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="min-w-0 break-all text-sm font-medium">
-                          {domain.hostname}
-                        </span>
-                        {managed ? (
-                          <Badge variant="outline" className="shrink-0">
-                            {t("settings.domains.ecsAddress")}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{detail}</p>
-                      {domain.warningGraceExpiresAt ? (
-                        <p className="text-xs text-warning">
-                          {t("settings.domains.grace", {
-                            date: formatDateTime(domain.warningGraceExpiresAt),
-                          })}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex min-w-0 items-center gap-2 sm:justify-start">
-                      <Badge
-                        className="gap-1.5 whitespace-nowrap"
-                        variant={
-                          managed || status === "active"
-                            ? "success"
-                            : status === "misconfigured" || status === "failed"
-                              ? "warning"
-                              : "secondary"
-                        }
-                      >
-                        <StatusIcon
-                          className={cn("size-3.5", status === "removing" && "animate-spin")}
-                          aria-hidden
-                        />
-                        {stateText}
-                      </Badge>
-                      {domain.diagnostics ? (
-                        <span className="min-w-0 truncate text-xs text-muted-foreground">
-                          {t("settings.domains.checked", {
-                            date: formatDateTime(domain.diagnostics.checkedAt),
-                          })}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2 sm:justify-end">
-                      {needsSetup ? (
-                        <Button type="button" size="sm" onClick={() => setSetupDomain(domain)}>
-                          {t("settings.domains.setup")}
-                        </Button>
-                      ) : usable ? (
-                        <Button type="button" size="sm" variant="outline" asChild>
-                          <a
-                            href={`https://${domain.hostname}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {t("settings.domains.openAddress")}
-                            <AppIcons.externalLink aria-hidden />
-                          </a>
-                        </Button>
-                      ) : null}
-                      {!removingDomain ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={t("settings.domains.actionsColumn")}
-                            >
-                              <AppIcons.more aria-hidden />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-48">
-                            {usable ? (
-                              <DropdownMenuItem
-                                disabled={domain.isPrimary || busy}
-                                onSelect={() =>
-                                  void act({ action: "primary", domainId: domain.id })
+            <div data-slot="domain-list" className="overflow-x-auto">
+              <Table className="min-w-[56rem]">
+                <TableHeader>
+                  <TableRow className="bg-muted/25 hover:bg-muted/25">
+                    <TableHead className="w-[46%] px-5 text-xs text-muted-foreground">
+                      {t("settings.domains.addressColumn")}
+                    </TableHead>
+                    <TableHead className="w-[29%] px-5 text-xs text-muted-foreground">
+                      {t("settings.domains.statusColumn")}
+                    </TableHead>
+                    <TableHead className="w-[25%] px-5 text-right text-xs text-muted-foreground">
+                      <span className="sr-only">{t("settings.domains.actionsColumn")}</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {domains.map((domain) => {
+                    const managed = domain.type === "platform_subdomain";
+                    const status = domainConnectionStatus(domain);
+                    const usable = canUseDomain(domain);
+                    const removingDomain = status === "removing";
+                    const expired = initialChallengeExpired(domain, Date.now());
+                    const needsSetup = !managed && !usable && !removingDomain;
+                    const stateText = managed
+                      ? t(
+                          domain.isPrimary
+                            ? "settings.domains.primary"
+                            : "settings.domains.notPrimary",
+                        )
+                      : t(`settings.domains.states.${status}`);
+                    const StatusIcon =
+                      managed || status === "active"
+                        ? AppIcons.check
+                        : status === "misconfigured" || status === "failed"
+                          ? AppIcons.error
+                          : status === "removing"
+                            ? AppIcons.loader
+                            : AppIcons.time;
+                    const detail = managed
+                      ? t("settings.domains.ecsAddressDescription")
+                      : expired
+                        ? t("settings.domains.expired")
+                        : domain.diagnostics
+                          ? t(`settings.domains.diagnostics.${domain.diagnostics.reason}`)
+                          : status === "active"
+                            ? t("settings.domains.ready")
+                            : status === "pending_verification"
+                              ? t("settings.domains.waitingOwnership")
+                              : status === "pending_dns"
+                                ? t("settings.domains.waitingDns")
+                                : status === "pending_certificate"
+                                  ? t("settings.domains.waitingCertificate")
+                                  : status === "removing"
+                                    ? t("settings.domains.removingNotice")
+                                    : t("settings.domains.actionFailed");
+                    return (
+                      <Fragment key={domain.id}>
+                        <TableRow
+                          data-domain-row="true"
+                          className="border-border/70 hover:bg-muted/20"
+                        >
+                          <TableCell className="w-[46%] whitespace-normal px-5 py-4 align-middle">
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="min-w-0 break-all text-sm font-medium">
+                                  {domain.hostname}
+                                </span>
+                                {managed ? (
+                                  <Badge variant="outline" className="shrink-0">
+                                    {t("settings.domains.ecsAddress")}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{detail}</p>
+                              {domain.warningGraceExpiresAt ? (
+                                <p className="text-xs text-warning">
+                                  {t("settings.domains.grace", {
+                                    date: formatDateTime(domain.warningGraceExpiresAt),
+                                  })}
+                                </p>
+                              ) : null}
+                            </div>
+                            {!managed ? (
+                              <Dialog
+                                open={setupDomain?.id === domain.id}
+                                onOpenChange={(open) => !open && setSetupDomain(null)}
+                              >
+                                <DialogContent className="max-h-[min(90vh,44rem)] overflow-y-auto sm:max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      {t("settings.domains.setupTitle")}{" "}
+                                      <span className="font-normal">{domain.hostname}</span>
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div className="rounded-lg bg-muted/45 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+                                      {t("settings.domains.propagationHint")}
+                                    </div>
+                                    {domain.verificationChallenge ? (
+                                      <div className="space-y-2">
+                                        <p className="text-sm font-medium">
+                                          {t("settings.domains.txtTitle")}
+                                        </p>
+                                        <div className="overflow-hidden rounded-lg border border-border/70">
+                                          {record(
+                                            "TXT",
+                                            t("settings.domains.recordName"),
+                                            domain.verificationChallenge.recordName,
+                                          )}
+                                          {record(
+                                            "TXT",
+                                            t("settings.domains.recordValue"),
+                                            domain.verificationChallenge.recordValue,
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                          {t("settings.domains.keepTxt")}
+                                        </p>
+                                      </div>
+                                    ) : null}
+                                    {setup ? (
+                                      <div className="space-y-2 border-t border-border/70 pt-4">
+                                        <p className="text-sm font-medium">
+                                          {t("settings.domains.routingTitle")}
+                                        </p>
+                                        <div className="overflow-hidden rounded-lg border border-border/70">
+                                          {record(
+                                            "CNAME",
+                                            t("settings.domains.recordName"),
+                                            domain.hostname,
+                                          )}
+                                          {record(
+                                            "CNAME",
+                                            t("settings.domains.recordValue"),
+                                            setup.dnsTarget,
+                                          )}
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-muted-foreground">
+                                          {t("settings.domains.cname", { target: setup.dnsTarget })}
+                                        </p>
+                                        <details className="text-xs text-muted-foreground">
+                                          <summary className="cursor-pointer font-medium text-foreground">
+                                            {t("settings.domains.apexTitle")}
+                                          </summary>
+                                          <p className="pt-2">
+                                            {t("settings.domains.apex", {
+                                              target: setup.dnsTarget,
+                                            })}
+                                          </p>
+                                          {setup.ingressIpv4.length ? (
+                                            <p className="pt-2">
+                                              {t("settings.domains.fallback", {
+                                                addresses: setup.ingressIpv4.join(", "),
+                                              })}
+                                            </p>
+                                          ) : null}
+                                        </details>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            ) : null}
+                          </TableCell>
+                          <TableCell className="w-[29%] whitespace-normal px-5 py-4 align-middle">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Badge
+                                className="gap-1.5 whitespace-nowrap"
+                                variant={
+                                  managed || status === "active"
+                                    ? "success"
+                                    : status === "misconfigured" || status === "failed"
+                                      ? "warning"
+                                      : "secondary"
                                 }
                               >
-                                {domain.isPrimary
-                                  ? t("settings.domains.primary")
-                                  : t("settings.domains.makePrimary")}
-                              </DropdownMenuItem>
-                            ) : null}
-                            {!managed ? (
-                              <>
-                                <DropdownMenuItem
-                                  disabled={busy || query.isFetching}
-                                  onSelect={() => void query.refetch()}
-                                >
-                                  {t("settings.domains.refreshStatus")}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  disabled={busy}
-                                  onSelect={() =>
-                                    void act({ action: "verify", domainId: domain.id })
-                                  }
-                                >
-                                  {t("settings.domains.checkDns")}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => setSetupDomain(domain)}>
-                                  {t(
-                                    usable
-                                      ? "settings.domains.viewSetup"
-                                      : "settings.domains.setup",
+                                <StatusIcon
+                                  className={cn(
+                                    "size-3.5",
+                                    status === "removing" && "animate-spin",
                                   )}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  disabled={busy}
-                                  onSelect={() => setRemoving(domain)}
-                                >
-                                  {t("settings.domains.remove")}
-                                </DropdownMenuItem>
-                              </>
-                            ) : null}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                    </div>
-                    {!managed &&
-                    domain.diagnostics?.reason === "caa_restricted" &&
-                    domain.diagnostics.detail ? (
-                      <p className="text-xs text-warning sm:col-span-3">
-                        {t(`settings.domains.caa.${domain.diagnostics.detail}`)}
-                      </p>
-                    ) : null}
-                    {!managed ? (
-                      <Dialog
-                        open={setupDomain?.id === domain.id}
-                        onOpenChange={(open) => !open && setSetupDomain(null)}
-                      >
-                        <DialogContent className="max-h-[min(90vh,44rem)] overflow-y-auto sm:max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>
-                              {t("settings.domains.setupTitle")}{" "}
-                              <span className="font-normal">{domain.hostname}</span>
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="rounded-lg bg-muted/45 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                              {t("settings.domains.propagationHint")}
+                                  aria-hidden
+                                />
+                                {stateText}
+                              </Badge>
+                              {domain.diagnostics ? (
+                                <span className="min-w-0 truncate text-xs text-muted-foreground">
+                                  {t("settings.domains.checked", {
+                                    date: formatDateTime(domain.diagnostics.checkedAt),
+                                  })}
+                                </span>
+                              ) : null}
                             </div>
-                            {domain.verificationChallenge ? (
-                              <div className="space-y-2">
-                                <p className="text-sm font-medium">
-                                  {t("settings.domains.txtTitle")}
-                                </p>
-                                <div className="overflow-hidden rounded-lg border border-border/70">
-                                  {record(
-                                    "TXT",
-                                    t("settings.domains.recordName"),
-                                    domain.verificationChallenge.recordName,
-                                  )}
-                                  {record(
-                                    "TXT",
-                                    t("settings.domains.recordValue"),
-                                    domain.verificationChallenge.recordValue,
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  {t("settings.domains.keepTxt")}
-                                </p>
-                              </div>
-                            ) : null}
-                            {setup ? (
-                              <div className="space-y-2 border-t border-border/70 pt-4">
-                                <p className="text-sm font-medium">
-                                  {t("settings.domains.routingTitle")}
-                                </p>
-                                <div className="overflow-hidden rounded-lg border border-border/70">
-                                  {record(
-                                    "CNAME",
-                                    t("settings.domains.recordName"),
-                                    domain.hostname,
-                                  )}
-                                  {record(
-                                    "CNAME",
-                                    t("settings.domains.recordValue"),
-                                    setup.dnsTarget,
-                                  )}
-                                </div>
-                                <p className="text-xs leading-relaxed text-muted-foreground">
-                                  {t("settings.domains.cname", { target: setup.dnsTarget })}
-                                </p>
-                                <details className="text-xs text-muted-foreground">
-                                  <summary className="cursor-pointer font-medium text-foreground">
-                                    {t("settings.domains.apexTitle")}
-                                  </summary>
-                                  <p className="pt-2">
-                                    {t("settings.domains.apex", { target: setup.dnsTarget })}
-                                  </p>
-                                  {setup.ingressIpv4.length ? (
-                                    <p className="pt-2">
-                                      {t("settings.domains.fallback", {
-                                        addresses: setup.ingressIpv4.join(", "),
-                                      })}
-                                    </p>
-                                  ) : null}
-                                </details>
-                              </div>
-                            ) : null}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    ) : null}
-                  </div>
-                );
-              })}
+                          </TableCell>
+                          <TableCell className="w-[25%] px-5 py-4 text-right align-middle">
+                            <div className="flex items-center justify-end gap-2">
+                              {needsSetup ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => setSetupDomain(domain)}
+                                >
+                                  {t("settings.domains.setup")}
+                                </Button>
+                              ) : usable ? (
+                                <Button type="button" size="sm" variant="outline" asChild>
+                                  <a
+                                    href={`https://${domain.hostname}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {t("settings.domains.openAddress")}
+                                    <AppIcons.externalLink aria-hidden />
+                                  </a>
+                                </Button>
+                              ) : null}
+                              {!removingDomain ? (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={t("settings.domains.actionsColumn")}
+                                    >
+                                      <AppIcons.more aria-hidden />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="min-w-48">
+                                    {usable ? (
+                                      <DropdownMenuItem
+                                        disabled={domain.isPrimary || busy}
+                                        onSelect={() =>
+                                          void act({ action: "primary", domainId: domain.id })
+                                        }
+                                      >
+                                        {domain.isPrimary
+                                          ? t("settings.domains.primary")
+                                          : t("settings.domains.makePrimary")}
+                                      </DropdownMenuItem>
+                                    ) : null}
+                                    {!managed ? (
+                                      <>
+                                        <DropdownMenuItem
+                                          disabled={busy || query.isFetching}
+                                          onSelect={() => void query.refetch()}
+                                        >
+                                          {t("settings.domains.refreshStatus")}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          disabled={busy}
+                                          onSelect={() =>
+                                            void act({ action: "verify", domainId: domain.id })
+                                          }
+                                        >
+                                          {t("settings.domains.checkDns")}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onSelect={() => setSetupDomain(domain)}>
+                                          {t(
+                                            usable
+                                              ? "settings.domains.viewSetup"
+                                              : "settings.domains.setup",
+                                          )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          variant="destructive"
+                                          disabled={busy}
+                                          onSelect={() => setRemoving(domain)}
+                                        >
+                                          {t("settings.domains.remove")}
+                                        </DropdownMenuItem>
+                                      </>
+                                    ) : null}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {!managed &&
+                        domain.diagnostics?.reason === "caa_restricted" &&
+                        domain.diagnostics.detail ? (
+                          <TableRow className="border-b border-border/70 hover:bg-transparent">
+                            <TableCell colSpan={3} className="px-5 pb-3 pt-0 text-xs text-warning">
+                              {t(`settings.domains.caa.${domain.diagnostics.detail}`)}
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
             {customCount > 0 && query.data ? (
               <div className="flex flex-col gap-3 border-t border-border/70 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">

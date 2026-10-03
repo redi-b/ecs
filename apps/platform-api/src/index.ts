@@ -61,7 +61,7 @@ const platformDb = createPlatformDb({
   ),
 });
 const discoveryService = createDiscoveryService(platformDb.db);
-void discoveryService.ensureDefaults();
+await discoveryService.ensureDefaults();
 const findDomainByHostname = createDomainTenantLookup(platformDb.db);
 const domainRuntime = createDomainRuntime({ db: platformDb.db, env: process.env });
 const billingRuntime = createBillingRuntime({ db: platformDb.db, env: process.env, logger });
@@ -319,6 +319,8 @@ const app = createPlatformApp({
   checkTenantHandleAvailability,
   ...billingAppOptions,
   listDiscoveryCampaigns: discoveryService.listEligible,
+  listDiscoveryCampaignCatalog: discoveryService.listCampaigns,
+  updateDiscoveryCampaign: discoveryService.updateCampaign,
   recordDiscoveryEvent: discoveryService.recordEvent,
   getDashboardMetrics: dashboardMetricsService,
   getInsightsSales,

@@ -191,9 +191,11 @@ const nexahubClientMessages = {
     </script>
     <script>
       import { gsap } from "gsap";
+      import { initDemoActions } from "../../../../lib/browser/demo-actions";
       import { initProductSearchSuggestions } from "../../../../lib/browser/product-search-suggestions";
       import { initNexahubStorefront } from "../scripts/client";
       initNexahubStorefront();
+      initDemoActions();
       if (document.body.dataset.demoMode !== "true" && document.body.dataset.editorMode !== "true") {
         initProductSearchSuggestions(document.querySelector<HTMLFormElement>(".site-header__search"));
       }

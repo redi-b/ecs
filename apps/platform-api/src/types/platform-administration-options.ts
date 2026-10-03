@@ -18,6 +18,12 @@ export type PlatformAdministrationOptions = {
   listDiscoveryCampaigns?: ReturnType<
     typeof import("../modules/discovery/service.js").createDiscoveryService
   >["listEligible"];
+  listDiscoveryCampaignCatalog?: ReturnType<
+    typeof import("../modules/discovery/service.js").createDiscoveryService
+  >["listCampaigns"];
+  updateDiscoveryCampaign?: ReturnType<
+    typeof import("../modules/discovery/service.js").createDiscoveryService
+  >["updateCampaign"];
   recordDiscoveryEvent?: ReturnType<
     typeof import("../modules/discovery/service.js").createDiscoveryService
   >["recordEvent"];

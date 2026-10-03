@@ -56,5 +56,8 @@ export function resolveCookieStorefrontDemoPath({
   if (!slug || !selectableDemoSlugs.has(slug)) return null;
   if (!pathname.startsWith("/") || pathname.startsWith("//") || isStorefrontDemoPath(pathname))
     return null;
-  return `/demo/storefront/${slug}${pathname === "/" ? "" : pathname}`;
+  // Keep the selected template in the public URL. The middleware rewrites the
+  // branded path internally, but visitors should never see the implementation
+  // route under /demo/storefront.
+  return `/${slug}${pathname === "/" ? "" : pathname}`;
 }

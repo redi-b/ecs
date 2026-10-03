@@ -13,6 +13,7 @@ import { registerLaunchReadinessRoutes } from "./launch-readiness.js";
 import { registerPlatformOnboardingRoutes } from "./onboarding.js";
 import { registerPlatformOperatorBillingRoutes } from "./operator-billing.js";
 import { registerPlatformOperatorContentRoutes } from "./operator-content.js";
+import { registerPlatformOperatorDiscoveryRoutes } from "./operator-discovery.js";
 import { registerPlatformOperatorOperationsRoutes } from "./operator-operations.js";
 import { registerPlatformOperatorTenantRoutes } from "./operator-tenants.js";
 import { registerPlatformStorefrontRoutes } from "./storefront.js";
@@ -38,6 +39,7 @@ export function registerPlatformRoutes(
   registerPlatformStorefrontRoutes(app, options);
   registerPlatformTenantOpsRoutes(app, options);
   registerPlatformOperatorContentRoutes(app, options);
+  registerPlatformOperatorDiscoveryRoutes(app, options);
   registerPlatformOperatorOperationsRoutes(app, options);
   registerPlatformOperatorBillingRoutes(app, options);
   registerPlatformOperatorTenantRoutes(app, options);

@@ -1,4 +1,13 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { tenants } from "./tenants.js";
 
 export const dashboardDiscoveryCampaigns = pgTable(
@@ -36,11 +45,13 @@ export const dashboardDiscoveryEvents = pgTable(
       .references(() => tenants.id),
     userId: text("user_id"),
     event: text("event").notNull(),
+    idempotencyKey: text("idempotency_key"),
     metadata: jsonb("metadata").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("dashboard_discovery_events_tenant_campaign_idx").on(table.tenantId, table.campaignId),
     index("dashboard_discovery_events_campaign_event_idx").on(table.campaignId, table.event),
+    uniqueIndex("dashboard_discovery_events_idempotency_key_uidx").on(table.idempotencyKey),
   ],
 );

@@ -17,6 +17,27 @@
     "mixView": "Mix view",
     "closeLaunch": "Close shop setup"
   },
+  "discovery": {
+    "dismiss": "Not now",
+    "telegram": {
+      "eyebrow": "Stay informed",
+      "title": "Connect Telegram for shop alerts",
+      "description": "Get important order and shop notifications where your team already works.",
+      "action": "Connect Telegram"
+    },
+    "quickSale": {
+      "eyebrow": "At the counter",
+      "title": "Try POS for quick sales",
+      "description": "Record a cash sale in seconds without leaving your catalog.",
+      "action": "Open POS"
+    },
+    "domains": {
+      "eyebrow": "Your storefront",
+      "title": "Give your shop its own address",
+      "description": "Connect a custom domain while keeping your ECS address as recovery.",
+      "action": "Open domains"
+    }
+  },
   "metrics": {
     "detailUnavailable": "Breakdown unavailable",
     "noProducts": "No products yet",

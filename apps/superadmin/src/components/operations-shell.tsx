@@ -11,6 +11,7 @@ import {
   RiDashboardLine as LayoutDashboard,
   RiLogoutCircleRLine as LogOut,
   RiMailLine as Mail,
+  RiMegaphoneLine as Megaphone,
   RiLayout2Line as PanelsTopLeft,
   RiShieldCheckLine as ShieldCheck,
   RiTeamLine as UsersRound,
@@ -79,6 +80,13 @@ const navigation = [
     label: "Plans",
     permission: "billing.plans.read",
     shortcut: "B",
+  },
+  {
+    href: "/discovery",
+    icon: Megaphone,
+    label: "Discovery",
+    permission: "platform.work.read",
+    shortcut: "D",
   },
   {
     href: "/payment-reviews",

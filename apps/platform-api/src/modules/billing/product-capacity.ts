@@ -1,6 +1,7 @@
 import type { createPlatformDb } from "@ecs/db";
 import { plans, planVersions, subscriptions } from "@ecs/db";
 import { eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type { ProductWriteInput } from "../../adapters/medusa/product/types.js";
 import type { MerchantProductsResult, MerchantProductWriteResult } from "../../types/index.js";
@@ -9,14 +10,19 @@ import { createPostgresCapacityService } from "./capacity-service.js";
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export async function resolveProductLimit(db: PlatformDb, tenantId: string) {
+  const entitlementPlanVersions = alias(planVersions, "capacity_entitlement_plan_versions");
   const [row] = await db
     .select({
-      limits: sql<unknown>`coalesce(${planVersions.limits}, ${plans.limits})`,
+      limits: sql<unknown>`coalesce(${entitlementPlanVersions.limits}, ${planVersions.limits}, ${plans.limits})`,
       status: subscriptions.status,
     })
     .from(subscriptions)
     .innerJoin(plans, eq(plans.id, subscriptions.planId))
     .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
+    .leftJoin(
+      entitlementPlanVersions,
+      eq(entitlementPlanVersions.id, subscriptions.entitlementPlanVersionId),
+    )
     .where(eq(subscriptions.tenantId, tenantId))
     .limit(1);
   const source =

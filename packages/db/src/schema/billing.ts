@@ -111,6 +111,8 @@ export const subscriptions = pgTable(
     planVersionId: uuid("plan_version_id")
       .notNull()
       .references(() => planVersions.id),
+    /** Entitlement/limit terms may advance immediately while commercial price stays pinned. */
+    entitlementPlanVersionId: uuid("entitlement_plan_version_id").references(() => planVersions.id),
     status: subscriptionStatus("status").notNull().default("trialing"),
     billingCycle: text("billing_cycle").notNull().default("monthly"),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),

@@ -200,8 +200,10 @@ const themeStyle = [
     <StorefrontAnalytics disabled={demoMode || editorMode} />
 
     <script>
+      import { initDemoActions } from "../../../../lib/browser/demo-actions";
       import { initLuviaStorefront } from "../scripts/client";
       initLuviaStorefront();
+      initDemoActions();
     </script>
   </body>
 </html>

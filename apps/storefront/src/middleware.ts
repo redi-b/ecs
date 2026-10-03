@@ -59,7 +59,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if ((context.request.method === "GET" || context.request.method === "HEAD") && cookieDemoPath) {
     const target = new URL(context.url);
     target.pathname = cookieDemoPath;
-    const response = await context.rewrite(target);
+    const response = context.redirect(target.href, 307);
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
   }

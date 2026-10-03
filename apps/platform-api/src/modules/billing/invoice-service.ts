@@ -1,4 +1,10 @@
-import { addBillingInterval, type BillingInterval } from "@ecs/billing";
+import {
+  addBillingInterval,
+  BILLING_RENEWAL_LEAD_DAYS,
+  type BillingInterval,
+  MS_PER_DAY,
+  parseScheduledDowngradePlanId,
+} from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import {
   auditLogs,
@@ -11,9 +17,7 @@ import {
   subscriptionTrials,
 } from "@ecs/db";
 import { and, desc, eq, sql } from "drizzle-orm";
-
 import type { BillingInvoice, BillingInvoiceUpdateResult } from "../../types/index.js";
-import { BILLING_RENEWAL_LEAD_DAYS, MS_PER_DAY, parseScheduledDowngradePlanId } from "@ecs/billing";
 import { isAcceptedLinksEtReference } from "./links-et-payment-verifier.js";
 import {
   type BillingPaymentVerificationInput,
@@ -265,6 +269,7 @@ export function createBillingInvoiceService(input: BillingInvoiceServiceOptions)
         .set({
           planId: nextPlanId,
           planVersionId: nextPlanVersionId,
+          entitlementPlanVersionId: nextPlanVersionId,
           renewalPlanVersionId: consumedRenewal ? null : sub?.renewalPlanVersionId,
           renewalEffectiveAt: consumedRenewal ? null : sub?.renewalPlanVersionId ? nextEnd : null,
           currentPeriodEnd: nextEnd,

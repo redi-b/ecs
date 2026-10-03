@@ -119,6 +119,31 @@ describe("entitlement service with PostgreSQL", { skip: !connectionString }, () 
     assert.equal((await service.evaluate({ key: "customDomains", tenantId })).allowed, true);
   });
 
+  it("uses an active entitlement version without changing the accepted commercial version", async () => {
+    const service = createEntitlementService(database.db);
+    const entitlementVersionId = randomUUID();
+    await database.db.insert(planVersions).values({
+      id: entitlementVersionId,
+      planId,
+      version: 2,
+      fingerprint: `integration-entitlements-${entitlementVersionId}`,
+      name: "Integration Growth",
+      price: "3999",
+      features: { customDomains: false },
+    });
+    await database.db
+      .update(subscriptions)
+      .set({ entitlementPlanVersionId: entitlementVersionId })
+      .where(eq(subscriptions.tenantId, tenantId));
+
+    assert.equal((await service.evaluate({ key: "customDomains", tenantId })).allowed, false);
+    const [subscription] = await database.db
+      .select({ planVersionId: subscriptions.planVersionId })
+      .from(subscriptions)
+      .where(eq(subscriptions.tenantId, tenantId));
+    assert.equal(subscription?.planVersionId, planVersionId);
+  });
+
   it("rejects a permanent override at the database boundary", async () => {
     await assert.rejects(
       database.db.execute(sql`

@@ -1,7 +1,8 @@
+import { decideCapability } from "@ecs/billing";
 import type { createPlatformDb } from "@ecs/db";
 import { auditLogs, entitlementOverrides, plans, planVersions, subscriptions } from "@ecs/db";
-import { decideCapability } from "@ecs/billing";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import {
   ENTITLEMENT_CATALOG,
@@ -126,6 +127,7 @@ export function resolveEntitlements(input: {
 }
 
 export function createEntitlementService(db: PlatformDb) {
+  const entitlementPlanVersions = alias(planVersions, "entitlement_plan_versions");
   const evaluate = async (input: {
     key: EntitlementKey;
     tenantId: string;
@@ -135,11 +137,16 @@ export function createEntitlementService(db: PlatformDb) {
       .select({
         planFeatures: plans.features,
         planVersionFeatures: planVersions.features,
+        entitlementPlanVersionFeatures: entitlementPlanVersions.features,
         subscriptionStatus: subscriptions.status,
       })
       .from(subscriptions)
       .innerJoin(plans, eq(plans.id, subscriptions.planId))
       .leftJoin(planVersions, eq(planVersions.id, subscriptions.planVersionId))
+      .leftJoin(
+        entitlementPlanVersions,
+        eq(entitlementPlanVersions.id, subscriptions.entitlementPlanVersionId),
+      )
       .where(eq(subscriptions.tenantId, input.tenantId))
       .limit(1);
 
@@ -163,7 +170,10 @@ export function createEntitlementService(db: PlatformDb) {
       key: input.key,
       now: input.now ?? new Date(),
       overrides,
-      planFeatures: subscription?.planVersionFeatures ?? subscription?.planFeatures,
+      planFeatures:
+        subscription?.entitlementPlanVersionFeatures ??
+        subscription?.planVersionFeatures ??
+        subscription?.planFeatures,
       subscriptionStatus: subscription?.subscriptionStatus ?? null,
     });
   };
