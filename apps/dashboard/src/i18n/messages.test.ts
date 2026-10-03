@@ -176,6 +176,36 @@ describe("i18n message catalogs", () => {
       if (/—/.test(am) && am.trim() !== "—") {
         violations.push(`${key}: em-dash in copy "${am}"`);
       }
+
+      // 5. Ban ቅንብር in favor of ማስተካከያ / ምርጫ
+      if (/ቅንብር/.test(am)) {
+        violations.push(`${key}: banned ቅንብር in "${am}"`);
+      }
+
+      // 6. Ban ብጁ
+      if (/ብጁ/.test(am)) {
+        violations.push(`${key}: banned ብጁ in "${am}"`);
+      }
+
+      // 7. Ban ማዋቀር
+      if (/ማዋቀር|ተዋቅሯል|አልተዋቀረም|ተዋቀረ/.test(am)) {
+        violations.push(`${key}: banned ማዋቀር in "${am}"`);
+      }
+
+      // 8. Ban ማዘመን / ዝማኔ
+      if (/ማዘመን|ያዘምኑ|አዘምን|ይዘምና|የዘመነ|ዝማኔ/.test(am)) {
+        violations.push(`${key}: banned ማዘመን in "${am}"`);
+      }
+
+      // 9. Ban ማስወገድ / አስወግድ
+      if (/ማስወገድ|አስወግድ|ያስወግድ|ይወገድ|ተወግዷል|ተወገደ/.test(am)) {
+        violations.push(`${key}: banned ማስወገድ in "${am}"`);
+      }
+
+      // 10. Ban ንጥል (allow ንጥረ ነገር)
+      if (/ንጥል|ንጥሎች/.test(am)) {
+        violations.push(`${key}: banned ንጥል in "${am}"`);
+      }
     }
 
     // Also assert on storefront message catalog
@@ -201,6 +231,24 @@ describe("i18n message catalogs", () => {
           }
           if (/—/.test(am) && am.trim() !== "—") {
             violations.push(`${sfKey}: em-dash in copy "${am}"`);
+          }
+          if (/ቅንብር/.test(am)) {
+            violations.push(`${sfKey}: banned ቅንብር in "${am}"`);
+          }
+          if (/ብጁ/.test(am)) {
+            violations.push(`${sfKey}: banned ብጁ in "${am}"`);
+          }
+          if (/ማዋቀር|ተዋቅሯል|አልተዋቀረም|ተዋቀረ/.test(am)) {
+            violations.push(`${sfKey}: banned ማዋቀር in "${am}"`);
+          }
+          if (/ማዘመን|ያዘምኑ|አዘምን|ይዘምና|የዘመነ|ዝማኔ/.test(am)) {
+            violations.push(`${sfKey}: banned ማዘመን in "${am}"`);
+          }
+          if (/ማስወገድ|አስወግድ|ያስወግድ|ይወገድ|ተወግዷል|ተወገደ/.test(am)) {
+            violations.push(`${sfKey}: banned ማስወገድ in "${am}"`);
+          }
+          if (/ንጥል|ንጥሎች/.test(am)) {
+            violations.push(`${sfKey}: banned ንጥል in "${am}"`);
           }
         }
       }
