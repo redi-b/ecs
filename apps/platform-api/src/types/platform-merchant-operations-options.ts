@@ -575,6 +575,14 @@ export type PlatformMerchantOperationsOptions = {
         }>;
       }>)
     | undefined;
+  ensureTelegramDestinationFromAuth?:
+    | ((input: { tenantId: string; userId: string }) => Promise<{
+        connected: boolean;
+        created?: boolean;
+        enabled?: boolean;
+        reason?: string;
+      }>)
+    | undefined;
   createTelegramConnectSession?:
     | ((input: { tenantId: string; userId: string }) => Promise<
         | {

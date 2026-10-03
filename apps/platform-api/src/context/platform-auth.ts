@@ -10,7 +10,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { organization } from "better-auth/plugins";
+import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { and, eq, ne } from "drizzle-orm";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { getEmailTemplateDefinition } from "../modules/email/template-catalog.js";
 import { renderEmailTemplate } from "../modules/email/template-renderer.js";
 import type { NotificationProvider } from "../modules/notifications/providers/types.js";
@@ -126,6 +128,8 @@ export function createPlatformAuth(options: {
   emailProvider?: NotificationProvider | undefined;
   googleClientId?: string | undefined;
   googleClientSecret?: string | undefined;
+  telegramAuthClientId?: string | undefined;
+  telegramAuthClientSecret?: string | undefined;
   enqueueAccountEmail?:
     | ((input: {
         idempotencySource: string;
@@ -142,6 +146,11 @@ export function createPlatformAuth(options: {
 }) {
   const emailProvider = options.emailProvider;
   const enqueueAccountEmail = options.enqueueAccountEmail;
+  const telegramClientId = options.telegramAuthClientId?.trim();
+  const telegramClientSecret = options.telegramAuthClientSecret?.trim();
+  const telegramJwks = createRemoteJWKSet(
+    new URL("https://oauth.telegram.org/.well-known/jwks.json"),
+  );
   const assertOrganizationKeepsOwner = async (input: {
     memberId: string;
     organizationId: string;
@@ -281,6 +290,52 @@ export function createPlatformAuth(options: {
       window: 60,
     },
     plugins: [
+      ...(telegramClientId && telegramClientSecret
+        ? [
+            genericOAuth({
+              config: [
+                {
+                  authorizationUrl: "https://oauth.telegram.org/auth",
+                  authentication: "basic",
+                  clientId: telegramClientId,
+                  clientSecret: telegramClientSecret,
+                  getUserInfo: async (tokens) => {
+                    if (!tokens.idToken) return null;
+                    try {
+                      const { payload } = await jwtVerify(tokens.idToken, telegramJwks, {
+                        audience: telegramClientId,
+                        issuer: "https://oauth.telegram.org",
+                      });
+                      if (typeof payload.sub !== "string") return null;
+                      const name =
+                        typeof payload.name === "string"
+                          ? payload.name
+                          : typeof payload.preferred_username === "string"
+                            ? payload.preferred_username
+                            : "Telegram merchant";
+                      const phone =
+                        typeof payload.phone_number === "string" ? payload.phone_number : undefined;
+                      return {
+                        email: `telegram-${payload.sub}@accounts.ecset.internal`,
+                        emailVerified: false,
+                        id: payload.sub,
+                        image: typeof payload.picture === "string" ? payload.picture : undefined,
+                        name,
+                        ...(phone ? { phone } : {}),
+                      };
+                    } catch {
+                      return null;
+                    }
+                  },
+                  pkce: true,
+                  providerId: "telegram",
+                  scopes: ["openid", "profile", "phone", "telegram:bot_access"],
+                  tokenUrl: "https://oauth.telegram.org/token",
+                },
+              ],
+            }),
+          ]
+        : []),
       organization({
         ac: merchantAccessControl,
         cancelPendingInvitationsOnReInvite: true,
@@ -430,7 +485,9 @@ export function createPlatformAuth(options: {
     },
     account: {
       accountLinking: {
-        allowDifferentEmails: false,
+        // Telegram does not provide email; explicit linking is the user’s
+        // authenticated choice, so provider email equality cannot be required.
+        allowDifferentEmails: true,
         disableImplicitLinking: true,
         enabled: true,
         requireLocalEmailVerified: true,

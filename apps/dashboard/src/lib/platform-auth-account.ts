@@ -299,6 +299,7 @@ export async function getAccountIdentity(options: AuthRequestContext) {
   if (!email) return { ok: false as const, status: 502 };
   return {
     email,
+    needsEmail: email.endsWith("@accounts.ecset.internal"),
     calendarPreference:
       body?.user?.calendarPreference === "ethiopian" ||
       body?.user?.calendarPreference === "gregorian"

@@ -5,6 +5,7 @@ import Link from "@/components/app/link";
 import { SignInForm } from "@/components/app/sign-in-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import { GoogleAuthButton } from "@/components/onboarding/google-auth-button";
+import { TelegramAuthButton } from "@/components/onboarding/telegram-auth-button";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
@@ -63,10 +64,9 @@ export default async function AdminSignInPage({
     redirect(authenticatedRedirect);
   }
 
-  const googleEnabled =
-    isCentralAccess &&
-    (await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000"))
-      .google;
+  const socialAuthProviders = isCentralAccess
+    ? await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000")
+    : { google: false, telegram: false };
   const errorMessage = getErrorMessage(params?.error, t);
   const centralSignIn = getCentralDashboardUrl("/sign-in");
   const shopName =
@@ -89,7 +89,8 @@ export default async function AdminSignInPage({
             {t("auth.recovery.resetComplete")}
           </p>
         ) : null}
-        {googleEnabled ? <GoogleAuthButton nextPath={nextPath} /> : null}
+        {socialAuthProviders.telegram ? <TelegramAuthButton nextPath={nextPath} /> : null}
+        {socialAuthProviders.google ? <GoogleAuthButton nextPath={nextPath} /> : null}
         <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">

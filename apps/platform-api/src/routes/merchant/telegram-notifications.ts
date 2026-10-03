@@ -88,6 +88,10 @@ export function registerMerchantTelegramNotificationRoutes(
       if (!auth.ok) {
         return auth.response;
       }
+      await options.ensureTelegramDestinationFromAuth?.({
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+      });
       const result = await options.listTelegramDestinations({ tenantId: auth.tenantId });
       return context.json(result);
     });

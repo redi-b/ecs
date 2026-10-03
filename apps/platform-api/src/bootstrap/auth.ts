@@ -1,4 +1,5 @@
 import type { createPlatformDb } from "@ecs/db";
+import { resolveTelegramAuthConfiguration } from "../config/telegram-auth.js";
 import { createPlatformAuth, parseTrustedOrigins } from "../context/platform-auth.js";
 import { createMerchantTeamService } from "../modules/team/merchant-team-service.js";
 
@@ -49,6 +50,7 @@ export function resolveGoogleAuthConfiguration(env: NodeJS.ProcessEnv) {
 export function createAuthRuntime(options: AuthRuntimeOptions) {
   const baseUrl = options.env.BETTER_AUTH_URL ?? "http://api.lvh.me";
   const google = resolveGoogleAuthConfiguration(options.env);
+  const telegram = resolveTelegramAuthConfiguration(options.env);
   const auth = createPlatformAuth({
     baseUrl,
     cookieDomain: options.env.BETTER_AUTH_COOKIE_DOMAIN,
@@ -57,6 +59,8 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     db: options.db,
     googleClientId: google.clientId,
     googleClientSecret: google.clientSecret,
+    telegramAuthClientId: telegram.enabled ? telegram.clientId : undefined,
+    telegramAuthClientSecret: telegram.enabled ? telegram.clientSecret : undefined,
     ...(!options.emailDeliveryService && options.authEmailProvider
       ? { emailProvider: options.authEmailProvider }
       : {}),
@@ -82,6 +86,8 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     auth,
     googleAuthEnabled: google.enabled,
     googleAuthStatus: google.status,
+    telegramAuthEnabled: telegram.enabled,
+    telegramAuthStatus: telegram.status,
     merchantTeamService: createMerchantTeamService({
       authHandler: auth.handler,
       db: options.db,

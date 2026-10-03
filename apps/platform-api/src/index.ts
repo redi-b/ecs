@@ -264,7 +264,14 @@ const billingAppOptions = createBillingAppOptions({
   logger,
 });
 
-const { auth, googleAuthEnabled, googleAuthStatus, merchantTeamService } = createAuthRuntime({
+const {
+  auth,
+  googleAuthEnabled,
+  googleAuthStatus,
+  merchantTeamService,
+  telegramAuthEnabled,
+  telegramAuthStatus,
+} = createAuthRuntime({
   authEmailProvider,
   db: platformDb.db,
   emailDeliveryService,
@@ -274,6 +281,10 @@ const { auth, googleAuthEnabled, googleAuthStatus, merchantTeamService } = creat
 logger.info(
   { enabled: googleAuthEnabled, status: googleAuthStatus },
   "Google OAuth configuration resolved",
+);
+logger.info(
+  { enabled: telegramAuthEnabled, status: telegramAuthStatus },
+  "Telegram OAuth configuration resolved",
 );
 
 const app = createPlatformApp({
@@ -313,6 +324,7 @@ const app = createPlatformApp({
   }),
   authHandler: auth.handler,
   googleAuthEnabled,
+  telegramAuthEnabled,
   createTenantDomain: domainManagementService.createTenantDomain,
   removeTenantDomain: domainRuntime?.removeTenantDomain,
   createTenantShop,

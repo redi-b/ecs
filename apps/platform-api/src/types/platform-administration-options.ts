@@ -238,5 +238,6 @@ export type PlatformAdministrationOptions = {
     | undefined;
   authHandler?: ((request: Request) => Promise<Response>) | undefined;
   googleAuthEnabled?: boolean | undefined;
+  telegramAuthEnabled?: boolean | undefined;
   getSession?: ((headers: Headers) => Promise<PlatformSession | null>) | undefined;
 };

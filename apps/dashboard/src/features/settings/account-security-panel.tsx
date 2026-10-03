@@ -90,10 +90,15 @@ export function AccountSecurityPanel({
   const [connectionsLoading, setConnectionsLoading] = useState(true);
   const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [unlinkingTelegram, setUnlinkingTelegram] = useState(false);
+  const [linkingTelegram, setLinkingTelegram] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingGoogleAction, setPendingGoogleAction] = useState<"connect" | "disconnect" | null>(
     null,
   );
+  const [pendingTelegramAction, setPendingTelegramAction] = useState<
+    "connect" | "disconnect" | null
+  >(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [avatar, setAvatar] = useState<ProfileAvatarPreferences>(
     actor.avatar ?? defaultProfileAvatar,
@@ -295,6 +300,12 @@ export function AccountSecurityPanel({
     } else if (connection === "google-unavailable") {
       setConnectionError("unavailable");
     } else if (connection === "google-failed") {
+      setConnectionError(url.searchParams.get("error") ?? "link_failed");
+    } else if (connection === "telegram-linked") {
+      toast.success(t("settings.accountSecurity.connections.telegramLinked"));
+    } else if (connection === "telegram-unavailable") {
+      setConnectionError("unavailable");
+    } else if (connection === "telegram-failed") {
       setConnectionError(url.searchParams.get("error") ?? "link_failed");
     }
     url.searchParams.delete("verified");
@@ -731,6 +742,48 @@ export function AccountSecurityPanel({
             </Button>
           )}
         </div>
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 px-4 py-3.5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium">Telegram</p>
+              <HelpTip
+                label={t("settings.accountSecurity.connections.telegramHelpLabel")}
+                summary={t("settings.accountSecurity.connections.telegramHelp")}
+                title={t("settings.accountSecurity.connections.telegramHelpTitle")}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {connections.some((item) => item.providerId === "telegram")
+                ? t("settings.accountSecurity.connections.connected")
+                : t("settings.accountSecurity.connections.notConnected")}
+            </p>
+          </div>
+          {connections.some((item) => item.providerId === "telegram") ? (
+            <Button
+              disabled={connectionsLoading || unlinkingTelegram || connections.length <= 1}
+              onClick={() => setPendingTelegramAction("disconnect")}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {unlinkingTelegram
+                ? t("common.saving")
+                : t("settings.accountSecurity.connections.disconnect")}
+            </Button>
+          ) : (
+            <Button
+              disabled={connectionsLoading || linkingTelegram}
+              onClick={() => setPendingTelegramAction("connect")}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {linkingTelegram
+                ? t("common.loading")
+                : t("settings.accountSecurity.connections.connect")}
+            </Button>
+          )}
+        </div>
       </section>
 
       <section className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/[0.08] shadow-[0_1px_2px_color-mix(in_oklch,var(--foreground)_4%,transparent)]">
@@ -1145,6 +1198,60 @@ export function AccountSecurityPanel({
             : t("settings.accountSecurity.connections.disconnectTitle")
         }
         tone={pendingGoogleAction === "disconnect" ? "destructive" : "default"}
+      />
+
+      <ConfirmDialog
+        cancelDisabled={linkingTelegram || unlinkingTelegram}
+        confirmDisabled={linkingTelegram || unlinkingTelegram}
+        confirmLabel={
+          pendingTelegramAction === "connect"
+            ? t("settings.accountSecurity.connections.telegramConnectConfirm")
+            : t("settings.accountSecurity.connections.disconnectConfirm")
+        }
+        description={
+          pendingTelegramAction === "connect"
+            ? t("settings.accountSecurity.connections.telegramConnectDescription")
+            : t("settings.accountSecurity.connections.telegramDisconnectDescription")
+        }
+        onConfirm={(event) => {
+          if (pendingTelegramAction === "connect") {
+            setPendingTelegramAction(null);
+            setLinkingTelegram(true);
+            window.location.assign("/dashboard/account/telegram-link");
+            return;
+          }
+
+          const telegram = connections.find((item) => item.providerId === "telegram");
+          if (!telegram) return;
+          event.preventDefault();
+          setUnlinkingTelegram(true);
+          void fetch("/dashboard/account/connections", {
+            body: JSON.stringify({ providerId: telegram.providerId }),
+            headers: { "content-type": "application/json" },
+            method: "DELETE",
+          })
+            .catch(() => null)
+            .then((response) => {
+              if (!response?.ok) {
+                toast.error(t("settings.accountSecurity.connections.telegramUnlinkFailed"));
+                return;
+              }
+              setConnections((items) => items.filter((item) => item.id !== telegram.id));
+              setPendingTelegramAction(null);
+              toast.success(t("settings.accountSecurity.connections.telegramUnlinked"));
+            })
+            .finally(() => setUnlinkingTelegram(false));
+        }}
+        onOpenChange={(open) => {
+          if (!open && !linkingTelegram && !unlinkingTelegram) setPendingTelegramAction(null);
+        }}
+        open={pendingTelegramAction !== null}
+        title={
+          pendingTelegramAction === "connect"
+            ? t("settings.accountSecurity.connections.telegramConnectTitle")
+            : t("settings.accountSecurity.connections.telegramDisconnectTitle")
+        }
+        tone={pendingTelegramAction === "disconnect" ? "destructive" : "default"}
       />
 
       <ConfirmDialog

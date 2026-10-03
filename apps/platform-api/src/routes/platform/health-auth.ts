@@ -3,7 +3,12 @@ import type { PlatformAppOptions, PlatformAppVariables } from "../../app.js";
 
 type PlatformHealthAuthDependencies = Pick<
   PlatformAppOptions,
-  "authHandler" | "getSession" | "googleAuthEnabled" | "landingPublicOrigins" | "serviceName"
+  | "authHandler"
+  | "getSession"
+  | "googleAuthEnabled"
+  | "landingPublicOrigins"
+  | "serviceName"
+  | "telegramAuthEnabled"
 >;
 
 export function registerPlatformHealthAuthRoutes(
@@ -12,7 +17,10 @@ export function registerPlatformHealthAuthRoutes(
 ) {
   app.get("/platform/auth/providers", (context) => {
     context.header("cache-control", "no-store");
-    return context.json({ google: options.googleAuthEnabled === true });
+    return context.json({
+      google: options.googleAuthEnabled === true,
+      telegram: options.telegramAuthEnabled === true,
+    });
   });
 
   if (options.authHandler) {
