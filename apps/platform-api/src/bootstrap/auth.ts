@@ -61,7 +61,6 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     googleClientSecret: google.clientSecret,
     telegramAuthClientId: telegram.enabled ? telegram.clientId : undefined,
     telegramAuthClientSecret: telegram.enabled ? telegram.clientSecret : undefined,
-    internalAccountEmailDomain: options.env.INTERNAL_ACCOUNT_EMAIL_DOMAIN,
     ...(!options.emailDeliveryService && options.authEmailProvider
       ? { emailProvider: options.authEmailProvider }
       : {}),
@@ -71,6 +70,7 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     requireEmailVerification: options.requireEmailVerification,
     secret:
       options.env.BETTER_AUTH_SECRET ?? "development-ecs-auth-secret-change-before-production",
+    storefrontPublicBaseDomain: options.env.STOREFRONT_PUBLIC_BASE_DOMAIN,
     trustedOrigins: parseTrustedOrigins(options.env.BETTER_AUTH_TRUSTED_ORIGINS) ?? [
       "http://api.lvh.me",
       "http://app.lvh.me",

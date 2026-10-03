@@ -15,7 +15,7 @@ import {
 export default async function CheckEmailPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ delivery?: string }>;
+  searchParams?: Promise<{ delivery?: string; flow?: string; next?: string }>;
 }) {
   const t = await getTranslations();
   const params = await searchParams;
@@ -53,7 +53,17 @@ export default async function CheckEmailPage({
         </p>
         <VerificationEmailForm initialEmail={email} />
         <Button asChild className="mt-3 w-full" size="lg" variant="outline">
-          <Link href="/sign-in">{t("signup.verification.backToSignIn")}</Link>
+          <Link
+            href={
+              params?.flow === "account"
+                ? `/dashboard${typeof params.next === "string" && params.next.startsWith("/dashboard") ? params.next.slice("/dashboard".length) : ""}`
+                : "/sign-in"
+            }
+          >
+            {params?.flow === "account"
+              ? t("auth.verificationFlow.notNow")
+              : t("signup.verification.backToSignIn")}
+          </Link>
         </Button>
       </section>
     </AuthShell>

@@ -27,6 +27,9 @@ export async function POST(request: Request) {
   });
 
   // Keep the response generic so this endpoint cannot be used to discover accounts.
+  if (!result.ok && result.status === 429) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
   if (!result.ok && result.status >= 500) {
     return NextResponse.json({ error: "verification_unavailable" }, { status: 503 });
   }

@@ -359,7 +359,7 @@ export function LaunchAssistant({
     </Button>
   );
   return (
-    <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 max-w-[calc(100vw-2rem)] motion-safe:animate-dashboard-base">
+    <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 max-w-[calc(100vw-2rem)] print:hidden motion-safe:animate-dashboard-base">
       {isMobile ? (
         <Sheet open={open} onOpenChange={changeOpen}>
           <SheetTrigger asChild>{launcher}</SheetTrigger>

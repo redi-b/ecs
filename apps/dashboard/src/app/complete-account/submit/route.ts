@@ -7,6 +7,7 @@ import {
   getAccountIdentity,
   updateAccountProfile,
 } from "@/lib/platform-auth-account";
+import { getVerificationEmailCookie } from "@/lib/verification-email-cookie";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
   if (identity.needsEmail && !email) {
     return NextResponse.json({ error: "missing_email" }, { status: 400 });
   }
+  let emailVerificationPending = false;
   if (identity.needsEmail && email) {
     const origin = ctx.origin ?? new URL(request.url).origin;
     const emailResult = await changeAccountEmail({
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
     if (!emailResult.ok) {
       return NextResponse.json({ error: "email_update_failed" }, { status: emailResult.status });
     }
+    emailVerificationPending = true;
   }
 
   const result = await updateAccountProfile({
@@ -56,9 +59,13 @@ export async function POST(request: Request) {
   const nextPath = getSafeAccountCompletionPath(
     typeof body?.next === "string" ? body.next : undefined,
   );
-  return NextResponse.json({
+  const response = NextResponse.json({
     emailVerificationRequired: identity.needsEmail,
     ok: true as const,
-    redirectTo: nextPath,
+    redirectTo: emailVerificationPending
+      ? `/check-email?flow=account&next=${encodeURIComponent(nextPath)}`
+      : nextPath,
   });
+  if (emailVerificationPending) response.headers.append("set-cookie", getVerificationEmailCookie(email));
+  return response;
 }

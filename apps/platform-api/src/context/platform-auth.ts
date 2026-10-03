@@ -130,7 +130,7 @@ export function createPlatformAuth(options: {
   googleClientSecret?: string | undefined;
   telegramAuthClientId?: string | undefined;
   telegramAuthClientSecret?: string | undefined;
-  internalAccountEmailDomain?: string | undefined;
+  storefrontPublicBaseDomain?: string | undefined;
   enqueueAccountEmail?:
     | ((input: {
         idempotencySource: string;
@@ -149,8 +149,13 @@ export function createPlatformAuth(options: {
   const enqueueAccountEmail = options.enqueueAccountEmail;
   const telegramClientId = options.telegramAuthClientId?.trim();
   const telegramClientSecret = options.telegramAuthClientSecret?.trim();
-  const internalAccountEmailDomain =
-    options.internalAccountEmailDomain?.trim().replace(/^@/, "") || "accounts.ecset.internal";
+  const storefrontBaseDomain =
+    (options.storefrontPublicBaseDomain ?? process.env.STOREFRONT_PUBLIC_BASE_DOMAIN)
+      ?.trim()
+      .replace(/^\.+|\.+$/g, "") || null;
+  const internalAccountEmailDomain = storefrontBaseDomain
+    ? `accounts.${storefrontBaseDomain}`
+    : "accounts.ecset.internal";
   const telegramJwks = createRemoteJWKSet(
     new URL("https://oauth.telegram.org/.well-known/jwks.json"),
   );
@@ -281,10 +286,10 @@ export function createPlatformAuth(options: {
     ...(options.trustedOrigins?.length ? { trustedOrigins: options.trustedOrigins } : {}),
     rateLimit: {
       customRules: {
-        "/change-email": { max: 3, window: 60 },
+        "/change-email": { max: 1, window: 60 },
         "/organization/invite-member": { max: 10, window: 60 },
         "/request-password-reset": { max: 3, window: 60 },
-        "/send-verification-email": { max: 3, window: 60 },
+        "/send-verification-email": { max: 1, window: 60 },
       },
       enabled: true,
       max: 100,

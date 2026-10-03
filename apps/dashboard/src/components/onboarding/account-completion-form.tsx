@@ -26,7 +26,6 @@ export function AccountCompletionForm({
   const [phoneEditing, setPhoneEditing] = useState(!initialPhone);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [emailPending, setEmailPending] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -38,7 +37,6 @@ export function AccountCompletionForm({
     }
 
     setError(null);
-    setEmailPending(false);
     setIsSubmitting(true);
     const response = await fetch("/complete-account/submit", {
       body: JSON.stringify({ email, next: nextPath, phone }),
@@ -66,9 +64,7 @@ export function AccountCompletionForm({
     }
 
     if (result.emailVerificationRequired) {
-      setEmailPending(true);
-      setError(t("auth.completion.emailVerificationRequired"));
-      setIsSubmitting(false);
+      window.location.assign(result.redirectTo);
       return;
     }
     window.location.assign(result.redirectTo);
@@ -125,16 +121,8 @@ export function AccountCompletionForm({
         ) : null}
 
         {error ? (
-          <Field data-invalid={!emailPending || undefined}>
-            <FieldError
-              className={
-                emailPending
-                  ? "border border-warning/30 bg-warning/8 px-3 py-2 text-warning"
-                  : undefined
-              }
-            >
-              {error}
-            </FieldError>
+          <Field data-invalid>
+            <FieldError>{error}</FieldError>
           </Field>
         ) : null}
 
