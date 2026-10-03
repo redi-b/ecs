@@ -9,7 +9,7 @@ import * as schema from "@ecs/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
-import { organization } from "better-auth/plugins";
+import { lastLoginMethod, organization } from "better-auth/plugins";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { and, eq, ne } from "drizzle-orm";
 import { createRemoteJWKSet, jwtVerify } from "jose";
@@ -130,6 +130,7 @@ export function createPlatformAuth(options: {
   googleClientSecret?: string | undefined;
   telegramAuthClientId?: string | undefined;
   telegramAuthClientSecret?: string | undefined;
+  internalAccountEmailDomain?: string | undefined;
   enqueueAccountEmail?:
     | ((input: {
         idempotencySource: string;
@@ -148,6 +149,8 @@ export function createPlatformAuth(options: {
   const enqueueAccountEmail = options.enqueueAccountEmail;
   const telegramClientId = options.telegramAuthClientId?.trim();
   const telegramClientSecret = options.telegramAuthClientSecret?.trim();
+  const internalAccountEmailDomain =
+    options.internalAccountEmailDomain?.trim().replace(/^@/, "") || "accounts.ecset.internal";
   const telegramJwks = createRemoteJWKSet(
     new URL("https://oauth.telegram.org/.well-known/jwks.json"),
   );
@@ -290,6 +293,7 @@ export function createPlatformAuth(options: {
       window: 60,
     },
     plugins: [
+      lastLoginMethod({ cookieName: "ecs.last_login_method", maxAge: 60 * 60 * 24 * 30 }),
       ...(telegramClientId && telegramClientSecret
         ? [
             genericOAuth({
@@ -316,7 +320,7 @@ export function createPlatformAuth(options: {
                       const phone =
                         typeof payload.phone_number === "string" ? payload.phone_number : undefined;
                       return {
-                        email: `telegram-${payload.sub}@accounts.ecset.internal`,
+                        email: `telegram-${payload.sub}@${internalAccountEmailDomain}`,
                         emailVerified: false,
                         id: payload.sub,
                         image: typeof payload.picture === "string" ? payload.picture : undefined,

@@ -297,9 +297,14 @@ export async function getAccountIdentity(options: AuthRequestContext) {
   } | null;
   const email = typeof body?.user?.email === "string" ? body.user.email : null;
   if (!email) return { ok: false as const, status: 502 };
+  const configuredDomain = process.env.INTERNAL_ACCOUNT_EMAIL_DOMAIN?.trim().replace(/^@/, "");
+  const isSyntheticTelegramEmail =
+    email.startsWith("telegram-") &&
+    (email.endsWith(`@${configuredDomain || "accounts.ecset.internal"}`) ||
+      email.endsWith("@accounts.ecset.internal"));
   return {
     email,
-    needsEmail: email.endsWith("@accounts.ecset.internal"),
+    needsEmail: isSyntheticTelegramEmail,
     calendarPreference:
       body?.user?.calendarPreference === "ethiopian" ||
       body?.user?.calendarPreference === "gregorian"

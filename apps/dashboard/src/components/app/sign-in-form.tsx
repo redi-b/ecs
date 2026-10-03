@@ -17,9 +17,11 @@ import { useI18n } from "@/i18n/provider";
 
 export function SignInForm({
   errorMessage: initialErrorMessage,
+  isLastUsed = false,
   nextPath,
 }: {
   errorMessage: string | null;
+  isLastUsed?: boolean;
   nextPath: string;
 }) {
   const fieldId = useId();
@@ -74,10 +76,13 @@ export function SignInForm({
       onSubmit={(event) => void onSubmit(event)}
     >
       <input name="next" type="hidden" value={nextPath} />
+      {isLastUsed ? (
+        <p className="-mb-1 text-xs text-muted-foreground">{t("auth.lastUsedEmail")}</p>
+      ) : null}
       <FieldGroup className="gap-4">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.email")}</FieldLabel>
-          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-12 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="email"
               autoFocus
@@ -101,7 +106,7 @@ export function SignInForm({
               {t("auth.recovery.forgotLink")}
             </Link>
           </div>
-          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-12 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="current-password"
               className="px-3 text-sm"

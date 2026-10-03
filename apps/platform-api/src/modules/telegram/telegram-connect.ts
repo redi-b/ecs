@@ -152,7 +152,7 @@ export function createTelegramConnectService(
         return { connected: false as const, reason: "telegram_not_configured" as const };
       }
       const [account] = await db
-        .select({ accountId: accounts.accountId, scope: accounts.scope })
+        .select({ accountId: accounts.accountId, idToken: accounts.idToken, scope: accounts.scope })
         .from(accounts)
         .where(and(eq(accounts.userId, input.userId), eq(accounts.providerId, "telegram")))
         .limit(1);
@@ -161,7 +161,12 @@ export function createTelegramConnectService(
         .split(/[ ,]/)
         .map((scope) => scope.trim())
         .filter(Boolean);
-      if (!account?.accountId || !grantedScopes.includes("telegram:bot_access")) {
+      const idTokenClaims = decodeJwtClaims(account?.idToken);
+      const botAccessClaim = idTokenClaims?.bot_access === true;
+      if (
+        !account?.accountId ||
+        (!grantedScopes.includes("telegram:bot_access") && !botAccessClaim)
+      ) {
         return { connected: false as const, reason: "bot_access_not_granted" as const };
       }
 
@@ -762,6 +767,19 @@ export function createTelegramConnectService(
       return { handled: true as const, reason: "connected" as const };
     },
   };
+}
+
+function decodeJwtClaims(token: string | null | undefined): Record<string, unknown> | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = Buffer.from(payload, "base64url").toString("utf8");
+    const value: unknown = JSON.parse(json);
+    return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 export type TelegramConnectService = ReturnType<typeof createTelegramConnectService>;

@@ -61,6 +61,7 @@ export function createAuthRuntime(options: AuthRuntimeOptions) {
     googleClientSecret: google.clientSecret,
     telegramAuthClientId: telegram.enabled ? telegram.clientId : undefined,
     telegramAuthClientSecret: telegram.enabled ? telegram.clientSecret : undefined,
+    internalAccountEmailDomain: options.env.INTERNAL_ACCOUNT_EMAIL_DOMAIN,
     ...(!options.emailDeliveryService && options.authEmailProvider
       ? { emailProvider: options.authEmailProvider }
       : {}),

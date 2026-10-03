@@ -6,13 +6,19 @@ import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 
-export function TelegramAuthButton({ nextPath }: { nextPath: string }) {
+export function TelegramAuthButton({
+  isLastUsed = false,
+  nextPath,
+}: {
+  isLastUsed?: boolean;
+  nextPath: string;
+}) {
   const { t } = useI18n();
   const [leaving, setLeaving] = useState(false);
   const href = `/auth/telegram?next=${encodeURIComponent(nextPath)}`;
 
   return (
-    <div className="mb-5 grid gap-4">
+    <div className="mb-5">
       <Button
         aria-busy={leaving}
         className="w-full"
@@ -31,12 +37,15 @@ export function TelegramAuthButton({ nextPath }: { nextPath: string }) {
           <AppIcons.telegram data-icon="inline-start" />
         )}
         {t("auth.continueWithTelegram")}
+        {isLastUsed ? (
+          <span className="ml-auto text-xs font-normal text-muted-foreground">
+            {t("auth.lastUsed")}
+          </span>
+        ) : null}
       </Button>
-      <div className="flex items-center gap-3" aria-hidden>
-        <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">{t("auth.orUseEmail")}</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        {t("auth.telegramMessagesHint")}
+      </p>
     </div>
   );
 }
