@@ -17,9 +17,11 @@ import { useI18n } from "@/i18n/provider";
 
 export function SignInForm({
   errorMessage: initialErrorMessage,
+  isLastUsed = false,
   nextPath,
 }: {
   errorMessage: string | null;
+  isLastUsed?: boolean;
   nextPath: string;
 }) {
   const fieldId = useId();
@@ -69,15 +71,21 @@ export function SignInForm({
   return (
     <form
       action="/session"
-      className="flex flex-col gap-5"
+      className="relative flex flex-col gap-5"
       method="post"
       onSubmit={(event) => void onSubmit(event)}
     >
       <input name="next" type="hidden" value={nextPath} />
+      {isLastUsed ? (
+        <span className="absolute -top-2 right-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-card px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-primary shadow-sm">
+          <AppIcons.time className="size-3" aria-hidden />
+          {t("auth.lastUsed")}
+        </span>
+      ) : null}
       <FieldGroup className="gap-4">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-email`}>{t("auth.email")}</FieldLabel>
-          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-12 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="email"
               autoFocus
@@ -101,7 +109,7 @@ export function SignInForm({
               {t("auth.recovery.forgotLink")}
             </Link>
           </div>
-          <InputGroup className="h-11 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
+          <InputGroup className="h-12 rounded-full border-border/80 bg-background px-1 transition-[border-color,box-shadow] duration-150 ease-[var(--ease-dashboard)] hover:border-ring/45 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25">
             <InputGroupInput
               autoComplete="current-password"
               className="px-3 text-sm"

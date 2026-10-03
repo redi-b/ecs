@@ -1,10 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { createPlatformDb } from "@ecs/db";
-import {
-  notificationDestinations,
-  telegramConnectSessions,
-  tenants,
-} from "@ecs/db";
+import { accounts, notificationDestinations, telegramConnectSessions, tenants } from "@ecs/db";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { sendTelegramBotMessage } from "../notifications/providers/telegram-provider.js";
@@ -12,15 +8,10 @@ import { sendTelegramBotMessage } from "../notifications/providers/telegram-prov
 type PlatformDb = ReturnType<typeof createPlatformDb>["db"];
 
 export const DEFAULT_TELEGRAM_EVENTS = [
-  "order.created",
-  "order.cancelled",
-  "payment.paid",
-  "payment.failed",
-  "inventory.low",
-  "storefront.inquiry_created",
   "billing.past_due",
   "billing.invoice_ready",
-  "notification.test",
+  "payment.failed",
+  "order.created",
 ] as const;
 
 export const MAX_TELEGRAM_DESTINATIONS = 10;
@@ -151,6 +142,86 @@ export function createTelegramConnectService(
   return {
     isConfigured: () => Boolean(config?.botToken && config?.botUsername),
 
+    /**
+     * Link a Telegram OAuth identity when the user granted telegram:bot_access.
+     * The OAuth account id is Telegram's private-chat user id. Keep this
+     * idempotent and never re-enable a destination that the merchant paused.
+     */
+    ensureDestinationFromAuth: async (input: { tenantId: string; userId: string }) => {
+      if (!config?.botToken) {
+        return { connected: false as const, reason: "telegram_not_configured" as const };
+      }
+      const [account] = await db
+        .select({ accountId: accounts.accountId, idToken: accounts.idToken, scope: accounts.scope })
+        .from(accounts)
+        .where(and(eq(accounts.userId, input.userId), eq(accounts.providerId, "telegram")))
+        .limit(1);
+
+      const grantedScopes = (account?.scope ?? "")
+        .split(/[ ,]/)
+        .map((scope) => scope.trim())
+        .filter(Boolean);
+      const idTokenClaims = decodeJwtClaims(account?.idToken);
+      const botAccessClaim = idTokenClaims?.bot_access === true;
+      if (
+        !account?.accountId ||
+        (!grantedScopes.includes("telegram:bot_access") && !botAccessClaim)
+      ) {
+        return { connected: false as const, reason: "bot_access_not_granted" as const };
+      }
+
+      const [existing] = await db
+        .select()
+        .from(notificationDestinations)
+        .where(
+          and(
+            eq(notificationDestinations.tenantId, input.tenantId),
+            eq(notificationDestinations.channel, "telegram"),
+            eq(notificationDestinations.target, account.accountId),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        await db
+          .update(notificationDestinations)
+          .set({
+            metadata: {
+              ...(existing.metadata as Record<string, unknown>),
+              source: "telegram_oauth",
+              botAccess: true,
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(notificationDestinations.id, existing.id));
+        return { connected: true as const, created: false as const, enabled: existing.enabled };
+      }
+
+      const [countRow] = await db
+        .select({ value: count() })
+        .from(notificationDestinations)
+        .where(
+          and(
+            eq(notificationDestinations.tenantId, input.tenantId),
+            eq(notificationDestinations.channel, "telegram"),
+          ),
+        );
+      if (Number(countRow?.value ?? 0) >= MAX_TELEGRAM_DESTINATIONS) {
+        return { connected: false as const, reason: "destination_limit" as const };
+      }
+
+      await db.insert(notificationDestinations).values({
+        tenantId: input.tenantId,
+        channel: "telegram",
+        target: account.accountId,
+        label: "Telegram",
+        enabled: true,
+        events: [...DEFAULT_TELEGRAM_EVENTS],
+        metadata: { source: "telegram_oauth", botAccess: true },
+      });
+      return { connected: true as const, created: true as const, enabled: true as const };
+    },
+
     listDestinations: async (input: { tenantId: string }) => {
       const rows = await db
         .select()
@@ -166,10 +237,7 @@ export function createTelegramConnectService(
       return { destinations: rows.map(serializeDestination) };
     },
 
-    createConnectSession: async (input: {
-      tenantId: string;
-      userId: string;
-    }) => {
+    createConnectSession: async (input: { tenantId: string; userId: string }) => {
       if (!config?.botToken || !config.botUsername) {
         return {
           ok: false as const,
@@ -314,7 +382,11 @@ export function createTelegramConnectService(
         .returning({ id: notificationDestinations.id });
 
       if (deleted.length === 0) {
-        return { ok: false as const, error: "destination_not_found" as const, status: 404 as const };
+        return {
+          ok: false as const,
+          error: "destination_not_found" as const,
+          status: 404 as const,
+        };
       }
       return { ok: true as const };
     },
@@ -337,7 +409,11 @@ export function createTelegramConnectService(
         .returning();
 
       if (!row) {
-        return { ok: false as const, error: "destination_not_found" as const, status: 404 as const };
+        return {
+          ok: false as const,
+          error: "destination_not_found" as const,
+          status: 404 as const,
+        };
       }
       return { ok: true as const, destination: serializeDestination(row) };
     },
@@ -348,7 +424,11 @@ export function createTelegramConnectService(
     setSharedEvents: async (input: { tenantId: string; events: string[] }) => {
       const events = [...new Set(input.events.map((e) => e.trim()).filter(Boolean))];
       if (events.length === 0) {
-        return { ok: false as const, error: "notification_events_invalid" as const, status: 400 as const };
+        return {
+          ok: false as const,
+          error: "notification_events_invalid" as const,
+          status: 400 as const,
+        };
       }
 
       await db
@@ -427,9 +507,7 @@ export function createTelegramConnectService(
       // Tools / menu / wizards / contact share for linked operators.
       if (serviceOptions?.handleToolsMessage) {
         const contactRaw =
-          typeof message === "object" &&
-          message !== null &&
-          "contact" in (message as object)
+          typeof message === "object" && message !== null && "contact" in (message as object)
             ? (message as { contact?: unknown }).contact
             : null;
         const contactObj =
@@ -449,12 +527,7 @@ export function createTelegramConnectService(
           : null;
 
         // Contact-only messages may have empty text.
-        const toolsText =
-          typeof text === "string" && text.trim()
-            ? text
-            : contact
-              ? "contact"
-              : "";
+        const toolsText = typeof text === "string" && text.trim() ? text : contact ? "contact" : "";
 
         if (toolsText || contact) {
           const tools = await serviceOptions.handleToolsMessage({
@@ -604,7 +677,9 @@ export function createTelegramConnectService(
       }
 
       const username =
-        typeof from === "object" && from !== null && typeof (from as { username?: unknown }).username === "string"
+        typeof from === "object" &&
+        from !== null &&
+        typeof (from as { username?: unknown }).username === "string"
           ? String((from as { username: string }).username)
           : null;
       const firstName =
@@ -692,6 +767,19 @@ export function createTelegramConnectService(
       return { handled: true as const, reason: "connected" as const };
     },
   };
+}
+
+function decodeJwtClaims(token: string | null | undefined): Record<string, unknown> | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = Buffer.from(payload, "base64url").toString("utf8");
+    const value: unknown = JSON.parse(json);
+    return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 export type TelegramConnectService = ReturnType<typeof createTelegramConnectService>;

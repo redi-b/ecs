@@ -116,6 +116,7 @@ export function createTelegramRuntime(options: TelegramBootstrapOptions) {
   return {
     appOptions: {
       listTelegramDestinations: connectService.listDestinations,
+      ensureTelegramDestinationFromAuth: connectService.ensureDestinationFromAuth,
       createTelegramConnectSession: connectService.createConnectSession,
       getTelegramConnectSession: connectService.getConnectSession,
       cancelTelegramConnectSession: connectService.cancelConnectSession,

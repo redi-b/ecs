@@ -35,6 +35,7 @@ import { getLaunchAssistantCookieName } from "@/lib/launch-assistant-preferences
 import { getMerchantDashboardAccessShell } from "@/lib/merchant-dashboard";
 import { getPlatformDiscoveryCampaigns } from "@/lib/platform-api/discovery";
 import { getPlatformLaunchReadiness } from "@/lib/platform-api/launch-readiness";
+import { listTelegramDestinations } from "@/lib/platform-api/notifications/telegram-client";
 import { getStorefrontDraft } from "@/lib/platform-api/storefront/templates";
 import { getPlatformOnboardingState } from "@/lib/platform-onboarding";
 import { getCentralDashboardUrl } from "@/lib/shop-host";
@@ -127,6 +128,18 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
         title={t("common.access.unavailableTitle")}
       />
     );
+  }
+
+  // Telegram OAuth may have granted direct-message access. The merchant
+  // notification read is idempotent and lets the platform materialize that
+  // consent as a tenant-scoped destination on the first shop visit.
+  if (allows(access.access.permissions ?? [], merchantPolicies.notificationsManage)) {
+    await listTelegramDestinations({
+      cookieHeader: requestHeaders.get("cookie"),
+      platformApiBaseUrl,
+      requestHost,
+      tenantId: access.access.tenant.id,
+    });
   }
 
   let initialReadiness: LaunchReadiness | null = null;

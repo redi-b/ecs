@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
 import { GoogleAuthButton } from "@/components/onboarding/google-auth-button";
+import { TelegramAuthButton } from "@/components/onboarding/telegram-auth-button";
 import { Button } from "@/components/ui/button";
 import { EthiopianPhoneInput } from "@/components/ui/ethiopian-phone-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -22,6 +23,7 @@ export function AccountSignUpForm({
   errorMessage: initialErrorMessage,
   googleEnabled,
   nextPath,
+  telegramEnabled,
 }: {
   defaultValues: {
     email?: string | undefined;
@@ -31,6 +33,7 @@ export function AccountSignUpForm({
   errorMessage: string | null;
   googleEnabled: boolean;
   nextPath?: string;
+  telegramEnabled: boolean;
 }) {
   const fieldId = useId();
   const { t } = useI18n();
@@ -93,7 +96,15 @@ export function AccountSignUpForm({
         </h1>
       </div>
 
+      {telegramEnabled ? <TelegramAuthButton nextPath={nextPath ?? "/onboarding"} /> : null}
       {googleEnabled ? <GoogleAuthButton nextPath={nextPath ?? "/onboarding"} /> : null}
+      {telegramEnabled || googleEnabled ? (
+        <div className="mb-5 flex items-center gap-3" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">{t("auth.orUseEmail")}</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+      ) : null}
 
       <form className="flex flex-col gap-5" onSubmit={(event) => void onSubmit(event)}>
         <Field>

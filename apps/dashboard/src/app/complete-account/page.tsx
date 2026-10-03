@@ -23,11 +23,15 @@ export default async function CompleteAccountPage({ searchParams }: CompleteAcco
   if (!identity.ok) {
     redirect(`/sign-in?next=${encodeURIComponent(`/complete-account?next=${nextPath}`)}`);
   }
-  if (identity.phone) redirect(nextPath);
+  if (identity.phone && !identity.needsEmail) redirect(nextPath);
 
   return (
     <AuthShell toolbar={<OnboardingSignOutButton />}>
-      <AccountCompletionForm nextPath={nextPath} />
+      <AccountCompletionForm
+        initialPhone={identity.phone}
+        nextPath={nextPath}
+        requiresEmail={identity.needsEmail}
+      />
     </AuthShell>
   );
 }

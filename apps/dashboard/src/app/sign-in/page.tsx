@@ -1,10 +1,11 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardAccessState } from "@/components/app/dashboard-access-state";
 import Link from "@/components/app/link";
 import { SignInForm } from "@/components/app/sign-in-form";
 import { AuthShell } from "@/components/onboarding/auth-shell";
 import { GoogleAuthButton } from "@/components/onboarding/google-auth-button";
+import { TelegramAuthButton } from "@/components/onboarding/telegram-auth-button";
 import type { MessageKey } from "@/i18n/messages";
 import { getTranslations } from "@/i18n/server";
 import { getAuthenticatedDashboardRedirect } from "@/lib/dashboard-auth-redirect";
@@ -20,6 +21,7 @@ export default async function AdminSignInPage({
   const params = await searchParams;
   const t = await getTranslations();
   const requestHeaders = await headers();
+  const cookieStore = await cookies();
   const requestHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const isCentralAccess = isCentralDashboardHost(requestHost);
   // Type as ShopHostValidation — do not use `as const` alone ({ ok: true } lacks `tenant`).
@@ -63,14 +65,14 @@ export default async function AdminSignInPage({
     redirect(authenticatedRedirect);
   }
 
-  const googleEnabled =
-    isCentralAccess &&
-    (await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000"))
-      .google;
+  const socialAuthProviders = isCentralAccess
+    ? await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000")
+    : { google: false, telegram: false };
   const errorMessage = getErrorMessage(params?.error, t);
   const centralSignIn = getCentralDashboardUrl("/sign-in");
   const shopName =
     shopHost.ok && shopHost.tenant?.name?.trim() ? shopHost.tenant.name.trim() : null;
+  const lastLoginMethod = cookieStore.get("ecs.last_login_method")?.value ?? null;
 
   return (
     <AuthShell>
@@ -89,8 +91,24 @@ export default async function AdminSignInPage({
             {t("auth.recovery.resetComplete")}
           </p>
         ) : null}
-        {googleEnabled ? <GoogleAuthButton nextPath={nextPath} /> : null}
-        <SignInForm errorMessage={errorMessage} nextPath={nextPath} />
+        {socialAuthProviders.telegram ? (
+          <TelegramAuthButton isLastUsed={lastLoginMethod === "telegram"} nextPath={nextPath} />
+        ) : null}
+        {socialAuthProviders.google ? (
+          <GoogleAuthButton isLastUsed={lastLoginMethod === "google"} nextPath={nextPath} />
+        ) : null}
+        {socialAuthProviders.telegram || socialAuthProviders.google ? (
+          <div className="mb-5 flex items-center gap-3" aria-hidden>
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">{t("auth.orUseEmail")}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        ) : null}
+        <SignInForm
+          errorMessage={errorMessage}
+          isLastUsed={lastLoginMethod === "email" || lastLoginMethod === "credential"}
+          nextPath={nextPath}
+        />
         {isCentralAccess ? (
           <p className="mt-7 border-t border-border/80 pt-6 text-center text-sm text-muted-foreground">
             {t("auth.newMerchant")}{" "}

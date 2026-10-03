@@ -25,7 +25,7 @@ describe("platform app foundation", () => {
     const response = await app.request("/platform/auth/providers");
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { google: true });
+    assert.deepEqual(await response.json(), { google: true, telegram: false });
     assert.equal(response.headers.get("cache-control"), "no-store");
   });
 

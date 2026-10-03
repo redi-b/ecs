@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { AppIcons } from "@/components/app/icons";
 import Link from "@/components/app/link";
@@ -119,10 +119,17 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (pending) return;
+    if (pending || cooldown > 0) return;
     setPending(true);
     setError(null);
     const response = await fetch("/check-email/request", {
@@ -132,9 +139,11 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
     }).catch(() => null);
     setPending(false);
     if (!response?.ok) {
+      if (response?.status === 429) setCooldown(60);
       setError(t("signup.verification.resendError"));
       return;
     }
+    setCooldown(60);
     setSent(true);
   }
 
@@ -149,12 +158,16 @@ export function VerificationEmailForm({ initialEmail }: { initialEmail: string }
       <Button
         aria-busy={pending}
         className="w-full"
-        disabled={pending}
+        disabled={pending || cooldown > 0}
         size="lg"
         type="submit"
       >
         {pending ? <AppIcons.loader aria-hidden className="animate-spin" /> : null}
-        {pending ? t("signup.verification.sending") : t("signup.verification.resend")}
+        {pending
+          ? t("signup.verification.sending")
+          : cooldown > 0
+            ? `${t("signup.verification.resend")} (${cooldown}s)`
+            : t("signup.verification.resend")}
       </Button>
     </form>
   );

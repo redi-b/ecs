@@ -6,7 +6,7 @@ import { AppIcons } from "@/components/app/icons";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
 
-export function GoogleAuthButton({
+export function TelegramAuthButton({
   isLastUsed = false,
   nextPath,
 }: {
@@ -15,7 +15,7 @@ export function GoogleAuthButton({
 }) {
   const { t } = useI18n();
   const [leaving, setLeaving] = useState(false);
-  const href = `/auth/google?next=${encodeURIComponent(nextPath)}`;
+  const href = `/auth/telegram?next=${encodeURIComponent(nextPath)}`;
 
   return (
     <div className="relative mb-5">
@@ -40,9 +40,9 @@ export function GoogleAuthButton({
         {leaving ? (
           <AppIcons.loader className="animate-spin" data-icon="inline-start" />
         ) : (
-          <AppIcons.google data-icon="inline-start" />
+          <AppIcons.telegram data-icon="inline-start" />
         )}
-        {t("auth.continueWithGoogle")}
+        {t("auth.continueWithTelegram")}
       </Button>
     </div>
   );

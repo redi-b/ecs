@@ -13,7 +13,6 @@ import {
 import { type AppLocale, getLocaleLabel, isAppLocale } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function LanguageSwitcher() {
   const { isLocalePending, locale, setLocale, t } = useI18n();
@@ -29,27 +28,23 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              aria-busy={isLocalePending}
-              aria-label={isLocalePending ? t("language.switching") : t("language.change")}
-              className="min-w-9 tabular-nums"
-              disabled={isLocalePending}
-              size="icon-lg"
-              variant="ghost"
-            >
-              {isLocalePending ? (
-                <AppIcons.loader className="size-4 animate-spin" data-icon="inline-start" />
-              ) : (
-                <span aria-hidden="true" className="text-xs font-semibold uppercase">
-                  {locale}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t("language.change")}</TooltipContent>
-        </Tooltip>
+        <Button
+          aria-busy={isLocalePending}
+          aria-label={isLocalePending ? t("language.switching") : t("language.change")}
+          className="min-w-9 tabular-nums"
+          disabled={isLocalePending}
+          size="icon-lg"
+          title={t("language.change")}
+          variant="ghost"
+        >
+          {isLocalePending ? (
+            <AppIcons.loader className="size-4 animate-spin" data-icon="inline-start" />
+          ) : (
+            <span aria-hidden="true" className="text-xs font-semibold uppercase">
+              {locale}
+            </span>
+          )}
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>{t("language.label")}</DropdownMenuLabel>

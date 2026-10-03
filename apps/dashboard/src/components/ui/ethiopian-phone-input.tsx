@@ -14,6 +14,7 @@ export function EthiopianPhoneInput({
   id,
   label,
   onChange,
+  readOnly = false,
   required = false,
   size = "default",
   value,
@@ -24,6 +25,7 @@ export function EthiopianPhoneInput({
   id: string;
   label: string;
   onChange: (value: string) => void;
+  readOnly?: boolean;
   required?: boolean;
   size?: "default" | "lg";
   value: string;
@@ -38,7 +40,7 @@ export function EthiopianPhoneInput({
       <InputGroup
         className={cn(
           "bg-background px-1 transition-colors hover:border-ring/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/25",
-          size === "lg" && "h-11",
+          size === "lg" && "h-12",
         )}
       >
         <InputGroupAddon>+251</InputGroupAddon>
@@ -63,6 +65,7 @@ export function EthiopianPhoneInput({
               .slice(0, 9);
             onChange(national ? `+251${national}` : "");
           }}
+          readOnly={readOnly}
           pattern="[1-9][0-9]{8}"
           placeholder="91 234 5678"
           required={required}

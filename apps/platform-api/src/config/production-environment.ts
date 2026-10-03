@@ -27,6 +27,9 @@ export const PLATFORM_PRODUCTION_ENVIRONMENT = {
   GOOGLE_AUTH_ENABLED: "operator",
   GOOGLE_CLIENT_ID: "operator",
   GOOGLE_CLIENT_SECRET: "operator",
+  TELEGRAM_AUTH_ENABLED: "operator",
+  TELEGRAM_AUTH_CLIENT_ID: "operator",
+  TELEGRAM_AUTH_CLIENT_SECRET: "operator",
   BETTER_AUTH_COOKIE_DOMAIN: "derived",
   BETTER_AUTH_COOKIE_PREFIX: "operator",
   BETTER_AUTH_TRUSTED_ORIGINS: "derived",
@@ -128,6 +131,21 @@ export function assertPlatformProductionEnvironment(env: NodeJS.ProcessEnv = pro
   }
   if (googleMode === "true" && (!googleClientId || !googleClientSecret)) {
     errors.push("Google authentication is enabled but its credentials are missing");
+  }
+
+  const telegramMode = present(env, "TELEGRAM_AUTH_ENABLED") || "auto";
+  const telegramClientId = present(env, "TELEGRAM_AUTH_CLIENT_ID");
+  const telegramClientSecret = present(env, "TELEGRAM_AUTH_CLIENT_SECRET");
+  if (!(["auto", "true", "false"] as const).includes(telegramMode as "auto" | "true" | "false")) {
+    errors.push("TELEGRAM_AUTH_ENABLED must be auto, true, or false");
+  }
+  if (Boolean(telegramClientId) !== Boolean(telegramClientSecret)) {
+    errors.push(
+      "TELEGRAM_AUTH_CLIENT_ID and TELEGRAM_AUTH_CLIENT_SECRET must be configured together",
+    );
+  }
+  if (telegramMode === "true" && (!telegramClientId || !telegramClientSecret)) {
+    errors.push("Telegram authentication is enabled but its credentials are missing");
   }
 
   const emailProvider = present(env, "EMAIL_PROVIDER");

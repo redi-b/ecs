@@ -41,9 +41,9 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     redirect("/sign-in");
   }
 
-  const googleEnabled = (
-    await getSocialAuthProviders(process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000")
-  ).google;
+  const socialAuthProviders = await getSocialAuthProviders(
+    process.env.PLATFORM_API_BASE_URL ?? "http://localhost:3000",
+  );
 
   const errorMessages: Record<string, string> = {
     auth_session_missing: t("signup.error.sessionMissing"),
@@ -69,8 +69,9 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
           phone: resolvedSearchParams.phone,
         }}
         errorMessage={errorMessage}
-        googleEnabled={googleEnabled}
+        googleEnabled={socialAuthProviders.google}
         nextPath={nextPath}
+        telegramEnabled={socialAuthProviders.telegram}
       />
     </AuthShell>
   );
